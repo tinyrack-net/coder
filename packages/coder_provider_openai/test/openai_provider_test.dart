@@ -7,7 +7,8 @@ import 'package:test/test.dart';
 
 void main() {
   test(
-    'Responses request is stateless, strict, sequential, and preserves output items',
+    'Responses request is stateless, strict, sequential, '
+    'and preserves output items',
     () async {
       final adapter = _RecordingAdapter('''
 data: {"type":"response.output_text.delta","delta":"hello"}
@@ -73,7 +74,7 @@ data: [DONE]
 
   test('an empty API key fails before opening a connection', () async {
     final provider = OpenAIResponsesProvider(
-      const OpenAIProviderConfig(apiKey: ''),
+      const OpenAIProviderConfig(),
     );
     expect(
       provider
@@ -94,12 +95,12 @@ data: [DONE]
   });
 
   test('Chat Completions assembles text and fragmented tool calls', () async {
-    final adapter = _RecordingAdapter('''
+    final adapter = _RecordingAdapter(r'''
 data: {"choices":[{"index":0,"delta":{"content":"hello "}}]}
 
-data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"read_","arguments":"{\\"path\\":"}}]}}]}
+data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"read_","arguments":"{\"path\":"}}]}}]}
 
-data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"name":"file","arguments":"\\"README.md\\"}"}}]},"finish_reason":"tool_calls"}]}
+data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"name":"file","arguments":"\"README.md\"}"}}]},"finish_reason":"tool_calls"}]}
 
 data: {"choices":[],"usage":{"prompt_tokens":4,"completion_tokens":3,"total_tokens":7}}
 
@@ -110,7 +111,6 @@ data: [DONE]
     final provider = OpenAIChatCompletionsProvider(
       const OpenAIProviderConfig(
         id: 'compatible',
-        apiKey: '',
         requiresApiKey: false,
         supportsReasoningEffort: false,
         strictToolSchema: false,
@@ -190,7 +190,279 @@ data: {"choices":[{"index":0,"delta":{"content":"partial"}}]}
       throwsA(isA<OpenAIProviderException>()),
     );
   });
+
+  test(
+    'Responses maps canonical history, forced tools, and function calls',
+    () async {
+      final adapter = _RecordingAdapter(r'''
+event: response.output_item.done
+data: {"item":{"type":"function_call","call_id":"call-2","name":"write_file","arguments":"{\"path\":\"a.txt\"}"}}
+
+data: {"type":"response.completed","response":{"output":[{"type":"function_call","call_id":"call-2","name":"write_file","arguments":"{\"path\":\"a.txt\"}"},{"type":"message","content":[{"type":"refusal","text":"ignored"},{"type":"output_text","text":"done"}]},{"type":"future_state","opaque":"value"}],"usage":{"input_tokens":3,"label":"ignored"}}}
+
+data: [DONE]
+
+''');
+      final dio = Dio()..httpClientAdapter = adapter;
+      final provider = OpenAIResponsesProvider(
+        const OpenAIProviderConfig(
+          id: 'compatible-responses',
+          requiresApiKey: false,
+          supportsReasoningEffort: false,
+          strictToolSchema: false,
+        ),
+        dio: dio,
+      );
+      final events = await provider
+          .stream(
+            _request(
+              forceToolName: 'write_file',
+              history: const <ConversationItem>[
+                UserConversationItem('inspect'),
+                AssistantConversationItem(
+                  text: 'earlier',
+                  toolCalls: <ConversationToolCall>[
+                    ConversationToolCall(
+                      callId: 'call-1',
+                      name: 'read_file',
+                      arguments: <String, dynamic>{'path': 'a.txt'},
+                    ),
+                  ],
+                  opaqueItems: <Map<String, dynamic>>[
+                    <String, dynamic>{'type': 'reasoning', 'opaque': true},
+                  ],
+                ),
+                ToolResultConversationItem(callId: 'call-1', output: 'content'),
+              ],
+            ),
+            CancellationToken(),
+          )
+          .toList();
+
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      expect(body, isNot(contains('reasoning')));
+      expect(body['tool_choice'], <String, dynamic>{
+        'type': 'function',
+        'name': 'write_file',
+      });
+      expect(adapter.options!.headers, isNot(contains('Authorization')));
+      final input = body['input']! as List<dynamic>;
+      expect(
+        input.map((item) => (item as Map<String, dynamic>)['type']),
+        <Object?>[
+          null,
+          'reasoning',
+          'message',
+          'function_call',
+          'function_call_output',
+        ],
+      );
+      expect(events.whereType<ModelFunctionCall>(), hasLength(1));
+      final completed = events.whereType<ModelResponseCompleted>().single;
+      expect(completed.assistant.text, 'done');
+      expect(completed.assistant.toolCalls.single.name, 'write_file');
+      expect(completed.assistant.opaqueItems.single['opaque'], 'value');
+      expect(completed.usage, <String, int>{'input_tokens': 3});
+      expect(provider.id, 'compatible-responses');
+    },
+  );
+
+  test('Responses normalizes semantic failures and malformed calls', () async {
+    for (final fixture in <String>[
+      'data: {"type":"response.completed"}\n\n',
+      'data: {"type":"response.failed","error":{"message":"failed"}}\n\n',
+      'data: {"type":"error","message":"top-level"}\n\n',
+      <String>[
+        'data: {"type":"response.output_item.done","item":',
+        '{"type":"function_call","call_id":"call","name":"tool",',
+        '"arguments":"[]"}}\n\n',
+      ].join(),
+    ]) {
+      final dio = Dio()..httpClientAdapter = _RecordingAdapter(fixture);
+      final provider = OpenAIResponsesProvider(
+        const OpenAIProviderConfig(requiresApiKey: false),
+        dio: dio,
+      );
+      await expectLater(
+        provider.stream(_request(), CancellationToken()).toList(),
+        throwsA(isA<OpenAIProviderException>()),
+      );
+    }
+  });
+
+  test('Responses retries only transient connection setup failures', () async {
+    final retrying = _SequenceAdapter(
+      failures: 1,
+      type: DioExceptionType.connectionError,
+      statusCode: 429,
+      fixture:
+          'data: {"type":"response.completed","response":{"output":[]}}\n\n',
+    );
+    final retryDio = Dio()..httpClientAdapter = retrying;
+    final provider = OpenAIResponsesProvider(
+      const OpenAIProviderConfig(requiresApiKey: false),
+      dio: retryDio,
+    );
+    expect(
+      await provider.stream(_request(), CancellationToken()).toList(),
+      hasLength(1),
+    );
+    expect(retrying.calls, 2);
+
+    final failing = _SequenceAdapter(
+      failures: 1,
+      type: DioExceptionType.badResponse,
+      statusCode: 400,
+      fixture: '',
+    );
+    final failingDio = Dio()..httpClientAdapter = failing;
+    await expectLater(
+      OpenAIResponsesProvider(
+        const OpenAIProviderConfig(
+          requiresApiKey: false,
+          maxConnectAttempts: 1,
+        ),
+        dio: failingDio,
+      ).stream(_request(), CancellationToken()).toList(),
+      throwsA(isA<DioException>()),
+    );
+  });
+
+  test('both adapters translate transport cancellation', () async {
+    for (final providerFactory in <ModelProvider Function(Dio)>[
+      (dio) => OpenAIResponsesProvider(
+        const OpenAIProviderConfig(requiresApiKey: false),
+        dio: dio,
+      ),
+      (dio) => OpenAIChatCompletionsProvider(
+        const OpenAIProviderConfig(requiresApiKey: false),
+        dio: dio,
+      ),
+    ]) {
+      final dio = Dio()..httpClientAdapter = _CancelAdapter();
+      final token = CancellationToken();
+      final events = providerFactory(dio).stream(_request(), token).toList();
+      await Future<void>.delayed(Duration.zero);
+      token.cancel();
+      await expectLater(events, throwsA(isA<AgentCancelledException>()));
+    }
+  });
+
+  test(
+    'Chat Completions maps all canonical messages and forced tools',
+    () async {
+      final adapter = _RecordingAdapter(
+        'data: {"choices":[]}\n\ndata: [DONE]\n\n',
+      );
+      final dio = Dio()..httpClientAdapter = adapter;
+      final provider = OpenAIChatCompletionsProvider(
+        const OpenAIProviderConfig(apiKey: 'key'),
+        dio: dio,
+      );
+      final events = await provider
+          .stream(
+            _request(
+              forceToolName: 'read_file',
+              history: const <ConversationItem>[
+                UserConversationItem('user'),
+                AssistantConversationItem(
+                  text: '',
+                  toolCalls: <ConversationToolCall>[
+                    ConversationToolCall(
+                      callId: 'call',
+                      name: 'read_file',
+                      arguments: <String, dynamic>{'path': 'a'},
+                    ),
+                  ],
+                ),
+                ToolResultConversationItem(callId: 'call', output: 'value'),
+              ],
+            ),
+            CancellationToken(),
+          )
+          .toList();
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      expect(body['reasoning_effort'], 'medium');
+      expect(body['tool_choice'], isA<Map<String, dynamic>>());
+      expect(body['messages'], hasLength(4));
+      expect((body['tools'] as List<dynamic>).single, contains('function'));
+      expect(events.single, isA<ModelResponseCompleted>());
+      expect(provider.id, 'openai');
+    },
+  );
+
+  test(
+    'Chat Completions validates credentials, calls, and Dio errors',
+    () async {
+      await expectLater(
+        OpenAIChatCompletionsProvider(
+          const OpenAIProviderConfig(),
+        ).stream(_request(), CancellationToken()).toList(),
+        throwsA(isA<OpenAIProviderException>()),
+      );
+
+      final malformed = Dio()
+        ..httpClientAdapter = _RecordingAdapter('''
+data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"","function":{"name":"","arguments":"[]"}}]}}]}
+
+data: [DONE]
+
+''');
+      await expectLater(
+        OpenAIChatCompletionsProvider(
+          const OpenAIProviderConfig(requiresApiKey: false),
+          dio: malformed,
+        ).stream(_request(), CancellationToken()).toList(),
+        throwsA(isA<OpenAIProviderException>()),
+      );
+
+      final errorAdapter = _SequenceAdapter(
+        failures: 1,
+        type: DioExceptionType.connectionTimeout,
+        statusCode: 503,
+        fixture: '',
+      );
+      final errorDio = Dio()..httpClientAdapter = errorAdapter;
+      await expectLater(
+        OpenAIChatCompletionsProvider(
+          const OpenAIProviderConfig(requiresApiKey: false),
+          dio: errorDio,
+        ).stream(_request(), CancellationToken()).toList(),
+        throwsA(
+          isA<OpenAIProviderException>().having(
+            (error) => error.retryable,
+            'retryable',
+            isTrue,
+          ),
+        ),
+      );
+    },
+  );
 }
+
+ModelRequest _request({
+  List<ConversationItem> history = const <ConversationItem>[],
+  String? forceToolName,
+}) => ModelRequest(
+  model: 'model',
+  reasoningEffort: 'medium',
+  instructions: 'instructions',
+  history: history,
+  tools: const <ModelToolDefinition>[
+    ModelToolDefinition(
+      name: 'read_file',
+      description: 'Read',
+      parameters: <String, dynamic>{
+        'type': 'object',
+        'properties': <String, dynamic>{},
+        'required': <String>[],
+        'additionalProperties': false,
+      },
+    ),
+  ],
+  safetyIdentifier: 'safe',
+  forceToolName: forceToolName,
+);
 
 class _RecordingAdapter implements HttpClientAdapter {
   _RecordingAdapter(this.fixture);
@@ -211,6 +483,63 @@ class _RecordingAdapter implements HttpClientAdapter {
       headers: <String, List<String>>{
         Headers.contentTypeHeader: <String>['text/event-stream'],
       },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+final class _SequenceAdapter implements HttpClientAdapter {
+  _SequenceAdapter({
+    required this.failures,
+    required this.type,
+    required this.statusCode,
+    required this.fixture,
+  });
+
+  final int failures;
+  final DioExceptionType type;
+  final int statusCode;
+  final String fixture;
+  int calls = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    calls += 1;
+    if (calls <= failures) {
+      throw DioException(
+        requestOptions: options,
+        type: type,
+        response: Response<Object?>(
+          requestOptions: options,
+          statusCode: statusCode,
+          data: <String, dynamic>{'error': 'failure'},
+        ),
+      );
+    }
+    return ResponseBody.fromString(fixture, 200);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+final class _CancelAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    await cancelFuture;
+    throw DioException.requestCancelled(
+      requestOptions: options,
+      reason: 'cancelled',
     );
   }
 

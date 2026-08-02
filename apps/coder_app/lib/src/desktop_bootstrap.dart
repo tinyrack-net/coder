@@ -1,19 +1,71 @@
+import 'package:coder_app/src/bootstrap.dart';
+import 'package:coder_app/src/ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:uuid/uuid.dart';
 
-import 'bootstrap.dart';
+/// A running embedded daemon exposed without leaking its concrete handle.
+abstract interface class EmbeddedDaemonSession {
+  /// The WebSocket endpoint bound by the daemon.
+  Uri get boundEndpoint;
 
+  /// The bearer token generated for this daemon.
+  String get bearerToken;
+
+  /// Stops the embedded daemon.
+  Future<void> stop();
+}
+
+/// Starts an embedded daemon session for the desktop bootstrap.
+abstract interface class EmbeddedDaemonLauncher {
+  /// Starts a daemon using the current process environment.
+  Future<EmbeddedDaemonSession> start();
+}
+
+/// Production launcher backed by [EmbeddedDaemonHandle].
+final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
+  /// Creates the production embedded daemon launcher.
+  const IsolateEmbeddedDaemonLauncher();
+
+  @override
+  Future<EmbeddedDaemonSession> start() async => _DaemonSession(
+    await EmbeddedDaemonHandle.start(DaemonConfig.fromEnvironment()),
+  );
+}
+
+final class _DaemonSession implements EmbeddedDaemonSession {
+  const _DaemonSession(this._handle);
+
+  final EmbeddedDaemonHandle _handle;
+
+  @override
+  String get bearerToken => _handle.bearerToken;
+
+  @override
+  Uri get boundEndpoint => _handle.boundEndpoint;
+
+  @override
+  Future<void> stop() => _handle.stop();
+}
+
+/// DesktopBootstrap defines a public contract.
 class DesktopBootstrap implements AppBootstrap {
-  DesktopBootstrap({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+  /// Creates a [DesktopBootstrap].
+  DesktopBootstrap({
+    FlutterSecureStorage? storage,
+    this._ids = const UuidAppIdGenerator(),
+    this._connector = const WebSocketAppClientConnector(),
+    this._launcher = const IsolateEmbeddedDaemonLauncher(),
+  }) : _storage = storage ?? const FlutterSecureStorage();
 
   static const String _addressKey = 'tinyrack_coder.host_address';
   static const String _tokenKey = 'tinyrack_coder.host_token';
 
   final FlutterSecureStorage _storage;
-  EmbeddedDaemonHandle? _embedded;
+  final AppIdGenerator _ids;
+  final AppClientConnector _connector;
+  final EmbeddedDaemonLauncher _launcher;
+  EmbeddedDaemonSession? _embedded;
 
   @override
   bool get canRegisterLocalWorkspace => true;
@@ -28,13 +80,12 @@ class DesktopBootstrap implements AppBootstrap {
           HostEndpoint.parse(savedAddress, token: savedToken),
           persist: false,
         );
-      } catch (_) {
-        // A previous embedded process is expected to be gone after an app restart.
+      } on Exception {
+        // A previous embedded process is expected to be gone after an app
+        // restart.
       }
     }
-    _embedded = await EmbeddedDaemonHandle.start(
-      DaemonConfig.fromEnvironment(),
-    );
+    _embedded = await _launcher.start();
     final endpoint = HostEndpoint(
       websocketUri: _embedded!.boundEndpoint,
       token: _embedded!.bearerToken,
@@ -58,9 +109,9 @@ class DesktopBootstrap implements AppBootstrap {
     HostEndpoint endpoint, {
     required bool persist,
   }) async {
-    final client = await CoderClient.connect(
+    final client = await _connector.connect(
       endpoint: endpoint,
-      clientId: const Uuid().v4(),
+      clientId: _ids.generate(),
       clientKind: 'desktop',
     );
     if (persist) {

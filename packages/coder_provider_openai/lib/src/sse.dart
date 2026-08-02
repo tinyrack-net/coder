@@ -2,13 +2,19 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+/// ServerSentEvent defines a public contract.
 class ServerSentEvent {
-  const ServerSentEvent({this.event, required this.data});
+  /// Creates a [ServerSentEvent].
+  const ServerSentEvent({required this.data, this.event});
 
+  /// The event public API member.
   final String? event;
+
+  /// The data public API member.
   final String data;
 }
 
+/// The decodeServerSentEvents public API member.
 Stream<ServerSentEvent> decodeServerSentEvents(Stream<Uint8List> bytes) async* {
   String? eventName;
   final data = <String>[];

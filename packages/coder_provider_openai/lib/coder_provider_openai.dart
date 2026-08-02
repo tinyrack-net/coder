@@ -1,5 +1,3 @@
-library;
-
 export 'src/chat_completions_provider.dart';
 export 'src/openai_provider.dart';
 export 'src/presets.dart';

@@ -1,0 +1,6 @@
+# Freezed is pinned to the analyzer-compatible version used by the workspace.
+allow_pins: true
+
+# json_annotation is referenced by generated serialization code.
+ignore:
+  - json_annotation

@@ -15,18 +15,23 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_markdown_plus: ^1.0.12
-  flutter_riverpod: ^3.4.2
+  flutter_riverpod: 3.3.2
   flutter_secure_storage: ^10.3.1
   go_router: ^17.3.0
-  path_provider: ^2.1.6
-  riverpod_annotation: ^4.0.6
-  shared_preferences: ^2.5.3
+  reactive_forms: ^18.2.2
+  riverpod_annotation: 4.0.3
   uuid: ^4.6.0
 
 dev_dependencies:
+  alchemist: ^0.14.0
+  build_runner: 2.15.1
+  coder_agent: ^0.1.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  go_router_builder: ^4.4.0
+  integration_test:
+    sdk: flutter
+  riverpod_generator: 4.0.4
 
 flutter:
   uses-material-design: true

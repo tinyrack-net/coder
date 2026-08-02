@@ -59,6 +59,7 @@ void main() {
 
       expect(client.serverInfo.serverId, handle.serverId);
       expect(client.serverInfo.features['providerAdmin'], isTrue);
+      expect(client.serverInfo.features['jsonRpc2'], isTrue);
       final initialCatalog = await client.listProviderCatalog();
       expect(
         initialCatalog.providers.map((item) => item.id),
@@ -175,13 +176,15 @@ void main() {
       expect(await client.subscribeTimeline(agent.id), isEmpty);
 
       final approvalFuture = client.events
-          .where((event) => event.type == MessageType.approvalRequest)
-          .map((event) => ApprovalRequestDto.fromJson(event.payload))
+          .where((event) => event is ApprovalRequestedClientEvent)
+          .cast<ApprovalRequestedClientEvent>()
+          .map((event) => event.approval)
           .first
           .timeout(const Duration(seconds: 5));
       final completedFuture = client.events
-          .where((event) => event.type == MessageType.timelineEvent)
-          .map((event) => TimelineEventDto.fromJson(event.payload))
+          .where((event) => event is TimelineClientEvent)
+          .cast<TimelineClientEvent>()
+          .map((event) => event.event)
           .firstWhere((event) => event.type == 'turn.completed')
           .timeout(const Duration(seconds: 5));
       await client.startTurn(
@@ -223,7 +226,6 @@ void main() {
   test('non-loopback clients cannot mutate provider settings', () async {
     final interfaces = await NetworkInterface.list(
       type: InternetAddressType.IPv4,
-      includeLoopback: false,
     );
     final address = interfaces
         .expand((item) => item.addresses)
@@ -316,11 +318,11 @@ void main() {
     );
     if (!Platform.isWindows) {
       expect(
-        (await File('${config.path}/auth.json').stat()).mode & 0x1ff,
+        File('${config.path}/auth.json').statSync().mode & 0x1ff,
         0x180,
       );
       expect(
-        (await File('${config.path}/credentials.json').stat()).mode & 0x1ff,
+        File('${config.path}/credentials.json').statSync().mode & 0x1ff,
         0x180,
       );
     }

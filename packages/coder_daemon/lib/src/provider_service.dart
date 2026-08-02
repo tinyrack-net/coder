@@ -1,35 +1,40 @@
-import 'dart:io';
-
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/provider_adapters.dart';
+import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:coder_provider_openai/coder_provider_openai.dart';
-import 'package:dio/dio.dart';
 
-import 'credential_store.dart';
-import 'database.dart';
-
+/// ProviderService defines a public contract.
 class ProviderService {
+  /// Creates a [ProviderService].
   ProviderService({
-    required CoderDatabase database,
-    required CredentialStore credentials,
-    Map<String, String>? environment,
-    ModelProvider? fixedProvider,
-  }) : _database = database,
-       _credentials = credentials,
-       _environment = environment ?? Platform.environment,
-       _fixedProvider = fixedProvider;
+    required this._repository,
+    required this._settings,
+    required this._credentials,
+    required this._environment,
+    required this._clock,
+    required this._modelDiscovery,
+    required this._providerFactory,
+    this._fixedProvider,
+  });
 
-  final CoderDatabase _database;
-  final CredentialStore _credentials;
+  final ProviderRepository _repository;
+  final SettingsRepository _settings;
+  final CredentialRepository _credentials;
   final Map<String, String> _environment;
+  final Clock _clock;
+  final ProviderModelDiscovery _modelDiscovery;
+  final ModelProviderFactory _providerFactory;
   final ModelProvider? _fixedProvider;
 
+  /// The initialize public API member.
   Future<void> initialize({String? legacyOpenAIKey}) async {
     await _credentials.load();
-    final existing = await _database.getProviderDto('openai');
+    final existing = await _repository.getProvider('openai');
     if (existing == null) {
-      final now = DateTime.now().toUtc();
-      await _database.upsertProvider(
+      final now = _clock.nowUtc();
+      await _repository.upsertProvider(
         ApiProviderDto(
           id: 'openai',
           name: 'OpenAI',
@@ -48,7 +53,7 @@ class ProviderService {
           updatedAt: now,
         ),
       );
-      await _database.setSetting('provider.defaultId', 'openai');
+      await _settings.setValue('provider.defaultId', 'openai');
     }
     if (legacyOpenAIKey?.isNotEmpty == true) {
       await _credentials.setProviderApiKey('openai', legacyOpenAIKey!);
@@ -58,8 +63,8 @@ class ProviderService {
       'gpt-5.6-terra',
       'gpt-5.6-luna',
     ]) {
-      if (await _database.getProviderModelDto('openai', model) == null) {
-        await _database.upsertProviderModel(
+      if (await _repository.getModel('openai', model) == null) {
+        await _repository.upsertModel(
           ProviderModelDto(
             providerId: 'openai',
             id: model,
@@ -72,21 +77,24 @@ class ProviderService {
     }
   }
 
+  /// The catalog public API member.
   Future<ProviderCatalogDto> catalog() async {
-    final providers = await _database.listProviderDtos();
+    final providers = await _repository.listProviders();
     return ProviderCatalogDto(
       providers: await Future.wait(providers.map(_withCredentialStatus)),
       presets: openAICompatiblePresets,
-      defaultProviderId: await _database.getSetting('provider.defaultId'),
+      defaultProviderId: await _settings.getValue('provider.defaultId'),
     );
   }
 
+  /// The get public API member.
   Future<ApiProviderDto> get(String id) async {
-    final provider = await _database.getProviderDto(id);
+    final provider = await _repository.getProvider(id);
     if (provider == null) throw StateError('Provider not found: $id');
     return _withCredentialStatus(provider);
   }
 
+  /// The upsert public API member.
   Future<ApiProviderDto> upsert(
     ApiProviderDto provider, {
     bool makeDefault = false,
@@ -104,16 +112,16 @@ class ProviderService {
         'environmentVariable is required for environment credentials.',
       );
     }
-    final stored = await _database.upsertProvider(
+    final stored = await _repository.upsertProvider(
       provider.copyWith(
         credentialConfigured: false,
         baseUrl: provider.baseUrl.replaceAll(RegExp(r'/+$'), ''),
-        updatedAt: DateTime.now().toUtc(),
+        updatedAt: _clock.nowUtc(),
       ),
     );
     await _ensurePresetModels(stored);
     if (makeDefault) {
-      await _database.setSetting('provider.defaultId', provider.id);
+      await _settings.setValue('provider.defaultId', provider.id);
     }
     if (provider.credentialSource != CredentialSource.stored) {
       await _credentials.removeProvider(provider.id);
@@ -127,10 +135,10 @@ class ProviderService {
         .firstOrNull;
     if (preset == null) return;
     for (final modelId in preset.modelIds) {
-      if (await _database.getProviderModelDto(provider.id, modelId) != null) {
+      if (await _repository.getModel(provider.id, modelId) != null) {
         continue;
       }
-      await _database.upsertProviderModel(
+      await _repository.upsertModel(
         ProviderModelDto(
           providerId: provider.id,
           id: modelId,
@@ -142,14 +150,16 @@ class ProviderService {
     }
   }
 
+  /// The delete public API member.
   Future<void> delete(String id) async {
-    await _database.deleteProvider(id);
+    await _repository.deleteProvider(id);
     await _credentials.removeProvider(id);
-    if (await _database.getSetting('provider.defaultId') == id) {
-      await _database.setSetting('provider.defaultId', '');
+    if (await _settings.getValue('provider.defaultId') == id) {
+      await _settings.setValue('provider.defaultId', '');
     }
   }
 
+  /// The setCredential public API member.
   Future<void> setCredential(String providerId, String value) async {
     final provider = await get(providerId);
     if (provider.credentialSource != CredentialSource.stored) {
@@ -158,9 +168,10 @@ class ProviderService {
     await _credentials.setProviderApiKey(providerId, value);
   }
 
+  /// The listModels public API member.
   Future<List<ProviderModelDto>> listModels(String providerId) async {
     final provider = await get(providerId);
-    final models = await _database.listProviderModelDtos(providerId);
+    final models = await _repository.listModels(providerId);
     if (provider.visibleModelIds.isEmpty) return models;
     final visible = provider.visibleModelIds.toSet();
     return models
@@ -172,28 +183,14 @@ class ProviderService {
         .toList();
   }
 
+  /// The refreshModels public API member.
   Future<List<ProviderModelDto>> refreshModels(String providerId) async {
     final provider = await get(providerId);
     final apiKey = _apiKey(provider);
     try {
-      final dio = Dio(BaseOptions(baseUrl: provider.baseUrl));
-      final response = await dio.get<Map<String, dynamic>>(
-        '/models',
-        options: Options(
-          headers: <String, String>{
-            if (apiKey.isNotEmpty) 'Authorization': 'Bearer $apiKey',
-          },
-        ),
-      );
-      final data = response.data?['data'];
-      if (data is! List) {
-        throw const FormatException('The /models response has no data list.');
-      }
-      final models = <ProviderModelDto>[];
-      for (final raw in data.whereType<Map>()) {
-        final id = raw['id'];
-        if (id is! String || id.trim().isEmpty) continue;
-        models.add(
+      final modelIds = await _modelDiscovery.fetchModelIds(provider, apiKey);
+      final models = <ProviderModelDto>[
+        for (final id in modelIds)
           ProviderModelDto(
             providerId: providerId,
             id: id,
@@ -201,18 +198,17 @@ class ProviderService {
             source: ProviderModelSource.discovered,
             capabilities: presetCapabilities(provider.presetId, id),
           ),
-        );
-      }
-      await _database.replaceDiscoveredModels(providerId, models);
+      ];
+      await _repository.replaceDiscoveredModels(providerId, models);
       return listModels(providerId);
-    } on DioException catch (error) {
-      final message = error.response?.data ?? error.message ?? '$error';
-      throw StateError('Model discovery failed: $message');
+    } on Exception catch (error) {
+      throw StateError('Model discovery failed: $error');
     }
   }
 
+  /// The upsertManualModel public API member.
   Future<ProviderModelDto> upsertManualModel(ProviderModelDto model) {
-    return _database.upsertProviderModel(
+    return _repository.upsertModel(
       model.copyWith(
         source: ProviderModelSource.manual,
         capabilities: model.capabilities.copyWith(
@@ -222,20 +218,22 @@ class ProviderService {
     );
   }
 
+  /// The deleteModel public API member.
   Future<void> deleteModel(String providerId, String modelId) async {
-    final model = await _database.getProviderModelDto(providerId, modelId);
+    final model = await _repository.getModel(providerId, modelId);
     if (model == null) return;
     if (model.source != ProviderModelSource.manual) {
       throw StateError('Only manually configured models can be deleted.');
     }
-    await _database.deleteProviderModel(providerId, modelId);
+    await _repository.deleteModel(providerId, modelId);
   }
 
+  /// The diagnose public API member.
   Future<ProviderDiagnosticDto> diagnose(
     String providerId,
     String model,
   ) async {
-    final checkedAt = DateTime.now().toUtc();
+    final checkedAt = _clock.nowUtc();
     try {
       final provider = await resolve(providerId, modelId: model);
       var completed = false;
@@ -292,27 +290,38 @@ class ProviderService {
       );
       await _saveDiagnostic(result);
       return result;
-    } catch (error) {
-      final result = ProviderDiagnosticDto(
-        providerId: providerId,
-        model: model,
-        status: DiagnosticStatus.failed,
-        endpointReachable: false,
-        streaming: false,
-        toolCalling: false,
-        checkedAt: checkedAt,
-        error: '$error',
-      );
-      await _saveDiagnostic(result);
-      return result;
+    } on Exception catch (error) {
+      return _failedDiagnostic(providerId, model, checkedAt, error);
     }
   }
 
+  Future<ProviderDiagnosticDto> _failedDiagnostic(
+    String providerId,
+    String model,
+    DateTime checkedAt,
+    Object error,
+  ) async {
+    final result = ProviderDiagnosticDto(
+      providerId: providerId,
+      model: model,
+      status: DiagnosticStatus.failed,
+      endpointReachable: false,
+      streaming: false,
+      toolCalling: false,
+      checkedAt: checkedAt,
+      error: '$error',
+    );
+    await _saveDiagnostic(result);
+    return result;
+  }
+
+  /// The resolve public API member.
   Future<ModelProvider> resolve(String providerId, {String? modelId}) async {
     if (_fixedProvider != null) return _fixedProvider;
     final provider = await get(providerId);
-    if (!provider.enabled)
+    if (!provider.enabled) {
       throw StateError('Provider is disabled: $providerId');
+    }
     final key = _apiKey(provider);
     if (provider.credentialSource != CredentialSource.none && key.isEmpty) {
       throw StateError('Provider credential is not configured: $providerId');
@@ -320,33 +329,29 @@ class ProviderService {
     final effectiveModel = modelId ?? provider.defaultModelId;
     final model = effectiveModel == null
         ? null
-        : await _database.getProviderModelDto(provider.id, effectiveModel);
+        : await _repository.getModel(provider.id, effectiveModel);
     final supportsReasoning =
         model?.capabilities.reasoningEffort == CapabilitySupport.supported;
-    final config = OpenAIProviderConfig(
-      id: provider.id,
+    return _providerFactory.create(
+      provider: provider,
       apiKey: key,
-      baseUrl: provider.baseUrl,
-      requiresApiKey: provider.credentialSource != CredentialSource.none,
       supportsReasoningEffort: supportsReasoning,
-      strictToolSchema: provider.strictToolSchema,
     );
-    return switch (provider.transport) {
-      ApiTransport.responses => OpenAIResponsesProvider(config),
-      ApiTransport.chatCompletions => OpenAIChatCompletionsProvider(config),
-    };
   }
 
+  /// The validateAgentModel public API member.
   Future<void> validateAgentModel(String providerId, String modelId) async {
     final provider = await get(providerId);
-    if (!provider.enabled)
+    if (!provider.enabled) {
       throw StateError('Provider is disabled: $providerId');
-    final model = await _database.getProviderModelDto(providerId, modelId);
+    }
+    final model = await _repository.getModel(providerId, modelId);
     if (model == null) throw StateError('Unknown provider model: $modelId');
     if (model.capabilities.streaming != CapabilitySupport.supported ||
         model.capabilities.toolCalling != CapabilitySupport.supported) {
       throw StateError(
-        'Model streaming and tool calling capabilities must be verified or configured.',
+        'Model streaming and tool calling capabilities must be verified or '
+        'configured.',
       );
     }
   }
@@ -372,7 +377,7 @@ class ProviderService {
       };
 
   Future<void> _saveDiagnostic(ProviderDiagnosticDto result) async {
-    final existing = await _database.getProviderModelDto(
+    final existing = await _repository.getModel(
       result.providerId,
       result.model,
     );
@@ -385,7 +390,7 @@ class ProviderService {
           source: ProviderModelSource.manual,
           capabilities: const ModelCapabilitiesDto(),
         );
-    await _database.upsertProviderModel(
+    await _repository.upsertModel(
       base.copyWith(
         diagnosticStatus: result.status,
         verifiedAt: result.checkedAt,

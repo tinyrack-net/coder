@@ -9,8 +9,15 @@ workspace:
   - apps/*
   - packages/*
 
+dependencies:
+  path: ^1.9.1
+
 dev_dependencies:
+  coverage: ^1.15.1
+  dependency_validator: ^5.0.5
   melos: 7.8.1
+  test: ^1.31.0
+  very_good_analysis: ^10.3.0
 
 melos:
   scripts:
@@ -22,11 +29,33 @@ melos:
     format:check:
       run: dart format --output=none --set-exit-if-changed .
     generate:
-      run: dart run melos exec --depends-on=build_runner -c 1 -o -- dart run build_runner build --delete-conflicting-outputs
+      run: dart run melos exec --depends-on=build_runner -c 1 -o -- dart run build_runner build
+    generate:check:
+      run: dart run tool/generate_check.dart
+    dependencies:check:
+      run: dart run melos exec -c 1 -- dart run dependency_validator
+    architecture:check:
+      run: dart run tool/verify_architecture.dart
     test:
-      run: dart run melos exec --no-flutter --dir-exists=test -c 1 -- dart test
-    test:flutter:
-      run: dart run melos exec --flutter --dir-exists=test -c 1 -- flutter test
+      run: dart run melos test:unit && dart run melos test:widget
+    test:unit:
+      run: dart test test --test-randomize-ordering-seed=random && dart run melos exec --no-flutter --dir-exists=test -c 1 -- dart test --test-randomize-ordering-seed=random
+    test:widget:
+      run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test test --exclude-tags=golden --test-randomize-ordering-seed=random
+    test:contract:
+      run: dart run melos exec --no-flutter --scope=coder_protocol --scope=coder_client --scope=coder_provider_openai --scope=coder_daemon -c 1 -- dart test --test-randomize-ordering-seed=random
+    test:golden:
+      run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test test/golden --tags=golden --test-randomize-ordering-seed=random
+    test:coverage:
+      run: dart run melos exec --no-flutter --dir-exists=test -c 1 -- dart test --coverage-path=coverage/lcov.info --coverage-package="\$MELOS_PACKAGE_NAME" --branch-coverage --test-randomize-ordering-seed=random && dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test --coverage --branch-coverage --test-randomize-ordering-seed=random && dart run tool/verify_coverage.dart
+    test:e2e:linux:
+      run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test integration_test/debug_e2e_test.dart -d linux
+    verify:fast:
+      run: dart run melos format:check && dart run melos analyze && dart run melos dependencies:check && dart run melos architecture:check && dart run melos generate:check && dart run melos test:unit && dart run melos test:widget && dart run melos test:contract
+    verify:
+      run: dart run melos verify:fast && dart run melos test:golden && dart run melos test:coverage
+    verify:debug:
+      run: dart run melos test:e2e:linux
     run:daemon:
       run: dart run packages/coder_daemon/bin/coder_daemon.dart
     run:desktop:
@@ -34,6 +63,6 @@ melos:
     run:mobile:
       run: dart run melos exec --scope=coder_app -- flutter run -t lib/main_mobile.dart
     build:linux:
-      run: dart run melos exec --scope=coder_app -- flutter build linux -t lib/main_desktop.dart
+      run: dart run melos exec --scope=coder_app -- flutter build linux --debug -t lib/main_desktop.dart
     build:android:
-      run: dart run melos exec --scope=coder_app -- flutter build apk -t lib/main_mobile.dart
+      run: dart run melos exec --scope=coder_app -- flutter build apk --debug -t lib/main_mobile.dart

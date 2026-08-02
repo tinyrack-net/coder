@@ -1,0 +1,2 @@
+# Drift and drift_dev are pinned as one tested schema toolchain.
+allow_pins: true

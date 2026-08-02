@@ -1,9 +1,13 @@
+import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/bootstrap.dart';
+import 'package:coder_app/src/remote_bootstrap.dart';
 import 'package:flutter/material.dart';
 
-import 'src/app.dart';
-import 'src/remote_bootstrap.dart';
-
-Future<void> main() async {
+/// Starts the mobile widget tree with an injectable remote-only bootstrap.
+Future<void> runMobileApp({AppBootstrap? bootstrap}) async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(CoderApp(bootstrap: RemoteBootstrap()));
+  runApp(CoderApp(bootstrap: bootstrap ?? RemoteBootstrap()));
 }
+
+/// Starts the production mobile application.
+Future<void> main() => runMobileApp();

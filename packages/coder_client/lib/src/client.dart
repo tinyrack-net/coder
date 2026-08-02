@@ -1,19 +1,23 @@
 import 'dart:async';
 
+import 'package:coder_client/src/api.dart';
+import 'package:coder_client/src/endpoint.dart';
+import 'package:coder_client/src/web_socket_connector.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:uuid/uuid.dart';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 
-import 'endpoint.dart';
-
-enum ClientConnectionState { connecting, connected, reconnecting, disconnected }
-
+/// CoderClientException defines a public contract.
 class CoderClientException implements Exception {
+  /// Creates a [CoderClientException].
   const CoderClientException(this.message, {this.code, this.retryable = false});
 
+  /// The message public API member.
   final String message;
+
+  /// The code public API member.
   final String? code;
+
+  /// The retryable public API member.
   final bool retryable;
 
   @override
@@ -21,24 +25,35 @@ class CoderClientException implements Exception {
       'CoderClientException${code == null ? '' : '($code)'}: $message';
 }
 
-class CoderClient {
+/// CoderClient defines a public contract.
+class CoderClient implements CoderApi {
   CoderClient._({
-    required HostEndpoint endpoint,
-    required String clientId,
-    required String clientKind,
-  }) : _endpoint = endpoint,
-       _clientId = clientId,
-       _clientKind = clientKind;
+    required this._endpoint,
+    required this._clientId,
+    required this._clientKind,
+    required this._connector,
+    required this._requestTimeout,
+    required this._reconnectDelay,
+  });
 
+  /// The connect public API member.
   static Future<CoderClient> connect({
     required HostEndpoint endpoint,
     required String clientId,
     required String clientKind,
+    WebSocketConnector connector = const IoWebSocketConnector(),
+    Duration requestTimeout = const Duration(seconds: 60),
+    Duration Function(int attempt)? reconnectDelay,
   }) async {
     final client = CoderClient._(
       endpoint: endpoint,
       clientId: clientId,
       clientKind: clientKind,
+      connector: connector,
+      requestTimeout: requestTimeout,
+      reconnectDelay:
+          reconnectDelay ??
+          (attempt) => Duration(seconds: 1 << (attempt - 1).clamp(0, 5)),
     );
     await client._open(initial: true);
     return client;
@@ -47,24 +62,25 @@ class CoderClient {
   final HostEndpoint _endpoint;
   final String _clientId;
   final String _clientKind;
-  final Uuid _uuid = const Uuid();
-  final Map<String, Completer<WireEnvelope>> _pending =
-      <String, Completer<WireEnvelope>>{};
-  final StreamController<WireEnvelope> _events =
-      StreamController<WireEnvelope>.broadcast();
+  final WebSocketConnector _connector;
+  final Duration _requestTimeout;
+  final Duration Function(int attempt) _reconnectDelay;
+  final StreamController<ClientEvent> _events =
+      StreamController<ClientEvent>.broadcast();
   final StreamController<ClientConnectionState> _states =
       StreamController<ClientConnectionState>.broadcast();
   final Map<String, int> _timelineSubscriptions = <String, int>{};
-  WebSocketChannel? _channel;
-  StreamSubscription<dynamic>? _socketSubscription;
+  json_rpc.Peer? _peer;
   ServerInfoDto? _serverInfo;
-  Completer<ServerInfoDto>? _serverInfoCompleter;
   bool _closed = false;
   bool _connecting = false;
   int _reconnectAttempt = 0;
 
-  Stream<WireEnvelope> get events => _events.stream;
+  @override
+  Stream<ClientEvent> get events => _events.stream;
+  @override
   Stream<ClientConnectionState> get states => _states.stream;
+  @override
   ServerInfoDto get serverInfo =>
       _serverInfo ??
       (throw StateError('The client has not completed its handshake.'));
@@ -77,35 +93,38 @@ class CoderClient {
           ? ClientConnectionState.connecting
           : ClientConnectionState.reconnecting,
     );
-    final handshake = Completer<ServerInfoDto>();
-    _serverInfoCompleter = handshake;
     try {
-      final channel = IOWebSocketChannel.connect(
+      final channel = await _connector.connect(
         _endpoint.websocketUri,
         headers: <String, String>{'Authorization': 'Bearer ${_endpoint.token}'},
-        connectTimeout: const Duration(seconds: 10),
-        pingInterval: const Duration(seconds: 10),
       );
-      _channel = channel;
-      await channel.ready;
-      _socketSubscription = channel.stream.listen(
-        _handleMessage,
-        onError: _handleSocketError,
-        onDone: _handleSocketDone,
-        cancelOnError: false,
+      final peer = json_rpc.Peer(channel.cast<String>());
+      _peer = peer;
+      for (final type in <String>[
+        RpcNotification.timelineEvent,
+        RpcNotification.agentUpdated,
+        RpcNotification.approvalRequested,
+      ]) {
+        peer.registerMethod(type, (json_rpc.Parameters parameters) {
+          _handleNotification(
+            type,
+            Map<String, dynamic>.from(parameters.asMap),
+          );
+        });
+      }
+      unawaited(peer.listen().whenComplete(_handleSocketDone));
+      final hello = await peer.sendRequest(
+        RpcMethod.hello,
+        HelloParamsDto(
+          clientId: _clientId,
+          clientKind: _clientKind,
+          protocolVersion: coderProtocolVersion,
+          capabilities: const <String, bool>{'timelineCatchup': true},
+        ).toJson(),
       );
-      _send(
-        WireEnvelope(
-          type: MessageType.hello,
-          payload: <String, dynamic>{
-            'clientId': _clientId,
-            'clientKind': _clientKind,
-            'protocolVersion': coderProtocolVersion,
-            'capabilities': <String, dynamic>{'timelineCatchup': true},
-          },
-        ),
+      _serverInfo = ServerInfoDto.fromJson(
+        Map<String, dynamic>.from(hello as Map),
       );
-      _serverInfo = await handshake.future.timeout(const Duration(seconds: 10));
       _reconnectAttempt = 0;
       _states.add(ClientConnectionState.connected);
       for (final entry in Map<String, int>.from(
@@ -116,19 +135,13 @@ class CoderClient {
             events,
           ) {
             for (final event in events) {
-              _events.add(
-                WireEnvelope(
-                  type: MessageType.timelineEvent,
-                  payload: event.toJson(),
-                ),
-              );
+              _events.add(TimelineClientEvent(event));
             }
           }),
         );
       }
     } catch (error) {
-      await _socketSubscription?.cancel();
-      _channel = null;
+      await _peer?.close();
       if (initial) rethrow;
       _scheduleReconnect();
     } finally {
@@ -136,156 +149,131 @@ class CoderClient {
     }
   }
 
-  void _handleMessage(dynamic raw) {
-    if (raw is! String) return;
+  void _handleNotification(String type, Map<String, dynamic> parameters) {
     try {
-      final envelope = WireEnvelope.decode(raw);
-      if (envelope.type == MessageType.serverInfo) {
-        final info = ServerInfoDto.fromJson(envelope.payload);
-        _serverInfoCompleter?.complete(info);
-        return;
+      switch (type) {
+        case RpcNotification.timelineEvent:
+          final event = TimelineEventDto.fromJson(parameters);
+          final current = _timelineSubscriptions[event.agentId] ?? 0;
+          if (event.sequence <= current) return;
+          _timelineSubscriptions[event.agentId] = event.sequence;
+          _events.add(TimelineClientEvent(event));
+        case RpcNotification.agentUpdated:
+          _events.add(AgentUpdatedClientEvent(AgentDto.fromJson(parameters)));
+        case RpcNotification.approvalRequested:
+          _events.add(
+            ApprovalRequestedClientEvent(
+              ApprovalRequestDto.fromJson(parameters),
+            ),
+          );
       }
-      if (envelope.type == MessageType.rpcError && envelope.requestId != null) {
-        final error = RpcErrorDto.fromJson(envelope.payload);
-        _pending
-            .remove(envelope.requestId)
-            ?.completeError(
-              CoderClientException(
-                error.message,
-                code: error.code,
-                retryable: error.retryable,
-              ),
-            );
-        return;
-      }
-      if (envelope.requestId case final requestId?) {
-        final pending = _pending.remove(requestId);
-        if (pending != null) {
-          pending.complete(envelope);
-          return;
-        }
-      }
-      if (envelope.type == MessageType.timelineEvent) {
-        final event = TimelineEventDto.fromJson(envelope.payload);
-        final current = _timelineSubscriptions[event.agentId] ?? 0;
-        if (event.sequence <= current) return;
-        _timelineSubscriptions[event.agentId] = event.sequence;
-      }
-      _events.add(envelope);
-    } catch (error, stackTrace) {
+    } on FormatException catch (error, stackTrace) {
       _events.addError(error, stackTrace);
     }
-  }
-
-  void _handleSocketError(Object error, StackTrace stackTrace) {
-    _failPending(
-      CoderClientException('Connection lost: $error', retryable: true),
-    );
   }
 
   void _handleSocketDone() {
     if (_closed) return;
     _states.add(ClientConnectionState.disconnected);
-    _failPending(
-      const CoderClientException('Connection closed.', retryable: true),
-    );
     _scheduleReconnect();
   }
 
   void _scheduleReconnect() {
     if (_closed || _connecting) return;
     _reconnectAttempt += 1;
-    final seconds = (1 << (_reconnectAttempt - 1).clamp(0, 5));
-    Timer(Duration(seconds: seconds), () => unawaited(_open(initial: false)));
+    Timer(
+      _reconnectDelay(_reconnectAttempt),
+      () => unawaited(_open(initial: false)),
+    );
   }
 
-  void _failPending(Object error) {
-    for (final completer in _pending.values) {
-      if (!completer.isCompleted) completer.completeError(error);
-    }
-    _pending.clear();
-  }
-
-  void _send(WireEnvelope envelope) {
-    final channel = _channel;
-    if (channel == null)
-      throw const CoderClientException('Not connected.', retryable: true);
-    channel.sink.add(envelope.encode());
-  }
-
-  Future<WireEnvelope> _request(
-    String type,
+  Future<Map<String, dynamic>> _request(
+    String method,
     Map<String, dynamic> payload,
   ) async {
-    final requestId = _uuid.v4();
-    final completer = Completer<WireEnvelope>();
-    _pending[requestId] = completer;
     try {
-      _send(WireEnvelope(type: type, requestId: requestId, payload: payload));
-      return await completer.future.timeout(const Duration(seconds: 60));
-    } finally {
-      _pending.remove(requestId);
+      final result =
+          await (_peer ??
+                  (throw const CoderClientException(
+                    'Not connected.',
+                    retryable: true,
+                  )))
+              .sendRequest(method, payload)
+              .timeout(_requestTimeout);
+      return Map<String, dynamic>.from(result as Map);
+    } on json_rpc.RpcException catch (error) {
+      final data = error.data is Map
+          ? error.data! as Map
+          : const <dynamic, dynamic>{};
+      throw CoderClientException(
+        error.message,
+        code: data['code'] as String?,
+        retryable: data['retryable'] == true,
+      );
     }
   }
 
+  @override
   Future<List<WorkspaceDto>> listWorkspaces() async {
     final response = await _request(
-      MessageType.workspaceListRequest,
+      RpcMethod.workspaceList,
       const <String, dynamic>{},
     );
-    return (response.payload['workspaces'] as List? ?? const <dynamic>[])
-        .whereType<Map>()
-        .map((item) => WorkspaceDto.fromJson(Map<String, dynamic>.from(item)))
-        .toList(growable: false);
+    return WorkspaceListResultDto.fromJson(response).workspaces;
   }
 
+  @override
   Future<WorkspaceDto> registerWorkspace({
     required String id,
     required String rootPath,
     required String name,
   }) async {
     final response = await _request(
-      MessageType.workspaceRegisterRequest,
-      <String, dynamic>{'id': id, 'rootPath': rootPath, 'name': name},
+      RpcMethod.workspaceRegister,
+      WorkspaceRegisterParamsDto(
+        id: id,
+        rootPath: rootPath,
+        name: name,
+      ).toJson(),
     );
-    return WorkspaceDto.fromJson(
-      response.payload['workspace'] as Map<String, dynamic>,
-    );
+    return WorkspaceResultDto.fromJson(response).workspace;
   }
 
+  @override
   Future<List<AgentDto>> listAgents({String? workspaceId}) async {
     final response = await _request(
-      MessageType.agentListRequest,
-      <String, dynamic>{if (workspaceId != null) 'workspaceId': workspaceId},
+      RpcMethod.agentList,
+      AgentListParamsDto(workspaceId: workspaceId).toJson(),
     );
-    return (response.payload['agents'] as List? ?? const <dynamic>[])
-        .whereType<Map>()
-        .map((item) => AgentDto.fromJson(Map<String, dynamic>.from(item)))
-        .toList(growable: false);
+    return AgentListResultDto.fromJson(response).agents;
   }
 
+  @override
   Future<AgentDto> createAgent({
     required String id,
     required String workspaceId,
     required String title,
     required String providerId,
     required String model,
-    String reasoningEffort = 'medium',
     required PermissionMode permissionMode,
+    String reasoningEffort = 'medium',
   }) async {
-    final response =
-        await _request(MessageType.agentCreateRequest, <String, dynamic>{
-          'id': id,
-          'workspaceId': workspaceId,
-          'title': title,
-          'providerId': providerId,
-          'model': model,
-          'reasoningEffort': reasoningEffort,
-          'permissionMode': permissionMode.name,
-        });
-    return AgentDto.fromJson(response.payload['agent'] as Map<String, dynamic>);
+    final response = await _request(
+      RpcMethod.agentCreate,
+      AgentCreateParamsDto(
+        id: id,
+        workspaceId: workspaceId,
+        title: title,
+        providerId: providerId,
+        model: model,
+        reasoningEffort: reasoningEffort,
+        permissionMode: permissionMode,
+      ).toJson(),
+    );
+    return AgentResultDto.fromJson(response).agent;
   }
 
+  @override
   Future<AgentDto> updateAgentConfiguration({
     required String agentId,
     required String providerId,
@@ -293,178 +281,187 @@ class CoderClient {
     String reasoningEffort = 'medium',
   }) async {
     final response = await _request(
-      MessageType.agentConfigurationUpdateRequest,
-      <String, dynamic>{
-        'agentId': agentId,
-        'providerId': providerId,
-        'model': model,
-        'reasoningEffort': reasoningEffort,
-      },
+      RpcMethod.agentConfigurationUpdate,
+      AgentConfigurationUpdateParamsDto(
+        agentId: agentId,
+        providerId: providerId,
+        model: model,
+        reasoningEffort: reasoningEffort,
+      ).toJson(),
     );
-    return AgentDto.fromJson(response.payload['agent'] as Map<String, dynamic>);
+    return AgentResultDto.fromJson(response).agent;
   }
 
+  @override
   Future<ProviderCatalogDto> listProviderCatalog() async {
     final response = await _request(
-      MessageType.providerListRequest,
+      RpcMethod.providerList,
       const <String, dynamic>{},
     );
-    return ProviderCatalogDto.fromJson(
-      Map<String, dynamic>.from(response.payload['catalog'] as Map),
-    );
+    return ProviderCatalogResultDto.fromJson(response).catalog;
   }
 
+  @override
   Future<ApiProviderDto> upsertProvider(
     ApiProviderDto provider, {
     bool makeDefault = false,
   }) async {
     final response = await _request(
-      MessageType.providerUpsertRequest,
-      <String, dynamic>{
-        'provider': provider.toJson(),
-        'makeDefault': makeDefault,
-      },
+      RpcMethod.providerUpsert,
+      ProviderUpsertParamsDto(
+        provider: provider,
+        makeDefault: makeDefault,
+      ).toJson(),
     );
-    return ApiProviderDto.fromJson(
-      Map<String, dynamic>.from(response.payload['provider'] as Map),
-    );
+    return ProviderResultDto.fromJson(response).provider;
   }
 
+  @override
   Future<void> deleteProvider(String providerId) async {
-    await _request(MessageType.providerDeleteRequest, <String, dynamic>{
-      'providerId': providerId,
-    });
+    await _request(
+      RpcMethod.providerDelete,
+      ProviderIdParamsDto(providerId: providerId).toJson(),
+    );
   }
 
+  @override
   Future<List<ProviderModelDto>> listProviderModels(String providerId) async {
     final response = await _request(
-      MessageType.providerModelsListRequest,
-      <String, dynamic>{'providerId': providerId},
+      RpcMethod.providerModelsList,
+      ProviderIdParamsDto(providerId: providerId).toJson(),
     );
     return _providerModels(response);
   }
 
+  @override
   Future<List<ProviderModelDto>> refreshProviderModels(
     String providerId,
   ) async {
     final response = await _request(
-      MessageType.providerModelsRefreshRequest,
-      <String, dynamic>{'providerId': providerId},
+      RpcMethod.providerModelsRefresh,
+      ProviderIdParamsDto(providerId: providerId).toJson(),
     );
     return _providerModels(response);
   }
 
-  List<ProviderModelDto> _providerModels(WireEnvelope response) =>
-      (response.payload['models'] as List? ?? const <dynamic>[])
-          .whereType<Map>()
-          .map(
-            (item) =>
-                ProviderModelDto.fromJson(Map<String, dynamic>.from(item)),
-          )
-          .toList(growable: false);
+  List<ProviderModelDto> _providerModels(Map<String, dynamic> response) =>
+      ProviderModelsResultDto.fromJson(response).models;
 
+  @override
   Future<ProviderModelDto> upsertProviderModel(ProviderModelDto model) async {
     final response = await _request(
-      MessageType.providerModelUpsertRequest,
-      <String, dynamic>{'model': model.toJson()},
+      RpcMethod.providerModelUpsert,
+      ProviderModelUpsertParamsDto(model: model).toJson(),
     );
-    return ProviderModelDto.fromJson(
-      Map<String, dynamic>.from(response.payload['model'] as Map),
-    );
+    return ProviderModelResultDto.fromJson(response).model;
   }
 
+  @override
   Future<void> deleteProviderModel(String providerId, String modelId) async {
-    await _request(MessageType.providerModelDeleteRequest, <String, dynamic>{
-      'providerId': providerId,
-      'modelId': modelId,
-    });
+    await _request(
+      RpcMethod.providerModelDelete,
+      ProviderModelParamsDto(providerId: providerId, modelId: modelId).toJson(),
+    );
   }
 
+  @override
   Future<ProviderDiagnosticDto> diagnoseProviderModel(
     String providerId,
     String modelId,
   ) async {
     final response = await _request(
-      MessageType.providerModelDiagnoseRequest,
-      <String, dynamic>{'providerId': providerId, 'modelId': modelId},
+      RpcMethod.providerModelDiagnose,
+      ProviderModelParamsDto(providerId: providerId, modelId: modelId).toJson(),
     );
-    return ProviderDiagnosticDto.fromJson(
-      Map<String, dynamic>.from(response.payload['diagnostic'] as Map),
-    );
+    return ProviderDiagnosticResultDto.fromJson(response).diagnostic;
   }
 
+  @override
   Future<void> setProviderCredential(String providerId, String apiKey) async {
-    await _request(MessageType.providerCredentialSetRequest, <String, dynamic>{
-      'providerId': providerId,
-      'apiKey': apiKey,
-    });
+    await _request(
+      RpcMethod.providerCredentialSet,
+      ProviderCredentialSetParamsDto(
+        providerId: providerId,
+        apiKey: apiKey,
+      ).toJson(),
+    );
   }
 
+  @override
   Future<void> clearProviderCredential(String providerId) async {
     await _request(
-      MessageType.providerCredentialClearRequest,
-      <String, dynamic>{'providerId': providerId},
+      RpcMethod.providerCredentialClear,
+      ProviderIdParamsDto(providerId: providerId).toJson(),
     );
   }
 
+  @override
   Future<void> startTurn({
     required String agentId,
     required String turnId,
     required String prompt,
   }) async {
-    await _request(MessageType.turnStartRequest, <String, dynamic>{
-      'agentId': agentId,
-      'turnId': turnId,
-      'prompt': prompt,
-    });
+    await _request(
+      RpcMethod.turnStart,
+      TurnStartParamsDto(
+        agentId: agentId,
+        turnId: turnId,
+        prompt: prompt,
+      ).toJson(),
+    );
   }
 
+  @override
   Future<void> cancelTurn(String agentId) async {
-    await _request(MessageType.turnCancelRequest, <String, dynamic>{
-      'agentId': agentId,
-    });
+    await _request(
+      RpcMethod.turnCancel,
+      AgentIdParamsDto(agentId: agentId).toJson(),
+    );
   }
 
+  @override
   Future<void> resolveApproval({
     required String approvalId,
     required bool approved,
   }) async {
-    await _request(MessageType.approvalResolveRequest, <String, dynamic>{
-      'approvalId': approvalId,
-      'approved': approved,
-    });
+    await _request(
+      RpcMethod.approvalResolve,
+      ApprovalResolveParamsDto(
+        approvalId: approvalId,
+        approved: approved,
+      ).toJson(),
+    );
   }
 
+  @override
   Future<List<TimelineEventDto>> subscribeTimeline(
     String agentId, {
     int afterSequence = 0,
   }) async {
     _timelineSubscriptions[agentId] = afterSequence;
     final response = await _request(
-      MessageType.timelineSubscribeRequest,
-      <String, dynamic>{'agentId': agentId, 'afterSequence': afterSequence},
+      RpcMethod.timelineSubscribe,
+      TimelineSubscribeParamsDto(
+        agentId: agentId,
+        afterSequence: afterSequence,
+      ).toJson(),
     );
-    final events = (response.payload['events'] as List? ?? const <dynamic>[])
-        .whereType<Map>()
-        .map(
-          (item) => TimelineEventDto.fromJson(Map<String, dynamic>.from(item)),
-        )
-        .toList(growable: false);
+    final events = TimelineResultDto.fromJson(response).events;
     for (final event in events) {
       final current = _timelineSubscriptions[agentId] ?? 0;
-      if (event.sequence > current)
+      if (event.sequence > current) {
         _timelineSubscriptions[agentId] = event.sequence;
+      }
     }
     return events;
   }
 
+  @override
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
     _states.add(ClientConnectionState.disconnected);
-    _failPending(const CoderClientException('Client closed.'));
-    await _socketSubscription?.cancel();
-    await _channel?.sink.close();
+    await _peer?.close();
     await _events.close();
     await _states.close();
   }

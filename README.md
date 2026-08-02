@@ -7,12 +7,13 @@ the same versioned WebSocket protocol.
 ## Development
 
 ```sh
-dart pub get
-dart run melos run generate
-dart run melos run analyze
-dart run melos run test
-dart run melos run test:flutter
+dart pub get --enforce-lockfile
+dart run melos verify
+dart run melos verify:debug
 ```
+
+See [`docs/testing.md`](docs/testing.md) for the individual TDD, contract,
+widget, golden, coverage, architecture, and Debug E2E commands.
 
 Run the standalone daemon. The seeded OpenAI provider reads
 `OPENAI_API_KEY`; additional providers can use an environment variable or a

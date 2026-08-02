@@ -1,17 +1,23 @@
+import 'package:coder_app/src/bootstrap.dart';
+import 'package:coder_app/src/ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:uuid/uuid.dart';
 
-import 'bootstrap.dart';
-
+/// RemoteBootstrap defines a public contract.
 class RemoteBootstrap implements AppBootstrap {
-  RemoteBootstrap({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+  /// Creates a [RemoteBootstrap].
+  RemoteBootstrap({
+    FlutterSecureStorage? storage,
+    this._ids = const UuidAppIdGenerator(),
+    this._connector = const WebSocketAppClientConnector(),
+  }) : _storage = storage ?? const FlutterSecureStorage();
 
   static const String _addressKey = 'tinyrack_coder.host_address';
   static const String _tokenKey = 'tinyrack_coder.host_token';
 
   final FlutterSecureStorage _storage;
+  final AppIdGenerator _ids;
+  final AppClientConnector _connector;
 
   @override
   bool get canRegisterLocalWorkspace => false;
@@ -32,9 +38,9 @@ class RemoteBootstrap implements AppBootstrap {
     HostEndpoint endpoint, {
     required bool persist,
   }) async {
-    final client = await CoderClient.connect(
+    final client = await _connector.connect(
       endpoint: endpoint,
-      clientId: const Uuid().v4(),
+      clientId: _ids.generate(),
       clientKind: 'mobile',
     );
     if (persist) {

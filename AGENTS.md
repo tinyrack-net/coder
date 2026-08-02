@@ -1,0 +1,46 @@
+# Tinyrack Coder engineering policy
+
+This repository is under active development. Prefer a sound, type-safe Dart and
+Flutter design over compatibility with development data, deprecated APIs, or an
+older internal protocol. Do not add compatibility shims or legacy adapters unless
+the user explicitly requests them.
+
+## Required workflow
+
+1. Write a test that fails for the intended reason before changing production
+   behavior. For refactors, add a characterization test first when the behavior is
+   not already fixed by tests.
+2. Keep business logic behind typed ports. Production application code must not
+   instantiate concrete transports, databases, filesystems, processes, clocks, or
+   ID generators outside a composition root.
+3. Never edit generated `.g.dart` or `.freezed.dart` files by hand. Run the
+   generator and commit its output.
+4. Add unit and contract tests for every behavior change. UI changes also require
+   widget tests and an updated Linux golden when pixels change. Protocol or daemon
+   changes require contract and daemon integration tests.
+5. Before reporting completion, run `dart run melos verify` and
+   `dart run melos verify:debug`. The latter must exercise the real Debug Flutter
+   runner and embedded daemon, not only a mocked widget tree.
+6. Run a platform Debug build for every platform-specific change. If the current
+   machine cannot run that platform, explicitly report it as unverified and name
+   the CI job responsible for it.
+
+## Non-negotiable gates
+
+- `dart analyze --fatal-infos` has zero diagnostics under strict casts,
+  inference, raw types, and `very_good_analysis`.
+- Dependency and architecture verification have zero violations.
+- Each package independently has at least 90% line and 80% branch coverage.
+  Missing production files count as 0%; only generated sources are excluded.
+- Tests use deterministic clocks, IDs, memory filesystems, fake processes,
+  recorded provider streams, and fake WebSockets. CI must never use a real API
+  key, paid provider request, user home, or internet-dependent provider call.
+- Test order is randomized. Preserve the printed seed whenever reproducing a
+  failure.
+
+Do not use broad lint ignores, coverage ignores, skipped tests, or broad exception
+catches to make a gate pass. A necessary line-level ignore must include a comment
+explaining the reason and safety argument.
+
+The commands, test taxonomy, coverage rules, and platform matrix are documented in
+[`docs/testing.md`](docs/testing.md).

@@ -1,24 +1,30 @@
 import 'dart:async';
 import 'dart:isolate';
 
-import 'application.dart';
-import 'config.dart';
+import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/application.dart';
+import 'package:coder_daemon/src/config.dart';
 
+/// EmbeddedDaemonHandle defines a public contract.
 class EmbeddedDaemonHandle implements DaemonHandle {
   EmbeddedDaemonHandle._({
     required this.boundEndpoint,
     required this.serverId,
     required this.bearerToken,
-    required Isolate isolate,
-    required SendPort commands,
-  }) : _isolate = isolate,
-       _commands = commands;
+    required this._isolate,
+    required this._commands,
+  });
 
-  static Future<EmbeddedDaemonHandle> start(DaemonConfig config) async {
+  /// The start public API member.
+  static Future<EmbeddedDaemonHandle> start(
+    DaemonConfig config, {
+    ModelProvider? provider,
+  }) async {
     final receive = ReceivePort();
     final isolate = await Isolate.spawn(_embeddedDaemonMain, <Object?>[
       receive.sendPort,
       config.toIsolateMessage(),
+      provider,
     ], debugName: 'tinyrack-coder-daemon');
     final message = await receive.first.timeout(const Duration(seconds: 30));
     receive.close();
@@ -61,7 +67,7 @@ class EmbeddedDaemonHandle implements DaemonHandle {
     _commands.send(<Object?>['stop', response.sendPort]);
     await response.first.timeout(const Duration(seconds: 10));
     response.close();
-    _isolate.kill(priority: Isolate.beforeNextEvent);
+    _isolate.kill();
   }
 }
 
@@ -70,8 +76,9 @@ Future<void> _embeddedDaemonMain(List<Object?> message) async {
   final config = DaemonConfig.fromIsolateMessage(
     Map<Object?, Object?>.from(message[1]! as Map),
   );
+  final provider = message[2] as ModelProvider?;
   try {
-    final handle = await DaemonApplication.start(config);
+    final handle = await DaemonApplication.start(config, provider: provider);
     final commands = ReceivePort();
     ready.send(<Object?, Object?>{
       'endpoint': handle.boundEndpoint.toString(),
@@ -88,7 +95,11 @@ Future<void> _embeddedDaemonMain(List<Object?> message) async {
         commands.close();
       }
     }
-  } catch (error) {
-    ready.send(<Object?, Object?>{'error': '$error'});
+  } on Exception catch (error) {
+    _sendStartupError(ready, error);
   }
+}
+
+void _sendStartupError(SendPort ready, Object error) {
+  ready.send(<Object?, Object?>{'error': '$error'});
 }

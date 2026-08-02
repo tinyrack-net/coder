@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_provider_openai/src/sse.dart';
 import 'package:dio/dio.dart';
 
-import 'sse.dart';
-
+/// OpenAIProviderConfig defines a public contract.
 class OpenAIProviderConfig {
+  /// Creates a [OpenAIProviderConfig].
   const OpenAIProviderConfig({
     this.id = 'openai',
     this.apiKey = '',
@@ -18,26 +19,46 @@ class OpenAIProviderConfig {
     this.strictToolSchema = true,
   });
 
+  /// The id public API member.
   final String id;
+
+  /// The apiKey public API member.
   final String apiKey;
+
+  /// The baseUrl public API member.
   final String baseUrl;
+
+  /// The maxConnectAttempts public API member.
   final int maxConnectAttempts;
+
+  /// The requiresApiKey public API member.
   final bool requiresApiKey;
+
+  /// The supportsReasoningEffort public API member.
   final bool supportsReasoningEffort;
+
+  /// The strictToolSchema public API member.
   final bool strictToolSchema;
 }
 
+/// OpenAIProviderException defines a public contract.
 class OpenAIProviderException implements Exception {
+  /// Creates a [OpenAIProviderException].
   const OpenAIProviderException(this.message, {this.retryable = false});
 
+  /// The message public API member.
   final String message;
+
+  /// The retryable public API member.
   final bool retryable;
 
   @override
   String toString() => 'OpenAIProviderException: $message';
 }
 
+/// OpenAIResponsesProvider defines a public contract.
 class OpenAIResponsesProvider implements ModelProvider {
+  /// Creates a [OpenAIResponsesProvider].
   OpenAIResponsesProvider(OpenAIProviderConfig config, {Dio? dio})
     : _config = config,
       _dio = dio ?? Dio(BaseOptions(baseUrl: config.baseUrl));
@@ -55,7 +76,8 @@ class OpenAIResponsesProvider implements ModelProvider {
   ) async* {
     if (_config.requiresApiKey && _config.apiKey.isEmpty) {
       throw const OpenAIProviderException(
-        'OpenAI API key is not configured. Set it in the desktop app or OPENAI_API_KEY.',
+        'OpenAI API key is not configured. Set it in the desktop app or '
+        'OPENAI_API_KEY.',
       );
     }
     final cancelToken = CancelToken();
@@ -83,8 +105,9 @@ class OpenAIResponsesProvider implements ModelProvider {
       } on DioException catch (error) {
         if (CancelToken.isCancel(error)) throw const AgentCancelledException();
         lastError = error;
-        if (!_isRetryable(error) || attempt == _config.maxConnectAttempts)
+        if (!_isRetryable(error) || attempt == _config.maxConnectAttempts) {
           rethrow;
+        }
         await Future<void>.delayed(
           Duration(milliseconds: 250 * (1 << (attempt - 1))),
         );
@@ -205,8 +228,8 @@ class OpenAIResponsesProvider implements ModelProvider {
           }
           final responseMap = Map<String, dynamic>.from(response);
           final output = (responseMap['output'] as List? ?? const <dynamic>[])
-              .whereType<Map>()
-              .map((item) => Map<String, dynamic>.from(item))
+              .whereType<Map<dynamic, dynamic>>()
+              .map(Map<String, dynamic>.from)
               .toList(growable: false);
           for (final item in output) {
             final call = _functionCall(item);
@@ -239,9 +262,9 @@ class OpenAIResponsesProvider implements ModelProvider {
             usage: _usage(responseMap['usage']),
           );
         case 'response.failed':
-          throw OpenAIProviderException(_errorMessage(event), retryable: false);
+          throw OpenAIProviderException(_errorMessage(event));
         case 'error':
-          throw OpenAIProviderException(_errorMessage(event), retryable: false);
+          throw OpenAIProviderException(_errorMessage(event));
       }
     }
   }
@@ -265,8 +288,9 @@ class OpenAIResponsesProvider implements ModelProvider {
     final callId = item['call_id'];
     final name = item['name'];
     final arguments = item['arguments'];
-    if (callId is! String || name is! String || arguments is! String)
+    if (callId is! String || name is! String || arguments is! String) {
       return null;
+    }
     final decoded = jsonDecode(arguments);
     if (decoded is! Map) {
       throw OpenAIProviderException(
@@ -291,8 +315,9 @@ class OpenAIResponsesProvider implements ModelProvider {
 
   String _errorMessage(Map<String, dynamic> event) {
     final error = event['error'];
-    if (error is Map && error['message'] is String)
+    if (error is Map && error['message'] is String) {
       return error['message'] as String;
+    }
     return event['message'] as String? ??
         'OpenAI Responses API request failed.';
   }

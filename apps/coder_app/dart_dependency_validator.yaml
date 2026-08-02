@@ -1,0 +1,2 @@
+# The Riverpod generator/analyzer graph is pinned as a tested unit.
+allow_pins: true

@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:coder_protocol/coder_protocol.dart';
 
+/// CancellationToken defines a public contract.
 class CancellationToken {
+  /// The isCancelled public API member.
   bool get isCancelled => _isCancelled;
   bool _isCancelled = false;
   final List<void Function()> _listeners = <void Function()>[];
 
+  /// The cancel public API member.
   void cancel() {
     if (_isCancelled) return;
     _isCancelled = true;
@@ -16,6 +19,7 @@ class CancellationToken {
     _listeners.clear();
   }
 
+  /// The onCancel public API member.
   void onCancel(void Function() listener) {
     if (_isCancelled) {
       listener();
@@ -24,34 +28,47 @@ class CancellationToken {
     _listeners.add(listener);
   }
 
+  /// The throwIfCancelled public API member.
   void throwIfCancelled() {
     if (_isCancelled) throw const AgentCancelledException();
   }
 }
 
+/// AgentCancelledException defines a public contract.
 class AgentCancelledException implements Exception {
+  /// Creates a [AgentCancelledException].
   const AgentCancelledException();
 }
 
+/// ModelToolDefinition defines a public contract.
 class ModelToolDefinition {
+  /// Creates a [ModelToolDefinition].
   const ModelToolDefinition({
     required this.name,
     required this.description,
     required this.parameters,
   });
 
+  /// The name public API member.
   final String name;
+
+  /// The description public API member.
   final String description;
+
+  /// The parameters public API member.
   final Map<String, dynamic> parameters;
 }
 
+/// ConversationToolCall defines a public contract.
 class ConversationToolCall {
+  /// Creates a [ConversationToolCall].
   const ConversationToolCall({
     required this.callId,
     required this.name,
     required this.arguments,
   });
 
+  /// Creates a [ConversationToolCall].
   factory ConversationToolCall.fromJson(Map<String, dynamic> json) =>
       ConversationToolCall(
         callId: json['callId']! as String,
@@ -59,10 +76,16 @@ class ConversationToolCall {
         arguments: Map<String, dynamic>.from(json['arguments']! as Map),
       );
 
+  /// The callId public API member.
   final String callId;
+
+  /// The name public API member.
   final String name;
+
+  /// The arguments public API member.
   final Map<String, dynamic> arguments;
 
+  /// The toJson public API member.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'callId': callId,
     'name': name,
@@ -70,6 +93,7 @@ class ConversationToolCall {
   };
 }
 
+/// ConversationItem defines a public contract.
 sealed class ConversationItem {
   const ConversationItem();
 
@@ -79,7 +103,7 @@ sealed class ConversationItem {
       'assistant' => AssistantConversationItem(
         text: json['text'] as String? ?? '',
         toolCalls: (json['toolCalls'] as List? ?? const <dynamic>[])
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map(
               (item) => ConversationToolCall.fromJson(
                 Map<String, dynamic>.from(item),
@@ -87,8 +111,8 @@ sealed class ConversationItem {
             )
             .toList(growable: false),
         opaqueItems: (json['opaqueItems'] as List? ?? const <dynamic>[])
-            .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
+            .whereType<Map<dynamic, dynamic>>()
+            .map(Map<String, dynamic>.from)
             .toList(growable: false),
       ),
       'toolResult' => ToolResultConversationItem(
@@ -100,11 +124,16 @@ sealed class ConversationItem {
     };
   }
 
+  /// The toJson public API member.
   Map<String, dynamic> toJson();
 }
 
+/// UserConversationItem defines a public contract.
 class UserConversationItem extends ConversationItem {
+  /// Creates a [UserConversationItem].
   const UserConversationItem(this.text);
+
+  /// The text public API member.
   final String text;
 
   @override
@@ -114,15 +143,22 @@ class UserConversationItem extends ConversationItem {
   };
 }
 
+/// AssistantConversationItem defines a public contract.
 class AssistantConversationItem extends ConversationItem {
+  /// Creates a [AssistantConversationItem].
   const AssistantConversationItem({
     required this.text,
     this.toolCalls = const <ConversationToolCall>[],
     this.opaqueItems = const <Map<String, dynamic>>[],
   });
 
+  /// The text public API member.
   final String text;
+
+  /// The toolCalls public API member.
   final List<ConversationToolCall> toolCalls;
+
+  /// The opaqueItems public API member.
   final List<Map<String, dynamic>> opaqueItems;
 
   @override
@@ -134,15 +170,22 @@ class AssistantConversationItem extends ConversationItem {
   };
 }
 
+/// ToolResultConversationItem defines a public contract.
 class ToolResultConversationItem extends ConversationItem {
+  /// Creates a [ToolResultConversationItem].
   const ToolResultConversationItem({
     required this.callId,
     required this.output,
     this.isError = false,
   });
 
+  /// The callId public API member.
   final String callId;
+
+  /// The output public API member.
   final String output;
+
+  /// The isError public API member.
   final bool isError;
 
   @override
@@ -154,7 +197,9 @@ class ToolResultConversationItem extends ConversationItem {
   };
 }
 
+/// ModelRequest defines a public contract.
 class ModelRequest {
+  /// Creates a [ModelRequest].
   const ModelRequest({
     required this.model,
     required this.reasoningEffort,
@@ -165,55 +210,91 @@ class ModelRequest {
     this.forceToolName,
   });
 
+  /// The model public API member.
   final String model;
+
+  /// The reasoningEffort public API member.
   final String reasoningEffort;
+
+  /// The instructions public API member.
   final String instructions;
+
+  /// The history public API member.
   final List<ConversationItem> history;
+
+  /// The tools public API member.
   final List<ModelToolDefinition> tools;
+
+  /// The safetyIdentifier public API member.
   final String safetyIdentifier;
+
+  /// The forceToolName public API member.
   final String? forceToolName;
 }
 
+/// ModelEvent defines a public contract.
 sealed class ModelEvent {
   const ModelEvent();
 }
 
+/// ModelTextDelta defines a public contract.
 class ModelTextDelta extends ModelEvent {
+  /// Creates a [ModelTextDelta].
   const ModelTextDelta(this.delta);
+
+  /// The delta public API member.
   final String delta;
 }
 
+/// ModelFunctionCall defines a public contract.
 class ModelFunctionCall extends ModelEvent {
+  /// Creates a [ModelFunctionCall].
   const ModelFunctionCall({
     required this.callId,
     required this.name,
     required this.arguments,
   });
 
+  /// The callId public API member.
   final String callId;
+
+  /// The name public API member.
   final String name;
+
+  /// The arguments public API member.
   final Map<String, dynamic> arguments;
 }
 
+/// ModelResponseCompleted defines a public contract.
 class ModelResponseCompleted extends ModelEvent {
+  /// Creates a [ModelResponseCompleted].
   const ModelResponseCompleted({
     required this.assistant,
     this.usage = const <String, int>{},
   });
 
+  /// The assistant public API member.
   final AssistantConversationItem assistant;
+
+  /// The usage public API member.
   final Map<String, int> usage;
 }
 
+/// Public API exposed by this library.
 abstract interface class ModelProvider {
+  /// The id public API member.
   String get id;
+
+  /// The stream public API member.
   Stream<ModelEvent> stream(
     ModelRequest request,
     CancellationToken cancellation,
   );
 }
 
+/// ToolInvocation defines a public contract.
 class ToolInvocation {
+  /// Creates a [ToolInvocation].
   const ToolInvocation({
     required this.callId,
     required this.name,
@@ -223,25 +304,58 @@ class ToolInvocation {
     this.preview,
   });
 
+  /// The callId public API member.
   final String callId;
+
+  /// The name public API member.
   final String name;
+
+  /// The arguments public API member.
   final Map<String, dynamic> arguments;
+
+  /// The risk public API member.
   final ToolRisk risk;
+
+  /// The workspaceRoot public API member.
   final String workspaceRoot;
+
+  /// The preview public API member.
   final String? preview;
 }
 
-enum ApprovalEvaluation { allow, ask, deny }
+/// Values supported by ApprovalEvaluation.
+enum ApprovalEvaluation {
+  /// Runs the tool without asking.
+  allow,
 
-enum ApprovalDecision { approved, denied }
+  /// Requires an explicit approval decision.
+  ask,
 
+  /// Rejects the tool invocation.
+  deny,
+}
+
+/// Values supported by ApprovalDecision.
+enum ApprovalDecision {
+  /// The invocation may proceed.
+  approved,
+
+  /// The invocation must not proceed.
+  denied,
+}
+
+/// Public API exposed by this library.
 abstract interface class ApprovalPolicy {
+  /// The evaluate public API member.
   ApprovalEvaluation evaluate(ToolRisk risk);
 }
 
+/// DefaultApprovalPolicy defines a public contract.
 class DefaultApprovalPolicy implements ApprovalPolicy {
+  /// Creates a [DefaultApprovalPolicy].
   const DefaultApprovalPolicy(this.mode);
 
+  /// The mode public API member.
   final PermissionMode mode;
 
   @override
@@ -253,41 +367,63 @@ class DefaultApprovalPolicy implements ApprovalPolicy {
   };
 }
 
+/// Public API exposed by this library.
 abstract interface class ApprovalCoordinator {
+  /// The request public API member.
   Future<ApprovalDecision> request(
     ToolInvocation invocation,
     CancellationToken cancellation,
   );
 }
 
+/// ToolExecutionContext defines a public contract.
 class ToolExecutionContext {
+  /// Creates a [ToolExecutionContext].
   const ToolExecutionContext({
     required this.workspaceRoot,
     required this.cancellation,
   });
 
+  /// The workspaceRoot public API member.
   final String workspaceRoot;
+
+  /// The cancellation public API member.
   final CancellationToken cancellation;
 }
 
+/// ToolResult defines a public contract.
 class ToolResult {
+  /// Creates a [ToolResult].
   const ToolResult({required this.output, this.isError = false});
 
+  /// The output public API member.
   final String output;
+
+  /// The isError public API member.
   final bool isError;
 }
 
+/// AgentTool defines a public contract.
 abstract class AgentTool {
+  /// The name public API member.
   String get name;
+
+  /// The description public API member.
   String get description;
+
+  /// The risk public API member.
   ToolRisk get risk;
+
+  /// The strictJsonSchema public API member.
   Map<String, dynamic> get strictJsonSchema;
 
+  /// The preview public API member.
   Future<String?> preview(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async => null;
 
+  /// The execute public API member.
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,

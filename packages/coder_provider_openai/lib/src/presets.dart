@@ -1,5 +1,6 @@
 import 'package:coder_protocol/coder_protocol.dart';
 
+/// The openAICompatiblePresets public API member.
 const List<ProviderPresetDto> openAICompatiblePresets = <ProviderPresetDto>[
   ProviderPresetDto(
     id: 'openai',
@@ -73,6 +74,7 @@ const List<ProviderPresetDto> openAICompatiblePresets = <ProviderPresetDto>[
   ),
 ];
 
+/// The presetCapabilities public API member.
 ModelCapabilitiesDto presetCapabilities(String presetId, String model) {
   if (presetId == 'openai') {
     final reasoning = model.startsWith('gpt-5') || model.startsWith('o');

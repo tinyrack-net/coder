@@ -1,344 +1,376 @@
 import 'dart:async';
 
+import 'package:coder_app/src/bootstrap.dart';
+import 'package:coder_app/src/ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'bootstrap.dart';
+part 'controller.g.dart';
 
+/// The bootstrapProvider public API member.
 final bootstrapProvider = Provider<AppBootstrap>(
   (ref) => throw StateError('AppBootstrap must be overridden.'),
 );
 
-final coderControllerProvider = NotifierProvider<CoderController, CoderState>(
-  CoderController.new,
+/// The appClockProvider public API member.
+final appClockProvider = Provider<AppClock>((ref) => const SystemAppClock());
+
+/// The appIdGeneratorProvider public API member.
+final appIdGeneratorProvider = Provider<AppIdGenerator>(
+  (ref) => const UuidAppIdGenerator(),
 );
 
-class CoderState {
-  const CoderState({
-    this.connecting = false,
-    this.connected = false,
-    this.connectionLabel,
-    this.serverInfo,
-    this.workspaces = const <WorkspaceDto>[],
-    this.agents = const <AgentDto>[],
-    this.timeline = const <TimelineEventDto>[],
-    this.approvals = const <String, ApprovalRequestDto>{},
-    this.providerCatalog,
-    this.providerModels = const <String, List<ProviderModelDto>>{},
-    this.providerBusy = false,
-    this.selectedWorkspaceId,
-    this.selectedAgentId,
-    this.error,
+/// ConnectionSnapshot defines a public contract.
+final class ConnectionSnapshot {
+  /// Creates a [ConnectionSnapshot].
+  const ConnectionSnapshot({
+    required this.api,
+    required this.endpoint,
+    required this.connectionState,
   });
 
-  final bool connecting;
-  final bool connected;
-  final String? connectionLabel;
-  final ServerInfoDto? serverInfo;
-  final List<WorkspaceDto> workspaces;
-  final List<AgentDto> agents;
-  final List<TimelineEventDto> timeline;
-  final Map<String, ApprovalRequestDto> approvals;
-  final ProviderCatalogDto? providerCatalog;
-  final Map<String, List<ProviderModelDto>> providerModels;
-  final bool providerBusy;
-  final String? selectedWorkspaceId;
-  final String? selectedAgentId;
-  final String? error;
+  /// The api public API member.
+  final CoderApi api;
 
-  CoderState copyWith({
-    bool? connecting,
-    bool? connected,
-    String? connectionLabel,
-    ServerInfoDto? serverInfo,
-    List<WorkspaceDto>? workspaces,
-    List<AgentDto>? agents,
-    List<TimelineEventDto>? timeline,
-    Map<String, ApprovalRequestDto>? approvals,
-    ProviderCatalogDto? providerCatalog,
-    Map<String, List<ProviderModelDto>>? providerModels,
-    bool? providerBusy,
-    String? selectedWorkspaceId,
-    String? selectedAgentId,
-    String? error,
-    bool clearError = false,
-    bool clearWorkspace = false,
-    bool clearAgent = false,
-  }) => CoderState(
-    connecting: connecting ?? this.connecting,
-    connected: connected ?? this.connected,
-    connectionLabel: connectionLabel ?? this.connectionLabel,
-    serverInfo: serverInfo ?? this.serverInfo,
-    workspaces: workspaces ?? this.workspaces,
-    agents: agents ?? this.agents,
-    timeline: timeline ?? this.timeline,
-    approvals: approvals ?? this.approvals,
-    providerCatalog: providerCatalog ?? this.providerCatalog,
-    providerModels: providerModels ?? this.providerModels,
-    providerBusy: providerBusy ?? this.providerBusy,
-    selectedWorkspaceId: clearWorkspace
-        ? null
-        : selectedWorkspaceId ?? this.selectedWorkspaceId,
-    selectedAgentId: clearAgent
-        ? null
-        : selectedAgentId ?? this.selectedAgentId,
-    error: clearError ? null : error ?? this.error,
-  );
+  /// The endpoint public API member.
+  final HostEndpoint endpoint;
+
+  /// The connectionState public API member.
+  final ClientConnectionState connectionState;
+
+  /// The serverInfo public API member.
+  ServerInfoDto get serverInfo => api.serverInfo;
+
+  /// The connected public API member.
+  bool get connected => connectionState == ClientConnectionState.connected;
+
+  /// The connecting public API member.
+  bool get connecting =>
+      connectionState == ClientConnectionState.connecting ||
+      connectionState == ClientConnectionState.reconnecting;
+
+  /// The label public API member.
+  String get label => endpoint.websocketUri.authority;
+
+  /// The copyWith public API member.
+  ConnectionSnapshot copyWith({ClientConnectionState? connectionState}) =>
+      ConnectionSnapshot(
+        api: api,
+        endpoint: endpoint,
+        connectionState: connectionState ?? this.connectionState,
+      );
 }
 
-class CoderController extends Notifier<CoderState> {
-  CoderClient? _client;
-  StreamSubscription<WireEnvelope>? _events;
-  StreamSubscription<ClientConnectionState>? _connectionStates;
-  bool _initialized = false;
-  final Uuid _uuid = const Uuid();
-  late AppBootstrap _bootstrapInstance;
+@Riverpod(keepAlive: true)
+/// ConnectionController defines a public contract.
+class ConnectionController extends _$ConnectionController {
+  StreamSubscription<ClientConnectionState>? _states;
+  CoderApi? _api;
+  late AppBootstrap _bootstrap;
 
-  AppBootstrap get _bootstrap => _bootstrapInstance;
+  /// The canRegisterLocalWorkspace public API member.
   bool get canRegisterLocalWorkspace => _bootstrap.canRegisterLocalWorkspace;
-  bool get canManageProviders =>
-      state.serverInfo?.features['providerAdmin'] == true;
 
   @override
-  CoderState build() {
-    _bootstrapInstance = ref.read(bootstrapProvider);
-    ref.onDispose(() {
-      unawaited(_dispose());
-    });
-    return const CoderState();
+  Future<ConnectionSnapshot?> build() async {
+    _bootstrap = ref.watch(bootstrapProvider);
+    ref.onDispose(() => unawaited(_dispose()));
+    final connection = await _bootstrap.autoConnect();
+    return connection == null ? null : _attach(connection);
   }
 
-  Future<void> initialize() async {
-    if (_initialized) return;
-    _initialized = true;
-    state = state.copyWith(connecting: true, clearError: true);
-    try {
-      final connection = await _bootstrap.autoConnect();
-      if (connection == null) {
-        state = state.copyWith(connecting: false);
-        return;
-      }
-      await _attach(connection);
-    } catch (error) {
-      state = state.copyWith(
-        connecting: false,
-        connected: false,
-        error: '$error',
-      );
-    }
-  }
-
+  /// The connect public API member.
   Future<void> connect(String address, String token) async {
-    state = state.copyWith(connecting: true, clearError: true);
+    state = const AsyncLoading<ConnectionSnapshot?>();
     try {
       final endpoint = HostEndpoint.parse(address.trim(), token: token.trim());
       final connection = await _bootstrap.connectRemote(endpoint);
-      await _attach(connection);
-    } catch (error) {
-      state = state.copyWith(
-        connecting: false,
-        connected: false,
-        error: '$error',
-      );
+      state = AsyncData<ConnectionSnapshot?>(await _attach(connection));
+    } on Exception catch (error, stackTrace) {
+      state = AsyncError<ConnectionSnapshot?>(error, stackTrace);
     }
   }
 
-  Future<void> _attach(BootstrapConnection connection) async {
-    await _client?.close();
-    await _events?.cancel();
-    await _connectionStates?.cancel();
-    _client = connection.client;
-    _events = connection.client.events.listen(_handleEvent);
-    _connectionStates = connection.client.states.listen((connectionState) {
-      state = state.copyWith(
-        connected: connectionState == ClientConnectionState.connected,
-        connecting:
-            connectionState == ClientConnectionState.connecting ||
-            connectionState == ClientConnectionState.reconnecting,
-      );
+  Future<ConnectionSnapshot> _attach(BootstrapConnection connection) async {
+    await _states?.cancel();
+    if (!identical(_api, connection.client)) await _api?.close();
+    _api = connection.client;
+    _states = connection.client.states.listen((connectionState) {
+      final current = state.asData?.value;
+      if (current != null) {
+        state = AsyncData<ConnectionSnapshot?>(
+          current.copyWith(connectionState: connectionState),
+        );
+      }
     });
-    final results = await Future.wait<Object>(<Future<Object>>[
-      connection.client.listWorkspaces(),
-      connection.client.listProviderCatalog(),
-    ]);
-    final workspaces = results[0] as List<WorkspaceDto>;
-    final providerCatalog = results[1] as ProviderCatalogDto;
-    state = state.copyWith(
-      connecting: false,
-      connected: true,
-      connectionLabel: connection.endpoint.websocketUri.authority,
-      serverInfo: connection.client.serverInfo,
-      workspaces: workspaces,
-      agents: const <AgentDto>[],
-      timeline: const <TimelineEventDto>[],
-      approvals: const <String, ApprovalRequestDto>{},
-      providerCatalog: providerCatalog,
-      providerModels: const <String, List<ProviderModelDto>>{},
-      clearWorkspace: true,
-      clearAgent: true,
-      clearError: true,
+    return ConnectionSnapshot(
+      api: connection.client,
+      endpoint: connection.endpoint,
+      connectionState: ClientConnectionState.connected,
     );
   }
 
-  Future<WorkspaceDto> registerWorkspace(String rootPath) async {
-    final workspace = await _client!.registerWorkspace(
-      id: _uuid.v4(),
-      rootPath: rootPath,
-      name: rootPath.split(RegExp(r'[/\\]')).last,
-    );
-    state = state.copyWith(
-      workspaces: <WorkspaceDto>[...state.workspaces, workspace],
-    );
-    return workspace;
+  Future<void> _dispose() async {
+    await _states?.cancel();
+    await _api?.close();
+    await _bootstrap.close();
+  }
+}
+
+@Riverpod(keepAlive: true)
+/// WorkspacesController defines a public contract.
+class WorkspacesController extends _$WorkspacesController {
+  @override
+  Future<List<WorkspaceDto>> build() async {
+    final connection = await ref.watch(connectionControllerProvider.future);
+    return connection == null
+        ? const <WorkspaceDto>[]
+        : connection.api.listWorkspaces();
   }
 
-  Future<void> selectWorkspace(String id) async {
-    if (state.selectedWorkspaceId == id && state.agents.isNotEmpty) return;
-    final agents = await _client!.listAgents(workspaceId: id);
-    state = state.copyWith(
-      selectedWorkspaceId: id,
-      agents: agents,
-      timeline: const <TimelineEventDto>[],
-      approvals: const <String, ApprovalRequestDto>{},
-      clearAgent: true,
-      clearError: true,
-    );
+  /// The register public API member.
+  Future<WorkspaceDto> register(String rootPath) async {
+    final connection = await ref.read(connectionControllerProvider.future);
+    if (connection == null) throw StateError('Daemon connection required.');
+    final previous = state.asData?.value ?? const <WorkspaceDto>[];
+    state = const AsyncLoading<List<WorkspaceDto>>();
+    try {
+      final workspace = await connection.api.registerWorkspace(
+        id: ref.read(appIdGeneratorProvider).generate(),
+        rootPath: rootPath,
+        name: rootPath.split(RegExp(r'[/\\]')).last,
+      );
+      state = AsyncData<List<WorkspaceDto>>(<WorkspaceDto>[
+        ...previous,
+        workspace,
+      ]);
+      return workspace;
+    } catch (error, stackTrace) {
+      state = AsyncError<List<WorkspaceDto>>(error, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+@riverpod
+/// AgentsController defines a public contract.
+class AgentsController extends _$AgentsController {
+  StreamSubscription<ClientEvent>? _events;
+  late String? _workspaceId;
+
+  @override
+  Future<List<AgentDto>> build(String? workspaceId) async {
+    _workspaceId = workspaceId;
+    final connection = await ref.watch(connectionControllerProvider.future);
+    if (connection == null || workspaceId == null) {
+      return const <AgentDto>[];
+    }
+    _events = connection.api.events.listen(_handleEvent);
+    ref.onDispose(() => unawaited(_events?.cancel()));
+    return connection.api.listAgents(workspaceId: workspaceId);
   }
 
-  Future<AgentDto> createAgent({
-    required String workspaceId,
+  /// The create public API member.
+  Future<AgentDto> create({
     required String title,
     required String providerId,
     required String model,
-    String reasoningEffort = 'medium',
-    PermissionMode permissionMode = PermissionMode.ask,
+    required String reasoningEffort,
+    required PermissionMode permissionMode,
   }) async {
-    final agent = await _client!.createAgent(
-      id: _uuid.v4(),
-      workspaceId: workspaceId,
-      title: title,
-      providerId: providerId,
-      model: model,
-      reasoningEffort: reasoningEffort,
-      permissionMode: permissionMode,
-    );
-    state = state.copyWith(agents: <AgentDto>[agent, ...state.agents]);
-    return agent;
+    final workspaceId = _workspaceId;
+    final connection = await ref.read(connectionControllerProvider.future);
+    if (connection == null || workspaceId == null) {
+      throw StateError('Workspace selection and daemon connection required.');
+    }
+    final previous = state.asData?.value ?? const <AgentDto>[];
+    state = const AsyncLoading<List<AgentDto>>();
+    try {
+      final agent = await connection.api.createAgent(
+        id: ref.read(appIdGeneratorProvider).generate(),
+        workspaceId: workspaceId,
+        title: title,
+        providerId: providerId,
+        model: model,
+        reasoningEffort: reasoningEffort,
+        permissionMode: permissionMode,
+      );
+      state = AsyncData<List<AgentDto>>(<AgentDto>[agent, ...previous]);
+      return agent;
+    } catch (error, stackTrace) {
+      state = AsyncError<List<AgentDto>>(error, stackTrace);
+      rethrow;
+    }
   }
 
-  Future<AgentDto> updateAgentConfiguration({
+  /// The updateConfiguration public API member.
+  Future<AgentDto> updateConfiguration({
     required String agentId,
     required String providerId,
     required String model,
     required String reasoningEffort,
   }) async {
-    final updated = await _client!.updateAgentConfiguration(
+    final connection = await ref.read(connectionControllerProvider.future);
+    if (connection == null) throw StateError('Daemon connection required.');
+    final updated = await connection.api.updateAgentConfiguration(
       agentId: agentId,
       providerId: providerId,
       model: model,
       reasoningEffort: reasoningEffort,
     );
-    state = state.copyWith(
-      agents: <AgentDto>[
-        for (final agent in state.agents)
-          if (agent.id == updated.id) updated else agent,
-      ],
-    );
+    _replace(updated);
     return updated;
   }
 
-  Future<void> loadProviderModels(String providerId) async {
-    final models = await _client!.listProviderModels(providerId);
-    state = state.copyWith(
-      providerModels: <String, List<ProviderModelDto>>{
-        ...state.providerModels,
-        providerId: models,
-      },
+  void _handleEvent(ClientEvent event) {
+    if (event case AgentUpdatedClientEvent(
+      :final agent,
+    ) when agent.workspaceId == _workspaceId) {
+      _replace(agent);
+    }
+  }
+
+  void _replace(AgentDto updated) {
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData<List<AgentDto>>(<AgentDto>[
+      for (final agent in current)
+        if (agent.id == updated.id) updated else agent,
+    ]);
+  }
+}
+
+/// ConversationState defines a public contract.
+final class ConversationState {
+  /// Creates a [ConversationState].
+  const ConversationState({
+    this.timeline = const <TimelineEventDto>[],
+    this.approvals = const <String, ApprovalRequestDto>{},
+  });
+
+  /// The timeline public API member.
+  final List<TimelineEventDto> timeline;
+
+  /// The approvals public API member.
+  final Map<String, ApprovalRequestDto> approvals;
+
+  /// The copyWith public API member.
+  ConversationState copyWith({
+    List<TimelineEventDto>? timeline,
+    Map<String, ApprovalRequestDto>? approvals,
+  }) => ConversationState(
+    timeline: timeline ?? this.timeline,
+    approvals: approvals ?? this.approvals,
+  );
+}
+
+@riverpod
+/// ConversationController defines a public contract.
+class ConversationController extends _$ConversationController {
+  StreamSubscription<ClientEvent>? _events;
+  late String? _agentId;
+
+  @override
+  Future<ConversationState> build(String? agentId) async {
+    _agentId = agentId;
+    final connection = await ref.watch(connectionControllerProvider.future);
+    if (connection == null || agentId == null) {
+      return const ConversationState();
+    }
+    final timeline = await connection.api.subscribeTimeline(agentId);
+    _events = connection.api.events.listen(_handleEvent);
+    ref.onDispose(() => unawaited(_events?.cancel()));
+    return ConversationState(
+      timeline: timeline,
+      approvals: _pendingApprovals(timeline),
     );
   }
 
-  Future<void> refreshProviderModels(String providerId) async {
-    state = state.copyWith(providerBusy: true, clearError: true);
-    try {
-      final models = await _client!.refreshProviderModels(providerId);
-      state = state.copyWith(
-        providerBusy: false,
-        providerModels: <String, List<ProviderModelDto>>{
-          ...state.providerModels,
-          providerId: models,
-        },
-      );
-    } catch (error) {
-      state = state.copyWith(providerBusy: false, error: '$error');
-      rethrow;
+  /// The startTurn public API member.
+  Future<void> startTurn(String prompt) async {
+    final agentId = _agentId;
+    final connection = await ref.read(connectionControllerProvider.future);
+    if (connection == null || agentId == null || prompt.trim().isEmpty) return;
+    await connection.api.startTurn(
+      agentId: agentId,
+      turnId: ref.read(appIdGeneratorProvider).generate(),
+      prompt: prompt.trim(),
+    );
+  }
+
+  /// The cancelTurn public API member.
+  Future<void> cancelTurn() async {
+    final agentId = _agentId;
+    final connection = await ref.read(connectionControllerProvider.future);
+    if (connection != null && agentId != null) {
+      await connection.api.cancelTurn(agentId);
     }
   }
 
-  Future<ApiProviderDto> saveProvider(
-    ApiProviderDto provider, {
-    String? apiKey,
-    bool makeDefault = false,
+  /// The resolveApproval public API member.
+  Future<void> resolveApproval(
+    String approvalId, {
+    required bool approved,
   }) async {
-    state = state.copyWith(providerBusy: true, clearError: true);
-    try {
-      final saved = await _client!.upsertProvider(
-        provider,
-        makeDefault: makeDefault,
-      );
-      if (provider.credentialSource == CredentialSource.stored &&
-          apiKey != null &&
-          apiKey.isNotEmpty) {
-        await _client!.setProviderCredential(provider.id, apiKey);
-      }
-      final catalog = await _client!.listProviderCatalog();
-      state = state.copyWith(providerBusy: false, providerCatalog: catalog);
-      return saved;
-    } catch (error) {
-      state = state.copyWith(providerBusy: false, error: '$error');
-      rethrow;
+    final connection = await ref.read(connectionControllerProvider.future);
+    if (connection == null) throw StateError('Daemon connection required.');
+    await connection.api.resolveApproval(
+      approvalId: approvalId,
+      approved: approved,
+    );
+    if (!ref.mounted) return;
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        approvals: Map<String, ApprovalRequestDto>.of(current.approvals)
+          ..remove(approvalId),
+      ),
+    );
+  }
+
+  void _handleEvent(ClientEvent clientEvent) {
+    final current = state.asData?.value;
+    if (current == null) return;
+    switch (clientEvent) {
+      case TimelineClientEvent(:final event):
+        if (event.agentId != _agentId ||
+            current.timeline.any((item) => item.sequence == event.sequence)) {
+          return;
+        }
+        final approvals = Map<String, ApprovalRequestDto>.of(current.approvals);
+        final approval = _approvalFromTimeline(event);
+        if (approval != null) approvals[approval.id] = approval;
+        if (event.type == 'approval.resolved') {
+          approvals.remove(event.data['approvalId']);
+        }
+        state = AsyncData<ConversationState>(
+          current.copyWith(
+            timeline: <TimelineEventDto>[...current.timeline, event],
+            approvals: approvals,
+          ),
+        );
+      case ApprovalRequestedClientEvent(:final approval):
+        if (approval.agentId == _agentId) {
+          state = AsyncData<ConversationState>(
+            current.copyWith(
+              approvals: <String, ApprovalRequestDto>{
+                ...current.approvals,
+                approval.id: approval,
+              },
+            ),
+          );
+        }
+      case AgentUpdatedClientEvent():
+        break;
     }
   }
 
-  Future<void> deleteProvider(String providerId) async {
-    await _client!.deleteProvider(providerId);
-    final catalog = await _client!.listProviderCatalog();
-    final models = Map<String, List<ProviderModelDto>>.of(state.providerModels)
-      ..remove(providerId);
-    state = state.copyWith(providerCatalog: catalog, providerModels: models);
-  }
-
-  Future<ProviderModelDto> saveManualModel(ProviderModelDto model) async {
-    final saved = await _client!.upsertProviderModel(model);
-    await loadProviderModels(model.providerId);
-    return saved;
-  }
-
-  Future<void> deleteProviderModel(String providerId, String modelId) async {
-    await _client!.deleteProviderModel(providerId, modelId);
-    await loadProviderModels(providerId);
-  }
-
-  Future<ProviderDiagnosticDto> diagnoseProviderModel(
-    String providerId,
-    String modelId,
-  ) async {
-    state = state.copyWith(providerBusy: true, clearError: true);
-    try {
-      final result = await _client!.diagnoseProviderModel(providerId, modelId);
-      await loadProviderModels(providerId);
-      state = state.copyWith(providerBusy: false);
-      return result;
-    } catch (error) {
-      state = state.copyWith(providerBusy: false, error: '$error');
-      rethrow;
-    }
-  }
-
-  Future<void> selectAgent(String id) async {
-    if (state.selectedAgentId == id && state.timeline.isNotEmpty) return;
-    final timeline = await _client!.subscribeTimeline(id);
+  Map<String, ApprovalRequestDto> _pendingApprovals(
+    List<TimelineEventDto> timeline,
+  ) {
     final approvals = <String, ApprovalRequestDto>{};
     for (final event in timeline) {
       final approval = _approvalFromTimeline(event);
@@ -349,84 +381,180 @@ class CoderController extends Notifier<CoderState> {
         approvals.remove(event.data['approvalId']);
       }
     }
-    state = state.copyWith(
-      selectedAgentId: id,
-      timeline: timeline,
-      approvals: approvals,
-    );
-  }
-
-  Future<void> startTurn(String prompt) async {
-    final agentId = state.selectedAgentId;
-    if (agentId == null || prompt.trim().isEmpty) return;
-    await _client!.startTurn(
-      agentId: agentId,
-      turnId: _uuid.v4(),
-      prompt: prompt.trim(),
-    );
-  }
-
-  Future<void> cancelTurn() async {
-    final agentId = state.selectedAgentId;
-    if (agentId != null) await _client!.cancelTurn(agentId);
-  }
-
-  Future<void> resolveApproval(String id, bool approved) async {
-    await _client!.resolveApproval(approvalId: id, approved: approved);
-    final approvals = Map<String, ApprovalRequestDto>.of(state.approvals)
-      ..remove(id);
-    state = state.copyWith(approvals: approvals);
-  }
-
-  void _handleEvent(WireEnvelope envelope) {
-    switch (envelope.type) {
-      case MessageType.timelineEvent:
-        final event = TimelineEventDto.fromJson(envelope.payload);
-        if (event.agentId != state.selectedAgentId ||
-            state.timeline.any((item) => item.sequence == event.sequence)) {
-          return;
-        }
-        final approvals = Map<String, ApprovalRequestDto>.of(state.approvals);
-        final approval = _approvalFromTimeline(event);
-        if (approval != null) approvals[approval.id] = approval;
-        if (event.type == 'approval.resolved')
-          approvals.remove(event.data['approvalId']);
-        state = state.copyWith(
-          timeline: <TimelineEventDto>[...state.timeline, event],
-          approvals: approvals,
-        );
-      case MessageType.agentUpdate:
-        final updated = AgentDto.fromJson(envelope.payload);
-        final items = <AgentDto>[
-          for (final item in state.agents)
-            if (item.id == updated.id) updated else item,
-        ];
-        state = state.copyWith(agents: items);
-      case MessageType.approvalRequest:
-        final approval = ApprovalRequestDto.fromJson(envelope.payload);
-        if (approval.agentId == state.selectedAgentId) {
-          state = state.copyWith(
-            approvals: <String, ApprovalRequestDto>{
-              ...state.approvals,
-              approval.id: approval,
-            },
-          );
-        }
-    }
+    return approvals;
   }
 
   ApprovalRequestDto? _approvalFromTimeline(TimelineEventDto event) {
     if (event.type != 'approval.requested') return null;
     final raw = event.data['approval'];
-    return raw is Map
+    return raw is Map<dynamic, dynamic>
         ? ApprovalRequestDto.fromJson(Map<String, dynamic>.from(raw))
         : null;
   }
+}
 
-  Future<void> _dispose() async {
-    await _events?.cancel();
-    await _connectionStates?.cancel();
-    await _client?.close();
-    await _bootstrap.close();
+/// ProviderSettingsState defines a public contract.
+final class ProviderSettingsState {
+  /// Creates a [ProviderSettingsState].
+  const ProviderSettingsState({
+    required this.catalog,
+    this.models = const <String, List<ProviderModelDto>>{},
+  });
+
+  /// The catalog public API member.
+  final ProviderCatalogDto catalog;
+
+  /// The models public API member.
+  final Map<String, List<ProviderModelDto>> models;
+
+  /// The copyWith public API member.
+  ProviderSettingsState copyWith({
+    ProviderCatalogDto? catalog,
+    Map<String, List<ProviderModelDto>>? models,
+  }) => ProviderSettingsState(
+    catalog: catalog ?? this.catalog,
+    models: models ?? this.models,
+  );
+}
+
+@Riverpod(keepAlive: true)
+/// ProviderSettingsController defines a public contract.
+class ProviderSettingsController extends _$ProviderSettingsController {
+  /// The canManage public API member.
+  bool get canManage =>
+      ref
+          .read(connectionControllerProvider)
+          .asData
+          ?.value
+          ?.serverInfo
+          .features['providerAdmin'] ==
+      true;
+
+  @override
+  Future<ProviderSettingsState?> build() async {
+    final connection = await ref.watch(connectionControllerProvider.future);
+    if (connection == null) return null;
+    return ProviderSettingsState(
+      catalog: await connection.api.listProviderCatalog(),
+    );
+  }
+
+  /// The loadModels public API member.
+  Future<void> loadModels(String providerId) async {
+    final connection = await ref.read(connectionControllerProvider.future);
+    final current = state.asData?.value;
+    if (connection == null || current == null) return;
+    final models = await connection.api.listProviderModels(providerId);
+    state = AsyncData<ProviderSettingsState?>(
+      current.copyWith(
+        models: <String, List<ProviderModelDto>>{
+          ...current.models,
+          providerId: models,
+        },
+      ),
+    );
+  }
+
+  /// The refreshModels public API member.
+  Future<void> refreshModels(String providerId) async {
+    final connection = await _requireConnection();
+    final models = await connection.api.refreshProviderModels(providerId);
+    _setModels(providerId, models);
+  }
+
+  /// The saveProvider public API member.
+  Future<ApiProviderDto> saveProvider(
+    ApiProviderDto provider, {
+    String? apiKey,
+    bool makeDefault = false,
+  }) async {
+    final connection = await _requireConnection();
+    final saved = await connection.api.upsertProvider(
+      provider,
+      makeDefault: makeDefault,
+    );
+    if (provider.credentialSource == CredentialSource.stored &&
+        apiKey != null &&
+        apiKey.isNotEmpty) {
+      await connection.api.setProviderCredential(provider.id, apiKey);
+    }
+    await _reloadCatalog(connection);
+    return saved;
+  }
+
+  /// The deleteProvider public API member.
+  Future<void> deleteProvider(String providerId) async {
+    final connection = await _requireConnection();
+    await connection.api.deleteProvider(providerId);
+    final current = state.asData?.value;
+    await _reloadCatalog(connection);
+    if (current != null) {
+      final models = Map<String, List<ProviderModelDto>>.of(current.models)
+        ..remove(providerId);
+      final refreshed = state.asData?.value;
+      if (refreshed != null) {
+        state = AsyncData<ProviderSettingsState?>(
+          refreshed.copyWith(models: models),
+        );
+      }
+    }
+  }
+
+  /// The saveManualModel public API member.
+  Future<ProviderModelDto> saveManualModel(ProviderModelDto model) async {
+    final connection = await _requireConnection();
+    final saved = await connection.api.upsertProviderModel(model);
+    await loadModels(model.providerId);
+    return saved;
+  }
+
+  /// The deleteModel public API member.
+  Future<void> deleteModel(String providerId, String modelId) async {
+    final connection = await _requireConnection();
+    await connection.api.deleteProviderModel(providerId, modelId);
+    await loadModels(providerId);
+  }
+
+  /// The diagnose public API member.
+  Future<ProviderDiagnosticDto> diagnose(
+    String providerId,
+    String modelId,
+  ) async {
+    final connection = await _requireConnection();
+    final result = await connection.api.diagnoseProviderModel(
+      providerId,
+      modelId,
+    );
+    await loadModels(providerId);
+    return result;
+  }
+
+  Future<ConnectionSnapshot> _requireConnection() async {
+    final connection = await ref.read(connectionControllerProvider.future);
+    if (connection == null) throw StateError('Daemon connection required.');
+    return connection;
+  }
+
+  Future<void> _reloadCatalog(ConnectionSnapshot connection) async {
+    final current = state.asData?.value;
+    state = AsyncData<ProviderSettingsState?>(
+      ProviderSettingsState(
+        catalog: await connection.api.listProviderCatalog(),
+        models: current?.models ?? const <String, List<ProviderModelDto>>{},
+      ),
+    );
+  }
+
+  void _setModels(String providerId, List<ProviderModelDto> models) {
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData<ProviderSettingsState?>(
+      current.copyWith(
+        models: <String, List<ProviderModelDto>>{
+          ...current.models,
+          providerId: models,
+        },
+      ),
+    );
   }
 }

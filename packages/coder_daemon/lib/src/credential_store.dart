@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coder_daemon/src/repositories.dart';
 import 'package:path/path.dart' as p;
 
-class CredentialStore {
+/// CredentialStore defines a public contract.
+class CredentialStore implements CredentialRepository {
+  /// Creates a [CredentialStore].
   CredentialStore(this.configDirectory);
 
+  /// The configDirectory public API member.
   final String configDirectory;
   final Map<String, String> _providerKeys = <String, String>{};
   String? _bearerToken;
@@ -15,11 +19,12 @@ class CredentialStore {
       File(p.join(configDirectory, 'credentials.json'));
   File get _authFile => File(p.join(configDirectory, 'auth.json'));
 
+  @override
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
     await _ensureDirectory();
-    if (await _credentialsFile.exists()) {
+    if (_credentialsFile.existsSync()) {
       final decoded = jsonDecode(await _credentialsFile.readAsString());
       if (decoded is Map && decoded['providerApiKeys'] is Map) {
         for (final entry in (decoded['providerApiKeys'] as Map).entries) {
@@ -29,7 +34,7 @@ class CredentialStore {
         }
       }
     }
-    if (await _authFile.exists()) {
+    if (_authFile.existsSync()) {
       final decoded = jsonDecode(await _authFile.readAsString());
       if (decoded is Map && decoded['bearerToken'] is String) {
         _bearerToken = decoded['bearerToken'] as String;
@@ -37,9 +42,12 @@ class CredentialStore {
     }
   }
 
+  @override
   String? get bearerToken => _bearerToken;
+  @override
   String? providerApiKey(String providerId) => _providerKeys[providerId];
 
+  @override
   Future<void> setBearerToken(String token) async {
     await load();
     _bearerToken = token;
@@ -49,6 +57,7 @@ class CredentialStore {
     });
   }
 
+  @override
   Future<void> setProviderApiKey(String providerId, String value) async {
     await load();
     if (value.isEmpty) {
@@ -62,6 +71,7 @@ class CredentialStore {
     });
   }
 
+  @override
   Future<void> removeProvider(String providerId) =>
       setProviderApiKey(providerId, '');
 
@@ -80,7 +90,7 @@ class CredentialStore {
     if (!Platform.isWindows) {
       await Process.run('chmod', <String>['600', temporary.path]);
     }
-    if (await file.exists()) await file.delete();
+    if (file.existsSync()) await file.delete();
     await temporary.rename(file.path);
     if (!Platform.isWindows) {
       await Process.run('chmod', <String>['600', file.path]);

@@ -1,9 +1,12 @@
+/// HostEndpoint defines a public contract.
 class HostEndpoint {
+  /// Creates a [HostEndpoint].
   const HostEndpoint({required this.websocketUri, required this.token});
 
+  /// Creates a [HostEndpoint].
   factory HostEndpoint.parse(String address, {required String token}) {
     final hasWebSocketScheme = RegExp(
-      r'^wss?://',
+      '^wss?://',
       caseSensitive: false,
     ).hasMatch(address);
     var uri = Uri.parse(hasWebSocketScheme ? address : 'ws://$address');
@@ -14,6 +17,9 @@ class HostEndpoint {
     return HostEndpoint(websocketUri: uri, token: token);
   }
 
+  /// The websocketUri public API member.
   final Uri websocketUri;
+
+  /// The token public API member.
   final String token;
 }

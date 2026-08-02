@@ -1,22 +1,29 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' show HttpConnectionInfo;
 
+import 'package:coder_daemon/src/agent_service.dart';
+import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/provider_service.dart';
+import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import 'agent_service.dart';
-import 'database.dart';
-import 'provider_service.dart';
-
+/// DaemonRpcServer defines a public contract.
 class DaemonRpcServer {
+  /// Creates a [DaemonRpcServer].
   DaemonRpcServer({
-    required this.database,
+    required this.workspaces,
+    required this.agentRepository,
+    required this.timeline,
     required this.agents,
     required this.providers,
+    required this.clock,
+    required this.workspaceCanonicalizer,
     required this.serverInfo,
     required this.token,
     required Stream<WireEnvelope> events,
@@ -24,14 +31,36 @@ class DaemonRpcServer {
     _eventSubscription = events.listen(_broadcast);
   }
 
-  final CoderDatabase database;
+  /// The workspaces public API member.
+  final WorkspaceRepository workspaces;
+
+  /// The agentRepository public API member.
+  final AgentRepository agentRepository;
+
+  /// The timeline public API member.
+  final TimelineRepository timeline;
+
+  /// The agents public API member.
   final AgentService agents;
+
+  /// The providers public API member.
   final ProviderService providers;
+
+  /// The clock public API member.
+  final Clock clock;
+
+  /// The workspaceCanonicalizer public API member.
+  final WorkspaceCanonicalizer workspaceCanonicalizer;
+
+  /// The serverInfo public API member.
   final ServerInfoDto serverInfo;
+
+  /// The token public API member.
   final String token;
   final Set<_ClientSession> _sessions = <_ClientSession>{};
   late final StreamSubscription<WireEnvelope> _eventSubscription;
 
+  /// The call public API member.
   FutureOr<Response> call(Request request) {
     if (request.url.path == 'health') {
       return Response.ok(
@@ -64,9 +93,13 @@ class DaemonRpcServer {
   }) {
     final session = _ClientSession(
       channel: channel,
-      database: database,
+      workspaces: workspaces,
+      agentRepository: agentRepository,
+      timeline: timeline,
       agents: agents,
       providers: providers,
+      clock: clock,
+      workspaceCanonicalizer: workspaceCanonicalizer,
       serverInfo: serverInfo,
       localAdmin: localAdmin,
       onClosed: () {},
@@ -78,16 +111,18 @@ class DaemonRpcServer {
 
   void _broadcast(WireEnvelope event) {
     for (final session in List<_ClientSession>.of(_sessions)) {
-      if (event.type == MessageType.timelineEvent ||
-          event.type == MessageType.approvalRequest) {
+      if (event.type == RpcNotification.timelineEvent ||
+          event.type == RpcNotification.approvalRequested) {
         final agentId = event.payload['agentId'] as String?;
-        if (agentId == null || !session.subscriptions.contains(agentId))
+        if (agentId == null || !session.subscriptions.contains(agentId)) {
           continue;
+        }
       }
       session.send(event);
     }
   }
 
+  /// The close public API member.
   Future<void> close() async {
     await _eventSubscription.cancel();
     for (final session in List<_ClientSession>.of(_sessions)) {
@@ -99,344 +134,277 @@ class DaemonRpcServer {
 class _ClientSession {
   _ClientSession({
     required this.channel,
-    required this.database,
+    required this.workspaces,
+    required this.agentRepository,
+    required this.timeline,
     required this.agents,
     required this.providers,
+    required this.clock,
+    required this.workspaceCanonicalizer,
     required this.serverInfo,
     required this.localAdmin,
     required this.onClosed,
   });
 
   final WebSocketChannel channel;
-  final CoderDatabase database;
+  final WorkspaceRepository workspaces;
+  final AgentRepository agentRepository;
+  final TimelineRepository timeline;
   final AgentService agents;
   final ProviderService providers;
+  final Clock clock;
+  final WorkspaceCanonicalizer workspaceCanonicalizer;
   final ServerInfoDto serverInfo;
   final bool localAdmin;
   void Function() onClosed;
   final Set<String> subscriptions = <String>{};
-  StreamSubscription<dynamic>? _subscription;
+  late final json_rpc.Peer _peer;
   bool _handshakeComplete = false;
 
   void start() {
-    _subscription = channel.stream.listen(
-      _message,
-      onDone: onClosed,
-      onError: (_, __) => onClosed(),
+    _peer = json_rpc.Peer(channel.cast<String>());
+    _peer.registerMethod(RpcMethod.hello, _hello);
+    for (final method in <String>[
+      RpcMethod.workspaceList,
+      RpcMethod.workspaceRegister,
+      RpcMethod.agentList,
+      RpcMethod.agentCreate,
+      RpcMethod.agentConfigurationUpdate,
+      RpcMethod.providerList,
+      RpcMethod.providerUpsert,
+      RpcMethod.providerDelete,
+      RpcMethod.providerModelsList,
+      RpcMethod.providerModelsRefresh,
+      RpcMethod.providerModelUpsert,
+      RpcMethod.providerModelDelete,
+      RpcMethod.providerModelDiagnose,
+      RpcMethod.providerCredentialSet,
+      RpcMethod.turnStart,
+      RpcMethod.turnCancel,
+      RpcMethod.approvalResolve,
+      RpcMethod.timelineSubscribe,
+    ]) {
+      _peer.registerMethod(
+        method,
+        (json_rpc.Parameters parameters) => _invoke(method, parameters),
+      );
+    }
+    unawaited(_peer.listen().whenComplete(onClosed));
+  }
+
+  Future<Map<String, dynamic>> _hello(json_rpc.Parameters parameters) async {
+    final payload = HelloParamsDto.fromJson(
+      Map<String, dynamic>.from(parameters.asMap),
     );
-  }
-
-  Future<void> _message(dynamic raw) async {
-    if (raw is! String) return;
-    String? requestId;
-    try {
-      final request = WireEnvelope.decode(raw);
-      requestId = request.requestId;
-      if (!_handshakeComplete) {
-        await _handshake(request);
-        return;
-      }
-      await _dispatch(request);
-    } on ProtocolException catch (error) {
-      _error(requestId, 'invalid_message', error.message);
-    } on FormatException catch (error) {
-      _error(requestId, 'invalid_payload', error.message);
-    } on _RpcRequestException catch (error) {
-      _error(requestId, error.code, error.message);
-    } catch (error) {
-      _error(requestId, 'request_failed', '$error');
-    }
-  }
-
-  Future<void> _handshake(WireEnvelope request) async {
-    if (request.type != MessageType.hello) {
-      _error(
-        request.requestId,
-        'handshake_required',
-        'The first message must be hello.',
-      );
-      await close();
-      return;
-    }
-    if (request.payload['protocolVersion'] != coderProtocolVersion) {
-      _error(
-        request.requestId,
-        'protocol_mismatch',
+    if (payload.protocolVersion != coderProtocolVersion) {
+      throw json_rpc.RpcException(
+        1001,
         'Unsupported protocol version.',
+        data: const <String, dynamic>{'code': 'protocol_mismatch'},
       );
-      await close();
-      return;
     }
     _handshakeComplete = true;
-    send(
-      WireEnvelope(
-        type: MessageType.serverInfo,
-        payload: serverInfo
-            .copyWith(
-              features: <String, bool>{
-                ...serverInfo.features,
-                'providerAdmin': localAdmin,
-                'providerCredentialWrite': localAdmin,
-                'providerDiagnostics': localAdmin,
-              },
-            )
-            .toJson(),
-      ),
-    );
+    return serverInfo
+        .copyWith(
+          features: <String, bool>{
+            ...serverInfo.features,
+            'providerAdmin': localAdmin,
+            'providerCredentialWrite': localAdmin,
+            'providerDiagnostics': localAdmin,
+            'jsonRpc2': true,
+          },
+        )
+        .toJson();
   }
 
-  Future<void> _dispatch(WireEnvelope request) async {
-    final requestId = request.requestId;
-    if (requestId == null)
-      throw const FormatException('requestId is required.');
-    switch (request.type) {
-      case MessageType.workspaceListRequest:
-        final workspaces = await database.listWorkspaceDtos();
-        _response(
-          MessageType.workspaceListResponse,
-          requestId,
-          <String, dynamic>{
-            'workspaces': workspaces.map((item) => item.toJson()).toList(),
-          },
+  Future<Map<String, dynamic>> _invoke(
+    String method,
+    json_rpc.Parameters parameters,
+  ) async {
+    if (!_handshakeComplete) {
+      throw json_rpc.RpcException(
+        1000,
+        'Handshake required.',
+        data: const <String, dynamic>{'code': 'handshake_required'},
+      );
+    }
+    try {
+      return await _dispatch(
+        method,
+        Map<String, dynamic>.from(parameters.asMap),
+      );
+    } on _RpcRequestException catch (error) {
+      throw json_rpc.RpcException(
+        1002,
+        error.message,
+        data: <String, dynamic>{'code': error.code},
+      );
+    } catch (error) {
+      throw json_rpc.RpcException(
+        1003,
+        '$error',
+        data: const <String, dynamic>{'code': 'request_failed'},
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> _dispatch(
+    String method,
+    Map<String, dynamic> payload,
+  ) async {
+    switch (method) {
+      case RpcMethod.workspaceList:
+        final items = await workspaces.list();
+        return WorkspaceListResultDto(workspaces: items).toJson();
+      case RpcMethod.workspaceRegister:
+        final request = WorkspaceRegisterParamsDto.fromJson(payload);
+        final rootPath = request.rootPath;
+        final canonical = workspaceCanonicalizer.canonicalizeExistingDirectory(
+          rootPath,
         );
-      case MessageType.workspaceRegisterRequest:
-        final rootPath = _requiredString(request.payload, 'rootPath');
-        final directory = Directory(rootPath);
-        if (!directory.existsSync())
-          throw const FormatException('Workspace directory not found.');
-        final canonical = directory.resolveSymbolicLinksSync();
-        final workspace = await database.registerWorkspace(
+        final workspace = await workspaces.register(
           WorkspaceDto(
-            id: _requiredString(request.payload, 'id'),
-            name:
-                (request.payload['name'] as String?)?.trim().isNotEmpty == true
-                ? (request.payload['name'] as String).trim()
+            id: request.id,
+            name: request.name.trim().isNotEmpty
+                ? request.name.trim()
                 : p.basename(canonical),
             rootPath: canonical,
-            createdAt: DateTime.now().toUtc(),
+            createdAt: clock.nowUtc(),
           ),
         );
-        _response(
-          MessageType.workspaceRegisterResponse,
-          requestId,
-          <String, dynamic>{'workspace': workspace.toJson()},
+        return WorkspaceResultDto(workspace: workspace).toJson();
+      case RpcMethod.agentList:
+        final request = AgentListParamsDto.fromJson(payload);
+        final items = await agentRepository.list(
+          workspaceId: request.workspaceId,
         );
-      case MessageType.agentListRequest:
-        final items = await database.listAgentDtos(
-          workspaceId: request.payload['workspaceId'] as String?,
-        );
-        _response(MessageType.agentListResponse, requestId, <String, dynamic>{
-          'agents': items.map((item) => item.toJson()).toList(),
-        });
-      case MessageType.agentCreateRequest:
+        return AgentListResultDto(agents: items).toJson();
+      case RpcMethod.agentCreate:
+        final request = AgentCreateParamsDto.fromJson(payload);
         final catalog = await providers.catalog();
-        final providerId =
-            request.payload['providerId'] as String? ??
-            catalog.defaultProviderId ??
-            'openai';
+        final providerId = request.providerId.isEmpty
+            ? catalog.defaultProviderId ?? 'openai'
+            : request.providerId;
         final configuredProvider = await providers.get(providerId);
-        final model =
-            request.payload['model'] as String? ??
-            configuredProvider.defaultModelId ??
-            (throw const FormatException('model is required.'));
+        final model = request.model.isEmpty
+            ? configuredProvider.defaultModelId ??
+                  (throw const FormatException('model is required.'))
+            : request.model;
         await providers.validateAgentModel(providerId, model);
-        final now = DateTime.now().toUtc();
-        final agent = await database.createAgent(
+        final now = clock.nowUtc();
+        final agent = await agentRepository.create(
           AgentDto(
-            id: _requiredString(request.payload, 'id'),
-            workspaceId: _requiredString(request.payload, 'workspaceId'),
-            title: _requiredString(request.payload, 'title'),
+            id: request.id,
+            workspaceId: request.workspaceId,
+            title: request.title,
             providerId: providerId,
             model: model,
-            reasoningEffort:
-                request.payload['reasoningEffort'] as String? ?? 'medium',
+            reasoningEffort: request.reasoningEffort,
             status: AgentStatus.idle,
-            permissionMode: PermissionMode.values.byName(
-              (request.payload['permissionMode'] as String?) ??
-                  PermissionMode.ask.name,
-            ),
+            permissionMode: request.permissionMode,
             createdAt: now,
             updatedAt: now,
           ),
         );
-        _response(MessageType.agentCreateResponse, requestId, <String, dynamic>{
-          'agent': agent.toJson(),
-        });
-      case MessageType.agentConfigurationUpdateRequest:
-        final providerId = _requiredString(request.payload, 'providerId');
-        final model = _requiredString(request.payload, 'model');
+        return AgentResultDto(agent: agent).toJson();
+      case RpcMethod.agentConfigurationUpdate:
+        final request = AgentConfigurationUpdateParamsDto.fromJson(payload);
+        final providerId = request.providerId;
+        final model = request.model;
         await providers.validateAgentModel(providerId, model);
-        final agent = await database.updateAgentConfiguration(
-          id: _requiredString(request.payload, 'agentId'),
+        final agent = await agentRepository.updateConfiguration(
+          id: request.agentId,
           providerId: providerId,
           model: model,
-          reasoningEffort:
-              request.payload['reasoningEffort'] as String? ?? 'medium',
+          reasoningEffort: request.reasoningEffort,
         );
-        _response(
-          MessageType.agentConfigurationUpdateResponse,
-          requestId,
-          <String, dynamic>{'agent': agent.toJson()},
-        );
-      case MessageType.providerListRequest:
+        return AgentResultDto(agent: agent).toJson();
+      case RpcMethod.providerList:
         final catalog = await providers.catalog();
-        _response(
-          MessageType.providerListResponse,
-          requestId,
-          <String, dynamic>{'catalog': catalog.toJson()},
-        );
-      case MessageType.providerUpsertRequest:
+        return ProviderCatalogResultDto(catalog: catalog).toJson();
+      case RpcMethod.providerUpsert:
         _requireLocalAdmin();
-        final raw = request.payload['provider'];
-        if (raw is! Map) throw const FormatException('provider is required.');
+        final request = ProviderUpsertParamsDto.fromJson(payload);
         final provider = await providers.upsert(
-          ApiProviderDto.fromJson(Map<String, dynamic>.from(raw)),
-          makeDefault: request.payload['makeDefault'] == true,
+          request.provider,
+          makeDefault: request.makeDefault,
         );
-        _response(
-          MessageType.providerUpsertResponse,
-          requestId,
-          <String, dynamic>{'provider': provider.toJson()},
-        );
-      case MessageType.providerDeleteRequest:
+        return ProviderResultDto(provider: provider).toJson();
+      case RpcMethod.providerDelete:
         _requireLocalAdmin();
-        await providers.delete(_requiredString(request.payload, 'providerId'));
-        _response(
-          MessageType.providerDeleteResponse,
-          requestId,
-          const <String, dynamic>{},
-        );
-      case MessageType.providerModelsListRequest:
-        final models = await providers.listModels(
-          _requiredString(request.payload, 'providerId'),
-        );
-        _response(
-          MessageType.providerModelsListResponse,
-          requestId,
-          <String, dynamic>{
-            'models': models.map((item) => item.toJson()).toList(),
-          },
-        );
-      case MessageType.providerModelsRefreshRequest:
+        final request = ProviderIdParamsDto.fromJson(payload);
+        await providers.delete(request.providerId);
+        return const <String, dynamic>{};
+      case RpcMethod.providerModelsList:
+        final request = ProviderIdParamsDto.fromJson(payload);
+        final models = await providers.listModels(request.providerId);
+        return ProviderModelsResultDto(models: models).toJson();
+      case RpcMethod.providerModelsRefresh:
         _requireLocalAdmin();
-        final models = await providers.refreshModels(
-          _requiredString(request.payload, 'providerId'),
-        );
-        _response(
-          MessageType.providerModelsRefreshResponse,
-          requestId,
-          <String, dynamic>{
-            'models': models.map((item) => item.toJson()).toList(),
-          },
-        );
-      case MessageType.providerModelUpsertRequest:
+        final request = ProviderIdParamsDto.fromJson(payload);
+        final models = await providers.refreshModels(request.providerId);
+        return ProviderModelsResultDto(models: models).toJson();
+      case RpcMethod.providerModelUpsert:
         _requireLocalAdmin();
-        final raw = request.payload['model'];
-        if (raw is! Map) throw const FormatException('model is required.');
-        final model = await providers.upsertManualModel(
-          ProviderModelDto.fromJson(Map<String, dynamic>.from(raw)),
-        );
-        _response(
-          MessageType.providerModelUpsertResponse,
-          requestId,
-          <String, dynamic>{'model': model.toJson()},
-        );
-      case MessageType.providerModelDeleteRequest:
+        final request = ProviderModelUpsertParamsDto.fromJson(payload);
+        final model = await providers.upsertManualModel(request.model);
+        return ProviderModelResultDto(model: model).toJson();
+      case RpcMethod.providerModelDelete:
         _requireLocalAdmin();
-        await providers.deleteModel(
-          _requiredString(request.payload, 'providerId'),
-          _requiredString(request.payload, 'modelId'),
-        );
-        _response(
-          MessageType.providerModelDeleteResponse,
-          requestId,
-          const <String, dynamic>{},
-        );
-      case MessageType.providerModelDiagnoseRequest:
+        final request = ProviderModelParamsDto.fromJson(payload);
+        await providers.deleteModel(request.providerId, request.modelId);
+        return const <String, dynamic>{};
+      case RpcMethod.providerModelDiagnose:
         _requireLocalAdmin();
+        final request = ProviderModelParamsDto.fromJson(payload);
         final diagnostic = await providers.diagnose(
-          _requiredString(request.payload, 'providerId'),
-          _requiredString(request.payload, 'modelId'),
+          request.providerId,
+          request.modelId,
         );
-        _response(
-          MessageType.providerModelDiagnoseResponse,
-          requestId,
-          <String, dynamic>{'diagnostic': diagnostic.toJson()},
-        );
-      case MessageType.providerCredentialSetRequest:
+        return ProviderDiagnosticResultDto(diagnostic: diagnostic).toJson();
+      case RpcMethod.providerCredentialSet:
         _requireLocalAdmin();
-        await providers.setCredential(
-          _requiredString(request.payload, 'providerId'),
-          _requiredString(request.payload, 'apiKey'),
-        );
-        _response(
-          MessageType.providerCredentialSetResponse,
-          requestId,
-          const <String, dynamic>{},
-        );
-      case MessageType.providerCredentialClearRequest:
+        final request = ProviderCredentialSetParamsDto.fromJson(payload);
+        await providers.setCredential(request.providerId, request.apiKey);
+        return const <String, dynamic>{};
+      case RpcMethod.providerCredentialClear:
         _requireLocalAdmin();
-        await providers.setCredential(
-          _requiredString(request.payload, 'providerId'),
-          '',
-        );
-        _response(
-          MessageType.providerCredentialClearResponse,
-          requestId,
-          const <String, dynamic>{},
-        );
-      case MessageType.turnStartRequest:
+        final request = ProviderIdParamsDto.fromJson(payload);
+        await providers.setCredential(request.providerId, '');
+        return const <String, dynamic>{};
+      case RpcMethod.turnStart:
+        final request = TurnStartParamsDto.fromJson(payload);
         final created = await agents.startTurn(
-          agentId: _requiredString(request.payload, 'agentId'),
-          turnId: _requiredString(request.payload, 'turnId'),
-          prompt: _requiredString(request.payload, 'prompt'),
+          agentId: request.agentId,
+          turnId: request.turnId,
+          prompt: request.prompt,
         );
-        _response(MessageType.turnStartResponse, requestId, <String, dynamic>{
-          'created': created,
-        });
-      case MessageType.turnCancelRequest:
-        await agents.cancelTurn(_requiredString(request.payload, 'agentId'));
-        _response(
-          MessageType.turnCancelResponse,
-          requestId,
-          const <String, dynamic>{},
-        );
-      case MessageType.approvalResolveRequest:
+        return TurnStartResultDto(created: created).toJson();
+      case RpcMethod.turnCancel:
+        final request = AgentIdParamsDto.fromJson(payload);
+        await agents.cancelTurn(request.agentId);
+        return const <String, dynamic>{};
+      case RpcMethod.approvalResolve:
+        final request = ApprovalResolveParamsDto.fromJson(payload);
         final approval = await agents.resolveApproval(
-          _requiredString(request.payload, 'approvalId'),
-          approved: request.payload['approved'] == true,
+          request.approvalId,
+          approved: request.approved,
         );
-        _response(
-          MessageType.approvalResolveResponse,
-          requestId,
-          <String, dynamic>{'approval': approval.toJson()},
+        return ApprovalResultDto(approval: approval).toJson();
+      case RpcMethod.timelineSubscribe:
+        final request = TimelineSubscribeParamsDto.fromJson(payload);
+        subscriptions.add(request.agentId);
+        final items = await timeline.after(
+          request.agentId,
+          request.afterSequence,
         );
-      case MessageType.timelineSubscribeRequest:
-        final agentId = _requiredString(request.payload, 'agentId');
-        final after = request.payload['afterSequence'] as int? ?? 0;
-        subscriptions.add(agentId);
-        final items = await database.timelineAfter(agentId, after);
-        _response(
-          MessageType.timelineSubscribeResponse,
-          requestId,
-          <String, dynamic>{
-            'events': items.map((item) => item.toJson()).toList(),
-          },
-        );
+        return TimelineResultDto(events: items).toJson();
       default:
-        _error(
-          requestId,
+        throw _RpcRequestException(
           'unknown_method',
-          'Unknown RPC method: ${request.type}',
+          'Unknown RPC method: $method',
         );
     }
-  }
-
-  String _requiredString(Map<String, dynamic> payload, String key) {
-    final value = payload[key];
-    if (value is! String || value.trim().isEmpty)
-      throw FormatException('$key is required.');
-    return value;
   }
 
   void _requireLocalAdmin() {
@@ -448,26 +416,11 @@ class _ClientSession {
     }
   }
 
-  void _response(String type, String requestId, Map<String, dynamic> payload) =>
-      send(WireEnvelope(type: type, requestId: requestId, payload: payload));
-
-  void _error(String? requestId, String code, String message) => send(
-    WireEnvelope(
-      type: MessageType.rpcError,
-      requestId: requestId,
-      payload: RpcErrorDto(
-        code: code,
-        message: message,
-        retryable: false,
-      ).toJson(),
-    ),
-  );
-
-  void send(WireEnvelope event) => channel.sink.add(event.encode());
+  void send(WireEnvelope event) =>
+      _peer.sendNotification(event.type, event.payload);
 
   Future<void> close() async {
-    await _subscription?.cancel();
-    await channel.sink.close();
+    await _peer.close();
     onClosed();
   }
 }

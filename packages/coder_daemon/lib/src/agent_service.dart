@@ -1,49 +1,63 @@
 import 'dart:async';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/provider_service.dart';
+import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:uuid/uuid.dart';
 
-import 'database.dart';
-import 'provider_service.dart';
-
+/// Signature used by DaemonEventSink.
 typedef DaemonEventSink = void Function(WireEnvelope event);
 
-class AgentService {
-  AgentService({
-    required CoderDatabase database,
-    required ProviderService providers,
-    required DaemonEventSink events,
-    required String safetyIdentifier,
-  }) : _database = database,
-       _providers = providers,
-       _events = events,
-       _safetyIdentifier = safetyIdentifier;
+/// Signature used by AgentToolsFactory.
+typedef AgentToolsFactory = Iterable<AgentTool> Function();
 
-  final CoderDatabase _database;
+/// AgentService defines a public contract.
+class AgentService {
+  /// Creates a [AgentService].
+  AgentService({
+    required this._agents,
+    required this._workspaces,
+    required this._timeline,
+    required this._providers,
+    required this._events,
+    required this._safetyIdentifier,
+    required this._clock,
+    required this._ids,
+    required this._toolsFactory,
+  });
+
+  final AgentRepository _agents;
+  final WorkspaceRepository _workspaces;
+  final TimelineRepository _timeline;
   final ProviderService _providers;
   final DaemonEventSink _events;
   final String _safetyIdentifier;
-  final Uuid _uuid = const Uuid();
+  final Clock _clock;
+  final IdGenerator _ids;
+  final AgentToolsFactory _toolsFactory;
   final Map<String, CancellationToken> _activeTurns =
       <String, CancellationToken>{};
   final Map<String, Completer<ApprovalDecision>> _pendingApprovals =
       <String, Completer<ApprovalDecision>>{};
 
+  /// The startTurn public API member.
   Future<bool> startTurn({
     required String agentId,
     required String turnId,
     required String prompt,
   }) async {
-    final agent = await _database.getAgentDto(agentId);
+    final agent = await _agents.getById(agentId);
     if (agent == null) throw StateError('Agent not found: $agentId');
     await _providers.validateAgentModel(agent.providerId, agent.model);
-    if (_activeTurns.containsKey(agentId))
+    if (_activeTurns.containsKey(agentId)) {
       throw StateError('Agent already has a running turn.');
-    final workspace = await _database.getWorkspaceDto(agent.workspaceId);
-    if (workspace == null)
+    }
+    final workspace = await _workspaces.getById(agent.workspaceId);
+    if (workspace == null) {
       throw StateError('Workspace not found: ${agent.workspaceId}');
-    final created = await _database.createTurn(
+    }
+    final created = await _agents.createTurn(
       id: turnId,
       agentId: agentId,
       prompt: prompt,
@@ -52,30 +66,25 @@ class AgentService {
 
     final cancellation = CancellationToken();
     _activeTurns[agentId] = cancellation;
-    await _database.updateAgentStatus(
+    await _agents.updateStatus(
       agentId,
       AgentStatus.running,
       activeTurnId: turnId,
     );
-    _emitAgent(await _database.getAgentDto(agentId));
+    _emitAgent(await _agents.getById(agentId));
 
     final runner = AgentRunner(
       provider: await _providers.resolve(
         agent.providerId,
         modelId: agent.model,
       ),
-      tools: <AgentTool>[
-        ListDirectoryTool(),
-        ReadFileTool(),
-        SearchTextTool(),
-        ApplyPatchTool(),
-        RunCommandTool(),
-      ],
+      tools: _toolsFactory(),
       approvals: _DatabaseApprovalCoordinator(
-        database: _database,
+        timeline: _timeline,
         events: _events,
         pending: _pendingApprovals,
-        uuid: _uuid,
+        ids: _ids,
+        clock: _clock,
         agentId: agentId,
         turnId: turnId,
       ),
@@ -91,8 +100,10 @@ class AgentService {
           AgentStatus.running => TurnStatus.running,
           _ => null,
         };
-        if (turnStatus != null) await _database.updateTurn(turnId, turnStatus);
-        final updated = await _database.updateAgentStatus(
+        if (turnStatus != null) {
+          await _agents.updateTurn(turnId, turnStatus);
+        }
+        final updated = await _agents.updateStatus(
           agentId,
           status,
           activeTurnId:
@@ -103,7 +114,7 @@ class AgentService {
         );
         _emitAgent(updated);
       },
-      onProviderItems: (items) => _database.appendProviderItems(agentId, items),
+      onProviderItems: (items) => _timeline.appendProviderItems(agentId, items),
     );
 
     unawaited(
@@ -117,7 +128,7 @@ class AgentService {
           model: agent.model,
           reasoningEffort: agent.reasoningEffort,
           permissionMode: agent.permissionMode,
-          history: await _database.providerHistory(agentId),
+          history: await _timeline.providerHistory(agentId),
           safetyIdentifier: _safetyIdentifier,
         ),
         cancellation,
@@ -133,15 +144,11 @@ class AgentService {
   ) async {
     try {
       await runner.startTurn(request, cancellation);
-      await _database.updateTurn(request.turnId, TurnStatus.completed);
+      await _agents.updateTurn(request.turnId, TurnStatus.completed);
     } on AgentCancelledException {
-      await _database.updateTurn(request.turnId, TurnStatus.cancelled);
-    } catch (error) {
-      await _database.updateTurn(
-        request.turnId,
-        TurnStatus.failed,
-        error: '$error',
-      );
+      await _agents.updateTurn(request.turnId, TurnStatus.cancelled);
+    } on Exception catch (error) {
+      await _markTurnFailed(request.turnId, error);
     } finally {
       if (identical(_activeTurns[request.agentId], cancellation)) {
         _activeTurns.remove(request.agentId);
@@ -149,17 +156,23 @@ class AgentService {
     }
   }
 
+  Future<void> _markTurnFailed(String turnId, Object error) =>
+      _agents.updateTurn(turnId, TurnStatus.failed, error: '$error');
+
+  /// The cancelTurn public API member.
   Future<void> cancelTurn(String agentId) async =>
       _activeTurns[agentId]?.cancel();
 
+  /// The resolveApproval public API member.
   Future<ApprovalRequestDto> resolveApproval(
     String approvalId, {
     required bool approved,
   }) async {
     final status = approved ? ApprovalStatus.approved : ApprovalStatus.denied;
-    final approval = await _database.resolveApproval(approvalId, status);
-    if (approval == null)
+    final approval = await _timeline.resolveApproval(approvalId, status);
+    if (approval == null) {
       throw StateError('Approval is not pending: $approvalId');
+    }
     _pendingApprovals
         .remove(approvalId)
         ?.complete(
@@ -180,21 +193,27 @@ class AgentService {
     required String type,
     required Map<String, dynamic> data,
   }) async {
-    final event = await _database.appendTimeline(
+    final event = await _timeline.append(
       agentId: agentId,
       turnId: turnId,
       type: type,
       data: data,
     );
     _events(
-      WireEnvelope(type: MessageType.timelineEvent, payload: event.toJson()),
+      WireEnvelope(
+        type: RpcNotification.timelineEvent,
+        payload: event.toJson(),
+      ),
     );
   }
 
   void _emitAgent(AgentDto? agent) {
     if (agent != null) {
       _events(
-        WireEnvelope(type: MessageType.agentUpdate, payload: agent.toJson()),
+        WireEnvelope(
+          type: RpcNotification.agentUpdated,
+          payload: agent.toJson(),
+        ),
       );
     }
   }
@@ -202,18 +221,20 @@ class AgentService {
 
 class _DatabaseApprovalCoordinator implements ApprovalCoordinator {
   _DatabaseApprovalCoordinator({
-    required this.database,
+    required this.timeline,
     required this.events,
     required this.pending,
-    required this.uuid,
+    required this.ids,
+    required this.clock,
     required this.agentId,
     required this.turnId,
   });
 
-  final CoderDatabase database;
+  final TimelineRepository timeline;
   final DaemonEventSink events;
   final Map<String, Completer<ApprovalDecision>> pending;
-  final Uuid uuid;
+  final IdGenerator ids;
+  final Clock clock;
   final String agentId;
   final String turnId;
 
@@ -223,7 +244,7 @@ class _DatabaseApprovalCoordinator implements ApprovalCoordinator {
     CancellationToken cancellation,
   ) async {
     final approval = ApprovalRequestDto(
-      id: uuid.v4(),
+      id: ids.generate(),
       agentId: agentId,
       turnId: turnId,
       toolCallId: invocation.callId,
@@ -231,33 +252,37 @@ class _DatabaseApprovalCoordinator implements ApprovalCoordinator {
       risk: invocation.risk,
       arguments: invocation.arguments,
       status: ApprovalStatus.pending,
-      createdAt: DateTime.now().toUtc(),
+      createdAt: clock.nowUtc(),
       preview: invocation.preview,
     );
     final completer = Completer<ApprovalDecision>();
     pending[approval.id] = completer;
-    await database.createApproval(approval);
-    final timeline = await database.appendTimeline(
+    await timeline.createApproval(approval);
+    final timelineEvent = await timeline.append(
       agentId: agentId,
       turnId: turnId,
       type: 'approval.requested',
       data: <String, dynamic>{'approval': approval.toJson()},
     );
     events(
-      WireEnvelope(type: MessageType.timelineEvent, payload: timeline.toJson()),
+      WireEnvelope(
+        type: RpcNotification.timelineEvent,
+        payload: timelineEvent.toJson(),
+      ),
     );
     events(
       WireEnvelope(
-        type: MessageType.approvalRequest,
+        type: RpcNotification.approvalRequested,
         payload: approval.toJson(),
       ),
     );
     cancellation.onCancel(() {
       final active = pending.remove(approval.id);
-      if (active != null && !active.isCompleted)
+      if (active != null && !active.isCompleted) {
         active.complete(ApprovalDecision.denied);
+      }
       unawaited(
-        database.resolveApproval(approval.id, ApprovalStatus.cancelled),
+        timeline.resolveApproval(approval.id, ApprovalStatus.cancelled),
       );
     });
     return completer.future;

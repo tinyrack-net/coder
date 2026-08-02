@@ -31,4 +31,30 @@ void main() {
       CapabilitySource.unknown,
     );
   });
+
+  test('preset catalog and OpenAI capabilities are complete', () {
+    expect(
+      openAICompatiblePresets.map((preset) => preset.id),
+      <String>[
+        'openai',
+        'openrouter',
+        'groq',
+        'deepseek',
+        'ollama',
+        'lmstudio',
+        'vllm',
+        'custom',
+      ],
+    );
+    final reasoning = presetCapabilities('openai', 'gpt-5.6-sol');
+    expect(reasoning.reasoningEffort, CapabilitySupport.supported);
+    expect(reasoning.supportedReasoningEfforts, contains('xhigh'));
+    final ordinary = presetCapabilities('openai', 'gpt-4.1');
+    expect(ordinary.reasoningEffort, CapabilitySupport.unsupported);
+    expect(ordinary.supportedReasoningEfforts, isEmpty);
+    expect(
+      presetCapabilities('custom', 'model'),
+      const ModelCapabilitiesDto(),
+    );
+  });
 }

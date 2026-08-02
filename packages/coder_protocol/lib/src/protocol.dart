@@ -1,80 +1,98 @@
 import 'dart:convert';
 
-const int coderProtocolVersion = 1;
+/// The coderProtocolVersion public API member.
+const int coderProtocolVersion = 2;
 
-abstract final class MessageType {
+/// Public API exposed by this library.
+abstract final class RpcMethod {
+  /// The hello public API member.
   static const String hello = 'hello';
-  static const String serverInfo = 'server.info';
-  static const String rpcError = 'rpc.error';
-  static const String workspaceListRequest = 'workspace.list.request';
-  static const String workspaceListResponse = 'workspace.list.response';
-  static const String workspaceRegisterRequest = 'workspace.register.request';
-  static const String workspaceRegisterResponse = 'workspace.register.response';
-  static const String agentListRequest = 'agent.list.request';
-  static const String agentListResponse = 'agent.list.response';
-  static const String agentCreateRequest = 'agent.create.request';
-  static const String agentCreateResponse = 'agent.create.response';
-  static const String agentConfigurationUpdateRequest =
-      'agent.configuration.update.request';
-  static const String agentConfigurationUpdateResponse =
-      'agent.configuration.update.response';
-  static const String providerListRequest = 'provider.list.request';
-  static const String providerListResponse = 'provider.list.response';
-  static const String providerUpsertRequest = 'provider.upsert.request';
-  static const String providerUpsertResponse = 'provider.upsert.response';
-  static const String providerDeleteRequest = 'provider.delete.request';
-  static const String providerDeleteResponse = 'provider.delete.response';
-  static const String providerModelsListRequest =
-      'provider.models.list.request';
-  static const String providerModelsListResponse =
-      'provider.models.list.response';
-  static const String providerModelsRefreshRequest =
-      'provider.models.refresh.request';
-  static const String providerModelsRefreshResponse =
-      'provider.models.refresh.response';
-  static const String providerModelUpsertRequest =
-      'provider.model.upsert.request';
-  static const String providerModelUpsertResponse =
-      'provider.model.upsert.response';
-  static const String providerModelDeleteRequest =
-      'provider.model.delete.request';
-  static const String providerModelDeleteResponse =
-      'provider.model.delete.response';
-  static const String providerModelDiagnoseRequest =
-      'provider.model.diagnose.request';
-  static const String providerModelDiagnoseResponse =
-      'provider.model.diagnose.response';
-  static const String providerCredentialSetRequest =
-      'provider.credential.set.request';
-  static const String providerCredentialSetResponse =
-      'provider.credential.set.response';
-  static const String providerCredentialClearRequest =
-      'provider.credential.clear.request';
-  static const String providerCredentialClearResponse =
-      'provider.credential.clear.response';
-  static const String turnStartRequest = 'turn.start.request';
-  static const String turnStartResponse = 'turn.start.response';
-  static const String turnCancelRequest = 'turn.cancel.request';
-  static const String turnCancelResponse = 'turn.cancel.response';
-  static const String approvalResolveRequest = 'approval.resolve.request';
-  static const String approvalResolveResponse = 'approval.resolve.response';
-  static const String timelineSubscribeRequest = 'timeline.subscribe.request';
-  static const String timelineSubscribeResponse = 'timeline.subscribe.response';
-  static const String timelineEvent = 'timeline.event';
-  static const String agentUpdate = 'agent.update';
-  static const String approvalRequest = 'approval.request';
+
+  /// The workspaceList public API member.
+  static const String workspaceList = 'workspace.list';
+
+  /// The workspaceRegister public API member.
+  static const String workspaceRegister = 'workspace.register';
+
+  /// The agentList public API member.
+  static const String agentList = 'agent.list';
+
+  /// The agentCreate public API member.
+  static const String agentCreate = 'agent.create';
+
+  /// The agentConfigurationUpdate public API member.
+  static const String agentConfigurationUpdate = 'agent.configuration.update';
+
+  /// The providerList public API member.
+  static const String providerList = 'provider.list';
+
+  /// The providerUpsert public API member.
+  static const String providerUpsert = 'provider.upsert';
+
+  /// The providerDelete public API member.
+  static const String providerDelete = 'provider.delete';
+
+  /// The providerModelsList public API member.
+  static const String providerModelsList = 'provider.models.list';
+
+  /// The providerModelsRefresh public API member.
+  static const String providerModelsRefresh = 'provider.models.refresh';
+
+  /// The providerModelUpsert public API member.
+  static const String providerModelUpsert = 'provider.model.upsert';
+
+  /// The providerModelDelete public API member.
+  static const String providerModelDelete = 'provider.model.delete';
+
+  /// The providerModelDiagnose public API member.
+  static const String providerModelDiagnose = 'provider.model.diagnose';
+
+  /// The providerCredentialSet public API member.
+  static const String providerCredentialSet = 'provider.credential.set';
+
+  /// The providerCredentialClear public API member.
+  static const String providerCredentialClear = 'provider.credential.clear';
+
+  /// The turnStart public API member.
+  static const String turnStart = 'turn.start';
+
+  /// The turnCancel public API member.
+  static const String turnCancel = 'turn.cancel';
+
+  /// The approvalResolve public API member.
+  static const String approvalResolve = 'approval.resolve';
+
+  /// The timelineSubscribe public API member.
+  static const String timelineSubscribe = 'timeline.subscribe';
 }
 
+/// Public API exposed by this library.
+abstract final class RpcNotification {
+  /// The timelineEvent public API member.
+  static const String timelineEvent = 'timeline.event';
+
+  /// The agentUpdated public API member.
+  static const String agentUpdated = 'agent.updated';
+
+  /// The approvalRequested public API member.
+  static const String approvalRequested = 'approval.requested';
+}
+
+/// ProtocolException defines a public contract.
 class ProtocolException implements Exception {
+  /// Creates a [ProtocolException].
   const ProtocolException(this.message);
 
+  /// The message public API member.
   final String message;
 
   @override
   String toString() => 'ProtocolException: $message';
 }
 
+/// WireEnvelope defines a public contract.
 class WireEnvelope {
+  /// Creates a [WireEnvelope].
   const WireEnvelope({
     required this.type,
     required this.payload,
@@ -82,6 +100,7 @@ class WireEnvelope {
     this.requestId,
   });
 
+  /// Creates a [WireEnvelope].
   factory WireEnvelope.fromJson(Map<String, dynamic> json) {
     final version = json['version'];
     final type = json['type'];
@@ -101,6 +120,7 @@ class WireEnvelope {
     );
   }
 
+  /// Creates a [WireEnvelope].
   factory WireEnvelope.decode(String source) {
     final decoded = jsonDecode(source);
     if (decoded is! Map) {
@@ -109,17 +129,26 @@ class WireEnvelope {
     return WireEnvelope.fromJson(Map<String, dynamic>.from(decoded));
   }
 
+  /// The version public API member.
   final int version;
+
+  /// The type public API member.
   final String type;
+
+  /// The requestId public API member.
   final String? requestId;
+
+  /// The payload public API member.
   final Map<String, dynamic> payload;
 
+  /// The toJson public API member.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'version': version,
     'type': type,
-    if (requestId case final requestId?) 'requestId': requestId,
+    'requestId': ?requestId,
     'payload': payload,
   };
 
+  /// The encode public API member.
   String encode() => jsonEncode(toJson());
 }

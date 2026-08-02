@@ -1,18 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_agent/src/model.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
-import 'model.dart';
-
+/// Signature used by AgentEventCallback.
 typedef AgentEventCallback =
     FutureOr<void> Function(String type, Map<String, dynamic> data);
+
+/// Signature used by AgentStatusCallback.
 typedef AgentStatusCallback =
     FutureOr<void> Function(AgentStatus status, {String? error});
+
+/// Signature used by ProviderItemsCallback.
 typedef ProviderItemsCallback =
     FutureOr<void> Function(List<ConversationItem> items);
 
+/// AgentRunRequest defines a public contract.
 class AgentRunRequest {
+  /// Creates a [AgentRunRequest].
   const AgentRunRequest({
     required this.agentId,
     required this.turnId,
@@ -26,42 +32,63 @@ class AgentRunRequest {
     this.maxToolRounds = 64,
   });
 
+  /// The agentId public API member.
   final String agentId;
+
+  /// The turnId public API member.
   final String turnId;
+
+  /// The workspaceRoot public API member.
   final String workspaceRoot;
+
+  /// The prompt public API member.
   final String prompt;
+
+  /// The model public API member.
   final String model;
+
+  /// The reasoningEffort public API member.
   final String reasoningEffort;
+
+  /// The permissionMode public API member.
   final PermissionMode permissionMode;
+
+  /// The history public API member.
   final List<ConversationItem> history;
+
+  /// The safetyIdentifier public API member.
   final String safetyIdentifier;
+
+  /// The maxToolRounds public API member.
   final int maxToolRounds;
 }
 
+/// AgentRunResult defines a public contract.
 class AgentRunResult {
+  /// Creates a [AgentRunResult].
   const AgentRunResult({
     required this.conversationItems,
     required this.toolRounds,
   });
 
+  /// The conversationItems public API member.
   final List<ConversationItem> conversationItems;
+
+  /// The toolRounds public API member.
   final int toolRounds;
 }
 
+/// AgentRunner defines a public contract.
 class AgentRunner {
+  /// Creates a [AgentRunner].
   AgentRunner({
-    required ModelProvider provider,
+    required this._provider,
     required Iterable<AgentTool> tools,
-    required ApprovalCoordinator approvals,
-    required AgentEventCallback onEvent,
-    required AgentStatusCallback onStatus,
-    required ProviderItemsCallback onProviderItems,
-  }) : _provider = provider,
-       _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool},
-       _approvals = approvals,
-       _onEvent = onEvent,
-       _onStatus = onStatus,
-       _onProviderItems = onProviderItems;
+    required this._approvals,
+    required this._onEvent,
+    required this._onStatus,
+    required this._onProviderItems,
+  }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool};
 
   final ModelProvider _provider;
   final Map<String, AgentTool> _tools;
@@ -70,6 +97,7 @@ class AgentRunner {
   final AgentStatusCallback _onStatus;
   final ProviderItemsCallback _onProviderItems;
 
+  /// The startTurn public API member.
   Future<AgentRunResult> startTurn(
     AgentRunRequest request,
     CancellationToken cancellation,
@@ -230,7 +258,7 @@ class AgentRunner {
             });
           } on AgentCancelledException {
             rethrow;
-          } catch (error) {
+          } on Exception catch (error) {
             final item = ToolResultConversationItem(
               callId: call.callId,
               output: jsonEncode(<String, dynamic>{'error': '$error'}),

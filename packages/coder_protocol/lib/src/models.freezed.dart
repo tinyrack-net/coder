@@ -287,7 +287,7 @@ as DateTime,
 /// @nodoc
 mixin _$AgentDto {
 
- String get id; String get workspaceId; String get title; String get providerId; String get model; String get reasoningEffort; AgentStatus get status; PermissionMode get permissionMode; DateTime get createdAt; DateTime get updatedAt; String? get activeTurnId; String? get lastError;
+ String get id; String get workspaceId; String get title; String get providerId; String get model; AgentStatus get status; PermissionMode get permissionMode; DateTime get createdAt; DateTime get updatedAt; String get reasoningEffort; String? get activeTurnId; String? get lastError;
 /// Create a copy of AgentDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -300,16 +300,16 @@ $AgentDtoCopyWith<AgentDto> get copyWith => _$AgentDtoCopyWithImpl<AgentDto>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.status, status) || other.status == status)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.model, model) || other.model == model)&&(identical(other.status, status) || other.status == status)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,workspaceId,title,providerId,model,reasoningEffort,status,permissionMode,createdAt,updatedAt,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,workspaceId,title,providerId,model,status,permissionMode,createdAt,updatedAt,reasoningEffort,activeTurnId,lastError);
 
 @override
 String toString() {
-  return 'AgentDto(id: $id, workspaceId: $workspaceId, title: $title, providerId: $providerId, model: $model, reasoningEffort: $reasoningEffort, status: $status, permissionMode: $permissionMode, createdAt: $createdAt, updatedAt: $updatedAt, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'AgentDto(id: $id, workspaceId: $workspaceId, title: $title, providerId: $providerId, model: $model, status: $status, permissionMode: $permissionMode, createdAt: $createdAt, updatedAt: $updatedAt, reasoningEffort: $reasoningEffort, activeTurnId: $activeTurnId, lastError: $lastError)';
 }
 
 
@@ -320,7 +320,7 @@ abstract mixin class $AgentDtoCopyWith<$Res>  {
   factory $AgentDtoCopyWith(AgentDto value, $Res Function(AgentDto) _then) = _$AgentDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String workspaceId, String title, String providerId, String model, String reasoningEffort, AgentStatus status, PermissionMode permissionMode, DateTime createdAt, DateTime updatedAt, String? activeTurnId, String? lastError
+ String id, String workspaceId, String title, String providerId, String model, AgentStatus status, PermissionMode permissionMode, DateTime createdAt, DateTime updatedAt, String reasoningEffort, String? activeTurnId, String? lastError
 });
 
 
@@ -337,19 +337,19 @@ class _$AgentDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = null,Object? title = null,Object? providerId = null,Object? model = null,Object? reasoningEffort = null,Object? status = null,Object? permissionMode = null,Object? createdAt = null,Object? updatedAt = null,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = null,Object? title = null,Object? providerId = null,Object? model = null,Object? status = null,Object? permissionMode = null,Object? createdAt = null,Object? updatedAt = null,Object? reasoningEffort = null,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,providerId: null == providerId ? _self.providerId : providerId // ignore: cast_nullable_to_non_nullable
 as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as String,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AgentStatus,permissionMode: null == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
+as DateTime,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as String,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -436,10 +436,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String title,  String providerId,  String model,  String reasoningEffort,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String? activeTurnId,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String title,  String providerId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentDto() when $default != null:
-return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.model,_that.reasoningEffort,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
   return orElse();
 
 }
@@ -457,10 +457,10 @@ return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.mo
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String title,  String providerId,  String model,  String reasoningEffort,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String? activeTurnId,  String? lastError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String title,  String providerId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)  $default,) {final _that = this;
 switch (_that) {
 case _AgentDto():
-return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.model,_that.reasoningEffort,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -477,10 +477,10 @@ return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.mo
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workspaceId,  String title,  String providerId,  String model,  String reasoningEffort,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String? activeTurnId,  String? lastError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workspaceId,  String title,  String providerId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentDto() when $default != null:
-return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.model,_that.reasoningEffort,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
   return null;
 
 }
@@ -492,7 +492,7 @@ return $default(_that.id,_that.workspaceId,_that.title,_that.providerId,_that.mo
 @JsonSerializable()
 
 class _AgentDto implements AgentDto {
-  const _AgentDto({required this.id, required this.workspaceId, required this.title, required this.providerId, required this.model, this.reasoningEffort = 'medium', required this.status, required this.permissionMode, required this.createdAt, required this.updatedAt, this.activeTurnId, this.lastError});
+  const _AgentDto({required this.id, required this.workspaceId, required this.title, required this.providerId, required this.model, required this.status, required this.permissionMode, required this.createdAt, required this.updatedAt, this.reasoningEffort = 'medium', this.activeTurnId, this.lastError});
   factory _AgentDto.fromJson(Map<String, dynamic> json) => _$AgentDtoFromJson(json);
 
 @override final  String id;
@@ -500,11 +500,11 @@ class _AgentDto implements AgentDto {
 @override final  String title;
 @override final  String providerId;
 @override final  String model;
-@override@JsonKey() final  String reasoningEffort;
 @override final  AgentStatus status;
 @override final  PermissionMode permissionMode;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
+@override@JsonKey() final  String reasoningEffort;
 @override final  String? activeTurnId;
 @override final  String? lastError;
 
@@ -521,16 +521,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.status, status) || other.status == status)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.model, model) || other.model == model)&&(identical(other.status, status) || other.status == status)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,workspaceId,title,providerId,model,reasoningEffort,status,permissionMode,createdAt,updatedAt,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,workspaceId,title,providerId,model,status,permissionMode,createdAt,updatedAt,reasoningEffort,activeTurnId,lastError);
 
 @override
 String toString() {
-  return 'AgentDto(id: $id, workspaceId: $workspaceId, title: $title, providerId: $providerId, model: $model, reasoningEffort: $reasoningEffort, status: $status, permissionMode: $permissionMode, createdAt: $createdAt, updatedAt: $updatedAt, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'AgentDto(id: $id, workspaceId: $workspaceId, title: $title, providerId: $providerId, model: $model, status: $status, permissionMode: $permissionMode, createdAt: $createdAt, updatedAt: $updatedAt, reasoningEffort: $reasoningEffort, activeTurnId: $activeTurnId, lastError: $lastError)';
 }
 
 
@@ -541,7 +541,7 @@ abstract mixin class _$AgentDtoCopyWith<$Res> implements $AgentDtoCopyWith<$Res>
   factory _$AgentDtoCopyWith(_AgentDto value, $Res Function(_AgentDto) _then) = __$AgentDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String workspaceId, String title, String providerId, String model, String reasoningEffort, AgentStatus status, PermissionMode permissionMode, DateTime createdAt, DateTime updatedAt, String? activeTurnId, String? lastError
+ String id, String workspaceId, String title, String providerId, String model, AgentStatus status, PermissionMode permissionMode, DateTime createdAt, DateTime updatedAt, String reasoningEffort, String? activeTurnId, String? lastError
 });
 
 
@@ -558,19 +558,19 @@ class __$AgentDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = null,Object? title = null,Object? providerId = null,Object? model = null,Object? reasoningEffort = null,Object? status = null,Object? permissionMode = null,Object? createdAt = null,Object? updatedAt = null,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = null,Object? title = null,Object? providerId = null,Object? model = null,Object? status = null,Object? permissionMode = null,Object? createdAt = null,Object? updatedAt = null,Object? reasoningEffort = null,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
   return _then(_AgentDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,providerId: null == providerId ? _self.providerId : providerId // ignore: cast_nullable_to_non_nullable
 as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as String,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AgentStatus,permissionMode: null == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
+as DateTime,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as String,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -1533,7 +1533,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $ModelCapabilitiesDtoCopyWith<$Res> get capabilities {
-
+  
   return $ModelCapabilitiesDtoCopyWith<$Res>(_self.capabilities, (value) {
     return _then(_self.copyWith(capabilities: value));
   });
@@ -1756,7 +1756,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $ModelCapabilitiesDtoCopyWith<$Res> get capabilities {
-
+  
   return $ModelCapabilitiesDtoCopyWith<$Res>(_self.capabilities, (value) {
     return _then(_self.copyWith(capabilities: value));
   });

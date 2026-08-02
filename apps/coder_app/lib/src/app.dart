@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import 'package:coder_app/src/bootstrap.dart';
+import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/settings_page.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -7,49 +10,17 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'bootstrap.dart';
-import 'controller.dart';
-import 'settings_page.dart';
+part 'app.g.dart';
 
+/// CoderApp defines a public contract.
 class CoderApp extends StatelessWidget {
+  /// Creates a [CoderApp].
   CoderApp({required this.bootstrap, super.key});
 
+  /// The bootstrap public API member.
   final AppBootstrap bootstrap;
 
-  late final GoRouter _router = GoRouter(
-    routes: <RouteBase>[
-      GoRoute(path: '/', builder: (_, __) => const HostPage()),
-      GoRoute(
-        path: '/hosts/:hostId',
-        builder: (_, state) =>
-            DashboardPage(hostId: state.pathParameters['hostId']!),
-        routes: <RouteBase>[
-          GoRoute(
-            path: 'settings',
-            builder: (_, state) =>
-                SettingsPage(hostId: state.pathParameters['hostId']!),
-          ),
-          GoRoute(
-            path: 'workspaces/:workspaceId',
-            builder: (_, state) => DashboardPage(
-              hostId: state.pathParameters['hostId']!,
-              workspaceId: state.pathParameters['workspaceId'],
-            ),
-            routes: <RouteBase>[
-              GoRoute(
-                path: 'agents/:agentId',
-                builder: (_, state) => DashboardPage(
-                  hostId: state.pathParameters['hostId']!,
-                  workspaceId: state.pathParameters['workspaceId'],
-                  agentId: state.pathParameters['agentId'],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ],
-  );
+  late final GoRouter _router = GoRouter(routes: $appRoutes);
 
   @override
   Widget build(BuildContext context) => ProviderScope(
@@ -60,7 +31,6 @@ class CoderApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xff625bff),
-          brightness: Brightness.light,
         ),
         useMaterial3: true,
         cardTheme: const CardThemeData(margin: EdgeInsets.zero),
@@ -73,13 +43,97 @@ class CoderApp extends StatelessWidget {
         useMaterial3: true,
         cardTheme: const CardThemeData(margin: EdgeInsets.zero),
       ),
-      themeMode: ThemeMode.system,
       routerConfig: _router,
     ),
   );
 }
 
+@TypedGoRoute<HostRoute>(path: '/')
+/// HostRoute defines a public contract.
+class HostRoute extends GoRouteData with $HostRoute {
+  /// Creates a [HostRoute].
+  const HostRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const HostPage();
+}
+
+@TypedGoRoute<DashboardRoute>(path: '/hosts/:hostId')
+/// DashboardRoute defines a public contract.
+class DashboardRoute extends GoRouteData with $DashboardRoute {
+  /// Creates a [DashboardRoute].
+  const DashboardRoute({required this.hostId});
+
+  /// The hostId public API member.
+  final String hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      DashboardPage(hostId: hostId);
+}
+
+@TypedGoRoute<SettingsRoute>(path: '/hosts/:hostId/settings')
+/// SettingsRoute defines a public contract.
+class SettingsRoute extends GoRouteData with $SettingsRoute {
+  /// Creates a [SettingsRoute].
+  const SettingsRoute({required this.hostId});
+
+  /// The hostId public API member.
+  final String hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      SettingsPage(hostId: hostId);
+}
+
+@TypedGoRoute<WorkspaceRoute>(
+  path: '/hosts/:hostId/workspaces/:workspaceId',
+)
+/// WorkspaceRoute defines a public contract.
+class WorkspaceRoute extends GoRouteData with $WorkspaceRoute {
+  /// Creates a [WorkspaceRoute].
+  const WorkspaceRoute({required this.hostId, required this.workspaceId});
+
+  /// The hostId public API member.
+  final String hostId;
+
+  /// The workspaceId public API member.
+  final String workspaceId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      DashboardPage(hostId: hostId, workspaceId: workspaceId);
+}
+
+@TypedGoRoute<AgentRoute>(
+  path: '/hosts/:hostId/workspaces/:workspaceId/agents/:agentId',
+)
+/// AgentRoute defines a public contract.
+class AgentRoute extends GoRouteData with $AgentRoute {
+  /// Creates a [AgentRoute].
+  const AgentRoute({
+    required this.hostId,
+    required this.workspaceId,
+    required this.agentId,
+  });
+
+  /// The hostId public API member.
+  final String hostId;
+
+  /// The workspaceId public API member.
+  final String workspaceId;
+
+  /// The agentId public API member.
+  final String agentId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      DashboardPage(hostId: hostId, workspaceId: workspaceId, agentId: agentId);
+}
+
+/// HostPage defines a public contract.
 class HostPage extends ConsumerStatefulWidget {
+  /// Creates a [HostPage].
   const HostPage({super.key});
 
   @override
@@ -93,9 +147,6 @@ class _HostPageState extends ConsumerState<HostPage> {
   @override
   void initState() {
     super.initState();
-    Future<void>.microtask(
-      () => ref.read(coderControllerProvider.notifier).initialize(),
-    );
   }
 
   @override
@@ -107,14 +158,16 @@ class _HostPageState extends ConsumerState<HostPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(coderControllerProvider, (previous, next) {
-      if (next.connected &&
-          previous?.connected != true &&
-          next.serverInfo != null) {
-        context.go('/hosts/${next.serverInfo!.serverId}');
+    ref.listen(connectionControllerProvider, (previous, next) {
+      final current = next.asData?.value;
+      final wasConnected = previous?.asData?.value?.connected == true;
+      if (current?.connected == true && !wasConnected) {
+        DashboardRoute(hostId: current!.serverInfo.serverId).go(context);
       }
     });
-    final state = ref.watch(coderControllerProvider);
+    final state = ref.watch(connectionControllerProvider);
+    final connection = state.asData?.value;
+    final connecting = state.isLoading || connection?.connecting == true;
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
@@ -154,10 +207,10 @@ class _HostPageState extends ConsumerState<HostPage> {
                   obscureText: true,
                   decoration: const InputDecoration(labelText: 'Bearer token'),
                 ),
-                if (state.error != null) ...<Widget>[
+                if (state.hasError) ...<Widget>[
                   const SizedBox(height: 12),
                   Text(
-                    state.error!,
+                    '${state.error}',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -165,18 +218,18 @@ class _HostPageState extends ConsumerState<HostPage> {
                 ],
                 const SizedBox(height: 20),
                 FilledButton.icon(
-                  onPressed: state.connecting
+                  onPressed: connecting
                       ? null
                       : () => ref
-                            .read(coderControllerProvider.notifier)
+                            .read(connectionControllerProvider.notifier)
                             .connect(_address.text, _token.text),
-                  icon: state.connecting
+                  icon: connecting
                       ? const SizedBox.square(
                           dimension: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.lan),
-                  label: Text(state.connecting ? '연결 중…' : '연결'),
+                  label: Text(connecting ? '연결 중…' : '연결'),
                 ),
               ],
             ),
@@ -187,7 +240,9 @@ class _HostPageState extends ConsumerState<HostPage> {
   }
 }
 
-class DashboardPage extends ConsumerStatefulWidget {
+/// DashboardPage defines a public contract.
+class DashboardPage extends ConsumerWidget {
+  /// Creates a [DashboardPage].
   const DashboardPage({
     required this.hostId,
     this.workspaceId,
@@ -195,46 +250,23 @@ class DashboardPage extends ConsumerStatefulWidget {
     super.key,
   });
 
+  /// The hostId public API member.
   final String hostId;
+
+  /// The workspaceId public API member.
   final String? workspaceId;
+
+  /// The agentId public API member.
   final String? agentId;
 
   @override
-  ConsumerState<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends ConsumerState<DashboardPage> {
-  @override
-  void initState() {
-    super.initState();
-    _sync();
-  }
-
-  @override
-  void didUpdateWidget(covariant DashboardPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.workspaceId != widget.workspaceId ||
-        oldWidget.agentId != widget.agentId)
-      _sync();
-  }
-
-  void _sync() {
-    Future<void>.microtask(() async {
-      final controller = ref.read(coderControllerProvider.notifier);
-      if (widget.workspaceId != null)
-        await controller.selectWorkspace(widget.workspaceId!);
-      if (widget.agentId != null) await controller.selectAgent(widget.agentId!);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(coderControllerProvider);
-    if (!state.connected) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final connection = ref.watch(connectionControllerProvider).asData?.value;
+    if (connection?.connected != true) {
       return Scaffold(
         body: Center(
           child: FilledButton(
-            onPressed: () => context.go('/'),
+            onPressed: () => const HostRoute().go(context),
             child: const Text('Host 연결로 돌아가기'),
           ),
         ),
@@ -246,12 +278,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         actions: <Widget>[
           IconButton(
             tooltip: '설정',
-            onPressed: () => context.go('/hosts/${widget.hostId}/settings'),
+            onPressed: () => SettingsRoute(hostId: hostId).go(context),
             icon: const Icon(Icons.settings_outlined),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Center(child: Text(state.connectionLabel ?? 'connected')),
+            child: Center(child: Text(connection?.label ?? 'connected')),
           ),
         ],
       ),
@@ -262,30 +294,47 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               children: <Widget>[
                 SizedBox(
                   width: 270,
-                  child: _WorkspacePane(hostId: widget.hostId),
+                  child: _WorkspacePane(
+                    hostId: hostId,
+                    selectedWorkspaceId: workspaceId,
+                  ),
                 ),
                 const VerticalDivider(width: 1),
                 SizedBox(
                   width: 280,
                   child: _AgentPane(
-                    hostId: widget.hostId,
-                    workspaceId: widget.workspaceId,
+                    hostId: hostId,
+                    workspaceId: workspaceId,
+                    selectedAgentId: agentId,
                   ),
                 ),
                 const VerticalDivider(width: 1),
-                Expanded(child: _ConversationPane(agentId: widget.agentId)),
+                Expanded(
+                  child: _ConversationPane(
+                    workspaceId: workspaceId,
+                    agentId: agentId,
+                  ),
+                ),
               ],
             );
           }
-          if (widget.agentId != null)
-            return _ConversationPane(agentId: widget.agentId);
-          if (widget.workspaceId != null) {
-            return _AgentPane(
-              hostId: widget.hostId,
-              workspaceId: widget.workspaceId,
+          if (agentId != null) {
+            return _ConversationPane(
+              workspaceId: workspaceId,
+              agentId: agentId,
             );
           }
-          return _WorkspacePane(hostId: widget.hostId);
+          if (workspaceId != null) {
+            return _AgentPane(
+              hostId: hostId,
+              workspaceId: workspaceId,
+              selectedAgentId: agentId,
+            );
+          }
+          return _WorkspacePane(
+            hostId: hostId,
+            selectedWorkspaceId: workspaceId,
+          );
         },
       ),
     );
@@ -293,20 +342,27 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 }
 
 class _WorkspacePane extends ConsumerWidget {
-  const _WorkspacePane({required this.hostId});
+  const _WorkspacePane({
+    required this.hostId,
+    required this.selectedWorkspaceId,
+  });
 
   final String hostId;
+  final String? selectedWorkspaceId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(coderControllerProvider);
-    final controller = ref.read(coderControllerProvider.notifier);
+    final state = ref.watch(workspacesControllerProvider);
+    final controller = ref.read(workspacesControllerProvider.notifier);
+    final canRegister = ref
+        .read(connectionControllerProvider.notifier)
+        .canRegisterLocalWorkspace;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         ListTile(
           title: const Text('Workspaces'),
-          trailing: controller.canRegisterLocalWorkspace
+          trailing: canRegister
               ? IconButton(
                   tooltip: '로컬 workspace 등록',
                   onPressed: () async {
@@ -314,9 +370,12 @@ class _WorkspacePane extends ConsumerWidget {
                       confirmButtonText: 'Workspace 선택',
                     );
                     if (path == null || !context.mounted) return;
-                    final workspace = await controller.registerWorkspace(path);
+                    final workspace = await controller.register(path);
                     if (context.mounted) {
-                      context.go('/hosts/$hostId/workspaces/${workspace.id}');
+                      WorkspaceRoute(
+                        hostId: hostId,
+                        workspaceId: workspace.id,
+                      ).go(context);
                     }
                   },
                   icon: const Icon(Icons.create_new_folder_outlined),
@@ -324,26 +383,32 @@ class _WorkspacePane extends ConsumerWidget {
               : null,
         ),
         Expanded(
-          child: state.workspaces.isEmpty
-              ? const Center(child: Text('등록된 workspace가 없습니다.'))
-              : ListView.builder(
-                  itemCount: state.workspaces.length,
-                  itemBuilder: (context, index) {
-                    final item = state.workspaces[index];
-                    return ListTile(
-                      selected: item.id == state.selectedWorkspaceId,
-                      leading: const Icon(Icons.folder_outlined),
-                      title: Text(item.name),
-                      subtitle: Text(
-                        item.rootPath,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      onTap: () =>
-                          context.go('/hosts/$hostId/workspaces/${item.id}'),
-                    );
-                  },
-                ),
+          child: state.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) => Center(child: Text('$error')),
+            data: (workspaces) => workspaces.isEmpty
+                ? const Center(child: Text('등록된 workspace가 없습니다.'))
+                : ListView.builder(
+                    itemCount: workspaces.length,
+                    itemBuilder: (context, index) {
+                      final item = workspaces[index];
+                      return ListTile(
+                        selected: item.id == selectedWorkspaceId,
+                        leading: const Icon(Icons.folder_outlined),
+                        title: Text(item.name),
+                        subtitle: Text(
+                          item.rootPath,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => WorkspaceRoute(
+                          hostId: hostId,
+                          workspaceId: item.id,
+                        ).go(context),
+                      );
+                    },
+                  ),
+          ),
         ),
       ],
     );
@@ -351,14 +416,19 @@ class _WorkspacePane extends ConsumerWidget {
 }
 
 class _AgentPane extends ConsumerWidget {
-  const _AgentPane({required this.hostId, required this.workspaceId});
+  const _AgentPane({
+    required this.hostId,
+    required this.workspaceId,
+    required this.selectedAgentId,
+  });
 
   final String hostId;
   final String? workspaceId;
+  final String? selectedAgentId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(coderControllerProvider);
+    final state = ref.watch(agentsControllerProvider(workspaceId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -381,22 +451,31 @@ class _AgentPane extends ConsumerWidget {
         Expanded(
           child: workspaceId == null
               ? const Center(child: Text('Workspace를 선택하세요.'))
-              : state.agents.isEmpty
-              ? const Center(child: Text('새 agent를 만들어 시작하세요.'))
-              : ListView.builder(
-                  itemCount: state.agents.length,
-                  itemBuilder: (context, index) {
-                    final agent = state.agents[index];
-                    return ListTile(
-                      selected: agent.id == state.selectedAgentId,
-                      leading: Icon(_agentIcon(agent.status)),
-                      title: Text(agent.title),
-                      subtitle: Text('${agent.model} · ${agent.status.name}'),
-                      onTap: () => context.go(
-                        '/hosts/$hostId/workspaces/$workspaceId/agents/${agent.id}',
-                      ),
-                    );
-                  },
+              : state.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stackTrace) => Center(child: Text('$error')),
+                  data: (agents) => agents.isEmpty
+                      ? const Center(child: Text('새 agent를 만들어 시작하세요.'))
+                      : ListView.builder(
+                          itemCount: agents.length,
+                          itemBuilder: (context, index) {
+                            final agent = agents[index];
+                            return ListTile(
+                              selected: agent.id == selectedAgentId,
+                              leading: Icon(_agentIcon(agent.status)),
+                              title: Text(agent.title),
+                              subtitle: Text(
+                                '${agent.model} · ${agent.status.name}',
+                              ),
+                              onTap: () => AgentRoute(
+                                hostId: hostId,
+                                workspaceId: workspaceId!,
+                                agentId: agent.id,
+                              ).go(context),
+                            );
+                          },
+                        ),
                 ),
         ),
       ],
@@ -415,149 +494,240 @@ class _AgentPane extends ConsumerWidget {
     WidgetRef ref,
     String workspaceId,
   ) async {
-    final controller = ref.read(coderControllerProvider.notifier);
-    final appState = ref.read(coderControllerProvider);
-    final catalog = appState.providerCatalog;
+    final controller = ref.read(agentsControllerProvider(workspaceId).notifier);
+    final providerController = ref.read(
+      providerSettingsControllerProvider.notifier,
+    );
+    final providerState = await ref.read(
+      providerSettingsControllerProvider.future,
+    );
+    final catalog = providerState?.catalog;
     if (catalog == null || catalog.providers.isEmpty) return;
     var providerId = catalog.defaultProviderId ?? catalog.providers.first.id;
-    await controller.loadProviderModels(providerId);
+    await providerController.loadModels(providerId);
     if (!context.mounted) return;
-    var availableModels =
-        ref.read(coderControllerProvider).providerModels[providerId] ??
+    final availableModels =
+        ref
+            .read(providerSettingsControllerProvider)
+            .asData
+            ?.value
+            ?.models[providerId] ??
         const <ProviderModelDto>[];
-    final title = TextEditingController(text: 'Coding session');
-    final model = TextEditingController(
-      text:
-          catalog.providers
-              .where((item) => item.id == providerId)
-              .firstOrNull
-              ?.defaultModelId ??
-          '',
-    );
-    var permission = PermissionMode.ask;
-    var reasoningEffort = 'medium';
-    final accepted = await showDialog<bool>(
+    final draft = await showDialog<_AgentDraft>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('새 agent'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                controller: title,
-                decoration: const InputDecoration(labelText: '이름'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: providerId,
-                decoration: const InputDecoration(labelText: 'API provider'),
-                items: catalog.providers
-                    .where((item) => item.enabled)
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value.id,
-                        child: Text(value.name),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) async {
-                  if (value == null) return;
-                  providerId = value;
-                  await controller.loadProviderModels(value);
-                  availableModels =
-                      ref.read(coderControllerProvider).providerModels[value] ??
-                      const <ProviderModelDto>[];
-                  final selectedProvider = catalog.providers
-                      .where((item) => item.id == value)
-                      .firstOrNull;
-                  model.text = selectedProvider?.defaultModelId ?? '';
-                  setState(() {});
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownMenu<String>(
-                controller: model,
-                enableFilter: true,
-                enableSearch: true,
-                expandedInsets: EdgeInsets.zero,
-                label: const Text('Model ID'),
-                dropdownMenuEntries: availableModels
-                    .map(
-                      (item) =>
-                          DropdownMenuEntry(value: item.id, label: item.label),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: reasoningEffort,
-                decoration: const InputDecoration(
-                  labelText: 'Reasoning effort',
-                ),
-                items: const <String>['none', 'low', 'medium', 'high', 'xhigh']
-                    .map(
-                      (value) =>
-                          DropdownMenuItem(value: value, child: Text(value)),
-                    )
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => reasoningEffort = value ?? reasoningEffort),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<PermissionMode>(
-                initialValue: permission,
-                decoration: const InputDecoration(labelText: 'Permission mode'),
-                items: PermissionMode.values
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(value.name),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => permission = value ?? PermissionMode.ask),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('생성'),
-            ),
-          ],
-        ),
+      builder: (context) => _AgentDraftDialog(
+        catalog: catalog,
+        providerId: providerId,
+        models: availableModels,
+        loadModels: (value) async {
+          await providerController.loadModels(value);
+          return ref
+                  .read(providerSettingsControllerProvider)
+                  .asData
+                  ?.value
+                  ?.models[value] ??
+              const <ProviderModelDto>[];
+        },
       ),
     );
-    if (accepted != true || !context.mounted || model.text.trim().isEmpty) {
-      title.dispose();
-      model.dispose();
-      return;
-    }
-    final agent = await controller.createAgent(
-      workspaceId: workspaceId,
-      title: title.text.trim().isEmpty ? 'Coding session' : title.text.trim(),
+    if (draft == null || !context.mounted) return;
+    providerId = draft.providerId;
+    final agent = await controller.create(
+      title: draft.title,
       providerId: providerId,
-      model: model.text.trim(),
-      reasoningEffort: reasoningEffort,
-      permissionMode: permission,
+      model: draft.model,
+      reasoningEffort: draft.reasoningEffort,
+      permissionMode: draft.permissionMode,
     );
-    title.dispose();
-    model.dispose();
     if (context.mounted) {
-      context.go('/hosts/$hostId/workspaces/$workspaceId/agents/${agent.id}');
+      AgentRoute(
+        hostId: hostId,
+        workspaceId: workspaceId,
+        agentId: agent.id,
+      ).go(context);
     }
   }
 }
 
-class _ConversationPane extends ConsumerStatefulWidget {
-  const _ConversationPane({required this.agentId});
+typedef _ModelLoader =
+    Future<List<ProviderModelDto>> Function(
+      String providerId,
+    );
 
+final class _AgentDraft {
+  const _AgentDraft({
+    required this.title,
+    required this.providerId,
+    required this.model,
+    required this.reasoningEffort,
+    required this.permissionMode,
+  });
+
+  final String title;
+  final String providerId;
+  final String model;
+  final String reasoningEffort;
+  final PermissionMode permissionMode;
+}
+
+class _AgentDraftDialog extends StatefulWidget {
+  const _AgentDraftDialog({
+    required this.catalog,
+    required this.providerId,
+    required this.models,
+    required this.loadModels,
+  });
+
+  final ProviderCatalogDto catalog;
+  final String providerId;
+  final List<ProviderModelDto> models;
+  final _ModelLoader loadModels;
+
+  @override
+  State<_AgentDraftDialog> createState() => _AgentDraftDialogState();
+}
+
+class _AgentDraftDialogState extends State<_AgentDraftDialog> {
+  late final TextEditingController _title;
+  late final TextEditingController _model;
+  late String _providerId;
+  late List<ProviderModelDto> _models;
+  PermissionMode _permission = PermissionMode.ask;
+  var _reasoningEffort = 'medium';
+
+  @override
+  void initState() {
+    super.initState();
+    _providerId = widget.providerId;
+    _models = widget.models;
+    _title = TextEditingController(text: 'Coding session');
+    _model = TextEditingController(
+      text:
+          widget.catalog.providers
+              .where((item) => item.id == _providerId)
+              .firstOrNull
+              ?.defaultModelId ??
+          '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _model.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('새 agent'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        TextField(
+          controller: _title,
+          decoration: const InputDecoration(labelText: '이름'),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: _providerId,
+          decoration: const InputDecoration(labelText: 'API provider'),
+          items: widget.catalog.providers
+              .where((item) => item.enabled)
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value.id,
+                  child: Text(value.name),
+                ),
+              )
+              .toList(),
+          onChanged: _selectProvider,
+        ),
+        const SizedBox(height: 12),
+        DropdownMenu<String>(
+          controller: _model,
+          enableFilter: true,
+          expandedInsets: EdgeInsets.zero,
+          label: const Text('Model ID'),
+          dropdownMenuEntries: _models
+              .map(
+                (item) => DropdownMenuEntry(value: item.id, label: item.label),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: _reasoningEffort,
+          decoration: const InputDecoration(labelText: 'Reasoning effort'),
+          items: const <String>['none', 'low', 'medium', 'high', 'xhigh']
+              .map(
+                (value) => DropdownMenuItem(value: value, child: Text(value)),
+              )
+              .toList(),
+          onChanged: (value) =>
+              setState(() => _reasoningEffort = value ?? _reasoningEffort),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<PermissionMode>(
+          initialValue: _permission,
+          decoration: const InputDecoration(labelText: 'Permission mode'),
+          items: PermissionMode.values
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(value.name),
+                ),
+              )
+              .toList(),
+          onChanged: (value) =>
+              setState(() => _permission = value ?? PermissionMode.ask),
+        ),
+      ],
+    ),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('취소'),
+      ),
+      FilledButton(onPressed: _submit, child: const Text('생성')),
+    ],
+  );
+
+  Future<void> _selectProvider(String? value) async {
+    if (value == null) return;
+    final models = await widget.loadModels(value);
+    if (!mounted) return;
+    final provider = widget.catalog.providers
+        .where((item) => item.id == value)
+        .firstOrNull;
+    setState(() {
+      _providerId = value;
+      _models = models;
+      _model.text = provider?.defaultModelId ?? '';
+    });
+  }
+
+  void _submit() {
+    final model = _model.text.trim();
+    if (model.isEmpty) return;
+    final title = _title.text.trim();
+    Navigator.pop(
+      context,
+      _AgentDraft(
+        title: title.isEmpty ? 'Coding session' : title,
+        providerId: _providerId,
+        model: model,
+        reasoningEffort: _reasoningEffort,
+        permissionMode: _permission,
+      ),
+    );
+  }
+}
+
+class _ConversationPane extends ConsumerStatefulWidget {
+  const _ConversationPane({required this.workspaceId, required this.agentId});
+
+  final String? workspaceId;
   final String? agentId;
 
   @override
@@ -575,8 +745,11 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(coderControllerProvider);
-    final selected = state.agents
+    final agents = ref
+        .watch(agentsControllerProvider(widget.workspaceId))
+        .asData
+        ?.value;
+    final selected = (agents ?? const <AgentDto>[])
         .where((item) => item.id == widget.agentId)
         .firstOrNull;
     if (widget.agentId == null || selected == null) {
@@ -585,7 +758,13 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final busy =
         selected.status == AgentStatus.running ||
         selected.status == AgentStatus.waitingForApproval;
-    final displayTimeline = _coalesceAssistantDeltas(state.timeline);
+    final conversation = ref.watch(
+      conversationControllerProvider(widget.agentId),
+    );
+    final conversationState = conversation.asData?.value;
+    final displayTimeline = _coalesceAssistantDeltas(
+      conversationState?.timeline ?? const <TimelineEventDto>[],
+    );
     return Column(
       children: <Widget>[
         ListTile(
@@ -596,12 +775,15 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           ),
           trailing: busy
               ? TextButton.icon(
-                  onPressed: () =>
-                      ref.read(coderControllerProvider.notifier).cancelTurn(),
+                  onPressed: () => ref
+                      .read(
+                        conversationControllerProvider(widget.agentId).notifier,
+                      )
+                      .cancelTurn(),
                   icon: const Icon(Icons.stop_circle_outlined),
                   label: const Text('중지'),
                 )
-              : state.timeline.isEmpty
+              : displayTimeline.isEmpty
               ? IconButton(
                   tooltip: 'Agent 모델 설정',
                   onPressed: () => _editAgentConfiguration(selected),
@@ -617,16 +799,18 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                   reverse: true,
                   padding: const EdgeInsets.all(20),
                   itemCount: displayTimeline.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final event =
                         displayTimeline[displayTimeline.length - index - 1];
-                    return _TimelineCard(event: event);
+                    return TimelineCard(event: event);
                   },
                 ),
         ),
-        for (final approval in state.approvals.values)
-          _ApprovalCard(approval: approval),
+        for (final approval
+            in conversationState?.approvals.values ??
+                const <ApprovalRequestDto>[])
+          ApprovalCard(approval: approval),
         SafeArea(
           top: false,
           child: Padding(
@@ -661,105 +845,48 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
   }
 
   Future<void> _editAgentConfiguration(AgentDto agent) async {
-    final controller = ref.read(coderControllerProvider.notifier);
-    final catalog = ref.read(coderControllerProvider).providerCatalog;
+    final workspaceId = widget.workspaceId;
+    if (workspaceId == null) return;
+    final controller = ref.read(agentsControllerProvider(workspaceId).notifier);
+    final providerController = ref.read(
+      providerSettingsControllerProvider.notifier,
+    );
+    final catalog = (await ref.read(
+      providerSettingsControllerProvider.future,
+    ))?.catalog;
     if (catalog == null) return;
-    var providerId = agent.providerId;
-    var reasoning = agent.reasoningEffort;
-    await controller.loadProviderModels(providerId);
+    await providerController.loadModels(agent.providerId);
     if (!mounted) return;
-    var models =
-        ref.read(coderControllerProvider).providerModels[providerId] ??
+    final models =
+        ref
+            .read(providerSettingsControllerProvider)
+            .asData
+            ?.value
+            ?.models[agent.providerId] ??
         const <ProviderModelDto>[];
-    final model = TextEditingController(text: agent.model);
-    final accepted = await showDialog<bool>(
+    final draft = await showDialog<_AgentConfigurationDraft>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Agent 모델 설정'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              DropdownButtonFormField<String>(
-                initialValue: providerId,
-                decoration: const InputDecoration(labelText: 'API provider'),
-                items: catalog.providers
-                    .where((item) => item.enabled)
-                    .map(
-                      (item) => DropdownMenuItem(
-                        value: item.id,
-                        child: Text(item.name),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) async {
-                  if (value == null) return;
-                  await controller.loadProviderModels(value);
-                  providerId = value;
-                  models =
-                      ref.read(coderControllerProvider).providerModels[value] ??
-                      const <ProviderModelDto>[];
-                  model.text =
-                      catalog.providers
-                          .where((item) => item.id == value)
-                          .firstOrNull
-                          ?.defaultModelId ??
-                      '';
-                  setDialogState(() {});
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownMenu<String>(
-                controller: model,
-                enableFilter: true,
-                enableSearch: true,
-                expandedInsets: EdgeInsets.zero,
-                label: const Text('Model ID'),
-                dropdownMenuEntries: models
-                    .map(
-                      (item) =>
-                          DropdownMenuEntry(value: item.id, label: item.label),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: reasoning,
-                decoration: const InputDecoration(
-                  labelText: 'Reasoning effort',
-                ),
-                items: const <String>['none', 'low', 'medium', 'high', 'xhigh']
-                    .map(
-                      (item) =>
-                          DropdownMenuItem(value: item, child: Text(item)),
-                    )
-                    .toList(),
-                onChanged: (value) =>
-                    setDialogState(() => reasoning = value ?? reasoning),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('저장'),
-            ),
-          ],
-        ),
+      builder: (context) => _AgentConfigurationDialog(
+        agent: agent,
+        catalog: catalog,
+        models: models,
+        loadModels: (providerId) async {
+          await providerController.loadModels(providerId);
+          return ref
+                  .read(providerSettingsControllerProvider)
+                  .asData
+                  ?.value
+                  ?.models[providerId] ??
+              const <ProviderModelDto>[];
+        },
       ),
     );
-    final modelId = model.text.trim();
-    model.dispose();
-    if (accepted != true || modelId.isEmpty) return;
-    await controller.updateAgentConfiguration(
+    if (draft == null) return;
+    await controller.updateConfiguration(
       agentId: agent.id,
-      providerId: providerId,
-      model: modelId,
-      reasoningEffort: reasoning,
+      providerId: draft.providerId,
+      model: draft.model,
+      reasoningEffort: draft.reasoningEffort,
     );
   }
 
@@ -767,7 +894,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final text = _composer.text;
     if (text.trim().isEmpty) return;
     _composer.clear();
-    await ref.read(coderControllerProvider.notifier).startTurn(text);
+    await ref
+        .read(conversationControllerProvider(widget.agentId).notifier)
+        .startTurn(text);
   }
 
   List<TimelineEventDto> _coalesceAssistantDeltas(
@@ -784,7 +913,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           previous.copyWith(
             data: <String, dynamic>{
               'text':
-                  '${previous.data['text'] as String? ?? ''}${event.data['text'] as String? ?? ''}',
+                  '${previous.data['text'] as String? ?? ''}'
+                  '${event.data['text'] as String? ?? ''}',
             },
           ),
         );
@@ -796,9 +926,146 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
   }
 }
 
-class _TimelineCard extends StatelessWidget {
-  const _TimelineCard({required this.event});
+final class _AgentConfigurationDraft {
+  const _AgentConfigurationDraft({
+    required this.providerId,
+    required this.model,
+    required this.reasoningEffort,
+  });
 
+  final String providerId;
+  final String model;
+  final String reasoningEffort;
+}
+
+class _AgentConfigurationDialog extends StatefulWidget {
+  const _AgentConfigurationDialog({
+    required this.agent,
+    required this.catalog,
+    required this.models,
+    required this.loadModels,
+  });
+
+  final AgentDto agent;
+  final ProviderCatalogDto catalog;
+  final List<ProviderModelDto> models;
+  final _ModelLoader loadModels;
+
+  @override
+  State<_AgentConfigurationDialog> createState() =>
+      _AgentConfigurationDialogState();
+}
+
+class _AgentConfigurationDialogState extends State<_AgentConfigurationDialog> {
+  late final TextEditingController _model;
+  late String _providerId;
+  late String _reasoningEffort;
+  late List<ProviderModelDto> _models;
+
+  @override
+  void initState() {
+    super.initState();
+    _providerId = widget.agent.providerId;
+    _reasoningEffort = widget.agent.reasoningEffort;
+    _models = widget.models;
+    _model = TextEditingController(text: widget.agent.model);
+  }
+
+  @override
+  void dispose() {
+    _model.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Agent 모델 설정'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        DropdownButtonFormField<String>(
+          initialValue: _providerId,
+          decoration: const InputDecoration(labelText: 'API provider'),
+          items: widget.catalog.providers
+              .where((item) => item.enabled)
+              .map(
+                (item) => DropdownMenuItem(
+                  value: item.id,
+                  child: Text(item.name),
+                ),
+              )
+              .toList(),
+          onChanged: _selectProvider,
+        ),
+        const SizedBox(height: 12),
+        DropdownMenu<String>(
+          controller: _model,
+          enableFilter: true,
+          expandedInsets: EdgeInsets.zero,
+          label: const Text('Model ID'),
+          dropdownMenuEntries: _models
+              .map(
+                (item) => DropdownMenuEntry(value: item.id, label: item.label),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: _reasoningEffort,
+          decoration: const InputDecoration(labelText: 'Reasoning effort'),
+          items: const <String>['none', 'low', 'medium', 'high', 'xhigh']
+              .map(
+                (item) => DropdownMenuItem(value: item, child: Text(item)),
+              )
+              .toList(),
+          onChanged: (value) =>
+              setState(() => _reasoningEffort = value ?? _reasoningEffort),
+        ),
+      ],
+    ),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('취소'),
+      ),
+      FilledButton(onPressed: _submit, child: const Text('저장')),
+    ],
+  );
+
+  Future<void> _selectProvider(String? value) async {
+    if (value == null) return;
+    final models = await widget.loadModels(value);
+    if (!mounted) return;
+    final provider = widget.catalog.providers
+        .where((item) => item.id == value)
+        .firstOrNull;
+    setState(() {
+      _providerId = value;
+      _models = models;
+      _model.text = provider?.defaultModelId ?? '';
+    });
+  }
+
+  void _submit() {
+    final model = _model.text.trim();
+    if (model.isEmpty) return;
+    Navigator.pop(
+      context,
+      _AgentConfigurationDraft(
+        providerId: _providerId,
+        model: model,
+        reasoningEffort: _reasoningEffort,
+      ),
+    );
+  }
+}
+
+/// Renders one persisted timeline event.
+class TimelineCard extends StatelessWidget {
+  /// Creates a [TimelineCard].
+  const TimelineCard({required this.event, super.key});
+
+  /// The event rendered by this card.
   final TimelineEventDto event;
 
   @override
@@ -841,9 +1108,12 @@ class _TimelineCard extends StatelessWidget {
   }
 }
 
-class _ApprovalCard extends ConsumerWidget {
-  const _ApprovalCard({required this.approval});
+/// Renders an actionable tool approval request.
+class ApprovalCard extends ConsumerWidget {
+  /// Creates an [ApprovalCard].
+  const ApprovalCard({required this.approval, super.key});
 
+  /// The pending approval rendered by this card.
   final ApprovalRequestDto approval;
 
   @override
@@ -874,15 +1144,23 @@ class _ApprovalCard extends ConsumerWidget {
               children: <Widget>[
                 TextButton(
                   onPressed: () => ref
-                      .read(coderControllerProvider.notifier)
-                      .resolveApproval(approval.id, false),
+                      .read(
+                        conversationControllerProvider(
+                          approval.agentId,
+                        ).notifier,
+                      )
+                      .resolveApproval(approval.id, approved: false),
                   child: const Text('거부'),
                 ),
                 const SizedBox(width: 8),
                 FilledButton(
                   onPressed: () => ref
-                      .read(coderControllerProvider.notifier)
-                      .resolveApproval(approval.id, true),
+                      .read(
+                        conversationControllerProvider(
+                          approval.agentId,
+                        ).notifier,
+                      )
+                      .resolveApproval(approval.id, approved: true),
                   child: const Text('승인'),
                 ),
               ],

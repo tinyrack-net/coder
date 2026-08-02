@@ -3,10 +3,17 @@ name: CI
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "17 18 * * *"
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality-linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -14,18 +21,17 @@ jobs:
           flutter-version: 3.44.8
           cache: true
       - name: Install Linux desktop dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev
-      - run: dart pub get
-      - run: dart run melos run generate
-      - run: dart run melos run format:check
-      - run: dart run melos run analyze
-      - run: dart run melos run test
-      - run: dart run melos run test:flutter
-      - run: flutter build linux --debug -t lib/main_desktop.dart
-        working-directory: apps/coder_app
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev xvfb
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos verify
+      - run: xvfb-run -a dart run melos verify:debug
+      - run: dart run melos build:linux
 
-  desktop-build:
+  desktop-debug-build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
@@ -33,31 +39,95 @@ jobs:
           - os: windows-latest
             command: flutter build windows --debug -t lib/main_desktop.dart
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.44.8
           cache: true
-      - run: dart pub get
+      - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
         working-directory: apps/coder_app
 
-  mobile-build:
+  mobile-debug-build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             command: flutter build apk --debug -t lib/main_mobile.dart
           - os: macos-latest
-            command: flutter build ios --simulator --no-codesign -t lib/main_mobile.dart
+            command: flutter build ios --debug --simulator --no-codesign -t lib/main_mobile.dart
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.44.8
           cache: true
-      - run: dart pub get
+      - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
+        working-directory: apps/coder_app
+
+  nightly-desktop-e2e:
+    if: github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            device: macos
+          - os: windows-latest
+            device: windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: flutter test integration_test/debug_e2e_test.dart -d ${{ matrix.device }}
+        working-directory: apps/coder_app
+
+  nightly-android-smoke:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          script: >-
+            cd apps/coder_app &&
+            flutter test integration_test/remote_bootstrap_smoke_test.dart
+            -d emulator-5554
+
+  nightly-ios-smoke:
+    if: github.event_name == 'schedule'
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - name: Boot an iOS simulator
+        run: |
+          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for values in data["devices"].values() for d in values if d["isAvailable"] and "iPhone" in d["name"]))')
+          xcrun simctl boot "$device_id" || true
+          echo "IOS_DEVICE_ID=$device_id" >> "$GITHUB_ENV"
+      - run: flutter test integration_test/remote_bootstrap_smoke_test.dart -d "$IOS_DEVICE_ID"
         working-directory: apps/coder_app

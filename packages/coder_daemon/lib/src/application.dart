@@ -3,50 +3,72 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/agent_service.dart';
+import 'package:coder_daemon/src/config.dart';
+import 'package:coder_daemon/src/credential_store.dart';
+import 'package:coder_daemon/src/database.dart';
+import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/provider_adapters.dart';
+import 'package:coder_daemon/src/provider_service.dart';
+import 'package:coder_daemon/src/server.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:uuid/uuid.dart';
 
-import 'agent_service.dart';
-import 'config.dart';
-import 'credential_store.dart';
-import 'database.dart';
-import 'provider_service.dart';
-import 'server.dart';
-
+/// Public API exposed by this library.
 abstract interface class DaemonHandle {
+  /// The ready public API member.
   Future<void> get ready;
+
+  /// The boundEndpoint public API member.
   Uri get boundEndpoint;
+
+  /// The serverId public API member.
   String get serverId;
+
+  /// The bearerToken public API member.
   String get bearerToken;
+
+  /// The stop public API member.
   Future<void> stop();
 }
 
+/// Public API exposed by this library.
 abstract final class DaemonApplication {
+  /// The start public API member.
   static Future<DaemonHandle> start(
     DaemonConfig config, {
     ModelProvider? provider,
+    Clock clock = const SystemClock(),
+    IdGenerator ids = const UuidIdGenerator(),
+    ProviderModelDiscovery modelDiscovery = const DioProviderModelDiscovery(),
+    ModelProviderFactory providerFactory =
+        const OpenAICompatibleProviderFactory(),
+    WorkspaceCanonicalizer workspaceCanonicalizer =
+        const IoWorkspaceCanonicalizer(),
   }) async {
     final home = Directory(config.homeDirectory);
     await home.create(recursive: true);
     final lockFile = File(p.join(home.path, 'daemon.lock'));
     final lock = await lockFile.open(mode: FileMode.append);
     try {
-      await lock.lock(FileLock.exclusive);
+      await lock.lock();
     } catch (_) {
       await lock.close();
       rethrow;
     }
 
-    final database = CoderDatabase(p.join(home.path, 'coder.sqlite'));
+    final database = CoderDatabase(
+      p.join(home.path, 'coder.sqlite'),
+      clock: clock,
+    );
     try {
-      await database.recoverInterruptedRuns();
-      var serverId = await database.getSetting('server.id');
+      await database.runtimeDao.recoverInterruptedRuns();
+      var serverId = await database.settingsDao.getValue('server.id');
       if (serverId == null) {
-        serverId = const Uuid().v4();
-        await database.setSetting('server.id', serverId);
+        serverId = ids.generate();
+        await database.settingsDao.setValue('server.id', serverId);
       }
       final credentials = CredentialStore(config.configDirectory);
       await credentials.load();
@@ -59,7 +81,7 @@ abstract final class DaemonApplication {
           'Bearer token must contain at least 256 bits (32 bytes).',
         );
       }
-      await database.setSetting(
+      await database.settingsDao.setValue(
         'auth.tokenHash',
         sha256.convert(utf8.encode(token)).toString(),
       );
@@ -68,16 +90,32 @@ abstract final class DaemonApplication {
       }
       final events = StreamController<WireEnvelope>.broadcast(sync: true);
       final providers = ProviderService(
-        database: database,
+        repository: database.providerDao,
+        settings: database.settingsDao,
         credentials: credentials,
+        environment: Platform.environment,
+        clock: clock,
+        modelDiscovery: modelDiscovery,
+        providerFactory: providerFactory,
         fixedProvider: provider,
       );
       await providers.initialize(legacyOpenAIKey: config.apiKey);
       final service = AgentService(
-        database: database,
+        agents: database.agentDao,
+        workspaces: database.workspaceDao,
+        timeline: database.timelineDao,
         providers: providers,
         events: events.add,
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
+        clock: clock,
+        ids: ids,
+        toolsFactory: () => <AgentTool>[
+          ListDirectoryTool(),
+          ReadFileTool(),
+          SearchTextTool(),
+          ApplyPatchTool(),
+          RunCommandTool(),
+        ],
       );
       final info = ServerInfoDto(
         serverId: serverId,
@@ -91,9 +129,13 @@ abstract final class DaemonApplication {
         },
       );
       final rpc = DaemonRpcServer(
-        database: database,
+        workspaces: database.workspaceDao,
+        agentRepository: database.agentDao,
+        timeline: database.timelineDao,
         agents: service,
         providers: providers,
+        clock: clock,
+        workspaceCanonicalizer: workspaceCanonicalizer,
         serverInfo: info,
         token: token,
         events: events.stream,
@@ -102,7 +144,6 @@ abstract final class DaemonApplication {
         rpc.call,
         config.host,
         config.port,
-        shared: false,
       );
       final presentationHost = config.host == '0.0.0.0'
           ? '127.0.0.1'
@@ -133,22 +174,15 @@ abstract final class DaemonApplication {
 
 class _LocalDaemonHandle implements DaemonHandle {
   _LocalDaemonHandle({
-    required Uri endpoint,
+    required this._endpoint,
     required String serverIdValue,
-    required String token,
-    required HttpServer http,
-    required DaemonRpcServer rpc,
-    required CoderDatabase database,
-    required StreamController<WireEnvelope> events,
-    required RandomAccessFile lock,
-  }) : _endpoint = endpoint,
-       _serverId = serverIdValue,
-       _token = token,
-       _http = http,
-       _rpc = rpc,
-       _database = database,
-       _events = events,
-       _lock = lock;
+    required this._token,
+    required this._http,
+    required this._rpc,
+    required this._database,
+    required this._events,
+    required this._lock,
+  }) : _serverId = serverIdValue;
 
   final Uri _endpoint;
   final String _serverId;

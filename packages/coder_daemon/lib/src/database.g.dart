@@ -127,9 +127,16 @@ class $WorkspacesTable extends Workspaces
 }
 
 class Workspace extends DataClass implements Insertable<Workspace> {
+  /// The id public API member.
   final String id;
+
+  /// The name public API member.
   final String name;
+
+  /// The rootPath public API member.
   final String rootPath;
+
+  /// The createdAt public API member.
   final DateTime createdAt;
   const Workspace({
     required this.id,
@@ -637,17 +644,40 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
 }
 
 class Agent extends DataClass implements Insertable<Agent> {
+  /// The id public API member.
   final String id;
+
+  /// The workspaceId public API member.
   final String workspaceId;
+
+  /// The title public API member.
   final String title;
+
+  /// The providerId public API member.
   final String providerId;
+
+  /// The model public API member.
   final String model;
+
+  /// The reasoningEffort public API member.
   final String reasoningEffort;
+
+  /// The status public API member.
   final String status;
+
+  /// The permissionMode public API member.
   final String permissionMode;
+
+  /// The activeTurnId public API member.
   final String? activeTurnId;
+
+  /// The lastError public API member.
   final String? lastError;
+
+  /// The createdAt public API member.
   final DateTime createdAt;
+
+  /// The updatedAt public API member.
   final DateTime updatedAt;
   const Agent({
     required this.id,
@@ -1230,12 +1260,25 @@ class $TurnsTable extends Turns with TableInfo<$TurnsTable, Turn> {
 }
 
 class Turn extends DataClass implements Insertable<Turn> {
+  /// The id public API member.
   final String id;
+
+  /// The agentId public API member.
   final String agentId;
+
+  /// The prompt public API member.
   final String prompt;
+
+  /// The status public API member.
   final String status;
+
+  /// The error public API member.
   final String? error;
+
+  /// The createdAt public API member.
   final DateTime createdAt;
+
+  /// The updatedAt public API member.
   final DateTime updatedAt;
   const Turn({
     required this.id,
@@ -1668,11 +1711,22 @@ class $TimelineEventsTable extends TimelineEvents
 }
 
 class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
+  /// The agentId public API member.
   final String agentId;
+
+  /// The sequence public API member.
   final int sequence;
+
+  /// The turnId public API member.
   final String? turnId;
+
+  /// The type public API member.
   final String type;
+
+  /// The dataJson public API member.
   final String dataJson;
+
+  /// The createdAt public API member.
   final DateTime createdAt;
   const TimelineEvent({
     required this.agentId,
@@ -2181,15 +2235,34 @@ class $ApprovalRequestsTable extends ApprovalRequests
 }
 
 class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
+  /// The id public API member.
   final String id;
+
+  /// The agentId public API member.
   final String agentId;
+
+  /// The turnId public API member.
   final String turnId;
+
+  /// The toolCallId public API member.
   final String toolCallId;
+
+  /// The toolName public API member.
   final String toolName;
+
+  /// The risk public API member.
   final String risk;
+
+  /// The argumentsJson public API member.
   final String argumentsJson;
+
+  /// The preview public API member.
   final String? preview;
+
+  /// The status public API member.
   final String status;
+
+  /// The createdAt public API member.
   final DateTime createdAt;
   const ApprovalRequest({
     required this.id,
@@ -2655,9 +2728,16 @@ class $ProviderStatesTable extends ProviderStates
 }
 
 class ProviderState extends DataClass implements Insertable<ProviderState> {
+  /// The agentId public API member.
   final String agentId;
+
+  /// The ordinal public API member.
   final int ordinal;
+
+  /// The itemJson public API member.
   final String itemJson;
+
+  /// The createdAt public API member.
   final DateTime createdAt;
   const ProviderState({
     required this.agentId,
@@ -2919,7 +2999,10 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
 }
 
 class Setting extends DataClass implements Insertable<Setting> {
+  /// The key public API member.
   final String key;
+
+  /// The value public API member.
   final String value;
   const Setting({required this.key, required this.value});
   @override
@@ -3405,18 +3488,43 @@ class $ApiProvidersTable extends ApiProviders
 }
 
 class ApiProvider extends DataClass implements Insertable<ApiProvider> {
+  /// The id public API member.
   final String id;
+
+  /// The name public API member.
   final String name;
+
+  /// The presetId public API member.
   final String presetId;
+
+  /// The baseUrl public API member.
   final String baseUrl;
+
+  /// The transport public API member.
   final String transport;
+
+  /// The credentialSource public API member.
   final String credentialSource;
+
+  /// The environmentVariable public API member.
   final String? environmentVariable;
+
+  /// The enabled public API member.
   final bool enabled;
+
+  /// The strictToolSchema public API member.
   final bool strictToolSchema;
+
+  /// The defaultModelId public API member.
   final String? defaultModelId;
+
+  /// The visibleModelIdsJson public API member.
   final String visibleModelIdsJson;
+
+  /// The createdAt public API member.
   final DateTime createdAt;
+
+  /// The updatedAt public API member.
   final DateTime updatedAt;
   const ApiProvider({
     required this.id,
@@ -4072,13 +4180,28 @@ class $ProviderModelsTable extends ProviderModels
 }
 
 class ProviderModel extends DataClass implements Insertable<ProviderModel> {
+  /// The providerId public API member.
   final String providerId;
+
+  /// The modelId public API member.
   final String modelId;
+
+  /// The label public API member.
   final String label;
+
+  /// The source public API member.
   final String source;
+
+  /// The capabilitiesJson public API member.
   final String capabilitiesJson;
+
+  /// The diagnosticStatus public API member.
   final String diagnosticStatus;
+
+  /// The verifiedAt public API member.
   final DateTime? verifiedAt;
+
+  /// The diagnosticError public API member.
   final String? diagnosticError;
   const ProviderModel({
     required this.providerId,
@@ -4388,6 +4511,12 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final $SettingsTable settings = $SettingsTable(this);
   late final $ApiProvidersTable apiProviders = $ApiProvidersTable(this);
   late final $ProviderModelsTable providerModels = $ProviderModelsTable(this);
+  late final SettingsDao settingsDao = SettingsDao(this as CoderDatabase);
+  late final WorkspaceDao workspaceDao = WorkspaceDao(this as CoderDatabase);
+  late final AgentDao agentDao = AgentDao(this as CoderDatabase);
+  late final TimelineDao timelineDao = TimelineDao(this as CoderDatabase);
+  late final ProviderDao providerDao = ProviderDao(this as CoderDatabase);
+  late final RuntimeDao runtimeDao = RuntimeDao(this as CoderDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

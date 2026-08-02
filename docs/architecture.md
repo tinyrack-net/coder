@@ -17,19 +17,23 @@ coder_app -> coder_client -> coder_protocol
 
 ## Package boundaries
 
-- `coder_protocol`: platform-neutral JSON DTOs and versioned envelopes.
-- `coder_client`: authenticated WebSocket handshake, correlated RPCs,
-  reconnect, and sequence-based timeline catch-up.
+- `coder_protocol`: platform-neutral, generated request/response and domain
+  DTOs for protocol version 2.
+- `coder_client`: authenticated JSON-RPC 2.0 over WebSocket, reconnect, and
+  sequence-based timeline catch-up. `json_rpc_2` owns request correlation,
+  notifications, and structured transport errors.
 - `coder_agent`: provider-independent turn loop, approval policy, cancellation,
   path-confined coding tools, and strict tool schemas.
 - `coder_provider_openai`: direct Responses and Chat Completions streaming
   adapters plus OpenAI-compatible provider/model presets. Responses requests
   use `store: false`; encrypted reasoning items remain opaque daemon-owned
   conversation state.
-- `coder_daemon`: composition root, Drift repositories, lifecycle recovery,
-  bearer authentication, WebSocket RPC server, embedded isolate, and CLI.
-- `coder_app`: Riverpod application state, go_router navigation, and adaptive
-  Material 3 UI.
+- `coder_daemon`: composition root, feature-scoped Drift DAOs, lifecycle
+  recovery, bearer authentication, WebSocket RPC server, embedded isolate,
+  and CLI.
+- `coder_app`: feature-scoped Riverpod `AsyncNotifier` application state,
+  typed go_router navigation, Reactive Forms settings, and adaptive Material 3
+  UI. Controllers depend only on the transport-neutral `CoderApi` port.
 
 Dependencies point inward through DTOs and interfaces. `coder_agent` does not
 read databases or call the network. The daemon is the only package allowed to

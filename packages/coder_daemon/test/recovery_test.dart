@@ -12,7 +12,7 @@ void main() {
       final databasePath = '${home.path}${Platform.pathSeparator}coder.sqlite';
       var database = CoderDatabase(databasePath);
       final now = DateTime.now().toUtc();
-      await database.registerWorkspace(
+      await database.workspaceDao.register(
         WorkspaceDto(
           id: 'workspace',
           name: 'Workspace',
@@ -20,7 +20,7 @@ void main() {
           createdAt: now,
         ),
       );
-      await database.createAgent(
+      await database.agentDao.create(
         AgentDto(
           id: 'agent',
           workspaceId: 'workspace',
@@ -34,8 +34,12 @@ void main() {
           updatedAt: now,
         ),
       );
-      await database.createTurn(id: 'turn', agentId: 'agent', prompt: 'work');
-      await database.createApproval(
+      await database.agentDao.createTurn(
+        id: 'turn',
+        agentId: 'agent',
+        prompt: 'work',
+      );
+      await database.timelineDao.createApproval(
         ApprovalRequestDto(
           id: 'approval',
           agentId: 'agent',
@@ -51,8 +55,8 @@ void main() {
       await database.close();
 
       database = CoderDatabase(databasePath);
-      await database.recoverInterruptedRuns();
-      final agent = await database.getAgentDto('agent');
+      await database.runtimeDao.recoverInterruptedRuns();
+      final agent = await database.agentDao.getById('agent');
       final turn = await (database.select(
         database.turns,
       )..where((row) => row.id.equals('turn'))).getSingle();

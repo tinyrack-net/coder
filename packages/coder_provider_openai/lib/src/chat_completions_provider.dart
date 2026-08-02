@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_provider_openai/src/openai_provider.dart';
+import 'package:coder_provider_openai/src/sse.dart';
 import 'package:dio/dio.dart';
 
-import 'openai_provider.dart';
-import 'sse.dart';
-
+/// OpenAIChatCompletionsProvider defines a public contract.
 class OpenAIChatCompletionsProvider implements ModelProvider {
+  /// Creates a [OpenAIChatCompletionsProvider].
   OpenAIChatCompletionsProvider(OpenAIProviderConfig config, {Dio? dio})
     : _config = config,
       _dio = dio ?? Dio(BaseOptions(baseUrl: config.baseUrl));
@@ -146,7 +147,7 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
       usage = _usage(event['usage']).isEmpty ? usage : _usage(event['usage']);
       final choices = event['choices'];
       if (choices is! List) continue;
-      for (final choice in choices.whereType<Map>()) {
+      for (final choice in choices.whereType<Map<dynamic, dynamic>>()) {
         final delta = choice['delta'];
         if (delta is! Map) continue;
         final content = delta['content'];
