@@ -2,10 +2,17 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
+import 'package:coder_daemon/src/credential_store.dart';
+import 'package:coder_daemon/src/provider_cli.dart';
 
 Future<void> main(List<String> arguments) async {
   final defaults = DaemonConfig.fromEnvironment();
+  if (arguments.firstOrNull == 'provider') {
+    await _runProvider(arguments.skip(1).toList(growable: false), defaults);
+    return;
+  }
   final parser = ArgParser()
     ..addOption('home', defaultsTo: defaults.homeDirectory)
     ..addOption('listen', defaultsTo: '${defaults.host}:${defaults.port}')
@@ -45,4 +52,58 @@ Future<void> main(List<String> arguments) async {
   await interrupt.cancel();
   await terminate?.cancel();
   await handle.stop();
+}
+
+Future<void> _runProvider(
+  List<String> arguments,
+  DaemonConfig config,
+) async {
+  final credentials = CredentialStore(config.configDirectory);
+  await credentials.load();
+  final token = config.bearerToken ?? credentials.bearerToken;
+  if (token == null) {
+    throw StateError(
+      'No daemon connection token found. Start coder_daemon first.',
+    );
+  }
+  final client = await CoderClient.connect(
+    endpoint: HostEndpoint(
+      websocketUri: Uri(
+        scheme: 'ws',
+        host: config.host == '0.0.0.0' ? '127.0.0.1' : config.host,
+        port: config.port,
+        path: '/ws',
+      ),
+      token: token,
+    ),
+    clientId: 'coder-daemon-cli',
+    clientKind: 'standalone-cli',
+  );
+  try {
+    final result = await runProviderCommand(
+      arguments,
+      backend: CoderApiProviderCliBackend(client),
+      output: stdout,
+      readSecret: _readSecret,
+    );
+    if (result != 0) exitCode = result;
+  } finally {
+    await client.close();
+  }
+}
+
+Future<String> _readSecret() async {
+  stdout.write('API key: ');
+  final wasEchoing = stdin.echoMode;
+  try {
+    stdin.echoMode = false;
+    final value = stdin.readLineSync();
+    stdout.writeln();
+    if (value == null || value.trim().isEmpty) {
+      throw const FormatException('API key must not be empty.');
+    }
+    return value.trim();
+  } finally {
+    stdin.echoMode = wasEchoing;
+  }
 }

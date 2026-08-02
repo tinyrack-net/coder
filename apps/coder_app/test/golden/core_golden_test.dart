@@ -129,15 +129,15 @@ Widget _settings(ThemeMode mode) {
     models: const <String, List<ProviderModelDto>>{
       'openai': <ProviderModelDto>[
         ProviderModelDto(
-          providerId: 'openai',
+          connectionId: 'openai',
           id: 'gpt-5.6-sol',
           label: 'gpt-5.6-sol',
-          source: ProviderModelSource.preset,
+          source: ProviderModelSource.bundled,
           capabilities: ModelCapabilitiesDto(
             streaming: CapabilitySupport.supported,
             toolCalling: CapabilitySupport.supported,
             reasoningEffort: CapabilitySupport.supported,
-            source: CapabilitySource.preset,
+            source: CapabilitySource.bundled,
           ),
         ),
       ],

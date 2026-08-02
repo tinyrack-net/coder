@@ -18,7 +18,7 @@ void main() {
       () => agents.id,
       () => agents.workspaceId,
       () => agents.title,
-      () => agents.providerId,
+      () => agents.providerConnectionId,
       () => agents.model,
       () => agents.reasoningEffort,
       () => agents.status,
@@ -84,19 +84,18 @@ void main() {
       () => settings.primaryKey,
     ]);
 
-    final providers = ApiProviders();
+    final providers = ProviderConnections();
     _expectGeneratedDsl(<Object? Function()>[
       () => providers.id,
-      () => providers.name,
-      () => providers.presetId,
-      () => providers.baseUrl,
-      () => providers.transport,
-      () => providers.credentialSource,
-      () => providers.environmentVariable,
-      () => providers.enabled,
-      () => providers.strictToolSchema,
+      () => providers.definitionId,
+      () => providers.displayName,
+      () => providers.status,
+      () => providers.authKind,
+      () => providers.credentialOrigin,
+      () => providers.isDefault,
       () => providers.defaultModelId,
-      () => providers.visibleModelIdsJson,
+      () => providers.error,
+      () => providers.customConfigJson,
       () => providers.createdAt,
       () => providers.updatedAt,
       () => providers.primaryKey,
@@ -104,7 +103,7 @@ void main() {
 
     final models = ProviderModels();
     _expectGeneratedDsl(<Object? Function()>[
-      () => models.providerId,
+      () => models.connectionId,
       () => models.modelId,
       () => models.label,
       () => models.source,
@@ -122,7 +121,7 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 2);
+      expect(database.schemaVersion, 4);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

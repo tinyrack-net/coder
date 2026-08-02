@@ -37,6 +37,7 @@ void main() {
           homeDirectory: home.path,
           port: 0,
           bearerToken: 'test-token-0123456789abcdef0123456789',
+          useEnvironmentCredentials: false,
         ),
         provider: _PatchProvider(),
       );
@@ -62,91 +63,70 @@ void main() {
       expect(client.serverInfo.features['jsonRpc2'], isTrue);
       final initialCatalog = await client.listProviderCatalog();
       expect(
-        initialCatalog.providers.map((item) => item.id),
-        contains('openai'),
-      );
-      final deepSeekPreset = initialCatalog.presets.singleWhere(
-        (item) => item.id == 'deepseek',
-      );
-      expect(deepSeekPreset.defaultModelId, 'deepseek-v4-pro');
-      final now = DateTime.now().toUtc();
-      await client.upsertProvider(
-        ApiProviderDto(
-          id: 'deepseek-test',
-          name: 'DeepSeek',
-          presetId: deepSeekPreset.id,
-          baseUrl: deepSeekPreset.defaultBaseUrl,
-          transport: deepSeekPreset.defaultTransport,
-          credentialSource: deepSeekPreset.defaultCredentialSource,
-          credentialConfigured: false,
-          environmentVariable: deepSeekPreset.defaultEnvironmentVariable,
-          enabled: true,
-          strictToolSchema: deepSeekPreset.strictToolSchema,
-          defaultModelId: deepSeekPreset.defaultModelId,
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
-      final deepSeekModels = await client.listProviderModels('deepseek-test');
-      expect(
-        deepSeekModels.map((item) => item.id),
-        containsAll(<String>['deepseek-v4-pro', 'deepseek-v4-flash']),
+        initialCatalog.definitions.map((item) => item.id),
+        containsAll(<String>['openai', 'deepseek', 'ollama']),
       );
       expect(
-        deepSeekModels.every(
-          (item) =>
-              item.capabilities.toolCalling == CapabilitySupport.supported,
-        ),
-        isTrue,
+        initialCatalog.toJson().toString(),
+        isNot(anyOf(contains('baseUrl'), contains('transport'))),
       );
-      final custom = await client.upsertProvider(
-        ApiProviderDto(
-          id: 'local-test',
+      final custom = await client.createCustomProvider(
+        'local-test',
+        CustomProviderConfigDto(
           name: 'Local test',
-          presetId: 'custom',
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
-          transport: ApiTransport.chatCompletions,
-          credentialSource: CredentialSource.stored,
-          credentialConfigured: false,
-          enabled: true,
-          strictToolSchema: false,
-          defaultModelId: 'test-model',
-          createdAt: now,
-          updatedAt: now,
+          apiFormat: ProviderApiFormat.chatCompletions,
+          authenticationRequired: false,
+          manualModelIds: const <String>['test-model'],
         ),
+        makeDefault: true,
       );
-      expect(custom.credentialConfigured, isFalse);
-      await client.setProviderCredential('local-test', 'local-secret');
-      final configuredCatalog = await client.listProviderCatalog();
+      expect(custom.status, ProviderConnectionStatus.connected);
+      expect(custom.authKind, ProviderAuthKind.none);
       expect(
-        configuredCatalog.providers
-            .singleWhere((item) => item.id == 'local-test')
-            .credentialConfigured,
-        isTrue,
+        (await client.listProviderConnections())
+            .singleWhere((connection) => connection.id == 'local-test')
+            .id,
+        'local-test',
       );
       expect(
-        configuredCatalog.toJson().toString(),
-        isNot(contains('local-secret')),
-      );
-      await client.upsertProviderModel(
-        const ProviderModelDto(
-          providerId: 'local-test',
-          id: 'test-model',
-          label: 'Test model',
-          source: ProviderModelSource.manual,
-          capabilities: ModelCapabilitiesDto(
-            streaming: CapabilitySupport.supported,
-            toolCalling: CapabilitySupport.supported,
-            reasoningEffort: CapabilitySupport.unsupported,
-            source: CapabilitySource.manual,
-          ),
-        ),
-      );
-      expect(await client.listProviderModels('local-test'), hasLength(1));
-      final refreshed = await client.refreshProviderModels('local-test');
-      expect(
-        refreshed.map((item) => item.id),
+        (await client.listProviderModels('local-test')).map((item) => item.id),
         containsAll(<String>['test-model', 'discovered-model']),
+      );
+      final updatedCustom = await client.updateCustomProvider(
+        'local-test',
+        CustomProviderConfigDto(
+          name: 'Updated local test',
+          baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
+          apiFormat: ProviderApiFormat.chatCompletions,
+          authenticationRequired: false,
+          manualModelIds: const <String>['test-model'],
+        ),
+      );
+      expect(updatedCustom.displayName, 'Updated local test');
+      await client.setDefaultProviderModel('local-test', 'discovered-model');
+      expect(
+        (await client.listProviderConnections())
+            .singleWhere((connection) => connection.id == 'local-test')
+            .defaultModelId,
+        'discovered-model',
+      );
+      await client.setDefaultProvider('local-test');
+      final temporary = await client.createCustomProvider(
+        'temporary',
+        CustomProviderConfigDto(
+          name: 'Temporary',
+          baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
+          apiFormat: ProviderApiFormat.responses,
+          authenticationRequired: false,
+          manualModelIds: const <String>['test-model'],
+        ),
+      );
+      expect(temporary.id, 'temporary');
+      await client.deleteCustomProvider(temporary.id);
+      expect(
+        (await client.listProviderConnections()).map((item) => item.id),
+        isNot(contains('temporary')),
       );
       final registered = await client.registerWorkspace(
         id: 'workspace-1',
@@ -160,15 +140,15 @@ void main() {
         id: 'agent-1',
         workspaceId: registered.id,
         title: 'Session',
-        providerId: 'openai',
-        model: 'gpt-5.6-sol',
+        providerConnectionId: 'local-test',
+        model: 'test-model',
         permissionMode: PermissionMode.ask,
       );
       expect(agent.status, AgentStatus.idle);
       final configuredAgent = await client.updateAgentConfiguration(
         agentId: agent.id,
-        providerId: 'openai',
-        model: 'gpt-5.6-sol',
+        providerConnectionId: 'local-test',
+        model: 'test-model',
         reasoningEffort: 'high',
       );
       expect(configuredAgent.reasoningEffort, 'high');
@@ -200,8 +180,8 @@ void main() {
       expect(
         client.updateAgentConfiguration(
           agentId: agent.id,
-          providerId: 'openai',
-          model: 'gpt-5.6-terra',
+          providerConnectionId: 'local-test',
+          model: 'discovered-model',
         ),
         throwsA(isA<CoderClientException>()),
       );
@@ -219,7 +199,25 @@ void main() {
       );
       expect(timeline.map((event) => event.type), contains('tool.completed'));
       expect(timeline.map((event) => event.type), contains('turn.completed'));
-      await client.deleteProvider('local-test');
+      await client.disconnectProvider('local-test');
+      await expectLater(
+        client.startTurn(
+          agentId: agent.id,
+          turnId: 'turn-stale-provider',
+          prompt: 'This must not run.',
+        ),
+        throwsA(
+          isA<CoderClientException>().having(
+            (error) => error.code,
+            'code',
+            'provider_not_connected',
+          ),
+        ),
+      );
+      expect(
+        (await client.listAgents(workspaceId: registered.id)).single.status,
+        AgentStatus.idle,
+      );
     },
   );
 
@@ -239,6 +237,7 @@ void main() {
         host: '0.0.0.0',
         port: 0,
         bearerToken: 'remote-token-0123456789abcdef0123456789',
+        useEnvironmentCredentials: false,
       ),
       provider: _PatchProvider(),
     );
@@ -256,21 +255,14 @@ void main() {
     );
     addTearDown(client.close);
     expect(client.serverInfo.features['providerAdmin'], isFalse);
-    final now = DateTime.now().toUtc();
     expect(
-      client.upsertProvider(
-        ApiProviderDto(
-          id: 'denied',
+      client.createCustomProvider(
+        'denied',
+        const CustomProviderConfigDto(
           name: 'Denied',
-          presetId: 'custom',
           baseUrl: 'http://127.0.0.1:9999/v1',
-          transport: ApiTransport.chatCompletions,
-          credentialSource: CredentialSource.none,
-          credentialConfigured: true,
-          enabled: true,
-          strictToolSchema: false,
-          createdAt: now,
-          updatedAt: now,
+          apiFormat: ProviderApiFormat.chatCompletions,
+          authenticationRequired: false,
         ),
       ),
       throwsA(
@@ -296,8 +288,10 @@ void main() {
         configDirectory: config.path,
         port: 0,
         bearerToken: token,
+        useEnvironmentCredentials: false,
         apiKey: apiKey,
       ),
+      modelDiscovery: const _StaticDiscovery(<String>['gpt-5.6-sol']),
     );
     await handle.stop();
     final persisted = StringBuffer();
@@ -337,12 +331,25 @@ void main() {
         homeDirectory: home.path,
         port: 0,
         bearerToken: 'embedded-token-0123456789abcdef012345',
+        useEnvironmentCredentials: false,
       ),
     );
     expect(handle.boundEndpoint.port, greaterThan(0));
     await handle.stop();
     await home.delete(recursive: true);
   });
+}
+
+final class _StaticDiscovery implements ProviderModelDiscovery {
+  const _StaticDiscovery(this.modelIds);
+
+  final List<String> modelIds;
+
+  @override
+  Future<List<String>> fetchModelIds(
+    ProviderRuntimeConfig config,
+    ProviderCredential? credential,
+  ) async => modelIds;
 }
 
 class _PatchProvider implements ModelProvider {

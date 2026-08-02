@@ -1,412 +1,687 @@
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
+import 'package:coder_daemon/src/provider_auth.dart';
+import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:coder_provider_openai/coder_provider_openai.dart';
 
-/// ProviderService defines a public contract.
-class ProviderService {
-  /// Creates a [ProviderService].
-  ProviderService({
+/// Stable provider connection failure translated to a protocol error code.
+final class ProviderConnectionFailure implements Exception {
+  /// Creates a provider connection failure.
+  const ProviderConnectionFailure(this.code, this.message);
+
+  /// Stable machine-readable error code.
+  final String code;
+
+  /// User-safe failure description.
+  final String message;
+
+  @override
+  String toString() => 'ProviderConnectionFailure($code): $message';
+}
+
+/// Owns provider connections while keeping runtime details out of the protocol.
+final class ProviderService implements ProviderOAuthConnector {
+  /// Creates the provider connection service.
+  factory ProviderService({
+    required ProviderRepository repository,
+    required CredentialRepository credentials,
+    required Map<String, String> environment,
+    required Clock clock,
+    required ProviderModelDiscovery modelDiscovery,
+    required ModelProviderFactory providerFactory,
+    required BuiltInProviderCatalog catalog,
+    ProviderCredentialRefresher? oauthRefresher,
+    ModelProvider? fixedProvider,
+  }) => ProviderService._(
+    repository: repository,
+    credentials: credentials,
+    environment: environment,
+    clock: clock,
+    modelDiscovery: modelDiscovery,
+    providerFactory: providerFactory,
+    catalog: catalog,
+    oauthRefresher: oauthRefresher,
+    fixedProvider: fixedProvider,
+  );
+
+  ProviderService._({
     required this._repository,
-    required this._settings,
     required this._credentials,
     required this._environment,
     required this._clock,
     required this._modelDiscovery,
     required this._providerFactory,
+    required this._catalog,
+    this._oauthRefresher,
     this._fixedProvider,
   });
 
   final ProviderRepository _repository;
-  final SettingsRepository _settings;
   final CredentialRepository _credentials;
   final Map<String, String> _environment;
   final Clock _clock;
   final ProviderModelDiscovery _modelDiscovery;
   final ModelProviderFactory _providerFactory;
+  final BuiltInProviderCatalog _catalog;
+  final ProviderCredentialRefresher? _oauthRefresher;
   final ModelProvider? _fixedProvider;
 
-  /// The initialize public API member.
-  Future<void> initialize({String? legacyOpenAIKey}) async {
+  /// Loads secrets and connects built-ins backed by daemon environment keys.
+  Future<void> initialize() async {
     await _credentials.load();
-    final existing = await _repository.getProvider('openai');
-    if (existing == null) {
-      final now = _clock.nowUtc();
-      await _repository.upsertProvider(
-        ApiProviderDto(
-          id: 'openai',
-          name: 'OpenAI',
-          presetId: 'openai',
-          baseUrl: 'https://api.openai.com/v1',
-          transport: ApiTransport.responses,
-          credentialSource: legacyOpenAIKey?.isNotEmpty == true
-              ? CredentialSource.stored
-              : CredentialSource.environment,
-          credentialConfigured: false,
-          environmentVariable: 'OPENAI_API_KEY',
-          enabled: true,
-          strictToolSchema: true,
-          defaultModelId: 'gpt-5.6-sol',
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
-      await _settings.setValue('provider.defaultId', 'openai');
+    if (_fixedProvider != null &&
+        await _repository.getConnection('openai') == null) {
+      await _initializeFixedProvider();
     }
-    if (legacyOpenAIKey?.isNotEmpty == true) {
-      await _credentials.setProviderApiKey('openai', legacyOpenAIKey!);
-    }
-    for (final model in const <String>[
-      'gpt-5.6-sol',
-      'gpt-5.6-terra',
-      'gpt-5.6-luna',
-    ]) {
-      if (await _repository.getModel('openai', model) == null) {
-        await _repository.upsertModel(
-          ProviderModelDto(
-            providerId: 'openai',
-            id: model,
-            label: model,
-            source: ProviderModelSource.preset,
-            capabilities: presetCapabilities('openai', model),
-          ),
-        );
-      }
-    }
-  }
-
-  /// The catalog public API member.
-  Future<ProviderCatalogDto> catalog() async {
-    final providers = await _repository.listProviders();
-    return ProviderCatalogDto(
-      providers: await Future.wait(providers.map(_withCredentialStatus)),
-      presets: openAICompatiblePresets,
-      defaultProviderId: await _settings.getValue('provider.defaultId'),
-    );
-  }
-
-  /// The get public API member.
-  Future<ApiProviderDto> get(String id) async {
-    final provider = await _repository.getProvider(id);
-    if (provider == null) throw StateError('Provider not found: $id');
-    return _withCredentialStatus(provider);
-  }
-
-  /// The upsert public API member.
-  Future<ApiProviderDto> upsert(
-    ApiProviderDto provider, {
-    bool makeDefault = false,
-  }) async {
-    final uri = Uri.tryParse(provider.baseUrl);
-    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-      throw const FormatException('Provider baseUrl must be an absolute URL.');
-    }
-    if (uri.scheme != 'http' && uri.scheme != 'https') {
-      throw const FormatException('Provider baseUrl must use http or https.');
-    }
-    if (provider.credentialSource == CredentialSource.environment &&
-        (provider.environmentVariable?.trim().isEmpty ?? true)) {
-      throw const FormatException(
-        'environmentVariable is required for environment credentials.',
-      );
-    }
-    final stored = await _repository.upsertProvider(
-      provider.copyWith(
-        credentialConfigured: false,
-        baseUrl: provider.baseUrl.replaceAll(RegExp(r'/+$'), ''),
-        updatedAt: _clock.nowUtc(),
-      ),
-    );
-    await _ensurePresetModels(stored);
-    if (makeDefault) {
-      await _settings.setValue('provider.defaultId', provider.id);
-    }
-    if (provider.credentialSource != CredentialSource.stored) {
-      await _credentials.removeProvider(provider.id);
-    }
-    return _withCredentialStatus(stored);
-  }
-
-  Future<void> _ensurePresetModels(ApiProviderDto provider) async {
-    final preset = openAICompatiblePresets
-        .where((item) => item.id == provider.presetId)
-        .firstOrNull;
-    if (preset == null) return;
-    for (final modelId in preset.modelIds) {
-      if (await _repository.getModel(provider.id, modelId) != null) {
+    for (final preset in builtInProviderPresets) {
+      if (await _repository.getConnection(preset.definition.id) != null) {
         continue;
       }
-      await _repository.upsertModel(
-        ProviderModelDto(
-          providerId: provider.id,
-          id: modelId,
-          label: modelId,
-          source: ProviderModelSource.preset,
-          capabilities: presetCapabilities(provider.presetId, modelId),
-        ),
+      final environmentCredential = _environmentCredential(preset);
+      if (environmentCredential == null) continue;
+      await _connectBuiltIn(
+        preset,
+        ProviderAuthKind.apiKey,
+        ProviderCredentialOrigin.environment,
+        environmentCredential,
       );
     }
   }
 
-  /// The delete public API member.
-  Future<void> delete(String id) async {
-    await _repository.deleteProvider(id);
-    await _credentials.removeProvider(id);
-    if (await _settings.getValue('provider.defaultId') == id) {
-      await _settings.setValue('provider.defaultId', '');
-    }
-  }
-
-  /// The setCredential public API member.
-  Future<void> setCredential(String providerId, String value) async {
-    final provider = await get(providerId);
-    if (provider.credentialSource != CredentialSource.stored) {
-      throw StateError('Provider does not use stored credentials.');
-    }
-    await _credentials.setProviderApiKey(providerId, value);
-  }
-
-  /// The listModels public API member.
-  Future<List<ProviderModelDto>> listModels(String providerId) async {
-    final provider = await get(providerId);
-    final models = await _repository.listModels(providerId);
-    if (provider.visibleModelIds.isEmpty) return models;
-    final visible = provider.visibleModelIds.toSet();
-    return models
-        .where(
-          (model) =>
-              model.source == ProviderModelSource.manual ||
-              visible.contains(model.id),
-        )
-        .toList();
-  }
-
-  /// The refreshModels public API member.
-  Future<List<ProviderModelDto>> refreshModels(String providerId) async {
-    final provider = await get(providerId);
-    final apiKey = _apiKey(provider);
-    try {
-      final modelIds = await _modelDiscovery.fetchModelIds(provider, apiKey);
-      final models = <ProviderModelDto>[
-        for (final id in modelIds)
-          ProviderModelDto(
-            providerId: providerId,
-            id: id,
-            label: id,
-            source: ProviderModelSource.discovered,
-            capabilities: presetCapabilities(provider.presetId, id),
-          ),
-      ];
-      await _repository.replaceDiscoveredModels(providerId, models);
-      return listModels(providerId);
-    } on Exception catch (error) {
-      throw StateError('Model discovery failed: $error');
-    }
-  }
-
-  /// The upsertManualModel public API member.
-  Future<ProviderModelDto> upsertManualModel(ProviderModelDto model) {
-    return _repository.upsertModel(
-      model.copyWith(
-        source: ProviderModelSource.manual,
-        capabilities: model.capabilities.copyWith(
-          source: CapabilitySource.manual,
-        ),
-      ),
+  Future<void> _initializeFixedProvider() async {
+    final preset = _catalog.require('openai');
+    final now = _clock.nowUtc();
+    final connection = ProviderConnectionDto(
+      id: preset.definition.id,
+      definitionId: preset.definition.id,
+      displayName: preset.definition.name,
+      status: ProviderConnectionStatus.connected,
+      authKind: ProviderAuthKind.none,
+      credentialOrigin: ProviderCredentialOrigin.none,
+      isDefault: true,
+      defaultModelId: preset.definition.recommendedModelIds.firstOrNull,
+      createdAt: now,
+      updatedAt: now,
     );
+    await _repository.upsertConnection(connection);
+    await _repository.replaceModels(
+      connection.id,
+      _seedModels(connection).values,
+    );
+    await _repository.setDefault(connection.id);
   }
 
-  /// The deleteModel public API member.
-  Future<void> deleteModel(String providerId, String modelId) async {
-    final model = await _repository.getModel(providerId, modelId);
-    if (model == null) return;
-    if (model.source != ProviderModelSource.manual) {
-      throw StateError('Only manually configured models can be deleted.');
-    }
-    await _repository.deleteModel(providerId, modelId);
-  }
+  /// Returns the safe public provider catalog.
+  Future<ProviderCatalogDto> catalog() async => _catalog.catalog();
 
-  /// The diagnose public API member.
-  Future<ProviderDiagnosticDto> diagnose(
-    String providerId,
-    String model,
-  ) async {
-    final checkedAt = _clock.nowUtc();
-    try {
-      final provider = await resolve(providerId, modelId: model);
-      var completed = false;
-      var toolCalling = false;
-      await for (final event in provider.stream(
-        ModelRequest(
-          model: model,
-          reasoningEffort: 'medium',
-          instructions: 'Call the capability_probe tool exactly once.',
-          history: const <ConversationItem>[
-            UserConversationItem('Run the capability probe.'),
-          ],
-          tools: const <ModelToolDefinition>[
-            ModelToolDefinition(
-              name: 'capability_probe',
-              description: 'Returns a fixed diagnostic value.',
-              parameters: <String, dynamic>{
-                'type': 'object',
-                'properties': <String, dynamic>{
-                  'value': <String, dynamic>{
-                    'type': 'string',
-                    'enum': <String>['ok'],
-                  },
-                },
-                'required': <String>['value'],
-                'additionalProperties': false,
-              },
-            ),
-          ],
-          safetyIdentifier: 'provider-diagnostic',
-          forceToolName: 'capability_probe',
-        ),
-        CancellationToken(),
-      )) {
-        if (event is ModelFunctionCall && event.name == 'capability_probe') {
-          toolCalling = true;
-        }
-        if (event is ModelResponseCompleted) completed = true;
+  /// Marks an explicit catalog refresh while retaining trusted runtime data.
+  Future<ProviderCatalogDto> refreshCatalog() async {
+    final refreshed = await _catalog.refresh();
+    for (final connection in await _repository.listConnections()) {
+      if (connection.definitionId == 'custom') continue;
+      final models = <String, ProviderModelDto>{
+        for (final model in await _repository.listModels(connection.id))
+          model.id: model,
+      };
+      for (final metadata in _catalog.modelsFor(connection.definitionId)) {
+        models[metadata.id] = ProviderModelDto(
+          connectionId: connection.id,
+          id: metadata.id,
+          label: metadata.label,
+          source:
+              _catalog.isRefreshedModel(
+                connection.definitionId,
+                metadata.id,
+              )
+              ? ProviderModelSource.refreshed
+              : ProviderModelSource.bundled,
+          capabilities: metadata.capabilities,
+          pricing: metadata.pricing,
+          limits: metadata.limits,
+        );
       }
-      final status = completed && toolCalling
-          ? DiagnosticStatus.verified
-          : DiagnosticStatus.failed;
-      final result = ProviderDiagnosticDto(
-        providerId: providerId,
-        model: model,
-        status: status,
-        endpointReachable: completed,
-        streaming: completed,
-        toolCalling: toolCalling,
-        checkedAt: checkedAt,
-        error: status == DiagnosticStatus.failed
-            ? 'The provider did not return a streamed tool call.'
-            : null,
-      );
-      await _saveDiagnostic(result);
-      return result;
-    } on Exception catch (error) {
-      return _failedDiagnostic(providerId, model, checkedAt, error);
+      await _repository.replaceModels(connection.id, models.values);
     }
+    return refreshed;
   }
 
-  Future<ProviderDiagnosticDto> _failedDiagnostic(
-    String providerId,
-    String model,
-    DateTime checkedAt,
-    Object error,
-  ) async {
-    final result = ProviderDiagnosticDto(
-      providerId: providerId,
-      model: model,
-      status: DiagnosticStatus.failed,
-      endpointReachable: false,
-      streaming: false,
-      toolCalling: false,
-      checkedAt: checkedAt,
-      error: '$error',
-    );
-    await _saveDiagnostic(result);
+  /// Returns all user-owned connections with deterministic ordering.
+  Future<List<ProviderConnectionDto>> connections() async {
+    final result = await _repository.listConnections();
+    result.sort((left, right) => left.displayName.compareTo(right.displayName));
     return result;
   }
 
-  /// The resolve public API member.
-  Future<ModelProvider> resolve(String providerId, {String? modelId}) async {
-    if (_fixedProvider != null) return _fixedProvider;
-    final provider = await get(providerId);
-    if (!provider.enabled) {
-      throw StateError('Provider is disabled: $providerId');
+  /// Returns one connection or fails when it does not exist.
+  Future<ProviderConnectionDto> get(String id) async {
+    final connection = await _repository.getConnection(id);
+    if (connection == null) {
+      throw ProviderConnectionFailure(
+        'provider_not_connected',
+        'Provider connection not found: $id',
+      );
     }
-    final key = _apiKey(provider);
-    if (provider.credentialSource != CredentialSource.none && key.isEmpty) {
-      throw StateError('Provider credential is not configured: $providerId');
+    return connection;
+  }
+
+  /// Connects a hosted built-in provider with one API key.
+  Future<ProviderConnectionDto> connectApiKey(
+    String definitionId,
+    String apiKey, {
+    bool makeDefault = false,
+  }) async {
+    if (apiKey.trim().isEmpty) {
+      throw const FormatException('API key must not be empty.');
     }
-    final effectiveModel = modelId ?? provider.defaultModelId;
-    final model = effectiveModel == null
-        ? null
-        : await _repository.getModel(provider.id, effectiveModel);
-    final supportsReasoning =
-        model?.capabilities.reasoningEffort == CapabilitySupport.supported;
-    return _providerFactory.create(
-      provider: provider,
-      apiKey: key,
-      supportsReasoningEffort: supportsReasoning,
+    final preset = _catalog.require(definitionId);
+    if (!_supportsFlow(preset, ProviderAuthFlow.apiKey)) {
+      throw StateError(
+        '$definitionId does not support API key authentication.',
+      );
+    }
+    final credential = ApiKeyCredential(apiKey);
+    await _credentials.setCredential(definitionId, credential);
+    return _connectBuiltIn(
+      preset,
+      ProviderAuthKind.apiKey,
+      ProviderCredentialOrigin.stored,
+      credential,
+      makeDefault: makeDefault,
     );
   }
 
-  /// The validateAgentModel public API member.
-  Future<void> validateAgentModel(String providerId, String modelId) async {
-    final provider = await get(providerId);
-    if (!provider.enabled) {
-      throw StateError('Provider is disabled: $providerId');
+  /// Connects a local built-in provider without authentication.
+  Future<ProviderConnectionDto> connectNone(
+    String definitionId, {
+    bool makeDefault = false,
+  }) async {
+    final preset = _catalog.require(definitionId);
+    if (!_supportsFlow(preset, ProviderAuthFlow.none)) {
+      throw StateError('$definitionId requires authentication.');
     }
-    final model = await _repository.getModel(providerId, modelId);
+    await _credentials.removeCredential(definitionId);
+    return _connectBuiltIn(
+      preset,
+      ProviderAuthKind.none,
+      ProviderCredentialOrigin.none,
+      null,
+      makeDefault: makeDefault,
+    );
+  }
+
+  @override
+  Future<void> connectOAuth(
+    String definitionId,
+    OAuthCredential credential, {
+    required bool makeDefault,
+  }) async {
+    final preset = _catalog.require(definitionId);
+    if (!_supportsFlow(preset, ProviderAuthFlow.oauthBrowser) &&
+        !_supportsFlow(preset, ProviderAuthFlow.oauthDevice)) {
+      throw StateError('$definitionId does not support OAuth.');
+    }
+    await _credentials.setCredential(definitionId, credential);
+    await _connectBuiltIn(
+      preset,
+      ProviderAuthKind.oauth,
+      ProviderCredentialOrigin.oauth,
+      credential,
+      makeDefault: makeDefault,
+    );
+  }
+
+  /// Creates an advanced custom OpenAI-compatible connection.
+  Future<ProviderConnectionDto> createCustom(
+    String id,
+    CustomProviderConfigDto config, {
+    String? apiKey,
+    bool makeDefault = false,
+  }) async {
+    if (id.trim().isEmpty) {
+      throw const FormatException('Custom provider ID must not be empty.');
+    }
+    if (await _repository.getConnection(id) != null) {
+      throw StateError('Provider connection already exists: $id');
+    }
+    final normalized = _validateCustom(config);
+    final credential = _customCredential(normalized, apiKey);
+    if (credential != null) {
+      await _credentials.setCredential(id, credential);
+    }
+    final now = _clock.nowUtc();
+    final connection = ProviderConnectionDto(
+      id: id,
+      definitionId: 'custom',
+      displayName: normalized.name,
+      status: ProviderConnectionStatus.connecting,
+      authKind: normalized.authenticationRequired
+          ? ProviderAuthKind.apiKey
+          : ProviderAuthKind.none,
+      credentialOrigin: credential == null
+          ? ProviderCredentialOrigin.none
+          : ProviderCredentialOrigin.stored,
+      isDefault: await _shouldBecomeDefault(makeDefault),
+      createdAt: now,
+      updatedAt: now,
+      customConfig: normalized,
+    );
+    return _discoverAndSave(connection, credential);
+  }
+
+  /// Updates advanced settings for an existing custom connection.
+  Future<ProviderConnectionDto> updateCustom(
+    String id,
+    CustomProviderConfigDto config, {
+    String? apiKey,
+  }) async {
+    final current = await get(id);
+    if (current.definitionId != 'custom') {
+      throw StateError('Built-in provider configuration is immutable.');
+    }
+    final normalized = _validateCustom(config);
+    var credential = _credentials.credential(id);
+    if (apiKey != null) {
+      credential = _customCredential(normalized, apiKey);
+      if (credential == null) {
+        await _credentials.removeCredential(id);
+      } else {
+        await _credentials.setCredential(id, credential);
+      }
+    }
+    final updated = current.copyWith(
+      displayName: normalized.name,
+      status: ProviderConnectionStatus.connecting,
+      authKind: normalized.authenticationRequired
+          ? ProviderAuthKind.apiKey
+          : ProviderAuthKind.none,
+      credentialOrigin: credential == null
+          ? ProviderCredentialOrigin.none
+          : ProviderCredentialOrigin.stored,
+      updatedAt: _clock.nowUtc(),
+      customConfig: normalized,
+      error: null,
+    );
+    return _discoverAndSave(updated, credential);
+  }
+
+  /// Disconnects a provider but preserves agents and historical metadata.
+  Future<void> disconnect(String id) async {
+    final connection = await get(id);
+    await _credentials.removeCredential(id);
+    await _repository.upsertConnection(
+      connection.copyWith(
+        status: ProviderConnectionStatus.disconnected,
+        credentialOrigin: ProviderCredentialOrigin.none,
+        isDefault: false,
+        updatedAt: _clock.nowUtc(),
+        error: null,
+      ),
+    );
+  }
+
+  /// Permanently removes a custom provider connection.
+  Future<void> deleteCustom(String id) async {
+    final connection = await get(id);
+    if (connection.definitionId != 'custom') {
+      throw StateError('Built-in provider connections cannot be deleted.');
+    }
+    await _credentials.removeCredential(id);
+    await _repository.deleteConnection(id);
+  }
+
+  /// Selects the daemon-wide default provider connection.
+  Future<void> setDefault(String id) async {
+    final connection = await get(id);
+    if (!_canRun(connection.status)) {
+      throw StateError('Provider is not connected: $id');
+    }
+    await _repository.setDefault(id);
+  }
+
+  /// Selects a default model already known to a provider connection.
+  Future<void> setDefaultModel(String id, String modelId) async {
+    final connection = await get(id);
+    if (await _repository.getModel(id, modelId) == null) {
+      throw StateError('Unknown provider model: $modelId');
+    }
+    await _repository.upsertConnection(
+      connection.copyWith(
+        defaultModelId: modelId,
+        updatedAt: _clock.nowUtc(),
+      ),
+    );
+  }
+
+  /// Returns cached and discovered models for a connection.
+  Future<List<ProviderModelDto>> listModels(String connectionId) =>
+      _repository.listModels(connectionId);
+
+  /// Creates an executable provider without exposing secrets or endpoints.
+  Future<ModelProvider> resolve(String connectionId, {String? modelId}) async {
+    if (_fixedProvider != null) return _fixedProvider;
+    final connection = await get(connectionId);
+    if (!_canRun(connection.status)) {
+      throw ProviderConnectionFailure(
+        'provider_not_connected',
+        'Provider is not connected: $connectionId',
+      );
+    }
+    var credential = _credentialFor(connection);
+    if (connection.authKind != ProviderAuthKind.none && credential == null) {
+      throw ProviderConnectionFailure(
+        'provider_not_connected',
+        'Provider credential is not configured: $connectionId',
+      );
+    }
+    if (credential case final OAuthCredential oauthCredential
+        when !oauthCredential.expiresAt.isAfter(
+          _clock.nowUtc().add(const Duration(minutes: 5)),
+        )) {
+      credential = await _refreshOAuth(connection, oauthCredential);
+    }
+    final effectiveModel = modelId ?? connection.defaultModelId;
+    final model = effectiveModel == null
+        ? null
+        : await _repository.getModel(connectionId, effectiveModel);
+    return _providerFactory.create(
+      config: _runtimeConfig(connection),
+      credential: credential,
+      supportsReasoningEffort:
+          model?.capabilities.reasoningEffort == CapabilitySupport.supported,
+    );
+  }
+
+  Future<OAuthCredential> _refreshOAuth(
+    ProviderConnectionDto connection,
+    OAuthCredential credential,
+  ) async {
+    final refresher = _oauthRefresher;
+    if (refresher == null) {
+      throw StateError('OAuth credential refresh is not configured.');
+    }
+    try {
+      final refreshed = await refresher.refresh(connection.id, credential);
+      await _credentials.setCredential(connection.id, refreshed);
+      return refreshed;
+    } on OAuthRefreshFailure catch (failure) {
+      if (failure.reauthRequired) {
+        await _repository.upsertConnection(
+          connection.copyWith(
+            status: ProviderConnectionStatus.reauthRequired,
+            updatedAt: _clock.nowUtc(),
+            error: failure.message,
+          ),
+        );
+      }
+      throw ProviderConnectionFailure(
+        failure.reauthRequired
+            ? 'provider_not_connected'
+            : 'provider_unavailable',
+        failure.message,
+      );
+    }
+  }
+
+  /// Verifies that a connected model can stream and call coding tools.
+  Future<void> validateAgentModel(
+    String connectionId,
+    String modelId,
+  ) async {
+    final connection = await get(connectionId);
+    if (!_canRun(connection.status)) {
+      throw ProviderConnectionFailure(
+        'provider_not_connected',
+        'Provider is not connected: $connectionId',
+      );
+    }
+    final model = await _repository.getModel(connectionId, modelId);
     if (model == null) throw StateError('Unknown provider model: $modelId');
     if (model.capabilities.streaming != CapabilitySupport.supported ||
         model.capabilities.toolCalling != CapabilitySupport.supported) {
       throw StateError(
-        'Model streaming and tool calling capabilities must be verified or '
-        'configured.',
+        'Model streaming and tool calling capabilities must be supported.',
       );
     }
   }
 
-  Future<ApiProviderDto> _withCredentialStatus(ApiProviderDto provider) async {
-    final configured = switch (provider.credentialSource) {
-      CredentialSource.none => true,
-      CredentialSource.stored =>
-        _credentials.providerApiKey(provider.id)?.isNotEmpty == true,
-      CredentialSource.environment =>
-        _environment[provider.environmentVariable]?.isNotEmpty == true,
-    };
-    return provider.copyWith(credentialConfigured: configured);
+  Future<ProviderConnectionDto> _connectBuiltIn(
+    ProviderRuntimePreset preset,
+    ProviderAuthKind authKind,
+    ProviderCredentialOrigin origin,
+    ProviderCredential? credential, {
+    bool makeDefault = false,
+  }) async {
+    final existing = await _repository.getConnection(preset.definition.id);
+    final now = _clock.nowUtc();
+    final connection = ProviderConnectionDto(
+      id: preset.definition.id,
+      definitionId: preset.definition.id,
+      displayName: preset.definition.name,
+      status: ProviderConnectionStatus.connecting,
+      authKind: authKind,
+      credentialOrigin: origin,
+      isDefault: existing?.isDefault ?? await _shouldBecomeDefault(makeDefault),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      defaultModelId: existing?.defaultModelId,
+    );
+    if (makeDefault) {
+      await _repository.setDefault(connection.id);
+    }
+    return _discoverAndSave(connection, credential);
   }
 
-  String _apiKey(ApiProviderDto provider) =>
-      switch (provider.credentialSource) {
-        CredentialSource.none => '',
-        CredentialSource.stored =>
-          _credentials.providerApiKey(provider.id) ?? '',
-        CredentialSource.environment =>
-          _environment[provider.environmentVariable] ?? '',
+  Future<ProviderConnectionDto> _discoverAndSave(
+    ProviderConnectionDto connection,
+    ProviderCredential? credential,
+  ) async {
+    await _repository.upsertConnection(connection);
+    final runtime = _runtimeConfig(connection);
+    final models = _seedModels(connection);
+    ProviderConnectionStatus status;
+    String? error;
+    try {
+      final discovered = await _modelDiscovery.fetchModelIds(
+        runtime,
+        credential,
+      );
+      for (final modelId in discovered) {
+        models.putIfAbsent(
+          modelId,
+          () => ProviderModelDto(
+            connectionId: connection.id,
+            id: modelId,
+            label: modelId,
+            source: ProviderModelSource.discovered,
+            capabilities: _catalogCapabilities(
+              connection.definitionId,
+              modelId,
+            ),
+          ),
+        );
+      }
+      status = ProviderConnectionStatus.connected;
+    } on ProviderDiscoveryFailure catch (failure) {
+      error = failure.message;
+      status = switch (failure.kind) {
+        ProviderDiscoveryFailureKind.invalidCredential =>
+          ProviderConnectionStatus.error,
+        ProviderDiscoveryFailureKind.unavailable =>
+          ProviderConnectionStatus.degraded,
+      };
+    }
+    await _repository.replaceModels(connection.id, models.values);
+    final saved = connection.copyWith(
+      status: status,
+      defaultModelId: _selectDefaultModel(connection, models.keys),
+      updatedAt: _clock.nowUtc(),
+      error: error,
+    );
+    await _repository.upsertConnection(saved);
+    if (saved.isDefault) await _repository.setDefault(saved.id);
+    return (await _repository.getConnection(saved.id)) ?? saved;
+  }
+
+  Map<String, ProviderModelDto> _seedModels(
+    ProviderConnectionDto connection,
+  ) {
+    final result = <String, ProviderModelDto>{};
+    for (final model in _catalog.modelsFor(connection.definitionId)) {
+      result[model.id] = ProviderModelDto(
+        connectionId: connection.id,
+        id: model.id,
+        label: model.label,
+        source: _catalog.isRefreshedModel(connection.definitionId, model.id)
+            ? ProviderModelSource.refreshed
+            : ProviderModelSource.bundled,
+        capabilities: model.capabilities,
+        pricing: model.pricing,
+        limits: model.limits,
+      );
+    }
+    for (final modelId
+        in connection.customConfig?.manualModelIds ?? const <String>[]) {
+      result[modelId] = ProviderModelDto(
+        connectionId: connection.id,
+        id: modelId,
+        label: modelId,
+        source: ProviderModelSource.manual,
+        capabilities: const ModelCapabilitiesDto(
+          streaming: CapabilitySupport.supported,
+          toolCalling: CapabilitySupport.supported,
+          source: CapabilitySource.manual,
+        ),
+      );
+    }
+    return result;
+  }
+
+  ModelCapabilitiesDto _catalogCapabilities(
+    String definitionId,
+    String modelId,
+  ) =>
+      _catalog
+          .modelsFor(definitionId)
+          .where((model) => model.id == modelId)
+          .map((model) => model.capabilities)
+          .firstOrNull ??
+      const ModelCapabilitiesDto();
+
+  String? _selectDefaultModel(
+    ProviderConnectionDto connection,
+    Iterable<String> modelIds,
+  ) {
+    final available = modelIds.toSet();
+    if (available.contains(connection.defaultModelId)) {
+      return connection.defaultModelId;
+    }
+    final recommended = _catalog
+        .find(connection.definitionId)
+        ?.definition
+        .recommendedModelIds;
+    for (final id in recommended ?? const <String>[]) {
+      if (available.contains(id)) return id;
+    }
+    return available.firstOrNull;
+  }
+
+  ProviderRuntimeConfig _runtimeConfig(ProviderConnectionDto connection) {
+    final custom = connection.customConfig;
+    if (custom != null) {
+      return ProviderRuntimeConfig(
+        id: connection.id,
+        definitionId: connection.definitionId,
+        baseUrl: custom.baseUrl,
+        apiFormat: custom.apiFormat,
+        strictToolSchema: custom.strictToolSchema,
+      );
+    }
+    final preset = _catalog.require(connection.definitionId);
+    if (connection.definitionId == 'openai' &&
+        connection.authKind == ProviderAuthKind.oauth) {
+      return ProviderRuntimeConfig(
+        id: connection.id,
+        definitionId: connection.definitionId,
+        baseUrl: 'https://chatgpt.com/backend-api/codex',
+        apiFormat: ProviderApiFormat.responses,
+        strictToolSchema: true,
+      );
+    }
+    return ProviderRuntimeConfig(
+      id: connection.id,
+      definitionId: connection.definitionId,
+      baseUrl: preset.baseUrl,
+      apiFormat: preset.apiFormat,
+      strictToolSchema: preset.strictToolSchema,
+    );
+  }
+
+  ProviderCredential? _credentialFor(ProviderConnectionDto connection) =>
+      switch (connection.credentialOrigin) {
+        ProviderCredentialOrigin.stored || ProviderCredentialOrigin.oauth =>
+          _credentials.credential(connection.id),
+        ProviderCredentialOrigin.environment => _environmentCredential(
+          _catalog.require(connection.definitionId),
+        ),
+        ProviderCredentialOrigin.none => null,
       };
 
-  Future<void> _saveDiagnostic(ProviderDiagnosticDto result) async {
-    final existing = await _repository.getModel(
-      result.providerId,
-      result.model,
-    );
-    final base =
-        existing ??
-        ProviderModelDto(
-          providerId: result.providerId,
-          id: result.model,
-          label: result.model,
-          source: ProviderModelSource.manual,
-          capabilities: const ModelCapabilitiesDto(),
-        );
-    await _repository.upsertModel(
-      base.copyWith(
-        diagnosticStatus: result.status,
-        verifiedAt: result.checkedAt,
-        diagnosticError: result.error,
-        capabilities: base.capabilities.source == CapabilitySource.manual
-            ? base.capabilities
-            : base.capabilities.copyWith(
-                streaming: result.streaming
-                    ? CapabilitySupport.supported
-                    : CapabilitySupport.unsupported,
-                toolCalling: result.toolCalling
-                    ? CapabilitySupport.supported
-                    : CapabilitySupport.unsupported,
-                source: CapabilitySource.diagnostic,
-              ),
-      ),
+  ApiKeyCredential? _environmentCredential(ProviderRuntimePreset preset) {
+    for (final name in preset.environmentVariables) {
+      final value = _environment[name];
+      if (value != null && value.isNotEmpty) return ApiKeyCredential(value);
+    }
+    return null;
+  }
+
+  Future<bool> _shouldBecomeDefault(bool requested) async {
+    if (requested) return true;
+    final existing = await _repository.listConnections();
+    return existing.every((connection) => !connection.isDefault);
+  }
+
+  static bool _supportsFlow(
+    ProviderRuntimePreset preset,
+    ProviderAuthFlow flow,
+  ) => preset.definition.authMethods.any((method) => method.flow == flow);
+
+  static bool _canRun(ProviderConnectionStatus status) =>
+      status == ProviderConnectionStatus.connected ||
+      status == ProviderConnectionStatus.degraded;
+
+  static ApiKeyCredential? _customCredential(
+    CustomProviderConfigDto config,
+    String? apiKey,
+  ) {
+    if (!config.authenticationRequired) return null;
+    if (apiKey == null || apiKey.trim().isEmpty) {
+      throw const FormatException('This custom provider requires an API key.');
+    }
+    return ApiKeyCredential(apiKey);
+  }
+
+  static CustomProviderConfigDto _validateCustom(
+    CustomProviderConfigDto config,
+  ) {
+    final uri = Uri.tryParse(config.baseUrl);
+    if (uri == null ||
+        !uri.hasAuthority ||
+        (uri.scheme != 'http' && uri.scheme != 'https')) {
+      throw const FormatException(
+        'Custom provider base URL must be an absolute HTTP(S) URL.',
+      );
+    }
+    return config.copyWith(
+      name: config.name.trim(),
+      baseUrl: config.baseUrl.replaceAll(RegExp(r'/+$'), ''),
+      manualModelIds: config.manualModelIds
+          .map((id) => id.trim())
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList(growable: false),
     );
   }
 }

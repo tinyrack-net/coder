@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coder_app/src/bootstrap.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/settings_page.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file_selector/file_selector.dart';
@@ -15,16 +16,26 @@ part 'app.g.dart';
 /// CoderApp defines a public contract.
 class CoderApp extends StatelessWidget {
   /// Creates a [CoderApp].
-  CoderApp({required this.bootstrap, super.key});
+  CoderApp({
+    required this.bootstrap,
+    this.externalUrlOpener = const PlatformExternalUrlOpener(),
+    super.key,
+  });
 
   /// The bootstrap public API member.
   final AppBootstrap bootstrap;
+
+  /// Platform adapter used to open interactive authorization pages.
+  final ExternalUrlOpener externalUrlOpener;
 
   late final GoRouter _router = GoRouter(routes: $appRoutes);
 
   @override
   Widget build(BuildContext context) => ProviderScope(
-    overrides: [bootstrapProvider.overrideWithValue(bootstrap)],
+    overrides: [
+      bootstrapProvider.overrideWithValue(bootstrap),
+      externalUrlOpenerProvider.overrideWithValue(externalUrlOpener),
+    ],
     child: MaterialApp.router(
       title: 'Tinyrack Coder',
       debugShowCheckedModeBanner: false,
@@ -501,23 +512,33 @@ class _AgentPane extends ConsumerWidget {
     final providerState = await ref.read(
       providerSettingsControllerProvider.future,
     );
-    final catalog = providerState?.catalog;
-    if (catalog == null || catalog.providers.isEmpty) return;
-    var providerId = catalog.defaultProviderId ?? catalog.providers.first.id;
-    await providerController.loadModels(providerId);
+    final connections = providerState?.connections
+        .where(
+          (connection) =>
+              connection.status == ProviderConnectionStatus.connected ||
+              connection.status == ProviderConnectionStatus.degraded,
+        )
+        .toList(growable: false);
+    if (connections == null || connections.isEmpty) return;
+    var connectionId = connections
+        .where((connection) => connection.isDefault)
+        .firstOrNull
+        ?.id;
+    connectionId ??= connections.first.id;
+    await providerController.loadModels(connectionId);
     if (!context.mounted) return;
     final availableModels =
         ref
             .read(providerSettingsControllerProvider)
             .asData
             ?.value
-            ?.models[providerId] ??
+            ?.models[connectionId] ??
         const <ProviderModelDto>[];
     final draft = await showDialog<_AgentDraft>(
       context: context,
       builder: (context) => _AgentDraftDialog(
-        catalog: catalog,
-        providerId: providerId,
+        connections: connections,
+        connectionId: connectionId!,
         models: availableModels,
         loadModels: (value) async {
           await providerController.loadModels(value);
@@ -531,10 +552,9 @@ class _AgentPane extends ConsumerWidget {
       ),
     );
     if (draft == null || !context.mounted) return;
-    providerId = draft.providerId;
     final agent = await controller.create(
       title: draft.title,
-      providerId: providerId,
+      providerConnectionId: draft.providerConnectionId,
       model: draft.model,
       reasoningEffort: draft.reasoningEffort,
       permissionMode: draft.permissionMode,
@@ -551,20 +571,20 @@ class _AgentPane extends ConsumerWidget {
 
 typedef _ModelLoader =
     Future<List<ProviderModelDto>> Function(
-      String providerId,
+      String connectionId,
     );
 
 final class _AgentDraft {
   const _AgentDraft({
     required this.title,
-    required this.providerId,
+    required this.providerConnectionId,
     required this.model,
     required this.reasoningEffort,
     required this.permissionMode,
   });
 
   final String title;
-  final String providerId;
+  final String providerConnectionId;
   final String model;
   final String reasoningEffort;
   final PermissionMode permissionMode;
@@ -572,14 +592,14 @@ final class _AgentDraft {
 
 class _AgentDraftDialog extends StatefulWidget {
   const _AgentDraftDialog({
-    required this.catalog,
-    required this.providerId,
+    required this.connections,
+    required this.connectionId,
     required this.models,
     required this.loadModels,
   });
 
-  final ProviderCatalogDto catalog;
-  final String providerId;
+  final List<ProviderConnectionDto> connections;
+  final String connectionId;
   final List<ProviderModelDto> models;
   final _ModelLoader loadModels;
 
@@ -590,7 +610,7 @@ class _AgentDraftDialog extends StatefulWidget {
 class _AgentDraftDialogState extends State<_AgentDraftDialog> {
   late final TextEditingController _title;
   late final TextEditingController _model;
-  late String _providerId;
+  late String _connectionId;
   late List<ProviderModelDto> _models;
   PermissionMode _permission = PermissionMode.ask;
   var _reasoningEffort = 'medium';
@@ -598,13 +618,13 @@ class _AgentDraftDialogState extends State<_AgentDraftDialog> {
   @override
   void initState() {
     super.initState();
-    _providerId = widget.providerId;
+    _connectionId = widget.connectionId;
     _models = widget.models;
     _title = TextEditingController(text: 'Coding session');
     _model = TextEditingController(
       text:
-          widget.catalog.providers
-              .where((item) => item.id == _providerId)
+          widget.connections
+              .where((item) => item.id == _connectionId)
               .firstOrNull
               ?.defaultModelId ??
           '',
@@ -630,14 +650,13 @@ class _AgentDraftDialogState extends State<_AgentDraftDialog> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: _providerId,
+          initialValue: _connectionId,
           decoration: const InputDecoration(labelText: 'API provider'),
-          items: widget.catalog.providers
-              .where((item) => item.enabled)
+          items: widget.connections
               .map(
                 (value) => DropdownMenuItem(
                   value: value.id,
-                  child: Text(value.name),
+                  child: Text(value.displayName),
                 ),
               )
               .toList(),
@@ -697,11 +716,11 @@ class _AgentDraftDialogState extends State<_AgentDraftDialog> {
     if (value == null) return;
     final models = await widget.loadModels(value);
     if (!mounted) return;
-    final provider = widget.catalog.providers
+    final provider = widget.connections
         .where((item) => item.id == value)
         .firstOrNull;
     setState(() {
-      _providerId = value;
+      _connectionId = value;
       _models = models;
       _model.text = provider?.defaultModelId ?? '';
     });
@@ -715,7 +734,7 @@ class _AgentDraftDialogState extends State<_AgentDraftDialog> {
       context,
       _AgentDraft(
         title: title.isEmpty ? 'Coding session' : title,
-        providerId: _providerId,
+        providerConnectionId: _connectionId,
         model: model,
         reasoningEffort: _reasoningEffort,
         permissionMode: _permission,
@@ -770,7 +789,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         ListTile(
           title: Text(selected.title),
           subtitle: Text(
-            '${selected.providerId}/${selected.model} · '
+            '${selected.providerConnectionId}/${selected.model} · '
             '${selected.reasoningEffort} · ${selected.permissionMode.name}',
           ),
           trailing: busy
@@ -851,32 +870,32 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final providerController = ref.read(
       providerSettingsControllerProvider.notifier,
     );
-    final catalog = (await ref.read(
+    final providerState = await ref.read(
       providerSettingsControllerProvider.future,
-    ))?.catalog;
-    if (catalog == null) return;
-    await providerController.loadModels(agent.providerId);
+    );
+    if (providerState == null) return;
+    await providerController.loadModels(agent.providerConnectionId);
     if (!mounted) return;
     final models =
         ref
             .read(providerSettingsControllerProvider)
             .asData
             ?.value
-            ?.models[agent.providerId] ??
+            ?.models[agent.providerConnectionId] ??
         const <ProviderModelDto>[];
     final draft = await showDialog<_AgentConfigurationDraft>(
       context: context,
       builder: (context) => _AgentConfigurationDialog(
         agent: agent,
-        catalog: catalog,
+        connections: providerState.connections,
         models: models,
-        loadModels: (providerId) async {
-          await providerController.loadModels(providerId);
+        loadModels: (connectionId) async {
+          await providerController.loadModels(connectionId);
           return ref
                   .read(providerSettingsControllerProvider)
                   .asData
                   ?.value
-                  ?.models[providerId] ??
+                  ?.models[connectionId] ??
               const <ProviderModelDto>[];
         },
       ),
@@ -884,7 +903,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     if (draft == null) return;
     await controller.updateConfiguration(
       agentId: agent.id,
-      providerId: draft.providerId,
+      providerConnectionId: draft.providerConnectionId,
       model: draft.model,
       reasoningEffort: draft.reasoningEffort,
     );
@@ -928,12 +947,12 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
 
 final class _AgentConfigurationDraft {
   const _AgentConfigurationDraft({
-    required this.providerId,
+    required this.providerConnectionId,
     required this.model,
     required this.reasoningEffort,
   });
 
-  final String providerId;
+  final String providerConnectionId;
   final String model;
   final String reasoningEffort;
 }
@@ -941,13 +960,13 @@ final class _AgentConfigurationDraft {
 class _AgentConfigurationDialog extends StatefulWidget {
   const _AgentConfigurationDialog({
     required this.agent,
-    required this.catalog,
+    required this.connections,
     required this.models,
     required this.loadModels,
   });
 
   final AgentDto agent;
-  final ProviderCatalogDto catalog;
+  final List<ProviderConnectionDto> connections;
   final List<ProviderModelDto> models;
   final _ModelLoader loadModels;
 
@@ -958,14 +977,14 @@ class _AgentConfigurationDialog extends StatefulWidget {
 
 class _AgentConfigurationDialogState extends State<_AgentConfigurationDialog> {
   late final TextEditingController _model;
-  late String _providerId;
+  late String _connectionId;
   late String _reasoningEffort;
   late List<ProviderModelDto> _models;
 
   @override
   void initState() {
     super.initState();
-    _providerId = widget.agent.providerId;
+    _connectionId = widget.agent.providerConnectionId;
     _reasoningEffort = widget.agent.reasoningEffort;
     _models = widget.models;
     _model = TextEditingController(text: widget.agent.model);
@@ -984,14 +1003,18 @@ class _AgentConfigurationDialogState extends State<_AgentConfigurationDialog> {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         DropdownButtonFormField<String>(
-          initialValue: _providerId,
+          initialValue: _connectionId,
           decoration: const InputDecoration(labelText: 'API provider'),
-          items: widget.catalog.providers
-              .where((item) => item.enabled)
+          items: widget.connections
+              .where(
+                (item) =>
+                    item.status == ProviderConnectionStatus.connected ||
+                    item.status == ProviderConnectionStatus.degraded,
+              )
               .map(
                 (item) => DropdownMenuItem(
                   value: item.id,
-                  child: Text(item.name),
+                  child: Text(item.displayName),
                 ),
               )
               .toList(),
@@ -1036,11 +1059,11 @@ class _AgentConfigurationDialogState extends State<_AgentConfigurationDialog> {
     if (value == null) return;
     final models = await widget.loadModels(value);
     if (!mounted) return;
-    final provider = widget.catalog.providers
+    final provider = widget.connections
         .where((item) => item.id == value)
         .firstOrNull;
     setState(() {
-      _providerId = value;
+      _connectionId = value;
       _models = models;
       _model.text = provider?.defaultModelId ?? '';
     });
@@ -1052,7 +1075,7 @@ class _AgentConfigurationDialogState extends State<_AgentConfigurationDialog> {
     Navigator.pop(
       context,
       _AgentConfigurationDraft(
-        providerId: _providerId,
+        providerConnectionId: _connectionId,
         model: model,
         reasoningEffort: _reasoningEffort,
       ),

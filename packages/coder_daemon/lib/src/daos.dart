@@ -113,7 +113,7 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
         id: agent.id,
         workspaceId: agent.workspaceId,
         title: agent.title,
-        providerId: agent.providerId,
+        providerConnectionId: agent.providerConnectionId,
         model: agent.model,
         reasoningEffort: Value<String>(agent.reasoningEffort),
         status: agent.status.name,
@@ -157,7 +157,7 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
   @override
   Future<AgentDto> updateConfiguration({
     required String id,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required String reasoningEffort,
   }) async {
@@ -168,7 +168,7 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
     }
     await (update(agents)..where((row) => row.id.equals(id))).write(
       AgentsCompanion(
-        providerId: Value<String>(providerId),
+        providerConnectionId: Value<String>(providerConnectionId),
         model: Value<String>(model),
         reasoningEffort: Value<String>(reasoningEffort),
         updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
@@ -215,7 +215,7 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
     id: row.id,
     workspaceId: row.workspaceId,
     title: row.title,
-    providerId: row.providerId,
+    providerConnectionId: row.providerConnectionId,
     model: row.model,
     reasoningEffort: row.reasoningEffort,
     status: AgentStatus.values.byName(row.status),
@@ -378,7 +378,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
   }
 }
 
-@DriftAccessor(tables: <Type>[ApiProviders, ProviderModels, Agents])
+@DriftAccessor(tables: <Type>[ProviderConnections, ProviderModels, Agents])
 /// ProviderDao defines a public contract.
 class ProviderDao extends DatabaseAccessor<CoderDatabase>
     with _$ProviderDaoMixin
@@ -387,68 +387,89 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
   ProviderDao(super.attachedDatabase);
 
   @override
-  Future<List<ApiProviderDto>> listProviders() async =>
-      (await (select(apiProviders)
-                ..orderBy(<OrderClauseGenerator<$ApiProvidersTable>>[
-                  (row) => OrderingTerm.asc(row.name),
+  Future<List<ProviderConnectionDto>> listConnections() async =>
+      (await (select(providerConnections)
+                ..orderBy(<OrderClauseGenerator<$ProviderConnectionsTable>>[
+                  (row) => OrderingTerm.asc(row.displayName),
                 ]))
               .get())
-          .map(_providerToDto)
+          .map(_connectionToDto)
           .toList(growable: false);
 
   @override
-  Future<ApiProviderDto?> getProvider(String id) async {
+  Future<ProviderConnectionDto?> getConnection(String id) async {
     final row = await (select(
-      apiProviders,
+      providerConnections,
     )..where((table) => table.id.equals(id))).getSingleOrNull();
-    return row == null ? null : _providerToDto(row);
+    return row == null ? null : _connectionToDto(row);
   }
 
   @override
-  Future<ApiProviderDto> upsertProvider(ApiProviderDto provider) async {
-    await into(apiProviders).insertOnConflictUpdate(
-      ApiProvidersCompanion.insert(
-        id: provider.id,
-        name: provider.name,
-        presetId: provider.presetId,
-        baseUrl: provider.baseUrl,
-        transport: provider.transport.name,
-        credentialSource: provider.credentialSource.name,
-        environmentVariable: Value<String?>(provider.environmentVariable),
-        enabled: provider.enabled,
-        strictToolSchema: provider.strictToolSchema,
-        defaultModelId: Value<String?>(provider.defaultModelId),
-        visibleModelIdsJson: Value<String>(
-          jsonEncode(provider.visibleModelIds),
+  Future<ProviderConnectionDto> upsertConnection(
+    ProviderConnectionDto connection,
+  ) async {
+    await into(providerConnections).insertOnConflictUpdate(
+      ProviderConnectionsCompanion.insert(
+        id: connection.id,
+        definitionId: connection.definitionId,
+        displayName: connection.displayName,
+        status: connection.status.name,
+        authKind: connection.authKind.name,
+        credentialOrigin: connection.credentialOrigin.name,
+        isDefault: Value<bool>(connection.isDefault),
+        defaultModelId: Value<String?>(connection.defaultModelId),
+        error: Value<String?>(connection.error),
+        customConfigJson: Value<String?>(
+          connection.customConfig == null
+              ? null
+              : jsonEncode(connection.customConfig!.toJson()),
         ),
-        createdAt: provider.createdAt,
-        updatedAt: provider.updatedAt,
+        createdAt: connection.createdAt,
+        updatedAt: connection.updatedAt,
       ),
     );
-    return (await getProvider(provider.id))!;
+    return (await getConnection(connection.id))!;
   }
 
   @override
-  Future<void> deleteProvider(String id) async {
+  Future<void> deleteConnection(String id) async {
     final count = agents.id.count();
     final query = selectOnly(agents)
       ..addColumns(<Expression<Object>>[count])
-      ..where(agents.providerId.equals(id));
+      ..where(agents.providerConnectionId.equals(id));
     if ((await query.getSingle()).read(count)! > 0) {
-      throw StateError('Provider is referenced by one or more agents.');
+      throw StateError(
+        'Provider connection is referenced by one or more agents.',
+      );
     }
     await transaction(() async {
       await (delete(
         providerModels,
-      )..where((row) => row.providerId.equals(id))).go();
-      await (delete(apiProviders)..where((row) => row.id.equals(id))).go();
+      )..where((row) => row.connectionId.equals(id))).go();
+      await (delete(
+        providerConnections,
+      )..where((row) => row.id.equals(id))).go();
     });
   }
 
   @override
-  Future<List<ProviderModelDto>> listModels(String providerId) async =>
+  Future<void> setDefault(String id) => transaction(() async {
+    await update(providerConnections).write(
+      const ProviderConnectionsCompanion(isDefault: Value<bool>(false)),
+    );
+    await (update(
+      providerConnections,
+    )..where((row) => row.id.equals(id))).write(
+      const ProviderConnectionsCompanion(
+        isDefault: Value<bool>(true),
+      ),
+    );
+  });
+
+  @override
+  Future<List<ProviderModelDto>> listModels(String connectionId) async =>
       (await (select(providerModels)
-                ..where((row) => row.providerId.equals(providerId))
+                ..where((row) => row.connectionId.equals(connectionId))
                 ..orderBy(<OrderClauseGenerator<$ProviderModelsTable>>[
                   (row) => OrderingTerm.asc(row.label),
                 ]))
@@ -457,11 +478,14 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
           .toList(growable: false);
 
   @override
-  Future<ProviderModelDto?> getModel(String providerId, String modelId) async {
+  Future<ProviderModelDto?> getModel(
+    String connectionId,
+    String modelId,
+  ) async {
     final row =
         await (select(providerModels)..where(
               (table) =>
-                  table.providerId.equals(providerId) &
+                  table.connectionId.equals(connectionId) &
                   table.modelId.equals(modelId),
             ))
             .getSingleOrNull();
@@ -472,90 +496,92 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
   Future<ProviderModelDto> upsertModel(ProviderModelDto model) async {
     await into(providerModels).insertOnConflictUpdate(
       ProviderModelsCompanion.insert(
-        providerId: model.providerId,
+        connectionId: model.connectionId,
         modelId: model.id,
         label: model.label,
         source: model.source.name,
         capabilitiesJson: jsonEncode(model.capabilities.toJson()),
+        pricingJson: Value<String?>(
+          model.pricing == null ? null : jsonEncode(model.pricing!.toJson()),
+        ),
+        limitsJson: Value<String?>(
+          model.limits == null ? null : jsonEncode(model.limits!.toJson()),
+        ),
         diagnosticStatus: Value<String>(model.diagnosticStatus.name),
         verifiedAt: Value<DateTime?>(model.verifiedAt),
         diagnosticError: Value<String?>(model.diagnosticError),
       ),
     );
-    return (await getModel(model.providerId, model.id))!;
+    return (await getModel(model.connectionId, model.id))!;
   }
 
   @override
-  Future<void> replaceDiscoveredModels(
-    String providerId,
+  Future<void> replaceModels(
+    String connectionId,
     Iterable<ProviderModelDto> models,
-  ) async {
-    final existingModels = <String, ProviderModelDto>{
-      for (final model in await listModels(providerId)) model.id: model,
-    };
-    await transaction(() async {
-      await (delete(providerModels)..where(
-            (row) =>
-                row.providerId.equals(providerId) &
-                row.source.equals(ProviderModelSource.discovered.name),
-          ))
-          .go();
-      for (final model in models) {
-        final existing = existingModels[model.id];
-        if (existing?.source == ProviderModelSource.manual ||
-            existing?.source == ProviderModelSource.preset) {
-          continue;
-        }
-        await upsertModel(
-          existing != null &&
-                  existing.diagnosticStatus != DiagnosticStatus.unknown
-              ? model.copyWith(
-                  capabilities: existing.capabilities,
-                  diagnosticStatus: existing.diagnosticStatus,
-                  verifiedAt: existing.verifiedAt,
-                  diagnosticError: existing.diagnosticError,
-                )
-              : model,
-        );
+  ) => transaction(() async {
+    await (delete(
+      providerModels,
+    )..where((row) => row.connectionId.equals(connectionId))).go();
+    for (final model in models) {
+      if (model.connectionId != connectionId) {
+        throw StateError('Replacement model belongs to another connection.');
       }
-    });
-  }
+      await upsertModel(model);
+    }
+  });
 
   @override
-  Future<void> deleteModel(String providerId, String modelId) =>
+  Future<void> deleteModel(String connectionId, String modelId) =>
       (delete(providerModels)..where(
             (row) =>
-                row.providerId.equals(providerId) & row.modelId.equals(modelId),
+                row.connectionId.equals(connectionId) &
+                row.modelId.equals(modelId),
           ))
           .go();
 
-  ApiProviderDto _providerToDto(ApiProvider row) => ApiProviderDto(
-    id: row.id,
-    name: row.name,
-    presetId: row.presetId,
-    baseUrl: row.baseUrl,
-    transport: ApiTransport.values.byName(row.transport),
-    credentialSource: CredentialSource.values.byName(row.credentialSource),
-    credentialConfigured: false,
-    enabled: row.enabled,
-    strictToolSchema: row.strictToolSchema,
-    environmentVariable: row.environmentVariable,
-    defaultModelId: row.defaultModelId,
-    visibleModelIds: (jsonDecode(row.visibleModelIdsJson) as List)
-        .whereType<String>()
-        .toList(growable: false),
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  );
+  ProviderConnectionDto _connectionToDto(ProviderConnection row) =>
+      ProviderConnectionDto(
+        id: row.id,
+        definitionId: row.definitionId,
+        displayName: row.displayName,
+        status: ProviderConnectionStatus.values.byName(row.status),
+        authKind: ProviderAuthKind.values.byName(row.authKind),
+        credentialOrigin: ProviderCredentialOrigin.values.byName(
+          row.credentialOrigin,
+        ),
+        isDefault: row.isDefault,
+        defaultModelId: row.defaultModelId,
+        error: row.error,
+        customConfig: row.customConfigJson == null
+            ? null
+            : CustomProviderConfigDto.fromJson(
+                Map<String, dynamic>.from(
+                  jsonDecode(row.customConfigJson!) as Map<dynamic, dynamic>,
+                ),
+              ),
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      );
 
   ProviderModelDto _modelToDto(ProviderModel row) => ProviderModelDto(
-    providerId: row.providerId,
+    connectionId: row.connectionId,
     id: row.modelId,
     label: row.label,
     source: ProviderModelSource.values.byName(row.source),
     capabilities: ModelCapabilitiesDto.fromJson(
       Map<String, dynamic>.from(jsonDecode(row.capabilitiesJson) as Map),
     ),
+    pricing: row.pricingJson == null
+        ? null
+        : ModelPricingDto.fromJson(
+            Map<String, dynamic>.from(jsonDecode(row.pricingJson!) as Map),
+          ),
+    limits: row.limitsJson == null
+        ? null
+        : ModelLimitsDto.fromJson(
+            Map<String, dynamic>.from(jsonDecode(row.limitsJson!) as Map),
+          ),
     diagnosticStatus: DiagnosticStatus.values.byName(row.diagnosticStatus),
     verifiedAt: row.verifiedAt,
     diagnosticError: row.diagnosticError,

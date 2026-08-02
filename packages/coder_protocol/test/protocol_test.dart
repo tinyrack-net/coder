@@ -18,35 +18,40 @@ void main() {
     supportedReasoningEfforts: <String>['low', 'medium'],
     source: CapabilitySource.manual,
   );
-  final provider = ApiProviderDto(
+  const authMethod = ProviderAuthMethodDto(
+    id: 'api-key',
+    label: 'API key',
+    kind: ProviderAuthKind.apiKey,
+    flow: ProviderAuthFlow.apiKey,
+  );
+  const definition = ProviderDefinitionDto(
     id: 'provider',
     name: 'Provider',
-    presetId: 'custom',
+    description: 'A hosted provider.',
+    authMethods: <ProviderAuthMethodDto>[authMethod],
+    recommendedModelIds: <String>['model'],
+  );
+  const customConfig = CustomProviderConfigDto(
+    name: 'Custom',
     baseUrl: 'http://localhost:11434/v1',
-    transport: ApiTransport.chatCompletions,
-    credentialSource: CredentialSource.stored,
-    credentialConfigured: true,
-    environmentVariable: 'PROVIDER_KEY',
-    enabled: true,
-    strictToolSchema: false,
+    apiFormat: ProviderApiFormat.chatCompletions,
+    authenticationRequired: true,
+    manualModelIds: <String>['model'],
+  );
+  final connection = ProviderConnectionDto(
+    id: 'provider',
+    definitionId: definition.id,
+    displayName: definition.name,
+    status: ProviderConnectionStatus.connected,
+    authKind: ProviderAuthKind.apiKey,
+    credentialOrigin: ProviderCredentialOrigin.stored,
+    isDefault: true,
     defaultModelId: 'model',
-    visibleModelIds: const <String>['model'],
     createdAt: now,
     updatedAt: now,
   );
-  const preset = ProviderPresetDto(
-    id: 'custom',
-    name: 'Custom',
-    defaultBaseUrl: 'http://localhost/v1',
-    defaultTransport: ApiTransport.chatCompletions,
-    defaultCredentialSource: CredentialSource.none,
-    strictToolSchema: false,
-    defaultEnvironmentVariable: 'CUSTOM_KEY',
-    defaultModelId: 'model',
-    modelIds: <String>['model'],
-  );
   final model = ProviderModelDto(
-    providerId: provider.id,
+    connectionId: connection.id,
     id: 'model',
     label: 'Model',
     source: ProviderModelSource.manual,
@@ -54,17 +59,38 @@ void main() {
     diagnosticStatus: DiagnosticStatus.verified,
     verifiedAt: now,
     diagnosticError: 'previous error',
+    pricing: const ModelPricingDto(
+      input: 1.25,
+      output: 2.5,
+      cacheRead: 0.25,
+      cacheWrite: 0.5,
+    ),
+    limits: const ModelLimitsDto(
+      context: 128000,
+      input: 120000,
+      output: 8000,
+    ),
   );
   final catalog = ProviderCatalogDto(
-    providers: <ApiProviderDto>[provider],
-    presets: <ProviderPresetDto>[preset],
-    defaultProviderId: provider.id,
+    definitions: const <ProviderDefinitionDto>[definition],
+    source: ProviderCatalogSource.bundled,
+    updatedAt: now,
+  );
+  final authAttempt = ProviderAuthAttemptDto(
+    id: 'attempt',
+    definitionId: definition.id,
+    methodId: 'chatgpt-device',
+    status: ProviderAuthAttemptStatus.awaitingUser,
+    authorizationUrl: 'https://auth.openai.com/codex/device',
+    userCode: 'ABCD-EFGH',
+    instructions: 'Enter the code.',
+    expiresAt: now.add(const Duration(minutes: 15)),
   );
   final agent = AgentDto(
     id: 'agent',
     workspaceId: workspace.id,
     title: 'Agent',
-    providerId: provider.id,
+    providerConnectionId: connection.id,
     model: model.id,
     status: AgentStatus.waitingForApproval,
     permissionMode: PermissionMode.ask,
@@ -94,7 +120,7 @@ void main() {
     preview: 'diff',
   );
   final diagnostic = ProviderDiagnosticDto(
-    providerId: provider.id,
+    connectionId: connection.id,
     model: model.id,
     status: DiagnosticStatus.verified,
     endpointReachable: true,
@@ -105,9 +131,11 @@ void main() {
   );
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 2);
+    expect(coderProtocolVersion, 3);
     expect(RpcMethod.workspaceList, 'workspace.list');
     expect(RpcMethod.agentCreate, 'agent.create');
+    expect(RpcMethod.providerCatalog, 'provider.catalog');
+    expect(RpcMethod.providerAuthStart, 'provider.auth.start');
     expect(RpcMethod.turnStart, 'turn.start');
     expect(RpcNotification.timelineEvent, 'timeline.event');
   });
@@ -120,8 +148,41 @@ void main() {
       (value) => value.toJson(),
       ModelCapabilitiesDto.fromJson,
     );
-    _roundTrip(provider, (value) => value.toJson(), ApiProviderDto.fromJson);
-    _roundTrip(preset, (value) => value.toJson(), ProviderPresetDto.fromJson);
+    _roundTrip(
+      model.pricing!,
+      (value) => value.toJson(),
+      ModelPricingDto.fromJson,
+    );
+    _roundTrip(
+      model.limits!,
+      (value) => value.toJson(),
+      ModelLimitsDto.fromJson,
+    );
+    _roundTrip(
+      authMethod,
+      (value) => value.toJson(),
+      ProviderAuthMethodDto.fromJson,
+    );
+    _roundTrip(
+      definition,
+      (value) => value.toJson(),
+      ProviderDefinitionDto.fromJson,
+    );
+    _roundTrip(
+      connection,
+      (value) => value.toJson(),
+      ProviderConnectionDto.fromJson,
+    );
+    _roundTrip(
+      customConfig,
+      (value) => value.toJson(),
+      CustomProviderConfigDto.fromJson,
+    );
+    _roundTrip(
+      authAttempt,
+      (value) => value.toJson(),
+      ProviderAuthAttemptDto.fromJson,
+    );
     _roundTrip(model, (value) => value.toJson(), ProviderModelDto.fromJson);
     _roundTrip(catalog, (value) => value.toJson(), ProviderCatalogDto.fromJson);
     _roundTrip(
@@ -187,7 +248,7 @@ void main() {
         id: 'agent',
         workspaceId: 'workspace',
         title: 'Agent',
-        providerId: 'provider',
+        providerConnectionId: 'provider',
         model: 'model',
         reasoningEffort: 'medium',
         permissionMode: PermissionMode.workspaceWrite,
@@ -198,7 +259,7 @@ void main() {
     _roundTrip(
       const AgentConfigurationUpdateParamsDto(
         agentId: 'agent',
-        providerId: 'provider',
+        providerConnectionId: 'provider',
         model: 'model',
         reasoningEffort: 'high',
       ),
@@ -206,35 +267,80 @@ void main() {
       AgentConfigurationUpdateParamsDto.fromJson,
     );
     _roundTrip(
-      ProviderUpsertParamsDto(provider: provider, makeDefault: true),
+      const ProviderConnectApiKeyParamsDto(
+        definitionId: 'provider',
+        apiKey: 'secret',
+        makeDefault: true,
+      ),
       (value) => value.toJson(),
-      ProviderUpsertParamsDto.fromJson,
+      ProviderConnectApiKeyParamsDto.fromJson,
     );
     _roundTrip(
-      const ProviderIdParamsDto(providerId: 'provider'),
+      const ProviderConnectNoneParamsDto(
+        definitionId: 'ollama',
+        makeDefault: false,
+      ),
       (value) => value.toJson(),
-      ProviderIdParamsDto.fromJson,
+      ProviderConnectNoneParamsDto.fromJson,
+    );
+    _roundTrip(
+      const ProviderConnectionIdParamsDto(connectionId: 'provider'),
+      (value) => value.toJson(),
+      ProviderConnectionIdParamsDto.fromJson,
     );
     _roundTrip(
       const ProviderModelParamsDto(
-        providerId: 'provider',
+        connectionId: 'provider',
         modelId: 'model',
       ),
       (value) => value.toJson(),
       ProviderModelParamsDto.fromJson,
     );
     _roundTrip(
-      ProviderModelUpsertParamsDto(model: model),
-      (value) => value.toJson(),
-      ProviderModelUpsertParamsDto.fromJson,
-    );
-    _roundTrip(
-      const ProviderCredentialSetParamsDto(
-        providerId: 'provider',
-        apiKey: 'secret',
+      const ProviderAuthStartParamsDto(
+        definitionId: 'openai',
+        methodId: 'chatgpt-device',
+        makeDefault: false,
       ),
       (value) => value.toJson(),
-      ProviderCredentialSetParamsDto.fromJson,
+      ProviderAuthStartParamsDto.fromJson,
+    );
+    _roundTrip(
+      const ProviderAuthAttemptParamsDto(attemptId: 'attempt'),
+      (value) => value.toJson(),
+      ProviderAuthAttemptParamsDto.fromJson,
+    );
+    _roundTrip(
+      const ProviderDefaultSetParamsDto(connectionId: 'provider'),
+      (value) => value.toJson(),
+      ProviderDefaultSetParamsDto.fromJson,
+    );
+    _roundTrip(
+      const ProviderDefaultModelSetParamsDto(
+        connectionId: 'provider',
+        modelId: 'model',
+      ),
+      (value) => value.toJson(),
+      ProviderDefaultModelSetParamsDto.fromJson,
+    );
+    _roundTrip(
+      const ProviderCustomCreateParamsDto(
+        id: 'custom-id',
+        config: customConfig,
+        apiKey: 'secret',
+        makeDefault: false,
+      ),
+      (value) => value.toJson(),
+      ProviderCustomCreateParamsDto.fromJson,
+    );
+    _roundTrip(
+      const ProviderCustomUpdateParamsDto(
+        connectionId: 'custom-id',
+        config: customConfig,
+        apiKey: 'replacement-secret',
+      ),
+      (value) => value.toJson(),
+      ProviderCustomUpdateParamsDto.fromJson,
     );
     _roundTrip(
       const TurnStartParamsDto(
@@ -295,9 +401,16 @@ void main() {
       ProviderCatalogResultDto.fromJson,
     );
     _roundTrip(
-      ProviderResultDto(provider: provider),
+      ProviderConnectionsResultDto(
+        connections: <ProviderConnectionDto>[connection],
+      ),
       (value) => value.toJson(),
-      ProviderResultDto.fromJson,
+      ProviderConnectionsResultDto.fromJson,
+    );
+    _roundTrip(
+      ProviderConnectionResultDto(connection: connection),
+      (value) => value.toJson(),
+      ProviderConnectionResultDto.fromJson,
     );
     _roundTrip(
       ProviderModelsResultDto(models: <ProviderModelDto>[model]),
@@ -305,9 +418,9 @@ void main() {
       ProviderModelsResultDto.fromJson,
     );
     _roundTrip(
-      ProviderModelResultDto(model: model),
+      ProviderAuthAttemptResultDto(attempt: authAttempt),
       (value) => value.toJson(),
-      ProviderModelResultDto.fromJson,
+      ProviderAuthAttemptResultDto.fromJson,
     );
     _roundTrip(
       ProviderDiagnosticResultDto(diagnostic: diagnostic),
@@ -351,6 +464,13 @@ void main() {
     );
   });
 
+  test('protocol exceptions expose a stable diagnostic message', () {
+    expect(
+      const ProtocolException('bad envelope').toString(),
+      'ProtocolException: bad envelope',
+    );
+  });
+
   test('wire envelope round-trips and ignores additive fields', () {
     final envelope = WireEnvelope.fromJson(const <String, dynamic>{
       'version': coderProtocolVersion,
@@ -371,8 +491,13 @@ void main() {
       ...PermissionMode.values,
       ...ApprovalStatus.values,
       ...ToolRisk.values,
-      ...ApiTransport.values,
-      ...CredentialSource.values,
+      ...ProviderApiFormat.values,
+      ...ProviderAuthKind.values,
+      ...ProviderAuthFlow.values,
+      ...ProviderCredentialOrigin.values,
+      ...ProviderConnectionStatus.values,
+      ...ProviderAuthAttemptStatus.values,
+      ...ProviderCatalogSource.values,
       ...ProviderModelSource.values,
       ...CapabilitySupport.values,
       ...CapabilitySource.values,

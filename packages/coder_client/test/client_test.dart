@@ -20,29 +20,40 @@ void main() {
     id: 'agent',
     workspaceId: workspace.id,
     title: 'Agent',
-    providerId: 'provider',
+    providerConnectionId: 'provider',
     model: 'model',
     status: AgentStatus.idle,
     permissionMode: PermissionMode.ask,
     createdAt: now,
     updatedAt: now,
   );
-  final provider = ApiProviderDto(
+  const definition = ProviderDefinitionDto(
     id: 'provider',
     name: 'Provider',
-    presetId: 'custom',
-    baseUrl: 'http://localhost/v1',
-    transport: ApiTransport.chatCompletions,
-    credentialSource: CredentialSource.none,
-    credentialConfigured: true,
-    enabled: true,
-    strictToolSchema: false,
+    description: 'Hosted provider',
+    authMethods: <ProviderAuthMethodDto>[
+      ProviderAuthMethodDto(
+        id: 'api-key',
+        label: 'API key',
+        kind: ProviderAuthKind.apiKey,
+        flow: ProviderAuthFlow.apiKey,
+      ),
+    ],
+  );
+  final connection = ProviderConnectionDto(
+    id: 'provider',
+    definitionId: 'provider',
+    displayName: 'Provider',
+    status: ProviderConnectionStatus.connected,
+    authKind: ProviderAuthKind.apiKey,
+    credentialOrigin: ProviderCredentialOrigin.stored,
+    isDefault: true,
     defaultModelId: 'model',
     createdAt: now,
     updatedAt: now,
   );
   const model = ProviderModelDto(
-    providerId: 'provider',
+    connectionId: 'provider',
     id: 'model',
     label: 'Model',
     source: ProviderModelSource.manual,
@@ -81,7 +92,8 @@ void main() {
             requests,
             workspace: workspace,
             agent: agent,
-            provider: provider,
+            definition: definition,
+            connection: connection,
             model: model,
             approval: approval,
             timeline: timeline,
@@ -127,7 +139,7 @@ void main() {
           id: agent.id,
           workspaceId: workspace.id,
           title: agent.title,
-          providerId: agent.providerId,
+          providerConnectionId: agent.providerConnectionId,
           model: agent.model,
           permissionMode: agent.permissionMode,
         ),
@@ -136,35 +148,60 @@ void main() {
       expect(
         await client.updateAgentConfiguration(
           agentId: agent.id,
-          providerId: provider.id,
+          providerConnectionId: connection.id,
           model: model.id,
         ),
         agent,
       );
       final catalog = await client.listProviderCatalog();
-      expect(catalog.providers, <ApiProviderDto>[provider]);
-      expect(
-        await client.upsertProvider(provider, makeDefault: true),
-        provider,
-      );
-      await client.deleteProvider(provider.id);
-      expect(await client.listProviderModels(provider.id), <ProviderModelDto>[
-        model,
+      expect(catalog.definitions, <ProviderDefinitionDto>[definition]);
+      expect(await client.listProviderConnections(), <ProviderConnectionDto>[
+        connection,
       ]);
       expect(
-        await client.refreshProviderModels(provider.id),
-        <ProviderModelDto>[
-          model,
-        ],
+        await client.connectProviderApiKey(
+          definition.id,
+          'api-key',
+          makeDefault: true,
+        ),
+        connection,
       );
-      expect(await client.upsertProviderModel(model), model);
-      await client.deleteProviderModel(provider.id, model.id);
+      expect(await client.connectProviderNone('ollama'), connection);
+      final attempt = await client.startProviderAuth(
+        definition.id,
+        'chatgpt-device',
+      );
+      expect(await client.providerAuthStatus(attempt.id), attempt);
+      await client.cancelProviderAuth(attempt.id);
+      await client.disconnectProvider(connection.id);
+      await client.setDefaultProvider(connection.id);
+      await client.setDefaultProviderModel(connection.id, model.id);
       expect(
-        (await client.diagnoseProviderModel(provider.id, model.id)).status,
-        DiagnosticStatus.verified,
+        (await client.refreshProviderCatalog()).definitions,
+        <ProviderDefinitionDto>[definition],
       );
-      await client.setProviderCredential(provider.id, 'api-key');
-      await client.clearProviderCredential(provider.id);
+      expect(
+        await client.listProviderModels(connection.id),
+        <ProviderModelDto>[model],
+      );
+      const customConfig = CustomProviderConfigDto(
+        name: 'Custom',
+        baseUrl: 'http://localhost/v1',
+        apiFormat: ProviderApiFormat.chatCompletions,
+        authenticationRequired: false,
+      );
+      expect(
+        await client.createCustomProvider(
+          'custom',
+          customConfig,
+        ),
+        connection,
+      );
+      expect(
+        await client.updateCustomProvider('custom', customConfig),
+        connection,
+      );
+      await client.deleteCustomProvider('custom');
       await client.startTurn(
         agentId: agent.id,
         turnId: 'turn',
@@ -189,6 +226,10 @@ void main() {
         ..sendNotification(
           RpcNotification.approvalRequested,
           approval.toJson(),
+        )
+        ..sendNotification(
+          RpcNotification.providerAuthUpdated,
+          attempt.toJson(),
         );
       await Future<void>.delayed(Duration.zero);
 
@@ -199,6 +240,10 @@ void main() {
         approval,
       );
       expect(
+        events.whereType<ProviderAuthUpdatedClientEvent>().single.attempt,
+        attempt,
+      );
+      expect(
         connector.requests.map((request) => request.method),
         containsAll(<String>[
           RpcMethod.workspaceList,
@@ -206,16 +251,21 @@ void main() {
           RpcMethod.agentList,
           RpcMethod.agentCreate,
           RpcMethod.agentConfigurationUpdate,
-          RpcMethod.providerList,
-          RpcMethod.providerUpsert,
-          RpcMethod.providerDelete,
+          RpcMethod.providerCatalog,
+          RpcMethod.providerConnectionsList,
+          RpcMethod.providerConnectApiKey,
+          RpcMethod.providerConnectNone,
+          RpcMethod.providerAuthStart,
+          RpcMethod.providerAuthStatus,
+          RpcMethod.providerAuthCancel,
+          RpcMethod.providerDisconnect,
+          RpcMethod.providerDefaultSet,
+          RpcMethod.providerDefaultModelSet,
+          RpcMethod.providerCatalogRefresh,
           RpcMethod.providerModelsList,
-          RpcMethod.providerModelsRefresh,
-          RpcMethod.providerModelUpsert,
-          RpcMethod.providerModelDelete,
-          RpcMethod.providerModelDiagnose,
-          RpcMethod.providerCredentialSet,
-          RpcMethod.providerCredentialClear,
+          RpcMethod.providerCustomCreate,
+          RpcMethod.providerCustomUpdate,
+          RpcMethod.providerCustomDelete,
           RpcMethod.turnStart,
           RpcMethod.turnCancel,
           RpcMethod.approvalResolve,
@@ -425,20 +475,19 @@ void _registerFixtureMethods(
   List<_Request> requests, {
   required WorkspaceDto workspace,
   required AgentDto agent,
-  required ApiProviderDto provider,
+  required ProviderDefinitionDto definition,
+  required ProviderConnectionDto connection,
   required ProviderModelDto model,
   required ApprovalRequestDto approval,
   required TimelineEventDto timeline,
 }) {
   _registerHello(peer, requests);
-  final diagnostic = ProviderDiagnosticDto(
-    providerId: provider.id,
-    model: model.id,
-    status: DiagnosticStatus.verified,
-    endpointReachable: true,
-    streaming: true,
-    toolCalling: true,
-    checkedAt: workspace.createdAt,
+  final attempt = ProviderAuthAttemptDto(
+    id: 'attempt',
+    definitionId: definition.id,
+    methodId: 'chatgpt-device',
+    status: ProviderAuthAttemptStatus.awaitingUser,
+    userCode: 'CODE-1234',
   );
   final responses = <String, Map<String, dynamic>>{
     RpcMethod.workspaceList: WorkspaceListResultDto(
@@ -450,30 +499,49 @@ void _registerFixtureMethods(
     RpcMethod.agentList: AgentListResultDto(agents: <AgentDto>[agent]).toJson(),
     RpcMethod.agentCreate: AgentResultDto(agent: agent).toJson(),
     RpcMethod.agentConfigurationUpdate: AgentResultDto(agent: agent).toJson(),
-    RpcMethod.providerList: ProviderCatalogResultDto(
+    RpcMethod.providerCatalog: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
-        providers: <ApiProviderDto>[provider],
-        presets: const <ProviderPresetDto>[],
-        defaultProviderId: provider.id,
+        definitions: <ProviderDefinitionDto>[definition],
+        source: ProviderCatalogSource.bundled,
+        updatedAt: workspace.createdAt,
       ),
     ).toJson(),
-    RpcMethod.providerUpsert: ProviderResultDto(provider: provider).toJson(),
-    RpcMethod.providerDelete: const <String, dynamic>{},
+    RpcMethod.providerConnectionsList: ProviderConnectionsResultDto(
+      connections: <ProviderConnectionDto>[connection],
+    ).toJson(),
+    RpcMethod.providerConnectApiKey: ProviderConnectionResultDto(
+      connection: connection,
+    ).toJson(),
+    RpcMethod.providerConnectNone: ProviderConnectionResultDto(
+      connection: connection,
+    ).toJson(),
+    RpcMethod.providerAuthStart: ProviderAuthAttemptResultDto(
+      attempt: attempt,
+    ).toJson(),
+    RpcMethod.providerAuthStatus: ProviderAuthAttemptResultDto(
+      attempt: attempt,
+    ).toJson(),
+    RpcMethod.providerAuthCancel: const <String, dynamic>{},
+    RpcMethod.providerDisconnect: const <String, dynamic>{},
+    RpcMethod.providerDefaultSet: const <String, dynamic>{},
+    RpcMethod.providerDefaultModelSet: const <String, dynamic>{},
+    RpcMethod.providerCatalogRefresh: ProviderCatalogResultDto(
+      catalog: ProviderCatalogDto(
+        definitions: <ProviderDefinitionDto>[definition],
+        source: ProviderCatalogSource.refreshed,
+        updatedAt: workspace.createdAt,
+      ),
+    ).toJson(),
     RpcMethod.providerModelsList: ProviderModelsResultDto(
       models: <ProviderModelDto>[model],
     ).toJson(),
-    RpcMethod.providerModelsRefresh: ProviderModelsResultDto(
-      models: <ProviderModelDto>[model],
+    RpcMethod.providerCustomCreate: ProviderConnectionResultDto(
+      connection: connection,
     ).toJson(),
-    RpcMethod.providerModelUpsert: ProviderModelResultDto(
-      model: model,
+    RpcMethod.providerCustomUpdate: ProviderConnectionResultDto(
+      connection: connection,
     ).toJson(),
-    RpcMethod.providerModelDelete: const <String, dynamic>{},
-    RpcMethod.providerModelDiagnose: ProviderDiagnosticResultDto(
-      diagnostic: diagnostic,
-    ).toJson(),
-    RpcMethod.providerCredentialSet: const <String, dynamic>{},
-    RpcMethod.providerCredentialClear: const <String, dynamic>{},
+    RpcMethod.providerCustomDelete: const <String, dynamic>{},
     RpcMethod.turnStart: const TurnStartResultDto(created: true).toJson(),
     RpcMethod.turnCancel: const <String, dynamic>{},
     RpcMethod.approvalResolve: ApprovalResultDto(approval: approval).toJson(),

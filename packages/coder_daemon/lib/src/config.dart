@@ -48,6 +48,7 @@ class DaemonConfig {
     this.apiKey,
     this.bearerToken,
     this.version = '0.1.0',
+    this.useEnvironmentCredentials = true,
   }) : configDirectory = configDirectory ?? homeDirectory;
 
   /// Creates a [DaemonConfig].
@@ -60,6 +61,7 @@ class DaemonConfig {
         apiKey: value['apiKey'] as String?,
         bearerToken: value['bearerToken'] as String?,
         version: value['version']! as String,
+        useEnvironmentCredentials: value['useEnvironmentCredentials']! as bool,
       );
 
   /// Creates a [DaemonConfig].
@@ -108,6 +110,9 @@ class DaemonConfig {
   /// The version public API member.
   final String version;
 
+  /// Whether built-in providers may use credentials from daemon environment.
+  final bool useEnvironmentCredentials;
+
   /// The copyWith public API member.
   DaemonConfig copyWith({
     String? homeDirectory,
@@ -116,6 +121,7 @@ class DaemonConfig {
     int? port,
     String? apiKey,
     String? bearerToken,
+    bool? useEnvironmentCredentials,
   }) => DaemonConfig(
     homeDirectory: homeDirectory ?? this.homeDirectory,
     configDirectory: configDirectory ?? this.configDirectory,
@@ -124,6 +130,8 @@ class DaemonConfig {
     apiKey: apiKey ?? this.apiKey,
     bearerToken: bearerToken ?? this.bearerToken,
     version: version,
+    useEnvironmentCredentials:
+        useEnvironmentCredentials ?? this.useEnvironmentCredentials,
   );
 
   /// The toIsolateMessage public API member.
@@ -135,6 +143,7 @@ class DaemonConfig {
     'apiKey': apiKey,
     'bearerToken': bearerToken,
     'version': version,
+    'useEnvironmentCredentials': useEnvironmentCredentials,
   };
 }
 

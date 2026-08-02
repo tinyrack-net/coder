@@ -17,6 +17,7 @@ class OpenAIProviderConfig {
     this.requiresApiKey = true,
     this.supportsReasoningEffort = true,
     this.strictToolSchema = true,
+    this.additionalHeaders = const <String, String>{},
   });
 
   /// The id public API member.
@@ -39,6 +40,9 @@ class OpenAIProviderConfig {
 
   /// The strictToolSchema public API member.
   final bool strictToolSchema;
+
+  /// Additional non-secret headers required by a provider runtime.
+  final Map<String, String> additionalHeaders;
 }
 
 /// OpenAIProviderException defines a public contract.
@@ -94,6 +98,7 @@ class OpenAIResponsesProvider implements ModelProvider {
           options: Options(
             responseType: ResponseType.stream,
             headers: <String, String>{
+              ..._config.additionalHeaders,
               if (_config.apiKey.isNotEmpty)
                 'Authorization': 'Bearer ${_config.apiKey}',
               'Accept': 'text/event-stream',

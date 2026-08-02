@@ -44,7 +44,7 @@ abstract interface class AgentRepository {
   /// The updateConfiguration public API member.
   Future<AgentDto> updateConfiguration({
     required String id,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required String reasoningEffort,
   });
@@ -91,35 +91,40 @@ abstract interface class TimelineRepository {
 
 /// Public API exposed by this library.
 abstract interface class ProviderRepository {
-  /// The listProviders public API member.
-  Future<List<ApiProviderDto>> listProviders();
+  /// Returns all configured provider connections.
+  Future<List<ProviderConnectionDto>> listConnections();
 
-  /// The getProvider public API member.
-  Future<ApiProviderDto?> getProvider(String id);
+  /// Returns one configured provider connection.
+  Future<ProviderConnectionDto?> getConnection(String id);
 
-  /// The upsertProvider public API member.
-  Future<ApiProviderDto> upsertProvider(ApiProviderDto provider);
+  /// Creates or replaces a configured provider connection.
+  Future<ProviderConnectionDto> upsertConnection(
+    ProviderConnectionDto connection,
+  );
 
-  /// The deleteProvider public API member.
-  Future<void> deleteProvider(String id);
+  /// Deletes one configured provider connection.
+  Future<void> deleteConnection(String id);
+
+  /// Selects exactly one configured connection as the default.
+  Future<void> setDefault(String id);
 
   /// The listModels public API member.
-  Future<List<ProviderModelDto>> listModels(String providerId);
+  Future<List<ProviderModelDto>> listModels(String connectionId);
 
   /// The getModel public API member.
-  Future<ProviderModelDto?> getModel(String providerId, String modelId);
+  Future<ProviderModelDto?> getModel(String connectionId, String modelId);
 
   /// The upsertModel public API member.
   Future<ProviderModelDto> upsertModel(ProviderModelDto model);
 
-  /// The replaceDiscoveredModels public API member.
-  Future<void> replaceDiscoveredModels(
-    String providerId,
+  /// Replaces all cached model metadata for one connection.
+  Future<void> replaceModels(
+    String connectionId,
     Iterable<ProviderModelDto> models,
   );
 
   /// The deleteModel public API member.
-  Future<void> deleteModel(String providerId, String modelId);
+  Future<void> deleteModel(String connectionId, String modelId);
 }
 
 /// Public API exposed by this library.
@@ -139,12 +144,52 @@ abstract interface class CredentialRepository {
   /// The setBearerToken public API member.
   Future<void> setBearerToken(String token);
 
-  /// The providerApiKey public API member.
-  String? providerApiKey(String providerId);
+  /// Returns the secret credential for one provider connection.
+  ProviderCredential? credential(String connectionId);
 
-  /// The setProviderApiKey public API member.
-  Future<void> setProviderApiKey(String providerId, String value);
+  /// Atomically stores one provider connection credential.
+  Future<void> setCredential(
+    String connectionId,
+    ProviderCredential credential,
+  );
 
-  /// The removeProvider public API member.
-  Future<void> removeProvider(String providerId);
+  /// Removes one provider connection credential.
+  Future<void> removeCredential(String connectionId);
+}
+
+/// Secret credential material held only inside the daemon.
+sealed class ProviderCredential {
+  const ProviderCredential();
+}
+
+/// API key credential material.
+final class ApiKeyCredential extends ProviderCredential {
+  /// Creates API key credential material.
+  const ApiKeyCredential(this.key);
+
+  /// Secret provider API key.
+  final String key;
+}
+
+/// OAuth credential material for a subscription-backed provider.
+final class OAuthCredential extends ProviderCredential {
+  /// Creates OAuth credential material.
+  const OAuthCredential({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.expiresAt,
+    this.accountId,
+  });
+
+  /// Short-lived OAuth access token.
+  final String accessToken;
+
+  /// Rotating OAuth refresh token.
+  final String refreshToken;
+
+  /// UTC expiration instant for [accessToken].
+  final DateTime expiresAt;
+
+  /// ChatGPT account identifier sent to the Codex backend when available.
+  final String? accountId;
 }

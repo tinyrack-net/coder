@@ -47,6 +47,15 @@ final class ApprovalRequestedClientEvent extends ClientEvent {
   final ApprovalRequestDto approval;
 }
 
+/// Reports state changes for an interactive provider OAuth attempt.
+final class ProviderAuthUpdatedClientEvent extends ClientEvent {
+  /// Creates an OAuth attempt event.
+  const ProviderAuthUpdatedClientEvent(this.attempt);
+
+  /// Current authorization attempt state.
+  final ProviderAuthAttemptDto attempt;
+}
+
 /// Public API exposed by this library.
 abstract interface class CoderApi {
   /// The events public API member.
@@ -76,7 +85,7 @@ abstract interface class CoderApi {
     required String id,
     required String workspaceId,
     required String title,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required PermissionMode permissionMode,
     String reasoningEffort = 'medium',
@@ -85,7 +94,7 @@ abstract interface class CoderApi {
   /// The updateAgentConfiguration public API member.
   Future<AgentDto> updateAgentConfiguration({
     required String agentId,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     String reasoningEffort = 'medium',
   });
@@ -93,38 +102,67 @@ abstract interface class CoderApi {
   /// The listProviderCatalog public API member.
   Future<ProviderCatalogDto> listProviderCatalog();
 
-  /// The upsertProvider public API member.
-  Future<ApiProviderDto> upsertProvider(
-    ApiProviderDto provider, {
+  /// Returns configured provider connections.
+  Future<List<ProviderConnectionDto>> listProviderConnections();
+
+  /// Connects a built-in provider with an API key.
+  Future<ProviderConnectionDto> connectProviderApiKey(
+    String definitionId,
+    String apiKey, {
     bool makeDefault = false,
   });
 
-  /// The deleteProvider public API member.
-  Future<void> deleteProvider(String providerId);
+  /// Connects a local built-in provider without authentication.
+  Future<ProviderConnectionDto> connectProviderNone(
+    String definitionId, {
+    bool makeDefault = false,
+  });
+
+  /// Starts an interactive provider authorization flow.
+  Future<ProviderAuthAttemptDto> startProviderAuth(
+    String definitionId,
+    String methodId, {
+    bool makeDefault = false,
+  });
+
+  /// Returns the latest state of an authorization attempt.
+  Future<ProviderAuthAttemptDto> providerAuthStatus(String attemptId);
+
+  /// Cancels a pending authorization attempt.
+  Future<void> cancelProviderAuth(String attemptId);
+
+  /// Disconnects a provider while preserving historical agent data.
+  Future<void> disconnectProvider(String connectionId);
+
+  /// Selects the daemon-wide default provider connection.
+  Future<void> setDefaultProvider(String connectionId);
+
+  /// Selects a connection's default model.
+  Future<void> setDefaultProviderModel(String connectionId, String modelId);
+
+  /// Explicitly refreshes public provider and model metadata.
+  Future<ProviderCatalogDto> refreshProviderCatalog();
 
   /// The listProviderModels public API member.
-  Future<List<ProviderModelDto>> listProviderModels(String providerId);
+  Future<List<ProviderModelDto>> listProviderModels(String connectionId);
 
-  /// The refreshProviderModels public API member.
-  Future<List<ProviderModelDto>> refreshProviderModels(String providerId);
+  /// Creates an advanced custom provider connection.
+  Future<ProviderConnectionDto> createCustomProvider(
+    String id,
+    CustomProviderConfigDto config, {
+    String? apiKey,
+    bool makeDefault = false,
+  });
 
-  /// The upsertProviderModel public API member.
-  Future<ProviderModelDto> upsertProviderModel(ProviderModelDto model);
+  /// Updates an advanced custom provider connection.
+  Future<ProviderConnectionDto> updateCustomProvider(
+    String connectionId,
+    CustomProviderConfigDto config, {
+    String? apiKey,
+  });
 
-  /// The deleteProviderModel public API member.
-  Future<void> deleteProviderModel(String providerId, String modelId);
-
-  /// The diagnoseProviderModel public API member.
-  Future<ProviderDiagnosticDto> diagnoseProviderModel(
-    String providerId,
-    String modelId,
-  );
-
-  /// The setProviderCredential public API member.
-  Future<void> setProviderCredential(String providerId, String apiKey);
-
-  /// The clearProviderCredential public API member.
-  Future<void> clearProviderCredential(String providerId);
+  /// Deletes an advanced custom provider connection.
+  Future<void> deleteCustomProvider(String connectionId);
 
   /// The startTurn public API member.
   Future<void> startTurn({

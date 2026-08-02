@@ -25,7 +25,7 @@ void main() {
           id: 'agent',
           workspaceId: 'workspace',
           title: 'Agent',
-          providerId: 'openai',
+          providerConnectionId: 'openai',
           model: 'gpt-5.6-sol',
           status: AgentStatus.running,
           permissionMode: PermissionMode.ask,

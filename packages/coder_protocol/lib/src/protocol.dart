@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 2;
+const int coderProtocolVersion = 3;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -23,35 +23,50 @@ abstract final class RpcMethod {
   /// The agentConfigurationUpdate public API member.
   static const String agentConfigurationUpdate = 'agent.configuration.update';
 
-  /// The providerList public API member.
-  static const String providerList = 'provider.list';
+  /// Returns immutable built-in provider definitions.
+  static const String providerCatalog = 'provider.catalog';
 
-  /// The providerUpsert public API member.
-  static const String providerUpsert = 'provider.upsert';
+  /// Returns configured provider connections.
+  static const String providerConnectionsList = 'provider.connections.list';
 
-  /// The providerDelete public API member.
-  static const String providerDelete = 'provider.delete';
+  /// Connects a built-in provider with an API key.
+  static const String providerConnectApiKey = 'provider.connect.apiKey';
+
+  /// Connects a built-in provider that requires no credential.
+  static const String providerConnectNone = 'provider.connect.none';
+
+  /// Starts an OAuth authorization flow.
+  static const String providerAuthStart = 'provider.auth.start';
+
+  /// Returns one OAuth authorization attempt.
+  static const String providerAuthStatus = 'provider.auth.status';
+
+  /// Cancels one OAuth authorization attempt.
+  static const String providerAuthCancel = 'provider.auth.cancel';
+
+  /// Disconnects a configured provider connection.
+  static const String providerDisconnect = 'provider.disconnect';
+
+  /// Selects the daemon-wide default provider connection.
+  static const String providerDefaultSet = 'provider.default.set';
+
+  /// Selects a connection's default model.
+  static const String providerDefaultModelSet = 'provider.defaultModel.set';
+
+  /// Explicitly refreshes model metadata from the catalog source.
+  static const String providerCatalogRefresh = 'provider.catalog.refresh';
 
   /// The providerModelsList public API member.
   static const String providerModelsList = 'provider.models.list';
 
-  /// The providerModelsRefresh public API member.
-  static const String providerModelsRefresh = 'provider.models.refresh';
+  /// Creates an advanced custom OpenAI-compatible connection.
+  static const String providerCustomCreate = 'provider.custom.create';
 
-  /// The providerModelUpsert public API member.
-  static const String providerModelUpsert = 'provider.model.upsert';
+  /// Updates an advanced custom OpenAI-compatible connection.
+  static const String providerCustomUpdate = 'provider.custom.update';
 
-  /// The providerModelDelete public API member.
-  static const String providerModelDelete = 'provider.model.delete';
-
-  /// The providerModelDiagnose public API member.
-  static const String providerModelDiagnose = 'provider.model.diagnose';
-
-  /// The providerCredentialSet public API member.
-  static const String providerCredentialSet = 'provider.credential.set';
-
-  /// The providerCredentialClear public API member.
-  static const String providerCredentialClear = 'provider.credential.clear';
+  /// Deletes an advanced custom OpenAI-compatible connection.
+  static const String providerCustomDelete = 'provider.custom.delete';
 
   /// The turnStart public API member.
   static const String turnStart = 'turn.start';
@@ -76,6 +91,9 @@ abstract final class RpcNotification {
 
   /// The approvalRequested public API member.
   static const String approvalRequested = 'approval.requested';
+
+  /// Reports OAuth authorization attempt state changes.
+  static const String providerAuthUpdated = 'provider.auth.updated';
 }
 
 /// ProtocolException defines a public contract.

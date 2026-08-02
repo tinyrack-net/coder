@@ -26,6 +26,7 @@ void main() {
           homeDirectory: home.path,
           port: 0,
           bearerToken: 'e2e-token-0123456789abcdef0123456789',
+          useEnvironmentCredentials: false,
         ),
         provider: _PatchProvider(),
       );

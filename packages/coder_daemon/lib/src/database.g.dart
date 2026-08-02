@@ -355,17 +355,17 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _providerIdMeta = const VerificationMeta(
-    'providerId',
-  );
+  static const VerificationMeta _providerConnectionIdMeta =
+      const VerificationMeta('providerConnectionId');
   @override
-  late final GeneratedColumn<String> providerId = GeneratedColumn<String>(
-    'provider_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
+  late final GeneratedColumn<String> providerConnectionId =
+      GeneratedColumn<String>(
+        'provider_connection_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
   static const VerificationMeta _modelMeta = const VerificationMeta('model');
   @override
   late final GeneratedColumn<String> model = GeneratedColumn<String>(
@@ -456,7 +456,7 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
     id,
     workspaceId,
     title,
-    providerId,
+    providerConnectionId,
     model,
     reasoningEffort,
     status,
@@ -502,13 +502,16 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
     } else if (isInserting) {
       context.missing(_titleMeta);
     }
-    if (data.containsKey('provider_id')) {
+    if (data.containsKey('provider_connection_id')) {
       context.handle(
-        _providerIdMeta,
-        providerId.isAcceptableOrUnknown(data['provider_id']!, _providerIdMeta),
+        _providerConnectionIdMeta,
+        providerConnectionId.isAcceptableOrUnknown(
+          data['provider_connection_id']!,
+          _providerConnectionIdMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_providerIdMeta);
+      context.missing(_providerConnectionIdMeta);
     }
     if (data.containsKey('model')) {
       context.handle(
@@ -598,9 +601,9 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
-      providerId: attachedDatabase.typeMapping.read(
+      providerConnectionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}provider_id'],
+        data['${effectivePrefix}provider_connection_id'],
       )!,
       model: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -653,8 +656,8 @@ class Agent extends DataClass implements Insertable<Agent> {
   /// The title public API member.
   final String title;
 
-  /// The providerId public API member.
-  final String providerId;
+  /// Provider connection selected for this agent.
+  final String providerConnectionId;
 
   /// The model public API member.
   final String model;
@@ -683,7 +686,7 @@ class Agent extends DataClass implements Insertable<Agent> {
     required this.id,
     required this.workspaceId,
     required this.title,
-    required this.providerId,
+    required this.providerConnectionId,
     required this.model,
     required this.reasoningEffort,
     required this.status,
@@ -699,7 +702,7 @@ class Agent extends DataClass implements Insertable<Agent> {
     map['id'] = Variable<String>(id);
     map['workspace_id'] = Variable<String>(workspaceId);
     map['title'] = Variable<String>(title);
-    map['provider_id'] = Variable<String>(providerId);
+    map['provider_connection_id'] = Variable<String>(providerConnectionId);
     map['model'] = Variable<String>(model);
     map['reasoning_effort'] = Variable<String>(reasoningEffort);
     map['status'] = Variable<String>(status);
@@ -720,7 +723,7 @@ class Agent extends DataClass implements Insertable<Agent> {
       id: Value(id),
       workspaceId: Value(workspaceId),
       title: Value(title),
-      providerId: Value(providerId),
+      providerConnectionId: Value(providerConnectionId),
       model: Value(model),
       reasoningEffort: Value(reasoningEffort),
       status: Value(status),
@@ -745,7 +748,9 @@ class Agent extends DataClass implements Insertable<Agent> {
       id: serializer.fromJson<String>(json['id']),
       workspaceId: serializer.fromJson<String>(json['workspaceId']),
       title: serializer.fromJson<String>(json['title']),
-      providerId: serializer.fromJson<String>(json['providerId']),
+      providerConnectionId: serializer.fromJson<String>(
+        json['providerConnectionId'],
+      ),
       model: serializer.fromJson<String>(json['model']),
       reasoningEffort: serializer.fromJson<String>(json['reasoningEffort']),
       status: serializer.fromJson<String>(json['status']),
@@ -763,7 +768,7 @@ class Agent extends DataClass implements Insertable<Agent> {
       'id': serializer.toJson<String>(id),
       'workspaceId': serializer.toJson<String>(workspaceId),
       'title': serializer.toJson<String>(title),
-      'providerId': serializer.toJson<String>(providerId),
+      'providerConnectionId': serializer.toJson<String>(providerConnectionId),
       'model': serializer.toJson<String>(model),
       'reasoningEffort': serializer.toJson<String>(reasoningEffort),
       'status': serializer.toJson<String>(status),
@@ -779,7 +784,7 @@ class Agent extends DataClass implements Insertable<Agent> {
     String? id,
     String? workspaceId,
     String? title,
-    String? providerId,
+    String? providerConnectionId,
     String? model,
     String? reasoningEffort,
     String? status,
@@ -792,7 +797,7 @@ class Agent extends DataClass implements Insertable<Agent> {
     id: id ?? this.id,
     workspaceId: workspaceId ?? this.workspaceId,
     title: title ?? this.title,
-    providerId: providerId ?? this.providerId,
+    providerConnectionId: providerConnectionId ?? this.providerConnectionId,
     model: model ?? this.model,
     reasoningEffort: reasoningEffort ?? this.reasoningEffort,
     status: status ?? this.status,
@@ -809,9 +814,9 @@ class Agent extends DataClass implements Insertable<Agent> {
           ? data.workspaceId.value
           : this.workspaceId,
       title: data.title.present ? data.title.value : this.title,
-      providerId: data.providerId.present
-          ? data.providerId.value
-          : this.providerId,
+      providerConnectionId: data.providerConnectionId.present
+          ? data.providerConnectionId.value
+          : this.providerConnectionId,
       model: data.model.present ? data.model.value : this.model,
       reasoningEffort: data.reasoningEffort.present
           ? data.reasoningEffort.value
@@ -835,7 +840,7 @@ class Agent extends DataClass implements Insertable<Agent> {
           ..write('id: $id, ')
           ..write('workspaceId: $workspaceId, ')
           ..write('title: $title, ')
-          ..write('providerId: $providerId, ')
+          ..write('providerConnectionId: $providerConnectionId, ')
           ..write('model: $model, ')
           ..write('reasoningEffort: $reasoningEffort, ')
           ..write('status: $status, ')
@@ -853,7 +858,7 @@ class Agent extends DataClass implements Insertable<Agent> {
     id,
     workspaceId,
     title,
-    providerId,
+    providerConnectionId,
     model,
     reasoningEffort,
     status,
@@ -870,7 +875,7 @@ class Agent extends DataClass implements Insertable<Agent> {
           other.id == this.id &&
           other.workspaceId == this.workspaceId &&
           other.title == this.title &&
-          other.providerId == this.providerId &&
+          other.providerConnectionId == this.providerConnectionId &&
           other.model == this.model &&
           other.reasoningEffort == this.reasoningEffort &&
           other.status == this.status &&
@@ -885,7 +890,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
   final Value<String> id;
   final Value<String> workspaceId;
   final Value<String> title;
-  final Value<String> providerId;
+  final Value<String> providerConnectionId;
   final Value<String> model;
   final Value<String> reasoningEffort;
   final Value<String> status;
@@ -899,7 +904,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     this.id = const Value.absent(),
     this.workspaceId = const Value.absent(),
     this.title = const Value.absent(),
-    this.providerId = const Value.absent(),
+    this.providerConnectionId = const Value.absent(),
     this.model = const Value.absent(),
     this.reasoningEffort = const Value.absent(),
     this.status = const Value.absent(),
@@ -914,7 +919,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     required String id,
     required String workspaceId,
     required String title,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     this.reasoningEffort = const Value.absent(),
     required String status,
@@ -927,7 +932,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
   }) : id = Value(id),
        workspaceId = Value(workspaceId),
        title = Value(title),
-       providerId = Value(providerId),
+       providerConnectionId = Value(providerConnectionId),
        model = Value(model),
        status = Value(status),
        permissionMode = Value(permissionMode),
@@ -937,7 +942,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     Expression<String>? id,
     Expression<String>? workspaceId,
     Expression<String>? title,
-    Expression<String>? providerId,
+    Expression<String>? providerConnectionId,
     Expression<String>? model,
     Expression<String>? reasoningEffort,
     Expression<String>? status,
@@ -952,7 +957,8 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
       if (id != null) 'id': id,
       if (workspaceId != null) 'workspace_id': workspaceId,
       if (title != null) 'title': title,
-      if (providerId != null) 'provider_id': providerId,
+      if (providerConnectionId != null)
+        'provider_connection_id': providerConnectionId,
       if (model != null) 'model': model,
       if (reasoningEffort != null) 'reasoning_effort': reasoningEffort,
       if (status != null) 'status': status,
@@ -969,7 +975,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     Value<String>? id,
     Value<String>? workspaceId,
     Value<String>? title,
-    Value<String>? providerId,
+    Value<String>? providerConnectionId,
     Value<String>? model,
     Value<String>? reasoningEffort,
     Value<String>? status,
@@ -984,7 +990,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
       id: id ?? this.id,
       workspaceId: workspaceId ?? this.workspaceId,
       title: title ?? this.title,
-      providerId: providerId ?? this.providerId,
+      providerConnectionId: providerConnectionId ?? this.providerConnectionId,
       model: model ?? this.model,
       reasoningEffort: reasoningEffort ?? this.reasoningEffort,
       status: status ?? this.status,
@@ -1009,8 +1015,10 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
-    if (providerId.present) {
-      map['provider_id'] = Variable<String>(providerId.value);
+    if (providerConnectionId.present) {
+      map['provider_connection_id'] = Variable<String>(
+        providerConnectionId.value,
+      );
     }
     if (model.present) {
       map['model'] = Variable<String>(model.value);
@@ -1048,7 +1056,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
           ..write('id: $id, ')
           ..write('workspaceId: $workspaceId, ')
           ..write('title: $title, ')
-          ..write('providerId: $providerId, ')
+          ..write('providerConnectionId: $providerConnectionId, ')
           ..write('model: $model, ')
           ..write('reasoningEffort: $reasoningEffort, ')
           ..write('status: $status, ')
@@ -3127,12 +3135,12 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   }
 }
 
-class $ApiProvidersTable extends ApiProviders
-    with TableInfo<$ApiProvidersTable, ApiProvider> {
+class $ProviderConnectionsTable extends ProviderConnections
+    with TableInfo<$ProviderConnectionsTable, ProviderConnection> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $ApiProvidersTable(this.attachedDatabase, [this._alias]);
+  $ProviderConnectionsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -3142,97 +3150,73 @@ class $ApiProvidersTable extends ApiProviders
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  static const VerificationMeta _definitionIdMeta = const VerificationMeta(
+    'definitionId',
+  );
   @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
+  late final GeneratedColumn<String> definitionId = GeneratedColumn<String>(
+    'definition_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _presetIdMeta = const VerificationMeta(
-    'presetId',
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
   );
   @override
-  late final GeneratedColumn<String> presetId = GeneratedColumn<String>(
-    'preset_id',
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _baseUrlMeta = const VerificationMeta(
-    'baseUrl',
-  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
-  late final GeneratedColumn<String> baseUrl = GeneratedColumn<String>(
-    'base_url',
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _transportMeta = const VerificationMeta(
-    'transport',
+  static const VerificationMeta _authKindMeta = const VerificationMeta(
+    'authKind',
   );
   @override
-  late final GeneratedColumn<String> transport = GeneratedColumn<String>(
-    'transport',
+  late final GeneratedColumn<String> authKind = GeneratedColumn<String>(
+    'auth_kind',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _credentialSourceMeta = const VerificationMeta(
-    'credentialSource',
+  static const VerificationMeta _credentialOriginMeta = const VerificationMeta(
+    'credentialOrigin',
   );
   @override
-  late final GeneratedColumn<String> credentialSource = GeneratedColumn<String>(
-    'credential_source',
+  late final GeneratedColumn<String> credentialOrigin = GeneratedColumn<String>(
+    'credential_origin',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _environmentVariableMeta =
-      const VerificationMeta('environmentVariable');
-  @override
-  late final GeneratedColumn<String> environmentVariable =
-      GeneratedColumn<String>(
-        'environment_variable',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _enabledMeta = const VerificationMeta(
-    'enabled',
+  static const VerificationMeta _isDefaultMeta = const VerificationMeta(
+    'isDefault',
   );
   @override
-  late final GeneratedColumn<bool> enabled = GeneratedColumn<bool>(
-    'enabled',
+  late final GeneratedColumn<bool> isDefault = GeneratedColumn<bool>(
+    'is_default',
     aliasedName,
     false,
     type: DriftSqlType.bool,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("enabled" IN (0, 1))',
+      'CHECK ("is_default" IN (0, 1))',
     ),
-  );
-  static const VerificationMeta _strictToolSchemaMeta = const VerificationMeta(
-    'strictToolSchema',
-  );
-  @override
-  late final GeneratedColumn<bool> strictToolSchema = GeneratedColumn<bool>(
-    'strict_tool_schema',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("strict_tool_schema" IN (0, 1))',
-    ),
+    defaultValue: const Constant(false),
   );
   static const VerificationMeta _defaultModelIdMeta = const VerificationMeta(
     'defaultModelId',
@@ -3245,18 +3229,26 @@ class $ApiProvidersTable extends ApiProviders
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _visibleModelIdsJsonMeta =
-      const VerificationMeta('visibleModelIdsJson');
+  static const VerificationMeta _errorMeta = const VerificationMeta('error');
   @override
-  late final GeneratedColumn<String> visibleModelIdsJson =
-      GeneratedColumn<String>(
-        'visible_model_ids_json',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        defaultValue: const Constant('[]'),
-      );
+  late final GeneratedColumn<String> error = GeneratedColumn<String>(
+    'error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _customConfigJsonMeta = const VerificationMeta(
+    'customConfigJson',
+  );
+  @override
+  late final GeneratedColumn<String> customConfigJson = GeneratedColumn<String>(
+    'custom_config_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -3282,16 +3274,15 @@ class $ApiProvidersTable extends ApiProviders
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    name,
-    presetId,
-    baseUrl,
-    transport,
-    credentialSource,
-    environmentVariable,
-    enabled,
-    strictToolSchema,
+    definitionId,
+    displayName,
+    status,
+    authKind,
+    credentialOrigin,
+    isDefault,
     defaultModelId,
-    visibleModelIdsJson,
+    error,
+    customConfigJson,
     createdAt,
     updatedAt,
   ];
@@ -3299,10 +3290,10 @@ class $ApiProvidersTable extends ApiProviders
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'api_providers';
+  static const String $name = 'provider_connections';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ApiProvider> instance, {
+    Insertable<ProviderConnection> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -3312,76 +3303,60 @@ class $ApiProvidersTable extends ApiProviders
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('name')) {
+    if (data.containsKey('definition_id')) {
       context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('preset_id')) {
-      context.handle(
-        _presetIdMeta,
-        presetId.isAcceptableOrUnknown(data['preset_id']!, _presetIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_presetIdMeta);
-    }
-    if (data.containsKey('base_url')) {
-      context.handle(
-        _baseUrlMeta,
-        baseUrl.isAcceptableOrUnknown(data['base_url']!, _baseUrlMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_baseUrlMeta);
-    }
-    if (data.containsKey('transport')) {
-      context.handle(
-        _transportMeta,
-        transport.isAcceptableOrUnknown(data['transport']!, _transportMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_transportMeta);
-    }
-    if (data.containsKey('credential_source')) {
-      context.handle(
-        _credentialSourceMeta,
-        credentialSource.isAcceptableOrUnknown(
-          data['credential_source']!,
-          _credentialSourceMeta,
+        _definitionIdMeta,
+        definitionId.isAcceptableOrUnknown(
+          data['definition_id']!,
+          _definitionIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_credentialSourceMeta);
+      context.missing(_definitionIdMeta);
     }
-    if (data.containsKey('environment_variable')) {
+    if (data.containsKey('display_name')) {
       context.handle(
-        _environmentVariableMeta,
-        environmentVariable.isAcceptableOrUnknown(
-          data['environment_variable']!,
-          _environmentVariableMeta,
-        ),
-      );
-    }
-    if (data.containsKey('enabled')) {
-      context.handle(
-        _enabledMeta,
-        enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_enabledMeta);
-    }
-    if (data.containsKey('strict_tool_schema')) {
-      context.handle(
-        _strictToolSchemaMeta,
-        strictToolSchema.isAcceptableOrUnknown(
-          data['strict_tool_schema']!,
-          _strictToolSchemaMeta,
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_strictToolSchemaMeta);
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('auth_kind')) {
+      context.handle(
+        _authKindMeta,
+        authKind.isAcceptableOrUnknown(data['auth_kind']!, _authKindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_authKindMeta);
+    }
+    if (data.containsKey('credential_origin')) {
+      context.handle(
+        _credentialOriginMeta,
+        credentialOrigin.isAcceptableOrUnknown(
+          data['credential_origin']!,
+          _credentialOriginMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_credentialOriginMeta);
+    }
+    if (data.containsKey('is_default')) {
+      context.handle(
+        _isDefaultMeta,
+        isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta),
+      );
     }
     if (data.containsKey('default_model_id')) {
       context.handle(
@@ -3392,12 +3367,18 @@ class $ApiProvidersTable extends ApiProviders
         ),
       );
     }
-    if (data.containsKey('visible_model_ids_json')) {
+    if (data.containsKey('error')) {
       context.handle(
-        _visibleModelIdsJsonMeta,
-        visibleModelIdsJson.isAcceptableOrUnknown(
-          data['visible_model_ids_json']!,
-          _visibleModelIdsJsonMeta,
+        _errorMeta,
+        error.isAcceptableOrUnknown(data['error']!, _errorMeta),
+      );
+    }
+    if (data.containsKey('custom_config_json')) {
+      context.handle(
+        _customConfigJsonMeta,
+        customConfigJson.isAcceptableOrUnknown(
+          data['custom_config_json']!,
+          _customConfigJsonMeta,
         ),
       );
     }
@@ -3423,53 +3404,49 @@ class $ApiProvidersTable extends ApiProviders
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  ApiProvider map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ProviderConnection map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ApiProvider(
+    return ProviderConnection(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      name: attachedDatabase.typeMapping.read(
+      definitionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}name'],
+        data['${effectivePrefix}definition_id'],
       )!,
-      presetId: attachedDatabase.typeMapping.read(
+      displayName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}preset_id'],
+        data['${effectivePrefix}display_name'],
       )!,
-      baseUrl: attachedDatabase.typeMapping.read(
+      status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}base_url'],
+        data['${effectivePrefix}status'],
       )!,
-      transport: attachedDatabase.typeMapping.read(
+      authKind: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}transport'],
+        data['${effectivePrefix}auth_kind'],
       )!,
-      credentialSource: attachedDatabase.typeMapping.read(
+      credentialOrigin: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}credential_source'],
+        data['${effectivePrefix}credential_origin'],
       )!,
-      environmentVariable: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}environment_variable'],
-      ),
-      enabled: attachedDatabase.typeMapping.read(
+      isDefault: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
-        data['${effectivePrefix}enabled'],
-      )!,
-      strictToolSchema: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}strict_tool_schema'],
+        data['${effectivePrefix}is_default'],
       )!,
       defaultModelId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}default_model_id'],
       ),
-      visibleModelIdsJson: attachedDatabase.typeMapping.read(
+      error: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}visible_model_ids_json'],
-      )!,
+        data['${effectivePrefix}error'],
+      ),
+      customConfigJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_config_json'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -3482,62 +3459,59 @@ class $ApiProvidersTable extends ApiProviders
   }
 
   @override
-  $ApiProvidersTable createAlias(String alias) {
-    return $ApiProvidersTable(attachedDatabase, alias);
+  $ProviderConnectionsTable createAlias(String alias) {
+    return $ProviderConnectionsTable(attachedDatabase, alias);
   }
 }
 
-class ApiProvider extends DataClass implements Insertable<ApiProvider> {
+class ProviderConnection extends DataClass
+    implements Insertable<ProviderConnection> {
   /// The id public API member.
   final String id;
 
-  /// The name public API member.
-  final String name;
+  /// Built-in definition identifier, or `custom`.
+  final String definitionId;
 
-  /// The presetId public API member.
-  final String presetId;
+  /// Human-readable connection name.
+  final String displayName;
 
-  /// The baseUrl public API member.
-  final String baseUrl;
+  /// Current connection state.
+  final String status;
 
-  /// The transport public API member.
-  final String transport;
+  /// Active authentication kind.
+  final String authKind;
 
-  /// The credentialSource public API member.
-  final String credentialSource;
+  /// Non-secret credential origin.
+  final String credentialOrigin;
 
-  /// The environmentVariable public API member.
-  final String? environmentVariable;
-
-  /// The enabled public API member.
-  final bool enabled;
-
-  /// The strictToolSchema public API member.
-  final bool strictToolSchema;
+  /// Whether this is the daemon-wide default connection.
+  final bool isDefault;
 
   /// The defaultModelId public API member.
   final String? defaultModelId;
 
-  /// The visibleModelIdsJson public API member.
-  final String visibleModelIdsJson;
+  /// Last user-safe connection error.
+  final String? error;
+
+  /// Advanced custom configuration, never used by built-in definitions.
+  final String? customConfigJson;
 
   /// The createdAt public API member.
   final DateTime createdAt;
 
   /// The updatedAt public API member.
   final DateTime updatedAt;
-  const ApiProvider({
+  const ProviderConnection({
     required this.id,
-    required this.name,
-    required this.presetId,
-    required this.baseUrl,
-    required this.transport,
-    required this.credentialSource,
-    this.environmentVariable,
-    required this.enabled,
-    required this.strictToolSchema,
+    required this.definitionId,
+    required this.displayName,
+    required this.status,
+    required this.authKind,
+    required this.credentialOrigin,
+    required this.isDefault,
     this.defaultModelId,
-    required this.visibleModelIdsJson,
+    this.error,
+    this.customConfigJson,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -3545,68 +3519,65 @@ class ApiProvider extends DataClass implements Insertable<ApiProvider> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['name'] = Variable<String>(name);
-    map['preset_id'] = Variable<String>(presetId);
-    map['base_url'] = Variable<String>(baseUrl);
-    map['transport'] = Variable<String>(transport);
-    map['credential_source'] = Variable<String>(credentialSource);
-    if (!nullToAbsent || environmentVariable != null) {
-      map['environment_variable'] = Variable<String>(environmentVariable);
-    }
-    map['enabled'] = Variable<bool>(enabled);
-    map['strict_tool_schema'] = Variable<bool>(strictToolSchema);
+    map['definition_id'] = Variable<String>(definitionId);
+    map['display_name'] = Variable<String>(displayName);
+    map['status'] = Variable<String>(status);
+    map['auth_kind'] = Variable<String>(authKind);
+    map['credential_origin'] = Variable<String>(credentialOrigin);
+    map['is_default'] = Variable<bool>(isDefault);
     if (!nullToAbsent || defaultModelId != null) {
       map['default_model_id'] = Variable<String>(defaultModelId);
     }
-    map['visible_model_ids_json'] = Variable<String>(visibleModelIdsJson);
+    if (!nullToAbsent || error != null) {
+      map['error'] = Variable<String>(error);
+    }
+    if (!nullToAbsent || customConfigJson != null) {
+      map['custom_config_json'] = Variable<String>(customConfigJson);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
 
-  ApiProvidersCompanion toCompanion(bool nullToAbsent) {
-    return ApiProvidersCompanion(
+  ProviderConnectionsCompanion toCompanion(bool nullToAbsent) {
+    return ProviderConnectionsCompanion(
       id: Value(id),
-      name: Value(name),
-      presetId: Value(presetId),
-      baseUrl: Value(baseUrl),
-      transport: Value(transport),
-      credentialSource: Value(credentialSource),
-      environmentVariable: environmentVariable == null && nullToAbsent
-          ? const Value.absent()
-          : Value(environmentVariable),
-      enabled: Value(enabled),
-      strictToolSchema: Value(strictToolSchema),
+      definitionId: Value(definitionId),
+      displayName: Value(displayName),
+      status: Value(status),
+      authKind: Value(authKind),
+      credentialOrigin: Value(credentialOrigin),
+      isDefault: Value(isDefault),
       defaultModelId: defaultModelId == null && nullToAbsent
           ? const Value.absent()
           : Value(defaultModelId),
-      visibleModelIdsJson: Value(visibleModelIdsJson),
+      error: error == null && nullToAbsent
+          ? const Value.absent()
+          : Value(error),
+      customConfigJson: customConfigJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customConfigJson),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
   }
 
-  factory ApiProvider.fromJson(
+  factory ProviderConnection.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ApiProvider(
+    return ProviderConnection(
       id: serializer.fromJson<String>(json['id']),
-      name: serializer.fromJson<String>(json['name']),
-      presetId: serializer.fromJson<String>(json['presetId']),
-      baseUrl: serializer.fromJson<String>(json['baseUrl']),
-      transport: serializer.fromJson<String>(json['transport']),
-      credentialSource: serializer.fromJson<String>(json['credentialSource']),
-      environmentVariable: serializer.fromJson<String?>(
-        json['environmentVariable'],
-      ),
-      enabled: serializer.fromJson<bool>(json['enabled']),
-      strictToolSchema: serializer.fromJson<bool>(json['strictToolSchema']),
+      definitionId: serializer.fromJson<String>(json['definitionId']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      status: serializer.fromJson<String>(json['status']),
+      authKind: serializer.fromJson<String>(json['authKind']),
+      credentialOrigin: serializer.fromJson<String>(json['credentialOrigin']),
+      isDefault: serializer.fromJson<bool>(json['isDefault']),
       defaultModelId: serializer.fromJson<String?>(json['defaultModelId']),
-      visibleModelIdsJson: serializer.fromJson<String>(
-        json['visibleModelIdsJson'],
-      ),
+      error: serializer.fromJson<String?>(json['error']),
+      customConfigJson: serializer.fromJson<String?>(json['customConfigJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -3616,77 +3587,73 @@ class ApiProvider extends DataClass implements Insertable<ApiProvider> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'name': serializer.toJson<String>(name),
-      'presetId': serializer.toJson<String>(presetId),
-      'baseUrl': serializer.toJson<String>(baseUrl),
-      'transport': serializer.toJson<String>(transport),
-      'credentialSource': serializer.toJson<String>(credentialSource),
-      'environmentVariable': serializer.toJson<String?>(environmentVariable),
-      'enabled': serializer.toJson<bool>(enabled),
-      'strictToolSchema': serializer.toJson<bool>(strictToolSchema),
+      'definitionId': serializer.toJson<String>(definitionId),
+      'displayName': serializer.toJson<String>(displayName),
+      'status': serializer.toJson<String>(status),
+      'authKind': serializer.toJson<String>(authKind),
+      'credentialOrigin': serializer.toJson<String>(credentialOrigin),
+      'isDefault': serializer.toJson<bool>(isDefault),
       'defaultModelId': serializer.toJson<String?>(defaultModelId),
-      'visibleModelIdsJson': serializer.toJson<String>(visibleModelIdsJson),
+      'error': serializer.toJson<String?>(error),
+      'customConfigJson': serializer.toJson<String?>(customConfigJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
-  ApiProvider copyWith({
+  ProviderConnection copyWith({
     String? id,
-    String? name,
-    String? presetId,
-    String? baseUrl,
-    String? transport,
-    String? credentialSource,
-    Value<String?> environmentVariable = const Value.absent(),
-    bool? enabled,
-    bool? strictToolSchema,
+    String? definitionId,
+    String? displayName,
+    String? status,
+    String? authKind,
+    String? credentialOrigin,
+    bool? isDefault,
     Value<String?> defaultModelId = const Value.absent(),
-    String? visibleModelIdsJson,
+    Value<String?> error = const Value.absent(),
+    Value<String?> customConfigJson = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) => ApiProvider(
+  }) => ProviderConnection(
     id: id ?? this.id,
-    name: name ?? this.name,
-    presetId: presetId ?? this.presetId,
-    baseUrl: baseUrl ?? this.baseUrl,
-    transport: transport ?? this.transport,
-    credentialSource: credentialSource ?? this.credentialSource,
-    environmentVariable: environmentVariable.present
-        ? environmentVariable.value
-        : this.environmentVariable,
-    enabled: enabled ?? this.enabled,
-    strictToolSchema: strictToolSchema ?? this.strictToolSchema,
+    definitionId: definitionId ?? this.definitionId,
+    displayName: displayName ?? this.displayName,
+    status: status ?? this.status,
+    authKind: authKind ?? this.authKind,
+    credentialOrigin: credentialOrigin ?? this.credentialOrigin,
+    isDefault: isDefault ?? this.isDefault,
     defaultModelId: defaultModelId.present
         ? defaultModelId.value
         : this.defaultModelId,
-    visibleModelIdsJson: visibleModelIdsJson ?? this.visibleModelIdsJson,
+    error: error.present ? error.value : this.error,
+    customConfigJson: customConfigJson.present
+        ? customConfigJson.value
+        : this.customConfigJson,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
-  ApiProvider copyWithCompanion(ApiProvidersCompanion data) {
-    return ApiProvider(
+  ProviderConnection copyWithCompanion(ProviderConnectionsCompanion data) {
+    return ProviderConnection(
       id: data.id.present ? data.id.value : this.id,
-      name: data.name.present ? data.name.value : this.name,
-      presetId: data.presetId.present ? data.presetId.value : this.presetId,
-      baseUrl: data.baseUrl.present ? data.baseUrl.value : this.baseUrl,
-      transport: data.transport.present ? data.transport.value : this.transport,
-      credentialSource: data.credentialSource.present
-          ? data.credentialSource.value
-          : this.credentialSource,
-      environmentVariable: data.environmentVariable.present
-          ? data.environmentVariable.value
-          : this.environmentVariable,
-      enabled: data.enabled.present ? data.enabled.value : this.enabled,
-      strictToolSchema: data.strictToolSchema.present
-          ? data.strictToolSchema.value
-          : this.strictToolSchema,
+      definitionId: data.definitionId.present
+          ? data.definitionId.value
+          : this.definitionId,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      status: data.status.present ? data.status.value : this.status,
+      authKind: data.authKind.present ? data.authKind.value : this.authKind,
+      credentialOrigin: data.credentialOrigin.present
+          ? data.credentialOrigin.value
+          : this.credentialOrigin,
+      isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
       defaultModelId: data.defaultModelId.present
           ? data.defaultModelId.value
           : this.defaultModelId,
-      visibleModelIdsJson: data.visibleModelIdsJson.present
-          ? data.visibleModelIdsJson.value
-          : this.visibleModelIdsJson,
+      error: data.error.present ? data.error.value : this.error,
+      customConfigJson: data.customConfigJson.present
+          ? data.customConfigJson.value
+          : this.customConfigJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -3694,18 +3661,17 @@ class ApiProvider extends DataClass implements Insertable<ApiProvider> {
 
   @override
   String toString() {
-    return (StringBuffer('ApiProvider(')
+    return (StringBuffer('ProviderConnection(')
           ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('presetId: $presetId, ')
-          ..write('baseUrl: $baseUrl, ')
-          ..write('transport: $transport, ')
-          ..write('credentialSource: $credentialSource, ')
-          ..write('environmentVariable: $environmentVariable, ')
-          ..write('enabled: $enabled, ')
-          ..write('strictToolSchema: $strictToolSchema, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('displayName: $displayName, ')
+          ..write('status: $status, ')
+          ..write('authKind: $authKind, ')
+          ..write('credentialOrigin: $credentialOrigin, ')
+          ..write('isDefault: $isDefault, ')
           ..write('defaultModelId: $defaultModelId, ')
-          ..write('visibleModelIdsJson: $visibleModelIdsJson, ')
+          ..write('error: $error, ')
+          ..write('customConfigJson: $customConfigJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3715,158 +3681,145 @@ class ApiProvider extends DataClass implements Insertable<ApiProvider> {
   @override
   int get hashCode => Object.hash(
     id,
-    name,
-    presetId,
-    baseUrl,
-    transport,
-    credentialSource,
-    environmentVariable,
-    enabled,
-    strictToolSchema,
+    definitionId,
+    displayName,
+    status,
+    authKind,
+    credentialOrigin,
+    isDefault,
     defaultModelId,
-    visibleModelIdsJson,
+    error,
+    customConfigJson,
     createdAt,
     updatedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ApiProvider &&
+      (other is ProviderConnection &&
           other.id == this.id &&
-          other.name == this.name &&
-          other.presetId == this.presetId &&
-          other.baseUrl == this.baseUrl &&
-          other.transport == this.transport &&
-          other.credentialSource == this.credentialSource &&
-          other.environmentVariable == this.environmentVariable &&
-          other.enabled == this.enabled &&
-          other.strictToolSchema == this.strictToolSchema &&
+          other.definitionId == this.definitionId &&
+          other.displayName == this.displayName &&
+          other.status == this.status &&
+          other.authKind == this.authKind &&
+          other.credentialOrigin == this.credentialOrigin &&
+          other.isDefault == this.isDefault &&
           other.defaultModelId == this.defaultModelId &&
-          other.visibleModelIdsJson == this.visibleModelIdsJson &&
+          other.error == this.error &&
+          other.customConfigJson == this.customConfigJson &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
 
-class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
+class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
   final Value<String> id;
-  final Value<String> name;
-  final Value<String> presetId;
-  final Value<String> baseUrl;
-  final Value<String> transport;
-  final Value<String> credentialSource;
-  final Value<String?> environmentVariable;
-  final Value<bool> enabled;
-  final Value<bool> strictToolSchema;
+  final Value<String> definitionId;
+  final Value<String> displayName;
+  final Value<String> status;
+  final Value<String> authKind;
+  final Value<String> credentialOrigin;
+  final Value<bool> isDefault;
   final Value<String?> defaultModelId;
-  final Value<String> visibleModelIdsJson;
+  final Value<String?> error;
+  final Value<String?> customConfigJson;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  const ApiProvidersCompanion({
+  const ProviderConnectionsCompanion({
     this.id = const Value.absent(),
-    this.name = const Value.absent(),
-    this.presetId = const Value.absent(),
-    this.baseUrl = const Value.absent(),
-    this.transport = const Value.absent(),
-    this.credentialSource = const Value.absent(),
-    this.environmentVariable = const Value.absent(),
-    this.enabled = const Value.absent(),
-    this.strictToolSchema = const Value.absent(),
+    this.definitionId = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.status = const Value.absent(),
+    this.authKind = const Value.absent(),
+    this.credentialOrigin = const Value.absent(),
+    this.isDefault = const Value.absent(),
     this.defaultModelId = const Value.absent(),
-    this.visibleModelIdsJson = const Value.absent(),
+    this.error = const Value.absent(),
+    this.customConfigJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  ApiProvidersCompanion.insert({
+  ProviderConnectionsCompanion.insert({
     required String id,
-    required String name,
-    required String presetId,
-    required String baseUrl,
-    required String transport,
-    required String credentialSource,
-    this.environmentVariable = const Value.absent(),
-    required bool enabled,
-    required bool strictToolSchema,
+    required String definitionId,
+    required String displayName,
+    required String status,
+    required String authKind,
+    required String credentialOrigin,
+    this.isDefault = const Value.absent(),
     this.defaultModelId = const Value.absent(),
-    this.visibleModelIdsJson = const Value.absent(),
+    this.error = const Value.absent(),
+    this.customConfigJson = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       name = Value(name),
-       presetId = Value(presetId),
-       baseUrl = Value(baseUrl),
-       transport = Value(transport),
-       credentialSource = Value(credentialSource),
-       enabled = Value(enabled),
-       strictToolSchema = Value(strictToolSchema),
+       definitionId = Value(definitionId),
+       displayName = Value(displayName),
+       status = Value(status),
+       authKind = Value(authKind),
+       credentialOrigin = Value(credentialOrigin),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
-  static Insertable<ApiProvider> custom({
+  static Insertable<ProviderConnection> custom({
     Expression<String>? id,
-    Expression<String>? name,
-    Expression<String>? presetId,
-    Expression<String>? baseUrl,
-    Expression<String>? transport,
-    Expression<String>? credentialSource,
-    Expression<String>? environmentVariable,
-    Expression<bool>? enabled,
-    Expression<bool>? strictToolSchema,
+    Expression<String>? definitionId,
+    Expression<String>? displayName,
+    Expression<String>? status,
+    Expression<String>? authKind,
+    Expression<String>? credentialOrigin,
+    Expression<bool>? isDefault,
     Expression<String>? defaultModelId,
-    Expression<String>? visibleModelIdsJson,
+    Expression<String>? error,
+    Expression<String>? customConfigJson,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (name != null) 'name': name,
-      if (presetId != null) 'preset_id': presetId,
-      if (baseUrl != null) 'base_url': baseUrl,
-      if (transport != null) 'transport': transport,
-      if (credentialSource != null) 'credential_source': credentialSource,
-      if (environmentVariable != null)
-        'environment_variable': environmentVariable,
-      if (enabled != null) 'enabled': enabled,
-      if (strictToolSchema != null) 'strict_tool_schema': strictToolSchema,
+      if (definitionId != null) 'definition_id': definitionId,
+      if (displayName != null) 'display_name': displayName,
+      if (status != null) 'status': status,
+      if (authKind != null) 'auth_kind': authKind,
+      if (credentialOrigin != null) 'credential_origin': credentialOrigin,
+      if (isDefault != null) 'is_default': isDefault,
       if (defaultModelId != null) 'default_model_id': defaultModelId,
-      if (visibleModelIdsJson != null)
-        'visible_model_ids_json': visibleModelIdsJson,
+      if (error != null) 'error': error,
+      if (customConfigJson != null) 'custom_config_json': customConfigJson,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  ApiProvidersCompanion copyWith({
+  ProviderConnectionsCompanion copyWith({
     Value<String>? id,
-    Value<String>? name,
-    Value<String>? presetId,
-    Value<String>? baseUrl,
-    Value<String>? transport,
-    Value<String>? credentialSource,
-    Value<String?>? environmentVariable,
-    Value<bool>? enabled,
-    Value<bool>? strictToolSchema,
+    Value<String>? definitionId,
+    Value<String>? displayName,
+    Value<String>? status,
+    Value<String>? authKind,
+    Value<String>? credentialOrigin,
+    Value<bool>? isDefault,
     Value<String?>? defaultModelId,
-    Value<String>? visibleModelIdsJson,
+    Value<String?>? error,
+    Value<String?>? customConfigJson,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
-    return ApiProvidersCompanion(
+    return ProviderConnectionsCompanion(
       id: id ?? this.id,
-      name: name ?? this.name,
-      presetId: presetId ?? this.presetId,
-      baseUrl: baseUrl ?? this.baseUrl,
-      transport: transport ?? this.transport,
-      credentialSource: credentialSource ?? this.credentialSource,
-      environmentVariable: environmentVariable ?? this.environmentVariable,
-      enabled: enabled ?? this.enabled,
-      strictToolSchema: strictToolSchema ?? this.strictToolSchema,
+      definitionId: definitionId ?? this.definitionId,
+      displayName: displayName ?? this.displayName,
+      status: status ?? this.status,
+      authKind: authKind ?? this.authKind,
+      credentialOrigin: credentialOrigin ?? this.credentialOrigin,
+      isDefault: isDefault ?? this.isDefault,
       defaultModelId: defaultModelId ?? this.defaultModelId,
-      visibleModelIdsJson: visibleModelIdsJson ?? this.visibleModelIdsJson,
+      error: error ?? this.error,
+      customConfigJson: customConfigJson ?? this.customConfigJson,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -3879,37 +3832,32 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
+    if (definitionId.present) {
+      map['definition_id'] = Variable<String>(definitionId.value);
     }
-    if (presetId.present) {
-      map['preset_id'] = Variable<String>(presetId.value);
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
     }
-    if (baseUrl.present) {
-      map['base_url'] = Variable<String>(baseUrl.value);
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
     }
-    if (transport.present) {
-      map['transport'] = Variable<String>(transport.value);
+    if (authKind.present) {
+      map['auth_kind'] = Variable<String>(authKind.value);
     }
-    if (credentialSource.present) {
-      map['credential_source'] = Variable<String>(credentialSource.value);
+    if (credentialOrigin.present) {
+      map['credential_origin'] = Variable<String>(credentialOrigin.value);
     }
-    if (environmentVariable.present) {
-      map['environment_variable'] = Variable<String>(environmentVariable.value);
-    }
-    if (enabled.present) {
-      map['enabled'] = Variable<bool>(enabled.value);
-    }
-    if (strictToolSchema.present) {
-      map['strict_tool_schema'] = Variable<bool>(strictToolSchema.value);
+    if (isDefault.present) {
+      map['is_default'] = Variable<bool>(isDefault.value);
     }
     if (defaultModelId.present) {
       map['default_model_id'] = Variable<String>(defaultModelId.value);
     }
-    if (visibleModelIdsJson.present) {
-      map['visible_model_ids_json'] = Variable<String>(
-        visibleModelIdsJson.value,
-      );
+    if (error.present) {
+      map['error'] = Variable<String>(error.value);
+    }
+    if (customConfigJson.present) {
+      map['custom_config_json'] = Variable<String>(customConfigJson.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -3925,18 +3873,17 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
 
   @override
   String toString() {
-    return (StringBuffer('ApiProvidersCompanion(')
+    return (StringBuffer('ProviderConnectionsCompanion(')
           ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('presetId: $presetId, ')
-          ..write('baseUrl: $baseUrl, ')
-          ..write('transport: $transport, ')
-          ..write('credentialSource: $credentialSource, ')
-          ..write('environmentVariable: $environmentVariable, ')
-          ..write('enabled: $enabled, ')
-          ..write('strictToolSchema: $strictToolSchema, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('displayName: $displayName, ')
+          ..write('status: $status, ')
+          ..write('authKind: $authKind, ')
+          ..write('credentialOrigin: $credentialOrigin, ')
+          ..write('isDefault: $isDefault, ')
           ..write('defaultModelId: $defaultModelId, ')
-          ..write('visibleModelIdsJson: $visibleModelIdsJson, ')
+          ..write('error: $error, ')
+          ..write('customConfigJson: $customConfigJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -3951,18 +3898,18 @@ class $ProviderModelsTable extends ProviderModels
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ProviderModelsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _providerIdMeta = const VerificationMeta(
-    'providerId',
+  static const VerificationMeta _connectionIdMeta = const VerificationMeta(
+    'connectionId',
   );
   @override
-  late final GeneratedColumn<String> providerId = GeneratedColumn<String>(
-    'provider_id',
+  late final GeneratedColumn<String> connectionId = GeneratedColumn<String>(
+    'connection_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES api_providers (id)',
+      'REFERENCES provider_connections (id)',
     ),
   );
   static const VerificationMeta _modelIdMeta = const VerificationMeta(
@@ -4005,6 +3952,28 @@ class $ProviderModelsTable extends ProviderModels
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _pricingJsonMeta = const VerificationMeta(
+    'pricingJson',
+  );
+  @override
+  late final GeneratedColumn<String> pricingJson = GeneratedColumn<String>(
+    'pricing_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _limitsJsonMeta = const VerificationMeta(
+    'limitsJson',
+  );
+  @override
+  late final GeneratedColumn<String> limitsJson = GeneratedColumn<String>(
+    'limits_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _diagnosticStatusMeta = const VerificationMeta(
     'diagnosticStatus',
   );
@@ -4041,11 +4010,13 @@ class $ProviderModelsTable extends ProviderModels
   );
   @override
   List<GeneratedColumn> get $columns => [
-    providerId,
+    connectionId,
     modelId,
     label,
     source,
     capabilitiesJson,
+    pricingJson,
+    limitsJson,
     diagnosticStatus,
     verifiedAt,
     diagnosticError,
@@ -4062,13 +4033,16 @@ class $ProviderModelsTable extends ProviderModels
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('provider_id')) {
+    if (data.containsKey('connection_id')) {
       context.handle(
-        _providerIdMeta,
-        providerId.isAcceptableOrUnknown(data['provider_id']!, _providerIdMeta),
+        _connectionIdMeta,
+        connectionId.isAcceptableOrUnknown(
+          data['connection_id']!,
+          _connectionIdMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_providerIdMeta);
+      context.missing(_connectionIdMeta);
     }
     if (data.containsKey('model_id')) {
       context.handle(
@@ -4105,6 +4079,21 @@ class $ProviderModelsTable extends ProviderModels
     } else if (isInserting) {
       context.missing(_capabilitiesJsonMeta);
     }
+    if (data.containsKey('pricing_json')) {
+      context.handle(
+        _pricingJsonMeta,
+        pricingJson.isAcceptableOrUnknown(
+          data['pricing_json']!,
+          _pricingJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('limits_json')) {
+      context.handle(
+        _limitsJsonMeta,
+        limitsJson.isAcceptableOrUnknown(data['limits_json']!, _limitsJsonMeta),
+      );
+    }
     if (data.containsKey('diagnostic_status')) {
       context.handle(
         _diagnosticStatusMeta,
@@ -4133,14 +4122,14 @@ class $ProviderModelsTable extends ProviderModels
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {providerId, modelId};
+  Set<GeneratedColumn> get $primaryKey => {connectionId, modelId};
   @override
   ProviderModel map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ProviderModel(
-      providerId: attachedDatabase.typeMapping.read(
+      connectionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}provider_id'],
+        data['${effectivePrefix}connection_id'],
       )!,
       modelId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -4158,6 +4147,14 @@ class $ProviderModelsTable extends ProviderModels
         DriftSqlType.string,
         data['${effectivePrefix}capabilities_json'],
       )!,
+      pricingJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pricing_json'],
+      ),
+      limitsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}limits_json'],
+      ),
       diagnosticStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}diagnostic_status'],
@@ -4180,8 +4177,8 @@ class $ProviderModelsTable extends ProviderModels
 }
 
 class ProviderModel extends DataClass implements Insertable<ProviderModel> {
-  /// The providerId public API member.
-  final String providerId;
+  /// Owning provider connection.
+  final String connectionId;
 
   /// The modelId public API member.
   final String modelId;
@@ -4195,6 +4192,12 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   /// The capabilitiesJson public API member.
   final String capabilitiesJson;
 
+  /// Optional model pricing metadata.
+  final String? pricingJson;
+
+  /// Optional model token-limit metadata.
+  final String? limitsJson;
+
   /// The diagnosticStatus public API member.
   final String diagnosticStatus;
 
@@ -4204,11 +4207,13 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   /// The diagnosticError public API member.
   final String? diagnosticError;
   const ProviderModel({
-    required this.providerId,
+    required this.connectionId,
     required this.modelId,
     required this.label,
     required this.source,
     required this.capabilitiesJson,
+    this.pricingJson,
+    this.limitsJson,
     required this.diagnosticStatus,
     this.verifiedAt,
     this.diagnosticError,
@@ -4216,11 +4221,17 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['provider_id'] = Variable<String>(providerId);
+    map['connection_id'] = Variable<String>(connectionId);
     map['model_id'] = Variable<String>(modelId);
     map['label'] = Variable<String>(label);
     map['source'] = Variable<String>(source);
     map['capabilities_json'] = Variable<String>(capabilitiesJson);
+    if (!nullToAbsent || pricingJson != null) {
+      map['pricing_json'] = Variable<String>(pricingJson);
+    }
+    if (!nullToAbsent || limitsJson != null) {
+      map['limits_json'] = Variable<String>(limitsJson);
+    }
     map['diagnostic_status'] = Variable<String>(diagnosticStatus);
     if (!nullToAbsent || verifiedAt != null) {
       map['verified_at'] = Variable<DateTime>(verifiedAt);
@@ -4233,11 +4244,17 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
 
   ProviderModelsCompanion toCompanion(bool nullToAbsent) {
     return ProviderModelsCompanion(
-      providerId: Value(providerId),
+      connectionId: Value(connectionId),
       modelId: Value(modelId),
       label: Value(label),
       source: Value(source),
       capabilitiesJson: Value(capabilitiesJson),
+      pricingJson: pricingJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pricingJson),
+      limitsJson: limitsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(limitsJson),
       diagnosticStatus: Value(diagnosticStatus),
       verifiedAt: verifiedAt == null && nullToAbsent
           ? const Value.absent()
@@ -4254,11 +4271,13 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ProviderModel(
-      providerId: serializer.fromJson<String>(json['providerId']),
+      connectionId: serializer.fromJson<String>(json['connectionId']),
       modelId: serializer.fromJson<String>(json['modelId']),
       label: serializer.fromJson<String>(json['label']),
       source: serializer.fromJson<String>(json['source']),
       capabilitiesJson: serializer.fromJson<String>(json['capabilitiesJson']),
+      pricingJson: serializer.fromJson<String?>(json['pricingJson']),
+      limitsJson: serializer.fromJson<String?>(json['limitsJson']),
       diagnosticStatus: serializer.fromJson<String>(json['diagnosticStatus']),
       verifiedAt: serializer.fromJson<DateTime?>(json['verifiedAt']),
       diagnosticError: serializer.fromJson<String?>(json['diagnosticError']),
@@ -4268,11 +4287,13 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'providerId': serializer.toJson<String>(providerId),
+      'connectionId': serializer.toJson<String>(connectionId),
       'modelId': serializer.toJson<String>(modelId),
       'label': serializer.toJson<String>(label),
       'source': serializer.toJson<String>(source),
       'capabilitiesJson': serializer.toJson<String>(capabilitiesJson),
+      'pricingJson': serializer.toJson<String?>(pricingJson),
+      'limitsJson': serializer.toJson<String?>(limitsJson),
       'diagnosticStatus': serializer.toJson<String>(diagnosticStatus),
       'verifiedAt': serializer.toJson<DateTime?>(verifiedAt),
       'diagnosticError': serializer.toJson<String?>(diagnosticError),
@@ -4280,20 +4301,24 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   }
 
   ProviderModel copyWith({
-    String? providerId,
+    String? connectionId,
     String? modelId,
     String? label,
     String? source,
     String? capabilitiesJson,
+    Value<String?> pricingJson = const Value.absent(),
+    Value<String?> limitsJson = const Value.absent(),
     String? diagnosticStatus,
     Value<DateTime?> verifiedAt = const Value.absent(),
     Value<String?> diagnosticError = const Value.absent(),
   }) => ProviderModel(
-    providerId: providerId ?? this.providerId,
+    connectionId: connectionId ?? this.connectionId,
     modelId: modelId ?? this.modelId,
     label: label ?? this.label,
     source: source ?? this.source,
     capabilitiesJson: capabilitiesJson ?? this.capabilitiesJson,
+    pricingJson: pricingJson.present ? pricingJson.value : this.pricingJson,
+    limitsJson: limitsJson.present ? limitsJson.value : this.limitsJson,
     diagnosticStatus: diagnosticStatus ?? this.diagnosticStatus,
     verifiedAt: verifiedAt.present ? verifiedAt.value : this.verifiedAt,
     diagnosticError: diagnosticError.present
@@ -4302,15 +4327,21 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   );
   ProviderModel copyWithCompanion(ProviderModelsCompanion data) {
     return ProviderModel(
-      providerId: data.providerId.present
-          ? data.providerId.value
-          : this.providerId,
+      connectionId: data.connectionId.present
+          ? data.connectionId.value
+          : this.connectionId,
       modelId: data.modelId.present ? data.modelId.value : this.modelId,
       label: data.label.present ? data.label.value : this.label,
       source: data.source.present ? data.source.value : this.source,
       capabilitiesJson: data.capabilitiesJson.present
           ? data.capabilitiesJson.value
           : this.capabilitiesJson,
+      pricingJson: data.pricingJson.present
+          ? data.pricingJson.value
+          : this.pricingJson,
+      limitsJson: data.limitsJson.present
+          ? data.limitsJson.value
+          : this.limitsJson,
       diagnosticStatus: data.diagnosticStatus.present
           ? data.diagnosticStatus.value
           : this.diagnosticStatus,
@@ -4326,11 +4357,13 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   @override
   String toString() {
     return (StringBuffer('ProviderModel(')
-          ..write('providerId: $providerId, ')
+          ..write('connectionId: $connectionId, ')
           ..write('modelId: $modelId, ')
           ..write('label: $label, ')
           ..write('source: $source, ')
           ..write('capabilitiesJson: $capabilitiesJson, ')
+          ..write('pricingJson: $pricingJson, ')
+          ..write('limitsJson: $limitsJson, ')
           ..write('diagnosticStatus: $diagnosticStatus, ')
           ..write('verifiedAt: $verifiedAt, ')
           ..write('diagnosticError: $diagnosticError')
@@ -4340,11 +4373,13 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
 
   @override
   int get hashCode => Object.hash(
-    providerId,
+    connectionId,
     modelId,
     label,
     source,
     capabilitiesJson,
+    pricingJson,
+    limitsJson,
     diagnosticStatus,
     verifiedAt,
     diagnosticError,
@@ -4353,69 +4388,81 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ProviderModel &&
-          other.providerId == this.providerId &&
+          other.connectionId == this.connectionId &&
           other.modelId == this.modelId &&
           other.label == this.label &&
           other.source == this.source &&
           other.capabilitiesJson == this.capabilitiesJson &&
+          other.pricingJson == this.pricingJson &&
+          other.limitsJson == this.limitsJson &&
           other.diagnosticStatus == this.diagnosticStatus &&
           other.verifiedAt == this.verifiedAt &&
           other.diagnosticError == this.diagnosticError);
 }
 
 class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
-  final Value<String> providerId;
+  final Value<String> connectionId;
   final Value<String> modelId;
   final Value<String> label;
   final Value<String> source;
   final Value<String> capabilitiesJson;
+  final Value<String?> pricingJson;
+  final Value<String?> limitsJson;
   final Value<String> diagnosticStatus;
   final Value<DateTime?> verifiedAt;
   final Value<String?> diagnosticError;
   final Value<int> rowid;
   const ProviderModelsCompanion({
-    this.providerId = const Value.absent(),
+    this.connectionId = const Value.absent(),
     this.modelId = const Value.absent(),
     this.label = const Value.absent(),
     this.source = const Value.absent(),
     this.capabilitiesJson = const Value.absent(),
+    this.pricingJson = const Value.absent(),
+    this.limitsJson = const Value.absent(),
     this.diagnosticStatus = const Value.absent(),
     this.verifiedAt = const Value.absent(),
     this.diagnosticError = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProviderModelsCompanion.insert({
-    required String providerId,
+    required String connectionId,
     required String modelId,
     required String label,
     required String source,
     required String capabilitiesJson,
+    this.pricingJson = const Value.absent(),
+    this.limitsJson = const Value.absent(),
     this.diagnosticStatus = const Value.absent(),
     this.verifiedAt = const Value.absent(),
     this.diagnosticError = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : providerId = Value(providerId),
+  }) : connectionId = Value(connectionId),
        modelId = Value(modelId),
        label = Value(label),
        source = Value(source),
        capabilitiesJson = Value(capabilitiesJson);
   static Insertable<ProviderModel> custom({
-    Expression<String>? providerId,
+    Expression<String>? connectionId,
     Expression<String>? modelId,
     Expression<String>? label,
     Expression<String>? source,
     Expression<String>? capabilitiesJson,
+    Expression<String>? pricingJson,
+    Expression<String>? limitsJson,
     Expression<String>? diagnosticStatus,
     Expression<DateTime>? verifiedAt,
     Expression<String>? diagnosticError,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (providerId != null) 'provider_id': providerId,
+      if (connectionId != null) 'connection_id': connectionId,
       if (modelId != null) 'model_id': modelId,
       if (label != null) 'label': label,
       if (source != null) 'source': source,
       if (capabilitiesJson != null) 'capabilities_json': capabilitiesJson,
+      if (pricingJson != null) 'pricing_json': pricingJson,
+      if (limitsJson != null) 'limits_json': limitsJson,
       if (diagnosticStatus != null) 'diagnostic_status': diagnosticStatus,
       if (verifiedAt != null) 'verified_at': verifiedAt,
       if (diagnosticError != null) 'diagnostic_error': diagnosticError,
@@ -4424,22 +4471,26 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
   }
 
   ProviderModelsCompanion copyWith({
-    Value<String>? providerId,
+    Value<String>? connectionId,
     Value<String>? modelId,
     Value<String>? label,
     Value<String>? source,
     Value<String>? capabilitiesJson,
+    Value<String?>? pricingJson,
+    Value<String?>? limitsJson,
     Value<String>? diagnosticStatus,
     Value<DateTime?>? verifiedAt,
     Value<String?>? diagnosticError,
     Value<int>? rowid,
   }) {
     return ProviderModelsCompanion(
-      providerId: providerId ?? this.providerId,
+      connectionId: connectionId ?? this.connectionId,
       modelId: modelId ?? this.modelId,
       label: label ?? this.label,
       source: source ?? this.source,
       capabilitiesJson: capabilitiesJson ?? this.capabilitiesJson,
+      pricingJson: pricingJson ?? this.pricingJson,
+      limitsJson: limitsJson ?? this.limitsJson,
       diagnosticStatus: diagnosticStatus ?? this.diagnosticStatus,
       verifiedAt: verifiedAt ?? this.verifiedAt,
       diagnosticError: diagnosticError ?? this.diagnosticError,
@@ -4450,8 +4501,8 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (providerId.present) {
-      map['provider_id'] = Variable<String>(providerId.value);
+    if (connectionId.present) {
+      map['connection_id'] = Variable<String>(connectionId.value);
     }
     if (modelId.present) {
       map['model_id'] = Variable<String>(modelId.value);
@@ -4464,6 +4515,12 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
     }
     if (capabilitiesJson.present) {
       map['capabilities_json'] = Variable<String>(capabilitiesJson.value);
+    }
+    if (pricingJson.present) {
+      map['pricing_json'] = Variable<String>(pricingJson.value);
+    }
+    if (limitsJson.present) {
+      map['limits_json'] = Variable<String>(limitsJson.value);
     }
     if (diagnosticStatus.present) {
       map['diagnostic_status'] = Variable<String>(diagnosticStatus.value);
@@ -4483,11 +4540,13 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
   @override
   String toString() {
     return (StringBuffer('ProviderModelsCompanion(')
-          ..write('providerId: $providerId, ')
+          ..write('connectionId: $connectionId, ')
           ..write('modelId: $modelId, ')
           ..write('label: $label, ')
           ..write('source: $source, ')
           ..write('capabilitiesJson: $capabilitiesJson, ')
+          ..write('pricingJson: $pricingJson, ')
+          ..write('limitsJson: $limitsJson, ')
           ..write('diagnosticStatus: $diagnosticStatus, ')
           ..write('verifiedAt: $verifiedAt, ')
           ..write('diagnosticError: $diagnosticError, ')
@@ -4509,7 +4568,8 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   );
   late final $ProviderStatesTable providerStates = $ProviderStatesTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
-  late final $ApiProvidersTable apiProviders = $ApiProvidersTable(this);
+  late final $ProviderConnectionsTable providerConnections =
+      $ProviderConnectionsTable(this);
   late final $ProviderModelsTable providerModels = $ProviderModelsTable(this);
   late final SettingsDao settingsDao = SettingsDao(this as CoderDatabase);
   late final WorkspaceDao workspaceDao = WorkspaceDao(this as CoderDatabase);
@@ -4529,7 +4589,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
     approvalRequests,
     providerStates,
     settings,
-    apiProviders,
+    providerConnections,
     providerModels,
   ];
 }
@@ -4820,7 +4880,7 @@ typedef $$AgentsTableCreateCompanionBuilder =
       required String id,
       required String workspaceId,
       required String title,
-      required String providerId,
+      required String providerConnectionId,
       required String model,
       Value<String> reasoningEffort,
       required String status,
@@ -4836,7 +4896,7 @@ typedef $$AgentsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> workspaceId,
       Value<String> title,
-      Value<String> providerId,
+      Value<String> providerConnectionId,
       Value<String> model,
       Value<String> reasoningEffort,
       Value<String> status,
@@ -4965,8 +5025,8 @@ class $$AgentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get providerId => $composableBuilder(
-    column: $table.providerId,
+  ColumnFilters<String> get providerConnectionId => $composableBuilder(
+    column: $table.providerConnectionId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5153,8 +5213,8 @@ class $$AgentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get providerId => $composableBuilder(
-    column: $table.providerId,
+  ColumnOrderings<String> get providerConnectionId => $composableBuilder(
+    column: $table.providerConnectionId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -5237,8 +5297,8 @@ class $$AgentsTableAnnotationComposer
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
-  GeneratedColumn<String> get providerId => $composableBuilder(
-    column: $table.providerId,
+  GeneratedColumn<String> get providerConnectionId => $composableBuilder(
+    column: $table.providerConnectionId,
     builder: (column) => column,
   );
 
@@ -5433,7 +5493,7 @@ class $$AgentsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> workspaceId = const Value.absent(),
                 Value<String> title = const Value.absent(),
-                Value<String> providerId = const Value.absent(),
+                Value<String> providerConnectionId = const Value.absent(),
                 Value<String> model = const Value.absent(),
                 Value<String> reasoningEffort = const Value.absent(),
                 Value<String> status = const Value.absent(),
@@ -5447,7 +5507,7 @@ class $$AgentsTableTableManager
                 id: id,
                 workspaceId: workspaceId,
                 title: title,
-                providerId: providerId,
+                providerConnectionId: providerConnectionId,
                 model: model,
                 reasoningEffort: reasoningEffort,
                 status: status,
@@ -5463,7 +5523,7 @@ class $$AgentsTableTableManager
                 required String id,
                 required String workspaceId,
                 required String title,
-                required String providerId,
+                required String providerConnectionId,
                 required String model,
                 Value<String> reasoningEffort = const Value.absent(),
                 required String status,
@@ -5477,7 +5537,7 @@ class $$AgentsTableTableManager
                 id: id,
                 workspaceId: workspaceId,
                 title: title,
-                providerId: providerId,
+                providerConnectionId: providerConnectionId,
                 model: model,
                 reasoningEffort: reasoningEffort,
                 status: status,
@@ -7397,56 +7457,63 @@ typedef $$SettingsTableProcessedTableManager =
       Setting,
       PrefetchHooks Function()
     >;
-typedef $$ApiProvidersTableCreateCompanionBuilder =
-    ApiProvidersCompanion Function({
+typedef $$ProviderConnectionsTableCreateCompanionBuilder =
+    ProviderConnectionsCompanion Function({
       required String id,
-      required String name,
-      required String presetId,
-      required String baseUrl,
-      required String transport,
-      required String credentialSource,
-      Value<String?> environmentVariable,
-      required bool enabled,
-      required bool strictToolSchema,
+      required String definitionId,
+      required String displayName,
+      required String status,
+      required String authKind,
+      required String credentialOrigin,
+      Value<bool> isDefault,
       Value<String?> defaultModelId,
-      Value<String> visibleModelIdsJson,
+      Value<String?> error,
+      Value<String?> customConfigJson,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
     });
-typedef $$ApiProvidersTableUpdateCompanionBuilder =
-    ApiProvidersCompanion Function({
+typedef $$ProviderConnectionsTableUpdateCompanionBuilder =
+    ProviderConnectionsCompanion Function({
       Value<String> id,
-      Value<String> name,
-      Value<String> presetId,
-      Value<String> baseUrl,
-      Value<String> transport,
-      Value<String> credentialSource,
-      Value<String?> environmentVariable,
-      Value<bool> enabled,
-      Value<bool> strictToolSchema,
+      Value<String> definitionId,
+      Value<String> displayName,
+      Value<String> status,
+      Value<String> authKind,
+      Value<String> credentialOrigin,
+      Value<bool> isDefault,
       Value<String?> defaultModelId,
-      Value<String> visibleModelIdsJson,
+      Value<String?> error,
+      Value<String?> customConfigJson,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
 
-final class $$ApiProvidersTableReferences
-    extends BaseReferences<_$CoderDatabase, $ApiProvidersTable, ApiProvider> {
-  $$ApiProvidersTableReferences(super.$_db, super.$_table, super.$_typedResult);
+final class $$ProviderConnectionsTableReferences
+    extends
+        BaseReferences<
+          _$CoderDatabase,
+          $ProviderConnectionsTable,
+          ProviderConnection
+        > {
+  $$ProviderConnectionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static MultiTypedResultKey<$ProviderModelsTable, List<ProviderModel>>
   _providerModelsRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
     db.providerModels,
-    aliasName: 'api_providers__id__provider_models__provider_id',
+    aliasName: 'provider_connections__id__provider_models__connection_id',
   );
 
   $$ProviderModelsTableProcessedTableManager get providerModelsRefs {
     final manager = $$ProviderModelsTableTableManager(
       $_db,
       $_db.providerModels,
-    ).filter((f) => f.providerId.id.sqlEquals($_itemColumn<String>('id')!));
+    ).filter((f) => f.connectionId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_providerModelsRefsTable($_db));
     return ProcessedTableManager(
@@ -7455,9 +7522,9 @@ final class $$ApiProvidersTableReferences
   }
 }
 
-class $$ApiProvidersTableFilterComposer
-    extends Composer<_$CoderDatabase, $ApiProvidersTable> {
-  $$ApiProvidersTableFilterComposer({
+class $$ProviderConnectionsTableFilterComposer
+    extends Composer<_$CoderDatabase, $ProviderConnectionsTable> {
+  $$ProviderConnectionsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7469,43 +7536,33 @@ class $$ApiProvidersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
+  ColumnFilters<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get presetId => $composableBuilder(
-    column: $table.presetId,
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get baseUrl => $composableBuilder(
-    column: $table.baseUrl,
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get transport => $composableBuilder(
-    column: $table.transport,
+  ColumnFilters<String> get authKind => $composableBuilder(
+    column: $table.authKind,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get credentialSource => $composableBuilder(
-    column: $table.credentialSource,
+  ColumnFilters<String> get credentialOrigin => $composableBuilder(
+    column: $table.credentialOrigin,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get environmentVariable => $composableBuilder(
-    column: $table.environmentVariable,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get enabled => $composableBuilder(
-    column: $table.enabled,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get strictToolSchema => $composableBuilder(
-    column: $table.strictToolSchema,
+  ColumnFilters<bool> get isDefault => $composableBuilder(
+    column: $table.isDefault,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7514,8 +7571,13 @@ class $$ApiProvidersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get visibleModelIdsJson => $composableBuilder(
-    column: $table.visibleModelIdsJson,
+  ColumnFilters<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customConfigJson => $composableBuilder(
+    column: $table.customConfigJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7536,7 +7598,7 @@ class $$ApiProvidersTableFilterComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.providerModels,
-      getReferencedColumn: (t) => t.providerId,
+      getReferencedColumn: (t) => t.connectionId,
       builder:
           (
             joinBuilder, {
@@ -7555,9 +7617,9 @@ class $$ApiProvidersTableFilterComposer
   }
 }
 
-class $$ApiProvidersTableOrderingComposer
-    extends Composer<_$CoderDatabase, $ApiProvidersTable> {
-  $$ApiProvidersTableOrderingComposer({
+class $$ProviderConnectionsTableOrderingComposer
+    extends Composer<_$CoderDatabase, $ProviderConnectionsTable> {
+  $$ProviderConnectionsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7569,43 +7631,33 @@ class $$ApiProvidersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
+  ColumnOrderings<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get presetId => $composableBuilder(
-    column: $table.presetId,
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get baseUrl => $composableBuilder(
-    column: $table.baseUrl,
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get transport => $composableBuilder(
-    column: $table.transport,
+  ColumnOrderings<String> get authKind => $composableBuilder(
+    column: $table.authKind,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get credentialSource => $composableBuilder(
-    column: $table.credentialSource,
+  ColumnOrderings<String> get credentialOrigin => $composableBuilder(
+    column: $table.credentialOrigin,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get environmentVariable => $composableBuilder(
-    column: $table.environmentVariable,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get enabled => $composableBuilder(
-    column: $table.enabled,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get strictToolSchema => $composableBuilder(
-    column: $table.strictToolSchema,
+  ColumnOrderings<bool> get isDefault => $composableBuilder(
+    column: $table.isDefault,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7614,8 +7666,13 @@ class $$ApiProvidersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get visibleModelIdsJson => $composableBuilder(
-    column: $table.visibleModelIdsJson,
+  ColumnOrderings<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customConfigJson => $composableBuilder(
+    column: $table.customConfigJson,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7630,9 +7687,9 @@ class $$ApiProvidersTableOrderingComposer
   );
 }
 
-class $$ApiProvidersTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $ApiProvidersTable> {
-  $$ApiProvidersTableAnnotationComposer({
+class $$ProviderConnectionsTableAnnotationComposer
+    extends Composer<_$CoderDatabase, $ProviderConnectionsTable> {
+  $$ProviderConnectionsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7642,43 +7699,40 @@ class $$ApiProvidersTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get presetId =>
-      $composableBuilder(column: $table.presetId, builder: (column) => column);
-
-  GeneratedColumn<String> get baseUrl =>
-      $composableBuilder(column: $table.baseUrl, builder: (column) => column);
-
-  GeneratedColumn<String> get transport =>
-      $composableBuilder(column: $table.transport, builder: (column) => column);
-
-  GeneratedColumn<String> get credentialSource => $composableBuilder(
-    column: $table.credentialSource,
+  GeneratedColumn<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get environmentVariable => $composableBuilder(
-    column: $table.environmentVariable,
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => column,
   );
 
-  GeneratedColumn<bool> get enabled =>
-      $composableBuilder(column: $table.enabled, builder: (column) => column);
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
 
-  GeneratedColumn<bool> get strictToolSchema => $composableBuilder(
-    column: $table.strictToolSchema,
+  GeneratedColumn<String> get authKind =>
+      $composableBuilder(column: $table.authKind, builder: (column) => column);
+
+  GeneratedColumn<String> get credentialOrigin => $composableBuilder(
+    column: $table.credentialOrigin,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get isDefault =>
+      $composableBuilder(column: $table.isDefault, builder: (column) => column);
 
   GeneratedColumn<String> get defaultModelId => $composableBuilder(
     column: $table.defaultModelId,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get visibleModelIdsJson => $composableBuilder(
-    column: $table.visibleModelIdsJson,
+  GeneratedColumn<String> get error =>
+      $composableBuilder(column: $table.error, builder: (column) => column);
+
+  GeneratedColumn<String> get customConfigJson => $composableBuilder(
+    column: $table.customConfigJson,
     builder: (column) => column,
   );
 
@@ -7695,7 +7749,7 @@ class $$ApiProvidersTableAnnotationComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.providerModels,
-      getReferencedColumn: (t) => t.providerId,
+      getReferencedColumn: (t) => t.connectionId,
       builder:
           (
             joinBuilder, {
@@ -7714,60 +7768,66 @@ class $$ApiProvidersTableAnnotationComposer
   }
 }
 
-class $$ApiProvidersTableTableManager
+class $$ProviderConnectionsTableTableManager
     extends
         RootTableManager<
           _$CoderDatabase,
-          $ApiProvidersTable,
-          ApiProvider,
-          $$ApiProvidersTableFilterComposer,
-          $$ApiProvidersTableOrderingComposer,
-          $$ApiProvidersTableAnnotationComposer,
-          $$ApiProvidersTableCreateCompanionBuilder,
-          $$ApiProvidersTableUpdateCompanionBuilder,
-          (ApiProvider, $$ApiProvidersTableReferences),
-          ApiProvider,
+          $ProviderConnectionsTable,
+          ProviderConnection,
+          $$ProviderConnectionsTableFilterComposer,
+          $$ProviderConnectionsTableOrderingComposer,
+          $$ProviderConnectionsTableAnnotationComposer,
+          $$ProviderConnectionsTableCreateCompanionBuilder,
+          $$ProviderConnectionsTableUpdateCompanionBuilder,
+          (ProviderConnection, $$ProviderConnectionsTableReferences),
+          ProviderConnection,
           PrefetchHooks Function({bool providerModelsRefs})
         > {
-  $$ApiProvidersTableTableManager(_$CoderDatabase db, $ApiProvidersTable table)
-    : super(
+  $$ProviderConnectionsTableTableManager(
+    _$CoderDatabase db,
+    $ProviderConnectionsTable table,
+  ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$ApiProvidersTableFilterComposer($db: db, $table: table),
+              $$ProviderConnectionsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$ApiProvidersTableOrderingComposer($db: db, $table: table),
+              $$ProviderConnectionsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
           createComputedFieldComposer: () =>
-              $$ApiProvidersTableAnnotationComposer($db: db, $table: table),
+              $$ProviderConnectionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String> presetId = const Value.absent(),
-                Value<String> baseUrl = const Value.absent(),
-                Value<String> transport = const Value.absent(),
-                Value<String> credentialSource = const Value.absent(),
-                Value<String?> environmentVariable = const Value.absent(),
-                Value<bool> enabled = const Value.absent(),
-                Value<bool> strictToolSchema = const Value.absent(),
+                Value<String> definitionId = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> authKind = const Value.absent(),
+                Value<String> credentialOrigin = const Value.absent(),
+                Value<bool> isDefault = const Value.absent(),
                 Value<String?> defaultModelId = const Value.absent(),
-                Value<String> visibleModelIdsJson = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<String?> customConfigJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => ApiProvidersCompanion(
+              }) => ProviderConnectionsCompanion(
                 id: id,
-                name: name,
-                presetId: presetId,
-                baseUrl: baseUrl,
-                transport: transport,
-                credentialSource: credentialSource,
-                environmentVariable: environmentVariable,
-                enabled: enabled,
-                strictToolSchema: strictToolSchema,
+                definitionId: definitionId,
+                displayName: displayName,
+                status: status,
+                authKind: authKind,
+                credentialOrigin: credentialOrigin,
+                isDefault: isDefault,
                 defaultModelId: defaultModelId,
-                visibleModelIdsJson: visibleModelIdsJson,
+                error: error,
+                customConfigJson: customConfigJson,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -7775,31 +7835,29 @@ class $$ApiProvidersTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String name,
-                required String presetId,
-                required String baseUrl,
-                required String transport,
-                required String credentialSource,
-                Value<String?> environmentVariable = const Value.absent(),
-                required bool enabled,
-                required bool strictToolSchema,
+                required String definitionId,
+                required String displayName,
+                required String status,
+                required String authKind,
+                required String credentialOrigin,
+                Value<bool> isDefault = const Value.absent(),
                 Value<String?> defaultModelId = const Value.absent(),
-                Value<String> visibleModelIdsJson = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<String?> customConfigJson = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
-              }) => ApiProvidersCompanion.insert(
+              }) => ProviderConnectionsCompanion.insert(
                 id: id,
-                name: name,
-                presetId: presetId,
-                baseUrl: baseUrl,
-                transport: transport,
-                credentialSource: credentialSource,
-                environmentVariable: environmentVariable,
-                enabled: enabled,
-                strictToolSchema: strictToolSchema,
+                definitionId: definitionId,
+                displayName: displayName,
+                status: status,
+                authKind: authKind,
+                credentialOrigin: credentialOrigin,
+                isDefault: isDefault,
                 defaultModelId: defaultModelId,
-                visibleModelIdsJson: visibleModelIdsJson,
+                error: error,
+                customConfigJson: customConfigJson,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -7808,7 +7866,7 @@ class $$ApiProvidersTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$ApiProvidersTableReferences(db, table, e),
+                  $$ProviderConnectionsTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -7823,21 +7881,23 @@ class $$ApiProvidersTableTableManager
                 return [
                   if (providerModelsRefs)
                     await $_getPrefetchedData<
-                      ApiProvider,
-                      $ApiProvidersTable,
+                      ProviderConnection,
+                      $ProviderConnectionsTable,
                       ProviderModel
                     >(
                       currentTable: table,
-                      referencedTable: $$ApiProvidersTableReferences
+                      referencedTable: $$ProviderConnectionsTableReferences
                           ._providerModelsRefsTable(db),
                       managerFromTypedResult: (p0) =>
-                          $$ApiProvidersTableReferences(
+                          $$ProviderConnectionsTableReferences(
                             db,
                             table,
                             p0,
                           ).providerModelsRefs,
                       referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.providerId == item.id),
+                          referencedItems.where(
+                            (e) => e.connectionId == item.id,
+                          ),
                       typedResults: items,
                     ),
                 ];
@@ -7848,27 +7908,29 @@ class $$ApiProvidersTableTableManager
       );
 }
 
-typedef $$ApiProvidersTableProcessedTableManager =
+typedef $$ProviderConnectionsTableProcessedTableManager =
     ProcessedTableManager<
       _$CoderDatabase,
-      $ApiProvidersTable,
-      ApiProvider,
-      $$ApiProvidersTableFilterComposer,
-      $$ApiProvidersTableOrderingComposer,
-      $$ApiProvidersTableAnnotationComposer,
-      $$ApiProvidersTableCreateCompanionBuilder,
-      $$ApiProvidersTableUpdateCompanionBuilder,
-      (ApiProvider, $$ApiProvidersTableReferences),
-      ApiProvider,
+      $ProviderConnectionsTable,
+      ProviderConnection,
+      $$ProviderConnectionsTableFilterComposer,
+      $$ProviderConnectionsTableOrderingComposer,
+      $$ProviderConnectionsTableAnnotationComposer,
+      $$ProviderConnectionsTableCreateCompanionBuilder,
+      $$ProviderConnectionsTableUpdateCompanionBuilder,
+      (ProviderConnection, $$ProviderConnectionsTableReferences),
+      ProviderConnection,
       PrefetchHooks Function({bool providerModelsRefs})
     >;
 typedef $$ProviderModelsTableCreateCompanionBuilder =
     ProviderModelsCompanion Function({
-      required String providerId,
+      required String connectionId,
       required String modelId,
       required String label,
       required String source,
       required String capabilitiesJson,
+      Value<String?> pricingJson,
+      Value<String?> limitsJson,
       Value<String> diagnosticStatus,
       Value<DateTime?> verifiedAt,
       Value<String?> diagnosticError,
@@ -7876,11 +7938,13 @@ typedef $$ProviderModelsTableCreateCompanionBuilder =
     });
 typedef $$ProviderModelsTableUpdateCompanionBuilder =
     ProviderModelsCompanion Function({
-      Value<String> providerId,
+      Value<String> connectionId,
       Value<String> modelId,
       Value<String> label,
       Value<String> source,
       Value<String> capabilitiesJson,
+      Value<String?> pricingJson,
+      Value<String?> limitsJson,
       Value<String> diagnosticStatus,
       Value<DateTime?> verifiedAt,
       Value<String?> diagnosticError,
@@ -7896,18 +7960,18 @@ final class $$ProviderModelsTableReferences
     super.$_typedResult,
   );
 
-  static $ApiProvidersTable _providerIdTable(_$CoderDatabase db) => db
-      .apiProviders
-      .createAlias('provider_models__provider_id__api_providers__id');
+  static $ProviderConnectionsTable _connectionIdTable(_$CoderDatabase db) => db
+      .providerConnections
+      .createAlias('provider_models__connection_id__provider_connections__id');
 
-  $$ApiProvidersTableProcessedTableManager get providerId {
-    final $_column = $_itemColumn<String>('provider_id')!;
+  $$ProviderConnectionsTableProcessedTableManager get connectionId {
+    final $_column = $_itemColumn<String>('connection_id')!;
 
-    final manager = $$ApiProvidersTableTableManager(
+    final manager = $$ProviderConnectionsTableTableManager(
       $_db,
-      $_db.apiProviders,
+      $_db.providerConnections,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_providerIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_connectionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -7944,6 +8008,16 @@ class $$ProviderModelsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get pricingJson => $composableBuilder(
+    column: $table.pricingJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get limitsJson => $composableBuilder(
+    column: $table.limitsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get diagnosticStatus => $composableBuilder(
     column: $table.diagnosticStatus,
     builder: (column) => ColumnFilters(column),
@@ -7959,20 +8033,20 @@ class $$ProviderModelsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$ApiProvidersTableFilterComposer get providerId {
-    final $$ApiProvidersTableFilterComposer composer = $composerBuilder(
+  $$ProviderConnectionsTableFilterComposer get connectionId {
+    final $$ProviderConnectionsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.providerId,
-      referencedTable: $db.apiProviders,
+      getCurrentColumn: (t) => t.connectionId,
+      referencedTable: $db.providerConnections,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$ApiProvidersTableFilterComposer(
+          }) => $$ProviderConnectionsTableFilterComposer(
             $db: $db,
-            $table: $db.apiProviders,
+            $table: $db.providerConnections,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8012,6 +8086,16 @@ class $$ProviderModelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get pricingJson => $composableBuilder(
+    column: $table.pricingJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get limitsJson => $composableBuilder(
+    column: $table.limitsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get diagnosticStatus => $composableBuilder(
     column: $table.diagnosticStatus,
     builder: (column) => ColumnOrderings(column),
@@ -8027,26 +8111,27 @@ class $$ProviderModelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$ApiProvidersTableOrderingComposer get providerId {
-    final $$ApiProvidersTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.providerId,
-      referencedTable: $db.apiProviders,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ApiProvidersTableOrderingComposer(
-            $db: $db,
-            $table: $db.apiProviders,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
+  $$ProviderConnectionsTableOrderingComposer get connectionId {
+    final $$ProviderConnectionsTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.connectionId,
+          referencedTable: $db.providerConnections,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-          ),
-    );
+              }) => $$ProviderConnectionsTableOrderingComposer(
+                $db: $db,
+                $table: $db.providerConnections,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return composer;
   }
 }
@@ -8074,6 +8159,16 @@ class $$ProviderModelsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get pricingJson => $composableBuilder(
+    column: $table.pricingJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get limitsJson => $composableBuilder(
+    column: $table.limitsJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get diagnosticStatus => $composableBuilder(
     column: $table.diagnosticStatus,
     builder: (column) => column,
@@ -8089,26 +8184,27 @@ class $$ProviderModelsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  $$ApiProvidersTableAnnotationComposer get providerId {
-    final $$ApiProvidersTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.providerId,
-      referencedTable: $db.apiProviders,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ApiProvidersTableAnnotationComposer(
-            $db: $db,
-            $table: $db.apiProviders,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
+  $$ProviderConnectionsTableAnnotationComposer get connectionId {
+    final $$ProviderConnectionsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.connectionId,
+          referencedTable: $db.providerConnections,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-          ),
-    );
+              }) => $$ProviderConnectionsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.providerConnections,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return composer;
   }
 }
@@ -8126,7 +8222,7 @@ class $$ProviderModelsTableTableManager
           $$ProviderModelsTableUpdateCompanionBuilder,
           (ProviderModel, $$ProviderModelsTableReferences),
           ProviderModel,
-          PrefetchHooks Function({bool providerId})
+          PrefetchHooks Function({bool connectionId})
         > {
   $$ProviderModelsTableTableManager(
     _$CoderDatabase db,
@@ -8143,21 +8239,25 @@ class $$ProviderModelsTableTableManager
               $$ProviderModelsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> providerId = const Value.absent(),
+                Value<String> connectionId = const Value.absent(),
                 Value<String> modelId = const Value.absent(),
                 Value<String> label = const Value.absent(),
                 Value<String> source = const Value.absent(),
                 Value<String> capabilitiesJson = const Value.absent(),
+                Value<String?> pricingJson = const Value.absent(),
+                Value<String?> limitsJson = const Value.absent(),
                 Value<String> diagnosticStatus = const Value.absent(),
                 Value<DateTime?> verifiedAt = const Value.absent(),
                 Value<String?> diagnosticError = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProviderModelsCompanion(
-                providerId: providerId,
+                connectionId: connectionId,
                 modelId: modelId,
                 label: label,
                 source: source,
                 capabilitiesJson: capabilitiesJson,
+                pricingJson: pricingJson,
+                limitsJson: limitsJson,
                 diagnosticStatus: diagnosticStatus,
                 verifiedAt: verifiedAt,
                 diagnosticError: diagnosticError,
@@ -8165,21 +8265,25 @@ class $$ProviderModelsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String providerId,
+                required String connectionId,
                 required String modelId,
                 required String label,
                 required String source,
                 required String capabilitiesJson,
+                Value<String?> pricingJson = const Value.absent(),
+                Value<String?> limitsJson = const Value.absent(),
                 Value<String> diagnosticStatus = const Value.absent(),
                 Value<DateTime?> verifiedAt = const Value.absent(),
                 Value<String?> diagnosticError = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProviderModelsCompanion.insert(
-                providerId: providerId,
+                connectionId: connectionId,
                 modelId: modelId,
                 label: label,
                 source: source,
                 capabilitiesJson: capabilitiesJson,
+                pricingJson: pricingJson,
+                limitsJson: limitsJson,
                 diagnosticStatus: diagnosticStatus,
                 verifiedAt: verifiedAt,
                 diagnosticError: diagnosticError,
@@ -8193,7 +8297,7 @@ class $$ProviderModelsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({providerId = false}) {
+          prefetchHooksCallback: ({connectionId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -8213,16 +8317,16 @@ class $$ProviderModelsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (providerId) {
+                    if (connectionId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.providerId,
+                                currentColumn: table.connectionId,
                                 referencedTable: $$ProviderModelsTableReferences
-                                    ._providerIdTable(db),
+                                    ._connectionIdTable(db),
                                 referencedColumn:
                                     $$ProviderModelsTableReferences
-                                        ._providerIdTable(db)
+                                        ._connectionIdTable(db)
                                         .id,
                               )
                               as T;
@@ -8251,7 +8355,7 @@ typedef $$ProviderModelsTableProcessedTableManager =
       $$ProviderModelsTableUpdateCompanionBuilder,
       (ProviderModel, $$ProviderModelsTableReferences),
       ProviderModel,
-      PrefetchHooks Function({bool providerId})
+      PrefetchHooks Function({bool connectionId})
     >;
 
 class $CoderDatabaseManager {
@@ -8271,8 +8375,8 @@ class $CoderDatabaseManager {
       $$ProviderStatesTableTableManager(_db, _db.providerStates);
   $$SettingsTableTableManager get settings =>
       $$SettingsTableTableManager(_db, _db.settings);
-  $$ApiProvidersTableTableManager get apiProviders =>
-      $$ApiProvidersTableTableManager(_db, _db.apiProviders);
+  $$ProviderConnectionsTableTableManager get providerConnections =>
+      $$ProviderConnectionsTableTableManager(_db, _db.providerConnections);
   $$ProviderModelsTableTableManager get providerModels =>
       $$ProviderModelsTableTableManager(_db, _db.providerModels);
 }

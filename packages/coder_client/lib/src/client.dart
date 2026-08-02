@@ -104,6 +104,7 @@ class CoderClient implements CoderApi {
         RpcNotification.timelineEvent,
         RpcNotification.agentUpdated,
         RpcNotification.approvalRequested,
+        RpcNotification.providerAuthUpdated,
       ]) {
         peer.registerMethod(type, (json_rpc.Parameters parameters) {
           _handleNotification(
@@ -164,6 +165,12 @@ class CoderClient implements CoderApi {
           _events.add(
             ApprovalRequestedClientEvent(
               ApprovalRequestDto.fromJson(parameters),
+            ),
+          );
+        case RpcNotification.providerAuthUpdated:
+          _events.add(
+            ProviderAuthUpdatedClientEvent(
+              ProviderAuthAttemptDto.fromJson(parameters),
             ),
           );
       }
@@ -253,7 +260,7 @@ class CoderClient implements CoderApi {
     required String id,
     required String workspaceId,
     required String title,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required PermissionMode permissionMode,
     String reasoningEffort = 'medium',
@@ -264,7 +271,7 @@ class CoderClient implements CoderApi {
         id: id,
         workspaceId: workspaceId,
         title: title,
-        providerId: providerId,
+        providerConnectionId: providerConnectionId,
         model: model,
         reasoningEffort: reasoningEffort,
         permissionMode: permissionMode,
@@ -276,7 +283,7 @@ class CoderClient implements CoderApi {
   @override
   Future<AgentDto> updateAgentConfiguration({
     required String agentId,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     String reasoningEffort = 'medium',
   }) async {
@@ -284,7 +291,7 @@ class CoderClient implements CoderApi {
       RpcMethod.agentConfigurationUpdate,
       AgentConfigurationUpdateParamsDto(
         agentId: agentId,
-        providerId: providerId,
+        providerConnectionId: providerConnectionId,
         model: model,
         reasoningEffort: reasoningEffort,
       ).toJson(),
@@ -295,103 +302,178 @@ class CoderClient implements CoderApi {
   @override
   Future<ProviderCatalogDto> listProviderCatalog() async {
     final response = await _request(
-      RpcMethod.providerList,
+      RpcMethod.providerCatalog,
       const <String, dynamic>{},
     );
     return ProviderCatalogResultDto.fromJson(response).catalog;
   }
 
   @override
-  Future<ApiProviderDto> upsertProvider(
-    ApiProviderDto provider, {
+  Future<List<ProviderConnectionDto>> listProviderConnections() async {
+    final response = await _request(
+      RpcMethod.providerConnectionsList,
+      const <String, dynamic>{},
+    );
+    return ProviderConnectionsResultDto.fromJson(response).connections;
+  }
+
+  @override
+  Future<ProviderConnectionDto> connectProviderApiKey(
+    String definitionId,
+    String apiKey, {
     bool makeDefault = false,
   }) async {
     final response = await _request(
-      RpcMethod.providerUpsert,
-      ProviderUpsertParamsDto(
-        provider: provider,
+      RpcMethod.providerConnectApiKey,
+      ProviderConnectApiKeyParamsDto(
+        definitionId: definitionId,
+        apiKey: apiKey,
         makeDefault: makeDefault,
       ).toJson(),
     );
-    return ProviderResultDto.fromJson(response).provider;
+    return ProviderConnectionResultDto.fromJson(response).connection;
   }
 
   @override
-  Future<void> deleteProvider(String providerId) async {
+  Future<ProviderConnectionDto> connectProviderNone(
+    String definitionId, {
+    bool makeDefault = false,
+  }) async {
+    final response = await _request(
+      RpcMethod.providerConnectNone,
+      ProviderConnectNoneParamsDto(
+        definitionId: definitionId,
+        makeDefault: makeDefault,
+      ).toJson(),
+    );
+    return ProviderConnectionResultDto.fromJson(response).connection;
+  }
+
+  @override
+  Future<ProviderAuthAttemptDto> startProviderAuth(
+    String definitionId,
+    String methodId, {
+    bool makeDefault = false,
+  }) async {
+    final response = await _request(
+      RpcMethod.providerAuthStart,
+      ProviderAuthStartParamsDto(
+        definitionId: definitionId,
+        methodId: methodId,
+        makeDefault: makeDefault,
+      ).toJson(),
+    );
+    return ProviderAuthAttemptResultDto.fromJson(response).attempt;
+  }
+
+  @override
+  Future<ProviderAuthAttemptDto> providerAuthStatus(String attemptId) async {
+    final response = await _request(
+      RpcMethod.providerAuthStatus,
+      ProviderAuthAttemptParamsDto(attemptId: attemptId).toJson(),
+    );
+    return ProviderAuthAttemptResultDto.fromJson(response).attempt;
+  }
+
+  @override
+  Future<void> cancelProviderAuth(String attemptId) async {
     await _request(
-      RpcMethod.providerDelete,
-      ProviderIdParamsDto(providerId: providerId).toJson(),
+      RpcMethod.providerAuthCancel,
+      ProviderAuthAttemptParamsDto(attemptId: attemptId).toJson(),
     );
   }
 
   @override
-  Future<List<ProviderModelDto>> listProviderModels(String providerId) async {
-    final response = await _request(
-      RpcMethod.providerModelsList,
-      ProviderIdParamsDto(providerId: providerId).toJson(),
-    );
-    return _providerModels(response);
-  }
-
-  @override
-  Future<List<ProviderModelDto>> refreshProviderModels(
-    String providerId,
-  ) async {
-    final response = await _request(
-      RpcMethod.providerModelsRefresh,
-      ProviderIdParamsDto(providerId: providerId).toJson(),
-    );
-    return _providerModels(response);
-  }
-
-  List<ProviderModelDto> _providerModels(Map<String, dynamic> response) =>
-      ProviderModelsResultDto.fromJson(response).models;
-
-  @override
-  Future<ProviderModelDto> upsertProviderModel(ProviderModelDto model) async {
-    final response = await _request(
-      RpcMethod.providerModelUpsert,
-      ProviderModelUpsertParamsDto(model: model).toJson(),
-    );
-    return ProviderModelResultDto.fromJson(response).model;
-  }
-
-  @override
-  Future<void> deleteProviderModel(String providerId, String modelId) async {
+  Future<void> disconnectProvider(String connectionId) async {
     await _request(
-      RpcMethod.providerModelDelete,
-      ProviderModelParamsDto(providerId: providerId, modelId: modelId).toJson(),
+      RpcMethod.providerDisconnect,
+      ProviderConnectionIdParamsDto(connectionId: connectionId).toJson(),
     );
   }
 
   @override
-  Future<ProviderDiagnosticDto> diagnoseProviderModel(
-    String providerId,
+  Future<void> setDefaultProvider(String connectionId) async {
+    await _request(
+      RpcMethod.providerDefaultSet,
+      ProviderDefaultSetParamsDto(connectionId: connectionId).toJson(),
+    );
+  }
+
+  @override
+  Future<void> setDefaultProviderModel(
+    String connectionId,
     String modelId,
   ) async {
-    final response = await _request(
-      RpcMethod.providerModelDiagnose,
-      ProviderModelParamsDto(providerId: providerId, modelId: modelId).toJson(),
-    );
-    return ProviderDiagnosticResultDto.fromJson(response).diagnostic;
-  }
-
-  @override
-  Future<void> setProviderCredential(String providerId, String apiKey) async {
     await _request(
-      RpcMethod.providerCredentialSet,
-      ProviderCredentialSetParamsDto(
-        providerId: providerId,
-        apiKey: apiKey,
+      RpcMethod.providerDefaultModelSet,
+      ProviderDefaultModelSetParamsDto(
+        connectionId: connectionId,
+        modelId: modelId,
       ).toJson(),
     );
   }
 
   @override
-  Future<void> clearProviderCredential(String providerId) async {
+  Future<ProviderCatalogDto> refreshProviderCatalog() async {
+    final response = await _request(
+      RpcMethod.providerCatalogRefresh,
+      const <String, dynamic>{},
+    );
+    return ProviderCatalogResultDto.fromJson(response).catalog;
+  }
+
+  @override
+  Future<List<ProviderModelDto>> listProviderModels(
+    String connectionId,
+  ) async {
+    final response = await _request(
+      RpcMethod.providerModelsList,
+      ProviderConnectionIdParamsDto(connectionId: connectionId).toJson(),
+    );
+    return ProviderModelsResultDto.fromJson(response).models;
+  }
+
+  @override
+  Future<ProviderConnectionDto> createCustomProvider(
+    String id,
+    CustomProviderConfigDto config, {
+    String? apiKey,
+    bool makeDefault = false,
+  }) async {
+    final response = await _request(
+      RpcMethod.providerCustomCreate,
+      ProviderCustomCreateParamsDto(
+        id: id,
+        config: config,
+        makeDefault: makeDefault,
+        apiKey: apiKey,
+      ).toJson(),
+    );
+    return ProviderConnectionResultDto.fromJson(response).connection;
+  }
+
+  @override
+  Future<ProviderConnectionDto> updateCustomProvider(
+    String connectionId,
+    CustomProviderConfigDto config, {
+    String? apiKey,
+  }) async {
+    final response = await _request(
+      RpcMethod.providerCustomUpdate,
+      ProviderCustomUpdateParamsDto(
+        connectionId: connectionId,
+        config: config,
+        apiKey: apiKey,
+      ).toJson(),
+    );
+    return ProviderConnectionResultDto.fromJson(response).connection;
+  }
+
+  @override
+  Future<void> deleteCustomProvider(String connectionId) async {
     await _request(
-      RpcMethod.providerCredentialClear,
-      ProviderIdParamsDto(providerId: providerId).toJson(),
+      RpcMethod.providerCustomDelete,
+      ProviderConnectionIdParamsDto(connectionId: connectionId).toJson(),
     );
   }
 

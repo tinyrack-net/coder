@@ -54,7 +54,7 @@ abstract class AgentCreateParamsDto with _$AgentCreateParamsDto {
     required String id,
     required String workspaceId,
     required String title,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required String reasoningEffort,
     required PermissionMode permissionMode,
@@ -72,7 +72,7 @@ abstract class AgentConfigurationUpdateParamsDto
   /// The AgentConfigurationUpdateParamsDto public API member.
   const factory AgentConfigurationUpdateParamsDto({
     required String agentId,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required String reasoningEffort,
   }) = _AgentConfigurationUpdateParamsDto;
@@ -84,29 +84,47 @@ abstract class AgentConfigurationUpdateParamsDto
 }
 
 @freezed
-/// ProviderUpsertParamsDto defines a public contract.
-abstract class ProviderUpsertParamsDto with _$ProviderUpsertParamsDto {
-  /// The ProviderUpsertParamsDto public API member.
-  const factory ProviderUpsertParamsDto({
-    required ApiProviderDto provider,
+/// Parameters for connecting a built-in provider with an API key.
+abstract class ProviderConnectApiKeyParamsDto
+    with _$ProviderConnectApiKeyParamsDto {
+  /// Creates API-key connection parameters.
+  const factory ProviderConnectApiKeyParamsDto({
+    required String definitionId,
+    required String apiKey,
     required bool makeDefault,
-  }) = _ProviderUpsertParamsDto;
+  }) = _ProviderConnectApiKeyParamsDto;
 
-  /// Creates a [ProviderUpsertParamsDto].
-  factory ProviderUpsertParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$ProviderUpsertParamsDtoFromJson(json);
+  /// Decodes API-key connection parameters.
+  factory ProviderConnectApiKeyParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderConnectApiKeyParamsDtoFromJson(json);
 }
 
 @freezed
-/// ProviderIdParamsDto defines a public contract.
-abstract class ProviderIdParamsDto with _$ProviderIdParamsDto {
-  /// The ProviderIdParamsDto public API member.
-  const factory ProviderIdParamsDto({required String providerId}) =
-      _ProviderIdParamsDto;
+/// Parameters for connecting a provider that needs no credentials.
+abstract class ProviderConnectNoneParamsDto
+    with _$ProviderConnectNoneParamsDto {
+  /// Creates no-auth connection parameters.
+  const factory ProviderConnectNoneParamsDto({
+    required String definitionId,
+    required bool makeDefault,
+  }) = _ProviderConnectNoneParamsDto;
 
-  /// Creates a [ProviderIdParamsDto].
-  factory ProviderIdParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$ProviderIdParamsDtoFromJson(json);
+  /// Decodes no-auth connection parameters.
+  factory ProviderConnectNoneParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderConnectNoneParamsDtoFromJson(json);
+}
+
+@freezed
+/// Parameters identifying one provider connection.
+abstract class ProviderConnectionIdParamsDto
+    with _$ProviderConnectionIdParamsDto {
+  /// Creates provider connection identifier parameters.
+  const factory ProviderConnectionIdParamsDto({required String connectionId}) =
+      _ProviderConnectionIdParamsDto;
+
+  /// Decodes provider connection identifier parameters.
+  factory ProviderConnectionIdParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderConnectionIdParamsDtoFromJson(json);
 }
 
 @freezed
@@ -114,7 +132,7 @@ abstract class ProviderIdParamsDto with _$ProviderIdParamsDto {
 abstract class ProviderModelParamsDto with _$ProviderModelParamsDto {
   /// The ProviderModelParamsDto public API member.
   const factory ProviderModelParamsDto({
-    required String providerId,
+    required String connectionId,
     required String modelId,
   }) = _ProviderModelParamsDto;
 
@@ -124,32 +142,92 @@ abstract class ProviderModelParamsDto with _$ProviderModelParamsDto {
 }
 
 @freezed
-/// ProviderModelUpsertParamsDto defines a public contract.
-abstract class ProviderModelUpsertParamsDto
-    with _$ProviderModelUpsertParamsDto {
-  /// The ProviderModelUpsertParamsDto public API member.
-  const factory ProviderModelUpsertParamsDto({
-    required ProviderModelDto model,
-  }) = _ProviderModelUpsertParamsDto;
+/// Parameters for starting a provider OAuth flow.
+abstract class ProviderAuthStartParamsDto with _$ProviderAuthStartParamsDto {
+  /// Creates OAuth start parameters.
+  const factory ProviderAuthStartParamsDto({
+    required String definitionId,
+    required String methodId,
+    required bool makeDefault,
+  }) = _ProviderAuthStartParamsDto;
 
-  /// Creates a [ProviderModelUpsertParamsDto].
-  factory ProviderModelUpsertParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$ProviderModelUpsertParamsDtoFromJson(json);
+  /// Decodes OAuth start parameters.
+  factory ProviderAuthStartParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderAuthStartParamsDtoFromJson(json);
 }
 
 @freezed
-/// ProviderCredentialSetParamsDto defines a public contract.
-abstract class ProviderCredentialSetParamsDto
-    with _$ProviderCredentialSetParamsDto {
-  /// The ProviderCredentialSetParamsDto public API member.
-  const factory ProviderCredentialSetParamsDto({
-    required String providerId,
-    required String apiKey,
-  }) = _ProviderCredentialSetParamsDto;
+/// Parameters identifying a provider authorization attempt.
+abstract class ProviderAuthAttemptParamsDto
+    with _$ProviderAuthAttemptParamsDto {
+  /// Creates authorization attempt parameters.
+  const factory ProviderAuthAttemptParamsDto({required String attemptId}) =
+      _ProviderAuthAttemptParamsDto;
 
-  /// Creates a [ProviderCredentialSetParamsDto].
-  factory ProviderCredentialSetParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$ProviderCredentialSetParamsDtoFromJson(json);
+  /// Decodes authorization attempt parameters.
+  factory ProviderAuthAttemptParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderAuthAttemptParamsDtoFromJson(json);
+}
+
+@freezed
+/// Parameters for selecting the daemon-wide default provider connection.
+abstract class ProviderDefaultSetParamsDto with _$ProviderDefaultSetParamsDto {
+  /// Creates default provider parameters.
+  const factory ProviderDefaultSetParamsDto({required String connectionId}) =
+      _ProviderDefaultSetParamsDto;
+
+  /// Decodes default provider parameters.
+  factory ProviderDefaultSetParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderDefaultSetParamsDtoFromJson(json);
+}
+
+@freezed
+/// Parameters for selecting a connection's default model.
+abstract class ProviderDefaultModelSetParamsDto
+    with _$ProviderDefaultModelSetParamsDto {
+  /// Creates default model parameters.
+  const factory ProviderDefaultModelSetParamsDto({
+    required String connectionId,
+    required String modelId,
+  }) = _ProviderDefaultModelSetParamsDto;
+
+  /// Decodes default model parameters.
+  factory ProviderDefaultModelSetParamsDto.fromJson(
+    Map<String, dynamic> json,
+  ) => _$ProviderDefaultModelSetParamsDtoFromJson(json);
+}
+
+@freezed
+/// Parameters for creating an advanced custom provider connection.
+abstract class ProviderCustomCreateParamsDto
+    with _$ProviderCustomCreateParamsDto {
+  /// Creates custom provider parameters.
+  const factory ProviderCustomCreateParamsDto({
+    required String id,
+    required CustomProviderConfigDto config,
+    required bool makeDefault,
+    String? apiKey,
+  }) = _ProviderCustomCreateParamsDto;
+
+  /// Decodes custom provider parameters.
+  factory ProviderCustomCreateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderCustomCreateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Parameters for updating an advanced custom provider connection.
+abstract class ProviderCustomUpdateParamsDto
+    with _$ProviderCustomUpdateParamsDto {
+  /// Creates custom provider update parameters.
+  const factory ProviderCustomUpdateParamsDto({
+    required String connectionId,
+    required CustomProviderConfigDto config,
+    String? apiKey,
+  }) = _ProviderCustomUpdateParamsDto;
+
+  /// Decodes custom provider update parameters.
+  factory ProviderCustomUpdateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderCustomUpdateParamsDtoFromJson(json);
 }
 
 @freezed
@@ -268,15 +346,30 @@ abstract class ProviderCatalogResultDto with _$ProviderCatalogResultDto {
 }
 
 @freezed
-/// ProviderResultDto defines a public contract.
-abstract class ProviderResultDto with _$ProviderResultDto {
-  /// The ProviderResultDto public API member.
-  const factory ProviderResultDto({required ApiProviderDto provider}) =
-      _ProviderResultDto;
+/// Result containing all configured provider connections.
+abstract class ProviderConnectionsResultDto
+    with _$ProviderConnectionsResultDto {
+  /// Creates a provider connections result.
+  const factory ProviderConnectionsResultDto({
+    required List<ProviderConnectionDto> connections,
+  }) = _ProviderConnectionsResultDto;
 
-  /// Creates a [ProviderResultDto].
-  factory ProviderResultDto.fromJson(Map<String, dynamic> json) =>
-      _$ProviderResultDtoFromJson(json);
+  /// Decodes a provider connections result.
+  factory ProviderConnectionsResultDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderConnectionsResultDtoFromJson(json);
+}
+
+@freezed
+/// Result containing one configured provider connection.
+abstract class ProviderConnectionResultDto with _$ProviderConnectionResultDto {
+  /// Creates a provider connection result.
+  const factory ProviderConnectionResultDto({
+    required ProviderConnectionDto connection,
+  }) = _ProviderConnectionResultDto;
+
+  /// Decodes a provider connection result.
+  factory ProviderConnectionResultDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderConnectionResultDtoFromJson(json);
 }
 
 @freezed
@@ -293,15 +386,17 @@ abstract class ProviderModelsResultDto with _$ProviderModelsResultDto {
 }
 
 @freezed
-/// ProviderModelResultDto defines a public contract.
-abstract class ProviderModelResultDto with _$ProviderModelResultDto {
-  /// The ProviderModelResultDto public API member.
-  const factory ProviderModelResultDto({required ProviderModelDto model}) =
-      _ProviderModelResultDto;
+/// Result containing one provider authorization attempt.
+abstract class ProviderAuthAttemptResultDto
+    with _$ProviderAuthAttemptResultDto {
+  /// Creates an authorization attempt result.
+  const factory ProviderAuthAttemptResultDto({
+    required ProviderAuthAttemptDto attempt,
+  }) = _ProviderAuthAttemptResultDto;
 
-  /// Creates a [ProviderModelResultDto].
-  factory ProviderModelResultDto.fromJson(Map<String, dynamic> json) =>
-      _$ProviderModelResultDtoFromJson(json);
+  /// Decodes an authorization attempt result.
+  factory ProviderAuthAttemptResultDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderAuthAttemptResultDtoFromJson(json);
 }
 
 @freezed

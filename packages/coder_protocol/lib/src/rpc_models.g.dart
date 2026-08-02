@@ -50,7 +50,7 @@ _AgentCreateParamsDto _$AgentCreateParamsDtoFromJson(
   id: json['id'] as String,
   workspaceId: json['workspaceId'] as String,
   title: json['title'] as String,
-  providerId: json['providerId'] as String,
+  providerConnectionId: json['providerConnectionId'] as String,
   model: json['model'] as String,
   reasoningEffort: json['reasoningEffort'] as String,
   permissionMode: $enumDecode(_$PermissionModeEnumMap, json['permissionMode']),
@@ -62,7 +62,7 @@ Map<String, dynamic> _$AgentCreateParamsDtoToJson(
   'id': instance.id,
   'workspaceId': instance.workspaceId,
   'title': instance.title,
-  'providerId': instance.providerId,
+  'providerConnectionId': instance.providerConnectionId,
   'model': instance.model,
   'reasoningEffort': instance.reasoningEffort,
   'permissionMode': _$PermissionModeEnumMap[instance.permissionMode]!,
@@ -78,7 +78,7 @@ _AgentConfigurationUpdateParamsDto _$AgentConfigurationUpdateParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentConfigurationUpdateParamsDto(
   agentId: json['agentId'] as String,
-  providerId: json['providerId'] as String,
+  providerConnectionId: json['providerConnectionId'] as String,
   model: json['model'] as String,
   reasoningEffort: json['reasoningEffort'] as String,
 );
@@ -87,67 +87,146 @@ Map<String, dynamic> _$AgentConfigurationUpdateParamsDtoToJson(
   _AgentConfigurationUpdateParamsDto instance,
 ) => <String, dynamic>{
   'agentId': instance.agentId,
-  'providerId': instance.providerId,
+  'providerConnectionId': instance.providerConnectionId,
   'model': instance.model,
   'reasoningEffort': instance.reasoningEffort,
 };
 
-_ProviderUpsertParamsDto _$ProviderUpsertParamsDtoFromJson(
+_ProviderConnectApiKeyParamsDto _$ProviderConnectApiKeyParamsDtoFromJson(
   Map<String, dynamic> json,
-) => _ProviderUpsertParamsDto(
-  provider: ApiProviderDto.fromJson(json['provider'] as Map<String, dynamic>),
+) => _ProviderConnectApiKeyParamsDto(
+  definitionId: json['definitionId'] as String,
+  apiKey: json['apiKey'] as String,
   makeDefault: json['makeDefault'] as bool,
 );
 
-Map<String, dynamic> _$ProviderUpsertParamsDtoToJson(
-  _ProviderUpsertParamsDto instance,
+Map<String, dynamic> _$ProviderConnectApiKeyParamsDtoToJson(
+  _ProviderConnectApiKeyParamsDto instance,
 ) => <String, dynamic>{
-  'provider': instance.provider,
+  'definitionId': instance.definitionId,
+  'apiKey': instance.apiKey,
   'makeDefault': instance.makeDefault,
 };
 
-_ProviderIdParamsDto _$ProviderIdParamsDtoFromJson(Map<String, dynamic> json) =>
-    _ProviderIdParamsDto(providerId: json['providerId'] as String);
+_ProviderConnectNoneParamsDto _$ProviderConnectNoneParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderConnectNoneParamsDto(
+  definitionId: json['definitionId'] as String,
+  makeDefault: json['makeDefault'] as bool,
+);
 
-Map<String, dynamic> _$ProviderIdParamsDtoToJson(
-  _ProviderIdParamsDto instance,
-) => <String, dynamic>{'providerId': instance.providerId};
+Map<String, dynamic> _$ProviderConnectNoneParamsDtoToJson(
+  _ProviderConnectNoneParamsDto instance,
+) => <String, dynamic>{
+  'definitionId': instance.definitionId,
+  'makeDefault': instance.makeDefault,
+};
+
+_ProviderConnectionIdParamsDto _$ProviderConnectionIdParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderConnectionIdParamsDto(
+  connectionId: json['connectionId'] as String,
+);
+
+Map<String, dynamic> _$ProviderConnectionIdParamsDtoToJson(
+  _ProviderConnectionIdParamsDto instance,
+) => <String, dynamic>{'connectionId': instance.connectionId};
 
 _ProviderModelParamsDto _$ProviderModelParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _ProviderModelParamsDto(
-  providerId: json['providerId'] as String,
+  connectionId: json['connectionId'] as String,
   modelId: json['modelId'] as String,
 );
 
 Map<String, dynamic> _$ProviderModelParamsDtoToJson(
   _ProviderModelParamsDto instance,
 ) => <String, dynamic>{
-  'providerId': instance.providerId,
+  'connectionId': instance.connectionId,
   'modelId': instance.modelId,
 };
 
-_ProviderModelUpsertParamsDto _$ProviderModelUpsertParamsDtoFromJson(
+_ProviderAuthStartParamsDto _$ProviderAuthStartParamsDtoFromJson(
   Map<String, dynamic> json,
-) => _ProviderModelUpsertParamsDto(
-  model: ProviderModelDto.fromJson(json['model'] as Map<String, dynamic>),
+) => _ProviderAuthStartParamsDto(
+  definitionId: json['definitionId'] as String,
+  methodId: json['methodId'] as String,
+  makeDefault: json['makeDefault'] as bool,
 );
 
-Map<String, dynamic> _$ProviderModelUpsertParamsDtoToJson(
-  _ProviderModelUpsertParamsDto instance,
-) => <String, dynamic>{'model': instance.model};
-
-_ProviderCredentialSetParamsDto _$ProviderCredentialSetParamsDtoFromJson(
-  Map<String, dynamic> json,
-) => _ProviderCredentialSetParamsDto(
-  providerId: json['providerId'] as String,
-  apiKey: json['apiKey'] as String,
-);
-
-Map<String, dynamic> _$ProviderCredentialSetParamsDtoToJson(
-  _ProviderCredentialSetParamsDto instance,
+Map<String, dynamic> _$ProviderAuthStartParamsDtoToJson(
+  _ProviderAuthStartParamsDto instance,
 ) => <String, dynamic>{
-  'providerId': instance.providerId,
+  'definitionId': instance.definitionId,
+  'methodId': instance.methodId,
+  'makeDefault': instance.makeDefault,
+};
+
+_ProviderAuthAttemptParamsDto _$ProviderAuthAttemptParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderAuthAttemptParamsDto(attemptId: json['attemptId'] as String);
+
+Map<String, dynamic> _$ProviderAuthAttemptParamsDtoToJson(
+  _ProviderAuthAttemptParamsDto instance,
+) => <String, dynamic>{'attemptId': instance.attemptId};
+
+_ProviderDefaultSetParamsDto _$ProviderDefaultSetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderDefaultSetParamsDto(connectionId: json['connectionId'] as String);
+
+Map<String, dynamic> _$ProviderDefaultSetParamsDtoToJson(
+  _ProviderDefaultSetParamsDto instance,
+) => <String, dynamic>{'connectionId': instance.connectionId};
+
+_ProviderDefaultModelSetParamsDto _$ProviderDefaultModelSetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderDefaultModelSetParamsDto(
+  connectionId: json['connectionId'] as String,
+  modelId: json['modelId'] as String,
+);
+
+Map<String, dynamic> _$ProviderDefaultModelSetParamsDtoToJson(
+  _ProviderDefaultModelSetParamsDto instance,
+) => <String, dynamic>{
+  'connectionId': instance.connectionId,
+  'modelId': instance.modelId,
+};
+
+_ProviderCustomCreateParamsDto _$ProviderCustomCreateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderCustomCreateParamsDto(
+  id: json['id'] as String,
+  config: CustomProviderConfigDto.fromJson(
+    json['config'] as Map<String, dynamic>,
+  ),
+  makeDefault: json['makeDefault'] as bool,
+  apiKey: json['apiKey'] as String?,
+);
+
+Map<String, dynamic> _$ProviderCustomCreateParamsDtoToJson(
+  _ProviderCustomCreateParamsDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'config': instance.config,
+  'makeDefault': instance.makeDefault,
+  'apiKey': instance.apiKey,
+};
+
+_ProviderCustomUpdateParamsDto _$ProviderCustomUpdateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderCustomUpdateParamsDto(
+  connectionId: json['connectionId'] as String,
+  config: CustomProviderConfigDto.fromJson(
+    json['config'] as Map<String, dynamic>,
+  ),
+  apiKey: json['apiKey'] as String?,
+);
+
+Map<String, dynamic> _$ProviderCustomUpdateParamsDtoToJson(
+  _ProviderCustomUpdateParamsDto instance,
+) => <String, dynamic>{
+  'connectionId': instance.connectionId,
+  'config': instance.config,
   'apiKey': instance.apiKey,
 };
 
@@ -249,15 +328,29 @@ Map<String, dynamic> _$ProviderCatalogResultDtoToJson(
   _ProviderCatalogResultDto instance,
 ) => <String, dynamic>{'catalog': instance.catalog};
 
-_ProviderResultDto _$ProviderResultDtoFromJson(Map<String, dynamic> json) =>
-    _ProviderResultDto(
-      provider: ApiProviderDto.fromJson(
-        json['provider'] as Map<String, dynamic>,
-      ),
-    );
+_ProviderConnectionsResultDto _$ProviderConnectionsResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderConnectionsResultDto(
+  connections: (json['connections'] as List<dynamic>)
+      .map((e) => ProviderConnectionDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
 
-Map<String, dynamic> _$ProviderResultDtoToJson(_ProviderResultDto instance) =>
-    <String, dynamic>{'provider': instance.provider};
+Map<String, dynamic> _$ProviderConnectionsResultDtoToJson(
+  _ProviderConnectionsResultDto instance,
+) => <String, dynamic>{'connections': instance.connections};
+
+_ProviderConnectionResultDto _$ProviderConnectionResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderConnectionResultDto(
+  connection: ProviderConnectionDto.fromJson(
+    json['connection'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$ProviderConnectionResultDtoToJson(
+  _ProviderConnectionResultDto instance,
+) => <String, dynamic>{'connection': instance.connection};
 
 _ProviderModelsResultDto _$ProviderModelsResultDtoFromJson(
   Map<String, dynamic> json,
@@ -271,15 +364,17 @@ Map<String, dynamic> _$ProviderModelsResultDtoToJson(
   _ProviderModelsResultDto instance,
 ) => <String, dynamic>{'models': instance.models};
 
-_ProviderModelResultDto _$ProviderModelResultDtoFromJson(
+_ProviderAuthAttemptResultDto _$ProviderAuthAttemptResultDtoFromJson(
   Map<String, dynamic> json,
-) => _ProviderModelResultDto(
-  model: ProviderModelDto.fromJson(json['model'] as Map<String, dynamic>),
+) => _ProviderAuthAttemptResultDto(
+  attempt: ProviderAuthAttemptDto.fromJson(
+    json['attempt'] as Map<String, dynamic>,
+  ),
 );
 
-Map<String, dynamic> _$ProviderModelResultDtoToJson(
-  _ProviderModelResultDto instance,
-) => <String, dynamic>{'model': instance.model};
+Map<String, dynamic> _$ProviderAuthAttemptResultDtoToJson(
+  _ProviderAuthAttemptResultDto instance,
+) => <String, dynamic>{'attempt': instance.attempt};
 
 _ProviderDiagnosticResultDto _$ProviderDiagnosticResultDtoFromJson(
   Map<String, dynamic> json,

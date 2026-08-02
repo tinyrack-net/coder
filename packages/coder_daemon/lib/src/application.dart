@@ -7,8 +7,11 @@ import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
 import 'package:coder_daemon/src/database.dart';
+import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
+import 'package:coder_daemon/src/provider_auth.dart';
+import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/server.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -45,6 +48,7 @@ abstract final class DaemonApplication {
     ProviderModelDiscovery modelDiscovery = const DioProviderModelDiscovery(),
     ModelProviderFactory providerFactory =
         const OpenAICompatibleProviderFactory(),
+    ProviderOAuthGateway? oauthGateway,
     WorkspaceCanonicalizer workspaceCanonicalizer =
         const IoWorkspaceCanonicalizer(),
   }) async {
@@ -89,17 +93,33 @@ abstract final class DaemonApplication {
         await credentials.setBearerToken(token);
       }
       final events = StreamController<WireEnvelope>.broadcast(sync: true);
+      final effectiveOAuthGateway =
+          oauthGateway ?? OpenAIOAuthGateway(clock: clock);
       final providers = ProviderService(
         repository: database.providerDao,
-        settings: database.settingsDao,
         credentials: credentials,
-        environment: Platform.environment,
+        environment: config.useEnvironmentCredentials
+            ? Platform.environment
+            : const <String, String>{},
         clock: clock,
         modelDiscovery: modelDiscovery,
         providerFactory: providerFactory,
+        catalog: BuiltInProviderCatalog(clock: clock),
+        oauthRefresher: OAuthCredentialRefresher(
+          gateway: effectiveOAuthGateway,
+        ),
         fixedProvider: provider,
       );
-      await providers.initialize(legacyOpenAIKey: config.apiKey);
+      await providers.initialize();
+      if (config.apiKey?.isNotEmpty == true &&
+          await database.providerDao.getConnection('openai') == null) {
+        await providers.connectApiKey('openai', config.apiKey!);
+      }
+      final providerAuth = ProviderAuthCoordinator(
+        gateway: effectiveOAuthGateway,
+        connector: providers,
+        ids: ids,
+      );
       final service = AgentService(
         agents: database.agentDao,
         workspaces: database.workspaceDao,
@@ -134,6 +154,7 @@ abstract final class DaemonApplication {
         timeline: database.timelineDao,
         agents: service,
         providers: providers,
+        providerAuth: providerAuth,
         clock: clock,
         workspaceCanonicalizer: workspaceCanonicalizer,
         serverInfo: info,

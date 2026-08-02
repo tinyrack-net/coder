@@ -36,8 +36,8 @@ class Agents extends Table {
   /// The title public API member.
   TextColumn get title => text()();
 
-  /// The providerId public API member.
-  TextColumn get providerId => text()();
+  /// Provider connection selected for this agent.
+  TextColumn get providerConnectionId => text()();
 
   /// The model public API member.
   TextColumn get model => text()();
@@ -185,41 +185,37 @@ class Settings extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{key};
 }
 
-/// ApiProviders defines a public contract.
-class ApiProviders extends Table {
+/// User-owned provider connections.
+class ProviderConnections extends Table {
   /// The id public API member.
   TextColumn get id => text()();
 
-  /// The name public API member.
-  TextColumn get name => text()();
+  /// Built-in definition identifier, or `custom`.
+  TextColumn get definitionId => text()();
 
-  /// The presetId public API member.
-  TextColumn get presetId => text()();
+  /// Human-readable connection name.
+  TextColumn get displayName => text()();
 
-  /// The baseUrl public API member.
-  TextColumn get baseUrl => text()();
+  /// Current connection state.
+  TextColumn get status => text()();
 
-  /// The transport public API member.
-  TextColumn get transport => text()();
+  /// Active authentication kind.
+  TextColumn get authKind => text()();
 
-  /// The credentialSource public API member.
-  TextColumn get credentialSource => text()();
+  /// Non-secret credential origin.
+  TextColumn get credentialOrigin => text()();
 
-  /// The environmentVariable public API member.
-  TextColumn get environmentVariable => text().nullable()();
-
-  /// The enabled public API member.
-  BoolColumn get enabled => boolean()();
-
-  /// The strictToolSchema public API member.
-  BoolColumn get strictToolSchema => boolean()();
+  /// Whether this is the daemon-wide default connection.
+  BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
 
   /// The defaultModelId public API member.
   TextColumn get defaultModelId => text().nullable()();
 
-  /// The visibleModelIdsJson public API member.
-  TextColumn get visibleModelIdsJson =>
-      text().withDefault(const Constant('[]'))();
+  /// Last user-safe connection error.
+  TextColumn get error => text().nullable()();
+
+  /// Advanced custom configuration, never used by built-in definitions.
+  TextColumn get customConfigJson => text().nullable()();
 
   /// The createdAt public API member.
   DateTimeColumn get createdAt => dateTime()();
@@ -233,8 +229,8 @@ class ApiProviders extends Table {
 
 /// ProviderModels defines a public contract.
 class ProviderModels extends Table {
-  /// The providerId public API member.
-  TextColumn get providerId => text().references(ApiProviders, #id)();
+  /// Owning provider connection.
+  TextColumn get connectionId => text().references(ProviderConnections, #id)();
 
   /// The modelId public API member.
   TextColumn get modelId => text()();
@@ -248,6 +244,12 @@ class ProviderModels extends Table {
   /// The capabilitiesJson public API member.
   TextColumn get capabilitiesJson => text()();
 
+  /// Optional model pricing metadata.
+  TextColumn get pricingJson => text().nullable()();
+
+  /// Optional model token-limit metadata.
+  TextColumn get limitsJson => text().nullable()();
+
   /// The diagnosticStatus public API member.
   TextColumn get diagnosticStatus =>
       text().withDefault(const Constant('unknown'))();
@@ -259,7 +261,7 @@ class ProviderModels extends Table {
   TextColumn get diagnosticError => text().nullable()();
 
   @override
-  Set<Column<Object>> get primaryKey => <Column<Object>>{providerId, modelId};
+  Set<Column<Object>> get primaryKey => <Column<Object>>{connectionId, modelId};
 }
 
 @DriftDatabase(
@@ -271,7 +273,7 @@ class ProviderModels extends Table {
     ApprovalRequests,
     ProviderStates,
     Settings,
-    ApiProviders,
+    ProviderConnections,
     ProviderModels,
   ],
   daos: <Type>[
@@ -287,27 +289,30 @@ class ProviderModels extends Table {
 class CoderDatabase extends _$CoderDatabase {
   /// Creates a [CoderDatabase].
   CoderDatabase(String path, {this.clock = const SystemClock()})
-    : super(NativeDatabase.createInBackground(File(path)));
+    : databasePath = path,
+      super(NativeDatabase.createInBackground(File(path)));
 
   /// The CoderDatabaseforTesting public API member.
-  CoderDatabase.forTesting(super.e, {this.clock = const SystemClock()});
+  CoderDatabase.forTesting(super.e, {this.clock = const SystemClock()})
+    : databasePath = '<memory>';
 
   /// The clock public API member.
   final Clock clock;
 
+  /// SQLite path included in explicit incompatible-schema guidance.
+  final String databasePath;
+
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) => migrator.createAll(),
-    onUpgrade: (migrator, from, to) async {
-      if (from == 1) {
-        await migrator.addColumn(agents, agents.reasoningEffort);
-        await migrator.createTable(apiProviders);
-        await migrator.createTable(providerModels);
-      }
-    },
+    onUpgrade: (migrator, from, to) => throw StateError(
+      'incompatible_database: schema $from cannot be opened as schema $to. '
+      'Stop the daemon and explicitly remove $databasePath to reset '
+      'development data.',
+    ),
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },

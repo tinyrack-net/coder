@@ -11,7 +11,8 @@ class CredentialStore implements CredentialRepository {
 
   /// The configDirectory public API member.
   final String configDirectory;
-  final Map<String, String> _providerKeys = <String, String>{};
+  final Map<String, ProviderCredential> _providerCredentials =
+      <String, ProviderCredential>{};
   String? _bearerToken;
   bool _loaded = false;
 
@@ -26,10 +27,17 @@ class CredentialStore implements CredentialRepository {
     await _ensureDirectory();
     if (_credentialsFile.existsSync()) {
       final decoded = jsonDecode(await _credentialsFile.readAsString());
-      if (decoded is Map && decoded['providerApiKeys'] is Map) {
-        for (final entry in (decoded['providerApiKeys'] as Map).entries) {
-          if (entry.key is String && entry.value is String) {
-            _providerKeys[entry.key as String] = entry.value as String;
+      if (decoded is! Map<String, dynamic> || decoded['version'] != 2) {
+        throw FormatException(
+          'incompatible_credentials: explicitly remove '
+          '${_credentialsFile.path} to reset development credentials.',
+        );
+      }
+      final credentials = decoded['providerCredentials'];
+      if (credentials is Map<String, dynamic>) {
+        for (final entry in credentials.entries) {
+          if (entry.value case final Map<String, dynamic> value) {
+            _providerCredentials[entry.key] = _credentialFromJson(value);
           }
         }
       }
@@ -44,8 +52,10 @@ class CredentialStore implements CredentialRepository {
 
   @override
   String? get bearerToken => _bearerToken;
+
   @override
-  String? providerApiKey(String providerId) => _providerKeys[providerId];
+  ProviderCredential? credential(String connectionId) =>
+      _providerCredentials[connectionId];
 
   @override
   Future<void> setBearerToken(String token) async {
@@ -58,22 +68,30 @@ class CredentialStore implements CredentialRepository {
   }
 
   @override
-  Future<void> setProviderApiKey(String providerId, String value) async {
+  Future<void> setCredential(
+    String connectionId,
+    ProviderCredential credential,
+  ) async {
     await load();
-    if (value.isEmpty) {
-      _providerKeys.remove(providerId);
-    } else {
-      _providerKeys[providerId] = value;
-    }
-    await _writeJson(_credentialsFile, <String, dynamic>{
-      'version': 1,
-      'providerApiKeys': _providerKeys,
-    });
+    _providerCredentials[connectionId] = credential;
+    await _writeCredentials();
   }
 
   @override
-  Future<void> removeProvider(String providerId) =>
-      setProviderApiKey(providerId, '');
+  Future<void> removeCredential(String connectionId) async {
+    await load();
+    _providerCredentials.remove(connectionId);
+    await _writeCredentials();
+  }
+
+  Future<void> _writeCredentials() =>
+      _writeJson(_credentialsFile, <String, dynamic>{
+        'version': 2,
+        'providerCredentials': <String, dynamic>{
+          for (final entry in _providerCredentials.entries)
+            entry.key: _credentialToJson(entry.value),
+        },
+      });
 
   Future<void> _ensureDirectory() async {
     final directory = Directory(configDirectory);
@@ -90,10 +108,50 @@ class CredentialStore implements CredentialRepository {
     if (!Platform.isWindows) {
       await Process.run('chmod', <String>['600', temporary.path]);
     }
-    if (file.existsSync()) await file.delete();
+    if (Platform.isWindows && file.existsSync()) await file.delete();
     await temporary.rename(file.path);
     if (!Platform.isWindows) {
       await Process.run('chmod', <String>['600', file.path]);
     }
   }
+
+  static ProviderCredential _credentialFromJson(Map<String, dynamic> json) =>
+      switch (json['type']) {
+        'apiKey' when json['key'] is String => ApiKeyCredential(
+          json['key']! as String,
+        ),
+        'oauth'
+            when json['accessToken'] is String &&
+                json['refreshToken'] is String &&
+                json['expiresAt'] is String =>
+          OAuthCredential(
+            accessToken: json['accessToken']! as String,
+            refreshToken: json['refreshToken']! as String,
+            expiresAt: DateTime.parse(json['expiresAt']! as String).toUtc(),
+            accountId: json['accountId'] as String?,
+          ),
+        _ => throw const FormatException('Invalid provider credential data.'),
+      };
+
+  static Map<String, dynamic> _credentialToJson(
+    ProviderCredential credential,
+  ) => switch (credential) {
+    ApiKeyCredential(:final key) => <String, dynamic>{
+      'type': 'apiKey',
+      'key': key,
+    },
+    OAuthCredential(
+      :final accessToken,
+      :final refreshToken,
+      :final expiresAt,
+      :final accountId,
+    ) =>
+      <String, dynamic>{
+        'type': 'oauth',
+        'accessToken': accessToken,
+        'refreshToken': refreshToken,
+        'expiresAt': expiresAt.toUtc().toIso8601String(),
+        'accountId': ?accountId,
+      },
+  };
 }

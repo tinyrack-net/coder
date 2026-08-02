@@ -49,7 +49,10 @@ class AgentService {
   }) async {
     final agent = await _agents.getById(agentId);
     if (agent == null) throw StateError('Agent not found: $agentId');
-    await _providers.validateAgentModel(agent.providerId, agent.model);
+    await _providers.validateAgentModel(
+      agent.providerConnectionId,
+      agent.model,
+    );
     if (_activeTurns.containsKey(agentId)) {
       throw StateError('Agent already has a running turn.');
     }
@@ -57,6 +60,10 @@ class AgentService {
     if (workspace == null) {
       throw StateError('Workspace not found: ${agent.workspaceId}');
     }
+    final provider = await _providers.resolve(
+      agent.providerConnectionId,
+      modelId: agent.model,
+    );
     final created = await _agents.createTurn(
       id: turnId,
       agentId: agentId,
@@ -74,10 +81,7 @@ class AgentService {
     _emitAgent(await _agents.getById(agentId));
 
     final runner = AgentRunner(
-      provider: await _providers.resolve(
-        agent.providerId,
-        modelId: agent.model,
-      ),
+      provider: provider,
       tools: _toolsFactory(),
       approvals: _DatabaseApprovalCoordinator(
         timeline: _timeline,

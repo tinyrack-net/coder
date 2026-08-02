@@ -40,6 +40,7 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
         options: Options(
           responseType: ResponseType.stream,
           headers: <String, String>{
+            ..._config.additionalHeaders,
             if (_config.apiKey.isNotEmpty)
               'Authorization': 'Bearer ${_config.apiKey}',
             'Accept': 'text/event-stream',

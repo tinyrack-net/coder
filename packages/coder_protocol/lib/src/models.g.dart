@@ -26,7 +26,7 @@ _AgentDto _$AgentDtoFromJson(Map<String, dynamic> json) => _AgentDto(
   id: json['id'] as String,
   workspaceId: json['workspaceId'] as String,
   title: json['title'] as String,
-  providerId: json['providerId'] as String,
+  providerConnectionId: json['providerConnectionId'] as String,
   model: json['model'] as String,
   status: $enumDecode(_$AgentStatusEnumMap, json['status']),
   permissionMode: $enumDecode(_$PermissionModeEnumMap, json['permissionMode']),
@@ -41,7 +41,7 @@ Map<String, dynamic> _$AgentDtoToJson(_AgentDto instance) => <String, dynamic>{
   'id': instance.id,
   'workspaceId': instance.workspaceId,
   'title': instance.title,
-  'providerId': instance.providerId,
+  'providerConnectionId': instance.providerConnectionId,
   'model': instance.model,
   'status': _$AgentStatusEnumMap[instance.status]!,
   'permissionMode': _$PermissionModeEnumMap[instance.permissionMode]!,
@@ -110,111 +110,251 @@ const _$CapabilitySupportEnumMap = {
 
 const _$CapabilitySourceEnumMap = {
   CapabilitySource.unknown: 'unknown',
-  CapabilitySource.preset: 'preset',
+  CapabilitySource.bundled: 'bundled',
+  CapabilitySource.refreshed: 'refreshed',
   CapabilitySource.diagnostic: 'diagnostic',
   CapabilitySource.manual: 'manual',
 };
 
-_ApiProviderDto _$ApiProviderDtoFromJson(Map<String, dynamic> json) =>
-    _ApiProviderDto(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      presetId: json['presetId'] as String,
-      baseUrl: json['baseUrl'] as String,
-      transport: $enumDecode(_$ApiTransportEnumMap, json['transport']),
-      credentialSource: $enumDecode(
-        _$CredentialSourceEnumMap,
-        json['credentialSource'],
-      ),
-      credentialConfigured: json['credentialConfigured'] as bool,
-      enabled: json['enabled'] as bool,
-      strictToolSchema: json['strictToolSchema'] as bool,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      environmentVariable: json['environmentVariable'] as String?,
-      defaultModelId: json['defaultModelId'] as String?,
-      visibleModelIds:
-          (json['visibleModelIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const <String>[],
+_ModelPricingDto _$ModelPricingDtoFromJson(Map<String, dynamic> json) =>
+    _ModelPricingDto(
+      input: (json['input'] as num?)?.toDouble(),
+      output: (json['output'] as num?)?.toDouble(),
+      cacheRead: (json['cacheRead'] as num?)?.toDouble(),
+      cacheWrite: (json['cacheWrite'] as num?)?.toDouble(),
     );
 
-Map<String, dynamic> _$ApiProviderDtoToJson(_ApiProviderDto instance) =>
+Map<String, dynamic> _$ModelPricingDtoToJson(_ModelPricingDto instance) =>
     <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'presetId': instance.presetId,
-      'baseUrl': instance.baseUrl,
-      'transport': _$ApiTransportEnumMap[instance.transport]!,
-      'credentialSource': _$CredentialSourceEnumMap[instance.credentialSource]!,
-      'credentialConfigured': instance.credentialConfigured,
-      'enabled': instance.enabled,
-      'strictToolSchema': instance.strictToolSchema,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'updatedAt': instance.updatedAt.toIso8601String(),
-      'environmentVariable': instance.environmentVariable,
-      'defaultModelId': instance.defaultModelId,
-      'visibleModelIds': instance.visibleModelIds,
+      'input': instance.input,
+      'output': instance.output,
+      'cacheRead': instance.cacheRead,
+      'cacheWrite': instance.cacheWrite,
     };
 
-const _$ApiTransportEnumMap = {
-  ApiTransport.responses: 'responses',
-  ApiTransport.chatCompletions: 'chatCompletions',
-};
-
-const _$CredentialSourceEnumMap = {
-  CredentialSource.none: 'none',
-  CredentialSource.stored: 'stored',
-  CredentialSource.environment: 'environment',
-};
-
-_ProviderPresetDto _$ProviderPresetDtoFromJson(Map<String, dynamic> json) =>
-    _ProviderPresetDto(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      defaultBaseUrl: json['defaultBaseUrl'] as String,
-      defaultTransport: $enumDecode(
-        _$ApiTransportEnumMap,
-        json['defaultTransport'],
-      ),
-      defaultCredentialSource: $enumDecode(
-        _$CredentialSourceEnumMap,
-        json['defaultCredentialSource'],
-      ),
-      strictToolSchema: json['strictToolSchema'] as bool,
-      defaultEnvironmentVariable: json['defaultEnvironmentVariable'] as String?,
-      defaultModelId: json['defaultModelId'] as String?,
-      modelIds:
-          (json['modelIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const <String>[],
+_ModelLimitsDto _$ModelLimitsDtoFromJson(Map<String, dynamic> json) =>
+    _ModelLimitsDto(
+      context: (json['context'] as num?)?.toInt(),
+      input: (json['input'] as num?)?.toInt(),
+      output: (json['output'] as num?)?.toInt(),
     );
 
-Map<String, dynamic> _$ProviderPresetDtoToJson(_ProviderPresetDto instance) =>
+Map<String, dynamic> _$ModelLimitsDtoToJson(_ModelLimitsDto instance) =>
     <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'defaultBaseUrl': instance.defaultBaseUrl,
-      'defaultTransport': _$ApiTransportEnumMap[instance.defaultTransport]!,
-      'defaultCredentialSource':
-          _$CredentialSourceEnumMap[instance.defaultCredentialSource]!,
-      'strictToolSchema': instance.strictToolSchema,
-      'defaultEnvironmentVariable': instance.defaultEnvironmentVariable,
-      'defaultModelId': instance.defaultModelId,
-      'modelIds': instance.modelIds,
+      'context': instance.context,
+      'input': instance.input,
+      'output': instance.output,
     };
+
+_ProviderAuthMethodDto _$ProviderAuthMethodDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderAuthMethodDto(
+  id: json['id'] as String,
+  label: json['label'] as String,
+  kind: $enumDecode(_$ProviderAuthKindEnumMap, json['kind']),
+  flow: $enumDecode(_$ProviderAuthFlowEnumMap, json['flow']),
+  experimental: json['experimental'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$ProviderAuthMethodDtoToJson(
+  _ProviderAuthMethodDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'label': instance.label,
+  'kind': _$ProviderAuthKindEnumMap[instance.kind]!,
+  'flow': _$ProviderAuthFlowEnumMap[instance.flow]!,
+  'experimental': instance.experimental,
+};
+
+const _$ProviderAuthKindEnumMap = {
+  ProviderAuthKind.apiKey: 'apiKey',
+  ProviderAuthKind.oauth: 'oauth',
+  ProviderAuthKind.none: 'none',
+};
+
+const _$ProviderAuthFlowEnumMap = {
+  ProviderAuthFlow.apiKey: 'apiKey',
+  ProviderAuthFlow.oauthBrowser: 'oauthBrowser',
+  ProviderAuthFlow.oauthDevice: 'oauthDevice',
+  ProviderAuthFlow.none: 'none',
+};
+
+_ProviderDefinitionDto _$ProviderDefinitionDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderDefinitionDto(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  description: json['description'] as String,
+  authMethods: (json['authMethods'] as List<dynamic>)
+      .map((e) => ProviderAuthMethodDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  recommendedModelIds:
+      (json['recommendedModelIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  local: json['local'] as bool? ?? false,
+  experimental: json['experimental'] as bool? ?? false,
+  documentationUrl: json['documentationUrl'] as String?,
+);
+
+Map<String, dynamic> _$ProviderDefinitionDtoToJson(
+  _ProviderDefinitionDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'description': instance.description,
+  'authMethods': instance.authMethods,
+  'recommendedModelIds': instance.recommendedModelIds,
+  'local': instance.local,
+  'experimental': instance.experimental,
+  'documentationUrl': instance.documentationUrl,
+};
+
+_CustomProviderConfigDto _$CustomProviderConfigDtoFromJson(
+  Map<String, dynamic> json,
+) => _CustomProviderConfigDto(
+  name: json['name'] as String,
+  baseUrl: json['baseUrl'] as String,
+  apiFormat: $enumDecode(_$ProviderApiFormatEnumMap, json['apiFormat']),
+  authenticationRequired: json['authenticationRequired'] as bool,
+  strictToolSchema: json['strictToolSchema'] as bool? ?? false,
+  manualModelIds:
+      (json['manualModelIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+);
+
+Map<String, dynamic> _$CustomProviderConfigDtoToJson(
+  _CustomProviderConfigDto instance,
+) => <String, dynamic>{
+  'name': instance.name,
+  'baseUrl': instance.baseUrl,
+  'apiFormat': _$ProviderApiFormatEnumMap[instance.apiFormat]!,
+  'authenticationRequired': instance.authenticationRequired,
+  'strictToolSchema': instance.strictToolSchema,
+  'manualModelIds': instance.manualModelIds,
+};
+
+const _$ProviderApiFormatEnumMap = {
+  ProviderApiFormat.responses: 'responses',
+  ProviderApiFormat.chatCompletions: 'chatCompletions',
+};
+
+_ProviderConnectionDto _$ProviderConnectionDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderConnectionDto(
+  id: json['id'] as String,
+  definitionId: json['definitionId'] as String,
+  displayName: json['displayName'] as String,
+  status: $enumDecode(_$ProviderConnectionStatusEnumMap, json['status']),
+  authKind: $enumDecode(_$ProviderAuthKindEnumMap, json['authKind']),
+  credentialOrigin: $enumDecode(
+    _$ProviderCredentialOriginEnumMap,
+    json['credentialOrigin'],
+  ),
+  isDefault: json['isDefault'] as bool,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  defaultModelId: json['defaultModelId'] as String?,
+  error: json['error'] as String?,
+  customConfig: json['customConfig'] == null
+      ? null
+      : CustomProviderConfigDto.fromJson(
+          json['customConfig'] as Map<String, dynamic>,
+        ),
+);
+
+Map<String, dynamic> _$ProviderConnectionDtoToJson(
+  _ProviderConnectionDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'definitionId': instance.definitionId,
+  'displayName': instance.displayName,
+  'status': _$ProviderConnectionStatusEnumMap[instance.status]!,
+  'authKind': _$ProviderAuthKindEnumMap[instance.authKind]!,
+  'credentialOrigin':
+      _$ProviderCredentialOriginEnumMap[instance.credentialOrigin]!,
+  'isDefault': instance.isDefault,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'defaultModelId': instance.defaultModelId,
+  'error': instance.error,
+  'customConfig': instance.customConfig,
+};
+
+const _$ProviderConnectionStatusEnumMap = {
+  ProviderConnectionStatus.connecting: 'connecting',
+  ProviderConnectionStatus.connected: 'connected',
+  ProviderConnectionStatus.degraded: 'degraded',
+  ProviderConnectionStatus.error: 'error',
+  ProviderConnectionStatus.reauthRequired: 'reauthRequired',
+  ProviderConnectionStatus.disconnected: 'disconnected',
+};
+
+const _$ProviderCredentialOriginEnumMap = {
+  ProviderCredentialOrigin.stored: 'stored',
+  ProviderCredentialOrigin.environment: 'environment',
+  ProviderCredentialOrigin.oauth: 'oauth',
+  ProviderCredentialOrigin.none: 'none',
+};
+
+_ProviderAuthAttemptDto _$ProviderAuthAttemptDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderAuthAttemptDto(
+  id: json['id'] as String,
+  definitionId: json['definitionId'] as String,
+  methodId: json['methodId'] as String,
+  status: $enumDecode(_$ProviderAuthAttemptStatusEnumMap, json['status']),
+  authorizationUrl: json['authorizationUrl'] as String?,
+  userCode: json['userCode'] as String?,
+  instructions: json['instructions'] as String?,
+  expiresAt: json['expiresAt'] == null
+      ? null
+      : DateTime.parse(json['expiresAt'] as String),
+  error: json['error'] as String?,
+);
+
+Map<String, dynamic> _$ProviderAuthAttemptDtoToJson(
+  _ProviderAuthAttemptDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'definitionId': instance.definitionId,
+  'methodId': instance.methodId,
+  'status': _$ProviderAuthAttemptStatusEnumMap[instance.status]!,
+  'authorizationUrl': instance.authorizationUrl,
+  'userCode': instance.userCode,
+  'instructions': instance.instructions,
+  'expiresAt': instance.expiresAt?.toIso8601String(),
+  'error': instance.error,
+};
+
+const _$ProviderAuthAttemptStatusEnumMap = {
+  ProviderAuthAttemptStatus.pending: 'pending',
+  ProviderAuthAttemptStatus.awaitingUser: 'awaitingUser',
+  ProviderAuthAttemptStatus.exchanging: 'exchanging',
+  ProviderAuthAttemptStatus.succeeded: 'succeeded',
+  ProviderAuthAttemptStatus.failed: 'failed',
+  ProviderAuthAttemptStatus.cancelled: 'cancelled',
+  ProviderAuthAttemptStatus.expired: 'expired',
+};
 
 _ProviderModelDto _$ProviderModelDtoFromJson(Map<String, dynamic> json) =>
     _ProviderModelDto(
-      providerId: json['providerId'] as String,
+      connectionId: json['connectionId'] as String,
       id: json['id'] as String,
       label: json['label'] as String,
       source: $enumDecode(_$ProviderModelSourceEnumMap, json['source']),
       capabilities: ModelCapabilitiesDto.fromJson(
         json['capabilities'] as Map<String, dynamic>,
       ),
+      pricing: json['pricing'] == null
+          ? null
+          : ModelPricingDto.fromJson(json['pricing'] as Map<String, dynamic>),
+      limits: json['limits'] == null
+          ? null
+          : ModelLimitsDto.fromJson(json['limits'] as Map<String, dynamic>),
       diagnosticStatus:
           $enumDecodeNullable(
             _$DiagnosticStatusEnumMap,
@@ -229,18 +369,21 @@ _ProviderModelDto _$ProviderModelDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ProviderModelDtoToJson(_ProviderModelDto instance) =>
     <String, dynamic>{
-      'providerId': instance.providerId,
+      'connectionId': instance.connectionId,
       'id': instance.id,
       'label': instance.label,
       'source': _$ProviderModelSourceEnumMap[instance.source]!,
       'capabilities': instance.capabilities,
+      'pricing': instance.pricing,
+      'limits': instance.limits,
       'diagnosticStatus': _$DiagnosticStatusEnumMap[instance.diagnosticStatus]!,
       'verifiedAt': instance.verifiedAt?.toIso8601String(),
       'diagnosticError': instance.diagnosticError,
     };
 
 const _$ProviderModelSourceEnumMap = {
-  ProviderModelSource.preset: 'preset',
+  ProviderModelSource.bundled: 'bundled',
+  ProviderModelSource.refreshed: 'refreshed',
   ProviderModelSource.discovered: 'discovered',
   ProviderModelSource.manual: 'manual',
 };
@@ -253,26 +396,29 @@ const _$DiagnosticStatusEnumMap = {
 
 _ProviderCatalogDto _$ProviderCatalogDtoFromJson(Map<String, dynamic> json) =>
     _ProviderCatalogDto(
-      providers: (json['providers'] as List<dynamic>)
-          .map((e) => ApiProviderDto.fromJson(e as Map<String, dynamic>))
+      definitions: (json['definitions'] as List<dynamic>)
+          .map((e) => ProviderDefinitionDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      presets: (json['presets'] as List<dynamic>)
-          .map((e) => ProviderPresetDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      defaultProviderId: json['defaultProviderId'] as String?,
+      source: $enumDecode(_$ProviderCatalogSourceEnumMap, json['source']),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
 
 Map<String, dynamic> _$ProviderCatalogDtoToJson(_ProviderCatalogDto instance) =>
     <String, dynamic>{
-      'providers': instance.providers,
-      'presets': instance.presets,
-      'defaultProviderId': instance.defaultProviderId,
+      'definitions': instance.definitions,
+      'source': _$ProviderCatalogSourceEnumMap[instance.source]!,
+      'updatedAt': instance.updatedAt.toIso8601String(),
     };
+
+const _$ProviderCatalogSourceEnumMap = {
+  ProviderCatalogSource.bundled: 'bundled',
+  ProviderCatalogSource.refreshed: 'refreshed',
+};
 
 _ProviderDiagnosticDto _$ProviderDiagnosticDtoFromJson(
   Map<String, dynamic> json,
 ) => _ProviderDiagnosticDto(
-  providerId: json['providerId'] as String,
+  connectionId: json['connectionId'] as String,
   model: json['model'] as String,
   status: $enumDecode(_$DiagnosticStatusEnumMap, json['status']),
   endpointReachable: json['endpointReachable'] as bool,
@@ -285,7 +431,7 @@ _ProviderDiagnosticDto _$ProviderDiagnosticDtoFromJson(
 Map<String, dynamic> _$ProviderDiagnosticDtoToJson(
   _ProviderDiagnosticDto instance,
 ) => <String, dynamic>{
-  'providerId': instance.providerId,
+  'connectionId': instance.connectionId,
   'model': instance.model,
   'status': _$DiagnosticStatusEnumMap[instance.status]!,
   'endpointReachable': instance.endpointReachable,

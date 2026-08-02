@@ -84,8 +84,8 @@ enum ToolRisk {
   command,
 }
 
-/// Values supported by ApiTransport.
-enum ApiTransport {
+/// API formats supported by custom OpenAI-compatible connections.
+enum ProviderApiFormat {
   /// Uses the OpenAI Responses API.
   responses,
 
@@ -93,22 +93,109 @@ enum ApiTransport {
   chatCompletions,
 }
 
-/// Values supported by CredentialSource.
-enum CredentialSource {
-  /// Does not send a credential.
-  none,
+/// Credential families supported by a provider connection.
+enum ProviderAuthKind {
+  /// A provider-issued API key.
+  apiKey,
 
-  /// Reads a credential from the daemon credential store.
+  /// An OAuth access and refresh token pair.
+  oauth,
+
+  /// No credential is required.
+  none,
+}
+
+/// User-visible authorization flows supported by a provider.
+enum ProviderAuthFlow {
+  /// Direct API key entry.
+  apiKey,
+
+  /// Browser authorization with a loopback callback.
+  oauthBrowser,
+
+  /// Headless device-code authorization.
+  oauthDevice,
+
+  /// No authorization interaction.
+  none,
+}
+
+/// The location from which a connected provider obtains credentials.
+enum ProviderCredentialOrigin {
+  /// Encrypted or permission-restricted local credential storage.
   stored,
 
-  /// Reads a credential from a daemon environment variable.
+  /// The daemon process environment.
   environment,
+
+  /// Locally stored OAuth access and refresh tokens.
+  oauth,
+
+  /// No credential exists or is required.
+  none,
+}
+
+/// Lifecycle state of a provider connection.
+enum ProviderConnectionStatus {
+  /// Initial discovery is in progress.
+  connecting,
+
+  /// Credential and model discovery succeeded.
+  connected,
+
+  /// Runtime is usable with bundled metadata after discovery failed.
+  degraded,
+
+  /// Connection setup failed.
+  error,
+
+  /// OAuth refresh failed and interactive sign-in is required.
+  reauthRequired,
+
+  /// The user explicitly disconnected the provider.
+  disconnected,
+}
+
+/// Lifecycle state of an OAuth authorization attempt.
+enum ProviderAuthAttemptStatus {
+  /// Authorization is being initialized.
+  pending,
+
+  /// User interaction is required.
+  awaitingUser,
+
+  /// Authorization succeeded and tokens are being exchanged.
+  exchanging,
+
+  /// Credential storage and provider connection succeeded.
+  succeeded,
+
+  /// Authorization failed.
+  failed,
+
+  /// The user cancelled authorization.
+  cancelled,
+
+  /// Authorization was not completed before expiration.
+  expired,
+}
+
+/// Source of the provider catalog currently used by the daemon.
+enum ProviderCatalogSource {
+  /// The verified snapshot bundled with the daemon.
+  bundled,
+
+  /// A user-requested catalog refresh completed.
+  refreshed,
 }
 
 /// Values supported by ProviderModelSource.
 enum ProviderModelSource {
-  /// The model came from a built-in provider preset.
-  preset,
+  /// The model came from the catalog bundled with the application.
+  bundled,
+
+  /// The model came from an explicitly refreshed catalog.
+  refreshed,
 
   /// The model came from the provider models endpoint.
   discovered,
@@ -134,8 +221,11 @@ enum CapabilitySource {
   /// No capability source is available.
   unknown,
 
-  /// A built-in preset supplied the capability.
-  preset,
+  /// The bundled catalog supplied the capability.
+  bundled,
+
+  /// An explicitly refreshed catalog supplied the capability.
+  refreshed,
 
   /// A diagnostic request supplied the capability.
   diagnostic,
@@ -180,7 +270,7 @@ abstract class AgentDto with _$AgentDto {
     required String id,
     required String workspaceId,
     required String title,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required AgentStatus status,
     required PermissionMode permissionMode,
@@ -214,50 +304,131 @@ abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
 }
 
 @freezed
-/// ApiProviderDto defines a public contract.
-abstract class ApiProviderDto with _$ApiProviderDto {
-  /// The ApiProviderDto public API member.
-  const factory ApiProviderDto({
-    required String id,
-    required String name,
-    required String presetId,
-    required String baseUrl,
-    required ApiTransport transport,
-    required CredentialSource credentialSource,
-    required bool credentialConfigured,
-    required bool enabled,
-    required bool strictToolSchema,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    String? environmentVariable,
-    String? defaultModelId,
-    @Default(<String>[]) List<String> visibleModelIds,
-  }) = _ApiProviderDto;
+/// Provider model token prices in USD per million tokens.
+abstract class ModelPricingDto with _$ModelPricingDto {
+  /// Creates optional model pricing metadata.
+  const factory ModelPricingDto({
+    double? input,
+    double? output,
+    double? cacheRead,
+    double? cacheWrite,
+  }) = _ModelPricingDto;
 
-  /// Creates a [ApiProviderDto].
-  factory ApiProviderDto.fromJson(Map<String, dynamic> json) =>
-      _$ApiProviderDtoFromJson(json);
+  /// Decodes model pricing metadata.
+  factory ModelPricingDto.fromJson(Map<String, dynamic> json) =>
+      _$ModelPricingDtoFromJson(json);
 }
 
 @freezed
-/// ProviderPresetDto defines a public contract.
-abstract class ProviderPresetDto with _$ProviderPresetDto {
-  /// The ProviderPresetDto public API member.
-  const factory ProviderPresetDto({
+/// Provider model token limits.
+abstract class ModelLimitsDto with _$ModelLimitsDto {
+  /// Creates optional model limit metadata.
+  const factory ModelLimitsDto({int? context, int? input, int? output}) =
+      _ModelLimitsDto;
+
+  /// Decodes model limit metadata.
+  factory ModelLimitsDto.fromJson(Map<String, dynamic> json) =>
+      _$ModelLimitsDtoFromJson(json);
+}
+
+@freezed
+/// ProviderAuthMethodDto describes one simple way to connect a provider.
+abstract class ProviderAuthMethodDto with _$ProviderAuthMethodDto {
+  /// Creates a provider authorization method.
+  const factory ProviderAuthMethodDto({
+    required String id,
+    required String label,
+    required ProviderAuthKind kind,
+    required ProviderAuthFlow flow,
+    @Default(false) bool experimental,
+  }) = _ProviderAuthMethodDto;
+
+  /// Decodes a provider authorization method.
+  factory ProviderAuthMethodDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderAuthMethodDtoFromJson(json);
+}
+
+@freezed
+/// ProviderDefinitionDto is immutable built-in provider metadata.
+abstract class ProviderDefinitionDto with _$ProviderDefinitionDto {
+  /// Creates an immutable provider definition.
+  const factory ProviderDefinitionDto({
     required String id,
     required String name,
-    required String defaultBaseUrl,
-    required ApiTransport defaultTransport,
-    required CredentialSource defaultCredentialSource,
-    required bool strictToolSchema,
-    String? defaultEnvironmentVariable,
-    String? defaultModelId,
-    @Default(<String>[]) List<String> modelIds,
-  }) = _ProviderPresetDto;
+    required String description,
+    required List<ProviderAuthMethodDto> authMethods,
+    @Default(<String>[]) List<String> recommendedModelIds,
+    @Default(false) bool local,
+    @Default(false) bool experimental,
+    String? documentationUrl,
+  }) = _ProviderDefinitionDto;
 
-  /// Creates a [ProviderPresetDto].
-  factory ProviderPresetDto.fromJson(Map<String, dynamic> json) =>
-      _$ProviderPresetDtoFromJson(json);
+  /// Decodes immutable provider metadata.
+  factory ProviderDefinitionDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderDefinitionDtoFromJson(json);
+}
+
+@freezed
+/// CustomProviderConfigDto contains the advanced custom endpoint settings.
+abstract class CustomProviderConfigDto with _$CustomProviderConfigDto {
+  /// Creates custom OpenAI-compatible endpoint configuration.
+  const factory CustomProviderConfigDto({
+    required String name,
+    required String baseUrl,
+    required ProviderApiFormat apiFormat,
+    required bool authenticationRequired,
+    @Default(false) bool strictToolSchema,
+    @Default(<String>[]) List<String> manualModelIds,
+  }) = _CustomProviderConfigDto;
+
+  /// Decodes custom endpoint configuration.
+  factory CustomProviderConfigDto.fromJson(Map<String, dynamic> json) =>
+      _$CustomProviderConfigDtoFromJson(json);
+}
+
+@freezed
+/// ProviderConnectionDto is the user-owned state of a provider connection.
+abstract class ProviderConnectionDto with _$ProviderConnectionDto {
+  /// Creates provider connection state.
+  const factory ProviderConnectionDto({
+    required String id,
+    required String definitionId,
+    required String displayName,
+    required ProviderConnectionStatus status,
+    required ProviderAuthKind authKind,
+    required ProviderCredentialOrigin credentialOrigin,
+    required bool isDefault,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    String? defaultModelId,
+    String? error,
+    CustomProviderConfigDto? customConfig,
+  }) = _ProviderConnectionDto;
+
+  /// Decodes provider connection state.
+  factory ProviderConnectionDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderConnectionDtoFromJson(json);
+}
+
+@freezed
+/// ProviderAuthAttemptDto describes a pending or completed OAuth flow.
+abstract class ProviderAuthAttemptDto with _$ProviderAuthAttemptDto {
+  /// Creates an OAuth authorization attempt.
+  const factory ProviderAuthAttemptDto({
+    required String id,
+    required String definitionId,
+    required String methodId,
+    required ProviderAuthAttemptStatus status,
+    String? authorizationUrl,
+    String? userCode,
+    String? instructions,
+    DateTime? expiresAt,
+    String? error,
+  }) = _ProviderAuthAttemptDto;
+
+  /// Decodes an OAuth authorization attempt.
+  factory ProviderAuthAttemptDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderAuthAttemptDtoFromJson(json);
 }
 
 @freezed
@@ -265,11 +436,13 @@ abstract class ProviderPresetDto with _$ProviderPresetDto {
 abstract class ProviderModelDto with _$ProviderModelDto {
   /// The ProviderModelDto public API member.
   const factory ProviderModelDto({
-    required String providerId,
+    required String connectionId,
     required String id,
     required String label,
     required ProviderModelSource source,
     required ModelCapabilitiesDto capabilities,
+    ModelPricingDto? pricing,
+    ModelLimitsDto? limits,
     @Default(DiagnosticStatus.unknown) DiagnosticStatus diagnosticStatus,
     DateTime? verifiedAt,
     String? diagnosticError,
@@ -285,9 +458,9 @@ abstract class ProviderModelDto with _$ProviderModelDto {
 abstract class ProviderCatalogDto with _$ProviderCatalogDto {
   /// The ProviderCatalogDto public API member.
   const factory ProviderCatalogDto({
-    required List<ApiProviderDto> providers,
-    required List<ProviderPresetDto> presets,
-    String? defaultProviderId,
+    required List<ProviderDefinitionDto> definitions,
+    required ProviderCatalogSource source,
+    required DateTime updatedAt,
   }) = _ProviderCatalogDto;
 
   /// Creates a [ProviderCatalogDto].
@@ -300,7 +473,7 @@ abstract class ProviderCatalogDto with _$ProviderCatalogDto {
 abstract class ProviderDiagnosticDto with _$ProviderDiagnosticDto {
   /// The ProviderDiagnosticDto public API member.
   const factory ProviderDiagnosticDto({
-    required String providerId,
+    required String connectionId,
     required String model,
     required DiagnosticStatus status,
     required bool endpointReachable,

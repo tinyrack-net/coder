@@ -21,7 +21,7 @@ void main() {
     id: 'agent',
     workspaceId: workspace.id,
     title: 'Agent',
-    providerId: 'openai',
+    providerConnectionId: 'openai',
     model: 'gpt-5.6-sol',
     status: AgentStatus.idle,
     permissionMode: PermissionMode.ask,
@@ -48,10 +48,10 @@ void main() {
     createdAt: now,
   );
   const model = ProviderModelDto(
-    providerId: 'openai',
+    connectionId: 'openai',
     id: 'gpt-5.6-sol',
     label: 'GPT',
-    source: ProviderModelSource.preset,
+    source: ProviderModelSource.bundled,
     capabilities: ModelCapabilitiesDto(
       streaming: CapabilitySupport.supported,
       toolCalling: CapabilitySupport.supported,
@@ -110,7 +110,7 @@ void main() {
           .read(agentsProvider.notifier)
           .create(
             title: 'Created',
-            providerId: 'openai',
+            providerConnectionId: 'openai',
             model: 'gpt-5.6-sol',
             reasoningEffort: 'high',
             permissionMode: PermissionMode.workspaceWrite,
@@ -121,7 +121,7 @@ void main() {
           .read(agentsProvider.notifier)
           .updateConfiguration(
             agentId: agent.id,
-            providerId: 'openai',
+            providerConnectionId: 'openai',
             model: 'gpt-5.6-terra',
             reasoningEffort: 'low',
           );
@@ -228,7 +228,8 @@ void main() {
       final initial = await container.read(
         providerSettingsControllerProvider.future,
       );
-      expect(initial!.catalog.defaultProviderId, 'openai');
+      expect(initial!.catalog.definitions.first.id, 'openai');
+      expect(initial.connections.single.isDefault, isTrue);
       expect(notifier.canManage, isTrue);
 
       await notifier.loadModels('openai');
@@ -239,34 +240,55 @@ void main() {
             .models['openai'],
         <ProviderModelDto>[model],
       );
-      await notifier.refreshModels('openai');
-      final provider = initial.catalog.providers.single.copyWith(
-        credentialSource: CredentialSource.stored,
-      );
-      await notifier.saveProvider(
-        provider,
-        apiKey: 'secret',
+      final connected = await notifier.connectApiKey(
+        'deepseek',
+        'secret',
         makeDefault: true,
       );
-      expect(api.credentials['openai'], 'secret');
-      await notifier.saveProvider(provider, apiKey: '');
-
-      final manual = model.copyWith(
-        id: 'manual',
-        label: 'Manual',
-        source: ProviderModelSource.manual,
+      expect(connected.definitionId, 'deepseek');
+      expect(api.credentials['deepseek'], 'secret');
+      await notifier.setDefaultModel('openai', 'gpt-5.6-sol');
+      await notifier.setDefault('openai');
+      final attempt = await notifier.startAuth(
+        'openai',
+        'chatgpt-browser',
       );
-      expect(await notifier.saveManualModel(manual), manual);
-      await notifier.diagnose('openai', 'manual');
-      await notifier.deleteModel('openai', 'manual');
-      await notifier.deleteProvider('openai');
+      expect(attempt.status, ProviderAuthAttemptStatus.awaitingUser);
+      await notifier.cancelAuth(attempt.id);
+      await notifier.refreshCatalog();
       expect(
         container
             .read(providerSettingsControllerProvider)
             .value!
             .catalog
-            .providers,
-        isEmpty,
+            .source,
+        ProviderCatalogSource.refreshed,
+      );
+      final custom = await notifier.createCustom(
+        'custom',
+        const CustomProviderConfigDto(
+          name: 'Custom',
+          baseUrl: 'http://127.0.0.1:9000/v1',
+          apiFormat: ProviderApiFormat.chatCompletions,
+          authenticationRequired: false,
+          manualModelIds: <String>['manual'],
+        ),
+      );
+      expect(custom.displayName, 'Custom');
+      await notifier.updateCustom(
+        custom.id,
+        custom.customConfig!.copyWith(name: 'Updated'),
+      );
+      await notifier.deleteCustom(custom.id);
+      await notifier.disconnect('deepseek');
+      expect(
+        container
+            .read(providerSettingsControllerProvider)
+            .value!
+            .connections
+            .singleWhere((item) => item.id == 'deepseek')
+            .status,
+        ProviderConnectionStatus.disconnected,
       );
     },
   );
@@ -294,11 +316,15 @@ void main() {
         conversation.copyWith(timeline: <TimelineEventDto>[]).timeline,
         isEmpty,
       );
-      const catalog = ProviderCatalogDto(
-        providers: <ApiProviderDto>[],
-        presets: <ProviderPresetDto>[],
+      final catalog = ProviderCatalogDto(
+        definitions: const <ProviderDefinitionDto>[],
+        source: ProviderCatalogSource.bundled,
+        updatedAt: now,
       );
-      const settings = ProviderSettingsState(catalog: catalog);
+      final settings = ProviderSettingsState(
+        catalog: catalog,
+        connections: const <ProviderConnectionDto>[],
+      );
       expect(
         settings
             .copyWith(models: const <String, List<ProviderModelDto>>{})

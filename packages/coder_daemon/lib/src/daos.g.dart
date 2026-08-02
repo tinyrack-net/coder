@@ -83,7 +83,8 @@ class TimelineDaoManager {
 }
 
 mixin _$ProviderDaoMixin on DatabaseAccessor<CoderDatabase> {
-  $ApiProvidersTable get apiProviders => attachedDatabase.apiProviders;
+  $ProviderConnectionsTable get providerConnections =>
+      attachedDatabase.providerConnections;
   $ProviderModelsTable get providerModels => attachedDatabase.providerModels;
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $AgentsTable get agents => attachedDatabase.agents;
@@ -93,8 +94,11 @@ mixin _$ProviderDaoMixin on DatabaseAccessor<CoderDatabase> {
 class ProviderDaoManager {
   final _$ProviderDaoMixin _db;
   ProviderDaoManager(this._db);
-  $$ApiProvidersTableTableManager get apiProviders =>
-      $$ApiProvidersTableTableManager(_db.attachedDatabase, _db.apiProviders);
+  $$ProviderConnectionsTableTableManager get providerConnections =>
+      $$ProviderConnectionsTableTableManager(
+        _db.attachedDatabase,
+        _db.providerConnections,
+      );
   $$ProviderModelsTableTableManager get providerModels =>
       $$ProviderModelsTableTableManager(
         _db.attachedDatabase,

@@ -13,6 +13,7 @@ void main() {
       apiKey: 'api-key',
       bearerToken: 'token',
       version: '2.0.0',
+      useEnvironmentCredentials: false,
     );
     final decoded = DaemonConfig.fromIsolateMessage(config.toIsolateMessage());
     expect(decoded.homeDirectory, '/state');
@@ -22,6 +23,7 @@ void main() {
     expect(decoded.apiKey, 'api-key');
     expect(decoded.bearerToken, 'token');
     expect(decoded.version, '2.0.0');
+    expect(decoded.useEnvironmentCredentials, isFalse);
 
     final copy = config.copyWith(
       homeDirectory: '/other-state',
@@ -30,6 +32,7 @@ void main() {
       port: 9000,
       apiKey: 'other-key',
       bearerToken: 'other-token',
+      useEnvironmentCredentials: true,
     );
     expect(copy.homeDirectory, '/other-state');
     expect(copy.configDirectory, '/other-config');
@@ -38,6 +41,7 @@ void main() {
     expect(copy.apiKey, 'other-key');
     expect(copy.bearerToken, 'other-token');
     expect(copy.version, config.version);
+    expect(copy.useEnvironmentCredentials, isTrue);
   });
 
   test('environment config supports Linux defaults and explicit override', () {

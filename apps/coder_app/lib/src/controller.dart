@@ -175,7 +175,7 @@ class AgentsController extends _$AgentsController {
   /// The create public API member.
   Future<AgentDto> create({
     required String title,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required String reasoningEffort,
     required PermissionMode permissionMode,
@@ -192,7 +192,7 @@ class AgentsController extends _$AgentsController {
         id: ref.read(appIdGeneratorProvider).generate(),
         workspaceId: workspaceId,
         title: title,
-        providerId: providerId,
+        providerConnectionId: providerConnectionId,
         model: model,
         reasoningEffort: reasoningEffort,
         permissionMode: permissionMode,
@@ -208,7 +208,7 @@ class AgentsController extends _$AgentsController {
   /// The updateConfiguration public API member.
   Future<AgentDto> updateConfiguration({
     required String agentId,
-    required String providerId,
+    required String providerConnectionId,
     required String model,
     required String reasoningEffort,
   }) async {
@@ -216,7 +216,7 @@ class AgentsController extends _$AgentsController {
     if (connection == null) throw StateError('Daemon connection required.');
     final updated = await connection.api.updateAgentConfiguration(
       agentId: agentId,
-      providerId: providerId,
+      providerConnectionId: providerConnectionId,
       model: model,
       reasoningEffort: reasoningEffort,
     );
@@ -364,6 +364,7 @@ class ConversationController extends _$ConversationController {
           );
         }
       case AgentUpdatedClientEvent():
+      case ProviderAuthUpdatedClientEvent():
         break;
     }
   }
@@ -398,28 +399,42 @@ final class ProviderSettingsState {
   /// Creates a [ProviderSettingsState].
   const ProviderSettingsState({
     required this.catalog,
+    required this.connections,
     this.models = const <String, List<ProviderModelDto>>{},
+    this.authAttempts = const <String, ProviderAuthAttemptDto>{},
   });
 
   /// The catalog public API member.
   final ProviderCatalogDto catalog;
 
+  /// User-owned provider connections.
+  final List<ProviderConnectionDto> connections;
+
   /// The models public API member.
   final Map<String, List<ProviderModelDto>> models;
+
+  /// Transient interactive authorization attempts.
+  final Map<String, ProviderAuthAttemptDto> authAttempts;
 
   /// The copyWith public API member.
   ProviderSettingsState copyWith({
     ProviderCatalogDto? catalog,
+    List<ProviderConnectionDto>? connections,
     Map<String, List<ProviderModelDto>>? models,
+    Map<String, ProviderAuthAttemptDto>? authAttempts,
   }) => ProviderSettingsState(
     catalog: catalog ?? this.catalog,
+    connections: connections ?? this.connections,
     models: models ?? this.models,
+    authAttempts: authAttempts ?? this.authAttempts,
   );
 }
 
 @Riverpod(keepAlive: true)
 /// ProviderSettingsController defines a public contract.
 class ProviderSettingsController extends _$ProviderSettingsController {
+  StreamSubscription<ClientEvent>? _events;
+
   /// The canManage public API member.
   bool get canManage =>
       ref
@@ -434,99 +449,170 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   Future<ProviderSettingsState?> build() async {
     final connection = await ref.watch(connectionControllerProvider.future);
     if (connection == null) return null;
+    _events = connection.api.events.listen(_handleEvent);
+    ref.onDispose(() => unawaited(_events?.cancel()));
     return ProviderSettingsState(
       catalog: await connection.api.listProviderCatalog(),
+      connections: await connection.api.listProviderConnections(),
     );
   }
 
   /// The loadModels public API member.
-  Future<void> loadModels(String providerId) async {
+  Future<void> loadModels(String connectionId) async {
     final connection = await ref.read(connectionControllerProvider.future);
     final current = state.asData?.value;
     if (connection == null || current == null) return;
-    final models = await connection.api.listProviderModels(providerId);
+    final models = await connection.api.listProviderModels(connectionId);
     state = AsyncData<ProviderSettingsState?>(
       current.copyWith(
         models: <String, List<ProviderModelDto>>{
           ...current.models,
-          providerId: models,
+          connectionId: models,
         },
       ),
     );
   }
 
-  /// The refreshModels public API member.
-  Future<void> refreshModels(String providerId) async {
+  /// Connects a hosted built-in provider with an API key.
+  Future<ProviderConnectionDto> connectApiKey(
+    String definitionId,
+    String apiKey, {
+    bool makeDefault = false,
+  }) async {
     final connection = await _requireConnection();
-    final models = await connection.api.refreshProviderModels(providerId);
-    _setModels(providerId, models);
+    final result = await connection.api.connectProviderApiKey(
+      definitionId,
+      apiKey,
+      makeDefault: makeDefault,
+    );
+    await _reload(connection);
+    return result;
   }
 
-  /// The saveProvider public API member.
-  Future<ApiProviderDto> saveProvider(
-    ApiProviderDto provider, {
+  /// Connects a local built-in provider without authentication.
+  Future<ProviderConnectionDto> connectNone(
+    String definitionId, {
+    bool makeDefault = false,
+  }) async {
+    final connection = await _requireConnection();
+    final result = await connection.api.connectProviderNone(
+      definitionId,
+      makeDefault: makeDefault,
+    );
+    await _reload(connection);
+    return result;
+  }
+
+  /// Starts ChatGPT browser or device-code authorization.
+  Future<ProviderAuthAttemptDto> startAuth(
+    String definitionId,
+    String methodId, {
+    bool makeDefault = false,
+  }) async {
+    final connection = await _requireConnection();
+    final attempt = await connection.api.startProviderAuth(
+      definitionId,
+      methodId,
+      makeDefault: makeDefault,
+    );
+    final current = state.asData?.value;
+    if (current != null) {
+      state = AsyncData<ProviderSettingsState?>(
+        current.copyWith(
+          authAttempts: <String, ProviderAuthAttemptDto>{
+            ...current.authAttempts,
+            attempt.id: attempt,
+          },
+        ),
+      );
+    }
+    return attempt;
+  }
+
+  /// Cancels an interactive authorization attempt.
+  Future<void> cancelAuth(String attemptId) async {
+    final connection = await _requireConnection();
+    await connection.api.cancelProviderAuth(attemptId);
+  }
+
+  /// Disconnects a provider connection while retaining history.
+  Future<void> disconnect(String connectionId) async {
+    final connection = await _requireConnection();
+    await connection.api.disconnectProvider(connectionId);
+    await _reload(connection);
+  }
+
+  /// Selects a connection as the daemon default.
+  Future<void> setDefault(String connectionId) async {
+    final connection = await _requireConnection();
+    await connection.api.setDefaultProvider(connectionId);
+    await _reload(connection);
+  }
+
+  /// Selects the connection's default model.
+  Future<void> setDefaultModel(
+    String connectionId,
+    String modelId,
+  ) async {
+    final connection = await _requireConnection();
+    await connection.api.setDefaultProviderModel(
+      connectionId,
+      modelId,
+    );
+    await _reload(connection);
+  }
+
+  /// Explicitly refreshes catalog metadata.
+  Future<void> refreshCatalog() async {
+    final connection = await _requireConnection();
+    final catalog = await connection.api.refreshProviderCatalog();
+    final current = state.asData?.value;
+    if (current != null) {
+      state = AsyncData<ProviderSettingsState?>(
+        current.copyWith(catalog: catalog),
+      );
+    }
+  }
+
+  /// Creates an advanced custom OpenAI-compatible provider.
+  Future<ProviderConnectionDto> createCustom(
+    String id,
+    CustomProviderConfigDto config, {
     String? apiKey,
     bool makeDefault = false,
   }) async {
     final connection = await _requireConnection();
-    final saved = await connection.api.upsertProvider(
-      provider,
+    final result = await connection.api.createCustomProvider(
+      id,
+      config,
+      apiKey: apiKey,
       makeDefault: makeDefault,
     );
-    if (provider.credentialSource == CredentialSource.stored &&
-        apiKey != null &&
-        apiKey.isNotEmpty) {
-      await connection.api.setProviderCredential(provider.id, apiKey);
-    }
-    await _reloadCatalog(connection);
-    return saved;
-  }
-
-  /// The deleteProvider public API member.
-  Future<void> deleteProvider(String providerId) async {
-    final connection = await _requireConnection();
-    await connection.api.deleteProvider(providerId);
-    final current = state.asData?.value;
-    await _reloadCatalog(connection);
-    if (current != null) {
-      final models = Map<String, List<ProviderModelDto>>.of(current.models)
-        ..remove(providerId);
-      final refreshed = state.asData?.value;
-      if (refreshed != null) {
-        state = AsyncData<ProviderSettingsState?>(
-          refreshed.copyWith(models: models),
-        );
-      }
-    }
-  }
-
-  /// The saveManualModel public API member.
-  Future<ProviderModelDto> saveManualModel(ProviderModelDto model) async {
-    final connection = await _requireConnection();
-    final saved = await connection.api.upsertProviderModel(model);
-    await loadModels(model.providerId);
-    return saved;
-  }
-
-  /// The deleteModel public API member.
-  Future<void> deleteModel(String providerId, String modelId) async {
-    final connection = await _requireConnection();
-    await connection.api.deleteProviderModel(providerId, modelId);
-    await loadModels(providerId);
-  }
-
-  /// The diagnose public API member.
-  Future<ProviderDiagnosticDto> diagnose(
-    String providerId,
-    String modelId,
-  ) async {
-    final connection = await _requireConnection();
-    final result = await connection.api.diagnoseProviderModel(
-      providerId,
-      modelId,
-    );
-    await loadModels(providerId);
+    await _reload(connection);
     return result;
+  }
+
+  /// Updates an advanced custom OpenAI-compatible provider.
+  Future<ProviderConnectionDto> updateCustom(
+    String connectionId,
+    CustomProviderConfigDto config, {
+    String? apiKey,
+  }) async {
+    final connection = await _requireConnection();
+    final result = await connection.api.updateCustomProvider(
+      connectionId,
+      config,
+      apiKey: apiKey,
+    );
+    await _reload(connection);
+    return result;
+  }
+
+  /// Deletes an advanced custom connection.
+  Future<void> deleteCustom(String connectionId) async {
+    final connection = await _requireConnection();
+    await connection.api.deleteCustomProvider(connectionId);
+    await _reload(connection);
   }
 
   Future<ConnectionSnapshot> _requireConnection() async {
@@ -535,26 +621,34 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     return connection;
   }
 
-  Future<void> _reloadCatalog(ConnectionSnapshot connection) async {
+  Future<void> _reload(ConnectionSnapshot connection) async {
     final current = state.asData?.value;
     state = AsyncData<ProviderSettingsState?>(
       ProviderSettingsState(
         catalog: await connection.api.listProviderCatalog(),
+        connections: await connection.api.listProviderConnections(),
         models: current?.models ?? const <String, List<ProviderModelDto>>{},
+        authAttempts:
+            current?.authAttempts ?? const <String, ProviderAuthAttemptDto>{},
       ),
     );
   }
 
-  void _setModels(String providerId, List<ProviderModelDto> models) {
-    final current = state.asData?.value;
-    if (current == null) return;
-    state = AsyncData<ProviderSettingsState?>(
-      current.copyWith(
-        models: <String, List<ProviderModelDto>>{
-          ...current.models,
-          providerId: models,
-        },
-      ),
-    );
+  void _handleEvent(ClientEvent event) {
+    if (event case ProviderAuthUpdatedClientEvent(:final attempt)) {
+      final current = state.asData?.value;
+      if (current == null) return;
+      state = AsyncData<ProviderSettingsState?>(
+        current.copyWith(
+          authAttempts: <String, ProviderAuthAttemptDto>{
+            ...current.authAttempts,
+            attempt.id: attempt,
+          },
+        ),
+      );
+      if (attempt.status == ProviderAuthAttemptStatus.succeeded) {
+        unawaited(_requireConnection().then(_reload));
+      }
+    }
   }
 }

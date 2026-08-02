@@ -4,6 +4,7 @@ import 'dart:io' show HttpConnectionInfo;
 
 import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -22,6 +23,7 @@ class DaemonRpcServer {
     required this.timeline,
     required this.agents,
     required this.providers,
+    required this.providerAuth,
     required this.clock,
     required this.workspaceCanonicalizer,
     required this.serverInfo,
@@ -29,6 +31,14 @@ class DaemonRpcServer {
     required Stream<WireEnvelope> events,
   }) {
     _eventSubscription = events.listen(_broadcast);
+    _authSubscription = providerAuth.events.listen(
+      (attempt) => _broadcast(
+        WireEnvelope(
+          type: RpcNotification.providerAuthUpdated,
+          payload: attempt.toJson(),
+        ),
+      ),
+    );
   }
 
   /// The workspaces public API member.
@@ -46,6 +56,9 @@ class DaemonRpcServer {
   /// The providers public API member.
   final ProviderService providers;
 
+  /// Transient provider authorization coordinator.
+  final ProviderAuthCoordinator providerAuth;
+
   /// The clock public API member.
   final Clock clock;
 
@@ -59,6 +72,7 @@ class DaemonRpcServer {
   final String token;
   final Set<_ClientSession> _sessions = <_ClientSession>{};
   late final StreamSubscription<WireEnvelope> _eventSubscription;
+  late final StreamSubscription<ProviderAuthAttemptDto> _authSubscription;
 
   /// The call public API member.
   FutureOr<Response> call(Request request) {
@@ -98,6 +112,7 @@ class DaemonRpcServer {
       timeline: timeline,
       agents: agents,
       providers: providers,
+      providerAuth: providerAuth,
       clock: clock,
       workspaceCanonicalizer: workspaceCanonicalizer,
       serverInfo: serverInfo,
@@ -125,6 +140,8 @@ class DaemonRpcServer {
   /// The close public API member.
   Future<void> close() async {
     await _eventSubscription.cancel();
+    await _authSubscription.cancel();
+    await providerAuth.close();
     for (final session in List<_ClientSession>.of(_sessions)) {
       await session.close();
     }
@@ -139,6 +156,7 @@ class _ClientSession {
     required this.timeline,
     required this.agents,
     required this.providers,
+    required this.providerAuth,
     required this.clock,
     required this.workspaceCanonicalizer,
     required this.serverInfo,
@@ -152,6 +170,7 @@ class _ClientSession {
   final TimelineRepository timeline;
   final AgentService agents;
   final ProviderService providers;
+  final ProviderAuthCoordinator providerAuth;
   final Clock clock;
   final WorkspaceCanonicalizer workspaceCanonicalizer;
   final ServerInfoDto serverInfo;
@@ -170,15 +189,21 @@ class _ClientSession {
       RpcMethod.agentList,
       RpcMethod.agentCreate,
       RpcMethod.agentConfigurationUpdate,
-      RpcMethod.providerList,
-      RpcMethod.providerUpsert,
-      RpcMethod.providerDelete,
+      RpcMethod.providerCatalog,
+      RpcMethod.providerConnectionsList,
+      RpcMethod.providerConnectApiKey,
+      RpcMethod.providerConnectNone,
+      RpcMethod.providerAuthStart,
+      RpcMethod.providerAuthStatus,
+      RpcMethod.providerAuthCancel,
+      RpcMethod.providerDisconnect,
+      RpcMethod.providerDefaultSet,
+      RpcMethod.providerDefaultModelSet,
+      RpcMethod.providerCatalogRefresh,
       RpcMethod.providerModelsList,
-      RpcMethod.providerModelsRefresh,
-      RpcMethod.providerModelUpsert,
-      RpcMethod.providerModelDelete,
-      RpcMethod.providerModelDiagnose,
-      RpcMethod.providerCredentialSet,
+      RpcMethod.providerCustomCreate,
+      RpcMethod.providerCustomUpdate,
+      RpcMethod.providerCustomDelete,
       RpcMethod.turnStart,
       RpcMethod.turnCancel,
       RpcMethod.approvalResolve,
@@ -239,6 +264,12 @@ class _ClientSession {
         error.message,
         data: <String, dynamic>{'code': error.code},
       );
+    } on ProviderConnectionFailure catch (error) {
+      throw json_rpc.RpcException(
+        1002,
+        error.message,
+        data: <String, dynamic>{'code': error.code},
+      );
     } catch (error) {
       throw json_rpc.RpcException(
         1003,
@@ -281,23 +312,29 @@ class _ClientSession {
         return AgentListResultDto(agents: items).toJson();
       case RpcMethod.agentCreate:
         final request = AgentCreateParamsDto.fromJson(payload);
-        final catalog = await providers.catalog();
-        final providerId = request.providerId.isEmpty
-            ? catalog.defaultProviderId ?? 'openai'
-            : request.providerId;
-        final configuredProvider = await providers.get(providerId);
+        final connections = await providers.connections();
+        final providerConnectionId = request.providerConnectionId.isEmpty
+            ? connections
+                      .where((connection) => connection.isDefault)
+                      .firstOrNull
+                      ?.id ??
+                  (throw const FormatException(
+                    'A connected provider is required.',
+                  ))
+            : request.providerConnectionId;
+        final configuredProvider = await providers.get(providerConnectionId);
         final model = request.model.isEmpty
             ? configuredProvider.defaultModelId ??
                   (throw const FormatException('model is required.'))
             : request.model;
-        await providers.validateAgentModel(providerId, model);
+        await providers.validateAgentModel(providerConnectionId, model);
         final now = clock.nowUtc();
         final agent = await agentRepository.create(
           AgentDto(
             id: request.id,
             workspaceId: request.workspaceId,
             title: request.title,
-            providerId: providerId,
+            providerConnectionId: providerConnectionId,
             model: model,
             reasoningEffort: request.reasoningEffort,
             status: AgentStatus.idle,
@@ -309,68 +346,103 @@ class _ClientSession {
         return AgentResultDto(agent: agent).toJson();
       case RpcMethod.agentConfigurationUpdate:
         final request = AgentConfigurationUpdateParamsDto.fromJson(payload);
-        final providerId = request.providerId;
+        final providerConnectionId = request.providerConnectionId;
         final model = request.model;
-        await providers.validateAgentModel(providerId, model);
+        await providers.validateAgentModel(providerConnectionId, model);
         final agent = await agentRepository.updateConfiguration(
           id: request.agentId,
-          providerId: providerId,
+          providerConnectionId: providerConnectionId,
           model: model,
           reasoningEffort: request.reasoningEffort,
         );
         return AgentResultDto(agent: agent).toJson();
-      case RpcMethod.providerList:
+      case RpcMethod.providerCatalog:
         final catalog = await providers.catalog();
         return ProviderCatalogResultDto(catalog: catalog).toJson();
-      case RpcMethod.providerUpsert:
+      case RpcMethod.providerConnectionsList:
+        final connections = await providers.connections();
+        return ProviderConnectionsResultDto(connections: connections).toJson();
+      case RpcMethod.providerConnectApiKey:
         _requireLocalAdmin();
-        final request = ProviderUpsertParamsDto.fromJson(payload);
-        final provider = await providers.upsert(
-          request.provider,
+        final request = ProviderConnectApiKeyParamsDto.fromJson(payload);
+        final connection = await providers.connectApiKey(
+          request.definitionId,
+          request.apiKey,
           makeDefault: request.makeDefault,
         );
-        return ProviderResultDto(provider: provider).toJson();
-      case RpcMethod.providerDelete:
+        return ProviderConnectionResultDto(connection: connection).toJson();
+      case RpcMethod.providerConnectNone:
         _requireLocalAdmin();
-        final request = ProviderIdParamsDto.fromJson(payload);
-        await providers.delete(request.providerId);
-        return const <String, dynamic>{};
-      case RpcMethod.providerModelsList:
-        final request = ProviderIdParamsDto.fromJson(payload);
-        final models = await providers.listModels(request.providerId);
-        return ProviderModelsResultDto(models: models).toJson();
-      case RpcMethod.providerModelsRefresh:
-        _requireLocalAdmin();
-        final request = ProviderIdParamsDto.fromJson(payload);
-        final models = await providers.refreshModels(request.providerId);
-        return ProviderModelsResultDto(models: models).toJson();
-      case RpcMethod.providerModelUpsert:
-        _requireLocalAdmin();
-        final request = ProviderModelUpsertParamsDto.fromJson(payload);
-        final model = await providers.upsertManualModel(request.model);
-        return ProviderModelResultDto(model: model).toJson();
-      case RpcMethod.providerModelDelete:
-        _requireLocalAdmin();
-        final request = ProviderModelParamsDto.fromJson(payload);
-        await providers.deleteModel(request.providerId, request.modelId);
-        return const <String, dynamic>{};
-      case RpcMethod.providerModelDiagnose:
-        _requireLocalAdmin();
-        final request = ProviderModelParamsDto.fromJson(payload);
-        final diagnostic = await providers.diagnose(
-          request.providerId,
-          request.modelId,
+        final request = ProviderConnectNoneParamsDto.fromJson(payload);
+        final connection = await providers.connectNone(
+          request.definitionId,
+          makeDefault: request.makeDefault,
         );
-        return ProviderDiagnosticResultDto(diagnostic: diagnostic).toJson();
-      case RpcMethod.providerCredentialSet:
+        return ProviderConnectionResultDto(connection: connection).toJson();
+      case RpcMethod.providerAuthStart:
         _requireLocalAdmin();
-        final request = ProviderCredentialSetParamsDto.fromJson(payload);
-        await providers.setCredential(request.providerId, request.apiKey);
+        final request = ProviderAuthStartParamsDto.fromJson(payload);
+        final attempt = await providerAuth.start(
+          definitionId: request.definitionId,
+          methodId: request.methodId,
+          makeDefault: request.makeDefault,
+        );
+        return ProviderAuthAttemptResultDto(attempt: attempt).toJson();
+      case RpcMethod.providerAuthStatus:
+        final request = ProviderAuthAttemptParamsDto.fromJson(payload);
+        final attempt = await providerAuth.status(request.attemptId);
+        return ProviderAuthAttemptResultDto(attempt: attempt).toJson();
+      case RpcMethod.providerAuthCancel:
+        _requireLocalAdmin();
+        final request = ProviderAuthAttemptParamsDto.fromJson(payload);
+        await providerAuth.cancel(request.attemptId);
         return const <String, dynamic>{};
-      case RpcMethod.providerCredentialClear:
+      case RpcMethod.providerDisconnect:
         _requireLocalAdmin();
-        final request = ProviderIdParamsDto.fromJson(payload);
-        await providers.setCredential(request.providerId, '');
+        final request = ProviderConnectionIdParamsDto.fromJson(payload);
+        await providers.disconnect(request.connectionId);
+        return const <String, dynamic>{};
+      case RpcMethod.providerDefaultSet:
+        _requireLocalAdmin();
+        final request = ProviderDefaultSetParamsDto.fromJson(payload);
+        await providers.setDefault(request.connectionId);
+        return const <String, dynamic>{};
+      case RpcMethod.providerDefaultModelSet:
+        _requireLocalAdmin();
+        final request = ProviderDefaultModelSetParamsDto.fromJson(payload);
+        await providers.setDefaultModel(request.connectionId, request.modelId);
+        return const <String, dynamic>{};
+      case RpcMethod.providerCatalogRefresh:
+        _requireLocalAdmin();
+        final catalog = await providers.refreshCatalog();
+        return ProviderCatalogResultDto(catalog: catalog).toJson();
+      case RpcMethod.providerModelsList:
+        final request = ProviderConnectionIdParamsDto.fromJson(payload);
+        final models = await providers.listModels(request.connectionId);
+        return ProviderModelsResultDto(models: models).toJson();
+      case RpcMethod.providerCustomCreate:
+        _requireLocalAdmin();
+        final request = ProviderCustomCreateParamsDto.fromJson(payload);
+        final connection = await providers.createCustom(
+          request.id,
+          request.config,
+          apiKey: request.apiKey,
+          makeDefault: request.makeDefault,
+        );
+        return ProviderConnectionResultDto(connection: connection).toJson();
+      case RpcMethod.providerCustomUpdate:
+        _requireLocalAdmin();
+        final request = ProviderCustomUpdateParamsDto.fromJson(payload);
+        final connection = await providers.updateCustom(
+          request.connectionId,
+          request.config,
+          apiKey: request.apiKey,
+        );
+        return ProviderConnectionResultDto(connection: connection).toJson();
+      case RpcMethod.providerCustomDelete:
+        _requireLocalAdmin();
+        final request = ProviderConnectionIdParamsDto.fromJson(payload);
+        await providers.deleteCustom(request.connectionId);
         return const <String, dynamic>{};
       case RpcMethod.turnStart:
         final request = TurnStartParamsDto.fromJson(payload);

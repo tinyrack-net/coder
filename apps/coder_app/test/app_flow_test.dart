@@ -25,7 +25,7 @@ void main() {
     id: id,
     workspaceId: workspace.id,
     title: 'Agent $id',
-    providerId: 'openai',
+    providerConnectionId: 'openai',
     model: model,
     status: status,
     permissionMode: PermissionMode.ask,
@@ -151,66 +151,66 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(700, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final customProvider = ApiProviderDto(
+    final customProvider = ProviderConnectionDto(
       id: 'custom',
-      name: 'Custom API',
-      presetId: 'custom',
-      baseUrl: 'http://localhost:8080/v1',
-      transport: ApiTransport.chatCompletions,
-      credentialSource: CredentialSource.stored,
-      credentialConfigured: true,
-      enabled: true,
-      strictToolSchema: false,
+      definitionId: 'custom',
+      displayName: 'Custom API',
+      status: ProviderConnectionStatus.connected,
+      authKind: ProviderAuthKind.apiKey,
+      credentialOrigin: ProviderCredentialOrigin.stored,
+      isDefault: false,
       defaultModelId: 'custom-model',
+      customConfig: const CustomProviderConfigDto(
+        name: 'Custom API',
+        baseUrl: 'http://localhost:8080/v1',
+        apiFormat: ProviderApiFormat.chatCompletions,
+        authenticationRequired: true,
+        manualModelIds: <String>['custom-model'],
+      ),
       createdAt: now,
       updatedAt: now,
     );
     final api = FakeCoderApi(
       workspaces: <WorkspaceDto>[workspace],
       catalog: ProviderCatalogDto(
-        defaultProviderId: 'openai',
-        presets: const <ProviderPresetDto>[
-          ProviderPresetDto(
+        definitions: const <ProviderDefinitionDto>[
+          ProviderDefinitionDto(
             id: 'openai',
             name: 'OpenAI',
-            defaultBaseUrl: 'https://api.openai.com/v1',
-            defaultTransport: ApiTransport.responses,
-            defaultCredentialSource: CredentialSource.environment,
-            strictToolSchema: true,
-            defaultModelId: 'gpt-5.6-sol',
-          ),
-          ProviderPresetDto(
-            id: 'custom',
-            name: 'Custom',
-            defaultBaseUrl: 'http://localhost:8080/v1',
-            defaultTransport: ApiTransport.chatCompletions,
-            defaultCredentialSource: CredentialSource.stored,
-            strictToolSchema: false,
-            defaultModelId: 'custom-model',
+            description: 'OpenAI Platform API.',
+            authMethods: <ProviderAuthMethodDto>[
+              ProviderAuthMethodDto(
+                id: 'api-key',
+                label: 'API key',
+                kind: ProviderAuthKind.apiKey,
+                flow: ProviderAuthFlow.apiKey,
+              ),
+            ],
+            recommendedModelIds: <String>['gpt-5.6-sol'],
           ),
         ],
-        providers: <ApiProviderDto>[
-          ApiProviderDto(
-            id: 'openai',
-            name: 'OpenAI',
-            presetId: 'openai',
-            baseUrl: 'https://api.openai.com/v1',
-            transport: ApiTransport.responses,
-            credentialSource: CredentialSource.environment,
-            credentialConfigured: false,
-            enabled: true,
-            strictToolSchema: true,
-            defaultModelId: 'gpt-5.6-sol',
-            createdAt: now,
-            updatedAt: now,
-          ),
-          customProvider,
-        ],
+        source: ProviderCatalogSource.bundled,
+        updatedAt: now,
       ),
+      connections: <ProviderConnectionDto>[
+        ProviderConnectionDto(
+          id: 'openai',
+          definitionId: 'openai',
+          displayName: 'OpenAI',
+          status: ProviderConnectionStatus.connected,
+          authKind: ProviderAuthKind.apiKey,
+          credentialOrigin: ProviderCredentialOrigin.environment,
+          isDefault: true,
+          defaultModelId: 'gpt-5.6-sol',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        customProvider,
+      ],
       models: const <String, List<ProviderModelDto>>{
         'custom': <ProviderModelDto>[
           ProviderModelDto(
-            providerId: 'custom',
+            connectionId: 'custom',
             id: 'custom-model',
             label: 'custom-model',
             source: ProviderModelSource.manual,
@@ -257,7 +257,10 @@ void main() {
     await tester.tap(find.text('생성'));
     await tester.pumpAndSettle();
     expect(find.text('요청을 입력해 coding agent를 시작하세요.'), findsOneWidget);
-    expect((await api.listAgents()).single.providerId, customProvider.id);
+    expect(
+      (await api.listAgents()).single.providerConnectionId,
+      customProvider.id,
+    );
     expect((await api.listAgents()).single.title, 'Coding session');
 
     await tester.tap(find.byTooltip('Agent 모델 설정'));
@@ -270,7 +273,7 @@ void main() {
     await tester.tap(find.text('저장'));
     await tester.pumpAndSettle();
     expect(find.text('요청을 입력해 coding agent를 시작하세요.'), findsOneWidget);
-    expect((await api.listAgents()).single.providerId, 'openai');
+    expect((await api.listAgents()).single.providerConnectionId, 'openai');
   });
 
   testWidgets('host page validates and connects an explicit endpoint', (
