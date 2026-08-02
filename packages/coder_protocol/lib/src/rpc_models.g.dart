@@ -25,7 +25,8 @@ Map<String, dynamic> _$HelloParamsDtoToJson(_HelloParamsDto instance) =>
 _WorkspaceRegisterParamsDto _$WorkspaceRegisterParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _WorkspaceRegisterParamsDto(
-  id: json['id'] as String,
+  workspaceId: json['workspaceId'] as String,
+  checkoutId: json['checkoutId'] as String,
   rootPath: json['rootPath'] as String,
   name: json['name'] as String,
 );
@@ -33,22 +34,96 @@ _WorkspaceRegisterParamsDto _$WorkspaceRegisterParamsDtoFromJson(
 Map<String, dynamic> _$WorkspaceRegisterParamsDtoToJson(
   _WorkspaceRegisterParamsDto instance,
 ) => <String, dynamic>{
-  'id': instance.id,
+  'workspaceId': instance.workspaceId,
+  'checkoutId': instance.checkoutId,
   'rootPath': instance.rootPath,
   'name': instance.name,
 };
 
+_WorkspaceIdParamsDto _$WorkspaceIdParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _WorkspaceIdParamsDto(workspaceId: json['workspaceId'] as String);
+
+Map<String, dynamic> _$WorkspaceIdParamsDtoToJson(
+  _WorkspaceIdParamsDto instance,
+) => <String, dynamic>{'workspaceId': instance.workspaceId};
+
+_DirectorySuggestParamsDto _$DirectorySuggestParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _DirectorySuggestParamsDto(
+  query: json['query'] as String,
+  limit: (json['limit'] as num?)?.toInt() ?? 30,
+);
+
+Map<String, dynamic> _$DirectorySuggestParamsDtoToJson(
+  _DirectorySuggestParamsDto instance,
+) => <String, dynamic>{'query': instance.query, 'limit': instance.limit};
+
+_GitBranchesListParamsDto _$GitBranchesListParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _GitBranchesListParamsDto(workspaceId: json['workspaceId'] as String);
+
+Map<String, dynamic> _$GitBranchesListParamsDtoToJson(
+  _GitBranchesListParamsDto instance,
+) => <String, dynamic>{'workspaceId': instance.workspaceId};
+
+_WorktreeCreateParamsDto _$WorktreeCreateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _WorktreeCreateParamsDto(
+  id: json['id'] as String,
+  workspaceId: json['workspaceId'] as String,
+  mode: $enumDecode(_$WorktreeCreateModeEnumMap, json['mode']),
+  branchName: json['branchName'] as String,
+  baseBranch: json['baseBranch'] as String?,
+);
+
+Map<String, dynamic> _$WorktreeCreateParamsDtoToJson(
+  _WorktreeCreateParamsDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'workspaceId': instance.workspaceId,
+  'mode': _$WorktreeCreateModeEnumMap[instance.mode]!,
+  'branchName': instance.branchName,
+  'baseBranch': instance.baseBranch,
+};
+
+const _$WorktreeCreateModeEnumMap = {
+  WorktreeCreateMode.newBranch: 'newBranch',
+  WorktreeCreateMode.existingBranch: 'existingBranch',
+};
+
+_WorktreeIdParamsDto _$WorktreeIdParamsDtoFromJson(Map<String, dynamic> json) =>
+    _WorktreeIdParamsDto(worktreeId: json['worktreeId'] as String);
+
+Map<String, dynamic> _$WorktreeIdParamsDtoToJson(
+  _WorktreeIdParamsDto instance,
+) => <String, dynamic>{'worktreeId': instance.worktreeId};
+
+_WorktreeArchiveParamsDto _$WorktreeArchiveParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _WorktreeArchiveParamsDto(
+  worktreeId: json['worktreeId'] as String,
+  force: json['force'] as bool,
+);
+
+Map<String, dynamic> _$WorktreeArchiveParamsDtoToJson(
+  _WorktreeArchiveParamsDto instance,
+) => <String, dynamic>{
+  'worktreeId': instance.worktreeId,
+  'force': instance.force,
+};
+
 _AgentListParamsDto _$AgentListParamsDtoFromJson(Map<String, dynamic> json) =>
-    _AgentListParamsDto(workspaceId: json['workspaceId'] as String?);
+    _AgentListParamsDto(worktreeId: json['worktreeId'] as String?);
 
 Map<String, dynamic> _$AgentListParamsDtoToJson(_AgentListParamsDto instance) =>
-    <String, dynamic>{'workspaceId': instance.workspaceId};
+    <String, dynamic>{'worktreeId': instance.worktreeId};
 
 _AgentCreateParamsDto _$AgentCreateParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentCreateParamsDto(
   id: json['id'] as String,
-  workspaceId: json['workspaceId'] as String,
+  worktreeId: json['worktreeId'] as String,
   title: json['title'] as String,
   providerConnectionId: json['providerConnectionId'] as String,
   model: json['model'] as String,
@@ -60,7 +135,7 @@ Map<String, dynamic> _$AgentCreateParamsDtoToJson(
   _AgentCreateParamsDto instance,
 ) => <String, dynamic>{
   'id': instance.id,
-  'workspaceId': instance.workspaceId,
+  'worktreeId': instance.worktreeId,
   'title': instance.title,
   'providerConnectionId': instance.providerConnectionId,
   'model': instance.model,
@@ -278,27 +353,85 @@ Map<String, dynamic> _$TimelineSubscribeParamsDtoToJson(
   'afterSequence': instance.afterSequence,
 };
 
-_WorkspaceListResultDto _$WorkspaceListResultDtoFromJson(
+_WorkspaceCatalogResultDto _$WorkspaceCatalogResultDtoFromJson(
   Map<String, dynamic> json,
-) => _WorkspaceListResultDto(
-  workspaces: (json['workspaces'] as List<dynamic>)
-      .map((e) => WorkspaceDto.fromJson(e as Map<String, dynamic>))
+) => _WorkspaceCatalogResultDto(
+  catalog: WorkspaceCatalogDto.fromJson(
+    json['catalog'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$WorkspaceCatalogResultDtoToJson(
+  _WorkspaceCatalogResultDto instance,
+) => <String, dynamic>{'catalog': instance.catalog};
+
+_WorkspaceRegisterResultDto _$WorkspaceRegisterResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _WorkspaceRegisterResultDto(
+  workspace: WorkspaceDto.fromJson(json['workspace'] as Map<String, dynamic>),
+  worktrees: (json['worktrees'] as List<dynamic>)
+      .map((e) => WorktreeDto.fromJson(e as Map<String, dynamic>))
       .toList(),
 );
 
-Map<String, dynamic> _$WorkspaceListResultDtoToJson(
-  _WorkspaceListResultDto instance,
-) => <String, dynamic>{'workspaces': instance.workspaces};
+Map<String, dynamic> _$WorkspaceRegisterResultDtoToJson(
+  _WorkspaceRegisterResultDto instance,
+) => <String, dynamic>{
+  'workspace': instance.workspace,
+  'worktrees': instance.worktrees,
+};
 
-_WorkspaceResultDto _$WorkspaceResultDtoFromJson(Map<String, dynamic> json) =>
-    _WorkspaceResultDto(
-      workspace: WorkspaceDto.fromJson(
-        json['workspace'] as Map<String, dynamic>,
-      ),
+_WorkspaceUnregisterResultDto _$WorkspaceUnregisterResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _WorkspaceUnregisterResultDto(unregistered: json['unregistered'] as bool);
+
+Map<String, dynamic> _$WorkspaceUnregisterResultDtoToJson(
+  _WorkspaceUnregisterResultDto instance,
+) => <String, dynamic>{'unregistered': instance.unregistered};
+
+_DirectorySuggestResultDto _$DirectorySuggestResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _DirectorySuggestResultDto(
+  suggestions: (json['suggestions'] as List<dynamic>)
+      .map((e) => DirectorySuggestionDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$DirectorySuggestResultDtoToJson(
+  _DirectorySuggestResultDto instance,
+) => <String, dynamic>{'suggestions': instance.suggestions};
+
+_GitBranchesListResultDto _$GitBranchesListResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _GitBranchesListResultDto(
+  branches: (json['branches'] as List<dynamic>)
+      .map((e) => GitBranchDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$GitBranchesListResultDtoToJson(
+  _GitBranchesListResultDto instance,
+) => <String, dynamic>{'branches': instance.branches};
+
+_WorktreeResultDto _$WorktreeResultDtoFromJson(Map<String, dynamic> json) =>
+    _WorktreeResultDto(
+      worktree: WorktreeDto.fromJson(json['worktree'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$WorkspaceResultDtoToJson(_WorkspaceResultDto instance) =>
-    <String, dynamic>{'workspace': instance.workspace};
+Map<String, dynamic> _$WorktreeResultDtoToJson(_WorktreeResultDto instance) =>
+    <String, dynamic>{'worktree': instance.worktree};
+
+_WorktreeArchivePreviewResultDto _$WorktreeArchivePreviewResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _WorktreeArchivePreviewResultDto(
+  preview: WorktreeArchivePreviewDto.fromJson(
+    json['preview'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$WorktreeArchivePreviewResultDtoToJson(
+  _WorktreeArchivePreviewResultDto instance,
+) => <String, dynamic>{'preview': instance.preview};
 
 _AgentListResultDto _$AgentListResultDtoFromJson(Map<String, dynamic> json) =>
     _AgentListResultDto(

@@ -9,14 +9,30 @@ void main() {
       () => workspaces.id,
       () => workspaces.name,
       () => workspaces.rootPath,
+      () => workspaces.kind,
       () => workspaces.createdAt,
       () => workspaces.primaryKey,
+    ]);
+
+    final worktrees = Worktrees();
+    _expectGeneratedDsl(<Object? Function()>[
+      () => worktrees.id,
+      () => worktrees.workspaceId,
+      () => worktrees.name,
+      () => worktrees.path,
+      () => worktrees.branch,
+      () => worktrees.head,
+      () => worktrees.kind,
+      () => worktrees.isCoderOwned,
+      () => worktrees.archivedAt,
+      () => worktrees.createdAt,
+      () => worktrees.primaryKey,
     ]);
 
     final agents = Agents();
     _expectGeneratedDsl(<Object? Function()>[
       () => agents.id,
-      () => agents.workspaceId,
+      () => agents.worktreeId,
       () => agents.title,
       () => agents.providerConnectionId,
       () => agents.model,
@@ -121,13 +137,14 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 4);
+      expect(database.schemaVersion, 5);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),
         isNotNull,
       );
       expect(await database.workspaceDao.list(), isEmpty);
+      expect(await database.worktreeDao.list(), isEmpty);
     },
   );
 }

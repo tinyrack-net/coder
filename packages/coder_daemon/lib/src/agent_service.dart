@@ -17,7 +17,7 @@ class AgentService {
   /// Creates a [AgentService].
   AgentService({
     required this._agents,
-    required this._workspaces,
+    required this._worktrees,
     required this._timeline,
     required this._providers,
     required this._events,
@@ -28,7 +28,7 @@ class AgentService {
   });
 
   final AgentRepository _agents;
-  final WorkspaceRepository _workspaces;
+  final WorktreeRepository _worktrees;
   final TimelineRepository _timeline;
   final ProviderService _providers;
   final DaemonEventSink _events;
@@ -56,9 +56,9 @@ class AgentService {
     if (_activeTurns.containsKey(agentId)) {
       throw StateError('Agent already has a running turn.');
     }
-    final workspace = await _workspaces.getById(agent.workspaceId);
-    if (workspace == null) {
-      throw StateError('Workspace not found: ${agent.workspaceId}');
+    final worktree = await _worktrees.getById(agent.worktreeId);
+    if (worktree == null || worktree.archivedAt != null) {
+      throw StateError('Worktree not found: ${agent.worktreeId}');
     }
     final provider = await _providers.resolve(
       agent.providerConnectionId,
@@ -127,7 +127,7 @@ class AgentService {
         AgentRunRequest(
           agentId: agentId,
           turnId: turnId,
-          workspaceRoot: workspace.rootPath,
+          workspaceRoot: worktree.path,
           prompt: prompt,
           model: agent.model,
           reasoningEffort: agent.reasoningEffort,

@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:coder_app/src/bootstrap.dart';
+import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/app_settings_page.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
+import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/settings_page.dart';
+import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -13,19 +17,19 @@ import 'package:go_router/go_router.dart';
 
 part 'app.g.dart';
 
-/// CoderApp defines a public contract.
+/// Tinyrack Coder application composition.
 class CoderApp extends StatelessWidget {
-  /// Creates a [CoderApp].
+  /// Creates the application.
   CoderApp({
-    required this.bootstrap,
+    required this.services,
     this.externalUrlOpener = const PlatformExternalUrlOpener(),
     super.key,
   });
 
-  /// The bootstrap public API member.
-  final AppBootstrap bootstrap;
+  /// Platform services used by feature controllers.
+  final AppServices services;
 
-  /// Platform adapter used to open interactive authorization pages.
+  /// Opens interactive provider authorization pages.
   final ExternalUrlOpener externalUrlOpener;
 
   late final GoRouter _router = GoRouter(routes: $appRoutes);
@@ -33,318 +37,228 @@ class CoderApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
-      bootstrapProvider.overrideWithValue(bootstrap),
+      appServicesProvider.overrideWithValue(services),
       externalUrlOpenerProvider.overrideWithValue(externalUrlOpener),
     ],
     child: MaterialApp.router(
       title: 'Tinyrack Coder',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xff625bff),
-        ),
-        useMaterial3: true,
-        cardTheme: const CardThemeData(margin: EdgeInsets.zero),
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xff948dff),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-        cardTheme: const CardThemeData(margin: EdgeInsets.zero),
-      ),
+      theme: _theme(Brightness.light),
+      darkTheme: _theme(Brightness.dark),
       routerConfig: _router,
     ),
   );
 }
 
-@TypedGoRoute<HostRoute>(path: '/')
-/// HostRoute defines a public contract.
-class HostRoute extends GoRouteData with $HostRoute {
-  /// Creates a [HostRoute].
-  const HostRoute();
+ThemeData _theme(Brightness brightness) => ThemeData(
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: brightness == Brightness.light
+        ? const Color(0xff625bff)
+        : const Color(0xff948dff),
+    brightness: brightness,
+  ),
+  useMaterial3: true,
+  cardTheme: const CardThemeData(margin: EdgeInsets.zero),
+);
 
-  @override
-  Widget build(BuildContext context, GoRouterState state) => const HostPage();
-}
-
-@TypedGoRoute<DashboardRoute>(path: '/hosts/:hostId')
-/// DashboardRoute defines a public contract.
-class DashboardRoute extends GoRouteData with $DashboardRoute {
-  /// Creates a [DashboardRoute].
-  const DashboardRoute({required this.hostId});
-
-  /// The hostId public API member.
-  final String hostId;
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      DashboardPage(hostId: hostId);
-}
-
-@TypedGoRoute<SettingsRoute>(path: '/hosts/:hostId/settings')
-/// SettingsRoute defines a public contract.
-class SettingsRoute extends GoRouteData with $SettingsRoute {
-  /// Creates a [SettingsRoute].
-  const SettingsRoute({required this.hostId});
-
-  /// The hostId public API member.
-  final String hostId;
+@TypedGoRoute<WorkspaceHomeRoute>(path: '/')
+/// Unified workspace home shown before daemon connections complete.
+class WorkspaceHomeRoute extends GoRouteData with $WorkspaceHomeRoute {
+  /// Creates the workspace home route.
+  const WorkspaceHomeRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      SettingsPage(hostId: hostId);
+      const WorkspacePage();
 }
 
-@TypedGoRoute<WorkspaceRoute>(
-  path: '/hosts/:hostId/workspaces/:workspaceId',
+@TypedGoRoute<WorktreeRoute>(
+  path: '/workspaces/:hostId/:workspaceId/:worktreeId',
 )
-/// WorkspaceRoute defines a public contract.
-class WorkspaceRoute extends GoRouteData with $WorkspaceRoute {
-  /// Creates a [WorkspaceRoute].
-  const WorkspaceRoute({required this.hostId, required this.workspaceId});
-
-  /// The hostId public API member.
-  final String hostId;
-
-  /// The workspaceId public API member.
-  final String workspaceId;
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      DashboardPage(hostId: hostId, workspaceId: workspaceId);
-}
-
-@TypedGoRoute<AgentRoute>(
-  path: '/hosts/:hostId/workspaces/:workspaceId/agents/:agentId',
-)
-/// AgentRoute defines a public contract.
-class AgentRoute extends GoRouteData with $AgentRoute {
-  /// Creates a [AgentRoute].
-  const AgentRoute({
+/// Opens a checkout and its session tabs.
+class WorktreeRoute extends GoRouteData with $WorktreeRoute {
+  /// Creates a checkout route.
+  const WorktreeRoute({
     required this.hostId,
     required this.workspaceId,
+    required this.worktreeId,
+  });
+
+  /// App-local daemon ID.
+  final String hostId;
+
+  /// Daemon-local repository ID.
+  final String workspaceId;
+
+  /// Daemon-local checkout ID.
+  final String worktreeId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => WorkspacePage(
+    selection: WorkspaceSelection(
+      hostId: hostId,
+      workspaceId: workspaceId,
+      worktreeId: worktreeId,
+    ),
+  );
+}
+
+@TypedGoRoute<SessionRoute>(
+  path: '/workspaces/:hostId/:workspaceId/:worktreeId/sessions/:agentId',
+)
+/// Opens one AI session in the checkout tab strip.
+class SessionRoute extends GoRouteData with $SessionRoute {
+  /// Creates a session route.
+  const SessionRoute({
+    required this.hostId,
+    required this.workspaceId,
+    required this.worktreeId,
     required this.agentId,
   });
 
-  /// The hostId public API member.
+  /// App-local daemon ID.
   final String hostId;
 
-  /// The workspaceId public API member.
+  /// Daemon-local repository ID.
   final String workspaceId;
 
-  /// The agentId public API member.
+  /// Daemon-local checkout ID.
+  final String worktreeId;
+
+  /// Daemon-local AI session ID.
   final String agentId;
 
   @override
+  Widget build(BuildContext context, GoRouterState state) => WorkspacePage(
+    selection: WorkspaceSelection(
+      hostId: hostId,
+      workspaceId: workspaceId,
+      worktreeId: worktreeId,
+    ),
+    requestedAgentId: agentId,
+  );
+}
+
+@TypedGoRoute<ProviderSettingsRoute>(path: '/settings/providers')
+/// Unified settings route with Provider selected.
+class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
+  /// Creates the provider settings route.
+  const ProviderSettingsRoute({this.hostId});
+
+  /// Preferred daemon in the provider selector.
+  final String? hostId;
+
+  @override
   Widget build(BuildContext context, GoRouterState state) =>
-      DashboardPage(hostId: hostId, workspaceId: workspaceId, agentId: agentId);
+      UnifiedSettingsPage(category: SettingsCategory.provider, hostId: hostId);
 }
 
-/// HostPage defines a public contract.
-class HostPage extends ConsumerStatefulWidget {
-  /// Creates a [HostPage].
-  const HostPage({super.key});
+@TypedGoRoute<DaemonSettingsRoute>(path: '/settings/daemons')
+/// Unified settings route with Daemon selected.
+class DaemonSettingsRoute extends GoRouteData with $DaemonSettingsRoute {
+  /// Creates daemon settings route.
+  const DaemonSettingsRoute();
 
   @override
-  ConsumerState<HostPage> createState() => _HostPageState();
+  Widget build(BuildContext context, GoRouterState state) =>
+      const UnifiedSettingsPage(category: SettingsCategory.daemon);
 }
 
-class _HostPageState extends ConsumerState<HostPage> {
-  final _address = TextEditingController(text: 'ws://127.0.0.1:7337/ws');
-  final _token = TextEditingController();
+@TypedGoRoute<NewHostRoute>(path: '/settings/daemons/new')
+/// Adds a remote daemon profile.
+class NewHostRoute extends GoRouteData with $NewHostRoute {
+  /// Creates the route.
+  const NewHostRoute();
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _address.dispose();
-    _token.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(connectionControllerProvider, (previous, next) {
-      final current = next.asData?.value;
-      final wasConnected = previous?.asData?.value?.connected == true;
-      if (current?.connected == true && !wasConnected) {
-        DashboardRoute(hostId: current!.serverInfo.serverId).go(context);
-      }
-    });
-    final state = ref.watch(connectionControllerProvider);
-    final connection = state.asData?.value;
-    final connecting = state.isLoading || connection?.connecting == true;
-    return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Icon(
-                  Icons.auto_awesome,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Tinyrack Coder',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  ref.read(bootstrapProvider).canRegisterLocalWorkspace
-                      ? '로컬 daemon을 시작하거나 원격 host에 연결합니다.'
-                      : '모바일은 원격 daemon에만 연결합니다.',
-                ),
-                const SizedBox(height: 28),
-                TextField(
-                  controller: _address,
-                  decoration: const InputDecoration(
-                    labelText: 'Daemon WebSocket 주소',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _token,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Bearer token'),
-                ),
-                if (state.hasError) ...<Widget>[
-                  const SizedBox(height: 12),
-                  Text(
-                    '${state.error}',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: connecting
-                      ? null
-                      : () => ref
-                            .read(connectionControllerProvider.notifier)
-                            .connect(_address.text, _token.text),
-                  icon: connecting
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.lan),
-                  label: Text(connecting ? '연결 중…' : '연결'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context, GoRouterState state) =>
+      const RemoteHostEditPage();
 }
 
-/// DashboardPage defines a public contract.
-class DashboardPage extends ConsumerWidget {
-  /// Creates a [DashboardPage].
-  const DashboardPage({
-    required this.hostId,
-    this.workspaceId,
-    this.agentId,
+@TypedGoRoute<EditHostRoute>(path: '/settings/daemons/:hostId')
+/// Edits a remote daemon profile.
+class EditHostRoute extends GoRouteData with $EditHostRoute {
+  /// Creates the route.
+  const EditHostRoute({required this.hostId});
+
+  /// App-local daemon profile ID.
+  final String hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RemoteHostEditPage(hostId: hostId);
+}
+
+/// Top-level settings categories.
+enum SettingsCategory {
+  /// API provider connections owned by one daemon.
+  provider,
+
+  /// Embedded and remote daemon connections.
+  daemon,
+}
+
+/// Shared two-pane settings shell.
+class UnifiedSettingsPage extends ConsumerStatefulWidget {
+  /// Creates a unified settings page.
+  const UnifiedSettingsPage({
+    required this.category,
+    this.hostId,
     super.key,
   });
 
-  /// The hostId public API member.
-  final String hostId;
+  /// Selected settings category.
+  final SettingsCategory category;
 
-  /// The workspaceId public API member.
-  final String? workspaceId;
-
-  /// The agentId public API member.
-  final String? agentId;
+  /// Preferred provider daemon.
+  final String? hostId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final connection = ref.watch(connectionControllerProvider).asData?.value;
-    if (connection?.connected != true) {
-      return Scaffold(
-        body: Center(
-          child: FilledButton(
-            onPressed: () => const HostRoute().go(context),
-            child: const Text('Host 연결로 돌아가기'),
-          ),
-        ),
-      );
-    }
+  ConsumerState<UnifiedSettingsPage> createState() =>
+      _UnifiedSettingsPageState();
+}
+
+class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
+  String? _hostId;
+
+  @override
+  Widget build(BuildContext context) {
+    final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
+    final online =
+        registry?.runtimes.values
+            .where((item) => item.connected)
+            .toList(growable: false) ??
+        const <HostRuntimeSnapshot>[];
+    _hostId ??= online.any((item) => item.id == widget.hostId)
+        ? widget.hostId
+        : online.firstOrNull?.id;
+    final detail = widget.category == SettingsCategory.daemon
+        ? const AppSettingsPage(embedded: true)
+        : _ProviderSettingsDetail(
+            hosts: online,
+            hostId: _hostId,
+            onChanged: (value) => setState(() => _hostId = value),
+          );
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tinyrack Coder'),
-        actions: <Widget>[
-          IconButton(
-            tooltip: '설정',
-            onPressed: () => SettingsRoute(hostId: hostId).go(context),
-            icon: const Icon(Icons.settings_outlined),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Center(child: Text(connection?.label ?? 'connected')),
-          ),
-        ],
+        leading: IconButton(
+          onPressed: () => const WorkspaceHomeRoute().go(context),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        title: const Text('설정'),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth >= 1000) {
-            return Row(
-              children: <Widget>[
-                SizedBox(
-                  width: 270,
-                  child: _WorkspacePane(
-                    hostId: hostId,
-                    selectedWorkspaceId: workspaceId,
-                  ),
-                ),
-                const VerticalDivider(width: 1),
-                SizedBox(
-                  width: 280,
-                  child: _AgentPane(
-                    hostId: hostId,
-                    workspaceId: workspaceId,
-                    selectedAgentId: agentId,
-                  ),
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  child: _ConversationPane(
-                    workspaceId: workspaceId,
-                    agentId: agentId,
-                  ),
-                ),
-              ],
-            );
-          }
-          if (agentId != null) {
-            return _ConversationPane(
-              workspaceId: workspaceId,
-              agentId: agentId,
-            );
-          }
-          if (workspaceId != null) {
-            return _AgentPane(
-              hostId: hostId,
-              workspaceId: workspaceId,
-              selectedAgentId: agentId,
-            );
-          }
-          return _WorkspacePane(
-            hostId: hostId,
-            selectedWorkspaceId: workspaceId,
+          if (constraints.maxWidth < 760) return detail;
+          return Row(
+            children: <Widget>[
+              SizedBox(
+                width: 230,
+                child: _SettingsSidebar(selected: widget.category),
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(child: detail),
+            ],
           );
         },
       ),
@@ -352,355 +266,620 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-class _WorkspacePane extends ConsumerWidget {
-  const _WorkspacePane({
-    required this.hostId,
-    required this.selectedWorkspaceId,
-  });
+class _SettingsSidebar extends StatelessWidget {
+  const _SettingsSidebar({required this.selected});
 
-  final String hostId;
-  final String? selectedWorkspaceId;
+  final SettingsCategory selected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(workspacesControllerProvider);
-    final controller = ref.read(workspacesControllerProvider.notifier);
-    final canRegister = ref
-        .read(connectionControllerProvider.notifier)
-        .canRegisterLocalWorkspace;
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(12),
+    children: <Widget>[
+      ListTile(
+        selected: selected == SettingsCategory.provider,
+        leading: const Icon(Icons.hub_outlined),
+        title: const Text('Provider'),
+        onTap: () => const ProviderSettingsRoute().go(context),
+      ),
+      ListTile(
+        selected: selected == SettingsCategory.daemon,
+        leading: const Icon(Icons.dns_outlined),
+        title: const Text('Daemon'),
+        onTap: () => const DaemonSettingsRoute().go(context),
+      ),
+    ],
+  );
+}
+
+class _ProviderSettingsDetail extends StatelessWidget {
+  const _ProviderSettingsDetail({
+    required this.hosts,
+    required this.hostId,
+    required this.onChanged,
+  });
+
+  final List<HostRuntimeSnapshot> hosts;
+  final String? hostId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (hosts.isEmpty || hostId == null) {
+      return const Center(child: Text('온라인 daemon 연결이 필요합니다.'));
+    }
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        ListTile(
-          title: const Text('Workspaces'),
-          trailing: canRegister
-              ? IconButton(
-                  tooltip: '로컬 workspace 등록',
-                  onPressed: () async {
-                    final path = await getDirectoryPath(
-                      confirmButtonText: 'Workspace 선택',
-                    );
-                    if (path == null || !context.mounted) return;
-                    final workspace = await controller.register(path);
-                    if (context.mounted) {
-                      WorkspaceRoute(
-                        hostId: hostId,
-                        workspaceId: workspace.id,
-                      ).go(context);
-                    }
-                  },
-                  icon: const Icon(Icons.create_new_folder_outlined),
-                )
-              : null,
-        ),
-        Expanded(
-          child: state.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stackTrace) => Center(child: Text('$error')),
-            data: (workspaces) => workspaces.isEmpty
-                ? const Center(child: Text('등록된 workspace가 없습니다.'))
-                : ListView.builder(
-                    itemCount: workspaces.length,
-                    itemBuilder: (context, index) {
-                      final item = workspaces[index];
-                      return ListTile(
-                        selected: item.id == selectedWorkspaceId,
-                        leading: const Icon(Icons.folder_outlined),
-                        title: Text(item.name),
-                        subtitle: Text(
-                          item.rootPath,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onTap: () => WorkspaceRoute(
-                          hostId: hostId,
-                          workspaceId: item.id,
-                        ).go(context),
-                      );
-                    },
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: DropdownButtonFormField<String>(
+            initialValue: hostId,
+            decoration: const InputDecoration(labelText: 'Daemon'),
+            items: hosts
+                .map(
+                  (host) => DropdownMenuItem<String>(
+                    value: host.id,
+                    child: Text(host.label),
                   ),
+                )
+                .toList(growable: false),
+            onChanged: onChanged,
           ),
         ),
+        Expanded(child: SettingsPage(hostId: hostId!, embedded: true)),
       ],
     );
   }
 }
 
-class _AgentPane extends ConsumerWidget {
-  const _AgentPane({
-    required this.hostId,
-    required this.workspaceId,
-    required this.selectedAgentId,
+/// Unified host/repository/worktree tree and session-tab workspace.
+class WorkspacePage extends ConsumerStatefulWidget {
+  /// Creates a workspace page.
+  const WorkspacePage({
+    this.selection,
+    this.requestedAgentId,
+    super.key,
   });
 
-  final String hostId;
-  final String? workspaceId;
-  final String? selectedAgentId;
+  /// Selected checkout, if any.
+  final WorkspaceSelection? selection;
+
+  /// Session requested by the route.
+  final String? requestedAgentId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(agentsControllerProvider(workspaceId));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        ListTile(
-          leading: MediaQuery.sizeOf(context).width < 1000
-              ? IconButton(
-                  onPressed: () => context.pop(),
-                  icon: const Icon(Icons.arrow_back),
-                )
-              : null,
-          title: const Text('Agents'),
-          trailing: workspaceId == null
-              ? null
-              : IconButton(
-                  tooltip: 'Agent 생성',
-                  onPressed: () => _createAgent(context, ref, workspaceId!),
-                  icon: const Icon(Icons.add),
-                ),
-        ),
-        Expanded(
-          child: workspaceId == null
-              ? const Center(child: Text('Workspace를 선택하세요.'))
-              : state.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (error, stackTrace) => Center(child: Text('$error')),
-                  data: (agents) => agents.isEmpty
-                      ? const Center(child: Text('새 agent를 만들어 시작하세요.'))
-                      : ListView.builder(
-                          itemCount: agents.length,
-                          itemBuilder: (context, index) {
-                            final agent = agents[index];
-                            return ListTile(
-                              selected: agent.id == selectedAgentId,
-                              leading: Icon(_agentIcon(agent.status)),
-                              title: Text(agent.title),
-                              subtitle: Text(
-                                '${agent.model} · ${agent.status.name}',
-                              ),
-                              onTap: () => AgentRoute(
-                                hostId: hostId,
-                                workspaceId: workspaceId!,
-                                agentId: agent.id,
-                              ).go(context),
-                            );
-                          },
-                        ),
-                ),
-        ),
-      ],
-    );
-  }
+  ConsumerState<WorkspacePage> createState() => _WorkspacePageState();
+}
 
-  IconData _agentIcon(AgentStatus status) => switch (status) {
-    AgentStatus.running => Icons.sync,
-    AgentStatus.waitingForApproval => Icons.approval_outlined,
-    AgentStatus.failed => Icons.error_outline,
-    _ => Icons.smart_toy_outlined,
-  };
+class _WorkspacePageState extends ConsumerState<WorkspacePage> {
+  bool _restoreScheduled = false;
 
-  Future<void> _createAgent(
-    BuildContext context,
-    WidgetRef ref,
-    String workspaceId,
-  ) async {
-    final controller = ref.read(agentsControllerProvider(workspaceId).notifier);
-    final providerController = ref.read(
-      providerSettingsControllerProvider.notifier,
-    );
-    final providerState = await ref.read(
-      providerSettingsControllerProvider.future,
-    );
-    final connections = providerState?.connections
-        .where(
-          (connection) =>
-              connection.status == ProviderConnectionStatus.connected ||
-              connection.status == ProviderConnectionStatus.degraded,
-        )
-        .toList(growable: false);
-    if (connections == null || connections.isEmpty) return;
-    var connectionId = connections
-        .where((connection) => connection.isDefault)
-        .firstOrNull
-        ?.id;
-    connectionId ??= connections.first.id;
-    await providerController.loadModels(connectionId);
-    if (!context.mounted) return;
-    final availableModels =
-        ref
-            .read(providerSettingsControllerProvider)
-            .asData
-            ?.value
-            ?.models[connectionId] ??
-        const <ProviderModelDto>[];
-    final draft = await showDialog<_AgentDraft>(
-      context: context,
-      builder: (context) => _AgentDraftDialog(
-        connections: connections,
-        connectionId: connectionId!,
-        models: availableModels,
-        loadModels: (value) async {
-          await providerController.loadModels(value);
-          return ref
-                  .read(providerSettingsControllerProvider)
-                  .asData
-                  ?.value
-                  ?.models[value] ??
-              const <ProviderModelDto>[];
+  @override
+  Widget build(BuildContext context) {
+    final registry = ref.watch(hostRegistryControllerProvider);
+    final catalog = ref.watch(workspaceCatalogControllerProvider);
+    _restoreSelection(registry.asData?.value, catalog.asData?.value);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Workspaces'),
+        actions: <Widget>[
+          IconButton(
+            tooltip: '폴더 추가',
+            onPressed:
+                registry.asData?.value.runtimes.values.any(
+                      (item) => item.connected,
+                    ) ==
+                    true
+                ? () => _addFolder(registry.requireValue)
+                : null,
+            icon: const Icon(Icons.create_new_folder_outlined),
+          ),
+          IconButton(
+            tooltip: '설정',
+            onPressed: () {
+              final hostId = widget.selection?.hostId;
+              if (hostId == null) {
+                const DaemonSettingsRoute().go(context);
+              } else {
+                ProviderSettingsRoute(hostId: hostId).go(context);
+              }
+            },
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final tree = _WorkspaceTree(
+            registry: registry.asData?.value,
+            catalog: catalog,
+            selected: widget.selection,
+            onAddFolder: registry.asData == null
+                ? null
+                : () => _addFolder(registry.requireValue),
+          );
+          if (constraints.maxWidth < 760) {
+            return widget.selection == null
+                ? tree
+                : _SessionArea(
+                    selection: widget.selection!,
+                    requestedAgentId: widget.requestedAgentId,
+                    showBack: true,
+                  );
+          }
+          return Row(
+            children: <Widget>[
+              SizedBox(width: 320, child: tree),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: widget.selection == null
+                    ? const _EmptyWorkspaceDetail()
+                    : _SessionArea(
+                        selection: widget.selection!,
+                        requestedAgentId: widget.requestedAgentId,
+                      ),
+              ),
+            ],
+          );
         },
       ),
     );
-    if (draft == null || !context.mounted) return;
-    final agent = await controller.create(
-      title: draft.title,
-      providerConnectionId: draft.providerConnectionId,
-      model: draft.model,
-      reasoningEffort: draft.reasoningEffort,
-      permissionMode: draft.permissionMode,
+  }
+
+  void _restoreSelection(
+    HostRegistryState? registry,
+    UnifiedWorkspaceCatalogState? catalog,
+  ) {
+    if (_restoreScheduled || widget.selection != null) return;
+    final saved = registry?.settings.lastWorktree;
+    if (saved == null || catalog == null) return;
+    final exists =
+        catalog.catalogs[saved.hostId]?.worktrees.any(
+          (item) =>
+              item.id == saved.worktreeId &&
+              item.workspaceId == saved.workspaceId,
+        ) ??
+        false;
+    if (!exists) return;
+    _restoreScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _goWorktree(context, saved);
+    });
+  }
+
+  Future<void> _addFolder(HostRegistryState registry) async {
+    final online = registry.runtimes.values
+        .where((item) => item.connected)
+        .toList(growable: false);
+    final hostId = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('폴더를 추가할 daemon'),
+        children: <Widget>[
+          for (final host in online)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, host.id),
+              child: ListTile(
+                leading: Icon(
+                  host.kind == HostKind.embedded
+                      ? Icons.computer_outlined
+                      : Icons.cloud_outlined,
+                ),
+                title: Text(host.label),
+              ),
+            ),
+        ],
+      ),
     );
-    if (context.mounted) {
-      AgentRoute(
+    if (hostId == null || !mounted) return;
+    final host = registry.runtimes[hostId]!;
+    final path =
+        host.kind == HostKind.embedded &&
+            ref.read(appServicesProvider).supportsEmbeddedDaemon
+        ? await getDirectoryPath(confirmButtonText: 'Workspace 선택')
+        : await showDialog<String>(
+            context: context,
+            builder: (context) => _RemoteDirectoryDialog(api: host.api!),
+          );
+    if (path == null || !mounted) return;
+    final result = await ref
+        .read(workspaceCatalogControllerProvider.notifier)
+        .register(hostId, path);
+    if (!mounted || result.worktrees.isEmpty) return;
+    _goWorktree(
+      context,
+      WorkspaceSelection(
         hostId: hostId,
-        workspaceId: workspaceId,
-        agentId: agent.id,
-      ).go(context);
-    }
+        workspaceId: result.workspace.id,
+        worktreeId: result.worktrees.first.id,
+      ),
+    );
   }
 }
 
-typedef _ModelLoader =
-    Future<List<ProviderModelDto>> Function(
-      String connectionId,
-    );
-
-final class _AgentDraft {
-  const _AgentDraft({
-    required this.title,
-    required this.providerConnectionId,
-    required this.model,
-    required this.reasoningEffort,
-    required this.permissionMode,
+class _WorkspaceTree extends StatelessWidget {
+  const _WorkspaceTree({
+    required this.registry,
+    required this.catalog,
+    required this.selected,
+    required this.onAddFolder,
   });
 
-  final String title;
-  final String providerConnectionId;
-  final String model;
-  final String reasoningEffort;
-  final PermissionMode permissionMode;
-}
-
-class _AgentDraftDialog extends StatefulWidget {
-  const _AgentDraftDialog({
-    required this.connections,
-    required this.connectionId,
-    required this.models,
-    required this.loadModels,
-  });
-
-  final List<ProviderConnectionDto> connections;
-  final String connectionId;
-  final List<ProviderModelDto> models;
-  final _ModelLoader loadModels;
+  final HostRegistryState? registry;
+  final AsyncValue<UnifiedWorkspaceCatalogState> catalog;
+  final WorkspaceSelection? selected;
+  final VoidCallback? onAddFolder;
 
   @override
-  State<_AgentDraftDialog> createState() => _AgentDraftDialogState();
+  Widget build(BuildContext context) {
+    final runtimes =
+        registry?.runtimes.values.toList(growable: false) ??
+        const <HostRuntimeSnapshot>[];
+    final catalogs =
+        catalog.asData?.value.catalogs ?? const <String, WorkspaceCatalogDto>{};
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ListTile(
+          title: const Text('Repositories'),
+          trailing: IconButton(
+            tooltip: '폴더 추가',
+            onPressed: onAddFolder,
+            icon: const Icon(Icons.add),
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: runtimes.isEmpty
+              ? _NoDaemonState(
+                  onSettings: () {
+                    const DaemonSettingsRoute().go(context);
+                  },
+                )
+              : ListView(
+                  children: <Widget>[
+                    for (final host in runtimes)
+                      _HostTreeNode(
+                        host: host,
+                        catalog: catalogs[host.id],
+                        selected: selected,
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
 }
 
-class _AgentDraftDialogState extends State<_AgentDraftDialog> {
-  late final TextEditingController _title;
-  late final TextEditingController _model;
-  late String _connectionId;
-  late List<ProviderModelDto> _models;
-  PermissionMode _permission = PermissionMode.ask;
-  var _reasoningEffort = 'medium';
+class _HostTreeNode extends StatelessWidget {
+  const _HostTreeNode({
+    required this.host,
+    required this.catalog,
+    required this.selected,
+  });
+
+  final HostRuntimeSnapshot host;
+  final WorkspaceCatalogDto? catalog;
+  final WorkspaceSelection? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final workspaces = catalog?.workspaces ?? const <WorkspaceDto>[];
+    if (!host.connected) {
+      return ListTile(
+        leading: const Icon(Icons.cloud_off_outlined),
+        title: Text(host.label),
+        subtitle: Text(
+          '${_hostStatusLabel(host.status)}'
+          '${host.error == null ? '' : ' · ${host.error}'}',
+        ),
+      );
+    }
+    return ExpansionTile(
+      initiallyExpanded: true,
+      leading: const Icon(Icons.dns_outlined),
+      title: Text(host.label),
+      subtitle: Text(_hostStatusLabel(host.status)),
+      children: <Widget>[
+        for (final workspace in workspaces)
+          _RepositoryTreeNode(
+            hostId: host.id,
+            workspace: workspace,
+            worktrees: catalog!.worktrees
+                .where((item) => item.workspaceId == workspace.id)
+                .toList(growable: false),
+            selected: selected,
+          ),
+      ],
+    );
+  }
+}
+
+class _RepositoryTreeNode extends ConsumerWidget {
+  const _RepositoryTreeNode({
+    required this.hostId,
+    required this.workspace,
+    required this.worktrees,
+    required this.selected,
+  });
+
+  final String hostId;
+  final WorkspaceDto workspace;
+  final List<WorktreeDto> worktrees;
+  final WorkspaceSelection? selected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Padding(
+    padding: const EdgeInsets.only(left: 16),
+    child: ExpansionTile(
+      initiallyExpanded: selected?.workspaceId == workspace.id,
+      leading: Icon(
+        workspace.kind == WorkspaceKind.git
+            ? Icons.account_tree_outlined
+            : Icons.folder_outlined,
+      ),
+      title: Row(
+        children: <Widget>[
+          Expanded(child: Text(workspace.name)),
+          if (workspace.kind == WorkspaceKind.git)
+            IconButton(
+              tooltip: '새 worktree',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _createWorktree(context, ref),
+              icon: const Icon(Icons.add, size: 18),
+            ),
+        ],
+      ),
+      subtitle: Text(
+        workspace.rootPath,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      children: <Widget>[
+        for (final worktree in worktrees)
+          ListTile(
+            contentPadding: const EdgeInsets.only(left: 48, right: 12),
+            selected:
+                selected?.hostId == hostId &&
+                selected?.worktreeId == worktree.id,
+            leading: Icon(
+              worktree.kind == WorktreeKind.checkout
+                  ? Icons.home_work_outlined
+                  : Icons.call_split_outlined,
+              size: 20,
+            ),
+            title: Text(worktree.branch ?? worktree.name),
+            subtitle: Text(
+              worktree.path,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: PopupMenuButton<String>(
+              tooltip: 'Worktree 메뉴',
+              onSelected: (action) {
+                if (action == 'archive') {
+                  unawaited(_archiveWorktree(context, ref, worktree));
+                }
+              },
+              itemBuilder: (context) => const <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: 'archive',
+                  child: Text('Archive'),
+                ),
+              ],
+            ),
+            onTap: () => _goWorktree(
+              context,
+              WorkspaceSelection(
+                hostId: hostId,
+                workspaceId: workspace.id,
+                worktreeId: worktree.id,
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+
+  Future<void> _createWorktree(BuildContext context, WidgetRef ref) async {
+    final api = await _api(ref);
+    final branches = await api.listGitBranches(workspace.id);
+    if (!context.mounted) return;
+    final draft = await showDialog<_WorktreeDraft>(
+      context: context,
+      builder: (context) => _CreateWorktreeDialog(branches: branches),
+    );
+    if (draft == null || !context.mounted) return;
+    final worktree = await api.createWorktree(
+      id: ref.read(appIdGeneratorProvider).generate(),
+      workspaceId: workspace.id,
+      mode: draft.mode,
+      branchName: draft.branchName,
+      baseBranch: draft.baseBranch,
+    );
+    await ref
+        .read(workspaceCatalogControllerProvider.notifier)
+        .refreshHost(hostId);
+    if (!context.mounted) return;
+    _goWorktree(
+      context,
+      WorkspaceSelection(
+        hostId: hostId,
+        workspaceId: workspace.id,
+        worktreeId: worktree.id,
+      ),
+    );
+  }
+
+  Future<void> _archiveWorktree(
+    BuildContext context,
+    WidgetRef ref,
+    WorktreeDto worktree,
+  ) async {
+    final api = await _api(ref);
+    final preview = await api.previewWorktreeArchive(worktree.id);
+    if (!context.mounted) return;
+    if (preview.runningSessionCount > 0) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Archive할 수 없습니다'),
+          content: Text(
+            '실행 중인 session ${preview.runningSessionCount}개를 먼저 '
+            '중지하세요.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    final risky = preview.dirty || preview.unpushedCommitCount > 0;
+    final dirtyWarning = preview.dirty ? '커밋하지 않은 변경이 있습니다.\n' : '';
+    final unpushedWarning = preview.unpushedCommitCount > 0
+        ? '${preview.unpushedCommitCount}개의 push하지 않은 commit이 있습니다.\n'
+        : '';
+    final removalWarning = preview.removesDirectory
+        ? 'Coder가 만든 checkout 디렉터리가 제거됩니다.'
+        : '등록만 숨기고 디스크의 checkout은 유지합니다.';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${worktree.name}을 Archive할까요?'),
+        content: Text('$dirtyWarning$unpushedWarning$removalWarning'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(risky ? '위험을 확인하고 Archive' : 'Archive'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await api.archiveWorktree(worktree.id, force: risky);
+    await ref
+        .read(workspaceCatalogControllerProvider.notifier)
+        .refreshHost(hostId);
+    if (context.mounted && selected?.worktreeId == worktree.id) {
+      const WorkspaceHomeRoute().go(context);
+    }
+  }
+
+  Future<CoderApi> _api(WidgetRef ref) async {
+    final runtime = (await ref.read(
+      hostRegistryControllerProvider.future,
+    )).runtimes[hostId];
+    return runtime?.api ??
+        (throw StateError('Online daemon connection required.'));
+  }
+}
+
+final class _WorktreeDraft {
+  const _WorktreeDraft({
+    required this.mode,
+    required this.branchName,
+    this.baseBranch,
+  });
+
+  final WorktreeCreateMode mode;
+  final String branchName;
+  final String? baseBranch;
+}
+
+class _CreateWorktreeDialog extends StatefulWidget {
+  const _CreateWorktreeDialog({required this.branches});
+
+  final List<GitBranchDto> branches;
+
+  @override
+  State<_CreateWorktreeDialog> createState() => _CreateWorktreeDialogState();
+}
+
+class _CreateWorktreeDialogState extends State<_CreateWorktreeDialog> {
+  final _branch = TextEditingController();
+  WorktreeCreateMode _mode = WorktreeCreateMode.newBranch;
+  String? _baseBranch;
 
   @override
   void initState() {
     super.initState();
-    _connectionId = widget.connectionId;
-    _models = widget.models;
-    _title = TextEditingController(text: 'Coding session');
-    _model = TextEditingController(
-      text:
-          widget.connections
-              .where((item) => item.id == _connectionId)
-              .firstOrNull
-              ?.defaultModelId ??
-          '',
-    );
+    _baseBranch = widget.branches
+        .where((item) => item.current)
+        .firstOrNull
+        ?.name;
   }
 
   @override
   void dispose() {
-    _title.dispose();
-    _model.dispose();
+    _branch.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('새 agent'),
+    title: const Text('새 worktree'),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        TextField(
-          controller: _title,
-          decoration: const InputDecoration(labelText: '이름'),
+        SegmentedButton<WorktreeCreateMode>(
+          segments: const <ButtonSegment<WorktreeCreateMode>>[
+            ButtonSegment<WorktreeCreateMode>(
+              value: WorktreeCreateMode.newBranch,
+              label: Text('새 branch'),
+            ),
+            ButtonSegment<WorktreeCreateMode>(
+              value: WorktreeCreateMode.existingBranch,
+              label: Text('기존 branch'),
+            ),
+          ],
+          selected: <WorktreeCreateMode>{_mode},
+          onSelectionChanged: (value) => setState(() {
+            _mode = value.single;
+            _branch.clear();
+          }),
         ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _connectionId,
-          decoration: const InputDecoration(labelText: 'API provider'),
-          items: widget.connections
-              .map(
-                (value) => DropdownMenuItem(
-                  value: value.id,
-                  child: Text(value.displayName),
-                ),
-              )
-              .toList(),
-          onChanged: _selectProvider,
-        ),
-        const SizedBox(height: 12),
-        DropdownMenu<String>(
-          controller: _model,
-          enableFilter: true,
-          expandedInsets: EdgeInsets.zero,
-          label: const Text('Model ID'),
-          dropdownMenuEntries: _models
-              .map(
-                (item) => DropdownMenuEntry(value: item.id, label: item.label),
-              )
-              .toList(),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _reasoningEffort,
-          decoration: const InputDecoration(labelText: 'Reasoning effort'),
-          items: const <String>['none', 'low', 'medium', 'high', 'xhigh']
-              .map(
-                (value) => DropdownMenuItem(value: value, child: Text(value)),
-              )
-              .toList(),
-          onChanged: (value) =>
-              setState(() => _reasoningEffort = value ?? _reasoningEffort),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<PermissionMode>(
-          initialValue: _permission,
-          decoration: const InputDecoration(labelText: 'Permission mode'),
-          items: PermissionMode.values
-              .map(
-                (value) => DropdownMenuItem(
-                  value: value,
-                  child: Text(value.name),
-                ),
-              )
-              .toList(),
-          onChanged: (value) =>
-              setState(() => _permission = value ?? PermissionMode.ask),
-        ),
+        const SizedBox(height: 16),
+        if (_mode == WorktreeCreateMode.newBranch) ...<Widget>[
+          TextField(
+            controller: _branch,
+            decoration: const InputDecoration(labelText: '새 branch 이름'),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _baseBranch,
+            decoration: const InputDecoration(labelText: 'Base branch'),
+            items: widget.branches
+                .map(
+                  (branch) => DropdownMenuItem<String>(
+                    value: branch.name,
+                    child: Text(branch.name),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (value) => _baseBranch = value,
+          ),
+        ] else
+          DropdownButtonFormField<String>(
+            decoration: const InputDecoration(labelText: 'Local branch'),
+            items: widget.branches
+                .where((branch) => !branch.checkedOut)
+                .map(
+                  (branch) => DropdownMenuItem<String>(
+                    value: branch.name,
+                    child: Text(branch.name),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (value) => _branch.text = value ?? '',
+          ),
       ],
     ),
     actions: <Widget>[
@@ -708,46 +887,398 @@ class _AgentDraftDialogState extends State<_AgentDraftDialog> {
         onPressed: () => Navigator.pop(context),
         child: const Text('취소'),
       ),
-      FilledButton(onPressed: _submit, child: const Text('생성')),
+      FilledButton(
+        onPressed: () {
+          final branch = _branch.text.trim();
+          if (branch.isEmpty) return;
+          Navigator.pop(
+            context,
+            _WorktreeDraft(
+              mode: _mode,
+              branchName: branch,
+              baseBranch: _mode == WorktreeCreateMode.newBranch
+                  ? _baseBranch
+                  : null,
+            ),
+          );
+        },
+        child: const Text('생성'),
+      ),
+    ],
+  );
+}
+
+class _NoDaemonState extends StatelessWidget {
+  const _NoDaemonState({required this.onSettings});
+
+  final VoidCallback onSettings;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const Text('설정된 daemon이 없습니다.'),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: onSettings,
+            child: const Text('Daemon 설정'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _EmptyWorkspaceDetail extends StatelessWidget {
+  const _EmptyWorkspaceDetail();
+
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: Text('왼쪽 트리에서 checkout 또는 worktree를 선택하세요.'),
+  );
+}
+
+class _RemoteDirectoryDialog extends StatefulWidget {
+  const _RemoteDirectoryDialog({required this.api});
+
+  final CoderApi api;
+
+  @override
+  State<_RemoteDirectoryDialog> createState() => _RemoteDirectoryDialogState();
+}
+
+class _RemoteDirectoryDialogState extends State<_RemoteDirectoryDialog> {
+  final _path = TextEditingController();
+  List<DirectorySuggestionDto> _suggestions = const <DirectorySuggestionDto>[];
+
+  @override
+  void dispose() {
+    _path.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Daemon의 폴더 선택'),
+    content: SizedBox(
+      width: 520,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          TextField(
+            controller: _path,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Daemon 경로',
+              hintText: '/srv/repositories/project',
+            ),
+            onChanged: _search,
+          ),
+          for (final suggestion in _suggestions)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.folder_outlined),
+              title: Text(suggestion.name),
+              subtitle: Text(suggestion.path),
+              onTap: () => setState(() => _path.text = suggestion.path),
+            ),
+        ],
+      ),
+    ),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('취소'),
+      ),
+      FilledButton(
+        onPressed: () {
+          final value = _path.text.trim();
+          if (value.isNotEmpty) Navigator.pop(context, value);
+        },
+        child: const Text('등록'),
+      ),
     ],
   );
 
-  Future<void> _selectProvider(String? value) async {
-    if (value == null) return;
-    final models = await widget.loadModels(value);
-    if (!mounted) return;
-    final provider = widget.connections
-        .where((item) => item.id == value)
-        .firstOrNull;
-    setState(() {
-      _connectionId = value;
-      _models = models;
-      _model.text = provider?.defaultModelId ?? '';
-    });
-  }
-
-  void _submit() {
-    final model = _model.text.trim();
-    if (model.isEmpty) return;
-    final title = _title.text.trim();
-    Navigator.pop(
-      context,
-      _AgentDraft(
-        title: title.isEmpty ? 'Coding session' : title,
-        providerConnectionId: _connectionId,
-        model: model,
-        reasoningEffort: _reasoningEffort,
-        permissionMode: _permission,
-      ),
-    );
+  Future<void> _search(String query) async {
+    final suggestions = await widget.api.suggestDirectories(query);
+    if (mounted) setState(() => _suggestions = suggestions);
   }
 }
 
-class _ConversationPane extends ConsumerStatefulWidget {
-  const _ConversationPane({required this.workspaceId, required this.agentId});
+class _SessionArea extends ConsumerStatefulWidget {
+  const _SessionArea({
+    required this.selection,
+    this.requestedAgentId,
+    this.showBack = false,
+  });
 
-  final String? workspaceId;
-  final String? agentId;
+  final WorkspaceSelection selection;
+  final String? requestedAgentId;
+  final bool showBack;
+
+  @override
+  ConsumerState<_SessionArea> createState() => _SessionAreaState();
+}
+
+class _SessionAreaState extends ConsumerState<_SessionArea> {
+  bool _requestedOpened = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = sessionTabsControllerProvider(widget.selection);
+    final tabs = ref.watch(provider);
+    final state = tabs.asData?.value;
+    if (!_requestedOpened &&
+        widget.requestedAgentId != null &&
+        state != null &&
+        state.sessions.any((item) => item.id == widget.requestedAgentId)) {
+      _requestedOpened = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(
+            ref.read(provider.notifier).open(widget.requestedAgentId!),
+          );
+        }
+      });
+    }
+    return Column(
+      children: <Widget>[
+        SizedBox(
+          height: 48,
+          child: Row(
+            children: <Widget>[
+              if (widget.showBack)
+                IconButton(
+                  onPressed: () => const WorkspaceHomeRoute().go(context),
+                  icon: const Icon(Icons.arrow_back),
+                ),
+              Expanded(
+                child: state == null
+                    ? const LinearProgressIndicator()
+                    : ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: <Widget>[
+                          for (final id in state.openAgentIds)
+                            _SessionTab(
+                              agent: state.sessions
+                                  .where((item) => item.id == id)
+                                  .first,
+                              selected: state.selectedAgentId == id,
+                              onSelect: () => _select(id),
+                              onClose: () => _close(id),
+                            ),
+                        ],
+                      ),
+              ),
+              IconButton(
+                tooltip: '새 session',
+                onPressed: state == null ? null : _createSession,
+                icon: const Icon(Icons.add),
+              ),
+              if (state != null)
+                PopupMenuButton<String>(
+                  tooltip: '모든 session',
+                  icon: const Icon(Icons.more_horiz),
+                  onSelected: _open,
+                  itemBuilder: (context) => <PopupMenuEntry<String>>[
+                    for (final agent in state.sessions)
+                      PopupMenuItem<String>(
+                        value: agent.id,
+                        child: Text(agent.title),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: state?.selectedAgentId == null
+              ? _NoSession(onCreate: _createSession)
+              : _ConversationPane(
+                  selection: widget.selection,
+                  agent: state!.sessions
+                      .where((item) => item.id == state.selectedAgentId)
+                      .first,
+                ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _select(String id) async {
+    await ref
+        .read(sessionTabsControllerProvider(widget.selection).notifier)
+        .select(id);
+    if (mounted) _goSession(context, widget.selection, id);
+  }
+
+  Future<void> _open(String id) async {
+    await ref
+        .read(sessionTabsControllerProvider(widget.selection).notifier)
+        .open(id);
+    if (mounted) _goSession(context, widget.selection, id);
+  }
+
+  Future<void> _close(String id) async {
+    final notifier = ref.read(
+      sessionTabsControllerProvider(widget.selection).notifier,
+    );
+    await notifier.close(id);
+    if (!mounted) return;
+    final selected = ref
+        .read(sessionTabsControllerProvider(widget.selection))
+        .requireValue
+        .selectedAgentId;
+    if (selected == null) {
+      _goWorktree(context, widget.selection);
+    } else {
+      _goSession(context, widget.selection, selected);
+    }
+  }
+
+  Future<void> _createSession() async {
+    final providerState = await ref.read(
+      providerSettingsControllerProvider(widget.selection.hostId).future,
+    );
+    final connections = providerState?.connections
+        .where(
+          (item) =>
+              item.status == ProviderConnectionStatus.connected ||
+              item.status == ProviderConnectionStatus.degraded,
+        )
+        .toList(growable: false);
+    if (connections == null || connections.isEmpty || !mounted) return;
+    final defaultConnection =
+        connections.where((item) => item.isDefault).firstOrNull ??
+        connections.first;
+    final title = await showDialog<String>(
+      context: context,
+      builder: (context) => const _SessionNameDialog(),
+    );
+    if (title == null || !mounted) return;
+    final model = defaultConnection.defaultModelId;
+    if (model == null) return;
+    final agent = await ref
+        .read(
+          agentsControllerProvider(
+            widget.selection.hostId,
+            widget.selection.worktreeId,
+          ).notifier,
+        )
+        .create(
+          title: title,
+          providerConnectionId: defaultConnection.id,
+          model: model,
+          reasoningEffort: 'medium',
+          permissionMode: PermissionMode.ask,
+        );
+    await ref
+        .read(sessionTabsControllerProvider(widget.selection).notifier)
+        .add(agent);
+    if (mounted) _goSession(context, widget.selection, agent.id);
+  }
+}
+
+class _SessionTab extends StatelessWidget {
+  const _SessionTab({
+    required this.agent,
+    required this.selected,
+    required this.onSelect,
+    required this.onClose,
+  });
+
+  final AgentDto agent;
+  final bool selected;
+  final VoidCallback onSelect;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: selected
+        ? Theme.of(context).colorScheme.secondaryContainer
+        : Colors.transparent,
+    child: InkWell(
+      onTap: onSelect,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 14),
+        child: Row(
+          children: <Widget>[
+            Text(agent.title),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: '탭 닫기',
+              onPressed: onClose,
+              icon: const Icon(Icons.close, size: 16),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _SessionNameDialog extends StatefulWidget {
+  const _SessionNameDialog();
+
+  @override
+  State<_SessionNameDialog> createState() => _SessionNameDialogState();
+}
+
+class _SessionNameDialogState extends State<_SessionNameDialog> {
+  final _title = TextEditingController(text: 'Coding session');
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('새 session'),
+    content: TextField(
+      controller: _title,
+      autofocus: true,
+      decoration: const InputDecoration(labelText: '이름'),
+    ),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('취소'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, _title.text.trim()),
+        child: const Text('생성'),
+      ),
+    ],
+  );
+}
+
+class _NoSession extends StatelessWidget {
+  const _NoSession({required this.onCreate});
+
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: FilledButton.icon(
+      onPressed: onCreate,
+      icon: const Icon(Icons.add),
+      label: const Text('새 session 시작'),
+    ),
+  );
+}
+
+class _ConversationPane extends ConsumerStatefulWidget {
+  const _ConversationPane({required this.selection, required this.agent});
+
+  final WorkspaceSelection selection;
+  final AgentDto agent;
 
   @override
   ConsumerState<_ConversationPane> createState() => _ConversationPaneState();
@@ -764,78 +1295,76 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
 
   @override
   Widget build(BuildContext context) {
-    final agents = ref
-        .watch(agentsControllerProvider(widget.workspaceId))
-        .asData
-        ?.value;
-    final selected = (agents ?? const <AgentDto>[])
-        .where((item) => item.id == widget.agentId)
-        .firstOrNull;
-    if (widget.agentId == null || selected == null) {
-      return const Center(child: Text('Agent를 선택하세요.'));
-    }
+    final current =
+        ref
+            .watch(
+              agentsControllerProvider(
+                widget.selection.hostId,
+                widget.selection.worktreeId,
+              ),
+            )
+            .asData
+            ?.value
+            .where((item) => item.id == widget.agent.id)
+            .firstOrNull ??
+        widget.agent;
     final busy =
-        selected.status == AgentStatus.running ||
-        selected.status == AgentStatus.waitingForApproval;
+        current.status == AgentStatus.running ||
+        current.status == AgentStatus.waitingForApproval;
     final conversation = ref.watch(
-      conversationControllerProvider(widget.agentId),
+      conversationControllerProvider(widget.selection.hostId, current.id),
     );
-    final conversationState = conversation.asData?.value;
-    final displayTimeline = _coalesceAssistantDeltas(
-      conversationState?.timeline ?? const <TimelineEventDto>[],
+    final value = conversation.asData?.value;
+    final timeline = _coalesceAssistantDeltas(
+      value?.timeline ?? const <TimelineEventDto>[],
     );
     return Column(
       children: <Widget>[
         ListTile(
-          title: Text(selected.title),
+          title: Text(current.title),
           subtitle: Text(
-            '${selected.providerConnectionId}/${selected.model} · '
-            '${selected.reasoningEffort} · ${selected.permissionMode.name}',
+            '${current.providerConnectionId}/${current.model} · '
+            '${current.permissionMode.name}',
           ),
           trailing: busy
-              ? TextButton.icon(
+              ? IconButton(
+                  tooltip: '중지',
                   onPressed: () => ref
                       .read(
-                        conversationControllerProvider(widget.agentId).notifier,
+                        conversationControllerProvider(
+                          widget.selection.hostId,
+                          current.id,
+                        ).notifier,
                       )
                       .cancelTurn(),
                   icon: const Icon(Icons.stop_circle_outlined),
-                  label: const Text('중지'),
-                )
-              : displayTimeline.isEmpty
-              ? IconButton(
-                  tooltip: 'Agent 모델 설정',
-                  onPressed: () => _editAgentConfiguration(selected),
-                  icon: const Icon(Icons.tune),
                 )
               : null,
         ),
-        const Divider(height: 1),
         Expanded(
-          child: displayTimeline.isEmpty
-              ? const Center(child: Text('요청을 입력해 coding agent를 시작하세요.'))
+          child: timeline.isEmpty
+              ? const Center(child: Text('코딩 요청을 입력하세요.'))
               : ListView.separated(
                   reverse: true,
                   padding: const EdgeInsets.all(20),
-                  itemCount: displayTimeline.length,
+                  itemCount: timeline.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final event =
-                        displayTimeline[displayTimeline.length - index - 1];
-                    return TimelineCard(event: event);
-                  },
+                  itemBuilder: (context, index) => TimelineCard(
+                    event: timeline[timeline.length - index - 1],
+                  ),
                 ),
         ),
         for (final approval
-            in conversationState?.approvals.values ??
-                const <ApprovalRequestDto>[])
-          ApprovalCard(approval: approval),
+            in value?.approvals.values ?? const <ApprovalRequestDto>[])
+          ApprovalCard(
+            hostId: widget.selection.hostId,
+            approval: approval,
+          ),
         SafeArea(
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 Expanded(
                   child: TextField(
@@ -847,12 +1376,12 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                       hintText: '코딩 요청을 입력하세요…',
                       border: OutlineInputBorder(),
                     ),
-                    onSubmitted: busy ? null : (_) => _send(),
+                    onSubmitted: busy ? null : (_) => _send(current.id),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton.filled(
-                  onPressed: busy ? null : _send,
+                  onPressed: busy ? null : () => _send(current.id),
                   icon: const Icon(Icons.arrow_upward),
                 ),
               ],
@@ -863,225 +1392,77 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     );
   }
 
-  Future<void> _editAgentConfiguration(AgentDto agent) async {
-    final workspaceId = widget.workspaceId;
-    if (workspaceId == null) return;
-    final controller = ref.read(agentsControllerProvider(workspaceId).notifier);
-    final providerController = ref.read(
-      providerSettingsControllerProvider.notifier,
-    );
-    final providerState = await ref.read(
-      providerSettingsControllerProvider.future,
-    );
-    if (providerState == null) return;
-    await providerController.loadModels(agent.providerConnectionId);
-    if (!mounted) return;
-    final models =
-        ref
-            .read(providerSettingsControllerProvider)
-            .asData
-            ?.value
-            ?.models[agent.providerConnectionId] ??
-        const <ProviderModelDto>[];
-    final draft = await showDialog<_AgentConfigurationDraft>(
-      context: context,
-      builder: (context) => _AgentConfigurationDialog(
-        agent: agent,
-        connections: providerState.connections,
-        models: models,
-        loadModels: (connectionId) async {
-          await providerController.loadModels(connectionId);
-          return ref
-                  .read(providerSettingsControllerProvider)
-                  .asData
-                  ?.value
-                  ?.models[connectionId] ??
-              const <ProviderModelDto>[];
-        },
-      ),
-    );
-    if (draft == null) return;
-    await controller.updateConfiguration(
-      agentId: agent.id,
-      providerConnectionId: draft.providerConnectionId,
-      model: draft.model,
-      reasoningEffort: draft.reasoningEffort,
-    );
-  }
-
-  Future<void> _send() async {
-    final text = _composer.text;
-    if (text.trim().isEmpty) return;
+  Future<void> _send(String agentId) async {
+    final text = _composer.text.trim();
+    if (text.isEmpty) return;
     _composer.clear();
     await ref
-        .read(conversationControllerProvider(widget.agentId).notifier)
+        .read(
+          conversationControllerProvider(
+            widget.selection.hostId,
+            agentId,
+          ).notifier,
+        )
         .startTurn(text);
   }
+}
 
-  List<TimelineEventDto> _coalesceAssistantDeltas(
-    List<TimelineEventDto> events,
-  ) {
-    final result = <TimelineEventDto>[];
-    for (final event in events) {
-      if (event.type == 'assistant.delta' &&
-          result.isNotEmpty &&
-          result.last.type == 'assistant.delta' &&
-          result.last.turnId == event.turnId) {
-        final previous = result.removeLast();
-        result.add(
-          previous.copyWith(
-            data: <String, dynamic>{
-              'text':
-                  '${previous.data['text'] as String? ?? ''}'
-                  '${event.data['text'] as String? ?? ''}',
-            },
-          ),
-        );
-      } else {
-        result.add(event);
-      }
+List<TimelineEventDto> _coalesceAssistantDeltas(
+  List<TimelineEventDto> events,
+) {
+  final result = <TimelineEventDto>[];
+  for (final event in events) {
+    if (event.type == 'assistant.delta' &&
+        result.isNotEmpty &&
+        result.last.type == 'assistant.delta' &&
+        result.last.turnId == event.turnId) {
+      final previous = result.removeLast();
+      result.add(
+        previous.copyWith(
+          data: <String, dynamic>{
+            'text':
+                '${previous.data['text'] as String? ?? ''}'
+                '${event.data['text'] as String? ?? ''}',
+          },
+        ),
+      );
+    } else {
+      result.add(event);
     }
-    return result;
   }
+  return result;
 }
 
-final class _AgentConfigurationDraft {
-  const _AgentConfigurationDraft({
-    required this.providerConnectionId,
-    required this.model,
-    required this.reasoningEffort,
-  });
-
-  final String providerConnectionId;
-  final String model;
-  final String reasoningEffort;
+void _goWorktree(BuildContext context, WorkspaceSelection selection) {
+  WorktreeRoute(
+    hostId: selection.hostId,
+    workspaceId: selection.workspaceId,
+    worktreeId: selection.worktreeId,
+  ).go(context);
 }
 
-class _AgentConfigurationDialog extends StatefulWidget {
-  const _AgentConfigurationDialog({
-    required this.agent,
-    required this.connections,
-    required this.models,
-    required this.loadModels,
-  });
-
-  final AgentDto agent;
-  final List<ProviderConnectionDto> connections;
-  final List<ProviderModelDto> models;
-  final _ModelLoader loadModels;
-
-  @override
-  State<_AgentConfigurationDialog> createState() =>
-      _AgentConfigurationDialogState();
+void _goSession(
+  BuildContext context,
+  WorkspaceSelection selection,
+  String agentId,
+) {
+  SessionRoute(
+    hostId: selection.hostId,
+    workspaceId: selection.workspaceId,
+    worktreeId: selection.worktreeId,
+    agentId: agentId,
+  ).go(context);
 }
 
-class _AgentConfigurationDialogState extends State<_AgentConfigurationDialog> {
-  late final TextEditingController _model;
-  late String _connectionId;
-  late String _reasoningEffort;
-  late List<ProviderModelDto> _models;
-
-  @override
-  void initState() {
-    super.initState();
-    _connectionId = widget.agent.providerConnectionId;
-    _reasoningEffort = widget.agent.reasoningEffort;
-    _models = widget.models;
-    _model = TextEditingController(text: widget.agent.model);
-  }
-
-  @override
-  void dispose() {
-    _model.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Agent 모델 설정'),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        DropdownButtonFormField<String>(
-          initialValue: _connectionId,
-          decoration: const InputDecoration(labelText: 'API provider'),
-          items: widget.connections
-              .where(
-                (item) =>
-                    item.status == ProviderConnectionStatus.connected ||
-                    item.status == ProviderConnectionStatus.degraded,
-              )
-              .map(
-                (item) => DropdownMenuItem(
-                  value: item.id,
-                  child: Text(item.displayName),
-                ),
-              )
-              .toList(),
-          onChanged: _selectProvider,
-        ),
-        const SizedBox(height: 12),
-        DropdownMenu<String>(
-          controller: _model,
-          enableFilter: true,
-          expandedInsets: EdgeInsets.zero,
-          label: const Text('Model ID'),
-          dropdownMenuEntries: _models
-              .map(
-                (item) => DropdownMenuEntry(value: item.id, label: item.label),
-              )
-              .toList(),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _reasoningEffort,
-          decoration: const InputDecoration(labelText: 'Reasoning effort'),
-          items: const <String>['none', 'low', 'medium', 'high', 'xhigh']
-              .map(
-                (item) => DropdownMenuItem(value: item, child: Text(item)),
-              )
-              .toList(),
-          onChanged: (value) =>
-              setState(() => _reasoningEffort = value ?? _reasoningEffort),
-        ),
-      ],
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('취소'),
-      ),
-      FilledButton(onPressed: _submit, child: const Text('저장')),
-    ],
-  );
-
-  Future<void> _selectProvider(String? value) async {
-    if (value == null) return;
-    final models = await widget.loadModels(value);
-    if (!mounted) return;
-    final provider = widget.connections
-        .where((item) => item.id == value)
-        .firstOrNull;
-    setState(() {
-      _connectionId = value;
-      _models = models;
-      _model.text = provider?.defaultModelId ?? '';
-    });
-  }
-
-  void _submit() {
-    final model = _model.text.trim();
-    if (model.isEmpty) return;
-    Navigator.pop(
-      context,
-      _AgentConfigurationDraft(
-        providerConnectionId: _connectionId,
-        model: model,
-        reasoningEffort: _reasoningEffort,
-      ),
-    );
-  }
-}
+String _hostStatusLabel(HostRuntimeStatus status) => switch (status) {
+  HostRuntimeStatus.online => '온라인',
+  HostRuntimeStatus.connecting => '연결 중',
+  HostRuntimeStatus.reconnecting => '재연결 중',
+  HostRuntimeStatus.offline => '오프라인',
+  HostRuntimeStatus.error => '오류',
+  HostRuntimeStatus.conflict => '중복 daemon',
+  HostRuntimeStatus.idle => '자동 연결 꺼짐',
+};
 
 /// Renders one persisted timeline event.
 class TimelineCard extends StatelessWidget {
@@ -1134,7 +1515,10 @@ class TimelineCard extends StatelessWidget {
 /// Renders an actionable tool approval request.
 class ApprovalCard extends ConsumerWidget {
   /// Creates an [ApprovalCard].
-  const ApprovalCard({required this.approval, super.key});
+  const ApprovalCard({required this.hostId, required this.approval, super.key});
+
+  /// Stable host profile containing the approval's agent.
+  final String hostId;
 
   /// The pending approval rendered by this card.
   final ApprovalRequestDto approval;
@@ -1169,6 +1553,7 @@ class ApprovalCard extends ConsumerWidget {
                   onPressed: () => ref
                       .read(
                         conversationControllerProvider(
+                          hostId,
                           approval.agentId,
                         ).notifier,
                       )
@@ -1180,6 +1565,7 @@ class ApprovalCard extends ConsumerWidget {
                   onPressed: () => ref
                       .read(
                         conversationControllerProvider(
+                          hostId,
                           approval.agentId,
                         ).notifier,
                       )

@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
 import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/controller.dart';
-import 'package:coder_app/src/settings_page.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,7 +55,9 @@ void main() {
               height: 400,
               child: _material(
                 ThemeMode.light,
-                ProviderScope(child: ApprovalCard(approval: approval)),
+                ProviderScope(
+                  child: ApprovalCard(hostId: 'server', approval: approval),
+                ),
               ),
             ),
           ),
@@ -63,7 +68,9 @@ void main() {
               height: 400,
               child: _material(
                 ThemeMode.dark,
-                ProviderScope(child: ApprovalCard(approval: approval)),
+                ProviderScope(
+                  child: ApprovalCard(hostId: 'server', approval: approval),
+                ),
               ),
             ),
           ),
@@ -122,6 +129,35 @@ void main() {
       ),
     ),
   );
+
+  unawaited(
+    goldenTest(
+      'daemon-independent shell renders offline and global settings states',
+      fileName: 'daemon_hosts',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'offline dashboard desktop',
+            child: SizedBox(
+              width: 800,
+              height: 700,
+              child: _offlineDashboard(ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'remote settings mobile',
+            child: SizedBox(
+              width: 390,
+              height: 700,
+              child: _globalSettings(ThemeMode.dark),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 Widget _settings(ThemeMode mode) {
@@ -145,9 +181,15 @@ Widget _settings(ThemeMode mode) {
   );
   return ProviderScope(
     overrides: [
-      bootstrapProvider.overrideWithValue(FakeAppBootstrap(api: api)),
+      appServicesProvider.overrideWithValue(fakeAppServices(api)),
     ],
-    child: _material(mode, const SettingsPage(hostId: 'server')),
+    child: _material(
+      mode,
+      const UnifiedSettingsPage(
+        category: SettingsCategory.provider,
+        hostId: 'server',
+      ),
+    ),
   );
 }
 
@@ -160,3 +202,65 @@ Widget _material(ThemeMode mode, Widget child) => MaterialApp(
   themeMode: mode,
   home: Scaffold(body: child),
 );
+
+Widget _offlineDashboard(ThemeMode mode) {
+  final api = FakeCoderApi();
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(
+        fakeAppServices(api, connected: false),
+      ),
+    ],
+    child: _material(
+      mode,
+      const WorkspacePage(),
+    ),
+  );
+}
+
+Widget _globalSettings(ThemeMode mode) {
+  final now = DateTime.utc(2026, 8, 3);
+  final store = MemoryAppStore(
+    settings: const AppSettings(embeddedDaemonEnabled: false),
+    profiles: <RemoteDaemonProfile>[
+      RemoteDaemonProfile(
+        id: 'production',
+        label: 'Production daemon',
+        websocketUri: Uri.parse('wss://coder.example.com/ws'),
+        autoConnect: false,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ],
+    tokens: const <String, String>{'production': 'secret'},
+  );
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(
+        AppServices(
+          settings: store,
+          profiles: store,
+          credentials: store,
+          clients: const _UnusedClients(),
+          clientKind: 'golden',
+        ),
+      ),
+    ],
+    child: _material(
+      mode,
+      const UnifiedSettingsPage(category: SettingsCategory.daemon),
+    ),
+  );
+}
+
+final class _UnusedClients implements HostClientFactory {
+  const _UnusedClients();
+
+  @override
+  Future<CoderApi> connect({
+    required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
+    required String clientId,
+    required String clientKind,
+  }) => throw StateError('Golden profiles do not auto-connect.');
+}

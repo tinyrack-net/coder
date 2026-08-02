@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WorkspaceDto {
 
- String get id; String get name; String get rootPath; DateTime get createdAt;
+ String get id; String get name; String get rootPath; WorkspaceKind get kind; DateTime get createdAt;
 /// Create a copy of WorkspaceDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $WorkspaceDtoCopyWith<WorkspaceDto> get copyWith => _$WorkspaceDtoCopyWithImpl<W
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkspaceDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.rootPath, rootPath) || other.rootPath == rootPath)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkspaceDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.rootPath, rootPath) || other.rootPath == rootPath)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,rootPath,createdAt);
+int get hashCode => Object.hash(runtimeType,id,name,rootPath,kind,createdAt);
 
 @override
 String toString() {
-  return 'WorkspaceDto(id: $id, name: $name, rootPath: $rootPath, createdAt: $createdAt)';
+  return 'WorkspaceDto(id: $id, name: $name, rootPath: $rootPath, kind: $kind, createdAt: $createdAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $WorkspaceDtoCopyWith<$Res>  {
   factory $WorkspaceDtoCopyWith(WorkspaceDto value, $Res Function(WorkspaceDto) _then) = _$WorkspaceDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String rootPath, DateTime createdAt
+ String id, String name, String rootPath, WorkspaceKind kind, DateTime createdAt
 });
 
 
@@ -65,12 +65,13 @@ class _$WorkspaceDtoCopyWithImpl<$Res>
 
 /// Create a copy of WorkspaceDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? rootPath = null,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? rootPath = null,Object? kind = null,Object? createdAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,rootPath: null == rootPath ? _self.rootPath : rootPath // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as WorkspaceKind,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
 }
@@ -156,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String rootPath,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String rootPath,  WorkspaceKind kind,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WorkspaceDto() when $default != null:
-return $default(_that.id,_that.name,_that.rootPath,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.rootPath,_that.kind,_that.createdAt);case _:
   return orElse();
 
 }
@@ -177,10 +178,10 @@ return $default(_that.id,_that.name,_that.rootPath,_that.createdAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String rootPath,  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String rootPath,  WorkspaceKind kind,  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _WorkspaceDto():
-return $default(_that.id,_that.name,_that.rootPath,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.rootPath,_that.kind,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +198,10 @@ return $default(_that.id,_that.name,_that.rootPath,_that.createdAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String rootPath,  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String rootPath,  WorkspaceKind kind,  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _WorkspaceDto() when $default != null:
-return $default(_that.id,_that.name,_that.rootPath,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.rootPath,_that.kind,_that.createdAt);case _:
   return null;
 
 }
@@ -212,12 +213,13 @@ return $default(_that.id,_that.name,_that.rootPath,_that.createdAt);case _:
 @JsonSerializable()
 
 class _WorkspaceDto implements WorkspaceDto {
-  const _WorkspaceDto({required this.id, required this.name, required this.rootPath, required this.createdAt});
+  const _WorkspaceDto({required this.id, required this.name, required this.rootPath, required this.kind, required this.createdAt});
   factory _WorkspaceDto.fromJson(Map<String, dynamic> json) => _$WorkspaceDtoFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  String rootPath;
+@override final  WorkspaceKind kind;
 @override final  DateTime createdAt;
 
 /// Create a copy of WorkspaceDto
@@ -233,16 +235,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkspaceDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.rootPath, rootPath) || other.rootPath == rootPath)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkspaceDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.rootPath, rootPath) || other.rootPath == rootPath)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,rootPath,createdAt);
+int get hashCode => Object.hash(runtimeType,id,name,rootPath,kind,createdAt);
 
 @override
 String toString() {
-  return 'WorkspaceDto(id: $id, name: $name, rootPath: $rootPath, createdAt: $createdAt)';
+  return 'WorkspaceDto(id: $id, name: $name, rootPath: $rootPath, kind: $kind, createdAt: $createdAt)';
 }
 
 
@@ -253,7 +255,7 @@ abstract mixin class _$WorkspaceDtoCopyWith<$Res> implements $WorkspaceDtoCopyWi
   factory _$WorkspaceDtoCopyWith(_WorkspaceDto value, $Res Function(_WorkspaceDto) _then) = __$WorkspaceDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String rootPath, DateTime createdAt
+ String id, String name, String rootPath, WorkspaceKind kind, DateTime createdAt
 });
 
 
@@ -270,13 +272,1392 @@ class __$WorkspaceDtoCopyWithImpl<$Res>
 
 /// Create a copy of WorkspaceDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? rootPath = null,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? rootPath = null,Object? kind = null,Object? createdAt = null,}) {
   return _then(_WorkspaceDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,rootPath: null == rootPath ? _self.rootPath : rootPath // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as WorkspaceKind,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$WorktreeDto {
+
+ String get id; String get workspaceId; String get name; String get path; WorktreeKind get kind; bool get isCoderOwned; DateTime get createdAt; String? get branch; String? get head; DateTime? get archivedAt;
+/// Create a copy of WorktreeDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$WorktreeDtoCopyWith<WorktreeDto> get copyWith => _$WorktreeDtoCopyWithImpl<WorktreeDto>(this as WorktreeDto, _$identity);
+
+  /// Serializes this WorktreeDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorktreeDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.name, name) || other.name == name)&&(identical(other.path, path) || other.path == path)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.isCoderOwned, isCoderOwned) || other.isCoderOwned == isCoderOwned)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.branch, branch) || other.branch == branch)&&(identical(other.head, head) || other.head == head)&&(identical(other.archivedAt, archivedAt) || other.archivedAt == archivedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,workspaceId,name,path,kind,isCoderOwned,createdAt,branch,head,archivedAt);
+
+@override
+String toString() {
+  return 'WorktreeDto(id: $id, workspaceId: $workspaceId, name: $name, path: $path, kind: $kind, isCoderOwned: $isCoderOwned, createdAt: $createdAt, branch: $branch, head: $head, archivedAt: $archivedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $WorktreeDtoCopyWith<$Res>  {
+  factory $WorktreeDtoCopyWith(WorktreeDto value, $Res Function(WorktreeDto) _then) = _$WorktreeDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String workspaceId, String name, String path, WorktreeKind kind, bool isCoderOwned, DateTime createdAt, String? branch, String? head, DateTime? archivedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$WorktreeDtoCopyWithImpl<$Res>
+    implements $WorktreeDtoCopyWith<$Res> {
+  _$WorktreeDtoCopyWithImpl(this._self, this._then);
+
+  final WorktreeDto _self;
+  final $Res Function(WorktreeDto) _then;
+
+/// Create a copy of WorktreeDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = null,Object? name = null,Object? path = null,Object? kind = null,Object? isCoderOwned = null,Object? createdAt = null,Object? branch = freezed,Object? head = freezed,Object? archivedAt = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as WorktreeKind,isCoderOwned: null == isCoderOwned ? _self.isCoderOwned : isCoderOwned // ignore: cast_nullable_to_non_nullable
+as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,branch: freezed == branch ? _self.branch : branch // ignore: cast_nullable_to_non_nullable
+as String?,head: freezed == head ? _self.head : head // ignore: cast_nullable_to_non_nullable
+as String?,archivedAt: freezed == archivedAt ? _self.archivedAt : archivedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [WorktreeDto].
+extension WorktreeDtoPatterns on WorktreeDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _WorktreeDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _WorktreeDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _WorktreeDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _WorktreeDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _WorktreeDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _WorktreeDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isCoderOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _WorktreeDto() when $default != null:
+return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isCoderOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isCoderOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)  $default,) {final _that = this;
+switch (_that) {
+case _WorktreeDto():
+return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isCoderOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isCoderOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)?  $default,) {final _that = this;
+switch (_that) {
+case _WorktreeDto() when $default != null:
+return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isCoderOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _WorktreeDto implements WorktreeDto {
+  const _WorktreeDto({required this.id, required this.workspaceId, required this.name, required this.path, required this.kind, required this.isCoderOwned, required this.createdAt, this.branch, this.head, this.archivedAt});
+  factory _WorktreeDto.fromJson(Map<String, dynamic> json) => _$WorktreeDtoFromJson(json);
+
+@override final  String id;
+@override final  String workspaceId;
+@override final  String name;
+@override final  String path;
+@override final  WorktreeKind kind;
+@override final  bool isCoderOwned;
+@override final  DateTime createdAt;
+@override final  String? branch;
+@override final  String? head;
+@override final  DateTime? archivedAt;
+
+/// Create a copy of WorktreeDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$WorktreeDtoCopyWith<_WorktreeDto> get copyWith => __$WorktreeDtoCopyWithImpl<_WorktreeDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$WorktreeDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorktreeDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.name, name) || other.name == name)&&(identical(other.path, path) || other.path == path)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.isCoderOwned, isCoderOwned) || other.isCoderOwned == isCoderOwned)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.branch, branch) || other.branch == branch)&&(identical(other.head, head) || other.head == head)&&(identical(other.archivedAt, archivedAt) || other.archivedAt == archivedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,workspaceId,name,path,kind,isCoderOwned,createdAt,branch,head,archivedAt);
+
+@override
+String toString() {
+  return 'WorktreeDto(id: $id, workspaceId: $workspaceId, name: $name, path: $path, kind: $kind, isCoderOwned: $isCoderOwned, createdAt: $createdAt, branch: $branch, head: $head, archivedAt: $archivedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$WorktreeDtoCopyWith<$Res> implements $WorktreeDtoCopyWith<$Res> {
+  factory _$WorktreeDtoCopyWith(_WorktreeDto value, $Res Function(_WorktreeDto) _then) = __$WorktreeDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String workspaceId, String name, String path, WorktreeKind kind, bool isCoderOwned, DateTime createdAt, String? branch, String? head, DateTime? archivedAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$WorktreeDtoCopyWithImpl<$Res>
+    implements _$WorktreeDtoCopyWith<$Res> {
+  __$WorktreeDtoCopyWithImpl(this._self, this._then);
+
+  final _WorktreeDto _self;
+  final $Res Function(_WorktreeDto) _then;
+
+/// Create a copy of WorktreeDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = null,Object? name = null,Object? path = null,Object? kind = null,Object? isCoderOwned = null,Object? createdAt = null,Object? branch = freezed,Object? head = freezed,Object? archivedAt = freezed,}) {
+  return _then(_WorktreeDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as WorktreeKind,isCoderOwned: null == isCoderOwned ? _self.isCoderOwned : isCoderOwned // ignore: cast_nullable_to_non_nullable
+as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,branch: freezed == branch ? _self.branch : branch // ignore: cast_nullable_to_non_nullable
+as String?,head: freezed == head ? _self.head : head // ignore: cast_nullable_to_non_nullable
+as String?,archivedAt: freezed == archivedAt ? _self.archivedAt : archivedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$WorkspaceCatalogDto {
+
+ List<WorkspaceDto> get workspaces; List<WorktreeDto> get worktrees;
+/// Create a copy of WorkspaceCatalogDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$WorkspaceCatalogDtoCopyWith<WorkspaceCatalogDto> get copyWith => _$WorkspaceCatalogDtoCopyWithImpl<WorkspaceCatalogDto>(this as WorkspaceCatalogDto, _$identity);
+
+  /// Serializes this WorkspaceCatalogDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkspaceCatalogDto&&const DeepCollectionEquality().equals(other.workspaces, workspaces)&&const DeepCollectionEquality().equals(other.worktrees, worktrees));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(workspaces),const DeepCollectionEquality().hash(worktrees));
+
+@override
+String toString() {
+  return 'WorkspaceCatalogDto(workspaces: $workspaces, worktrees: $worktrees)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $WorkspaceCatalogDtoCopyWith<$Res>  {
+  factory $WorkspaceCatalogDtoCopyWith(WorkspaceCatalogDto value, $Res Function(WorkspaceCatalogDto) _then) = _$WorkspaceCatalogDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<WorkspaceDto> workspaces, List<WorktreeDto> worktrees
+});
+
+
+
+
+}
+/// @nodoc
+class _$WorkspaceCatalogDtoCopyWithImpl<$Res>
+    implements $WorkspaceCatalogDtoCopyWith<$Res> {
+  _$WorkspaceCatalogDtoCopyWithImpl(this._self, this._then);
+
+  final WorkspaceCatalogDto _self;
+  final $Res Function(WorkspaceCatalogDto) _then;
+
+/// Create a copy of WorkspaceCatalogDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? workspaces = null,Object? worktrees = null,}) {
+  return _then(_self.copyWith(
+workspaces: null == workspaces ? _self.workspaces : workspaces // ignore: cast_nullable_to_non_nullable
+as List<WorkspaceDto>,worktrees: null == worktrees ? _self.worktrees : worktrees // ignore: cast_nullable_to_non_nullable
+as List<WorktreeDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [WorkspaceCatalogDto].
+extension WorkspaceCatalogDtoPatterns on WorkspaceCatalogDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _WorkspaceCatalogDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _WorkspaceCatalogDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _WorkspaceCatalogDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _WorkspaceCatalogDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _WorkspaceCatalogDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _WorkspaceCatalogDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<WorkspaceDto> workspaces,  List<WorktreeDto> worktrees)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _WorkspaceCatalogDto() when $default != null:
+return $default(_that.workspaces,_that.worktrees);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<WorkspaceDto> workspaces,  List<WorktreeDto> worktrees)  $default,) {final _that = this;
+switch (_that) {
+case _WorkspaceCatalogDto():
+return $default(_that.workspaces,_that.worktrees);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<WorkspaceDto> workspaces,  List<WorktreeDto> worktrees)?  $default,) {final _that = this;
+switch (_that) {
+case _WorkspaceCatalogDto() when $default != null:
+return $default(_that.workspaces,_that.worktrees);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _WorkspaceCatalogDto implements WorkspaceCatalogDto {
+  const _WorkspaceCatalogDto({required final  List<WorkspaceDto> workspaces, required final  List<WorktreeDto> worktrees}): _workspaces = workspaces,_worktrees = worktrees;
+  factory _WorkspaceCatalogDto.fromJson(Map<String, dynamic> json) => _$WorkspaceCatalogDtoFromJson(json);
+
+ final  List<WorkspaceDto> _workspaces;
+@override List<WorkspaceDto> get workspaces {
+  if (_workspaces is EqualUnmodifiableListView) return _workspaces;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_workspaces);
+}
+
+ final  List<WorktreeDto> _worktrees;
+@override List<WorktreeDto> get worktrees {
+  if (_worktrees is EqualUnmodifiableListView) return _worktrees;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_worktrees);
+}
+
+
+/// Create a copy of WorkspaceCatalogDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$WorkspaceCatalogDtoCopyWith<_WorkspaceCatalogDto> get copyWith => __$WorkspaceCatalogDtoCopyWithImpl<_WorkspaceCatalogDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$WorkspaceCatalogDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkspaceCatalogDto&&const DeepCollectionEquality().equals(other._workspaces, _workspaces)&&const DeepCollectionEquality().equals(other._worktrees, _worktrees));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_workspaces),const DeepCollectionEquality().hash(_worktrees));
+
+@override
+String toString() {
+  return 'WorkspaceCatalogDto(workspaces: $workspaces, worktrees: $worktrees)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$WorkspaceCatalogDtoCopyWith<$Res> implements $WorkspaceCatalogDtoCopyWith<$Res> {
+  factory _$WorkspaceCatalogDtoCopyWith(_WorkspaceCatalogDto value, $Res Function(_WorkspaceCatalogDto) _then) = __$WorkspaceCatalogDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<WorkspaceDto> workspaces, List<WorktreeDto> worktrees
+});
+
+
+
+
+}
+/// @nodoc
+class __$WorkspaceCatalogDtoCopyWithImpl<$Res>
+    implements _$WorkspaceCatalogDtoCopyWith<$Res> {
+  __$WorkspaceCatalogDtoCopyWithImpl(this._self, this._then);
+
+  final _WorkspaceCatalogDto _self;
+  final $Res Function(_WorkspaceCatalogDto) _then;
+
+/// Create a copy of WorkspaceCatalogDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? workspaces = null,Object? worktrees = null,}) {
+  return _then(_WorkspaceCatalogDto(
+workspaces: null == workspaces ? _self._workspaces : workspaces // ignore: cast_nullable_to_non_nullable
+as List<WorkspaceDto>,worktrees: null == worktrees ? _self._worktrees : worktrees // ignore: cast_nullable_to_non_nullable
+as List<WorktreeDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$WorktreeArchivePreviewDto {
+
+ String get worktreeId; bool get dirty; int get unpushedCommitCount; int get runningSessionCount; bool get removesDirectory;
+/// Create a copy of WorktreeArchivePreviewDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$WorktreeArchivePreviewDtoCopyWith<WorktreeArchivePreviewDto> get copyWith => _$WorktreeArchivePreviewDtoCopyWithImpl<WorktreeArchivePreviewDto>(this as WorktreeArchivePreviewDto, _$identity);
+
+  /// Serializes this WorktreeArchivePreviewDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorktreeArchivePreviewDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.unpushedCommitCount, unpushedCommitCount) || other.unpushedCommitCount == unpushedCommitCount)&&(identical(other.runningSessionCount, runningSessionCount) || other.runningSessionCount == runningSessionCount)&&(identical(other.removesDirectory, removesDirectory) || other.removesDirectory == removesDirectory));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId,dirty,unpushedCommitCount,runningSessionCount,removesDirectory);
+
+@override
+String toString() {
+  return 'WorktreeArchivePreviewDto(worktreeId: $worktreeId, dirty: $dirty, unpushedCommitCount: $unpushedCommitCount, runningSessionCount: $runningSessionCount, removesDirectory: $removesDirectory)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $WorktreeArchivePreviewDtoCopyWith<$Res>  {
+  factory $WorktreeArchivePreviewDtoCopyWith(WorktreeArchivePreviewDto value, $Res Function(WorktreeArchivePreviewDto) _then) = _$WorktreeArchivePreviewDtoCopyWithImpl;
+@useResult
+$Res call({
+ String worktreeId, bool dirty, int unpushedCommitCount, int runningSessionCount, bool removesDirectory
+});
+
+
+
+
+}
+/// @nodoc
+class _$WorktreeArchivePreviewDtoCopyWithImpl<$Res>
+    implements $WorktreeArchivePreviewDtoCopyWith<$Res> {
+  _$WorktreeArchivePreviewDtoCopyWithImpl(this._self, this._then);
+
+  final WorktreeArchivePreviewDto _self;
+  final $Res Function(WorktreeArchivePreviewDto) _then;
+
+/// Create a copy of WorktreeArchivePreviewDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? worktreeId = null,Object? dirty = null,Object? unpushedCommitCount = null,Object? runningSessionCount = null,Object? removesDirectory = null,}) {
+  return _then(_self.copyWith(
+worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,dirty: null == dirty ? _self.dirty : dirty // ignore: cast_nullable_to_non_nullable
+as bool,unpushedCommitCount: null == unpushedCommitCount ? _self.unpushedCommitCount : unpushedCommitCount // ignore: cast_nullable_to_non_nullable
+as int,runningSessionCount: null == runningSessionCount ? _self.runningSessionCount : runningSessionCount // ignore: cast_nullable_to_non_nullable
+as int,removesDirectory: null == removesDirectory ? _self.removesDirectory : removesDirectory // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [WorktreeArchivePreviewDto].
+extension WorktreeArchivePreviewDtoPatterns on WorktreeArchivePreviewDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _WorktreeArchivePreviewDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _WorktreeArchivePreviewDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _WorktreeArchivePreviewDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _WorktreeArchivePreviewDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _WorktreeArchivePreviewDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _WorktreeArchivePreviewDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String worktreeId,  bool dirty,  int unpushedCommitCount,  int runningSessionCount,  bool removesDirectory)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _WorktreeArchivePreviewDto() when $default != null:
+return $default(_that.worktreeId,_that.dirty,_that.unpushedCommitCount,_that.runningSessionCount,_that.removesDirectory);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String worktreeId,  bool dirty,  int unpushedCommitCount,  int runningSessionCount,  bool removesDirectory)  $default,) {final _that = this;
+switch (_that) {
+case _WorktreeArchivePreviewDto():
+return $default(_that.worktreeId,_that.dirty,_that.unpushedCommitCount,_that.runningSessionCount,_that.removesDirectory);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String worktreeId,  bool dirty,  int unpushedCommitCount,  int runningSessionCount,  bool removesDirectory)?  $default,) {final _that = this;
+switch (_that) {
+case _WorktreeArchivePreviewDto() when $default != null:
+return $default(_that.worktreeId,_that.dirty,_that.unpushedCommitCount,_that.runningSessionCount,_that.removesDirectory);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _WorktreeArchivePreviewDto implements WorktreeArchivePreviewDto {
+  const _WorktreeArchivePreviewDto({required this.worktreeId, required this.dirty, required this.unpushedCommitCount, required this.runningSessionCount, required this.removesDirectory});
+  factory _WorktreeArchivePreviewDto.fromJson(Map<String, dynamic> json) => _$WorktreeArchivePreviewDtoFromJson(json);
+
+@override final  String worktreeId;
+@override final  bool dirty;
+@override final  int unpushedCommitCount;
+@override final  int runningSessionCount;
+@override final  bool removesDirectory;
+
+/// Create a copy of WorktreeArchivePreviewDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$WorktreeArchivePreviewDtoCopyWith<_WorktreeArchivePreviewDto> get copyWith => __$WorktreeArchivePreviewDtoCopyWithImpl<_WorktreeArchivePreviewDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$WorktreeArchivePreviewDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorktreeArchivePreviewDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.unpushedCommitCount, unpushedCommitCount) || other.unpushedCommitCount == unpushedCommitCount)&&(identical(other.runningSessionCount, runningSessionCount) || other.runningSessionCount == runningSessionCount)&&(identical(other.removesDirectory, removesDirectory) || other.removesDirectory == removesDirectory));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId,dirty,unpushedCommitCount,runningSessionCount,removesDirectory);
+
+@override
+String toString() {
+  return 'WorktreeArchivePreviewDto(worktreeId: $worktreeId, dirty: $dirty, unpushedCommitCount: $unpushedCommitCount, runningSessionCount: $runningSessionCount, removesDirectory: $removesDirectory)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$WorktreeArchivePreviewDtoCopyWith<$Res> implements $WorktreeArchivePreviewDtoCopyWith<$Res> {
+  factory _$WorktreeArchivePreviewDtoCopyWith(_WorktreeArchivePreviewDto value, $Res Function(_WorktreeArchivePreviewDto) _then) = __$WorktreeArchivePreviewDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String worktreeId, bool dirty, int unpushedCommitCount, int runningSessionCount, bool removesDirectory
+});
+
+
+
+
+}
+/// @nodoc
+class __$WorktreeArchivePreviewDtoCopyWithImpl<$Res>
+    implements _$WorktreeArchivePreviewDtoCopyWith<$Res> {
+  __$WorktreeArchivePreviewDtoCopyWithImpl(this._self, this._then);
+
+  final _WorktreeArchivePreviewDto _self;
+  final $Res Function(_WorktreeArchivePreviewDto) _then;
+
+/// Create a copy of WorktreeArchivePreviewDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? worktreeId = null,Object? dirty = null,Object? unpushedCommitCount = null,Object? runningSessionCount = null,Object? removesDirectory = null,}) {
+  return _then(_WorktreeArchivePreviewDto(
+worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,dirty: null == dirty ? _self.dirty : dirty // ignore: cast_nullable_to_non_nullable
+as bool,unpushedCommitCount: null == unpushedCommitCount ? _self.unpushedCommitCount : unpushedCommitCount // ignore: cast_nullable_to_non_nullable
+as int,runningSessionCount: null == runningSessionCount ? _self.runningSessionCount : runningSessionCount // ignore: cast_nullable_to_non_nullable
+as int,removesDirectory: null == removesDirectory ? _self.removesDirectory : removesDirectory // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$DirectorySuggestionDto {
+
+ String get path; String get name;
+/// Create a copy of DirectorySuggestionDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DirectorySuggestionDtoCopyWith<DirectorySuggestionDto> get copyWith => _$DirectorySuggestionDtoCopyWithImpl<DirectorySuggestionDto>(this as DirectorySuggestionDto, _$identity);
+
+  /// Serializes this DirectorySuggestionDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DirectorySuggestionDto&&(identical(other.path, path) || other.path == path)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,path,name);
+
+@override
+String toString() {
+  return 'DirectorySuggestionDto(path: $path, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DirectorySuggestionDtoCopyWith<$Res>  {
+  factory $DirectorySuggestionDtoCopyWith(DirectorySuggestionDto value, $Res Function(DirectorySuggestionDto) _then) = _$DirectorySuggestionDtoCopyWithImpl;
+@useResult
+$Res call({
+ String path, String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$DirectorySuggestionDtoCopyWithImpl<$Res>
+    implements $DirectorySuggestionDtoCopyWith<$Res> {
+  _$DirectorySuggestionDtoCopyWithImpl(this._self, this._then);
+
+  final DirectorySuggestionDto _self;
+  final $Res Function(DirectorySuggestionDto) _then;
+
+/// Create a copy of DirectorySuggestionDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? path = null,Object? name = null,}) {
+  return _then(_self.copyWith(
+path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [DirectorySuggestionDto].
+extension DirectorySuggestionDtoPatterns on DirectorySuggestionDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DirectorySuggestionDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DirectorySuggestionDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DirectorySuggestionDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _DirectorySuggestionDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DirectorySuggestionDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DirectorySuggestionDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String path,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DirectorySuggestionDto() when $default != null:
+return $default(_that.path,_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String path,  String name)  $default,) {final _that = this;
+switch (_that) {
+case _DirectorySuggestionDto():
+return $default(_that.path,_that.name);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String path,  String name)?  $default,) {final _that = this;
+switch (_that) {
+case _DirectorySuggestionDto() when $default != null:
+return $default(_that.path,_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DirectorySuggestionDto implements DirectorySuggestionDto {
+  const _DirectorySuggestionDto({required this.path, required this.name});
+  factory _DirectorySuggestionDto.fromJson(Map<String, dynamic> json) => _$DirectorySuggestionDtoFromJson(json);
+
+@override final  String path;
+@override final  String name;
+
+/// Create a copy of DirectorySuggestionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DirectorySuggestionDtoCopyWith<_DirectorySuggestionDto> get copyWith => __$DirectorySuggestionDtoCopyWithImpl<_DirectorySuggestionDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DirectorySuggestionDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DirectorySuggestionDto&&(identical(other.path, path) || other.path == path)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,path,name);
+
+@override
+String toString() {
+  return 'DirectorySuggestionDto(path: $path, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DirectorySuggestionDtoCopyWith<$Res> implements $DirectorySuggestionDtoCopyWith<$Res> {
+  factory _$DirectorySuggestionDtoCopyWith(_DirectorySuggestionDto value, $Res Function(_DirectorySuggestionDto) _then) = __$DirectorySuggestionDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String path, String name
+});
+
+
+
+
+}
+/// @nodoc
+class __$DirectorySuggestionDtoCopyWithImpl<$Res>
+    implements _$DirectorySuggestionDtoCopyWith<$Res> {
+  __$DirectorySuggestionDtoCopyWithImpl(this._self, this._then);
+
+  final _DirectorySuggestionDto _self;
+  final $Res Function(_DirectorySuggestionDto) _then;
+
+/// Create a copy of DirectorySuggestionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? path = null,Object? name = null,}) {
+  return _then(_DirectorySuggestionDto(
+path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$GitBranchDto {
+
+ String get name; bool get current; bool get checkedOut;
+/// Create a copy of GitBranchDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GitBranchDtoCopyWith<GitBranchDto> get copyWith => _$GitBranchDtoCopyWithImpl<GitBranchDto>(this as GitBranchDto, _$identity);
+
+  /// Serializes this GitBranchDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GitBranchDto&&(identical(other.name, name) || other.name == name)&&(identical(other.current, current) || other.current == current)&&(identical(other.checkedOut, checkedOut) || other.checkedOut == checkedOut));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,name,current,checkedOut);
+
+@override
+String toString() {
+  return 'GitBranchDto(name: $name, current: $current, checkedOut: $checkedOut)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GitBranchDtoCopyWith<$Res>  {
+  factory $GitBranchDtoCopyWith(GitBranchDto value, $Res Function(GitBranchDto) _then) = _$GitBranchDtoCopyWithImpl;
+@useResult
+$Res call({
+ String name, bool current, bool checkedOut
+});
+
+
+
+
+}
+/// @nodoc
+class _$GitBranchDtoCopyWithImpl<$Res>
+    implements $GitBranchDtoCopyWith<$Res> {
+  _$GitBranchDtoCopyWithImpl(this._self, this._then);
+
+  final GitBranchDto _self;
+  final $Res Function(GitBranchDto) _then;
+
+/// Create a copy of GitBranchDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? current = null,Object? checkedOut = null,}) {
+  return _then(_self.copyWith(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,current: null == current ? _self.current : current // ignore: cast_nullable_to_non_nullable
+as bool,checkedOut: null == checkedOut ? _self.checkedOut : checkedOut // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GitBranchDto].
+extension GitBranchDtoPatterns on GitBranchDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GitBranchDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GitBranchDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GitBranchDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GitBranchDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GitBranchDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GitBranchDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  bool current,  bool checkedOut)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GitBranchDto() when $default != null:
+return $default(_that.name,_that.current,_that.checkedOut);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  bool current,  bool checkedOut)  $default,) {final _that = this;
+switch (_that) {
+case _GitBranchDto():
+return $default(_that.name,_that.current,_that.checkedOut);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  bool current,  bool checkedOut)?  $default,) {final _that = this;
+switch (_that) {
+case _GitBranchDto() when $default != null:
+return $default(_that.name,_that.current,_that.checkedOut);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GitBranchDto implements GitBranchDto {
+  const _GitBranchDto({required this.name, required this.current, required this.checkedOut});
+  factory _GitBranchDto.fromJson(Map<String, dynamic> json) => _$GitBranchDtoFromJson(json);
+
+@override final  String name;
+@override final  bool current;
+@override final  bool checkedOut;
+
+/// Create a copy of GitBranchDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GitBranchDtoCopyWith<_GitBranchDto> get copyWith => __$GitBranchDtoCopyWithImpl<_GitBranchDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GitBranchDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GitBranchDto&&(identical(other.name, name) || other.name == name)&&(identical(other.current, current) || other.current == current)&&(identical(other.checkedOut, checkedOut) || other.checkedOut == checkedOut));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,name,current,checkedOut);
+
+@override
+String toString() {
+  return 'GitBranchDto(name: $name, current: $current, checkedOut: $checkedOut)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GitBranchDtoCopyWith<$Res> implements $GitBranchDtoCopyWith<$Res> {
+  factory _$GitBranchDtoCopyWith(_GitBranchDto value, $Res Function(_GitBranchDto) _then) = __$GitBranchDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String name, bool current, bool checkedOut
+});
+
+
+
+
+}
+/// @nodoc
+class __$GitBranchDtoCopyWithImpl<$Res>
+    implements _$GitBranchDtoCopyWith<$Res> {
+  __$GitBranchDtoCopyWithImpl(this._self, this._then);
+
+  final _GitBranchDto _self;
+  final $Res Function(_GitBranchDto) _then;
+
+/// Create a copy of GitBranchDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? current = null,Object? checkedOut = null,}) {
+  return _then(_GitBranchDto(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,current: null == current ? _self.current : current // ignore: cast_nullable_to_non_nullable
+as bool,checkedOut: null == checkedOut ? _self.checkedOut : checkedOut // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -287,7 +1668,7 @@ as DateTime,
 /// @nodoc
 mixin _$AgentDto {
 
- String get id; String get workspaceId; String get title; String get providerConnectionId; String get model; AgentStatus get status; PermissionMode get permissionMode; DateTime get createdAt; DateTime get updatedAt; String get reasoningEffort; String? get activeTurnId; String? get lastError;
+ String get id; String get worktreeId; String get title; String get providerConnectionId; String get model; AgentStatus get status; PermissionMode get permissionMode; DateTime get createdAt; DateTime get updatedAt; String get reasoningEffort; String? get activeTurnId; String? get lastError;
 /// Create a copy of AgentDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -300,16 +1681,16 @@ $AgentDtoCopyWith<AgentDto> get copyWith => _$AgentDtoCopyWithImpl<AgentDto>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.model, model) || other.model == model)&&(identical(other.status, status) || other.status == status)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.model, model) || other.model == model)&&(identical(other.status, status) || other.status == status)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,workspaceId,title,providerConnectionId,model,status,permissionMode,createdAt,updatedAt,reasoningEffort,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,providerConnectionId,model,status,permissionMode,createdAt,updatedAt,reasoningEffort,activeTurnId,lastError);
 
 @override
 String toString() {
-  return 'AgentDto(id: $id, workspaceId: $workspaceId, title: $title, providerConnectionId: $providerConnectionId, model: $model, status: $status, permissionMode: $permissionMode, createdAt: $createdAt, updatedAt: $updatedAt, reasoningEffort: $reasoningEffort, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'AgentDto(id: $id, worktreeId: $worktreeId, title: $title, providerConnectionId: $providerConnectionId, model: $model, status: $status, permissionMode: $permissionMode, createdAt: $createdAt, updatedAt: $updatedAt, reasoningEffort: $reasoningEffort, activeTurnId: $activeTurnId, lastError: $lastError)';
 }
 
 
@@ -320,7 +1701,7 @@ abstract mixin class $AgentDtoCopyWith<$Res>  {
   factory $AgentDtoCopyWith(AgentDto value, $Res Function(AgentDto) _then) = _$AgentDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String workspaceId, String title, String providerConnectionId, String model, AgentStatus status, PermissionMode permissionMode, DateTime createdAt, DateTime updatedAt, String reasoningEffort, String? activeTurnId, String? lastError
+ String id, String worktreeId, String title, String providerConnectionId, String model, AgentStatus status, PermissionMode permissionMode, DateTime createdAt, DateTime updatedAt, String reasoningEffort, String? activeTurnId, String? lastError
 });
 
 
@@ -337,10 +1718,10 @@ class _$AgentDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = null,Object? title = null,Object? providerConnectionId = null,Object? model = null,Object? status = null,Object? permissionMode = null,Object? createdAt = null,Object? updatedAt = null,Object? reasoningEffort = null,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? providerConnectionId = null,Object? model = null,Object? status = null,Object? permissionMode = null,Object? createdAt = null,Object? updatedAt = null,Object? reasoningEffort = null,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
 as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
@@ -436,10 +1817,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String title,  String providerConnectionId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String providerConnectionId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentDto() when $default != null:
-return $default(_that.id,_that.workspaceId,_that.title,_that.providerConnectionId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.providerConnectionId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
   return orElse();
 
 }
@@ -457,10 +1838,10 @@ return $default(_that.id,_that.workspaceId,_that.title,_that.providerConnectionI
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String title,  String providerConnectionId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String providerConnectionId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)  $default,) {final _that = this;
 switch (_that) {
 case _AgentDto():
-return $default(_that.id,_that.workspaceId,_that.title,_that.providerConnectionId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.providerConnectionId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -477,10 +1858,10 @@ return $default(_that.id,_that.workspaceId,_that.title,_that.providerConnectionI
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workspaceId,  String title,  String providerConnectionId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String providerConnectionId,  String model,  AgentStatus status,  PermissionMode permissionMode,  DateTime createdAt,  DateTime updatedAt,  String reasoningEffort,  String? activeTurnId,  String? lastError)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentDto() when $default != null:
-return $default(_that.id,_that.workspaceId,_that.title,_that.providerConnectionId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.providerConnectionId,_that.model,_that.status,_that.permissionMode,_that.createdAt,_that.updatedAt,_that.reasoningEffort,_that.activeTurnId,_that.lastError);case _:
   return null;
 
 }
@@ -492,11 +1873,11 @@ return $default(_that.id,_that.workspaceId,_that.title,_that.providerConnectionI
 @JsonSerializable()
 
 class _AgentDto implements AgentDto {
-  const _AgentDto({required this.id, required this.workspaceId, required this.title, required this.providerConnectionId, required this.model, required this.status, required this.permissionMode, required this.createdAt, required this.updatedAt, this.reasoningEffort = 'medium', this.activeTurnId, this.lastError});
+  const _AgentDto({required this.id, required this.worktreeId, required this.title, required this.providerConnectionId, required this.model, required this.status, required this.permissionMode, required this.createdAt, required this.updatedAt, this.reasoningEffort = 'medium', this.activeTurnId, this.lastError});
   factory _AgentDto.fromJson(Map<String, dynamic> json) => _$AgentDtoFromJson(json);
 
 @override final  String id;
-@override final  String workspaceId;
+@override final  String worktreeId;
 @override final  String title;
 @override final  String providerConnectionId;
 @override final  String model;
@@ -521,16 +1902,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.model, model) || other.model == model)&&(identical(other.status, status) || other.status == status)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.model, model) || other.model == model)&&(identical(other.status, status) || other.status == status)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,workspaceId,title,providerConnectionId,model,status,permissionMode,createdAt,updatedAt,reasoningEffort,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,providerConnectionId,model,status,permissionMode,createdAt,updatedAt,reasoningEffort,activeTurnId,lastError);
 
 @override
 String toString() {
-  return 'AgentDto(id: $id, workspaceId: $workspaceId, title: $title, providerConnectionId: $providerConnectionId, model: $model, status: $status, permissionMode: $permissionMode, createdAt: $createdAt, updatedAt: $updatedAt, reasoningEffort: $reasoningEffort, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'AgentDto(id: $id, worktreeId: $worktreeId, title: $title, providerConnectionId: $providerConnectionId, model: $model, status: $status, permissionMode: $permissionMode, createdAt: $createdAt, updatedAt: $updatedAt, reasoningEffort: $reasoningEffort, activeTurnId: $activeTurnId, lastError: $lastError)';
 }
 
 
@@ -541,7 +1922,7 @@ abstract mixin class _$AgentDtoCopyWith<$Res> implements $AgentDtoCopyWith<$Res>
   factory _$AgentDtoCopyWith(_AgentDto value, $Res Function(_AgentDto) _then) = __$AgentDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String workspaceId, String title, String providerConnectionId, String model, AgentStatus status, PermissionMode permissionMode, DateTime createdAt, DateTime updatedAt, String reasoningEffort, String? activeTurnId, String? lastError
+ String id, String worktreeId, String title, String providerConnectionId, String model, AgentStatus status, PermissionMode permissionMode, DateTime createdAt, DateTime updatedAt, String reasoningEffort, String? activeTurnId, String? lastError
 });
 
 
@@ -558,10 +1939,10 @@ class __$AgentDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = null,Object? title = null,Object? providerConnectionId = null,Object? model = null,Object? status = null,Object? permissionMode = null,Object? createdAt = null,Object? updatedAt = null,Object? reasoningEffort = null,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? providerConnectionId = null,Object? model = null,Object? status = null,Object? permissionMode = null,Object? createdAt = null,Object? updatedAt = null,Object? reasoningEffort = null,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
   return _then(_AgentDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
 as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable

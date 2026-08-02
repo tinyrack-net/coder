@@ -14,11 +14,11 @@ class CredentialStore implements CredentialRepository {
   final Map<String, ProviderCredential> _providerCredentials =
       <String, ProviderCredential>{};
   String? _bearerToken;
+  String? _adminToken;
   bool _loaded = false;
 
   File get _credentialsFile =>
       File(p.join(configDirectory, 'credentials.json'));
-  File get _authFile => File(p.join(configDirectory, 'auth.json'));
 
   @override
   Future<void> load() async {
@@ -27,7 +27,7 @@ class CredentialStore implements CredentialRepository {
     await _ensureDirectory();
     if (_credentialsFile.existsSync()) {
       final decoded = jsonDecode(await _credentialsFile.readAsString());
-      if (decoded is! Map<String, dynamic> || decoded['version'] != 2) {
+      if (decoded is! Map<String, dynamic> || decoded['version'] != 3) {
         throw FormatException(
           'incompatible_credentials: explicitly remove '
           '${_credentialsFile.path} to reset development credentials.',
@@ -41,11 +41,18 @@ class CredentialStore implements CredentialRepository {
           }
         }
       }
-    }
-    if (_authFile.existsSync()) {
-      final decoded = jsonDecode(await _authFile.readAsString());
-      if (decoded is Map && decoded['bearerToken'] is String) {
-        _bearerToken = decoded['bearerToken'] as String;
+      final daemon = decoded['daemon'];
+      if (daemon != null) {
+        if (daemon is! Map<String, dynamic> ||
+            daemon['bearerToken'] is! String ||
+            daemon['adminToken'] is! String) {
+          throw const FormatException('Invalid daemon credential data.');
+        }
+        _bearerToken = daemon['bearerToken'] as String;
+        _adminToken = daemon['adminToken'] as String;
+      }
+      if ((_bearerToken == null) != (_adminToken == null)) {
+        throw const FormatException('Invalid daemon credential data.');
       }
     }
   }
@@ -54,17 +61,21 @@ class CredentialStore implements CredentialRepository {
   String? get bearerToken => _bearerToken;
 
   @override
+  String? get adminToken => _adminToken;
+
+  @override
   ProviderCredential? credential(String connectionId) =>
       _providerCredentials[connectionId];
 
   @override
-  Future<void> setBearerToken(String token) async {
+  Future<void> setDaemonTokens({
+    required String bearerToken,
+    required String adminToken,
+  }) async {
     await load();
-    _bearerToken = token;
-    await _writeJson(_authFile, <String, dynamic>{
-      'version': 1,
-      'bearerToken': token,
-    });
+    _bearerToken = bearerToken;
+    _adminToken = adminToken;
+    await _writeCredentials();
   }
 
   @override
@@ -86,7 +97,12 @@ class CredentialStore implements CredentialRepository {
 
   Future<void> _writeCredentials() =>
       _writeJson(_credentialsFile, <String, dynamic>{
-        'version': 2,
+        'version': 3,
+        if (_bearerToken case final bearerToken?)
+          'daemon': <String, dynamic>{
+            'bearerToken': bearerToken,
+            'adminToken': _adminToken,
+          },
         'providerCredentials': <String, dynamic>{
           for (final entry in _providerCredentials.entries)
             entry.key: _credentialToJson(entry.value),

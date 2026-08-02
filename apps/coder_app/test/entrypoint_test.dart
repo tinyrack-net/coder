@@ -28,19 +28,19 @@ void main() {
     expect(mobileCalls, 1);
   });
 
-  testWidgets('desktop and mobile runners accept test bootstraps', (
+  testWidgets('desktop and mobile runners accept test services', (
     tester,
   ) async {
     final desktopApi = FakeCoderApi();
     await desktop_entry.runDesktopApp(
-      bootstrap: FakeAppBootstrap(api: desktopApi),
+      services: fakeAppServices(desktopApi),
     );
     await tester.pumpAndSettle();
-    expect(find.text('등록된 workspace가 없습니다.'), findsOneWidget);
+    expect(find.text('Test daemon'), findsOneWidget);
 
     final mobileApi = FakeCoderApi();
     await mobile_entry.runMobileApp(
-      bootstrap: FakeAppBootstrap(api: mobileApi),
+      services: fakeAppServices(mobileApi),
     );
     await tester.pump();
     expect(find.byType(CoderApp), findsOneWidget);

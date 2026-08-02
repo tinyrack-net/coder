@@ -38,6 +38,15 @@ class $WorkspacesTable extends Workspaces
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -50,7 +59,7 @@ class $WorkspacesTable extends Workspaces
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, name, rootPath, createdAt];
+  List<GeneratedColumn> get $columns => [id, name, rootPath, kind, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -84,6 +93,14 @@ class $WorkspacesTable extends Workspaces
     } else if (isInserting) {
       context.missing(_rootPathMeta);
     }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -113,6 +130,10 @@ class $WorkspacesTable extends Workspaces
         DriftSqlType.string,
         data['${effectivePrefix}root_path'],
       )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -136,12 +157,16 @@ class Workspace extends DataClass implements Insertable<Workspace> {
   /// The rootPath public API member.
   final String rootPath;
 
+  /// Whether this workspace represents a Git repository or a directory.
+  final String kind;
+
   /// The createdAt public API member.
   final DateTime createdAt;
   const Workspace({
     required this.id,
     required this.name,
     required this.rootPath,
+    required this.kind,
     required this.createdAt,
   });
   @override
@@ -150,6 +175,7 @@ class Workspace extends DataClass implements Insertable<Workspace> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['root_path'] = Variable<String>(rootPath);
+    map['kind'] = Variable<String>(kind);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -159,6 +185,7 @@ class Workspace extends DataClass implements Insertable<Workspace> {
       id: Value(id),
       name: Value(name),
       rootPath: Value(rootPath),
+      kind: Value(kind),
       createdAt: Value(createdAt),
     );
   }
@@ -172,6 +199,7 @@ class Workspace extends DataClass implements Insertable<Workspace> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       rootPath: serializer.fromJson<String>(json['rootPath']),
+      kind: serializer.fromJson<String>(json['kind']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -182,6 +210,7 @@ class Workspace extends DataClass implements Insertable<Workspace> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'rootPath': serializer.toJson<String>(rootPath),
+      'kind': serializer.toJson<String>(kind),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -190,11 +219,13 @@ class Workspace extends DataClass implements Insertable<Workspace> {
     String? id,
     String? name,
     String? rootPath,
+    String? kind,
     DateTime? createdAt,
   }) => Workspace(
     id: id ?? this.id,
     name: name ?? this.name,
     rootPath: rootPath ?? this.rootPath,
+    kind: kind ?? this.kind,
     createdAt: createdAt ?? this.createdAt,
   );
   Workspace copyWithCompanion(WorkspacesCompanion data) {
@@ -202,6 +233,7 @@ class Workspace extends DataClass implements Insertable<Workspace> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       rootPath: data.rootPath.present ? data.rootPath.value : this.rootPath,
+      kind: data.kind.present ? data.kind.value : this.kind,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -212,13 +244,14 @@ class Workspace extends DataClass implements Insertable<Workspace> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('rootPath: $rootPath, ')
+          ..write('kind: $kind, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, rootPath, createdAt);
+  int get hashCode => Object.hash(id, name, rootPath, kind, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -226,6 +259,7 @@ class Workspace extends DataClass implements Insertable<Workspace> {
           other.id == this.id &&
           other.name == this.name &&
           other.rootPath == this.rootPath &&
+          other.kind == this.kind &&
           other.createdAt == this.createdAt);
 }
 
@@ -233,12 +267,14 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
   final Value<String> id;
   final Value<String> name;
   final Value<String> rootPath;
+  final Value<String> kind;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const WorkspacesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.rootPath = const Value.absent(),
+    this.kind = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -246,16 +282,19 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
     required String id,
     required String name,
     required String rootPath,
+    required String kind,
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
        rootPath = Value(rootPath),
+       kind = Value(kind),
        createdAt = Value(createdAt);
   static Insertable<Workspace> custom({
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? rootPath,
+    Expression<String>? kind,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -263,6 +302,7 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (rootPath != null) 'root_path': rootPath,
+      if (kind != null) 'kind': kind,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -272,6 +312,7 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
     Value<String>? id,
     Value<String>? name,
     Value<String>? rootPath,
+    Value<String>? kind,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -279,6 +320,7 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
       id: id ?? this.id,
       name: name ?? this.name,
       rootPath: rootPath ?? this.rootPath,
+      kind: kind ?? this.kind,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -296,6 +338,9 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
     if (rootPath.present) {
       map['root_path'] = Variable<String>(rootPath.value);
     }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -311,6 +356,7 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('rootPath: $rootPath, ')
+          ..write('kind: $kind, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -318,11 +364,12 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
   }
 }
 
-class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
+class $WorktreesTable extends Worktrees
+    with TableInfo<$WorktreesTable, Worktree> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $AgentsTable(this.attachedDatabase, [this._alias]);
+  $WorktreesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -344,6 +391,641 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES workspaces (id)',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _branchMeta = const VerificationMeta('branch');
+  @override
+  late final GeneratedColumn<String> branch = GeneratedColumn<String>(
+    'branch',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _headMeta = const VerificationMeta('head');
+  @override
+  late final GeneratedColumn<String> head = GeneratedColumn<String>(
+    'head',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isCoderOwnedMeta = const VerificationMeta(
+    'isCoderOwned',
+  );
+  @override
+  late final GeneratedColumn<bool> isCoderOwned = GeneratedColumn<bool>(
+    'is_coder_owned',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_coder_owned" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _archivedAtMeta = const VerificationMeta(
+    'archivedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+    'archived_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    name,
+    path,
+    branch,
+    head,
+    kind,
+    isCoderOwned,
+    archivedAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'worktrees';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Worktree> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pathMeta);
+    }
+    if (data.containsKey('branch')) {
+      context.handle(
+        _branchMeta,
+        branch.isAcceptableOrUnknown(data['branch']!, _branchMeta),
+      );
+    }
+    if (data.containsKey('head')) {
+      context.handle(
+        _headMeta,
+        head.isAcceptableOrUnknown(data['head']!, _headMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('is_coder_owned')) {
+      context.handle(
+        _isCoderOwnedMeta,
+        isCoderOwned.isAcceptableOrUnknown(
+          data['is_coder_owned']!,
+          _isCoderOwnedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_isCoderOwnedMeta);
+    }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+        _archivedAtMeta,
+        archivedAt.isAcceptableOrUnknown(data['archived_at']!, _archivedAtMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Worktree map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Worktree(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      branch: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch'],
+      ),
+      head: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}head'],
+      ),
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      isCoderOwned: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_coder_owned'],
+      )!,
+      archivedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}archived_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $WorktreesTable createAlias(String alias) {
+    return $WorktreesTable(attachedDatabase, alias);
+  }
+}
+
+class Worktree extends DataClass implements Insertable<Worktree> {
+  /// Stable worktree identifier.
+  final String id;
+
+  /// Owning workspace identifier.
+  final String workspaceId;
+
+  /// Human-readable checkout name.
+  final String name;
+
+  /// Canonical checkout path.
+  final String path;
+
+  /// Checked-out branch, when this is a Git worktree.
+  final String? branch;
+
+  /// Current commit, when this is a Git worktree.
+  final String? head;
+
+  /// Worktree ownership and lifecycle kind.
+  final String kind;
+
+  /// Whether Coder created and may remove the checkout directory.
+  final bool isCoderOwned;
+
+  /// Archive instant; null while visible in the workspace catalog.
+  final DateTime? archivedAt;
+
+  /// Creation instant.
+  final DateTime createdAt;
+  const Worktree({
+    required this.id,
+    required this.workspaceId,
+    required this.name,
+    required this.path,
+    this.branch,
+    this.head,
+    required this.kind,
+    required this.isCoderOwned,
+    this.archivedAt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['name'] = Variable<String>(name);
+    map['path'] = Variable<String>(path);
+    if (!nullToAbsent || branch != null) {
+      map['branch'] = Variable<String>(branch);
+    }
+    if (!nullToAbsent || head != null) {
+      map['head'] = Variable<String>(head);
+    }
+    map['kind'] = Variable<String>(kind);
+    map['is_coder_owned'] = Variable<bool>(isCoderOwned);
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<DateTime>(archivedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  WorktreesCompanion toCompanion(bool nullToAbsent) {
+    return WorktreesCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      name: Value(name),
+      path: Value(path),
+      branch: branch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(branch),
+      head: head == null && nullToAbsent ? const Value.absent() : Value(head),
+      kind: Value(kind),
+      isCoderOwned: Value(isCoderOwned),
+      archivedAt: archivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archivedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Worktree.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Worktree(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      name: serializer.fromJson<String>(json['name']),
+      path: serializer.fromJson<String>(json['path']),
+      branch: serializer.fromJson<String?>(json['branch']),
+      head: serializer.fromJson<String?>(json['head']),
+      kind: serializer.fromJson<String>(json['kind']),
+      isCoderOwned: serializer.fromJson<bool>(json['isCoderOwned']),
+      archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'name': serializer.toJson<String>(name),
+      'path': serializer.toJson<String>(path),
+      'branch': serializer.toJson<String?>(branch),
+      'head': serializer.toJson<String?>(head),
+      'kind': serializer.toJson<String>(kind),
+      'isCoderOwned': serializer.toJson<bool>(isCoderOwned),
+      'archivedAt': serializer.toJson<DateTime?>(archivedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Worktree copyWith({
+    String? id,
+    String? workspaceId,
+    String? name,
+    String? path,
+    Value<String?> branch = const Value.absent(),
+    Value<String?> head = const Value.absent(),
+    String? kind,
+    bool? isCoderOwned,
+    Value<DateTime?> archivedAt = const Value.absent(),
+    DateTime? createdAt,
+  }) => Worktree(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    name: name ?? this.name,
+    path: path ?? this.path,
+    branch: branch.present ? branch.value : this.branch,
+    head: head.present ? head.value : this.head,
+    kind: kind ?? this.kind,
+    isCoderOwned: isCoderOwned ?? this.isCoderOwned,
+    archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Worktree copyWithCompanion(WorktreesCompanion data) {
+    return Worktree(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      name: data.name.present ? data.name.value : this.name,
+      path: data.path.present ? data.path.value : this.path,
+      branch: data.branch.present ? data.branch.value : this.branch,
+      head: data.head.present ? data.head.value : this.head,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      isCoderOwned: data.isCoderOwned.present
+          ? data.isCoderOwned.value
+          : this.isCoderOwned,
+      archivedAt: data.archivedAt.present
+          ? data.archivedAt.value
+          : this.archivedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Worktree(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('name: $name, ')
+          ..write('path: $path, ')
+          ..write('branch: $branch, ')
+          ..write('head: $head, ')
+          ..write('kind: $kind, ')
+          ..write('isCoderOwned: $isCoderOwned, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    name,
+    path,
+    branch,
+    head,
+    kind,
+    isCoderOwned,
+    archivedAt,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Worktree &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.name == this.name &&
+          other.path == this.path &&
+          other.branch == this.branch &&
+          other.head == this.head &&
+          other.kind == this.kind &&
+          other.isCoderOwned == this.isCoderOwned &&
+          other.archivedAt == this.archivedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class WorktreesCompanion extends UpdateCompanion<Worktree> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String> name;
+  final Value<String> path;
+  final Value<String?> branch;
+  final Value<String?> head;
+  final Value<String> kind;
+  final Value<bool> isCoderOwned;
+  final Value<DateTime?> archivedAt;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const WorktreesCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.path = const Value.absent(),
+    this.branch = const Value.absent(),
+    this.head = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.isCoderOwned = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WorktreesCompanion.insert({
+    required String id,
+    required String workspaceId,
+    required String name,
+    required String path,
+    this.branch = const Value.absent(),
+    this.head = const Value.absent(),
+    required String kind,
+    required bool isCoderOwned,
+    this.archivedAt = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       name = Value(name),
+       path = Value(path),
+       kind = Value(kind),
+       isCoderOwned = Value(isCoderOwned),
+       createdAt = Value(createdAt);
+  static Insertable<Worktree> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? name,
+    Expression<String>? path,
+    Expression<String>? branch,
+    Expression<String>? head,
+    Expression<String>? kind,
+    Expression<bool>? isCoderOwned,
+    Expression<DateTime>? archivedAt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (name != null) 'name': name,
+      if (path != null) 'path': path,
+      if (branch != null) 'branch': branch,
+      if (head != null) 'head': head,
+      if (kind != null) 'kind': kind,
+      if (isCoderOwned != null) 'is_coder_owned': isCoderOwned,
+      if (archivedAt != null) 'archived_at': archivedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WorktreesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String>? name,
+    Value<String>? path,
+    Value<String?>? branch,
+    Value<String?>? head,
+    Value<String>? kind,
+    Value<bool>? isCoderOwned,
+    Value<DateTime?>? archivedAt,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return WorktreesCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      name: name ?? this.name,
+      path: path ?? this.path,
+      branch: branch ?? this.branch,
+      head: head ?? this.head,
+      kind: kind ?? this.kind,
+      isCoderOwned: isCoderOwned ?? this.isCoderOwned,
+      archivedAt: archivedAt ?? this.archivedAt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (branch.present) {
+      map['branch'] = Variable<String>(branch.value);
+    }
+    if (head.present) {
+      map['head'] = Variable<String>(head.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (isCoderOwned.present) {
+      map['is_coder_owned'] = Variable<bool>(isCoderOwned.value);
+    }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<DateTime>(archivedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorktreesCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('name: $name, ')
+          ..write('path: $path, ')
+          ..write('branch: $branch, ')
+          ..write('head: $head, ')
+          ..write('kind: $kind, ')
+          ..write('isCoderOwned: $isCoderOwned, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AgentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _worktreeIdMeta = const VerificationMeta(
+    'worktreeId',
+  );
+  @override
+  late final GeneratedColumn<String> worktreeId = GeneratedColumn<String>(
+    'worktree_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES worktrees (id)',
     ),
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
@@ -454,7 +1136,7 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    workspaceId,
+    worktreeId,
     title,
     providerConnectionId,
     model,
@@ -483,16 +1165,13 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('workspace_id')) {
+    if (data.containsKey('worktree_id')) {
       context.handle(
-        _workspaceIdMeta,
-        workspaceId.isAcceptableOrUnknown(
-          data['workspace_id']!,
-          _workspaceIdMeta,
-        ),
+        _worktreeIdMeta,
+        worktreeId.isAcceptableOrUnknown(data['worktree_id']!, _worktreeIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_workspaceIdMeta);
+      context.missing(_worktreeIdMeta);
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -593,9 +1272,9 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      workspaceId: attachedDatabase.typeMapping.read(
+      worktreeId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}workspace_id'],
+        data['${effectivePrefix}worktree_id'],
       )!,
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -650,8 +1329,8 @@ class Agent extends DataClass implements Insertable<Agent> {
   /// The id public API member.
   final String id;
 
-  /// The workspaceId public API member.
-  final String workspaceId;
+  /// The worktreeId public API member.
+  final String worktreeId;
 
   /// The title public API member.
   final String title;
@@ -684,7 +1363,7 @@ class Agent extends DataClass implements Insertable<Agent> {
   final DateTime updatedAt;
   const Agent({
     required this.id,
-    required this.workspaceId,
+    required this.worktreeId,
     required this.title,
     required this.providerConnectionId,
     required this.model,
@@ -700,7 +1379,7 @@ class Agent extends DataClass implements Insertable<Agent> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['workspace_id'] = Variable<String>(workspaceId);
+    map['worktree_id'] = Variable<String>(worktreeId);
     map['title'] = Variable<String>(title);
     map['provider_connection_id'] = Variable<String>(providerConnectionId);
     map['model'] = Variable<String>(model);
@@ -721,7 +1400,7 @@ class Agent extends DataClass implements Insertable<Agent> {
   AgentsCompanion toCompanion(bool nullToAbsent) {
     return AgentsCompanion(
       id: Value(id),
-      workspaceId: Value(workspaceId),
+      worktreeId: Value(worktreeId),
       title: Value(title),
       providerConnectionId: Value(providerConnectionId),
       model: Value(model),
@@ -746,7 +1425,7 @@ class Agent extends DataClass implements Insertable<Agent> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Agent(
       id: serializer.fromJson<String>(json['id']),
-      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      worktreeId: serializer.fromJson<String>(json['worktreeId']),
       title: serializer.fromJson<String>(json['title']),
       providerConnectionId: serializer.fromJson<String>(
         json['providerConnectionId'],
@@ -766,7 +1445,7 @@ class Agent extends DataClass implements Insertable<Agent> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'workspaceId': serializer.toJson<String>(workspaceId),
+      'worktreeId': serializer.toJson<String>(worktreeId),
       'title': serializer.toJson<String>(title),
       'providerConnectionId': serializer.toJson<String>(providerConnectionId),
       'model': serializer.toJson<String>(model),
@@ -782,7 +1461,7 @@ class Agent extends DataClass implements Insertable<Agent> {
 
   Agent copyWith({
     String? id,
-    String? workspaceId,
+    String? worktreeId,
     String? title,
     String? providerConnectionId,
     String? model,
@@ -795,7 +1474,7 @@ class Agent extends DataClass implements Insertable<Agent> {
     DateTime? updatedAt,
   }) => Agent(
     id: id ?? this.id,
-    workspaceId: workspaceId ?? this.workspaceId,
+    worktreeId: worktreeId ?? this.worktreeId,
     title: title ?? this.title,
     providerConnectionId: providerConnectionId ?? this.providerConnectionId,
     model: model ?? this.model,
@@ -810,9 +1489,9 @@ class Agent extends DataClass implements Insertable<Agent> {
   Agent copyWithCompanion(AgentsCompanion data) {
     return Agent(
       id: data.id.present ? data.id.value : this.id,
-      workspaceId: data.workspaceId.present
-          ? data.workspaceId.value
-          : this.workspaceId,
+      worktreeId: data.worktreeId.present
+          ? data.worktreeId.value
+          : this.worktreeId,
       title: data.title.present ? data.title.value : this.title,
       providerConnectionId: data.providerConnectionId.present
           ? data.providerConnectionId.value
@@ -838,7 +1517,7 @@ class Agent extends DataClass implements Insertable<Agent> {
   String toString() {
     return (StringBuffer('Agent(')
           ..write('id: $id, ')
-          ..write('workspaceId: $workspaceId, ')
+          ..write('worktreeId: $worktreeId, ')
           ..write('title: $title, ')
           ..write('providerConnectionId: $providerConnectionId, ')
           ..write('model: $model, ')
@@ -856,7 +1535,7 @@ class Agent extends DataClass implements Insertable<Agent> {
   @override
   int get hashCode => Object.hash(
     id,
-    workspaceId,
+    worktreeId,
     title,
     providerConnectionId,
     model,
@@ -873,7 +1552,7 @@ class Agent extends DataClass implements Insertable<Agent> {
       identical(this, other) ||
       (other is Agent &&
           other.id == this.id &&
-          other.workspaceId == this.workspaceId &&
+          other.worktreeId == this.worktreeId &&
           other.title == this.title &&
           other.providerConnectionId == this.providerConnectionId &&
           other.model == this.model &&
@@ -888,7 +1567,7 @@ class Agent extends DataClass implements Insertable<Agent> {
 
 class AgentsCompanion extends UpdateCompanion<Agent> {
   final Value<String> id;
-  final Value<String> workspaceId;
+  final Value<String> worktreeId;
   final Value<String> title;
   final Value<String> providerConnectionId;
   final Value<String> model;
@@ -902,7 +1581,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
   final Value<int> rowid;
   const AgentsCompanion({
     this.id = const Value.absent(),
-    this.workspaceId = const Value.absent(),
+    this.worktreeId = const Value.absent(),
     this.title = const Value.absent(),
     this.providerConnectionId = const Value.absent(),
     this.model = const Value.absent(),
@@ -917,7 +1596,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
   });
   AgentsCompanion.insert({
     required String id,
-    required String workspaceId,
+    required String worktreeId,
     required String title,
     required String providerConnectionId,
     required String model,
@@ -930,7 +1609,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       workspaceId = Value(workspaceId),
+       worktreeId = Value(worktreeId),
        title = Value(title),
        providerConnectionId = Value(providerConnectionId),
        model = Value(model),
@@ -940,7 +1619,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
        updatedAt = Value(updatedAt);
   static Insertable<Agent> custom({
     Expression<String>? id,
-    Expression<String>? workspaceId,
+    Expression<String>? worktreeId,
     Expression<String>? title,
     Expression<String>? providerConnectionId,
     Expression<String>? model,
@@ -955,7 +1634,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (worktreeId != null) 'worktree_id': worktreeId,
       if (title != null) 'title': title,
       if (providerConnectionId != null)
         'provider_connection_id': providerConnectionId,
@@ -973,7 +1652,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
 
   AgentsCompanion copyWith({
     Value<String>? id,
-    Value<String>? workspaceId,
+    Value<String>? worktreeId,
     Value<String>? title,
     Value<String>? providerConnectionId,
     Value<String>? model,
@@ -988,7 +1667,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
   }) {
     return AgentsCompanion(
       id: id ?? this.id,
-      workspaceId: workspaceId ?? this.workspaceId,
+      worktreeId: worktreeId ?? this.worktreeId,
       title: title ?? this.title,
       providerConnectionId: providerConnectionId ?? this.providerConnectionId,
       model: model ?? this.model,
@@ -1009,8 +1688,8 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (workspaceId.present) {
-      map['workspace_id'] = Variable<String>(workspaceId.value);
+    if (worktreeId.present) {
+      map['worktree_id'] = Variable<String>(worktreeId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -1054,7 +1733,7 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
   String toString() {
     return (StringBuffer('AgentsCompanion(')
           ..write('id: $id, ')
-          ..write('workspaceId: $workspaceId, ')
+          ..write('worktreeId: $worktreeId, ')
           ..write('title: $title, ')
           ..write('providerConnectionId: $providerConnectionId, ')
           ..write('model: $model, ')
@@ -4560,6 +5239,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   _$CoderDatabase(QueryExecutor e) : super(e);
   $CoderDatabaseManager get managers => $CoderDatabaseManager(this);
   late final $WorkspacesTable workspaces = $WorkspacesTable(this);
+  late final $WorktreesTable worktrees = $WorktreesTable(this);
   late final $AgentsTable agents = $AgentsTable(this);
   late final $TurnsTable turns = $TurnsTable(this);
   late final $TimelineEventsTable timelineEvents = $TimelineEventsTable(this);
@@ -4573,6 +5253,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final $ProviderModelsTable providerModels = $ProviderModelsTable(this);
   late final SettingsDao settingsDao = SettingsDao(this as CoderDatabase);
   late final WorkspaceDao workspaceDao = WorkspaceDao(this as CoderDatabase);
+  late final WorktreeDao worktreeDao = WorktreeDao(this as CoderDatabase);
   late final AgentDao agentDao = AgentDao(this as CoderDatabase);
   late final TimelineDao timelineDao = TimelineDao(this as CoderDatabase);
   late final ProviderDao providerDao = ProviderDao(this as CoderDatabase);
@@ -4583,6 +5264,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     workspaces,
+    worktrees,
     agents,
     turns,
     timelineEvents,
@@ -4599,6 +5281,7 @@ typedef $$WorkspacesTableCreateCompanionBuilder =
       required String id,
       required String name,
       required String rootPath,
+      required String kind,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -4607,6 +5290,7 @@ typedef $$WorkspacesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String> rootPath,
+      Value<String> kind,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -4615,20 +5299,19 @@ final class $$WorkspacesTableReferences
     extends BaseReferences<_$CoderDatabase, $WorkspacesTable, Workspace> {
   $$WorkspacesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static MultiTypedResultKey<$AgentsTable, List<Agent>> _agentsRefsTable(
-    _$CoderDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.agents,
-    aliasName: 'workspaces__id__agents__workspace_id',
+  static MultiTypedResultKey<$WorktreesTable, List<Worktree>>
+  _worktreesRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
+    db.worktrees,
+    aliasName: 'workspaces__id__worktrees__workspace_id',
   );
 
-  $$AgentsTableProcessedTableManager get agentsRefs {
-    final manager = $$AgentsTableTableManager(
+  $$WorktreesTableProcessedTableManager get worktreesRefs {
+    final manager = $$WorktreesTableTableManager(
       $_db,
-      $_db.agents,
+      $_db.worktrees,
     ).filter((f) => f.workspaceId.id.sqlEquals($_itemColumn<String>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_agentsRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(_worktreesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -4659,27 +5342,32 @@ class $$WorkspacesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
 
-  Expression<bool> agentsRefs(
-    Expression<bool> Function($$AgentsTableFilterComposer f) f,
+  Expression<bool> worktreesRefs(
+    Expression<bool> Function($$WorktreesTableFilterComposer f) f,
   ) {
-    final $$AgentsTableFilterComposer composer = $composerBuilder(
+    final $$WorktreesTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.agents,
+      referencedTable: $db.worktrees,
       getReferencedColumn: (t) => t.workspaceId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableFilterComposer(
+          }) => $$WorktreesTableFilterComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.worktrees,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4714,6 +5402,11 @@ class $$WorkspacesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -4738,25 +5431,28 @@ class $$WorkspacesTableAnnotationComposer
   GeneratedColumn<String> get rootPath =>
       $composableBuilder(column: $table.rootPath, builder: (column) => column);
 
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  Expression<T> agentsRefs<T extends Object>(
-    Expression<T> Function($$AgentsTableAnnotationComposer a) f,
+  Expression<T> worktreesRefs<T extends Object>(
+    Expression<T> Function($$WorktreesTableAnnotationComposer a) f,
   ) {
-    final $$AgentsTableAnnotationComposer composer = $composerBuilder(
+    final $$WorktreesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.agents,
+      referencedTable: $db.worktrees,
       getReferencedColumn: (t) => t.workspaceId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableAnnotationComposer(
+          }) => $$WorktreesTableAnnotationComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.worktrees,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4780,7 +5476,7 @@ class $$WorkspacesTableTableManager
           $$WorkspacesTableUpdateCompanionBuilder,
           (Workspace, $$WorkspacesTableReferences),
           Workspace,
-          PrefetchHooks Function({bool agentsRefs})
+          PrefetchHooks Function({bool worktreesRefs})
         > {
   $$WorkspacesTableTableManager(_$CoderDatabase db, $WorkspacesTable table)
     : super(
@@ -4798,12 +5494,14 @@ class $$WorkspacesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> rootPath = const Value.absent(),
+                Value<String> kind = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WorkspacesCompanion(
                 id: id,
                 name: name,
                 rootPath: rootPath,
+                kind: kind,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -4812,12 +5510,14 @@ class $$WorkspacesTableTableManager
                 required String id,
                 required String name,
                 required String rootPath,
+                required String kind,
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => WorkspacesCompanion.insert(
                 id: id,
                 name: name,
                 rootPath: rootPath,
+                kind: kind,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -4829,24 +5529,28 @@ class $$WorkspacesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({agentsRefs = false}) {
+          prefetchHooksCallback: ({worktreesRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (agentsRefs) db.agents],
+              explicitlyWatchedTables: [if (worktreesRefs) db.worktrees],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
-                  if (agentsRefs)
+                  if (worktreesRefs)
                     await $_getPrefetchedData<
                       Workspace,
                       $WorkspacesTable,
-                      Agent
+                      Worktree
                     >(
                       currentTable: table,
                       referencedTable: $$WorkspacesTableReferences
-                          ._agentsRefsTable(db),
+                          ._worktreesRefsTable(db),
                       managerFromTypedResult: (p0) =>
-                          $$WorkspacesTableReferences(db, table, p0).agentsRefs,
+                          $$WorkspacesTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).worktreesRefs,
                       referencedItemsForCurrentItem: (item, referencedItems) =>
                           referencedItems.where(
                             (e) => e.workspaceId == item.id,
@@ -4873,12 +5577,509 @@ typedef $$WorkspacesTableProcessedTableManager =
       $$WorkspacesTableUpdateCompanionBuilder,
       (Workspace, $$WorkspacesTableReferences),
       Workspace,
-      PrefetchHooks Function({bool agentsRefs})
+      PrefetchHooks Function({bool worktreesRefs})
+    >;
+typedef $$WorktreesTableCreateCompanionBuilder =
+    WorktreesCompanion Function({
+      required String id,
+      required String workspaceId,
+      required String name,
+      required String path,
+      Value<String?> branch,
+      Value<String?> head,
+      required String kind,
+      required bool isCoderOwned,
+      Value<DateTime?> archivedAt,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$WorktreesTableUpdateCompanionBuilder =
+    WorktreesCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String> name,
+      Value<String> path,
+      Value<String?> branch,
+      Value<String?> head,
+      Value<String> kind,
+      Value<bool> isCoderOwned,
+      Value<DateTime?> archivedAt,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$WorktreesTableReferences
+    extends BaseReferences<_$CoderDatabase, $WorktreesTable, Worktree> {
+  $$WorktreesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $WorkspacesTable _workspaceIdTable(_$CoderDatabase db) =>
+      db.workspaces.createAlias('worktrees__workspace_id__workspaces__id');
+
+  $$WorkspacesTableProcessedTableManager get workspaceId {
+    final $_column = $_itemColumn<String>('workspace_id')!;
+
+    final manager = $$WorkspacesTableTableManager(
+      $_db,
+      $_db.workspaces,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workspaceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$AgentsTable, List<Agent>> _agentsRefsTable(
+    _$CoderDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.agents,
+    aliasName: 'worktrees__id__agents__worktree_id',
+  );
+
+  $$AgentsTableProcessedTableManager get agentsRefs {
+    final manager = $$AgentsTableTableManager(
+      $_db,
+      $_db.agents,
+    ).filter((f) => f.worktreeId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_agentsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$WorktreesTableFilterComposer
+    extends Composer<_$CoderDatabase, $WorktreesTable> {
+  $$WorktreesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get branch => $composableBuilder(
+    column: $table.branch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get head => $composableBuilder(
+    column: $table.head,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCoderOwned => $composableBuilder(
+    column: $table.isCoderOwned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$WorkspacesTableFilterComposer get workspaceId {
+    final $$WorkspacesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspaces,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableFilterComposer(
+            $db: $db,
+            $table: $db.workspaces,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> agentsRefs(
+    Expression<bool> Function($$AgentsTableFilterComposer f) f,
+  ) {
+    final $$AgentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.agents,
+      getReferencedColumn: (t) => t.worktreeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableFilterComposer(
+            $db: $db,
+            $table: $db.agents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WorktreesTableOrderingComposer
+    extends Composer<_$CoderDatabase, $WorktreesTable> {
+  $$WorktreesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get branch => $composableBuilder(
+    column: $table.branch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get head => $composableBuilder(
+    column: $table.head,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isCoderOwned => $composableBuilder(
+    column: $table.isCoderOwned,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$WorkspacesTableOrderingComposer get workspaceId {
+    final $$WorkspacesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspaces,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableOrderingComposer(
+            $db: $db,
+            $table: $db.workspaces,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WorktreesTableAnnotationComposer
+    extends Composer<_$CoderDatabase, $WorktreesTable> {
+  $$WorktreesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<String> get branch =>
+      $composableBuilder(column: $table.branch, builder: (column) => column);
+
+  GeneratedColumn<String> get head =>
+      $composableBuilder(column: $table.head, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<bool> get isCoderOwned => $composableBuilder(
+    column: $table.isCoderOwned,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$WorkspacesTableAnnotationComposer get workspaceId {
+    final $$WorkspacesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspaces,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workspaces,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> agentsRefs<T extends Object>(
+    Expression<T> Function($$AgentsTableAnnotationComposer a) f,
+  ) {
+    final $$AgentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.agents,
+      getReferencedColumn: (t) => t.worktreeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WorktreesTableTableManager
+    extends
+        RootTableManager<
+          _$CoderDatabase,
+          $WorktreesTable,
+          Worktree,
+          $$WorktreesTableFilterComposer,
+          $$WorktreesTableOrderingComposer,
+          $$WorktreesTableAnnotationComposer,
+          $$WorktreesTableCreateCompanionBuilder,
+          $$WorktreesTableUpdateCompanionBuilder,
+          (Worktree, $$WorktreesTableReferences),
+          Worktree,
+          PrefetchHooks Function({bool workspaceId, bool agentsRefs})
+        > {
+  $$WorktreesTableTableManager(_$CoderDatabase db, $WorktreesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WorktreesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WorktreesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WorktreesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> path = const Value.absent(),
+                Value<String?> branch = const Value.absent(),
+                Value<String?> head = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<bool> isCoderOwned = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorktreesCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                name: name,
+                path: path,
+                branch: branch,
+                head: head,
+                kind: kind,
+                isCoderOwned: isCoderOwned,
+                archivedAt: archivedAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                required String name,
+                required String path,
+                Value<String?> branch = const Value.absent(),
+                Value<String?> head = const Value.absent(),
+                required String kind,
+                required bool isCoderOwned,
+                Value<DateTime?> archivedAt = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => WorktreesCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                name: name,
+                path: path,
+                branch: branch,
+                head: head,
+                kind: kind,
+                isCoderOwned: isCoderOwned,
+                archivedAt: archivedAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$WorktreesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({workspaceId = false, agentsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (agentsRefs) db.agents],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (workspaceId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.workspaceId,
+                                referencedTable: $$WorktreesTableReferences
+                                    ._workspaceIdTable(db),
+                                referencedColumn: $$WorktreesTableReferences
+                                    ._workspaceIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (agentsRefs)
+                    await $_getPrefetchedData<Worktree, $WorktreesTable, Agent>(
+                      currentTable: table,
+                      referencedTable: $$WorktreesTableReferences
+                          ._agentsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$WorktreesTableReferences(db, table, p0).agentsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.worktreeId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$WorktreesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$CoderDatabase,
+      $WorktreesTable,
+      Worktree,
+      $$WorktreesTableFilterComposer,
+      $$WorktreesTableOrderingComposer,
+      $$WorktreesTableAnnotationComposer,
+      $$WorktreesTableCreateCompanionBuilder,
+      $$WorktreesTableUpdateCompanionBuilder,
+      (Worktree, $$WorktreesTableReferences),
+      Worktree,
+      PrefetchHooks Function({bool workspaceId, bool agentsRefs})
     >;
 typedef $$AgentsTableCreateCompanionBuilder =
     AgentsCompanion Function({
       required String id,
-      required String workspaceId,
+      required String worktreeId,
       required String title,
       required String providerConnectionId,
       required String model,
@@ -4894,7 +6095,7 @@ typedef $$AgentsTableCreateCompanionBuilder =
 typedef $$AgentsTableUpdateCompanionBuilder =
     AgentsCompanion Function({
       Value<String> id,
-      Value<String> workspaceId,
+      Value<String> worktreeId,
       Value<String> title,
       Value<String> providerConnectionId,
       Value<String> model,
@@ -4912,17 +6113,17 @@ final class $$AgentsTableReferences
     extends BaseReferences<_$CoderDatabase, $AgentsTable, Agent> {
   $$AgentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $WorkspacesTable _workspaceIdTable(_$CoderDatabase db) =>
-      db.workspaces.createAlias('agents__workspace_id__workspaces__id');
+  static $WorktreesTable _worktreeIdTable(_$CoderDatabase db) =>
+      db.worktrees.createAlias('agents__worktree_id__worktrees__id');
 
-  $$WorkspacesTableProcessedTableManager get workspaceId {
-    final $_column = $_itemColumn<String>('workspace_id')!;
+  $$WorktreesTableProcessedTableManager get worktreeId {
+    final $_column = $_itemColumn<String>('worktree_id')!;
 
-    final manager = $$WorkspacesTableTableManager(
+    final manager = $$WorktreesTableTableManager(
       $_db,
-      $_db.workspaces,
+      $_db.worktrees,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_workspaceIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_worktreeIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -5070,20 +6271,20 @@ class $$AgentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$WorkspacesTableFilterComposer get workspaceId {
-    final $$WorkspacesTableFilterComposer composer = $composerBuilder(
+  $$WorktreesTableFilterComposer get worktreeId {
+    final $$WorktreesTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.workspaceId,
-      referencedTable: $db.workspaces,
+      getCurrentColumn: (t) => t.worktreeId,
+      referencedTable: $db.worktrees,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$WorkspacesTableFilterComposer(
+          }) => $$WorktreesTableFilterComposer(
             $db: $db,
-            $table: $db.workspaces,
+            $table: $db.worktrees,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5258,20 +6459,20 @@ class $$AgentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$WorkspacesTableOrderingComposer get workspaceId {
-    final $$WorkspacesTableOrderingComposer composer = $composerBuilder(
+  $$WorktreesTableOrderingComposer get worktreeId {
+    final $$WorktreesTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.workspaceId,
-      referencedTable: $db.workspaces,
+      getCurrentColumn: (t) => t.worktreeId,
+      referencedTable: $db.worktrees,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$WorkspacesTableOrderingComposer(
+          }) => $$WorktreesTableOrderingComposer(
             $db: $db,
-            $table: $db.workspaces,
+            $table: $db.worktrees,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5332,20 +6533,20 @@ class $$AgentsTableAnnotationComposer
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
-  $$WorkspacesTableAnnotationComposer get workspaceId {
-    final $$WorkspacesTableAnnotationComposer composer = $composerBuilder(
+  $$WorktreesTableAnnotationComposer get worktreeId {
+    final $$WorktreesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.workspaceId,
-      referencedTable: $db.workspaces,
+      getCurrentColumn: (t) => t.worktreeId,
+      referencedTable: $db.worktrees,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$WorkspacesTableAnnotationComposer(
+          }) => $$WorktreesTableAnnotationComposer(
             $db: $db,
-            $table: $db.workspaces,
+            $table: $db.worktrees,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5470,7 +6671,7 @@ class $$AgentsTableTableManager
           (Agent, $$AgentsTableReferences),
           Agent,
           PrefetchHooks Function({
-            bool workspaceId,
+            bool worktreeId,
             bool turnsRefs,
             bool timelineEventsRefs,
             bool approvalRequestsRefs,
@@ -5491,7 +6692,7 @@ class $$AgentsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> workspaceId = const Value.absent(),
+                Value<String> worktreeId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String> providerConnectionId = const Value.absent(),
                 Value<String> model = const Value.absent(),
@@ -5505,7 +6706,7 @@ class $$AgentsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => AgentsCompanion(
                 id: id,
-                workspaceId: workspaceId,
+                worktreeId: worktreeId,
                 title: title,
                 providerConnectionId: providerConnectionId,
                 model: model,
@@ -5521,7 +6722,7 @@ class $$AgentsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String workspaceId,
+                required String worktreeId,
                 required String title,
                 required String providerConnectionId,
                 required String model,
@@ -5535,7 +6736,7 @@ class $$AgentsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => AgentsCompanion.insert(
                 id: id,
-                workspaceId: workspaceId,
+                worktreeId: worktreeId,
                 title: title,
                 providerConnectionId: providerConnectionId,
                 model: model,
@@ -5556,7 +6757,7 @@ class $$AgentsTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
-                workspaceId = false,
+                worktreeId = false,
                 turnsRefs = false,
                 timelineEventsRefs = false,
                 approvalRequestsRefs = false,
@@ -5586,15 +6787,15 @@ class $$AgentsTableTableManager
                           dynamic
                         >
                       >(state) {
-                        if (workspaceId) {
+                        if (worktreeId) {
                           state =
                               state.withJoin(
                                     currentTable: table,
-                                    currentColumn: table.workspaceId,
+                                    currentColumn: table.worktreeId,
                                     referencedTable: $$AgentsTableReferences
-                                        ._workspaceIdTable(db),
+                                        ._worktreeIdTable(db),
                                     referencedColumn: $$AgentsTableReferences
-                                        ._workspaceIdTable(db)
+                                        ._worktreeIdTable(db)
                                         .id,
                                   )
                                   as T;
@@ -5701,7 +6902,7 @@ typedef $$AgentsTableProcessedTableManager =
       (Agent, $$AgentsTableReferences),
       Agent,
       PrefetchHooks Function({
-        bool workspaceId,
+        bool worktreeId,
         bool turnsRefs,
         bool timelineEventsRefs,
         bool approvalRequestsRefs,
@@ -8363,6 +9564,8 @@ class $CoderDatabaseManager {
   $CoderDatabaseManager(this._db);
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db, _db.worktrees);
   $$AgentsTableTableManager get agents =>
       $$AgentsTableTableManager(_db, _db.agents);
   $$TurnsTableTableManager get turns =>

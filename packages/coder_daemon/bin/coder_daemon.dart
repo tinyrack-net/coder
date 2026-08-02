@@ -61,7 +61,8 @@ Future<void> _runProvider(
   final credentials = CredentialStore(config.configDirectory);
   await credentials.load();
   final token = config.bearerToken ?? credentials.bearerToken;
-  if (token == null) {
+  final adminToken = config.adminToken ?? credentials.adminToken;
+  if (token == null || adminToken == null) {
     throw StateError(
       'No daemon connection token found. Start coder_daemon first.',
     );
@@ -74,7 +75,10 @@ Future<void> _runProvider(
         port: config.port,
         path: '/ws',
       ),
-      token: token,
+    ),
+    credentials: DaemonCredentials(
+      bearerToken: token,
+      adminToken: adminToken,
     ),
     clientId: 'coder-daemon-cli',
     clientKind: 'standalone-cli',

@@ -15,10 +15,17 @@ final externalUrlOpenerProvider = Provider<ExternalUrlOpener>(
 /// Provider connection settings for one daemon host.
 class SettingsPage extends ConsumerStatefulWidget {
   /// Creates a provider connection settings page.
-  const SettingsPage({required this.hostId, super.key});
+  const SettingsPage({
+    required this.hostId,
+    this.embedded = false,
+    super.key,
+  });
 
   /// Route host identifier.
   final String hostId;
+
+  /// Whether the unified settings shell supplies navigation chrome.
+  final bool embedded;
 
   @override
   ConsumerState<SettingsPage> createState() => _SettingsPageState();
@@ -27,9 +34,20 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   final Set<String> _loadingModels = <String>{};
 
+  ProviderSettingsControllerProvider get _provider =>
+      providerSettingsControllerProvider(widget.hostId);
+
   @override
   Widget build(BuildContext context) {
-    final asyncState = ref.watch(providerSettingsControllerProvider);
+    final asyncState = ref.watch(_provider);
+    final body = asyncState.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(child: Text('$error')),
+      data: (state) => state == null
+          ? const Center(child: Text('Daemon 연결이 필요합니다.'))
+          : _body(state),
+    );
+    if (widget.embedded) return body;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -42,27 +60,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             tooltip: 'Catalog 갱신',
             onPressed: asyncState.asData?.value == null
                 ? null
-                : () => ref
-                      .read(providerSettingsControllerProvider.notifier)
-                      .refreshCatalog(),
+                : () => ref.read(_provider.notifier).refreshCatalog(),
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
-      body: asyncState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('$error')),
-        data: (state) => state == null
-            ? const Center(child: Text('Daemon 연결이 필요합니다.'))
-            : _body(state),
-      ),
+      body: body,
     );
   }
 
   Widget _body(ProviderSettingsState state) {
-    final canManage = ref
-        .read(providerSettingsControllerProvider.notifier)
-        .canManage;
+    final canManage = ref.read(_provider.notifier).canManage;
     final activeConnections = state.connections
         .where(
           (connection) =>
@@ -74,9 +82,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         unawaited(
-          ref
-              .read(providerSettingsControllerProvider.notifier)
-              .loadModels(connection.id),
+          ref.read(_provider.notifier).loadModels(connection.id),
         );
       });
     }
@@ -85,11 +91,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       models: state.models,
       canManage: canManage,
       onDisconnect: _disconnect,
-      onSetDefault: (id) =>
-          ref.read(providerSettingsControllerProvider.notifier).setDefault(id),
-      onSetDefaultModel: (id, model) => ref
-          .read(providerSettingsControllerProvider.notifier)
-          .setDefaultModel(id, model),
+      onSetDefault: (id) => ref.read(_provider.notifier).setDefault(id),
+      onSetDefaultModel: (id, model) =>
+          ref.read(_provider.notifier).setDefaultModel(id, model),
       onEditCustom: _editCustom,
     );
     final catalog = _ProviderCatalog(
@@ -140,9 +144,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               attempt.status == ProviderAuthAttemptStatus.exchanging)
             _AuthAttemptBar(
               attempt: attempt,
-              onCancel: () => ref
-                  .read(providerSettingsControllerProvider.notifier)
-                  .cancelAuth(attempt.id),
+              onCancel: () =>
+                  ref.read(_provider.notifier).cancelAuth(attempt.id),
             ),
       ],
     );
@@ -155,9 +158,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     final method = definition.authMethods.single;
     if (method.flow == ProviderAuthFlow.none) {
-      await ref
-          .read(providerSettingsControllerProvider.notifier)
-          .connectNone(definition.id);
+      await ref.read(_provider.notifier).connectNone(definition.id);
       return;
     }
     await _showApiKey(definition);
@@ -210,7 +211,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       return;
     }
     final attempt = await ref
-        .read(providerSettingsControllerProvider.notifier)
+        .read(_provider.notifier)
         .startAuth(definition.id, methodId);
     final authorizationUrl = attempt.authorizationUrl;
     if (methodId == 'chatgpt-browser' && authorizationUrl != null) {
@@ -226,9 +227,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       builder: (context) => _ApiKeyDialog(providerName: definition.name),
     );
     if (apiKey == null || apiKey.isEmpty) return;
-    await ref
-        .read(providerSettingsControllerProvider.notifier)
-        .connectApiKey(definition.id, apiKey);
+    await ref.read(_provider.notifier).connectApiKey(definition.id, apiKey);
   }
 
   Future<void> _addCustom() async {
@@ -238,7 +237,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     if (draft == null) return;
     final connection = await ref
-        .read(providerSettingsControllerProvider.notifier)
+        .read(_provider.notifier)
         .createCustom(
           ref.read(appIdGeneratorProvider).generate(),
           draft.config,
@@ -251,7 +250,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     if (!mounted || manualModels == null || manualModels.isEmpty) return;
     await ref
-        .read(providerSettingsControllerProvider.notifier)
+        .read(_provider.notifier)
         .updateCustom(
           connection.id,
           draft.config.copyWith(manualModelIds: manualModels),
@@ -266,7 +265,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     if (draft == null) return;
     await ref
-        .read(providerSettingsControllerProvider.notifier)
+        .read(_provider.notifier)
         .updateCustom(connection.id, draft.config, apiKey: draft.apiKey);
   }
 
@@ -291,9 +290,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
     );
     if (confirmed != true) return;
-    await ref
-        .read(providerSettingsControllerProvider.notifier)
-        .disconnect(connection.id);
+    await ref.read(_provider.notifier).disconnect(connection.id);
   }
 }
 

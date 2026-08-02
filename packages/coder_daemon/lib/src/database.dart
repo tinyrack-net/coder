@@ -18,7 +18,46 @@ class Workspaces extends Table {
   /// The rootPath public API member.
   TextColumn get rootPath => text()();
 
+  /// Whether this workspace represents a Git repository or a directory.
+  TextColumn get kind => text()();
+
   /// The createdAt public API member.
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+/// A concrete checkout belonging to a repository workspace.
+class Worktrees extends Table {
+  /// Stable worktree identifier.
+  TextColumn get id => text()();
+
+  /// Owning workspace identifier.
+  TextColumn get workspaceId => text().references(Workspaces, #id)();
+
+  /// Human-readable checkout name.
+  TextColumn get name => text()();
+
+  /// Canonical checkout path.
+  TextColumn get path => text()();
+
+  /// Checked-out branch, when this is a Git worktree.
+  TextColumn get branch => text().nullable()();
+
+  /// Current commit, when this is a Git worktree.
+  TextColumn get head => text().nullable()();
+
+  /// Worktree ownership and lifecycle kind.
+  TextColumn get kind => text()();
+
+  /// Whether Coder created and may remove the checkout directory.
+  BoolColumn get isCoderOwned => boolean()();
+
+  /// Archive instant; null while visible in the workspace catalog.
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+
+  /// Creation instant.
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -30,8 +69,8 @@ class Agents extends Table {
   /// The id public API member.
   TextColumn get id => text()();
 
-  /// The workspaceId public API member.
-  TextColumn get workspaceId => text().references(Workspaces, #id)();
+  /// The worktreeId public API member.
+  TextColumn get worktreeId => text().references(Worktrees, #id)();
 
   /// The title public API member.
   TextColumn get title => text()();
@@ -267,6 +306,7 @@ class ProviderModels extends Table {
 @DriftDatabase(
   tables: <Type>[
     Workspaces,
+    Worktrees,
     Agents,
     Turns,
     TimelineEvents,
@@ -279,6 +319,7 @@ class ProviderModels extends Table {
   daos: <Type>[
     SettingsDao,
     WorkspaceDao,
+    WorktreeDao,
     AgentDao,
     TimelineDao,
     ProviderDao,
@@ -303,7 +344,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

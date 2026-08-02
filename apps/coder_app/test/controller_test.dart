@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/controller.dart';
-import 'package:coder_app/src/ports.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,11 +17,21 @@ void main() {
     id: 'workspace',
     name: 'Workspace',
     rootPath: '/workspace',
+    kind: WorkspaceKind.directory,
+    createdAt: now,
+  );
+  final worktree = WorktreeDto(
+    id: 'worktree',
+    workspaceId: workspace.id,
+    name: workspace.name,
+    path: workspace.rootPath,
+    kind: WorktreeKind.directory,
+    isCoderOwned: false,
     createdAt: now,
   );
   final agent = AgentDto(
     id: 'agent',
-    workspaceId: workspace.id,
+    worktreeId: worktree.id,
     title: 'Agent',
     providerConnectionId: 'openai',
     model: 'gpt-5.6-sol',
@@ -63,48 +75,54 @@ void main() {
     () async {
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
         agents: <AgentDto>[agent],
       );
       final container = _container(api);
       addTearDown(container.dispose);
 
-      final connection = await container.read(
-        connectionControllerProvider.future,
+      await container.read(
+        hostRegistryControllerProvider.future,
       );
-      expect(connection, isNotNull);
-      expect(connection!.connected, isTrue);
-      expect(connection.connecting, isFalse);
-      expect(connection.label, '127.0.0.1:7337');
-      expect(connection.serverInfo.serverId, 'server');
-      expect(
-        container
-            .read(connectionControllerProvider.notifier)
-            .canRegisterLocalWorkspace,
-        isTrue,
-      );
+      await Future<void>.delayed(Duration.zero);
+      final runtime = container
+          .read(hostRegistryControllerProvider)
+          .value!
+          .runtimes['server']!;
+      expect(runtime.connected, isTrue);
+      expect(runtime.serverInfo!.serverId, 'server');
 
       api.emitState(ClientConnectionState.reconnecting);
       await Future<void>.delayed(Duration.zero);
       expect(
-        container.read(connectionControllerProvider).value!.connecting,
-        isTrue,
+        container
+            .read(hostRegistryControllerProvider)
+            .value!
+            .runtimes['server']!
+            .status,
+        HostRuntimeStatus.reconnecting,
       );
       api.emitState(ClientConnectionState.connected);
 
-      expect(
-        await container.read(workspacesControllerProvider.future),
-        <WorkspaceDto>[
-          workspace,
-        ],
+      final catalog = await container.read(
+        workspaceCatalogControllerProvider.future,
       );
+      expect(catalog.catalogs['server']?.workspaces, <WorkspaceDto>[workspace]);
       final registered = await container
-          .read(workspacesControllerProvider.notifier)
-          .register('/workspace/new');
-      expect(registered.id, 'generated-id');
-      expect(registered.name, 'new');
-      expect(container.read(workspacesControllerProvider).value, hasLength(2));
+          .read(workspaceCatalogControllerProvider.notifier)
+          .register('server', '/workspace/new');
+      expect(registered.workspace.id, 'generated-id');
+      expect(registered.workspace.name, 'new');
+      expect(
+        container
+            .read(workspaceCatalogControllerProvider)
+            .value
+            ?.catalogs['server']
+            ?.workspaces,
+        hasLength(2),
+      );
 
-      final agentsProvider = agentsControllerProvider(workspace.id);
+      final agentsProvider = agentsControllerProvider('server', worktree.id);
       expect(await container.read(agentsProvider.future), <AgentDto>[agent]);
       final created = await container
           .read(agentsProvider.notifier)
@@ -135,9 +153,192 @@ void main() {
       );
 
       expect(
-        await container.read(agentsControllerProvider(null).future),
+        await container.read(agentsControllerProvider('server', null).future),
         isEmpty,
       );
+    },
+  );
+
+  test('feature families never mix state between connected hosts', () async {
+    WorkspaceDto hostWorkspace(String host) => WorkspaceDto(
+      id: 'workspace',
+      name: '$host workspace',
+      rootPath: '/$host',
+      kind: WorkspaceKind.directory,
+      createdAt: now,
+    );
+    AgentDto hostAgent(String host) => agent.copyWith(title: '$host agent');
+    TimelineEventDto hostEvent(String host) => TimelineEventDto(
+      agentId: agent.id,
+      sequence: 1,
+      turnId: 'turn',
+      type: 'assistant.delta',
+      data: <String, dynamic>{'text': host},
+      createdAt: now,
+    );
+    ProviderCatalogDto hostCatalog(String host) => ProviderCatalogDto(
+      definitions: <ProviderDefinitionDto>[
+        ProviderDefinitionDto(
+          id: host,
+          name: host,
+          description: host,
+          authMethods: const <ProviderAuthMethodDto>[],
+        ),
+      ],
+      source: ProviderCatalogSource.bundled,
+      updatedAt: now,
+    );
+    final firstApi = FakeCoderApi(
+      serverInfo: _serverInfo('first-server'),
+      workspaces: <WorkspaceDto>[hostWorkspace('first')],
+      worktrees: <WorktreeDto>[worktree],
+      agents: <AgentDto>[hostAgent('first')],
+      timelines: <String, List<TimelineEventDto>>{
+        agent.id: <TimelineEventDto>[hostEvent('first')],
+      },
+      catalog: hostCatalog('first'),
+    );
+    final secondApi = FakeCoderApi(
+      serverInfo: _serverInfo('second-server'),
+      workspaces: <WorkspaceDto>[hostWorkspace('second')],
+      worktrees: <WorktreeDto>[worktree],
+      agents: <AgentDto>[hostAgent('second')],
+      timelines: <String, List<TimelineEventDto>>{
+        agent.id: <TimelineEventDto>[hostEvent('second')],
+      },
+      catalog: hostCatalog('second'),
+    );
+    final store = MemoryAppStore(
+      settings: const AppSettings(embeddedDaemonEnabled: false),
+      profiles: <RemoteDaemonProfile>[
+        _profile('first', now),
+        _profile('second', now),
+      ],
+      tokens: const <String, String>{'first': 'one', 'second': 'two'},
+    );
+    final container = ProviderContainer(
+      overrides: [
+        appServicesProvider.overrideWithValue(
+          AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: _HostClients(<String, CoderApi>{
+              'first.test': firstApi,
+              'second.test': secondApi,
+            }),
+            clientKind: 'test',
+          ),
+        ),
+        appIdGeneratorProvider.overrideWithValue(const _FixedIdGenerator()),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(hostRegistryControllerProvider.future);
+    await Future<void>.delayed(Duration.zero);
+
+    final catalogs = await container.read(
+      workspaceCatalogControllerProvider.future,
+    );
+    expect(
+      catalogs.catalogs['first']?.workspaces.single.name,
+      'first workspace',
+    );
+    expect(
+      catalogs.catalogs['second']?.workspaces.single.name,
+      'second workspace',
+    );
+    expect(
+      (await container.read(
+        agentsControllerProvider('first', 'worktree').future,
+      )).single.title,
+      'first agent',
+    );
+    expect(
+      (await container.read(
+        agentsControllerProvider('second', 'worktree').future,
+      )).single.title,
+      'second agent',
+    );
+    expect(
+      (await container.read(
+        conversationControllerProvider('first', agent.id).future,
+      )).timeline.single.data['text'],
+      'first',
+    );
+    expect(
+      (await container.read(
+        conversationControllerProvider('second', agent.id).future,
+      )).timeline.single.data['text'],
+      'second',
+    );
+    expect(
+      (await container.read(
+        providerSettingsControllerProvider('first').future,
+      ))!.catalog.definitions.single.id,
+      'first',
+    );
+    expect(
+      (await container.read(
+        providerSettingsControllerProvider('second').future,
+      ))!.catalog.definitions.single.id,
+      'second',
+    );
+  });
+
+  test(
+    'session tabs close locally and persist independently per worktree',
+    () async {
+      final second = agent.copyWith(id: 'agent-2', title: 'Second');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+        agents: <AgentDto>[agent, second],
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[_profile('server', now)],
+        tokens: const <String, String>{'server': 'token'},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(
+            AppServices(
+              settings: store,
+              profiles: store,
+              credentials: store,
+              clients: _HostClients(<String, CoderApi>{
+                'server.test': api,
+              }),
+              clientKind: 'test',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      const selection = WorkspaceSelection(
+        hostId: 'server',
+        workspaceId: 'workspace',
+        worktreeId: 'worktree',
+      );
+      final provider = sessionTabsControllerProvider(selection);
+      expect((await container.read(provider.future)).openAgentIds, <String>[
+        'agent',
+      ]);
+
+      await container.read(provider.notifier).open(second.id);
+      await container.read(provider.notifier).close(agent.id);
+
+      expect(container.read(provider).requireValue.openAgentIds, <String>[
+        second.id,
+      ]);
+      expect(
+        store.settings.sessionTabs[selection.storageKey]?.selectedAgentId,
+        second.id,
+      );
+      expect(await api.listAgents(worktreeId: worktree.id), hasLength(2));
     },
   );
 
@@ -152,7 +353,9 @@ void main() {
       );
       final container = _container(api);
       addTearDown(container.dispose);
-      final provider = conversationControllerProvider(agent.id);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
       final initial = await container.read(provider.future);
       expect(initial.timeline, <TimelineEventDto>[approvalEvent]);
       expect(initial.approvals[approval.id], approval);
@@ -206,7 +409,9 @@ void main() {
       );
       expect(container.read(provider).value!.approvals, isEmpty);
       expect(
-        await container.read(conversationControllerProvider(null).future),
+        await container.read(
+          conversationControllerProvider('server', null).future,
+        ),
         const ConversationState(),
       );
     },
@@ -222,11 +427,12 @@ void main() {
       );
       final container = _container(api);
       addTearDown(container.dispose);
-      final notifier = container.read(
-        providerSettingsControllerProvider.notifier,
-      );
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = providerSettingsControllerProvider('server');
+      final notifier = container.read(provider.notifier);
       final initial = await container.read(
-        providerSettingsControllerProvider.future,
+        provider.future,
       );
       expect(initial!.catalog.definitions.first.id, 'openai');
       expect(initial.connections.single.isDefault, isTrue);
@@ -234,10 +440,7 @@ void main() {
 
       await notifier.loadModels('openai');
       expect(
-        container
-            .read(providerSettingsControllerProvider)
-            .value!
-            .models['openai'],
+        container.read(provider).value!.models['openai'],
         <ProviderModelDto>[model],
       );
       final connected = await notifier.connectApiKey(
@@ -257,11 +460,7 @@ void main() {
       await notifier.cancelAuth(attempt.id);
       await notifier.refreshCatalog();
       expect(
-        container
-            .read(providerSettingsControllerProvider)
-            .value!
-            .catalog
-            .source,
+        container.read(provider).value!.catalog.source,
         ProviderCatalogSource.refreshed,
       );
       final custom = await notifier.createCustom(
@@ -283,7 +482,7 @@ void main() {
       await notifier.disconnect('deepseek');
       expect(
         container
-            .read(providerSettingsControllerProvider)
+            .read(provider)
             .value!
             .connections
             .singleWhere((item) => item.id == 'deepseek')
@@ -297,19 +496,19 @@ void main() {
     'feature state value objects and production ports are deterministic',
     () {
       final api = FakeCoderApi();
-      final endpoint = HostEndpoint.parse('ws://localhost/ws', token: 'token');
-      final snapshot = ConnectionSnapshot(
+      final endpoint = HostEndpoint.parse('ws://localhost/ws');
+      final snapshot = HostRuntimeSnapshot(
+        id: 'host',
+        label: 'Host',
+        kind: HostKind.remote,
+        status: HostRuntimeStatus.offline,
         api: api,
         endpoint: endpoint,
-        connectionState: ClientConnectionState.disconnected,
       );
       expect(snapshot.connected, isFalse);
-      expect(snapshot.connecting, isFalse);
       expect(
-        snapshot
-            .copyWith(connectionState: ClientConnectionState.connecting)
-            .connecting,
-        isTrue,
+        snapshot.copyWith(status: HostRuntimeStatus.connecting).status,
+        HostRuntimeStatus.connecting,
       );
       const conversation = ConversationState();
       expect(
@@ -333,6 +532,10 @@ void main() {
       );
       expect(const SystemAppClock().nowUtc().isUtc, isTrue);
       expect(const UuidAppIdGenerator().generate(), isNotEmpty);
+      expect(
+        const HostConnectionFailure.network('offline').toString(),
+        'offline',
+      );
       unawaited(api.close());
     },
   );
@@ -340,10 +543,40 @@ void main() {
 
 ProviderContainer _container(FakeCoderApi api) => ProviderContainer(
   overrides: [
-    bootstrapProvider.overrideWithValue(FakeAppBootstrap(api: api)),
+    appServicesProvider.overrideWithValue(fakeAppServices(api)),
     appIdGeneratorProvider.overrideWithValue(const _FixedIdGenerator()),
   ],
 );
+
+RemoteDaemonProfile _profile(String id, DateTime now) => RemoteDaemonProfile(
+  id: id,
+  label: id,
+  websocketUri: Uri.parse('ws://$id.test/ws'),
+  autoConnect: true,
+  createdAt: now,
+  updatedAt: now,
+);
+
+ServerInfoDto _serverInfo(String id) => ServerInfoDto(
+  serverId: id,
+  version: 'test',
+  protocolVersion: coderProtocolVersion,
+  features: const <String, bool>{'providerAdmin': true},
+);
+
+final class _HostClients implements HostClientFactory {
+  const _HostClients(this.apis);
+
+  final Map<String, CoderApi> apis;
+
+  @override
+  Future<CoderApi> connect({
+    required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
+    required String clientId,
+    required String clientKind,
+  }) async => apis[endpoint.websocketUri.host]!;
+}
 
 final class _FixedIdGenerator implements AppIdGenerator {
   const _FixedIdGenerator();

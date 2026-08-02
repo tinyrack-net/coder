@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/desktop_bootstrap.dart';
+import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:flutter/material.dart';
@@ -14,12 +16,18 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'embedded daemon streams, approves a patch, and restores timeline',
+    'app switches hosts, streams, approves a patch, and restores timeline',
     (tester) async {
       FlutterSecureStorage.setMockInitialValues(<String, String>{});
       final home = await Directory.systemTemp.createTemp('coder-e2e-home-');
       final workspace = await Directory.systemTemp.createTemp(
         'coder-e2e-workspace-',
+      );
+      final remoteHome = await Directory.systemTemp.createTemp(
+        'coder-e2e-remote-home-',
+      );
+      final remoteWorkspace = await Directory.systemTemp.createTemp(
+        'coder-e2e-remote-workspace-',
       );
       final handle = await EmbeddedDaemonHandle.start(
         DaemonConfig(
@@ -30,47 +38,108 @@ void main() {
         ),
         provider: _PatchProvider(),
       );
+      final remoteHandle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: remoteHome.path,
+          port: 0,
+          bearerToken: 'remote-token-0123456789abcdef0123456789',
+          useEnvironmentCredentials: false,
+        ),
+        provider: _PatchProvider(),
+      );
       addTearDown(() async {
         await handle.stop();
+        await remoteHandle.stop();
         if (home.existsSync()) home.deleteSync(recursive: true);
+        if (remoteHome.existsSync()) remoteHome.deleteSync(recursive: true);
         if (workspace.existsSync()) workspace.deleteSync(recursive: true);
+        if (remoteWorkspace.existsSync()) {
+          remoteWorkspace.deleteSync(recursive: true);
+        }
       });
       final endpoint = HostEndpoint(
         websocketUri: handle.boundEndpoint,
-        token: handle.bearerToken,
       );
       final setupClient = await CoderClient.connect(
         endpoint: endpoint,
+        credentials: DaemonCredentials(
+          bearerToken: handle.bearerToken,
+          adminToken: handle.adminToken,
+        ),
         clientId: 'e2e-setup',
         clientKind: 'integration-test',
       );
       await setupClient.registerWorkspace(
-        id: 'workspace-e2e',
+        workspaceId: 'workspace-e2e',
+        checkoutId: 'checkout-e2e',
         rootPath: workspace.path,
         name: 'E2E Workspace',
       );
       await setupClient.close();
+      final remoteSetupClient = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: remoteHandle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'remote-token-0123456789abcdef0123456789',
+        ),
+        clientId: 'remote-e2e-setup',
+        clientKind: 'integration-test',
+      );
+      await remoteSetupClient.registerWorkspace(
+        workspaceId: 'remote-workspace-e2e',
+        checkoutId: 'remote-checkout-e2e',
+        rootPath: remoteWorkspace.path,
+        name: 'Remote Workspace',
+      );
+      await remoteSetupClient.close();
+
+      final now = DateTime.utc(2026, 8, 3);
+      final appStore = MemoryAppStore(
+        profiles: <RemoteDaemonProfile>[
+          RemoteDaemonProfile(
+            id: 'remote',
+            label: 'Remote daemon',
+            websocketUri: remoteHandle.boundEndpoint,
+            autoConnect: true,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        tokens: const <String, String>{
+          'remote': 'remote-token-0123456789abcdef0123456789',
+        },
+      );
 
       await tester.pumpWidget(
         CoderApp(
-          bootstrap: DesktopBootstrap(
-            launcher: _ExistingLauncher(handle),
+          services: AppServices(
+            settings: appStore,
+            profiles: appStore,
+            credentials: appStore,
+            clients: const WebSocketHostClientFactory(),
+            clientKind: 'desktop-integration-test',
+            embeddedLauncher: _ExistingLauncher(handle),
           ),
         ),
       );
+      await _pumpUntil(tester, find.text('내장 daemon'));
+      await _pumpUntil(tester, find.text('Remote daemon'));
       await _pumpUntil(tester, find.text('E2E Workspace'));
-      await tester.tap(find.text('E2E Workspace'));
-      await _pumpUntil(tester, find.text('새 agent를 만들어 시작하세요.'));
-      await tester.tap(find.byTooltip('Agent 생성'));
+      await _pumpUntil(tester, find.text('Remote Workspace'));
+      await tester.tap(find.text('E2E Workspace').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('생성'));
       await _pumpUntil(
         tester,
-        find.text('요청을 입력해 coding agent를 시작하세요.'),
+        find.text(workspace.path),
       );
+      await tester.tap(find.text('E2E Workspace').last);
+      await _pumpUntil(tester, find.text('새 session 시작'));
+      await tester.tap(find.text('새 session 시작'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('생성'));
+      await _pumpUntil(tester, find.text('코딩 요청을 입력하세요.'));
 
       await tester.enterText(find.byType(TextField).last, 'Create result.txt');
-      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.testTextInput.receiveAction(TextInputAction.done);
       await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
       await tester.tap(find.text('승인'));
       await _pumpUntil(
@@ -84,10 +153,14 @@ void main() {
 
       final reconnected = await CoderClient.connect(
         endpoint: endpoint,
+        credentials: DaemonCredentials(
+          bearerToken: handle.bearerToken,
+          adminToken: handle.adminToken,
+        ),
         clientId: 'e2e-reconnect',
         clientKind: 'integration-test',
       );
-      final agents = await reconnected.listAgents(workspaceId: 'workspace-e2e');
+      final agents = await reconnected.listAgents(worktreeId: 'checkout-e2e');
       expect(agents, hasLength(1));
       final timeline = await reconnected.subscribeTimeline(agents.single.id);
       expect(timeline.map((event) => event.type), contains('turn.completed'));
@@ -129,10 +202,18 @@ final class _ExistingSession implements EmbeddedDaemonSession {
   final EmbeddedDaemonHandle handle;
 
   @override
-  String get bearerToken => handle.bearerToken;
+  DaemonCredentials get credentials => DaemonCredentials(
+    bearerToken: handle.bearerToken,
+    adminToken: handle.adminToken,
+  );
 
   @override
-  Uri get boundEndpoint => handle.boundEndpoint;
+  HostEndpoint get endpoint => HostEndpoint(
+    websocketUri: handle.boundEndpoint,
+  );
+
+  @override
+  String get serverId => handle.serverId;
 
   @override
   Future<void> stop() => handle.stop();

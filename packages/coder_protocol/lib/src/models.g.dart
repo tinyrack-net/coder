@@ -11,6 +11,7 @@ _WorkspaceDto _$WorkspaceDtoFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       name: json['name'] as String,
       rootPath: json['rootPath'] as String,
+      kind: $enumDecode(_$WorkspaceKindEnumMap, json['kind']),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
 
@@ -19,12 +20,116 @@ Map<String, dynamic> _$WorkspaceDtoToJson(_WorkspaceDto instance) =>
       'id': instance.id,
       'name': instance.name,
       'rootPath': instance.rootPath,
+      'kind': _$WorkspaceKindEnumMap[instance.kind]!,
       'createdAt': instance.createdAt.toIso8601String(),
+    };
+
+const _$WorkspaceKindEnumMap = {
+  WorkspaceKind.git: 'git',
+  WorkspaceKind.directory: 'directory',
+};
+
+_WorktreeDto _$WorktreeDtoFromJson(Map<String, dynamic> json) => _WorktreeDto(
+  id: json['id'] as String,
+  workspaceId: json['workspaceId'] as String,
+  name: json['name'] as String,
+  path: json['path'] as String,
+  kind: $enumDecode(_$WorktreeKindEnumMap, json['kind']),
+  isCoderOwned: json['isCoderOwned'] as bool,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  branch: json['branch'] as String?,
+  head: json['head'] as String?,
+  archivedAt: json['archivedAt'] == null
+      ? null
+      : DateTime.parse(json['archivedAt'] as String),
+);
+
+Map<String, dynamic> _$WorktreeDtoToJson(_WorktreeDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'workspaceId': instance.workspaceId,
+      'name': instance.name,
+      'path': instance.path,
+      'kind': _$WorktreeKindEnumMap[instance.kind]!,
+      'isCoderOwned': instance.isCoderOwned,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'branch': instance.branch,
+      'head': instance.head,
+      'archivedAt': instance.archivedAt?.toIso8601String(),
+    };
+
+const _$WorktreeKindEnumMap = {
+  WorktreeKind.checkout: 'checkout',
+  WorktreeKind.managed: 'managed',
+  WorktreeKind.external: 'external',
+  WorktreeKind.directory: 'directory',
+};
+
+_WorkspaceCatalogDto _$WorkspaceCatalogDtoFromJson(Map<String, dynamic> json) =>
+    _WorkspaceCatalogDto(
+      workspaces: (json['workspaces'] as List<dynamic>)
+          .map((e) => WorkspaceDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      worktrees: (json['worktrees'] as List<dynamic>)
+          .map((e) => WorktreeDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$WorkspaceCatalogDtoToJson(
+  _WorkspaceCatalogDto instance,
+) => <String, dynamic>{
+  'workspaces': instance.workspaces,
+  'worktrees': instance.worktrees,
+};
+
+_WorktreeArchivePreviewDto _$WorktreeArchivePreviewDtoFromJson(
+  Map<String, dynamic> json,
+) => _WorktreeArchivePreviewDto(
+  worktreeId: json['worktreeId'] as String,
+  dirty: json['dirty'] as bool,
+  unpushedCommitCount: (json['unpushedCommitCount'] as num).toInt(),
+  runningSessionCount: (json['runningSessionCount'] as num).toInt(),
+  removesDirectory: json['removesDirectory'] as bool,
+);
+
+Map<String, dynamic> _$WorktreeArchivePreviewDtoToJson(
+  _WorktreeArchivePreviewDto instance,
+) => <String, dynamic>{
+  'worktreeId': instance.worktreeId,
+  'dirty': instance.dirty,
+  'unpushedCommitCount': instance.unpushedCommitCount,
+  'runningSessionCount': instance.runningSessionCount,
+  'removesDirectory': instance.removesDirectory,
+};
+
+_DirectorySuggestionDto _$DirectorySuggestionDtoFromJson(
+  Map<String, dynamic> json,
+) => _DirectorySuggestionDto(
+  path: json['path'] as String,
+  name: json['name'] as String,
+);
+
+Map<String, dynamic> _$DirectorySuggestionDtoToJson(
+  _DirectorySuggestionDto instance,
+) => <String, dynamic>{'path': instance.path, 'name': instance.name};
+
+_GitBranchDto _$GitBranchDtoFromJson(Map<String, dynamic> json) =>
+    _GitBranchDto(
+      name: json['name'] as String,
+      current: json['current'] as bool,
+      checkedOut: json['checkedOut'] as bool,
+    );
+
+Map<String, dynamic> _$GitBranchDtoToJson(_GitBranchDto instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'current': instance.current,
+      'checkedOut': instance.checkedOut,
     };
 
 _AgentDto _$AgentDtoFromJson(Map<String, dynamic> json) => _AgentDto(
   id: json['id'] as String,
-  workspaceId: json['workspaceId'] as String,
+  worktreeId: json['worktreeId'] as String,
   title: json['title'] as String,
   providerConnectionId: json['providerConnectionId'] as String,
   model: json['model'] as String,
@@ -39,7 +144,7 @@ _AgentDto _$AgentDtoFromJson(Map<String, dynamic> json) => _AgentDto(
 
 Map<String, dynamic> _$AgentDtoToJson(_AgentDto instance) => <String, dynamic>{
   'id': instance.id,
-  'workspaceId': instance.workspaceId,
+  'worktreeId': instance.worktreeId,
   'title': instance.title,
   'providerConnectionId': instance.providerConnectionId,
   'model': instance.model,

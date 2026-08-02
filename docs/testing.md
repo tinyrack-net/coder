@@ -37,6 +37,11 @@ architecture rules, generated-code drift, and unit/widget/contract tests. `verif
 adds goldens and per-package coverage. `verify:debug` is deliberately separate
 because it compiles and launches the Linux desktop runner.
 
+Golden tests run in their own canonical Linux process. Coverage excludes the
+`golden` tag so font/rendering configuration from unrelated test isolates cannot
+make pixel comparisons nondeterministic; the same UI behavior remains covered by
+widget tests and `test:golden` is still a required gate.
+
 ## Coverage
 
 `tool/verify_coverage.dart` enforces 90% line and 80% branch coverage separately

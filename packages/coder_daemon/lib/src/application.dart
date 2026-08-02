@@ -7,6 +7,7 @@ import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
 import 'package:coder_daemon/src/database.dart';
+import 'package:coder_daemon/src/git_workspace.dart';
 import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
@@ -14,6 +15,7 @@ import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/server.dart';
+import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
@@ -33,6 +35,9 @@ abstract interface class DaemonHandle {
   /// The bearerToken public API member.
   String get bearerToken;
 
+  /// Secret granting provider administration to trusted local clients.
+  String get adminToken;
+
   /// The stop public API member.
   Future<void> stop();
 }
@@ -49,8 +54,8 @@ abstract final class DaemonApplication {
     ModelProviderFactory providerFactory =
         const OpenAICompatibleProviderFactory(),
     ProviderOAuthGateway? oauthGateway,
-    WorkspaceCanonicalizer workspaceCanonicalizer =
-        const IoWorkspaceCanonicalizer(),
+    WorkspacePathGateway workspacePaths = const IoWorkspacePathGateway(),
+    GitWorkspaceGateway? git,
   }) async {
     final home = Directory(config.homeDirectory);
     await home.create(recursive: true);
@@ -80,17 +85,28 @@ abstract final class DaemonApplication {
           config.bearerToken ??
           credentials.bearerToken ??
           generateBearerToken();
+      final adminToken =
+          config.adminToken ?? credentials.adminToken ?? generateBearerToken();
       if (utf8.encode(token).length < 32) {
         throw ArgumentError(
           'Bearer token must contain at least 256 bits (32 bytes).',
+        );
+      }
+      if (utf8.encode(adminToken).length < 32) {
+        throw ArgumentError(
+          'Admin token must contain at least 256 bits (32 bytes).',
         );
       }
       await database.settingsDao.setValue(
         'auth.tokenHash',
         sha256.convert(utf8.encode(token)).toString(),
       );
-      if (credentials.bearerToken != token) {
-        await credentials.setBearerToken(token);
+      if (credentials.bearerToken != token ||
+          credentials.adminToken != adminToken) {
+        await credentials.setDaemonTokens(
+          bearerToken: token,
+          adminToken: adminToken,
+        );
       }
       final events = StreamController<WireEnvelope>.broadcast(sync: true);
       final effectiveOAuthGateway =
@@ -122,7 +138,7 @@ abstract final class DaemonApplication {
       );
       final service = AgentService(
         agents: database.agentDao,
-        workspaces: database.workspaceDao,
+        worktrees: database.worktreeDao,
         timeline: database.timelineDao,
         providers: providers,
         events: events.add,
@@ -137,6 +153,15 @@ abstract final class DaemonApplication {
           RunCommandTool(),
         ],
       );
+      final workspaceService = WorkspaceService(
+        database.workspaceDao,
+        database.worktreeDao,
+        database.agentDao,
+        workspacePaths,
+        git ?? const ProcessGitWorkspaceGateway(IoCommandRunner()),
+        clock,
+        p.join(home.path, 'worktrees'),
+      );
       final info = ServerInfoDto(
         serverId: serverId,
         version: config.version,
@@ -149,16 +174,16 @@ abstract final class DaemonApplication {
         },
       );
       final rpc = DaemonRpcServer(
-        workspaces: database.workspaceDao,
+        workspaces: workspaceService,
         agentRepository: database.agentDao,
         timeline: database.timelineDao,
         agents: service,
         providers: providers,
         providerAuth: providerAuth,
         clock: clock,
-        workspaceCanonicalizer: workspaceCanonicalizer,
         serverInfo: info,
         token: token,
+        adminToken: adminToken,
         events: events.stream,
       );
       final http = await shelf_io.serve(
@@ -178,6 +203,7 @@ abstract final class DaemonApplication {
         ),
         serverIdValue: serverId,
         token: token,
+        adminTokenValue: adminToken,
         http: http,
         rpc: rpc,
         database: database,
@@ -198,16 +224,19 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._endpoint,
     required String serverIdValue,
     required this._token,
+    required String adminTokenValue,
     required this._http,
     required this._rpc,
     required this._database,
     required this._events,
     required this._lock,
-  }) : _serverId = serverIdValue;
+  }) : _serverId = serverIdValue,
+       _adminToken = adminTokenValue;
 
   final Uri _endpoint;
   final String _serverId;
   final String _token;
+  final String _adminToken;
   final HttpServer _http;
   final DaemonRpcServer _rpc;
   final CoderDatabase _database;
@@ -221,6 +250,8 @@ class _LocalDaemonHandle implements DaemonHandle {
   String get serverId => _serverId;
   @override
   String get bearerToken => _token;
+  @override
+  String get adminToken => _adminToken;
   @override
   Future<void> get ready => Future<void>.value();
 
