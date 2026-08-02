@@ -1,0 +1,39 @@
+name: coder_workspace
+description: Tinyrack Coder monorepo.
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+workspace:
+  - apps/*
+  - packages/*
+
+dev_dependencies:
+  melos: 7.8.1
+
+melos:
+  scripts:
+    analyze:
+      run: dart analyze --fatal-infos
+      description: Analyze the entire workspace.
+    format:
+      run: dart format .
+    format:check:
+      run: dart format --output=none --set-exit-if-changed .
+    generate:
+      run: dart run melos exec --depends-on=build_runner -c 1 -o -- dart run build_runner build --delete-conflicting-outputs
+    test:
+      run: dart run melos exec --no-flutter --dir-exists=test -c 1 -- dart test
+    test:flutter:
+      run: dart run melos exec --flutter --dir-exists=test -c 1 -- flutter test
+    run:daemon:
+      run: dart run packages/coder_daemon/bin/coder_daemon.dart
+    run:desktop:
+      run: dart run melos exec --scope=coder_app -- flutter run -d linux -t lib/main_desktop.dart
+    run:mobile:
+      run: dart run melos exec --scope=coder_app -- flutter run -t lib/main_mobile.dart
+    build:linux:
+      run: dart run melos exec --scope=coder_app -- flutter build linux -t lib/main_desktop.dart
+    build:android:
+      run: dart run melos exec --scope=coder_app -- flutter build apk -t lib/main_mobile.dart
