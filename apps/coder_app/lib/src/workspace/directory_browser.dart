@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/remote_path.dart';
 import 'package:coder_client/coder_client.dart';
@@ -64,9 +65,10 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final parent = parentDirectoryPath(_path.text);
     return AlertDialog(
-      title: const Text('Daemon의 폴더 선택'),
+      title: Text(l10n.directoryBrowserTitle),
       content: SizedBox(
         width: 560,
         height: 420,
@@ -77,8 +79,8 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
               key: const ValueKey('directory-browser-path'),
               controller: _path,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Daemon 경로',
+              decoration: InputDecoration(
+                labelText: l10n.directoryBrowserPath,
                 hintText: '/srv/repositories/project',
               ),
               onChanged: _onPathTyped,
@@ -114,9 +116,9 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
                       onTap: () => unawaited(_open(entry.path)),
                     ),
                   if (!_loading && _entries.isEmpty && _error == null)
-                    const ListTile(
+                    ListTile(
                       dense: true,
-                      title: Text('하위 폴더가 없습니다.'),
+                      title: Text(l10n.directoryBrowserEmpty),
                     ),
                 ],
               ),
@@ -127,11 +129,11 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('취소'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, _path.text.trim()),
-          child: const Text('이 폴더 선택'),
+          child: Text(l10n.directoryBrowserSelect),
         ),
       ],
     );
@@ -183,7 +185,7 @@ class DaemonPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SimpleDialog(
-    title: const Text('폴더를 추가할 daemon'),
+    title: Text(AppLocalizations.of(context).directoryBrowserHostTitle),
     children: <Widget>[
       for (final host in hosts)
         SimpleDialogOption(

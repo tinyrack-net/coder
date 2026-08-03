@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'support/fake_coder_api.dart';
+import 'support/localization.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 3);
@@ -83,6 +84,20 @@ void main() {
       find.text('Route session'),
     ),
     tags: const <String>['route_test__session_route__widget'],
+  );
+
+  testWidgets(
+    'GeneralSettingsRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const GeneralSettingsRoute().location,
+      find.text('표시 언어'),
+    ),
+    tags: const <String>[
+      'route_test__general_settings_route__widget',
+      'feature_test__settings_language__widget',
+    ],
   );
 
   testWidgets(
@@ -166,7 +181,12 @@ Future<void> _verifyRoute(
         overrides: [
           appServicesProvider.overrideWithValue(fakeAppServices(api)),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          routerConfig: router,
+        ),
       ),
     );
     await tester.pumpAndSettle();

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 
@@ -21,6 +22,7 @@ void reportWorktreeHookFailure(
 ) {
   final failure = failedWorktreeHook(runs);
   if (failure == null) return;
+  final l10n = AppLocalizations.of(context);
   final phase = switch (failure.phase) {
     WorktreeHookPhase.setup => 'Setup',
     WorktreeHookPhase.teardown => 'Teardown',
@@ -31,17 +33,19 @@ void reportWorktreeHookFailure(
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
-        '$phase 실패 (exit ${failure.exitCode}): ${failure.command}',
+        l10n.hookFailureMessage(phase, failure.exitCode, failure.command),
       ),
       action: SnackBarAction(
-        label: '자세히',
-        onPressed: () => unawaited(_showHookOutput(navigator, failure, phase)),
+        label: l10n.commonDetails,
+        onPressed: () =>
+            unawaited(_showHookOutput(l10n, navigator, failure, phase)),
       ),
     ),
   );
 }
 
 Future<void> _showHookOutput(
+  AppLocalizations l10n,
   NavigatorState navigator,
   WorktreeHookRunDto failure,
   String phase,
@@ -54,17 +58,17 @@ Future<void> _showHookOutput(
     DialogRoute<void>(
       context: navigator.context,
       builder: (context) => AlertDialog(
-        title: Text('$phase hook 실패'),
+        title: Text(l10n.hookFailureTitle(phase)),
         content: SingleChildScrollView(
           child: SelectableText(
             '${failure.command}\n\nexit ${failure.exitCode}\n'
-            '${output.isEmpty ? '(출력 없음)' : output}',
+            '${output.isEmpty ? l10n.hookFailureNoOutput : output}',
           ),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('확인'),
+            child: Text(l10n.commonConfirm),
           ),
         ],
       ),

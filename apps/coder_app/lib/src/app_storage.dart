@@ -144,6 +144,7 @@ final class _AppDocument {
       'embeddedDaemonExposure': settings.embeddedDaemonExposure.name,
       'lastActiveHostId': settings.lastActiveHostId,
       'lastWorktree': _selectionToJson(settings.lastWorktree),
+      'localeTag': settings.localeTag,
       'sessionTabs': settings.sessionTabs.entries
           .map(
             (entry) => <String, dynamic>{
@@ -164,6 +165,9 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
   final exposure = json['embeddedDaemonExposure'];
   final lastHost = json['lastActiveHostId'];
   final lastWorktree = json['lastWorktree'];
+  // Absent in documents written before the language setting existed, which
+  // read back as the system default rather than failing the whole document.
+  final localeTag = json['localeTag'];
   final tabs = json['sessionTabs'];
   final collapsed = json['sidebarCollapsed'];
   if (embedded is! bool ||
@@ -171,6 +175,7 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
       (exposure != null && exposure is! String) ||
       (lastHost != null && lastHost is! String) ||
       (lastWorktree != null && lastWorktree is! Map<String, dynamic>) ||
+      (localeTag != null && localeTag is! String) ||
       tabs is! List) {
     throw const FormatException('Invalid app settings values.');
   }
@@ -200,6 +205,7 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
     lastWorktree: lastWorktree == null
         ? null
         : _selectionFromJson(lastWorktree as Map<String, dynamic>),
+    localeTag: localeTag as String?,
     sessionTabs: Map<String, SessionTabPreference>.unmodifiable(sessionTabs),
     sidebarCollapsed: collapsed,
   );

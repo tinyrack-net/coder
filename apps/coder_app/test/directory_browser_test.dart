@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fake_coder_api.dart';
 
+import 'support/localization.dart';
+
 void main() {
   const tree = <String, List<String>>{
     '/': <String>['/srv'],
@@ -19,6 +21,9 @@ void main() {
     String? chosen;
     await tester.pumpWidget(
       MaterialApp(
+        locale: testLocale,
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) => TextButton(
@@ -102,6 +107,9 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
           home: Scaffold(
             body: DirectoryBrowserDialog(api: api, initialPath: '/'),
           ),

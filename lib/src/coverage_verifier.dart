@@ -155,12 +155,18 @@ final class CoverageVerifier {
 
   List<String> _productionSources(String root) {
     final lib = Directory(p.join(root, 'lib'));
+    // Generated sources are excluded for the same reason the analyzer skips
+    // them: they are the generator's output, not code anyone can test.
+    final generatedDirectory =
+        '${p.separator}l10n${p.separator}gen'
+        '${p.separator}';
     return <String>[
       for (final entity in lib.listSync(recursive: true))
         if (entity is File &&
             entity.path.endsWith('.dart') &&
             !entity.path.endsWith('.g.dart') &&
-            !entity.path.endsWith('.freezed.dart'))
+            !entity.path.endsWith('.freezed.dart') &&
+            !entity.path.contains(generatedDirectory))
           p.normalize(p.absolute(entity.path)),
     ]..sort();
   }

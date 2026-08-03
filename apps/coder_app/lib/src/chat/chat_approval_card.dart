@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_code_block.dart';
 import 'package:coder_app/src/chat/chat_diff.dart';
 import 'package:coder_app/src/chat/chat_diff_view.dart';
@@ -21,41 +22,44 @@ class ApprovalCard extends ConsumerWidget {
   final ApprovalRequestDto approval;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-    child: Card(
-      color: Theme.of(context).colorScheme.tertiaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              '승인 필요 · ${approval.toolName}',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            _preview(),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                TextButton(
-                  onPressed: () => _resolve(ref, approved: false),
-                  child: const Text('거부'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () => _resolve(ref, approved: true),
-                  child: const Text('승인'),
-                ),
-              ],
-            ),
-          ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Card(
+        color: Theme.of(context).colorScheme.tertiaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                l10n.chatApprovalRequired(approval.toolName),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              _preview(),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  TextButton(
+                    onPressed: () => _resolve(ref, approved: false),
+                    child: Text(l10n.chatApprovalDeny),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => _resolve(ref, approved: true),
+                    child: Text(l10n.chatApprovalAllow),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _preview() {
     final preview = approval.preview;

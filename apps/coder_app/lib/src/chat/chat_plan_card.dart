@@ -1,3 +1,4 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
@@ -42,7 +43,7 @@ class ChatPlanCard extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '제안된 계획',
+                    AppLocalizations.of(context).chatPlanTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: theme.colorScheme.primary,
                     ),

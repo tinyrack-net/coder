@@ -1,3 +1,4 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_diff.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +47,7 @@ class ChatDiffView extends StatelessWidget {
     if (hidden > 0) {
       rows.add(
         Text(
-          '… $hidden줄 더',
+          AppLocalizations.of(context).chatMoreLines(hidden),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

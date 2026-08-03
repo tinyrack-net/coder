@@ -1,3 +1,4 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
@@ -114,11 +115,18 @@ class ChatNoticeLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final (String label, Color color) = switch (notice.kind) {
-      ChatNoticeKind.turnCompleted => ('완료', theme.colorScheme.outline),
-      ChatNoticeKind.turnCancelled => ('중지됨', theme.colorScheme.outline),
+      ChatNoticeKind.turnCompleted => (
+        l10n.commonDone,
+        theme.colorScheme.outline,
+      ),
+      ChatNoticeKind.turnCancelled => (
+        l10n.chatNoticeCancelled,
+        theme.colorScheme.outline,
+      ),
       ChatNoticeKind.turnFailed => (
-        '실패 · ${notice.message ?? ''}',
+        l10n.chatNoticeFailed(notice.message ?? ''),
         theme.colorScheme.error,
       ),
     };
@@ -200,10 +208,10 @@ class ChatEmptyState extends StatelessWidget {
             color: theme.colorScheme.outline,
           ),
           const SizedBox(height: 12),
-          const Text('코딩 요청을 입력하세요.'),
+          Text(AppLocalizations.of(context).chatEmptyTitle),
           const SizedBox(height: 6),
           Text(
-            '예) 테스트를 실행하고 실패 원인을 고쳐줘',
+            AppLocalizations.of(context).chatEmptyExample,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -230,7 +238,7 @@ class ChatRunningIndicator extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Text(
-          '실행 중',
+          AppLocalizations.of(context).commonRunning,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),

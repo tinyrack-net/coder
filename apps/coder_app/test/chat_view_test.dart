@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/localization.dart';
+
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   var sequence = 0;
@@ -38,6 +40,9 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        locale: testLocale,
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
         home: Scaffold(
           body: ChatTimelineView(
             items: projectChatTimeline(events),

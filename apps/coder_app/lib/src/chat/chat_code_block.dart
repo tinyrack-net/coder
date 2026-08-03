@@ -1,3 +1,4 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -58,7 +59,7 @@ class ChatCodeBlock extends StatelessWidget {
                     SelectableText(visible, style: chatMonospaceStyle(context)),
                     if (hidden > 0)
                       Text(
-                        '… $hidden줄 더',
+                        AppLocalizations.of(context).chatMoreLines(hidden),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -69,7 +70,7 @@ class ChatCodeBlock extends StatelessWidget {
             ),
             if (showCopy)
               IconButton(
-                tooltip: '복사',
+                tooltip: AppLocalizations.of(context).commonCopy,
                 visualDensity: VisualDensity.compact,
                 onPressed: () => Clipboard.setData(ClipboardData(text: text)),
                 icon: const Icon(Icons.copy_all_outlined, size: 16),

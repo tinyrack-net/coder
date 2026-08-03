@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/workspace/worktree_hook_report.dart';
 import 'package:coder_client/coder_client.dart';
@@ -59,7 +61,7 @@ class WorkspaceSidebar extends StatelessWidget {
             key: const ValueKey('workspace-new-button'),
             onPressed: onNewWorkspace,
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('New workspace'),
+            label: Text(AppLocalizations.of(context).workspaceNewWorkspace),
           ),
         ),
         const Divider(height: 1),
@@ -101,22 +103,24 @@ class _HostTreeNode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final workspaces = catalog?.workspaces ?? const <WorkspaceDto>[];
     if (!host.connected) {
+      final error = hostErrorText(l10n, host);
       return ListTile(
         leading: const Icon(Icons.cloud_off_outlined),
-        title: Text(host.label),
+        title: Text(hostLabel(l10n, host)),
         subtitle: Text(
-          '${_hostStatusLabel(host.status)}'
-          '${host.error == null ? '' : ' · ${host.error}'}',
+          '${_hostStatusLabel(l10n, host.status)}'
+          '${error == null ? '' : ' · $error'}',
         ),
       );
     }
     return ExpansionTile(
       initiallyExpanded: true,
       leading: const Icon(Icons.dns_outlined),
-      title: Text(host.label),
-      subtitle: Text(_hostStatusLabel(host.status)),
+      title: Text(hostLabel(l10n, host)),
+      subtitle: Text(_hostStatusLabel(l10n, host.status)),
       children: <Widget>[
         for (final workspace in workspaces)
           _RepositoryTreeNode(
@@ -152,71 +156,75 @@ class _RepositoryTreeNode extends ConsumerWidget {
   final WorkspaceSelection? selected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.only(left: 16),
-    child: ExpansionTile(
-      initiallyExpanded: selected?.workspaceId == workspace.id,
-      leading: Icon(
-        workspace.kind == WorkspaceKind.git
-            ? Icons.account_tree_outlined
-            : Icons.folder_outlined,
-      ),
-      title: Text(workspace.name),
-      subtitle: Text(
-        workspace.rootPath,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      children: <Widget>[
-        for (final worktree in worktrees)
-          ListTile(
-            contentPadding: const EdgeInsets.only(left: 48, right: 12),
-            selected:
-                selected?.hostId == hostId &&
-                selected?.worktreeId == worktree.id,
-            leading: Icon(
-              worktree.kind == WorktreeKind.checkout
-                  ? Icons.home_work_outlined
-                  : Icons.call_split_outlined,
-              size: 20,
-            ),
-            title: Text(worktree.branch ?? worktree.name),
-            subtitle: Text(
-              worktree.path,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: PopupMenuButton<String>(
-              tooltip: 'Worktree 메뉴',
-              onSelected: (action) {
-                if (action == 'archive') {
-                  unawaited(_archiveWorktree(context, ref, worktree));
-                }
-              },
-              itemBuilder: (context) => const <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                  value: 'archive',
-                  child: Text('Archive'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 16),
+      child: ExpansionTile(
+        initiallyExpanded: selected?.workspaceId == workspace.id,
+        leading: Icon(
+          workspace.kind == WorkspaceKind.git
+              ? Icons.account_tree_outlined
+              : Icons.folder_outlined,
+        ),
+        title: Text(workspace.name),
+        subtitle: Text(
+          workspace.rootPath,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        children: <Widget>[
+          for (final worktree in worktrees)
+            ListTile(
+              contentPadding: const EdgeInsets.only(left: 48, right: 12),
+              selected:
+                  selected?.hostId == hostId &&
+                  selected?.worktreeId == worktree.id,
+              leading: Icon(
+                worktree.kind == WorktreeKind.checkout
+                    ? Icons.home_work_outlined
+                    : Icons.call_split_outlined,
+                size: 20,
+              ),
+              title: Text(worktree.branch ?? worktree.name),
+              subtitle: Text(
+                worktree.path,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: PopupMenuButton<String>(
+                tooltip: l10n.workspaceWorktreeMenu,
+                onSelected: (action) {
+                  if (action == 'archive') {
+                    unawaited(_archiveWorktree(context, ref, worktree));
+                  }
+                },
+                itemBuilder: (context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'archive',
+                    child: Text(l10n.workspaceArchive),
+                  ),
+                ],
+              ),
+              onTap: () => onSelect(
+                WorkspaceSelection(
+                  hostId: hostId,
+                  workspaceId: workspace.id,
+                  worktreeId: worktree.id,
                 ),
-              ],
-            ),
-            onTap: () => onSelect(
-              WorkspaceSelection(
-                hostId: hostId,
-                workspaceId: workspace.id,
-                worktreeId: worktree.id,
               ),
             ),
-          ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
   Future<void> _archiveWorktree(
     BuildContext context,
     WidgetRef ref,
     WorktreeDto worktree,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final api = await _api(ref);
     final preview = await api.previewWorktreeArchive(worktree.id);
     if (!context.mounted) return;
@@ -224,15 +232,14 @@ class _RepositoryTreeNode extends ConsumerWidget {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Archive할 수 없습니다'),
+          title: Text(l10n.workspaceArchiveBlockedTitle),
           content: Text(
-            '실행 중인 session ${preview.runningSessionCount}개를 먼저 '
-            '중지하세요.',
+            l10n.workspaceArchiveBlockedBody(preview.runningSessionCount),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('확인'),
+              child: Text(l10n.commonConfirm),
             ),
           ],
         ),
@@ -240,26 +247,28 @@ class _RepositoryTreeNode extends ConsumerWidget {
       return;
     }
     final risky = preview.dirty || preview.unpushedCommitCount > 0;
-    final dirtyWarning = preview.dirty ? '커밋하지 않은 변경이 있습니다.\n' : '';
+    final dirtyWarning = preview.dirty ? l10n.workspaceArchiveDirty : '';
     final unpushedWarning = preview.unpushedCommitCount > 0
-        ? '${preview.unpushedCommitCount}개의 push하지 않은 commit이 있습니다.\n'
+        ? l10n.workspaceArchiveUnpushed(preview.unpushedCommitCount)
         : '';
     final removalWarning = preview.removesDirectory
-        ? 'Coder가 만든 checkout 디렉터리가 제거됩니다.'
-        : '등록만 숨기고 디스크의 checkout은 유지합니다.';
+        ? l10n.workspaceArchiveRemovesDirectory
+        : l10n.workspaceArchiveKeepsDirectory;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${worktree.name}을 Archive할까요?'),
+        title: Text(l10n.workspaceArchiveTitle(worktree.name)),
         content: Text('$dirtyWarning$unpushedWarning$removalWarning'),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(risky ? '위험을 확인하고 Archive' : 'Archive'),
+            child: Text(
+              risky ? l10n.workspaceArchiveRisky : l10n.workspaceArchive,
+            ),
           ),
         ],
       ),
@@ -299,11 +308,13 @@ class _NoDaemonState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Text('설정된 daemon이 없습니다.'),
+          Text(AppLocalizations.of(context).workspaceNoDaemons),
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: onSettings,
-            child: const Text('Daemon 설정'),
+            child: Text(
+              AppLocalizations.of(context).workspaceOpenDaemonSettings,
+            ),
           ),
         ],
       ),
@@ -311,12 +322,13 @@ class _NoDaemonState extends StatelessWidget {
   );
 }
 
-String _hostStatusLabel(HostRuntimeStatus status) => switch (status) {
-  HostRuntimeStatus.online => '온라인',
-  HostRuntimeStatus.connecting => '연결 중',
-  HostRuntimeStatus.reconnecting => '재연결 중',
-  HostRuntimeStatus.offline => '오프라인',
-  HostRuntimeStatus.error => '오류',
-  HostRuntimeStatus.conflict => '중복 daemon',
-  HostRuntimeStatus.idle => '자동 연결 꺼짐',
-};
+String _hostStatusLabel(AppLocalizations l10n, HostRuntimeStatus status) =>
+    switch (status) {
+      HostRuntimeStatus.online => l10n.hostStatusOnline,
+      HostRuntimeStatus.connecting => l10n.hostStatusConnecting,
+      HostRuntimeStatus.reconnecting => l10n.hostStatusReconnecting,
+      HostRuntimeStatus.offline => l10n.hostStatusOffline,
+      HostRuntimeStatus.error => l10n.hostStatusError,
+      HostRuntimeStatus.conflict => l10n.hostStatusConflict,
+      HostRuntimeStatus.idle => l10n.hostStatusIdle,
+    };

@@ -1,4 +1,6 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +16,7 @@ class AppSettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(hostRegistryControllerProvider);
     final supportsEmbedded = ref
         .read(appServicesProvider)
@@ -35,7 +38,7 @@ class AppSettingsPage extends ConsumerWidget {
           onPressed: () => context.go('/'),
           icon: const Icon(Icons.arrow_back),
         ),
-        title: const Text('앱 설정'),
+        title: Text(l10n.appSettingsTitle),
       ),
       body: body,
     );
@@ -46,88 +49,87 @@ class AppSettingsPage extends ConsumerWidget {
     WidgetRef ref,
     HostRegistryState registry, {
     required bool supportsEmbedded,
-  }) => ListView(
-    padding: const EdgeInsets.all(24),
-    children: <Widget>[
-      if (supportsEmbedded) ...<Widget>[
-        Text(
-          '로컬 실행',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: Column(
-            children: <Widget>[
-              SwitchListTile(
-                title: const Text('내장 daemon'),
-                subtitle: const Text(
-                  '앱과 함께 시작하고 앱 종료 시 중지합니다. 시작 실패는 앱 사용을 막지 않습니다.',
-                ),
-                value: registry.settings.embeddedDaemonEnabled,
-                onChanged: (enabled) => _toggleEmbedded(
-                  context,
-                  ref,
-                  currentlyEnabled: registry.settings.embeddedDaemonEnabled,
-                  enabled: enabled,
-                ),
-              ),
-              const Divider(height: 1),
-              SwitchListTile(
-                key: const ValueKey<String>('embedded-daemon-exposure'),
-                title: const Text('네트워크 접근 허용'),
-                subtitle: const Text(
-                  '끄면 이 기기에서만, 켜면 모든 IPv4 네트워크 인터페이스에서 연결할 수 있습니다.',
-                ),
-                value:
-                    registry.settings.embeddedDaemonExposure ==
-                    EmbeddedDaemonExposure.allInterfaces,
-                onChanged: _embeddedRestarting(registry)
-                    ? null
-                    : (enabled) => ref
-                          .read(hostRegistryControllerProvider.notifier)
-                          .setEmbeddedDaemonExposure(
-                            enabled
-                                ? EmbeddedDaemonExposure.allInterfaces
-                                : EmbeddedDaemonExposure.loopback,
-                          ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-      ],
-      Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 8,
-        children: <Widget>[
+  }) {
+    final l10n = AppLocalizations.of(context);
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: <Widget>[
+        if (supportsEmbedded) ...<Widget>[
           Text(
-            '원격 daemons',
+            l10n.appSettingsLocalSection,
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          FilledButton.icon(
-            onPressed: () => context.go('/settings/daemons/new'),
-            icon: const Icon(Icons.add),
-            label: const Text('원격 daemon 추가'),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: <Widget>[
+                SwitchListTile(
+                  title: Text(l10n.embeddedDaemonName),
+                  subtitle: Text(l10n.appSettingsEmbeddedSubtitle),
+                  value: registry.settings.embeddedDaemonEnabled,
+                  onChanged: (enabled) => _toggleEmbedded(
+                    context,
+                    ref,
+                    currentlyEnabled: registry.settings.embeddedDaemonEnabled,
+                    enabled: enabled,
+                  ),
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  key: const ValueKey<String>('embedded-daemon-exposure'),
+                  title: Text(l10n.appSettingsExposure),
+                  subtitle: Text(l10n.appSettingsExposureSubtitle),
+                  value:
+                      registry.settings.embeddedDaemonExposure ==
+                      EmbeddedDaemonExposure.allInterfaces,
+                  onChanged: _embeddedRestarting(registry)
+                      ? null
+                      : (enabled) => ref
+                            .read(hostRegistryControllerProvider.notifier)
+                            .setEmbeddedDaemonExposure(
+                              enabled
+                                  ? EmbeddedDaemonExposure.allInterfaces
+                                  : EmbeddedDaemonExposure.loopback,
+                            ),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(height: 24),
         ],
-      ),
-      const SizedBox(height: 8),
-      if (registry.profiles.isEmpty)
-        const Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text('저장된 원격 daemon이 없습니다.'),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
+          children: <Widget>[
+            Text(
+              l10n.appSettingsRemoteSection,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            FilledButton.icon(
+              onPressed: () => context.go('/settings/daemons/new'),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.appSettingsAddRemote),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (registry.profiles.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(l10n.appSettingsNoRemotes),
+            ),
           ),
-        ),
-      for (final profile in registry.profiles)
-        _RemoteHostCard(
-          profile: profile,
-          runtime: registry.runtimes[profile.id],
-        ),
-    ],
-  );
+        for (final profile in registry.profiles)
+          _RemoteHostCard(
+            profile: profile,
+            runtime: registry.runtimes[profile.id],
+          ),
+      ],
+    );
+  }
 
   bool _embeddedRestarting(HostRegistryState registry) =>
       registry.settings.embeddedDaemonEnabled &&
@@ -139,22 +141,21 @@ class AppSettingsPage extends ConsumerWidget {
     required bool currentlyEnabled,
     required bool enabled,
   }) async {
+    final l10n = AppLocalizations.of(context);
     if (currentlyEnabled && !enabled) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('내장 daemon을 중지할까요?'),
-          content: const Text(
-            '이 앱이 소유한 daemon과 연결만 중지합니다. 원격 및 standalone daemon은 영향을 받지 않습니다.',
-          ),
+          title: Text(l10n.appSettingsStopEmbeddedTitle),
+          content: Text(l10n.appSettingsStopEmbeddedBody),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('취소'),
+              child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('중지'),
+              child: Text(l10n.commonStop),
             ),
           ],
         ),
@@ -174,58 +175,61 @@ class _RemoteHostCard extends ConsumerWidget {
   final HostRuntimeSnapshot? runtime;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: <Widget>[
-          ListTile(
-            leading: Icon(_statusIcon(runtime?.status)),
-            title: Text(profile.label),
-            subtitle: Text(
-              '${profile.websocketUri}\n${_statusText(runtime)}',
-            ),
-            isThreeLine: true,
-            trailing: IconButton(
-              tooltip: '연결 편집',
-              onPressed: () => context.go('/settings/daemons/${profile.id}'),
-              icon: const Icon(Icons.edit_outlined),
-            ),
-          ),
-          SwitchListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            title: const Text('앱 시작 시 자동 연결'),
-            value: profile.autoConnect,
-            onChanged: (enabled) => ref
-                .read(hostRegistryControllerProvider.notifier)
-                .setRemoteAutoConnect(profile.id, enabled: enabled),
-          ),
-          Wrap(
-            alignment: WrapAlignment.end,
-            spacing: 8,
-            runSpacing: 4,
-            children: <Widget>[
-              TextButton.icon(
-                onPressed: () => ref
-                    .read(hostRegistryControllerProvider.notifier)
-                    .reconnect(profile.id),
-                icon: const Icon(Icons.refresh),
-                label: const Text('다시 연결'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: <Widget>[
+            ListTile(
+              leading: Icon(_statusIcon(runtime?.status)),
+              title: Text(profile.label),
+              subtitle: Text(
+                '${profile.websocketUri}\n${_statusText(l10n, runtime)}',
               ),
-              if (runtime?.connected == true)
+              isThreeLine: true,
+              trailing: IconButton(
+                tooltip: l10n.appSettingsEditConnection,
+                onPressed: () => context.go('/settings/daemons/${profile.id}'),
+                icon: const Icon(Icons.edit_outlined),
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              title: Text(l10n.appSettingsAutoConnect),
+              value: profile.autoConnect,
+              onChanged: (enabled) => ref
+                  .read(hostRegistryControllerProvider.notifier)
+                  .setRemoteAutoConnect(profile.id, enabled: enabled),
+            ),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 4,
+              children: <Widget>[
                 TextButton.icon(
-                  onPressed: () => context.go(
-                    '/settings/providers?hostId=${profile.id}',
-                  ),
-                  icon: const Icon(Icons.hub_outlined),
-                  label: const Text('Provider 설정'),
+                  onPressed: () => ref
+                      .read(hostRegistryControllerProvider.notifier)
+                      .reconnect(profile.id),
+                  icon: const Icon(Icons.refresh),
+                  label: Text(l10n.appSettingsReconnect),
                 ),
-            ],
-          ),
-        ],
+                if (runtime?.connected == true)
+                  TextButton.icon(
+                    onPressed: () => context.go(
+                      '/settings/providers?hostId=${profile.id}',
+                    ),
+                    icon: const Icon(Icons.hub_outlined),
+                    label: Text(l10n.appSettingsProviderSettings),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// Add/edit form for one remote daemon profile.
@@ -270,6 +274,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
     final existing = registry?.profiles
         .where((profile) => profile.id == widget.hostId)
@@ -288,7 +293,11 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
           onPressed: () => context.go('/settings/daemons'),
           icon: const Icon(Icons.arrow_back),
         ),
-        title: Text(existing == null ? '원격 daemon 추가' : '원격 daemon 편집'),
+        title: Text(
+          existing == null
+              ? l10n.appSettingsAddRemoteTitle
+              : l10n.appSettingsEditRemoteTitle,
+        ),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -299,8 +308,8 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               TextField(
                 key: const ValueKey<String>('remote-host-label'),
                 controller: _label,
-                decoration: const InputDecoration(
-                  labelText: '이름',
+                decoration: InputDecoration(
+                  labelText: l10n.commonName,
                   hintText: 'Production daemon',
                 ),
               ),
@@ -309,8 +318,8 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 key: const ValueKey<String>('remote-host-address'),
                 controller: _address,
                 keyboardType: TextInputType.url,
-                decoration: const InputDecoration(
-                  labelText: 'WebSocket 주소',
+                decoration: InputDecoration(
+                  labelText: l10n.appSettingsAddress,
                   hintText: 'wss://coder.example.com/ws',
                 ),
               ),
@@ -322,13 +331,13 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 decoration: InputDecoration(
                   labelText: existing == null
                       ? 'Bearer token'
-                      : '새 Bearer token (변경할 때만 입력)',
+                      : l10n.appSettingsNewToken,
                 ),
               ),
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('앱 시작 시 자동 연결'),
+                title: Text(l10n.appSettingsAutoConnect),
                 value: _autoConnect,
                 onChanged: (value) => setState(() => _autoConnect = value),
               ),
@@ -344,12 +353,12 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                   if (existing != null)
                     TextButton(
                       onPressed: _saving ? null : () => _delete(existing),
-                      child: const Text('삭제'),
+                      child: Text(l10n.commonDelete),
                     ),
                   const SizedBox(width: 8),
                   FilledButton(
                     onPressed: _saving ? null : () => _save(existing),
-                    child: Text(_saving ? '저장 중…' : '저장'),
+                    child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
                   ),
                 ],
               ),
@@ -386,6 +395,13 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
         );
       }
       if (mounted) context.go('/settings/daemons');
+    } on HostConnectionFailure catch (failure) {
+      if (!mounted) return;
+      final message = hostConnectionFailureText(
+        AppLocalizations.of(context),
+        failure,
+      );
+      setState(() => _error = message);
     } on Exception catch (error) {
       if (mounted) setState(() => _error = '$error');
     } finally {
@@ -394,19 +410,20 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
   }
 
   Future<void> _delete(RemoteDaemonProfile profile) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${profile.label}을 삭제할까요?'),
-        content: const Text('연결과 저장된 bearer token도 이 기기에서 제거됩니다.'),
+        title: Text(l10n.appSettingsDeleteTitle(profile.label)),
+        content: Text(l10n.appSettingsDeleteBody),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('삭제'),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -428,15 +445,18 @@ IconData _statusIcon(HostRuntimeStatus? status) => switch (status) {
   HostRuntimeStatus.idle || null => Icons.pause_circle_outline,
 };
 
-String _statusText(HostRuntimeSnapshot? runtime) {
-  if (runtime == null) return '대기 중';
+String _statusText(AppLocalizations l10n, HostRuntimeSnapshot? runtime) {
+  if (runtime == null) return l10n.hostStatusPending;
   return switch (runtime.status) {
-    HostRuntimeStatus.online => '온라인',
-    HostRuntimeStatus.connecting => '연결 중',
-    HostRuntimeStatus.reconnecting => '재연결 중',
-    HostRuntimeStatus.offline => runtime.error ?? '오프라인',
-    HostRuntimeStatus.error => runtime.error ?? '오류',
-    HostRuntimeStatus.conflict => runtime.error ?? '중복 daemon',
-    HostRuntimeStatus.idle => '자동 연결 꺼짐',
+    HostRuntimeStatus.online => l10n.hostStatusOnline,
+    HostRuntimeStatus.connecting => l10n.hostStatusConnecting,
+    HostRuntimeStatus.reconnecting => l10n.hostStatusReconnecting,
+    HostRuntimeStatus.offline =>
+      hostErrorText(l10n, runtime) ?? l10n.hostStatusOffline,
+    HostRuntimeStatus.error =>
+      hostErrorText(l10n, runtime) ?? l10n.hostStatusError,
+    HostRuntimeStatus.conflict =>
+      hostErrorText(l10n, runtime) ?? l10n.hostStatusConflict,
+    HostRuntimeStatus.idle => l10n.hostStatusIdle,
   };
 }

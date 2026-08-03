@@ -12,6 +12,8 @@ import 'package:go_router/go_router.dart';
 
 import 'support/fake_coder_api.dart';
 
+import 'support/localization.dart';
+
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
@@ -597,7 +599,12 @@ void main() {
             fakeAppServices(api, connected: false),
           ),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          routerConfig: router,
+        ),
       ),
     );
     await tester.pump();
@@ -954,6 +961,9 @@ void main() {
             appServicesProvider.overrideWithValue(fakeAppServices(api)),
           ],
           child: MaterialApp(
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
             home: Scaffold(
               body: ListView(
                 children: <Widget>[
@@ -1017,7 +1027,12 @@ Future<GoRouter> _pumpRoute(
           fakeAppServices(api, store: store),
         ),
       ],
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        locale: testLocale,
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();

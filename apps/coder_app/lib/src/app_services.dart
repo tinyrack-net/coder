@@ -80,7 +80,8 @@ final class WebSocketHostClientFactory implements HostClientFactory {
       final message = '$error';
       if (message.contains('401') || message.contains('403')) {
         throw const HostConnectionFailure.authentication(
-          'Daemon이 bearer token을 거부했습니다.',
+          'The daemon rejected the bearer token.',
+          reason: HostFailureReason.rejectedBearerToken,
         );
       }
       throw HostConnectionFailure.network(message);

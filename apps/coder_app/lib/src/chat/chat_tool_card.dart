@@ -1,3 +1,4 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_code_block.dart';
 import 'package:coder_app/src/chat/chat_diff_view.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
@@ -42,7 +43,10 @@ class ChatToolCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final presentation = describeToolActivity(activity);
+    final presentation = describeToolActivity(
+      AppLocalizations.of(context),
+      activity,
+    );
     final statusColor = switch (activity.status) {
       ChatToolStatus.failed => theme.colorScheme.error,
       ChatToolStatus.denied => theme.colorScheme.outline,

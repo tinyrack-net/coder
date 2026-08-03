@@ -17,6 +17,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../support/fake_coder_api.dart';
 
+import '../support/localization.dart';
+
 void main() {
   final now = DateTime.utc(2026);
   final approval = ApprovalRequestDto(
@@ -697,6 +699,9 @@ Widget _shell(ThemeMode mode, {bool collapsed = false}) {
 }
 
 Widget _material(ThemeMode mode, Widget child) => MaterialApp(
+  locale: testLocale,
+  localizationsDelegates: testLocalizationsDelegates,
+  supportedLocales: testSupportedLocales,
   theme: ThemeData(colorSchemeSeed: const Color(0xff625bff)),
   darkTheme: ThemeData(
     brightness: Brightness.dark,

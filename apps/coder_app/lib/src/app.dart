@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/agent_settings_page.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/app_settings_page.dart';
@@ -9,6 +10,8 @@ import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
+import 'package:coder_app/src/general_settings_page.dart';
+import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/project_settings_page.dart';
 import 'package:coder_app/src/session_composer.dart';
@@ -46,20 +49,44 @@ class CoderApp extends StatelessWidget {
       appServicesProvider.overrideWithValue(services),
       externalUrlOpenerProvider.overrideWithValue(externalUrlOpener),
     ],
-    child: MaterialApp.router(
+    child: _CoderAppView(router: _router),
+  );
+}
+
+/// Builds the app shell below [ProviderScope] so it can watch settings.
+class _CoderAppView extends ConsumerWidget {
+  const _CoderAppView({required this.router});
+
+  final GoRouter router;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final localeTag = ref
+        .watch(hostRegistryControllerProvider)
+        .asData
+        ?.value
+        .settings
+        .localeTag;
+    return MaterialApp.router(
       title: 'Tinyrack Coder',
       debugShowCheckedModeBanner: false,
-      theme: _theme(Brightness.light),
-      darkTheme: _theme(Brightness.dark),
-      routerConfig: _router,
-    ),
-  );
+      theme: coderTheme(Brightness.light),
+      darkTheme: coderTheme(Brightness.dark),
+      // A null locale lets Flutter resolve the system locale against
+      // [AppLocalizations.supportedLocales], which falls back to English.
+      locale: localeTag == null ? null : Locale(localeTag),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    );
+  }
 }
 
 /// Width at which the workspace and settings shells show both panes.
 const double wideLayoutBreakpoint = 760;
 
-ThemeData _theme(Brightness brightness) => ThemeData(
+/// Builds the shared Material theme for one brightness.
+ThemeData coderTheme(Brightness brightness) => ThemeData(
   colorScheme: ColorScheme.fromSeed(
     seedColor: brightness == Brightness.light
         ? const Color(0xff625bff)
@@ -151,6 +178,17 @@ class SessionRoute extends GoRouteData with $SessionRoute {
   );
 }
 
+@TypedGoRoute<GeneralSettingsRoute>(path: '/settings/general')
+/// Unified settings route with General selected.
+class GeneralSettingsRoute extends GoRouteData with $GeneralSettingsRoute {
+  /// Creates the general settings route.
+  const GeneralSettingsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const UnifiedSettingsPage(category: SettingsCategory.general);
+}
+
 @TypedGoRoute<ProviderSettingsRoute>(path: '/settings/providers')
 /// Unified settings route with Provider selected.
 class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
@@ -231,6 +269,9 @@ class EditHostRoute extends GoRouteData with $EditHostRoute {
 
 /// Top-level settings categories.
 enum SettingsCategory {
+  /// App-wide preferences that do not belong to any single daemon.
+  general,
+
   /// Worktree lifecycle hooks stored in each project's `coder.json`.
   project,
 
@@ -280,6 +321,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         : online.firstOrNull?.id;
     void selectHost(String? value) => setState(() => _hostId = value);
     final detail = switch (widget.category) {
+      SettingsCategory.general => const GeneralSettingsPage(embedded: true),
       SettingsCategory.project => _HostScopedDetail(
         hosts: online,
         hostId: _hostId,
@@ -306,7 +348,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           onPressed: () => const WorkspaceHomeRoute().go(context),
           icon: const Icon(Icons.arrow_back),
         ),
-        title: const Text('설정'),
+        title: Text(AppLocalizations.of(context).settingsTitle),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -333,35 +375,44 @@ class _SettingsSidebar extends StatelessWidget {
   final SettingsCategory selected;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(12),
-    children: <Widget>[
-      ListTile(
-        selected: selected == SettingsCategory.project,
-        leading: const Icon(Icons.folder_copy_outlined),
-        title: const Text('Projects'),
-        onTap: () => const ProjectSettingsRoute().go(context),
-      ),
-      ListTile(
-        selected: selected == SettingsCategory.agent,
-        leading: const Icon(Icons.smart_toy_outlined),
-        title: const Text('Agent'),
-        onTap: () => const AgentSettingsRoute().go(context),
-      ),
-      ListTile(
-        selected: selected == SettingsCategory.provider,
-        leading: const Icon(Icons.hub_outlined),
-        title: const Text('Provider'),
-        onTap: () => const ProviderSettingsRoute().go(context),
-      ),
-      ListTile(
-        selected: selected == SettingsCategory.daemon,
-        leading: const Icon(Icons.dns_outlined),
-        title: const Text('Daemon'),
-        onTap: () => const DaemonSettingsRoute().go(context),
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: <Widget>[
+        ListTile(
+          selected: selected == SettingsCategory.general,
+          leading: const Icon(Icons.tune),
+          title: Text(l10n.settingsCategoryGeneral),
+          onTap: () => const GeneralSettingsRoute().go(context),
+        ),
+        ListTile(
+          selected: selected == SettingsCategory.project,
+          leading: const Icon(Icons.folder_copy_outlined),
+          title: Text(l10n.settingsCategoryProjects),
+          onTap: () => const ProjectSettingsRoute().go(context),
+        ),
+        ListTile(
+          selected: selected == SettingsCategory.agent,
+          leading: const Icon(Icons.smart_toy_outlined),
+          title: Text(l10n.settingsCategoryAgent),
+          onTap: () => const AgentSettingsRoute().go(context),
+        ),
+        ListTile(
+          selected: selected == SettingsCategory.provider,
+          leading: const Icon(Icons.hub_outlined),
+          title: Text(l10n.settingsCategoryProvider),
+          onTap: () => const ProviderSettingsRoute().go(context),
+        ),
+        ListTile(
+          selected: selected == SettingsCategory.daemon,
+          leading: const Icon(Icons.dns_outlined),
+          title: Text(l10n.settingsCategoryDaemon),
+          onTap: () => const DaemonSettingsRoute().go(context),
+        ),
+      ],
+    );
+  }
 }
 
 class _HostScopedDetail extends StatelessWidget {
@@ -380,7 +431,9 @@ class _HostScopedDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (hosts.isEmpty || hostId == null) {
-      return const Center(child: Text('온라인 daemon 연결이 필요합니다.'));
+      return Center(
+        child: Text(AppLocalizations.of(context).settingsRequiresOnlineDaemon),
+      );
     }
     return Column(
       children: <Widget>[
@@ -393,7 +446,7 @@ class _HostScopedDetail extends StatelessWidget {
                 .map(
                   (host) => DropdownMenuItem<String>(
                     value: host.id,
-                    child: Text(host.label),
+                    child: Text(hostLabel(AppLocalizations.of(context), host)),
                   ),
                 )
                 .toList(growable: false),
@@ -443,14 +496,16 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
             ? null
             : IconButton(
                 key: const ValueKey('workspace-sidebar-toggle'),
-                tooltip: collapsed ? '사이드바 열기' : '사이드바 접기',
+                tooltip: collapsed
+                    ? AppLocalizations.of(context).workspaceSidebarExpand
+                    : AppLocalizations.of(context).workspaceSidebarCollapse,
                 onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
                 icon: Icon(collapsed ? Icons.menu : Icons.menu_open),
               ),
-        title: const Text('Workspaces'),
+        title: Text(AppLocalizations.of(context).workspacesTitle),
         actions: <Widget>[
           IconButton(
-            tooltip: '설정',
+            tooltip: AppLocalizations.of(context).settingsTitle,
             onPressed: () {
               final hostId = widget.selection?.hostId;
               if (hostId == null) {
@@ -600,13 +655,13 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                       ),
               ),
               IconButton(
-                tooltip: '새 session',
+                tooltip: AppLocalizations.of(context).workspaceNewSession,
                 onPressed: state == null ? null : _startDraft,
                 icon: const Icon(Icons.add),
               ),
               if (state != null)
                 PopupMenuButton<String>(
-                  tooltip: '모든 session',
+                  tooltip: AppLocalizations.of(context).workspaceAllSessions,
                   icon: const Icon(Icons.more_horiz),
                   onSelected: _open,
                   itemBuilder: (context) => <PopupMenuEntry<String>>[
@@ -705,7 +760,7 @@ class _SessionTab extends StatelessWidget {
             Text(agent.title),
             IconButton(
               visualDensity: VisualDensity.compact,
-              tooltip: '탭 닫기',
+              tooltip: AppLocalizations.of(context).workspaceCloseTab,
               onPressed: onClose,
               icon: const Icon(Icons.close, size: 16),
             ),
@@ -792,7 +847,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           ),
           trailing: busy
               ? IconButton(
-                  tooltip: '중지',
+                  tooltip: AppLocalizations.of(context).commonStop,
                   onPressed: () => ref
                       .read(
                         conversationControllerProvider(
@@ -826,7 +881,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           ),
         SessionComposer(
           enabled: !busy && effective != null,
-          hint: effective == null ? '사용할 Provider와 모델을 먼저 선택하세요.' : null,
+          hint: effective == null
+              ? AppLocalizations.of(context).composerSelectProviderFirst
+              : null,
           bar: SessionComposerBar(
             hostId: widget.selection.hostId,
             definitions: definitions,

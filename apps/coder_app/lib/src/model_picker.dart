@@ -1,3 +1,4 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 
@@ -13,7 +14,7 @@ Future<String?> showModelPicker(
   required String connectionId,
   required List<ProviderModelDto> models,
   required String? currentModelId,
-  String title = '기본 모델 선택',
+  String? title,
   String? inheritLabel,
 }) {
   final picker = ModelPicker(
@@ -54,7 +55,7 @@ class ModelPicker extends StatefulWidget {
     required this.connectionId,
     required this.models,
     required this.currentModelId,
-    this.title = '기본 모델 선택',
+    this.title,
     this.inheritLabel,
     super.key,
   });
@@ -68,8 +69,8 @@ class ModelPicker extends StatefulWidget {
   /// Currently selected model, marked with a check.
   final String? currentModelId;
 
-  /// Heading shown above the search field.
-  final String title;
+  /// Heading shown above the search field, or null for the default.
+  final String? title;
 
   /// When set, adds a leading option that clears an explicit selection.
   final String? inheritLabel;
@@ -83,6 +84,7 @@ class _ModelPickerState extends State<ModelPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final query = _query.trim().toLowerCase();
     final ordered = <ProviderModelDto>[
       ...widget.models.where((model) => model.id == widget.currentModelId),
@@ -107,12 +109,12 @@ class _ModelPickerState extends State<ModelPicker> {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  widget.title,
+                  widget.title ?? l10n.modelPickerTitle,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
               IconButton(
-                tooltip: '닫기',
+                tooltip: l10n.commonClose,
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.close),
               ),
@@ -122,9 +124,9 @@ class _ModelPickerState extends State<ModelPicker> {
           TextField(
             key: const ValueKey('model-search-field'),
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: '모델 검색',
-              prefixIcon: Icon(Icons.search),
+            decoration: InputDecoration(
+              labelText: l10n.modelPickerSearch,
+              prefixIcon: const Icon(Icons.search),
             ),
             onChanged: (value) => setState(() => _query = value),
           ),
@@ -140,7 +142,7 @@ class _ModelPickerState extends State<ModelPicker> {
             ),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(child: Text('검색 결과가 없습니다.'))
+                ? Center(child: Text(l10n.modelPickerNoResults))
                 : ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {

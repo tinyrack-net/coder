@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/composer_menu.dart';
 import 'package:coder_app/src/controller.dart';
@@ -76,6 +77,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final providers = ref
         .watch(providerSettingsControllerProvider(hostId))
         .value;
+    final l10n = AppLocalizations.of(context);
     final connections = usableConnections(
       providers?.connections ?? const <ProviderConnectionDto>[],
     );
@@ -103,10 +105,10 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           ComposerChip(
             valueKey: const ValueKey('session-composer-mode'),
             icon: Icons.checklist_rtl,
-            label: planning ? 'Plan' : '실행',
+            label: planning ? l10n.composerPlan : l10n.composerRun,
             tooltip: planning
-                ? '계획만 세웁니다. Shift+Tab으로 전환'
-                : '요청을 바로 수행합니다. Shift+Tab으로 전환',
+                ? l10n.composerPlanTooltip
+                : l10n.composerRunTooltip,
             selected: planning,
             onPressed: enabled
                 ? (_) => widget.onModeChanged(
@@ -119,7 +121,9 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
             valueKey: const ValueKey('session-composer-agent'),
             icon: Icons.smart_toy_outlined,
             label: agent?.name ?? 'Agent',
-            tooltip: agentEnabled ? 'Agent 선택' : '세션 생성 후에는 Agent를 바꿀 수 없습니다.',
+            tooltip: agentEnabled
+                ? l10n.composerSelectAgent
+                : l10n.composerAgentLocked,
             onPressed: enabled && agentEnabled && definitions.isNotEmpty
                 ? _chooseAgent
                 : null,
@@ -129,7 +133,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
             valueKey: const ValueKey('session-composer-provider'),
             icon: Icons.cloud_outlined,
             label: connection?.displayName ?? 'Provider',
-            tooltip: 'Provider 선택',
+            tooltip: l10n.composerSelectProvider,
             onPressed: enabled && connections.isNotEmpty
                 ? (chipContext) => _chooseProvider(chipContext, connections)
                 : null,
@@ -138,8 +142,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           ComposerChip(
             valueKey: const ValueKey('session-composer-model'),
             icon: Icons.memory_outlined,
-            label: modelLabel ?? selection?.modelId ?? '모델',
-            tooltip: '모델 선택',
+            label: modelLabel ?? selection?.modelId ?? l10n.composerModel,
+            tooltip: l10n.composerSelectModel,
             onPressed: enabled && connection != null
                 ? (chipContext) => _chooseModel(chipContext, connection.id)
                 : null,
@@ -209,6 +213,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
   }
 
   Future<void> _chooseModel(BuildContext context, String connectionId) async {
+    final l10n = AppLocalizations.of(context);
     await _ensureModelsLoaded(connectionId);
     if (!context.mounted) return;
     final models = _loadedModels(connectionId) ?? const <ProviderModelDto>[];
@@ -220,8 +225,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       currentModelId: connectionId == widget.selection?.providerConnectionId
           ? widget.selection?.modelId
           : null,
-      title: '모델 선택',
-      inheritLabel: 'Agent 기본값 사용',
+      title: l10n.composerSelectModel,
+      inheritLabel: l10n.composerInheritModel,
     );
     if (chosen == null) return;
     widget.onModelChanged(
@@ -318,6 +323,7 @@ class DraftSessionPane extends ConsumerWidget {
             .where((definition) => definition.id == draft.agentDefinitionId)
             .firstOrNull ??
         definitions.firstOrNull;
+    final l10n = AppLocalizations.of(context);
     final connections =
         providers?.connections ?? const <ProviderConnectionDto>[];
     final effective =
@@ -331,12 +337,12 @@ class DraftSessionPane extends ConsumerWidget {
     );
     return Column(
       children: <Widget>[
-        const Expanded(child: Center(child: Text('코딩 요청으로 새 session을 시작하세요.'))),
+        Expanded(child: Center(child: Text(l10n.composerStartHint))),
         SessionComposer(
           enabled: agent != null && effective != null,
           hint: agent == null
-              ? '사용 가능한 primary Agent가 없습니다.'
-              : (effective == null ? '사용할 Provider와 모델을 먼저 선택하세요.' : null),
+              ? l10n.composerNoPrimaryAgent
+              : (effective == null ? l10n.composerSelectProviderFirst : null),
           bar: SessionComposerBar(
             hostId: selection.hostId,
             definitions: definitions,
@@ -440,7 +446,7 @@ class _SessionComposerState extends State<SessionComposer> {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                'Plan 모드 · 계획만 세우고 실행하지 않습니다',
+                AppLocalizations.of(context).composerPlanBanner,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                 ),
@@ -459,9 +465,9 @@ class _SessionComposerState extends State<SessionComposer> {
                     minLines: 1,
                     maxLines: 8,
                     enabled: widget.enabled,
-                    decoration: const InputDecoration(
-                      hintText: '코딩 요청을 입력하세요…',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context).composerInputHint,
+                      border: const OutlineInputBorder(),
                     ),
                     onSubmitted: widget.enabled ? (_) => _submit() : null,
                   ),

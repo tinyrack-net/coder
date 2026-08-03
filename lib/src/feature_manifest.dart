@@ -74,6 +74,17 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'settings.language',
+    description:
+        'Selects the app UI language or follows the system locale, and keeps '
+        'the choice across restarts.',
+    routes: <String>['GeneralSettingsRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'project.settings',
     description:
         'Edits per-project worktree lifecycle hooks stored in the repository '

@@ -49,6 +49,7 @@ void main() {
             ),
           },
           sidebarCollapsed: true,
+          localeTag: 'en',
         ),
       );
       await store.upsertProfile(profile);
@@ -61,6 +62,7 @@ void main() {
       );
       expect(restored.lastWorktree, selection);
       expect(restored.sidebarCollapsed, isTrue);
+      expect(restored.localeTag, 'en');
       expect(
         restored.sessionTabs[selection.storageKey]?.openAgentIds,
         <String>['agent-1', 'agent-2'],
@@ -132,6 +134,37 @@ void main() {
     expect(await credentials.readBearerToken(original.id), isNull);
   });
 
+  test(
+    'documents written before the language setting load as the system default',
+    () async {
+      // The key is simply absent in v3 documents written by earlier builds,
+      // which must keep loading rather than resetting every stored setting.
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        SharedPreferencesAppStore.documentKey: jsonEncode(<String, Object?>{
+          'version': 3,
+          'settings': <String, Object?>{
+            'embeddedDaemonEnabled': true,
+            'embeddedDaemonExposure': 'allInterfaces',
+            'lastActiveHostId': 'host-id',
+            'lastWorktree': null,
+            'sessionTabs': <Object>[],
+            'sidebarCollapsed': true,
+          },
+          'profiles': <Object>[],
+        }),
+      });
+      final store = SharedPreferencesAppStore(
+        await SharedPreferences.getInstance(),
+      );
+
+      final restored = await store.loadSettings();
+      expect(restored.localeTag, isNull);
+      expect(restored.lastActiveHostId, 'host-id');
+      expect(restored.sidebarCollapsed, isTrue);
+    },
+    tags: const <String>['feature_test__settings_language__unit'],
+  );
+
   test('rejects incompatible and malformed settings documents', () async {
     final preferences = await SharedPreferences.getInstance();
     final store = SharedPreferencesAppStore(preferences);
@@ -151,6 +184,19 @@ void main() {
       <String, Object?>{
         'version': 3,
         'settings': <String, Object?>{},
+        'profiles': <Object>[],
+      },
+      <String, Object?>{
+        'version': 3,
+        'settings': <String, Object?>{
+          'embeddedDaemonEnabled': true,
+          'embeddedDaemonExposure': 'loopback',
+          'lastActiveHostId': null,
+          'lastWorktree': null,
+          'localeTag': 7,
+          'sessionTabs': <Object>[],
+          'sidebarCollapsed': false,
+        },
         'profiles': <Object>[],
       },
       <String, Object?>{

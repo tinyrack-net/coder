@@ -127,6 +127,9 @@ class HostRegistryController extends _$HostRegistryController {
   Future<void> setEmbeddedDaemonExposure(EmbeddedDaemonExposure exposure) =>
       _registry.setEmbeddedDaemonExposure(exposure);
 
+  /// Persists the app UI language, where null follows the system locale.
+  Future<void> setLocaleTag(String? tag) => _registry.setLocaleTag(tag);
+
   /// Persists whether the workspace sidebar is hidden.
   Future<void> setSidebarCollapsed({required bool collapsed}) =>
       _registry.setSidebarCollapsed(collapsed: collapsed);

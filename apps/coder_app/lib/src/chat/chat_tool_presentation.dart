@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_diff.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 
@@ -136,16 +137,19 @@ final class ChatToolPresentation {
 }
 
 /// Describes one tool activity for the chat timeline.
-ChatToolPresentation describeToolActivity(ChatToolActivity activity) {
+ChatToolPresentation describeToolActivity(
+  AppLocalizations l10n,
+  ChatToolActivity activity,
+) {
   final spec = _specs[activity.toolName] ?? _genericSpec;
-  final title = spec.title(activity);
+  final title = spec.title(l10n, activity);
   final argumentBody = spec.argumentBody(activity);
   switch (activity.status) {
     case ChatToolStatus.running:
       return ChatToolPresentation(
         glyph: spec.glyph,
         title: title,
-        resultLine: '실행 중',
+        resultLine: l10n.commonRunning,
         body: const ChatToolEmptyBody(),
         argumentBody: argumentBody,
         isFailure: false,
@@ -154,7 +158,7 @@ ChatToolPresentation describeToolActivity(ChatToolActivity activity) {
       return ChatToolPresentation(
         glyph: spec.glyph,
         title: title,
-        resultLine: '거부됨',
+        resultLine: l10n.toolRejected,
         body: const ChatToolEmptyBody(),
         argumentBody: argumentBody,
         isFailure: false,
@@ -163,7 +167,10 @@ ChatToolPresentation describeToolActivity(ChatToolActivity activity) {
       return ChatToolPresentation(
         glyph: spec.glyph,
         title: title,
-        resultLine: _truncate(_firstLine(activity.error ?? '실패'), 120),
+        resultLine: _truncate(
+          _firstLine(activity.error ?? l10n.toolFailed),
+          120,
+        ),
         body: ChatToolTextBody(activity.error ?? ''),
         argumentBody: argumentBody,
         isFailure: true,
@@ -173,7 +180,7 @@ ChatToolPresentation describeToolActivity(ChatToolActivity activity) {
       return ChatToolPresentation(
         glyph: spec.glyph,
         title: title,
-        resultLine: spec.result(activity, output),
+        resultLine: spec.result(l10n, activity, output),
         body: spec.body(activity, output),
         argumentBody: argumentBody,
         isFailure: activity.isError || spec.isFailure(output),
@@ -192,8 +199,12 @@ final class _ToolSpec {
   });
 
   final ChatToolGlyph glyph;
-  final String Function(ChatToolActivity activity) title;
-  final String Function(ChatToolActivity activity, ChatToolOutput output)
+  final String Function(AppLocalizations l10n, ChatToolActivity activity) title;
+  final String Function(
+    AppLocalizations l10n,
+    ChatToolActivity activity,
+    ChatToolOutput output,
+  )
   result;
   final ChatToolBody Function(ChatToolActivity activity, ChatToolOutput output)
   body;
@@ -224,64 +235,64 @@ bool _neverFails(ChatToolOutput output) => false;
 final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
   'read_file': _ToolSpec(
     glyph: ChatToolGlyph.read,
-    title: (activity) {
+    title: (l10n, activity) {
       final path = _stringArg(activity, 'path') ?? '?';
       final offset = activity.arguments['offset'];
       final limit = activity.arguments['limit'];
       if (offset == null && limit == null) return 'Read($path)';
       return 'Read($path @${offset ?? 0}+${limit ?? 0})';
     },
-    result: (activity, output) {
+    result: (l10n, activity, output) {
       final text = _asText(output);
-      if (text.isEmpty) return '빈 파일';
-      return '${_countLines(text)}줄 읽음';
+      if (text.isEmpty) return l10n.toolEmptyFile;
+      return l10n.toolReadLines(_countLines(text));
     },
   ),
   'list_directory': _ToolSpec(
     glyph: ChatToolGlyph.list,
-    title: (activity) => 'List(${_stringArg(activity, 'path') ?? '.'})',
-    result: (activity, output) {
-      if (output is! ChatToolJsonArray) return _genericResult(output);
+    title: (l10n, activity) => 'List(${_stringArg(activity, 'path') ?? '.'})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonArray) return _genericResult(l10n, output);
       final entries = output.value.whereType<Map<String, dynamic>>();
       if (entries.length != output.value.length) {
-        return '항목 ${output.value.length}개';
+        return l10n.toolListItems(output.value.length);
       }
       final directories = entries
           .where((entry) => entry['type'] == 'directory')
           .length;
-      return '디렉터리 $directories · 파일 ${entries.length - directories}';
+      return l10n.toolListEntries(directories, entries.length - directories);
     },
   ),
   'search_text': _ToolSpec(
     glyph: ChatToolGlyph.search,
-    title: (activity) {
+    title: (l10n, activity) {
       final query = _truncate(_stringArg(activity, 'query') ?? '', 40);
       final path = _stringArg(activity, 'path');
       return path == null ? 'Search($query)' : 'Search($query in $path)';
     },
-    result: (activity, output) {
-      if (output is! ChatToolJsonArray) return _genericResult(output);
-      if (output.value.isEmpty) return '일치 없음';
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonArray) return _genericResult(l10n, output);
+      if (output.value.isEmpty) return l10n.toolNoMatches;
       final paths = output.value
           .whereType<Map<String, dynamic>>()
           .map((match) => match['path'])
           .whereType<String>()
           .toSet();
-      return '${paths.length}개 파일에서 ${output.value.length}건';
+      return l10n.toolMatches(output.value.length, paths.length);
     },
   ),
   'apply_patch': _ToolSpec(
     glyph: ChatToolGlyph.edit,
-    title: (activity) {
+    title: (l10n, activity) {
       final files = parseChatDiff(_stringArg(activity, 'patch') ?? '');
       final named = files
           .where((file) => file.path.isNotEmpty)
           .toList(growable: false);
       if (named.isEmpty) return 'Edit';
       if (named.length == 1) return 'Edit(${named.single.path})';
-      return 'Edit(${named.length}개 파일)';
+      return l10n.toolEditFiles(named.length);
     },
-    result: (activity, output) {
+    result: (l10n, activity, output) {
       final files = parseChatDiff(_stringArg(activity, 'patch') ?? '');
       final added = files.fold<int>(0, (sum, file) => sum + file.added);
       final removed = files.fold<int>(0, (sum, file) => sum + file.removed);
@@ -289,7 +300,7 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
           ? output.value['changedFiles']
           : null;
       final count = changed is int ? changed : files.length;
-      return '+$added -$removed · $count개 파일';
+      return l10n.toolPatchSummary(added, removed, count);
     },
     argumentBody: (activity) =>
         ChatToolDiffBody(parseChatDiff(_stringArg(activity, 'patch') ?? '')),
@@ -297,16 +308,21 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
   ),
   'run_command': _ToolSpec(
     glyph: ChatToolGlyph.run,
-    title: (activity) {
+    title: (l10n, activity) {
       final command = _stringArg(activity, 'command') ?? '';
       return 'Bash(${_truncate(_firstLine(command), 60)})';
     },
-    result: (activity, output) {
-      if (output is! ChatToolJsonObject) return _genericResult(output);
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
       final exitCode = output.value['exitCode'];
       final text = output.value['output'];
-      if (exitCode is! int || text is! String) return _genericResult(output);
-      return '종료 코드 $exitCode · ${text.isEmpty ? 0 : _countLines(text)}줄';
+      if (exitCode is! int || text is! String) {
+        return _genericResult(l10n, output);
+      }
+      return l10n.toolCommandResult(
+        exitCode,
+        text.isEmpty ? 0 : _countLines(text),
+      );
     },
     body: (activity, output) {
       if (output is ChatToolJsonObject && output.value['output'] is String) {
@@ -328,7 +344,7 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
   ),
   'delegate_agent': _ToolSpec(
     glyph: ChatToolGlyph.delegate,
-    title: (activity) =>
+    title: (l10n, activity) =>
         'Task(${_stringArg(activity, 'agentDefinitionId') ?? '?'})',
     argumentBody: (activity) {
       final prompt = _stringArg(activity, 'prompt');
@@ -336,11 +352,11 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
           ? const ChatToolEmptyBody()
           : ChatToolTextBody(prompt);
     },
-    result: (activity, output) {
-      if (output is! ChatToolJsonObject) return _genericResult(output);
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
       final status = output.value['status'];
       final finalText = output.value['finalText'];
-      if (status is! String) return _genericResult(output);
+      if (status is! String) return _genericResult(l10n, output);
       if (finalText is! String || finalText.isEmpty) return status;
       return '$status · ${_truncate(_firstLine(finalText), 80)}';
     },
@@ -356,7 +372,7 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
 final _ToolSpec _genericSpec = _ToolSpec(
   glyph: ChatToolGlyph.generic,
   argumentBody: _prettyArgumentBody,
-  title: (activity) {
+  title: (l10n, activity) {
     final scalar = activity.arguments.values
         .where((value) => value is String || value is num || value is bool)
         .map((value) => '$value')
@@ -364,17 +380,17 @@ final _ToolSpec _genericSpec = _ToolSpec(
     if (scalar == null) return '${activity.toolName}()';
     return '${activity.toolName}(${_truncate(_firstLine(scalar), 40)})';
   },
-  result: (activity, output) => _genericResult(output),
+  result: (l10n, activity, output) => _genericResult(l10n, output),
 );
 
-String _genericResult(ChatToolOutput output) {
+String _genericResult(AppLocalizations l10n, ChatToolOutput output) {
   final text = _asText(output);
   final line = text
       .split('\n')
       .map((value) => value.trim())
       .where((value) => value.isNotEmpty)
       .firstOrNull;
-  if (line == null || line.isEmpty) return '완료';
+  if (line == null || line.isEmpty) return l10n.commonDone;
   return _truncate(line, 80);
 }
 

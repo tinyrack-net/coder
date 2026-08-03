@@ -10,6 +10,7 @@ List<RouteBase> get $appRoutes => [
   $workspaceHomeRoute,
   $worktreeRoute,
   $sessionRoute,
+  $generalSettingsRoute,
   $providerSettingsRoute,
   $projectSettingsRoute,
   $agentSettingsRoute,
@@ -134,6 +135,33 @@ mixin $SessionRoute on GoRouteData {
   String get location => GoRouteData.$location(
     '/workspaces/${Uri.encodeComponent(_self.hostId)}/${Uri.encodeComponent(_self.workspaceId)}/${Uri.encodeComponent(_self.worktreeId)}/sessions/${Uri.encodeComponent(_self.sessionId)}',
   );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $generalSettingsRoute => GoRouteData.$route(
+  path: '/settings/general',
+  hasOverriddenOnExit: false,
+  factory: $GeneralSettingsRoute._fromState,
+);
+
+mixin $GeneralSettingsRoute on GoRouteData {
+  static GeneralSettingsRoute _fromState(GoRouterState state) =>
+      const GeneralSettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings/general');
 
   @override
   void go(BuildContext context) => context.go(location);

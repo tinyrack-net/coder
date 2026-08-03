@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/model_picker.dart';
@@ -41,12 +42,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final asyncState = ref.watch(_provider);
     final body = asyncState.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (state) => state == null
-          ? const Center(child: Text('Daemon 연결이 필요합니다.'))
+          ? Center(child: Text(l10n.providerSettingsRequiresDaemon))
           : _body(state),
     );
     if (widget.embedded) return body;
@@ -56,10 +58,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           onPressed: context.pop,
           icon: const Icon(Icons.arrow_back),
         ),
-        title: const Text('Provider 설정'),
+        title: Text(l10n.providerSettingsTitle),
         actions: <Widget>[
           IconButton(
-            tooltip: 'Catalog 갱신',
+            tooltip: l10n.providerSettingsRefreshCatalog,
             onPressed: asyncState.asData?.value == null
                 ? null
                 : () => ref.read(_provider.notifier).refreshCatalog(),
@@ -155,9 +157,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text('OpenAI 연결', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                AppLocalizations.of(context).providerSettingsOpenAiTitle,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 8),
-              const Text('ChatGPT 로그인은 공개 Codex 인증 흐름에 의존하는 실험적 기능입니다.'),
+              Text(
+                AppLocalizations.of(context).providerSettingsOpenAiSubtitle,
+              ),
               const SizedBox(height: 16),
               for (final method in definition.authMethods)
                 Padding(
@@ -175,7 +182,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     ),
                     title: Text(method.label),
                     subtitle: method.experimental
-                        ? const Text('실험적')
+                        ? Text(
+                            AppLocalizations.of(
+                              context,
+                            ).providerSettingsExperimental,
+                          )
                         : const Text('OpenAI Platform'),
                     onTap: () => Navigator.pop(context, method.id),
                   ),
@@ -250,21 +261,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _disconnect(ProviderConnectionDto connection) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Provider 연결 해제'),
+        title: Text(l10n.providerSettingsDisconnectTitle),
         content: Text(
-          '${connection.displayName} 연결을 해제할까요? 기존 agent 이력은 유지됩니다.',
+          l10n.providerSettingsDisconnectBody(connection.displayName),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('연결 해제'),
+            child: Text(l10n.providerSettingsDisconnect),
           ),
         ],
       ),
@@ -292,34 +304,40 @@ class _ConnectedProviders extends StatelessWidget {
   final ValueChanged<ProviderConnectionDto> onEditCustom;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    key: const ValueKey('provider-settings-connected'),
-    padding: const EdgeInsets.all(20),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text('연결됨', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        if (connections.isEmpty)
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('연결된 Provider가 없습니다.'),
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      key: const ValueKey('provider-settings-connected'),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.providerSettingsConnected,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 12),
+          if (connections.isEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(l10n.providerSettingsNoConnections),
+              ),
             ),
-          ),
-        for (final connection in connections)
-          _ProviderConnectionCard(
-            connection: connection,
-            models: models[connection.id],
-            onDisconnect: onDisconnect,
-            onSetDefault: onSetDefault,
-            onSetDefaultModel: (modelId) =>
-                onSetDefaultModel(connection.id, modelId),
-            onEditCustom: onEditCustom,
-          ),
-      ],
-    ),
-  );
+          for (final connection in connections)
+            _ProviderConnectionCard(
+              connection: connection,
+              models: models[connection.id],
+              onDisconnect: onDisconnect,
+              onSetDefault: onSetDefault,
+              onSetDefaultModel: (modelId) =>
+                  onSetDefaultModel(connection.id, modelId),
+              onEditCustom: onEditCustom,
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ProviderConnectionCard extends StatelessWidget {
@@ -340,72 +358,76 @@ class _ProviderConnectionCard extends StatelessWidget {
   final ValueChanged<ProviderConnectionDto> onEditCustom;
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  connection.displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              if (connection.isDefault) const Chip(label: Text('기본')),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'default':
-                      onSetDefault(connection.id);
-                    case 'edit':
-                      onEditCustom(connection);
-                    case 'disconnect':
-                      onDisconnect(connection);
-                  }
-                },
-                itemBuilder: (context) => <PopupMenuEntry<String>>[
-                  if (!connection.isDefault)
-                    const PopupMenuItem(
-                      value: 'default',
-                      child: Text('기본 Provider로 설정'),
-                    ),
-                  if (connection.definitionId == 'custom')
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Text('고급 설정 편집'),
-                    ),
-                  const PopupMenuItem(
-                    value: 'disconnect',
-                    child: Text('연결 해제'),
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    connection.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                ],
-              ),
-            ],
-          ),
-          Text(
-            '${_statusLabel(connection.status)} · '
-            '${_authLabel(connection.credentialOrigin)}',
-          ),
-          if (connection.error != null)
-            Text(
-              connection.error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                if (connection.isDefault)
+                  Chip(label: Text(l10n.providerSettingsDefaultChip)),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'default':
+                        onSetDefault(connection.id);
+                      case 'edit':
+                        onEditCustom(connection);
+                      case 'disconnect':
+                        onDisconnect(connection);
+                    }
+                  },
+                  itemBuilder: (context) => <PopupMenuEntry<String>>[
+                    if (!connection.isDefault)
+                      PopupMenuItem(
+                        value: 'default',
+                        child: Text(l10n.providerSettingsMakeDefault),
+                      ),
+                    if (connection.definitionId == 'custom')
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text(l10n.providerSettingsEditAdvanced),
+                      ),
+                    PopupMenuItem(
+                      value: 'disconnect',
+                      child: Text(l10n.providerSettingsDisconnect),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          const SizedBox(height: 12),
-          _ProviderModelSelector(
-            connection: connection,
-            models: models,
-            onSelected: onSetDefaultModel,
-          ),
-        ],
+            Text(
+              '${_statusLabel(l10n, connection.status)} · '
+              '${_authLabel(l10n, connection.credentialOrigin)}',
+            ),
+            if (connection.error != null)
+              Text(
+                connection.error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            const SizedBox(height: 12),
+            _ProviderModelSelector(
+              connection: connection,
+              models: models,
+              onSelected: onSetDefaultModel,
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _ProviderModelSelector extends StatefulWidget {
@@ -429,6 +451,7 @@ class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final models = widget.models;
     final currentId = widget.connection.defaultModelId;
     final selected = models
@@ -438,15 +461,15 @@ class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
     final enabled = models != null && models.isNotEmpty && !_saving;
     final String primaryText;
     if (models == null) {
-      primaryText = '모델을 불러오는 중…';
+      primaryText = l10n.providerSettingsModelsLoading;
     } else if (models.isEmpty) {
-      primaryText = '사용 가능한 모델이 없습니다.';
+      primaryText = l10n.providerSettingsNoModels;
     } else if (selected != null) {
       primaryText = selected.label;
     } else if (currentId != null) {
       primaryText = currentId;
     } else {
-      primaryText = '모델 선택';
+      primaryText = l10n.providerSettingsSelectModel;
     }
     return InkWell(
       key: ValueKey('model-selector-${widget.connection.id}'),
@@ -455,7 +478,7 @@ class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
       child: InputDecorator(
         isEmpty: currentId == null,
         decoration: InputDecoration(
-          labelText: '기본 모델',
+          labelText: l10n.providerSettingsDefaultModel,
           enabled: enabled,
           errorText: _error,
         ),
@@ -480,7 +503,7 @@ class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
                     ),
                   if (missing)
                     Text(
-                      '카탈로그에 없음',
+                      l10n.providerSettingsModelMissing,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -551,45 +574,51 @@ class _ProviderCatalog extends StatelessWidget {
   final VoidCallback onAddCustom;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    key: const ValueKey('provider-settings-add'),
-    padding: const EdgeInsets.all(20),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text('Provider 추가', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        if (definitions.isEmpty)
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('추가 가능한 preset이 없습니다.'),
-            ),
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      key: const ValueKey('provider-settings-add'),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.providerSettingsAdd,
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
-        for (final definition in definitions)
+          const SizedBox(height: 12),
+          if (definitions.isEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(l10n.providerSettingsNoPresets),
+              ),
+            ),
+          for (final definition in definitions)
+            Card(
+              child: ListTile(
+                key: ValueKey('provider-add-${definition.id}'),
+                leading: const Icon(Icons.hub_outlined),
+                title: Text(definition.name),
+                subtitle: Text(definition.description),
+                trailing: const Icon(Icons.add_circle_outline),
+                onTap: () => onAdd(definition),
+              ),
+            ),
           Card(
             child: ListTile(
-              key: ValueKey('provider-add-${definition.id}'),
-              leading: const Icon(Icons.hub_outlined),
-              title: Text(definition.name),
-              subtitle: Text(definition.description),
-              trailing: const Icon(Icons.add_circle_outline),
-              onTap: () => onAdd(definition),
+              key: const ValueKey('provider-add-custom'),
+              leading: const Icon(Icons.tune),
+              title: const Text('Custom OpenAI Compatible'),
+              subtitle: Text(l10n.providerSettingsCustomSubtitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: onAddCustom,
             ),
           ),
-        Card(
-          child: ListTile(
-            key: const ValueKey('provider-add-custom'),
-            leading: const Icon(Icons.tune),
-            title: const Text('Custom OpenAI Compatible'),
-            subtitle: const Text('고급 설정: 자체 endpoint 연결'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: onAddCustom,
-          ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class _AuthAttemptBar extends StatelessWidget {
@@ -603,14 +632,17 @@ class _AuthAttemptBar extends StatelessWidget {
     color: Theme.of(context).colorScheme.secondaryContainer,
     child: ListTile(
       leading: const CircularProgressIndicator(),
-      title: const Text('ChatGPT 로그인 대기 중'),
+      title: Text(AppLocalizations.of(context).providerSettingsOAuthPending),
       subtitle: SelectableText(
         <String?>[
           attempt.authorizationUrl,
           attempt.userCode,
         ].whereType<String>().join(' · '),
       ),
-      trailing: TextButton(onPressed: onCancel, child: const Text('취소')),
+      trailing: TextButton(
+        onPressed: onCancel,
+        child: Text(AppLocalizations.of(context).commonCancel),
+      ),
     ),
   );
 }
@@ -634,29 +666,32 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text('${widget.providerName} 연결'),
-    content: TextField(
-      key: const ValueKey('provider-api-key'),
-      controller: _controller,
-      obscureText: true,
-      autofocus: true,
-      decoration: const InputDecoration(labelText: 'API key'),
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('취소'),
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.providerSettingsConnectTitle(widget.providerName)),
+      content: TextField(
+        key: const ValueKey('provider-api-key'),
+        controller: _controller,
+        obscureText: true,
+        autofocus: true,
+        decoration: const InputDecoration(labelText: 'API key'),
       ),
-      FilledButton(
-        onPressed: () {
-          final value = _controller.text.trim();
-          if (value.isNotEmpty) Navigator.pop(context, value);
-        },
-        child: const Text('연결'),
-      ),
-    ],
-  );
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final value = _controller.text.trim();
+            if (value.isNotEmpty) Navigator.pop(context, value);
+          },
+          child: Text(l10n.providerSettingsConnect),
+        ),
+      ],
+    );
+  }
 }
 
 final class _CustomDraft {
@@ -709,73 +744,78 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Custom Provider 고급 설정'),
-    content: SizedBox(
-      width: 520,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            TextField(
-              controller: _name,
-              decoration: const InputDecoration(labelText: '이름'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _baseUrl,
-              decoration: const InputDecoration(labelText: 'Base URL'),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<ProviderApiFormat>(
-              initialValue: _apiFormat,
-              decoration: const InputDecoration(labelText: 'API 형식'),
-              items: ProviderApiFormat.values
-                  .map(
-                    (format) => DropdownMenuItem(
-                      value: format,
-                      child: Text(format.name),
-                    ),
-                  )
-                  .toList(growable: false),
-              onChanged: (value) {
-                if (value != null) setState(() => _apiFormat = value);
-              },
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('API key 필요'),
-              value: _authenticationRequired,
-              onChanged: (value) =>
-                  setState(() => _authenticationRequired = value),
-            ),
-            if (_authenticationRequired)
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.providerSettingsCustomTitle),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
               TextField(
-                controller: _apiKey,
-                obscureText: true,
-                decoration: _TextInputDecorationM3.apiKey,
+                controller: _name,
+                decoration: InputDecoration(labelText: l10n.commonName),
               ),
-            const SizedBox(height: 12),
-            if (widget.initial?.manualModelIds.isNotEmpty ?? false)
+              const SizedBox(height: 12),
               TextField(
-                controller: _models,
-                decoration: const InputDecoration(
-                  labelText: '수동 model ID',
-                  hintText: 'model-a, model-b',
+                controller: _baseUrl,
+                decoration: const InputDecoration(labelText: 'Base URL'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<ProviderApiFormat>(
+                initialValue: _apiFormat,
+                decoration: InputDecoration(
+                  labelText: l10n.providerSettingsApiFormat,
                 ),
+                items: ProviderApiFormat.values
+                    .map(
+                      (format) => DropdownMenuItem(
+                        value: format,
+                        child: Text(format.name),
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (value) {
+                  if (value != null) setState(() => _apiFormat = value);
+                },
               ),
-          ],
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.providerSettingsRequiresApiKey),
+                value: _authenticationRequired,
+                onChanged: (value) =>
+                    setState(() => _authenticationRequired = value),
+              ),
+              if (_authenticationRequired)
+                TextField(
+                  controller: _apiKey,
+                  obscureText: true,
+                  decoration: _TextInputDecorationM3.apiKey,
+                ),
+              const SizedBox(height: 12),
+              if (widget.initial?.manualModelIds.isNotEmpty ?? false)
+                TextField(
+                  controller: _models,
+                  decoration: InputDecoration(
+                    labelText: l10n.providerSettingsManualModels,
+                    hintText: 'model-a, model-b',
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('취소'),
-      ),
-      FilledButton(onPressed: _submit, child: const Text('저장')),
-    ],
-  );
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.commonSave)),
+      ],
+    );
+  }
 
   void _submit() {
     final name = _name.text.trim();
@@ -823,63 +863,69 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Model 자동 조회 실패'),
-    content: SizedBox(
-      width: 480,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const Text('Provider가 model 목록을 제공하지 않았습니다. 사용할 model ID를 입력하세요.'),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _models,
-            decoration: const InputDecoration(
-              labelText: '수동 model ID',
-              hintText: 'model-a, model-b',
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.providerSettingsModelLookupFailedTitle),
+      content: SizedBox(
+        width: 480,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(l10n.providerSettingsModelLookupFailedBody),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _models,
+              decoration: InputDecoration(
+                labelText: l10n.providerSettingsManualModels,
+                hintText: 'model-a, model-b',
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('나중에'),
-      ),
-      FilledButton(
-        onPressed: () {
-          final models = _models.text
-              .split(',')
-              .map((value) => value.trim())
-              .where((value) => value.isNotEmpty)
-              .toSet()
-              .toList(growable: false);
-          if (models.isNotEmpty) Navigator.pop(context, models);
-        },
-        child: const Text('저장'),
-      ),
-    ],
-  );
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.providerSettingsLater),
+        ),
+        FilledButton(
+          onPressed: () {
+            final models = _models.text
+                .split(',')
+                .map((value) => value.trim())
+                .where((value) => value.isNotEmpty)
+                .toSet()
+                .toList(growable: false);
+            if (models.isNotEmpty) Navigator.pop(context, models);
+          },
+          child: Text(l10n.commonSave),
+        ),
+      ],
+    );
+  }
 }
 
 abstract final class _TextInputDecorationM3 {
   static const InputDecoration apiKey = InputDecoration(labelText: 'API key');
 }
 
-String _statusLabel(ProviderConnectionStatus status) => switch (status) {
-  ProviderConnectionStatus.connecting => '연결 중',
-  ProviderConnectionStatus.connected => '연결됨',
-  ProviderConnectionStatus.degraded => '제한된 연결',
-  ProviderConnectionStatus.error => '오류',
-  ProviderConnectionStatus.reauthRequired => '재로그인 필요',
-  ProviderConnectionStatus.disconnected => '연결 해제됨',
-};
+String _statusLabel(AppLocalizations l10n, ProviderConnectionStatus status) =>
+    switch (status) {
+      ProviderConnectionStatus.connecting => l10n.providerStatusConnecting,
+      ProviderConnectionStatus.connected => l10n.providerStatusConnected,
+      ProviderConnectionStatus.degraded => l10n.providerStatusDegraded,
+      ProviderConnectionStatus.error => l10n.providerStatusError,
+      ProviderConnectionStatus.reauthRequired =>
+        l10n.providerStatusReauthRequired,
+      ProviderConnectionStatus.disconnected => l10n.providerStatusDisconnected,
+    };
 
-String _authLabel(ProviderCredentialOrigin origin) => switch (origin) {
-  ProviderCredentialOrigin.stored => '저장된 credential',
-  ProviderCredentialOrigin.environment => 'Environment credential',
-  ProviderCredentialOrigin.oauth => 'ChatGPT OAuth',
-  ProviderCredentialOrigin.none => '인증 없음',
-};
+String _authLabel(AppLocalizations l10n, ProviderCredentialOrigin origin) =>
+    switch (origin) {
+      ProviderCredentialOrigin.stored => l10n.providerAuthStored,
+      ProviderCredentialOrigin.environment => 'Environment credential',
+      ProviderCredentialOrigin.oauth => 'ChatGPT OAuth',
+      ProviderCredentialOrigin.none => l10n.providerAuthNone,
+    };

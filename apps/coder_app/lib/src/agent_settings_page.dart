@@ -1,3 +1,4 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -72,7 +73,13 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
                 const VerticalDivider(width: 1),
                 Expanded(
                   child: selected == null
-                      ? const Center(child: Text('Agent를 선택하세요.'))
+                      ? Center(
+                          child: Text(
+                            AppLocalizations.of(
+                              context,
+                            ).agentSettingsSelectAgent,
+                          ),
+                        )
                       : _AgentEditor(
                           key: ValueKey<String>(selected.contentHash),
                           hostId: widget.hostId,
@@ -141,45 +148,48 @@ class _AgentDefinitionList extends StatelessWidget {
   final VoidCallback? onCreate;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: <Widget>[
-      ListTile(
-        title: const Text('Agents'),
-        subtitle: Text('${state.definitions.length} definitions'),
-        trailing: IconButton(
-          tooltip: 'Agent 추가',
-          onPressed: onCreate,
-          icon: const Icon(Icons.add),
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      children: <Widget>[
+        ListTile(
+          title: Text(l10n.agentSettingsHeading),
+          subtitle: Text(l10n.agentSettingsCount(state.definitions.length)),
+          trailing: IconButton(
+            tooltip: l10n.agentSettingsAdd,
+            onPressed: onCreate,
+            icon: const Icon(Icons.add),
+          ),
         ),
-      ),
-      const Divider(height: 1),
-      Expanded(
-        child: ListView(
-          children: <Widget>[
-            for (final definition in state.definitions)
-              ListTile(
-                selected: definition.id == selectedId,
-                leading: Icon(
-                  definition.mode == AgentMode.primary
-                      ? Icons.smart_toy_outlined
-                      : Icons.call_split,
+        const Divider(height: 1),
+        Expanded(
+          child: ListView(
+            children: <Widget>[
+              for (final definition in state.definitions)
+                ListTile(
+                  selected: definition.id == selectedId,
+                  leading: Icon(
+                    definition.mode == AgentMode.primary
+                        ? Icons.smart_toy_outlined
+                        : Icons.call_split,
+                  ),
+                  title: Text(definition.name),
+                  subtitle: Text(
+                    definition.isStale
+                        ? '${definition.mode.name} · stale'
+                        : definition.mode.name,
+                  ),
+                  trailing: definition.diagnostics.isEmpty
+                      ? null
+                      : const Icon(Icons.warning_amber, size: 18),
+                  onTap: () => onSelected(definition.id),
                 ),
-                title: Text(definition.name),
-                subtitle: Text(
-                  definition.isStale
-                      ? '${definition.mode.name} · stale'
-                      : definition.mode.name,
-                ),
-                trailing: definition.diagnostics.isEmpty
-                    ? null
-                    : const Icon(Icons.warning_amber, size: 18),
-                onTap: () => onSelected(definition.id),
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _AgentEditor extends StatefulWidget {
@@ -247,6 +257,7 @@ class _AgentEditorState extends State<_AgentEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final definition = widget.definition;
     final editable = !_saving;
     final subagents = widget.state.definitions.where(
@@ -261,7 +272,7 @@ class _AgentEditorState extends State<_AgentEditor> {
           leading: widget.onBack == null
               ? null
               : IconButton(
-                  tooltip: 'Agent 목록',
+                  tooltip: l10n.agentSettingsList,
                   onPressed: widget.onBack,
                   icon: const Icon(Icons.arrow_back),
                 ),
@@ -270,7 +281,7 @@ class _AgentEditorState extends State<_AgentEditor> {
           trailing: Wrap(
             children: <Widget>[
               IconButton(
-                tooltip: '파일 위치 복사',
+                tooltip: l10n.agentSettingsCopyPath,
                 onPressed: () => Clipboard.setData(
                   ClipboardData(text: definition.sourcePath),
                 ),
@@ -278,19 +289,19 @@ class _AgentEditorState extends State<_AgentEditor> {
               ),
               if (definition.isBuiltIn)
                 IconButton(
-                  tooltip: '기본값으로 초기화',
+                  tooltip: l10n.agentSettingsReset,
                   onPressed: editable ? _reset : null,
                   icon: const Icon(Icons.restore),
                 )
               else
                 IconButton(
-                  tooltip: 'Archive',
+                  tooltip: l10n.workspaceArchive,
                   onPressed: editable ? _archive : null,
                   icon: const Icon(Icons.archive_outlined),
                 ),
               FilledButton(
                 onPressed: editable ? () => _save(force: false) : null,
-                child: Text(_saving ? '저장 중…' : '저장'),
+                child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
               ),
             ],
           ),
@@ -314,26 +325,26 @@ class _AgentEditorState extends State<_AgentEditor> {
               TextField(
                 controller: _name,
                 enabled: editable,
-                decoration: const InputDecoration(labelText: '이름'),
+                decoration: InputDecoration(labelText: l10n.commonName),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _description,
                 enabled: editable,
-                decoration: const InputDecoration(labelText: '설명'),
+                decoration: InputDecoration(labelText: l10n.commonDescription),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 initialValue: definition.mode.name,
                 enabled: false,
-                decoration: const InputDecoration(labelText: '유형'),
+                decoration: InputDecoration(labelText: l10n.commonKind),
               ),
               SwitchListTile(
                 value: _promptEnabled,
                 onChanged: editable
                     ? (value) => setState(() => _promptEnabled = value)
                     : null,
-                title: const Text('Custom system prompt 사용'),
+                title: Text(l10n.agentSettingsCustomPrompt),
               ),
               TextField(
                 controller: _prompt,
@@ -355,15 +366,15 @@ class _AgentEditorState extends State<_AgentEditor> {
                     setState(() => _modelSource = value);
                   }
                 },
-                child: const Column(
+                child: Column(
                   children: <Widget>[
                     RadioListTile<AgentModelSource>(
                       value: AgentModelSource.daemonDefault,
-                      title: Text('Daemon 기본 provider/model'),
+                      title: Text(l10n.agentSettingsDaemonDefaultModel),
                     ),
                     RadioListTile<AgentModelSource>(
                       value: AgentModelSource.fixed,
-                      title: Text('고정 provider/model'),
+                      title: Text(l10n.agentSettingsPinnedModel),
                     ),
                   ],
                 ),
@@ -416,7 +427,10 @@ class _AgentEditorState extends State<_AgentEditor> {
                     : null,
               ),
               const SizedBox(height: 20),
-              Text('내장 도구', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                l10n.agentSettingsBuiltinTools,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               for (final tool in widget.state.tools)
                 CheckboxListTile(
                   value: _tools.contains(tool.id),
@@ -433,11 +447,11 @@ class _AgentEditorState extends State<_AgentEditor> {
               if (definition.mode == AgentMode.primary) ...<Widget>[
                 const SizedBox(height: 20),
                 Text(
-                  '호출 가능한 Subagent',
+                  l10n.agentSettingsSubagents,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 if (subagents.isEmpty)
-                  const ListTile(title: Text('등록된 Subagent가 없습니다.')),
+                  ListTile(title: Text(l10n.agentSettingsNoSubagents)),
                 for (final subagent in subagents)
                   CheckboxListTile(
                     value: _callableAgents.contains(subagent.id),
@@ -480,6 +494,7 @@ class _AgentEditorState extends State<_AgentEditor> {
   );
 
   Future<void> _save({required bool force}) async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _saving = true);
     try {
       await ProviderScope.containerOf(context)
@@ -494,16 +509,16 @@ class _AgentEditorState extends State<_AgentEditor> {
       final retry = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Agent 저장 실패'),
+          title: Text(l10n.agentSettingsSaveFailedTitle),
           content: Text('$error'),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Reload'),
+              child: Text(l10n.agentSettingsReload),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Overwrite'),
+              child: Text(l10n.agentSettingsOverwrite),
             ),
           ],
         ),
@@ -560,20 +575,24 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
   bool _saving = false;
   Object? _error;
 
-  String? get _idError {
+  /// Whether the typed ID is well-formed and unused.
+  bool get _idAccepted {
+    final id = _id.text.trim();
+    return RegExp(r'^[a-z0-9][a-z0-9_-]{0,63}$').hasMatch(id) &&
+        !widget.existingIds.contains(id);
+  }
+
+  String? _idError(AppLocalizations l10n) {
     final id = _id.text.trim();
     if (id.isEmpty) return null;
     if (!RegExp(r'^[a-z0-9][a-z0-9_-]{0,63}$').hasMatch(id)) {
-      return '영문 소문자, 숫자, -, _만 사용할 수 있습니다.';
+      return l10n.agentSettingsIdInvalid;
     }
-    if (widget.existingIds.contains(id)) return '이미 존재하는 Agent ID입니다.';
+    if (widget.existingIds.contains(id)) return l10n.agentSettingsIdTaken;
     return null;
   }
 
-  bool get _valid =>
-      _id.text.trim().isNotEmpty &&
-      _name.text.trim().isNotEmpty &&
-      _idError == null;
+  bool get _valid => _name.text.trim().isNotEmpty && _idAccepted;
 
   @override
   void dispose() {
@@ -583,70 +602,73 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Agent 추가'),
-    content: SizedBox(
-      width: 420,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          TextField(
-            controller: _id,
-            autofocus: true,
-            enabled: !_saving,
-            onChanged: (_) => setState(() => _error = null),
-            decoration: const InputDecoration(
-              labelText: 'ID (파일명)',
-              hintText: 'reviewer',
-            ).copyWith(errorText: _idError),
-          ),
-          TextField(
-            controller: _name,
-            enabled: !_saving,
-            onChanged: (_) => setState(() => _error = null),
-            decoration: InputDecoration(
-              labelText: '이름',
-              errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.agentSettingsAddTitle),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            TextField(
+              controller: _id,
+              autofocus: true,
+              enabled: !_saving,
+              onChanged: (_) => setState(() => _error = null),
+              decoration: InputDecoration(
+                labelText: l10n.agentSettingsIdLabel,
+                hintText: 'reviewer',
+              ).copyWith(errorText: _idError(l10n)),
+            ),
+            TextField(
+              controller: _name,
+              enabled: !_saving,
+              onChanged: (_) => setState(() => _error = null),
+              decoration: InputDecoration(
+                labelText: l10n.commonName,
+                errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
+                    ? null
+                    : l10n.agentSettingsNameRequired,
+              ),
+            ),
+            DropdownButtonFormField<AgentMode>(
+              initialValue: _mode,
+              decoration: InputDecoration(labelText: l10n.commonKind),
+              items: AgentMode.values
+                  .map(
+                    (value) => DropdownMenuItem<AgentMode>(
+                      value: value,
+                      child: Text(value.name),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: _saving
                   ? null
-                  : '이름을 입력하세요.',
+                  : (value) => setState(() => _mode = value!),
             ),
-          ),
-          DropdownButtonFormField<AgentMode>(
-            initialValue: _mode,
-            decoration: const InputDecoration(labelText: '유형'),
-            items: AgentMode.values
-                .map(
-                  (value) => DropdownMenuItem<AgentMode>(
-                    value: value,
-                    child: Text(value.name),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: _saving
-                ? null
-                : (value) => setState(() => _mode = value!),
-          ),
-          if (_error case final error?) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(
-              '$error',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+            if (_error case final error?) ...<Widget>[
+              const SizedBox(height: 12),
+              Text(
+                '$error',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: _saving ? null : () => Navigator.pop(context),
-        child: const Text('취소'),
-      ),
-      FilledButton(
-        onPressed: _valid && !_saving ? _submit : null,
-        child: Text(_saving ? '생성 중…' : '생성'),
-      ),
-    ],
-  );
+      actions: <Widget>[
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(
+          onPressed: _valid && !_saving ? _submit : null,
+          child: Text(_saving ? l10n.commonCreating : l10n.commonCreate),
+        ),
+      ],
+    );
+  }
 
   Future<void> _submit() async {
     setState(() {
@@ -686,7 +708,10 @@ class _AgentSettingsError extends StatelessWidget {
       children: <Widget>[
         Text('$error'),
         const SizedBox(height: 12),
-        FilledButton(onPressed: onRetry, child: const Text('다시 시도')),
+        FilledButton(
+          onPressed: onRetry,
+          child: Text(AppLocalizations.of(context).commonRetry),
+        ),
       ],
     ),
   );

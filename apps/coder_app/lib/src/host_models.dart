@@ -5,6 +5,30 @@ import 'package:meta/meta.dart';
 /// Stable identifier reserved for the app-owned desktop daemon.
 const String embeddedHostId = 'embedded';
 
+/// Fallback name for the app-owned daemon.
+///
+/// The UI substitutes a localized name through `hostLabel`, so this value
+/// only surfaces where no localizations are in scope.
+const String embeddedDaemonFallbackLabel = 'Embedded daemon';
+
+/// Failure causes the app itself raises, so the UI can localize them.
+///
+/// Failures reported by a daemon keep their server-supplied text instead,
+/// which is why [HostConnectionFailure.reason] is nullable.
+enum HostFailureReason {
+  /// The remote daemon form was submitted without a bearer token.
+  missingBearerToken,
+
+  /// A connection was attempted with no bearer token in secure storage.
+  noStoredBearerToken,
+
+  /// Another profile already resolved to the same daemon server ID.
+  duplicateDaemon,
+
+  /// The daemon answered the handshake with 401 or 403.
+  rejectedBearerToken,
+}
+
 /// Network interfaces exposed by the app-owned desktop daemon.
 enum EmbeddedDaemonExposure {
   /// Accept connections only from this machine.
@@ -27,6 +51,7 @@ final class AppSettings {
     this.embeddedDaemonExposure = EmbeddedDaemonExposure.loopback,
     this.lastActiveHostId,
     this.lastWorktree,
+    this.localeTag,
     this.sessionTabs = const <String, SessionTabPreference>{},
     this.sidebarCollapsed = false,
   });
@@ -43,6 +68,9 @@ final class AppSettings {
   /// Last selected worktree in the unified workspace tree.
   final WorkspaceSelection? lastWorktree;
 
+  /// Language tag selected for the app UI, or null to follow the system.
+  final String? localeTag;
+
   /// Locally-open session tabs keyed by [WorkspaceSelection.storageKey].
   final Map<String, SessionTabPreference> sessionTabs;
 
@@ -57,6 +85,8 @@ final class AppSettings {
     bool clearLastActiveHost = false,
     WorkspaceSelection? lastWorktree,
     bool clearLastWorktree = false,
+    String? localeTag,
+    bool clearLocaleTag = false,
     Map<String, SessionTabPreference>? sessionTabs,
     bool? sidebarCollapsed,
   }) => AppSettings(
@@ -67,6 +97,7 @@ final class AppSettings {
         ? null
         : lastActiveHostId ?? this.lastActiveHostId,
     lastWorktree: clearLastWorktree ? null : lastWorktree ?? this.lastWorktree,
+    localeTag: clearLocaleTag ? null : localeTag ?? this.localeTag,
     sessionTabs: sessionTabs ?? this.sessionTabs,
     sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
   );
@@ -223,6 +254,7 @@ final class HostRuntimeSnapshot {
     this.api,
     this.serverInfo,
     this.error,
+    this.errorReason,
     this.conflictingHostId,
   });
 
@@ -247,8 +279,11 @@ final class HostRuntimeSnapshot {
   /// Handshake metadata from the daemon.
   final ServerInfoDto? serverInfo;
 
-  /// Safe user-facing failure message.
+  /// Safe user-facing failure message, used when [errorReason] is null.
   final String? error;
+
+  /// App-authored cause the UI localizes in place of [error].
+  final HostFailureReason? errorReason;
 
   /// Existing profile that resolved to the same server ID.
   final String? conflictingHostId;
@@ -264,6 +299,7 @@ final class HostRuntimeSnapshot {
     CoderApi? api,
     ServerInfoDto? serverInfo,
     String? error,
+    HostFailureReason? errorReason,
     String? conflictingHostId,
     bool clearApi = false,
     bool clearError = false,
@@ -277,6 +313,7 @@ final class HostRuntimeSnapshot {
     api: clearApi ? null : api ?? this.api,
     serverInfo: serverInfo ?? this.serverInfo,
     error: clearError ? null : error ?? this.error,
+    errorReason: clearError ? null : errorReason ?? this.errorReason,
     conflictingHostId: clearConflict
         ? null
         : conflictingHostId ?? this.conflictingHostId,
@@ -331,26 +368,29 @@ enum HostConnectionFailureKind {
 /// Typed failure used by connection adapters and retry policy.
 final class HostConnectionFailure implements Exception {
   /// Creates an invalid-endpoint failure.
-  const HostConnectionFailure.invalidEndpoint(this.message)
+  const HostConnectionFailure.invalidEndpoint(this.message, {this.reason})
     : kind = HostConnectionFailureKind.invalidEndpoint;
 
   /// Creates an authentication failure.
-  const HostConnectionFailure.authentication(this.message)
+  const HostConnectionFailure.authentication(this.message, {this.reason})
     : kind = HostConnectionFailureKind.authentication;
 
   /// Creates a protocol mismatch failure.
-  const HostConnectionFailure.protocolMismatch(this.message)
+  const HostConnectionFailure.protocolMismatch(this.message, {this.reason})
     : kind = HostConnectionFailureKind.protocolMismatch;
 
   /// Creates a retryable network failure.
-  const HostConnectionFailure.network(this.message)
+  const HostConnectionFailure.network(this.message, {this.reason})
     : kind = HostConnectionFailureKind.network;
 
   /// Failure category.
   final HostConnectionFailureKind kind;
 
-  /// Safe display message.
+  /// Safe display message, used when [reason] is null.
   final String message;
+
+  /// App-authored cause the UI localizes in place of [message].
+  final HostFailureReason? reason;
 
   /// Whether automatic connection attempts may continue.
   bool get retryable => kind == HostConnectionFailureKind.network;

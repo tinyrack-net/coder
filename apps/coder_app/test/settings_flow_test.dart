@@ -14,6 +14,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fake_coder_api.dart';
 
+import 'support/localization.dart';
+
 void main() {
   for (final size in <Size>[const Size(1200, 900), const Size(390, 760)]) {
     testWidgets('connected providers are above addable providers at $size', (
@@ -561,7 +563,12 @@ void main() {
           ),
           externalUrlOpenerProvider.overrideWithValue(_ExternalUrlOpener()),
         ],
-        child: MaterialApp(home: _SettingsHostHarness(key: harness)),
+        child: MaterialApp(
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          home: _SettingsHostHarness(key: harness),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -596,7 +603,12 @@ void main() {
             ),
           ),
         ],
-        child: const MaterialApp(home: SettingsPage(hostId: 'server')),
+        child: const MaterialApp(
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          home: SettingsPage(hostId: 'server'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -687,7 +699,12 @@ Future<void> _pumpSettings(
           externalUrlOpener ?? _ExternalUrlOpener(),
         ),
       ],
-      child: const MaterialApp(home: SettingsPage(hostId: 'server')),
+      child: const MaterialApp(
+        locale: testLocale,
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        home: SettingsPage(hostId: 'server'),
+      ),
     ),
   );
   if (settle) {

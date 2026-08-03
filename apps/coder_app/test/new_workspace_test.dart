@@ -11,6 +11,8 @@ import 'package:go_router/go_router.dart';
 
 import 'support/fake_coder_api.dart';
 
+import 'support/localization.dart';
+
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
@@ -299,7 +301,12 @@ Future<GoRouter> _pump(WidgetTester tester, FakeCoderApi api) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        locale: testLocale,
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();

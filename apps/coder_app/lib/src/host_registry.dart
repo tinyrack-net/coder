@@ -91,7 +91,7 @@ final class HostRegistry {
       if (settings.embeddedDaemonEnabled && _embeddedLauncher != null)
         embeddedHostId: const HostRuntimeSnapshot(
           id: embeddedHostId,
-          label: '내장 daemon',
+          label: embeddedDaemonFallbackLabel,
           kind: HostKind.embedded,
           status: HostRuntimeStatus.connecting,
         ),
@@ -139,7 +139,8 @@ final class HostRegistry {
     final token = bearerToken.trim();
     if (token.isEmpty) {
       throw const HostConnectionFailure.authentication(
-        'Bearer token을 입력하세요.',
+        'A bearer token is required.',
+        reason: HostFailureReason.missingBearerToken,
       );
     }
     final now = _clock.nowUtc();
@@ -241,7 +242,7 @@ final class HostRegistry {
         _replaceRuntime(
           const HostRuntimeSnapshot(
             id: embeddedHostId,
-            label: '내장 daemon',
+            label: embeddedDaemonFallbackLabel,
             kind: HostKind.embedded,
             status: HostRuntimeStatus.connecting,
           ),
@@ -308,6 +309,16 @@ final class HostRegistry {
     _emit(value.copyWith(settings: settings));
   }
 
+  /// Persists the app UI language, where null follows the system locale.
+  Future<void> setLocaleTag(String? tag) async {
+    final settings = value.settings.copyWith(
+      localeTag: tag,
+      clearLocaleTag: tag == null,
+    );
+    await _settings.saveSettings(settings);
+    _emit(value.copyWith(settings: settings));
+  }
+
   /// Persists whether the workspace sidebar is hidden on wide layouts.
   Future<void> setSidebarCollapsed({required bool collapsed}) async {
     final settings = value.settings.copyWith(sidebarCollapsed: collapsed);
@@ -364,7 +375,7 @@ final class HostRegistry {
               ...value.runtimes,
               embeddedHostId: const HostRuntimeSnapshot(
                 id: embeddedHostId,
-                label: '내장 daemon',
+                label: embeddedDaemonFallbackLabel,
                 kind: HostKind.embedded,
                 status: HostRuntimeStatus.connecting,
               ),
@@ -399,7 +410,7 @@ final class HostRegistry {
               ...value.runtimes,
               embeddedHostId: const HostRuntimeSnapshot(
                 id: embeddedHostId,
-                label: '내장 daemon',
+                label: embeddedDaemonFallbackLabel,
                 kind: HostKind.embedded,
                 status: HostRuntimeStatus.connecting,
               ),
@@ -441,7 +452,10 @@ final class HostRegistry {
     if (token == null || token.isEmpty) {
       _setFailure(
         profileId,
-        const HostConnectionFailure.authentication('Bearer token이 없습니다.'),
+        const HostConnectionFailure.authentication(
+          'No bearer token is stored.',
+          reason: HostFailureReason.noStoredBearerToken,
+        ),
         retry: false,
       );
       return;
@@ -493,7 +507,8 @@ final class HostRegistry {
           (runtime) => runtime.copyWith(
             status: HostRuntimeStatus.conflict,
             conflictingHostId: conflictingHostId,
-            error: '같은 daemon이 이미 등록되어 있습니다.',
+            error: 'That daemon is already registered.',
+            errorReason: HostFailureReason.duplicateDaemon,
             clearApi: true,
           ),
         );
@@ -563,6 +578,7 @@ final class HostRegistry {
       (runtime) => runtime.copyWith(
         status: retry ? HostRuntimeStatus.offline : HostRuntimeStatus.error,
         error: failure.message,
+        errorReason: failure.reason,
         clearApi: true,
       ),
     );

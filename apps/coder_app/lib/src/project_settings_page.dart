@@ -1,3 +1,4 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -48,7 +49,11 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
       data: (value) {
         final projects = _projects(value);
         if (projects.isEmpty) {
-          return const Center(child: Text('등록된 project가 없습니다.'));
+          return Center(
+            child: Text(
+              AppLocalizations.of(context).projectSettingsNoProjects,
+            ),
+          );
         }
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -80,7 +85,13 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                 const VerticalDivider(width: 1),
                 Expanded(
                   child: selected == null
-                      ? const Center(child: Text('Project를 선택하세요.'))
+                      ? Center(
+                          child: Text(
+                            AppLocalizations.of(
+                              context,
+                            ).projectSettingsSelectProject,
+                          ),
+                        )
                       : _ProjectEditor(
                           key: ValueKey<String>(
                             '${widget.hostId} ${selected.id}',
@@ -117,38 +128,41 @@ class _ProjectList extends StatelessWidget {
   final ValueChanged<String> onSelected;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: <Widget>[
-      ListTile(
-        title: const Text('Projects'),
-        subtitle: Text('${projects.length} projects'),
-      ),
-      const Divider(height: 1),
-      Expanded(
-        child: ListView(
-          children: <Widget>[
-            for (final project in projects)
-              ListTile(
-                selected: project.id == selectedId,
-                leading: Icon(
-                  project.kind == WorkspaceKind.git
-                      ? Icons.account_tree_outlined
-                      : Icons.folder_outlined,
-                ),
-                title: Text(project.name),
-                subtitle: Text(
-                  project.rootPath,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => onSelected(project.id),
-              ),
-          ],
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      children: <Widget>[
+        ListTile(
+          title: Text(l10n.projectSettingsHeading),
+          subtitle: Text(l10n.projectSettingsCount(projects.length)),
         ),
-      ),
-    ],
-  );
+        const Divider(height: 1),
+        Expanded(
+          child: ListView(
+            children: <Widget>[
+              for (final project in projects)
+                ListTile(
+                  selected: project.id == selectedId,
+                  leading: Icon(
+                    project.kind == WorkspaceKind.git
+                        ? Icons.account_tree_outlined
+                        : Icons.folder_outlined,
+                  ),
+                  title: Text(project.name),
+                  subtitle: Text(
+                    project.rootPath,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => onSelected(project.id),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _ProjectEditor extends ConsumerStatefulWidget {
@@ -183,6 +197,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final provider = projectSettingsControllerProvider(
       widget.hostId,
       widget.workspace.id,
@@ -206,7 +221,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
               leading: widget.onBack == null
                   ? null
                   : IconButton(
-                      tooltip: 'Project 목록',
+                      tooltip: l10n.projectSettingsProjectList,
                       onPressed: widget.onBack,
                       icon: const Icon(Icons.arrow_back),
                     ),
@@ -216,7 +231,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
                   IconButton(
-                    tooltip: '파일 위치 복사',
+                    tooltip: l10n.projectSettingsCopyPath,
                     onPressed: () => Clipboard.setData(
                       ClipboardData(text: value.sourcePath),
                     ),
@@ -224,7 +239,9 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   ),
                   FilledButton(
                     onPressed: _saving ? null : _save,
-                    child: Text(_saving ? '저장 중…' : '저장'),
+                    child: Text(
+                      _saving ? l10n.commonSaving : l10n.commonSave,
+                    ),
                   ),
                 ],
               ),
@@ -248,9 +265,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '한 줄에 명령 하나를 적으면 daemon 호스트의 shell에서 순서대로 '
-                    '실행됩니다. CODER_WORKTREE_PATH, CODER_PROJECT_PATH, '
-                    'CODER_BRANCH 환경변수를 사용할 수 있습니다.',
+                    l10n.projectSettingsHookHelp,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 16),
@@ -259,11 +274,11 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     enabled: !_saving,
                     minLines: 3,
                     maxLines: 8,
-                    decoration: const InputDecoration(
-                      labelText: 'Setup (worktree 생성 후)',
+                    decoration: InputDecoration(
+                      labelText: l10n.projectSettingsSetup,
                       hintText: 'npm install',
                       alignLabelWithHint: true,
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -272,11 +287,11 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     enabled: !_saving,
                     minLines: 3,
                     maxLines: 8,
-                    decoration: const InputDecoration(
-                      labelText: 'Teardown (worktree 제거 전)',
+                    decoration: InputDecoration(
+                      labelText: l10n.projectSettingsTeardown,
                       hintText: 'docker compose down',
                       alignLabelWithHint: true,
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ],
@@ -289,6 +304,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _saving = true;
       _error = null;
@@ -311,7 +327,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('저장했습니다.')));
+      ).showSnackBar(SnackBar(content: Text(l10n.commonSaved)));
     } on CoderClientException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -335,7 +351,10 @@ class _ProjectSettingsError extends StatelessWidget {
       children: <Widget>[
         Text('$error'),
         const SizedBox(height: 12),
-        FilledButton(onPressed: onRetry, child: const Text('다시 시도')),
+        FilledButton(
+          onPressed: onRetry,
+          child: Text(AppLocalizations.of(context).commonRetry),
+        ),
       ],
     ),
   );

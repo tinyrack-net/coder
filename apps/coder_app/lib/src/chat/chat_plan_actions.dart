@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -7,6 +8,9 @@ import 'package:coder_app/src/session_title.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// The two prompts below are sent to the model, not shown to the user, so they
+// are deliberately left out of the localized strings.
 
 /// Prompt sent when the user accepts a plan in the current session.
 const String implementPlanPrompt = '계획을 실행해줘.';
@@ -48,45 +52,48 @@ class ChatPlanActions extends ConsumerWidget {
   final ValueChanged<SessionDto> onSessionCreated;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-    child: Card(
-      key: const ValueKey('chat-plan-actions'),
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              '이 계획대로 진행할까요?',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                TextButton(
-                  onPressed: onDismiss,
-                  child: const Text('계속 계획'),
-                ),
-                TextButton(
-                  onPressed: () => unawaited(_startFreshSession(ref)),
-                  child: const Text('새 세션에서 실행'),
-                ),
-                FilledButton(
-                  onPressed: () => unawaited(_implementHere(ref)),
-                  child: const Text('계획대로 실행'),
-                ),
-              ],
-            ),
-          ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Card(
+        key: const ValueKey('chat-plan-actions'),
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                l10n.chatPlanPrompt,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
+                children: <Widget>[
+                  TextButton(
+                    onPressed: onDismiss,
+                    child: Text(l10n.chatPlanKeepPlanning),
+                  ),
+                  TextButton(
+                    onPressed: () => unawaited(_startFreshSession(ref)),
+                    child: Text(l10n.chatPlanRunInNewSession),
+                  ),
+                  FilledButton(
+                    onPressed: () => unawaited(_implementHere(ref)),
+                    child: Text(l10n.chatPlanRun),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   Future<void> _implementHere(WidgetRef ref) async {
     // Read the notifiers first: dismissing unmounts this widget, and `ref` is

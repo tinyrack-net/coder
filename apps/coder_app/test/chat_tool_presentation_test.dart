@@ -2,6 +2,8 @@ import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_tool_presentation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/localization.dart';
+
 void main() {
   final now = DateTime.utc(2026, 8, 3);
 
@@ -63,6 +65,7 @@ void main() {
     'built-in tools render CLI titles and Korean result lines',
     () {
       final read = describeToolActivity(
+        testL10n,
         activity(
           'read_file',
           arguments: <String, dynamic>{'path': 'lib/main.dart'},
@@ -75,6 +78,7 @@ void main() {
 
       expect(
         describeToolActivity(
+          testL10n,
           activity(
             'read_file',
             arguments: <String, dynamic>{
@@ -95,6 +99,7 @@ void main() {
       );
 
       final list = describeToolActivity(
+        testL10n,
         activity(
           'list_directory',
           arguments: <String, dynamic>{'path': 'lib'},
@@ -107,6 +112,7 @@ void main() {
       expect(list.resultLine, '디렉터리 1 · 파일 1');
 
       final search = describeToolActivity(
+        testL10n,
         activity(
           'search_text',
           arguments: <String, dynamic>{'query': 'TODO', 'path': 'lib'},
@@ -120,6 +126,7 @@ void main() {
       expect(search.resultLine, '2개 파일에서 3건');
       expect(
         describeToolActivity(
+          testL10n,
           activity(
             'search_text',
             arguments: <String, dynamic>{'query': 'nothing'},
@@ -130,6 +137,7 @@ void main() {
       );
 
       final edit = describeToolActivity(
+        testL10n,
         activity(
           'apply_patch',
           arguments: <String, dynamic>{
@@ -149,6 +157,7 @@ void main() {
       expect(edit.resultLine, '+2 -1 · 1개 파일');
 
       final run = describeToolActivity(
+        testL10n,
         activity(
           'run_command',
           arguments: <String, dynamic>{'command': 'flutter test'},
@@ -165,6 +174,7 @@ void main() {
       );
 
       final failedRun = describeToolActivity(
+        testL10n,
         activity(
           'run_command',
           arguments: <String, dynamic>{'command': 'false'},
@@ -176,6 +186,7 @@ void main() {
       expect(failedRun.isFailure, isTrue);
 
       final task = describeToolActivity(
+        testL10n,
         activity(
           'delegate_agent',
           arguments: <String, dynamic>{
@@ -197,6 +208,7 @@ void main() {
     'unknown tools and malformed output fall back to generic summaries',
     () {
       final unknown = describeToolActivity(
+        testL10n,
         activity(
           'fetch_url',
           arguments: <String, dynamic>{
@@ -212,12 +224,14 @@ void main() {
 
       expect(
         describeToolActivity(
+          testL10n,
           activity('fetch_url', output: ''),
         ).resultLine,
         '완료',
       );
       expect(
         describeToolActivity(
+          testL10n,
           activity(
             'run_command',
             arguments: <String, dynamic>{'command': 'ls'},
@@ -228,6 +242,7 @@ void main() {
       );
       expect(
         describeToolActivity(
+          testL10n,
           activity(
             'apply_patch',
             arguments: <String, dynamic>{'patch': 'not a diff'},
@@ -238,6 +253,7 @@ void main() {
       );
       expect(
         describeToolActivity(
+          testL10n,
           activity(
             'list_directory',
             arguments: <String, dynamic>{'path': '.'},
@@ -255,6 +271,7 @@ void main() {
     () {
       expect(
         describeToolActivity(
+          testL10n,
           activity(
             'read_file',
             arguments: <String, dynamic>{'path': 'a.dart'},
@@ -265,6 +282,7 @@ void main() {
       );
       expect(
         describeToolActivity(
+          testL10n,
           activity(
             'run_command',
             arguments: <String, dynamic>{'command': 'rm -rf /'},
@@ -274,6 +292,7 @@ void main() {
         '거부됨',
       );
       final failed = describeToolActivity(
+        testL10n,
         activity(
           'apply_patch',
           arguments: <String, dynamic>{'patch': 'diff'},
@@ -292,10 +311,12 @@ void main() {
     () {
       final long = 'x' * 200;
       final run = describeToolActivity(
+        testL10n,
         activity('run_command', arguments: <String, dynamic>{'command': long}),
       );
       expect(run.title.length, lessThanOrEqualTo('Bash()'.length + 60));
       final failed = describeToolActivity(
+        testL10n,
         activity(
           'run_command',
           arguments: <String, dynamic>{'command': 'x'},
