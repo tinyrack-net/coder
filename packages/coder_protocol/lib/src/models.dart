@@ -138,6 +138,15 @@ enum WorktreeKind {
   directory,
 }
 
+/// Worktree lifecycle stage that triggers a configured project hook.
+enum WorktreeHookPhase {
+  /// Runs after a managed worktree checkout is created.
+  setup,
+
+  /// Runs before a worktree checkout is removed.
+  teardown,
+}
+
 /// Supported sources for creating a managed Git worktree.
 enum WorktreeCreateMode {
   /// Creates a new branch from a base branch.
@@ -377,6 +386,37 @@ abstract class WorktreeArchivePreviewDto with _$WorktreeArchivePreviewDto {
   /// Decodes an archive preview.
   factory WorktreeArchivePreviewDto.fromJson(Map<String, dynamic> json) =>
       _$WorktreeArchivePreviewDtoFromJson(json);
+}
+
+@freezed
+/// Project-scoped configuration stored in the repository root `coder.json`.
+abstract class ProjectSettingsDto with _$ProjectSettingsDto {
+  /// Creates project settings.
+  const factory ProjectSettingsDto({
+    @Default(<String>[]) List<String> setup,
+    @Default(<String>[]) List<String> teardown,
+  }) = _ProjectSettingsDto;
+
+  /// Decodes project settings.
+  factory ProjectSettingsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProjectSettingsDtoFromJson(json);
+}
+
+@freezed
+/// Outcome of one worktree lifecycle hook command.
+abstract class WorktreeHookRunDto with _$WorktreeHookRunDto {
+  /// Creates a hook run record.
+  const factory WorktreeHookRunDto({
+    required WorktreeHookPhase phase,
+    required String command,
+    required int exitCode,
+    required String stdout,
+    required String stderr,
+  }) = _WorktreeHookRunDto;
+
+  /// Decodes a hook run record.
+  factory WorktreeHookRunDto.fromJson(Map<String, dynamic> json) =>
+      _$WorktreeHookRunDtoFromJson(json);
 }
 
 @freezed

@@ -506,15 +506,58 @@ abstract class GitBranchesListResultDto with _$GitBranchesListResultDto {
 }
 
 @freezed
-/// Result containing one worktree.
+/// Result containing one worktree and the lifecycle hooks it ran.
 abstract class WorktreeResultDto with _$WorktreeResultDto {
   /// Creates a worktree result.
-  const factory WorktreeResultDto({required WorktreeDto worktree}) =
-      _WorktreeResultDto;
+  const factory WorktreeResultDto({
+    required WorktreeDto worktree,
+    @Default(<WorktreeHookRunDto>[]) List<WorktreeHookRunDto> hookRuns,
+  }) = _WorktreeResultDto;
 
   /// Decodes a worktree result.
   factory WorktreeResultDto.fromJson(Map<String, dynamic> json) =>
       _$WorktreeResultDtoFromJson(json);
+}
+
+@freezed
+/// Requests the `coder.json` settings of one registered workspace.
+abstract class ProjectSettingsGetParamsDto with _$ProjectSettingsGetParamsDto {
+  /// Creates project settings read parameters.
+  const factory ProjectSettingsGetParamsDto({required String workspaceId}) =
+      _ProjectSettingsGetParamsDto;
+
+  /// Decodes project settings read parameters.
+  factory ProjectSettingsGetParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProjectSettingsGetParamsDtoFromJson(json);
+}
+
+@freezed
+/// Replaces the worktree hook section of one workspace's `coder.json`.
+abstract class ProjectSettingsSaveParamsDto
+    with _$ProjectSettingsSaveParamsDto {
+  /// Creates project settings write parameters.
+  const factory ProjectSettingsSaveParamsDto({
+    required String workspaceId,
+    required ProjectSettingsDto settings,
+  }) = _ProjectSettingsSaveParamsDto;
+
+  /// Decodes project settings write parameters.
+  factory ProjectSettingsSaveParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProjectSettingsSaveParamsDtoFromJson(json);
+}
+
+@freezed
+/// Result containing project settings and the file backing them.
+abstract class ProjectSettingsResultDto with _$ProjectSettingsResultDto {
+  /// Creates a project settings result.
+  const factory ProjectSettingsResultDto({
+    required ProjectSettingsDto settings,
+    required String sourcePath,
+  }) = _ProjectSettingsResultDto;
+
+  /// Decodes a project settings result.
+  factory ProjectSettingsResultDto.fromJson(Map<String, dynamic> json) =>
+      _$ProjectSettingsResultDtoFromJson(json);
 }
 
 @freezed

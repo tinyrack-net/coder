@@ -157,10 +157,14 @@ final class ProcessGitWorkspaceGateway implements GitWorkspaceGateway {
   }
 
   @override
-  Future<void> removeWorktree(String repositoryRoot, String path) async {
+  Future<void> removeWorktree(
+    String repositoryRoot,
+    String path, {
+    bool force = false,
+  }) async {
     final result = await _commands.run(
       'git',
-      <String>['worktree', 'remove', path],
+      <String>['worktree', 'remove', if (force) '--force', path],
       workingDirectory: repositoryRoot,
     );
     _requireSuccess(result, 'Unable to remove Git worktree.');

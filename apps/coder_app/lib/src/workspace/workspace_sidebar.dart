@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/workspace/worktree_hook_report.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -264,10 +265,14 @@ class _RepositoryTreeNode extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    await api.archiveWorktree(worktree.id, force: risky);
+    final archived = await api.archiveWorktree(worktree.id, force: risky);
     await ref
         .read(workspaceCatalogControllerProvider.notifier)
         .refreshHost(hostId);
+    // Teardown never blocks the archive, so surface failures afterwards.
+    if (context.mounted) {
+      reportWorktreeHookFailure(context, archived.hookRuns);
+    }
     if (context.mounted && selected?.worktreeId == worktree.id) {
       onArchivedSelection();
     }

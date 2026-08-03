@@ -11,6 +11,7 @@ import 'package:coder_daemon/src/database.dart';
 import 'package:coder_daemon/src/git_workspace.dart';
 import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/project_settings.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_catalog.dart';
@@ -54,6 +55,8 @@ abstract final class DaemonApplication {
     ProviderOAuthGateway? oauthGateway,
     WorkspacePathGateway workspacePaths = const IoWorkspacePathGateway(),
     GitWorkspaceGateway? git,
+    ProjectSettingsStore projectSettings = const FileProjectSettingsStore(),
+    WorktreeHookRunner worktreeHooks = const ShellWorktreeHookRunner(),
   }) async {
     final home = Directory(config.homeDirectory);
     await home.create(recursive: true);
@@ -166,6 +169,8 @@ abstract final class DaemonApplication {
         git ?? const ProcessGitWorkspaceGateway(IoCommandRunner()),
         clock,
         p.join(home.path, 'worktrees'),
+        projectSettings,
+        worktreeHooks,
       );
       final info = ServerInfoDto(
         serverId: serverId,

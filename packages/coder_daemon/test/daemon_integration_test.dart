@@ -632,6 +632,22 @@ void main() {
       );
       expect(registered.workspace.kind, WorkspaceKind.git);
       expect(await client.listGitBranches('git-workspace'), hasLength(1));
+
+      expect(
+        (await client.getProjectSettings('git-workspace')).settings,
+        const ProjectSettingsDto(),
+      );
+      final teardownMarker = '${repository.path}/teardown-ran';
+      final saved = await client.saveProjectSettings(
+        'git-workspace',
+        ProjectSettingsDto(
+          setup: <String>[r'printf "%s" "$CODER_BRANCH" > setup-ran'],
+          teardown: <String>['printf ran > $teardownMarker'],
+        ),
+      );
+      expect(saved.sourcePath, '${repository.path}/coder.json');
+      expect(File(saved.sourcePath).existsSync(), isTrue);
+
       final managed = await client.createWorktree(
         id: 'managed-worktree',
         workspaceId: 'git-workspace',
@@ -639,19 +655,36 @@ void main() {
         branchName: 'feature/vertical-slice',
         baseBranch: 'main',
       );
-      expect(Directory(managed.path).existsSync(), isTrue);
+      expect(Directory(managed.worktree.path).existsSync(), isTrue);
+      expect(managed.hookRuns.single.exitCode, 0);
+      expect(managed.hookRuns.single.phase, WorktreeHookPhase.setup);
+      expect(
+        await File('${managed.worktree.path}/setup-ran').readAsString(),
+        'feature-vertical-slice',
+      );
       expect(
         (await client.refreshWorkspace('git-workspace')).worktrees,
         isNotEmpty,
       );
-      final preview = await client.previewWorktreeArchive(managed.id);
+      final preview = await client.previewWorktreeArchive(
+        managed.worktree.id,
+      );
       expect(preview.removesDirectory, isTrue);
-      await client.archiveWorktree(managed.id);
-      expect(Directory(managed.path).existsSync(), isFalse);
+      final archived = await client.archiveWorktree(
+        managed.worktree.id,
+        force: true,
+      );
+      expect(archived.hookRuns.single.phase, WorktreeHookPhase.teardown);
+      expect(archived.hookRuns.single.exitCode, 0);
+      expect(File(teardownMarker).existsSync(), isTrue);
+      expect(Directory(managed.worktree.path).existsSync(), isFalse);
       await client.unregisterWorkspace('git-workspace');
       expect((await client.getWorkspaceCatalog()).workspaces, isEmpty);
     },
-    tags: const <String>['feature_test__worktree_lifecycle__verticalSlice'],
+    tags: const <String>[
+      'feature_test__worktree_lifecycle__verticalSlice',
+      'feature_test__project_settings__verticalSlice',
+    ],
   );
 
   test(

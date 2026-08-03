@@ -390,6 +390,124 @@ abstract class _$SessionsController extends $AsyncNotifier<List<SessionDto>> {
   }
 }
 
+/// Loads and edits the `coder.json` worktree hooks of one project.
+
+@ProviderFor(ProjectSettingsController)
+final projectSettingsControllerProvider = ProjectSettingsControllerFamily._();
+
+/// Loads and edits the `coder.json` worktree hooks of one project.
+final class ProjectSettingsControllerProvider
+    extends
+        $AsyncNotifierProvider<
+          ProjectSettingsController,
+          ProjectSettingsResultDto
+        > {
+  /// Loads and edits the `coder.json` worktree hooks of one project.
+  ProjectSettingsControllerProvider._({
+    required ProjectSettingsControllerFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: null,
+         name: r'projectSettingsControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$projectSettingsControllerHash();
+
+  @override
+  String toString() {
+    return r'projectSettingsControllerProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  ProjectSettingsController create() => ProjectSettingsController();
+
+  @override
+  bool operator ==(Object other) {
+    return other is ProjectSettingsControllerProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$projectSettingsControllerHash() =>
+    r'14470492bc6382696ec61623410e8599adbd2a40';
+
+/// Loads and edits the `coder.json` worktree hooks of one project.
+
+final class ProjectSettingsControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          ProjectSettingsController,
+          AsyncValue<ProjectSettingsResultDto>,
+          ProjectSettingsResultDto,
+          FutureOr<ProjectSettingsResultDto>,
+          (String, String)
+        > {
+  ProjectSettingsControllerFamily._()
+    : super(
+        retry: null,
+        name: r'projectSettingsControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Loads and edits the `coder.json` worktree hooks of one project.
+
+  ProjectSettingsControllerProvider call(String hostId, String workspaceId) =>
+      ProjectSettingsControllerProvider._(
+        argument: (hostId, workspaceId),
+        from: this,
+      );
+
+  @override
+  String toString() => r'projectSettingsControllerProvider';
+}
+
+/// Loads and edits the `coder.json` worktree hooks of one project.
+
+abstract class _$ProjectSettingsController
+    extends $AsyncNotifier<ProjectSettingsResultDto> {
+  late final _$args = ref.$arg as (String, String);
+  String get hostId => _$args.$1;
+  String get workspaceId => _$args.$2;
+
+  FutureOr<ProjectSettingsResultDto> build(String hostId, String workspaceId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref
+            as $Ref<
+              AsyncValue<ProjectSettingsResultDto>,
+              ProjectSettingsResultDto
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<ProjectSettingsResultDto>,
+                ProjectSettingsResultDto
+              >,
+              AsyncValue<ProjectSettingsResultDto>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args.$1, _$args.$2));
+  }
+}
+
 /// Loads and edits one daemon's Markdown agent files.
 
 @ProviderFor(AgentDefinitionsController)

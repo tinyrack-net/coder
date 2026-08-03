@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/project_settings.dart';
 import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:crypto/crypto.dart';
@@ -16,8 +17,10 @@ final class WorkspaceService {
     this._paths,
     this._git,
     this._clock,
-    this._managedWorktreeRoot,
-  );
+    this._managedWorktreeRoot, [
+    this._projectSettings = const FileProjectSettingsStore(),
+    this._hooks = const ShellWorktreeHookRunner(),
+  ]);
 
   final WorkspaceRepository _workspaces;
   final WorktreeRepository _worktrees;
@@ -26,6 +29,8 @@ final class WorkspaceService {
   final GitWorkspaceGateway _git;
   final Clock _clock;
   final String _managedWorktreeRoot;
+  final ProjectSettingsStore _projectSettings;
+  final WorktreeHookRunner _hooks;
 
   /// Returns repositories and active worktrees as one catalog snapshot.
   Future<WorkspaceCatalogDto> catalog() async => WorkspaceCatalogDto(
@@ -145,14 +150,36 @@ final class WorkspaceService {
     return _git.listBranches(workspace.rootPath);
   }
 
+  /// Returns the `coder.json` settings of one registered workspace.
+  Future<ProjectSettingsResultDto> getProjectSettings(
+    String workspaceId,
+  ) async {
+    final workspace = await _requireWorkspace(workspaceId);
+    return ProjectSettingsResultDto(
+      settings: await _projectSettings.load(workspace.rootPath),
+      sourcePath: _projectSettings.sourcePath(workspace.rootPath),
+    );
+  }
+
+  /// Replaces the worktree hook section of one workspace's `coder.json`.
+  Future<ProjectSettingsResultDto> saveProjectSettings(
+    ProjectSettingsSaveParamsDto request,
+  ) async {
+    final workspace = await _requireWorkspace(request.workspaceId);
+    await _projectSettings.save(workspace.rootPath, request.settings);
+    return getProjectSettings(workspace.id);
+  }
+
   /// Creates a managed checkout from a new or existing local branch.
-  Future<WorktreeDto> createWorktree(WorktreeCreateParamsDto request) async {
+  Future<WorktreeResultDto> createWorktree(
+    WorktreeCreateParamsDto request,
+  ) async {
     final workspace = await _requireWorkspace(request.workspaceId);
     if (workspace.kind != WorkspaceKind.git) {
       throw StateError('Managed worktrees require a Git repository.');
     }
     if (await _worktrees.getById(request.id) case final existing?) {
-      return existing;
+      return WorktreeResultDto(worktree: existing);
     }
     final branch = _normalizeBranch(request.branchName);
     await _fetchBaseRemote(workspace.rootPath, request);
@@ -182,7 +209,7 @@ final class WorkspaceService {
     final snapshot = snapshots
         .where((item) => item.path == checkoutPath)
         .firstOrNull;
-    return _worktrees.upsert(
+    final worktree = await _worktrees.upsert(
       WorktreeDto(
         id: request.id,
         workspaceId: workspace.id,
@@ -193,6 +220,14 @@ final class WorkspaceService {
         kind: WorktreeKind.managed,
         isCoderOwned: true,
         createdAt: _clock.nowUtc(),
+      ),
+    );
+    return WorktreeResultDto(
+      worktree: worktree,
+      hookRuns: await _runHooks(
+        WorktreeHookPhase.setup,
+        workspace: workspace,
+        worktree: worktree,
       ),
     );
   }
@@ -213,7 +248,7 @@ final class WorkspaceService {
   }
 
   /// Archives one worktree and removes only Coder-owned managed checkouts.
-  Future<WorktreeDto> archive(
+  Future<WorktreeResultDto> archive(
     String worktreeId, {
     required bool force,
   }) async {
@@ -225,13 +260,78 @@ final class WorkspaceService {
     if (!force && (preview.dirty || preview.unpushedCommitCount > 0)) {
       throw StateError('Archive confirmation is required for local changes.');
     }
+    final workspace = await _requireWorkspace(worktree.workspaceId);
+    final hookRuns = await _runHooks(
+      WorktreeHookPhase.teardown,
+      workspace: workspace,
+      worktree: worktree,
+    );
     if (worktree.isCoderOwned) {
-      final workspace = await _requireWorkspace(worktree.workspaceId);
-      await _git.removeWorktree(workspace.rootPath, worktree.path);
+      await _git.removeWorktree(
+        workspace.rootPath,
+        worktree.path,
+        force: force,
+      );
     }
     final archivedAt = _clock.nowUtc();
     await _worktrees.archive(worktree.id, archivedAt);
-    return (await _worktrees.getById(worktree.id))!;
+    return WorktreeResultDto(
+      worktree: (await _worktrees.getById(worktree.id))!,
+      hookRuns: hookRuns,
+    );
+  }
+
+  /// Runs configured hooks in order and stops at the first failing command.
+  ///
+  /// A failing hook never rolls back or blocks the surrounding lifecycle
+  /// operation; the outcome is reported to the caller instead.
+  Future<List<WorktreeHookRunDto>> _runHooks(
+    WorktreeHookPhase phase, {
+    required WorkspaceDto workspace,
+    required WorktreeDto worktree,
+  }) async {
+    final ProjectSettingsDto settings;
+    try {
+      settings = await _projectSettings.load(workspace.rootPath);
+    } on FormatException catch (error) {
+      return <WorktreeHookRunDto>[
+        WorktreeHookRunDto(
+          phase: phase,
+          command: _projectSettings.sourcePath(workspace.rootPath),
+          exitCode: -1,
+          stdout: '',
+          stderr: error.message,
+        ),
+      ];
+    }
+    final commands = switch (phase) {
+      WorktreeHookPhase.setup => settings.setup,
+      WorktreeHookPhase.teardown => settings.teardown,
+    };
+    final environment = <String, String>{
+      'CODER_PROJECT_PATH': workspace.rootPath,
+      'CODER_WORKTREE_PATH': worktree.path,
+      'CODER_BRANCH': ?worktree.branch,
+    };
+    final runs = <WorktreeHookRunDto>[];
+    for (final command in commands) {
+      final result = await _hooks.run(
+        command,
+        workingDirectory: worktree.path,
+        environment: environment,
+      );
+      runs.add(
+        WorktreeHookRunDto(
+          phase: phase,
+          command: command,
+          exitCode: result.exitCode,
+          stdout: result.stdout,
+          stderr: result.stderr,
+        ),
+      );
+      if (result.exitCode != 0) break;
+    }
+    return runs;
   }
 
   Future<List<WorktreeDto>> _upsertGitSnapshots(

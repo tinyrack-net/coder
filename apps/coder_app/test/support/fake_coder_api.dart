@@ -372,8 +372,37 @@ final class FakeCoderApi implements CoderApi {
     ),
   ];
 
+  /// Project settings keyed by workspace ID.
+  final Map<String, ProjectSettingsDto> projectSettings =
+      <String, ProjectSettingsDto>{};
+
+  /// Hook runs reported by the next worktree create call.
+  List<WorktreeHookRunDto> createWorktreeHookRuns =
+      const <WorktreeHookRunDto>[];
+
+  /// Hook runs reported by the next worktree archive call.
+  List<WorktreeHookRunDto> archiveWorktreeHookRuns =
+      const <WorktreeHookRunDto>[];
+
   @override
-  Future<WorktreeDto> createWorktree({
+  Future<ProjectSettingsResultDto> getProjectSettings(
+    String workspaceId,
+  ) async => ProjectSettingsResultDto(
+    settings: projectSettings[workspaceId] ?? const ProjectSettingsDto(),
+    sourcePath: '/projects/$workspaceId/coder.json',
+  );
+
+  @override
+  Future<ProjectSettingsResultDto> saveProjectSettings(
+    String workspaceId,
+    ProjectSettingsDto settings,
+  ) async {
+    projectSettings[workspaceId] = settings;
+    return getProjectSettings(workspaceId);
+  }
+
+  @override
+  Future<WorktreeResultDto> createWorktree({
     required String id,
     required String workspaceId,
     required WorktreeCreateMode mode,
@@ -398,7 +427,10 @@ final class FakeCoderApi implements CoderApi {
       createdAt: _now,
     );
     _worktrees.add(worktree);
-    return worktree;
+    return WorktreeResultDto(
+      worktree: worktree,
+      hookRuns: createWorktreeHookRuns,
+    );
   }
 
   @override
@@ -416,14 +448,17 @@ final class FakeCoderApi implements CoderApi {
   );
 
   @override
-  Future<WorktreeDto> archiveWorktree(
+  Future<WorktreeResultDto> archiveWorktree(
     String worktreeId, {
     bool force = false,
   }) async {
     final index = _worktrees.indexWhere((item) => item.id == worktreeId);
     final archived = _worktrees[index].copyWith(archivedAt: _now);
     _worktrees.removeAt(index);
-    return archived;
+    return WorktreeResultDto(
+      worktree: archived,
+      hookRuns: archiveWorktreeHookRuns,
+    );
   }
 
   @override

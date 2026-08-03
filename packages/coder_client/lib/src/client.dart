@@ -303,7 +303,33 @@ class CoderClient implements CoderApi {
   }
 
   @override
-  Future<WorktreeDto> createWorktree({
+  Future<ProjectSettingsResultDto> getProjectSettings(
+    String workspaceId,
+  ) async {
+    final response = await _request(
+      RpcMethod.projectSettingsGet,
+      ProjectSettingsGetParamsDto(workspaceId: workspaceId).toJson(),
+    );
+    return ProjectSettingsResultDto.fromJson(response);
+  }
+
+  @override
+  Future<ProjectSettingsResultDto> saveProjectSettings(
+    String workspaceId,
+    ProjectSettingsDto settings,
+  ) async {
+    final response = await _request(
+      RpcMethod.projectSettingsSave,
+      ProjectSettingsSaveParamsDto(
+        workspaceId: workspaceId,
+        settings: settings,
+      ).toJson(),
+    );
+    return ProjectSettingsResultDto.fromJson(response);
+  }
+
+  @override
+  Future<WorktreeResultDto> createWorktree({
     required String id,
     required String workspaceId,
     required WorktreeCreateMode mode,
@@ -320,7 +346,7 @@ class CoderClient implements CoderApi {
         baseBranch: baseBranch,
       ).toJson(),
     );
-    return WorktreeResultDto.fromJson(response).worktree;
+    return WorktreeResultDto.fromJson(response);
   }
 
   @override
@@ -335,7 +361,7 @@ class CoderClient implements CoderApi {
   }
 
   @override
-  Future<WorktreeDto> archiveWorktree(
+  Future<WorktreeResultDto> archiveWorktree(
     String worktreeId, {
     bool force = false,
   }) async {
@@ -343,7 +369,7 @@ class CoderClient implements CoderApi {
       RpcMethod.worktreeArchive,
       WorktreeArchiveParamsDto(worktreeId: worktreeId, force: force).toJson(),
     );
-    return WorktreeResultDto.fromJson(response).worktree;
+    return WorktreeResultDto.fromJson(response);
   }
 
   @override

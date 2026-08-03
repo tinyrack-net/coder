@@ -1,6 +1,7 @@
 import 'package:coder_daemon/src/database.dart';
 import 'package:coder_daemon/src/git_workspace.dart';
 import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/project_settings.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:drift/native.dart';
@@ -67,9 +68,10 @@ branch refs/heads/feature/settings
           baseBranch: 'main',
         ),
       );
-      expect(managed.kind, WorktreeKind.managed);
-      expect(managed.isCoderOwned, isTrue);
-      expect(managed.path, contains('/state/worktrees/'));
+      expect(managed.worktree.kind, WorktreeKind.managed);
+      expect(managed.worktree.isCoderOwned, isTrue);
+      expect(managed.worktree.path, contains('/state/worktrees/'));
+      expect(managed.hookRuns, isEmpty);
       expect(git.created.single.branchName, 'feature-user-settings');
     },
     tags: const <String>[
@@ -123,7 +125,7 @@ branch refs/heads/feature/settings
         throwsA(isA<StateError>()),
       );
       final archived = await service.archive('managed-1', force: true);
-      expect(archived.archivedAt?.toUtc(), _FixedClock.now);
+      expect(archived.worktree.archivedAt?.toUtc(), _FixedClock.now);
       expect(git.removed, hasLength(1));
     },
   );
@@ -260,7 +262,7 @@ branch refs/heads/feature/settings
         ),
       );
       expect(git.fetched, <String>['origin']);
-      expect(offline.branch, 'offline');
+      expect(offline.worktree.branch, 'offline');
       git
         ..fetched.clear()
         ..created.clear()
@@ -273,7 +275,7 @@ branch refs/heads/feature/settings
         branchName: 'Topic Branch',
       );
       final created = await service.createWorktree(request);
-      expect(created.head, 'created-head');
+      expect(created.worktree.head, 'created-head');
       expect(await service.createWorktree(request), created);
       await expectLater(
         service.createWorktree(
@@ -349,6 +351,234 @@ branch refs/heads/feature/settings
       service.archive('checkout-1', force: true),
       throwsA(isA<StateError>()),
     );
+  });
+
+  group('worktree lifecycle hooks', () {
+    late CoderDatabase database;
+    late _FakeProjectSettings projectSettings;
+    late _FakeHookRunner hooks;
+    late _FakeGitGateway git;
+    late List<String> log;
+    late WorkspaceService service;
+
+    setUp(() async {
+      database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      log = <String>[];
+      projectSettings = _FakeProjectSettings();
+      hooks = _FakeHookRunner(log);
+      git = _FakeGitGateway(log);
+      service = WorkspaceService(
+        database.workspaceDao,
+        database.worktreeDao,
+        database.sessionDao,
+        _FakeWorkspacePaths(),
+        git,
+        _FixedClock(),
+        '/state/worktrees',
+        projectSettings,
+        hooks,
+      );
+      await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+    });
+
+    Future<WorktreeResultDto> createManaged({String id = 'managed-1'}) =>
+        service.createWorktree(
+          WorktreeCreateParamsDto(
+            id: id,
+            workspaceId: 'repo-1',
+            mode: WorktreeCreateMode.existingBranch,
+            branchName: 'topic',
+          ),
+        );
+
+    test(
+      'reads and writes project settings through the workspace root',
+      () async {
+        expect(
+          await service.getProjectSettings('repo-1'),
+          const ProjectSettingsResultDto(
+            settings: ProjectSettingsDto(),
+            sourcePath: '/repo/coder.json',
+          ),
+        );
+
+        const settings = ProjectSettingsDto(
+          setup: <String>['npm ci'],
+          teardown: <String>['docker compose down'],
+        );
+        expect(
+          await service.saveProjectSettings(
+            const ProjectSettingsSaveParamsDto(
+              workspaceId: 'repo-1',
+              settings: settings,
+            ),
+          ),
+          const ProjectSettingsResultDto(
+            settings: settings,
+            sourcePath: '/repo/coder.json',
+          ),
+        );
+        expect(projectSettings.saved, <ProjectSettingsDto>[settings]);
+        await expectLater(
+          service.getProjectSettings('missing'),
+          throwsA(isA<StateError>()),
+        );
+      },
+      tags: const <String>['feature_test__project_settings__unit'],
+    );
+
+    test(
+      'runs setup hooks in the new checkout with worktree environment',
+      () async {
+        projectSettings.settings = const ProjectSettingsDto(
+          setup: <String>['npm ci', 'npm run build'],
+        );
+
+        final created = await createManaged();
+
+        expect(
+          created.hookRuns.map((run) => run.command),
+          <String>['npm ci', 'npm run build'],
+        );
+        expect(
+          created.hookRuns.every(
+            (run) => run.phase == WorktreeHookPhase.setup && run.exitCode == 0,
+          ),
+          isTrue,
+        );
+        expect(
+          hooks.invocations.first.workingDirectory,
+          created.worktree.path,
+        );
+        expect(hooks.invocations.first.environment, <String, String>{
+          'CODER_PROJECT_PATH': '/repo',
+          'CODER_WORKTREE_PATH': created.worktree.path,
+          'CODER_BRANCH': 'topic',
+        });
+      },
+      tags: const <String>['feature_test__worktree_lifecycle__unit'],
+    );
+
+    test(
+      'keeps the worktree and stops after a failing setup hook',
+      () async {
+        projectSettings.settings = const ProjectSettingsDto(
+          setup: <String>['npm ci', 'npm run build'],
+        );
+        hooks.failures['npm ci'] = const CommandResult(
+          exitCode: 2,
+          stdout: 'partial',
+          stderr: 'network down',
+        );
+
+        final created = await createManaged();
+
+        expect(created.hookRuns, hasLength(1));
+        expect(created.hookRuns.single.exitCode, 2);
+        expect(created.hookRuns.single.stderr, 'network down');
+        expect(
+          await database.worktreeDao.getById('managed-1'),
+          isNotNull,
+        );
+      },
+      tags: const <String>['feature_test__worktree_lifecycle__unit'],
+    );
+
+    test('reports unreadable project settings as a failed hook', () async {
+      projectSettings.loadFailure = const FormatException(
+        'invalid_project_settings: broken',
+      );
+
+      final created = await createManaged();
+
+      expect(created.hookRuns.single.exitCode, -1);
+      expect(created.hookRuns.single.command, '/repo/coder.json');
+      expect(created.hookRuns.single.stderr, contains('broken'));
+      expect(hooks.invocations, isEmpty);
+    });
+
+    test('does not rerun setup hooks for an existing worktree', () async {
+      projectSettings.settings = const ProjectSettingsDto(
+        setup: <String>['npm ci'],
+      );
+
+      await createManaged();
+      final repeated = await createManaged();
+
+      expect(hooks.invocations, hasLength(1));
+      expect(repeated.hookRuns, isEmpty);
+    });
+
+    test(
+      'runs teardown hooks before the checkout is removed',
+      () async {
+        projectSettings.settings = const ProjectSettingsDto(
+          teardown: <String>['docker compose down'],
+        );
+        final created = await createManaged();
+        log.clear();
+
+        final archived = await service.archive('managed-1', force: true);
+
+        expect(log, <String>[
+          'hook:docker compose down',
+          'git:remove:force',
+        ]);
+        expect(
+          archived.hookRuns.single.phase,
+          WorktreeHookPhase.teardown,
+        );
+        expect(archived.worktree.archivedAt?.toUtc(), _FixedClock.now);
+        expect(
+          hooks.invocations.single.workingDirectory,
+          created.worktree.path,
+        );
+      },
+      tags: const <String>['feature_test__worktree_lifecycle__unit'],
+    );
+
+    test('archives even when a teardown hook fails', () async {
+      projectSettings.settings = const ProjectSettingsDto(
+        teardown: <String>['docker compose down'],
+      );
+      hooks.failures['docker compose down'] = const CommandResult(
+        exitCode: 1,
+        stdout: '',
+        stderr: 'no such service',
+      );
+      await createManaged();
+
+      final archived = await service.archive('managed-1', force: true);
+
+      expect(archived.hookRuns.single.exitCode, 1);
+      expect(archived.worktree.archivedAt, isNotNull);
+      expect(git.removed, hasLength(1));
+    });
+
+    test('does not run teardown hooks for a refused archive', () async {
+      projectSettings.settings = const ProjectSettingsDto(
+        teardown: <String>['docker compose down'],
+      );
+      await createManaged();
+      git.state = const GitWorktreeState(dirty: true);
+
+      await expectLater(
+        service.archive('managed-1', force: false),
+        throwsA(isA<StateError>()),
+      );
+      expect(hooks.invocations, isEmpty);
+    });
   });
 
   group('process Git workspace gateway', () {
@@ -505,6 +735,7 @@ branch refs/heads/feature/settings
       () async {
         final commands = _FakeCommandRunner(<CommandResult>[
           _result(),
+          _result(),
           _result(exitCode: 1, stderr: 'status failed'),
         ]);
         final gateway = ProcessGitWorkspaceGateway(commands);
@@ -513,6 +744,11 @@ branch refs/heads/feature/settings
         expect(
           commands.invocations.first.arguments,
           <String>['worktree', 'remove', '/managed/topic'],
+        );
+        await gateway.removeWorktree('/repo', '/managed/topic', force: true);
+        expect(
+          commands.invocations[1].arguments,
+          <String>['worktree', 'remove', '--force', '/managed/topic'],
         );
         await expectLater(
           gateway.inspectWorktree('/repo'),
@@ -600,7 +836,61 @@ final class _FakeWorkspacePaths implements WorkspacePathGateway {
   }
 }
 
+final class _FakeProjectSettings implements ProjectSettingsStore {
+  ProjectSettingsDto settings = const ProjectSettingsDto();
+  FormatException? loadFailure;
+  final List<ProjectSettingsDto> saved = <ProjectSettingsDto>[];
+
+  @override
+  String sourcePath(String rootPath) => '$rootPath/coder.json';
+
+  @override
+  Future<ProjectSettingsDto> load(String rootPath) async {
+    if (loadFailure case final failure?) throw failure;
+    return settings;
+  }
+
+  @override
+  Future<void> save(String rootPath, ProjectSettingsDto value) async {
+    saved.add(value);
+    settings = value;
+  }
+}
+
+final class _HookInvocation {
+  const _HookInvocation(this.command, this.workingDirectory, this.environment);
+
+  final String command;
+  final String workingDirectory;
+  final Map<String, String> environment;
+}
+
+final class _FakeHookRunner implements WorktreeHookRunner {
+  _FakeHookRunner(this.log);
+
+  final List<String> log;
+  final List<_HookInvocation> invocations = <_HookInvocation>[];
+  final Map<String, CommandResult> failures = <String, CommandResult>{};
+
+  @override
+  Future<CommandResult> run(
+    String command, {
+    required String workingDirectory,
+    required Map<String, String> environment,
+  }) async {
+    log.add('hook:$command');
+    invocations.add(_HookInvocation(command, workingDirectory, environment));
+    return failures[command] ??
+        const CommandResult(exitCode: 0, stdout: '', stderr: '');
+  }
+}
+
 final class _FakeGitGateway implements GitWorkspaceGateway {
+  _FakeGitGateway([List<String>? log]) : log = log ?? <String>[];
+
+  /// Shared call log used to assert hook ordering against Git operations.
+  final List<String> log;
+
   String? root = '/repo';
   GitWorktreeState state = const GitWorktreeState();
   final List<GitWorktreeCreateRequest> created = <GitWorktreeCreateRequest>[];
@@ -666,7 +956,12 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
   Future<GitWorktreeState> inspectWorktree(String path) async => state;
 
   @override
-  Future<void> removeWorktree(String repositoryRoot, String path) async {
+  Future<void> removeWorktree(
+    String repositoryRoot,
+    String path, {
+    bool force = false,
+  }) async {
+    log.add('git:remove${force ? ':force' : ''}');
     removed.add(path);
   }
 }

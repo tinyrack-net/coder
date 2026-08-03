@@ -99,8 +99,17 @@ abstract interface class CoderApi {
   /// Lists local branches in one Git repository.
   Future<List<GitBranchDto>> listGitBranches(String workspaceId);
 
-  /// Creates a managed Git worktree.
-  Future<WorktreeDto> createWorktree({
+  /// Reads worktree lifecycle hooks from a repository root `coder.json`.
+  Future<ProjectSettingsResultDto> getProjectSettings(String workspaceId);
+
+  /// Writes worktree lifecycle hooks into a repository root `coder.json`.
+  Future<ProjectSettingsResultDto> saveProjectSettings(
+    String workspaceId,
+    ProjectSettingsDto settings,
+  );
+
+  /// Creates a managed Git worktree and runs its configured setup hooks.
+  Future<WorktreeResultDto> createWorktree({
     required String id,
     required String workspaceId,
     required WorktreeCreateMode mode,
@@ -111,8 +120,11 @@ abstract interface class CoderApi {
   /// Previews archive safety conditions.
   Future<WorktreeArchivePreviewDto> previewWorktreeArchive(String worktreeId);
 
-  /// Archives a worktree registration and optionally its managed checkout.
-  Future<WorktreeDto> archiveWorktree(String worktreeId, {bool force = false});
+  /// Archives a worktree after running its configured teardown hooks.
+  Future<WorktreeResultDto> archiveWorktree(
+    String worktreeId, {
+    bool force = false,
+  });
 
   /// The listSessions public API member.
   Future<List<SessionDto>> listSessions({String? worktreeId});

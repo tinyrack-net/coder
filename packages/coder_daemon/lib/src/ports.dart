@@ -192,7 +192,15 @@ abstract interface class GitWorkspaceGateway {
   Future<GitWorktreeState> inspectWorktree(String path);
 
   /// Removes a managed checkout through Git.
-  Future<void> removeWorktree(String repositoryRoot, String path);
+  ///
+  /// [force] discards modified and untracked files, which setup hooks
+  /// routinely create, and is only set once the caller has confirmed the
+  /// archive risks.
+  Future<void> removeWorktree(
+    String repositoryRoot,
+    String path, {
+    bool force = false,
+  });
 }
 
 /// Result returned by a process invocation.
@@ -222,6 +230,45 @@ abstract interface class CommandRunner {
     List<String> arguments, {
     required String workingDirectory,
   });
+}
+
+/// Runs project-configured worktree lifecycle commands.
+///
+/// Unlike [CommandRunner], hook commands are authored by the user in
+/// `coder.json` and are expected to use shell syntax such as pipes and
+/// environment expansion, so they are handed to the platform shell verbatim.
+abstract interface class WorktreeHookRunner {
+  /// Runs one hook command and reports its outcome.
+  Future<CommandResult> run(
+    String command, {
+    required String workingDirectory,
+    required Map<String, String> environment,
+  });
+}
+
+/// Production shell adapter for worktree lifecycle hooks.
+final class ShellWorktreeHookRunner implements WorktreeHookRunner {
+  /// Creates the production hook adapter.
+  const ShellWorktreeHookRunner();
+
+  @override
+  Future<CommandResult> run(
+    String command, {
+    required String workingDirectory,
+    required Map<String, String> environment,
+  }) async {
+    final result = await Process.run(
+      Platform.isWindows ? 'cmd.exe' : '/bin/sh',
+      Platform.isWindows ? <String>['/c', command] : <String>['-c', command],
+      workingDirectory: workingDirectory,
+      environment: environment,
+    );
+    return CommandResult(
+      exitCode: result.exitCode,
+      stdout: '${result.stdout}',
+      stderr: '${result.stderr}',
+    );
+  }
 }
 
 /// Production process adapter.

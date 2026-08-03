@@ -4,6 +4,7 @@ export 'src/config.dart';
 export 'src/embedded.dart';
 export 'src/git_workspace.dart';
 export 'src/ports.dart';
+export 'src/project_settings.dart';
 export 'src/provider_adapters.dart';
 export 'src/repositories.dart';
 export 'src/workspace_service.dart';

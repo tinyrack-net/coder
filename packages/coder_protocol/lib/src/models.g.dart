@@ -102,6 +102,44 @@ Map<String, dynamic> _$WorktreeArchivePreviewDtoToJson(
   'removesDirectory': instance.removesDirectory,
 };
 
+_ProjectSettingsDto _$ProjectSettingsDtoFromJson(Map<String, dynamic> json) =>
+    _ProjectSettingsDto(
+      setup:
+          (json['setup'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+          const <String>[],
+      teardown:
+          (json['teardown'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+    );
+
+Map<String, dynamic> _$ProjectSettingsDtoToJson(_ProjectSettingsDto instance) =>
+    <String, dynamic>{'setup': instance.setup, 'teardown': instance.teardown};
+
+_WorktreeHookRunDto _$WorktreeHookRunDtoFromJson(Map<String, dynamic> json) =>
+    _WorktreeHookRunDto(
+      phase: $enumDecode(_$WorktreeHookPhaseEnumMap, json['phase']),
+      command: json['command'] as String,
+      exitCode: (json['exitCode'] as num).toInt(),
+      stdout: json['stdout'] as String,
+      stderr: json['stderr'] as String,
+    );
+
+Map<String, dynamic> _$WorktreeHookRunDtoToJson(_WorktreeHookRunDto instance) =>
+    <String, dynamic>{
+      'phase': _$WorktreeHookPhaseEnumMap[instance.phase]!,
+      'command': instance.command,
+      'exitCode': instance.exitCode,
+      'stdout': instance.stdout,
+      'stderr': instance.stderr,
+    };
+
+const _$WorktreeHookPhaseEnumMap = {
+  WorktreeHookPhase.setup: 'setup',
+  WorktreeHookPhase.teardown: 'teardown',
+};
+
 _DirectorySuggestionDto _$DirectorySuggestionDtoFromJson(
   Map<String, dynamic> json,
 ) => _DirectorySuggestionDto(

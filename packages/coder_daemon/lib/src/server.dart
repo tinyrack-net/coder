@@ -210,6 +210,8 @@ class _ClientSession {
       RpcMethod.worktreeCreate,
       RpcMethod.worktreeArchivePreview,
       RpcMethod.worktreeArchive,
+      RpcMethod.projectSettingsGet,
+      RpcMethod.projectSettingsSave,
       RpcMethod.agentDefinitionList,
       RpcMethod.agentDefinitionGet,
       RpcMethod.agentDefinitionCreate,
@@ -356,9 +358,15 @@ class _ClientSession {
         ).toJson();
       case RpcMethod.worktreeCreate:
         final request = WorktreeCreateParamsDto.fromJson(payload);
-        return WorktreeResultDto(
-          worktree: await workspaces.createWorktree(request),
-        ).toJson();
+        return (await workspaces.createWorktree(request)).toJson();
+      case RpcMethod.projectSettingsGet:
+        final request = ProjectSettingsGetParamsDto.fromJson(payload);
+        return (await workspaces.getProjectSettings(
+          request.workspaceId,
+        )).toJson();
+      case RpcMethod.projectSettingsSave:
+        final request = ProjectSettingsSaveParamsDto.fromJson(payload);
+        return (await workspaces.saveProjectSettings(request)).toJson();
       case RpcMethod.worktreeArchivePreview:
         final request = WorktreeIdParamsDto.fromJson(payload);
         return WorktreeArchivePreviewResultDto(
@@ -366,12 +374,10 @@ class _ClientSession {
         ).toJson();
       case RpcMethod.worktreeArchive:
         final request = WorktreeArchiveParamsDto.fromJson(payload);
-        return WorktreeResultDto(
-          worktree: await workspaces.archive(
-            request.worktreeId,
-            force: request.force,
-          ),
-        ).toJson();
+        return (await workspaces.archive(
+          request.worktreeId,
+          force: request.force,
+        )).toJson();
       case RpcMethod.agentDefinitionList:
         return AgentDefinitionListResultDto(
           definitions: await agentDefinitions.list(),

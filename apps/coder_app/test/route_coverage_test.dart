@@ -97,6 +97,17 @@ void main() {
   );
 
   testWidgets(
+    'ProjectSettingsRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const ProjectSettingsRoute(hostId: 'server').location,
+      find.text('Projects'),
+    ),
+    tags: const <String>['route_test__project_settings_route__widget'],
+  );
+
+  testWidgets(
     'AgentSettingsRoute renders at desktop and mobile sizes',
     (tester) => _verifyRoute(
       tester,

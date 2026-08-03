@@ -485,10 +485,60 @@ Map<String, dynamic> _$GitBranchesListResultDtoToJson(
 _WorktreeResultDto _$WorktreeResultDtoFromJson(Map<String, dynamic> json) =>
     _WorktreeResultDto(
       worktree: WorktreeDto.fromJson(json['worktree'] as Map<String, dynamic>),
+      hookRuns:
+          (json['hookRuns'] as List<dynamic>?)
+              ?.map(
+                (e) => WorktreeHookRunDto.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <WorktreeHookRunDto>[],
     );
 
 Map<String, dynamic> _$WorktreeResultDtoToJson(_WorktreeResultDto instance) =>
-    <String, dynamic>{'worktree': instance.worktree};
+    <String, dynamic>{
+      'worktree': instance.worktree,
+      'hookRuns': instance.hookRuns,
+    };
+
+_ProjectSettingsGetParamsDto _$ProjectSettingsGetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProjectSettingsGetParamsDto(workspaceId: json['workspaceId'] as String);
+
+Map<String, dynamic> _$ProjectSettingsGetParamsDtoToJson(
+  _ProjectSettingsGetParamsDto instance,
+) => <String, dynamic>{'workspaceId': instance.workspaceId};
+
+_ProjectSettingsSaveParamsDto _$ProjectSettingsSaveParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProjectSettingsSaveParamsDto(
+  workspaceId: json['workspaceId'] as String,
+  settings: ProjectSettingsDto.fromJson(
+    json['settings'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$ProjectSettingsSaveParamsDtoToJson(
+  _ProjectSettingsSaveParamsDto instance,
+) => <String, dynamic>{
+  'workspaceId': instance.workspaceId,
+  'settings': instance.settings,
+};
+
+_ProjectSettingsResultDto _$ProjectSettingsResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProjectSettingsResultDto(
+  settings: ProjectSettingsDto.fromJson(
+    json['settings'] as Map<String, dynamic>,
+  ),
+  sourcePath: json['sourcePath'] as String,
+);
+
+Map<String, dynamic> _$ProjectSettingsResultDtoToJson(
+  _ProjectSettingsResultDto instance,
+) => <String, dynamic>{
+  'settings': instance.settings,
+  'sourcePath': instance.sourcePath,
+};
 
 _WorktreeArchivePreviewResultDto _$WorktreeArchivePreviewResultDtoFromJson(
   Map<String, dynamic> json,

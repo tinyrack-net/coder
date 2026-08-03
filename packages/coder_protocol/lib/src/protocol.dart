@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 10;
+const int coderProtocolVersion = 11;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -34,6 +34,12 @@ abstract final class RpcMethod {
 
   /// Archives a worktree and removes it only when Coder owns it.
   static const String worktreeArchive = 'worktree.archive';
+
+  /// Reads project settings from a workspace root `coder.json`.
+  static const String projectSettingsGet = 'project.settings.get';
+
+  /// Writes worktree lifecycle hooks into a workspace root `coder.json`.
+  static const String projectSettingsSave = 'project.settings.save';
 
   /// Lists Markdown-backed agent definitions.
   static const String agentDefinitionList = 'agentDefinition.list';

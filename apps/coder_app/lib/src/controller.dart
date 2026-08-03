@@ -337,6 +337,27 @@ class SessionsController extends _$SessionsController {
   }
 }
 
+@riverpod
+/// Loads and edits the `coder.json` worktree hooks of one project.
+class ProjectSettingsController extends _$ProjectSettingsController {
+  @override
+  Future<ProjectSettingsResultDto> build(
+    String hostId,
+    String workspaceId,
+  ) async {
+    final api = await _watchHostApi(ref, hostId);
+    return api.getProjectSettings(workspaceId);
+  }
+
+  /// Replaces the worktree hook section on the daemon host.
+  Future<void> save(ProjectSettingsDto settings) async {
+    final api = await _requireHostApi(ref, hostId);
+    state = AsyncData<ProjectSettingsResultDto>(
+      await api.saveProjectSettings(workspaceId, settings),
+    );
+  }
+}
+
 /// Agent definition editor data owned by one daemon.
 final class AgentDefinitionsState {
   /// Creates an immutable Markdown agent catalog snapshot.

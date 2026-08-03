@@ -317,6 +317,35 @@ void main() {
 
   unawaited(
     goldenTest(
+      'project settings adapts to desktop and mobile widths',
+      fileName: 'project_settings',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'desktop light',
+            child: SizedBox(
+              width: 1100,
+              height: 760,
+              child: _projectSettings(ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'mobile dark',
+            child: SizedBox(
+              width: 390,
+              height: 760,
+              child: _projectSettings(ThemeMode.dark),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'Markdown agent settings adapts to desktop and mobile widths',
       fileName: 'agent_settings',
       constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
@@ -539,6 +568,44 @@ Widget _settings(ThemeMode mode) {
       mode,
       const UnifiedSettingsPage(
         category: SettingsCategory.provider,
+        hostId: 'server',
+      ),
+    ),
+  );
+}
+
+Widget _projectSettings(ThemeMode mode) {
+  final api =
+      FakeCoderApi(
+          workspaces: <WorkspaceDto>[
+            WorkspaceDto(
+              id: 'workspace',
+              name: 'coder',
+              rootPath: '/repos/coder',
+              kind: WorkspaceKind.git,
+              createdAt: DateTime.utc(2026, 8, 3),
+            ),
+            WorkspaceDto(
+              id: 'design',
+              name: 'design',
+              rootPath: '/repos/design',
+              kind: WorkspaceKind.directory,
+              createdAt: DateTime.utc(2026, 8, 3),
+            ),
+          ],
+        )
+        ..projectSettings['workspace'] = const ProjectSettingsDto(
+          setup: <String>['npm install'],
+          teardown: <String>['docker compose down'],
+        );
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(api)),
+    ],
+    child: _material(
+      mode,
+      const UnifiedSettingsPage(
+        category: SettingsCategory.project,
         hostId: 'server',
       ),
     ),

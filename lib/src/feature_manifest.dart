@@ -74,8 +74,24 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'project.settings',
+    description:
+        'Edits per-project worktree lifecycle hooks stored in the repository '
+        "root's coder.json.",
+    apiMethods: <String>['getProjectSettings', 'saveProjectSettings'],
+    routes: <String>['ProjectSettingsRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'worktree.lifecycle',
-    description: 'Creates and safely archives Git worktrees.',
+    description:
+        'Creates and safely archives Git worktrees, running the project '
+        'setup and teardown hooks around each checkout.',
     apiMethods: <String>[
       'listGitBranches',
       'createWorktree',

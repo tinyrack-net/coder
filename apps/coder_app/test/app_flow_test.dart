@@ -145,10 +145,20 @@ void main() {
         isCoderOwned: true,
         createdAt: now,
       );
-      final api = FakeCoderApi(
-        workspaces: <WorkspaceDto>[workspace],
-        worktrees: <WorktreeDto>[checkout, managed],
-      );
+      final api =
+          FakeCoderApi(
+              workspaces: <WorkspaceDto>[workspace],
+              worktrees: <WorktreeDto>[checkout, managed],
+            )
+            ..archiveWorktreeHookRuns = const <WorktreeHookRunDto>[
+              WorktreeHookRunDto(
+                phase: WorktreeHookPhase.teardown,
+                command: 'docker compose down',
+                exitCode: 1,
+                stdout: '',
+                stderr: 'no such service',
+              ),
+            ];
       final router = await _pumpRoute(
         tester,
         api,
@@ -174,6 +184,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('feature/settings'), findsNothing);
       expect(router.routeInformationProvider.value.uri.path, '/');
+      // Teardown never blocks the archive, so the failure is only reported.
+      expect(
+        find.text('Teardown 실패 (exit 1): docker compose down'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('자세히'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('no such service'), findsOneWidget);
     },
     tags: const <String>['feature_test__worktree_lifecycle__widget'],
   );
@@ -587,7 +605,7 @@ void main() {
     expect(find.byTooltip('설정'), findsOneWidget);
   });
 
-  testWidgets('settings combines Agent, Provider, and Daemon categories', (
+  testWidgets('settings combines Projects, Agent, Provider, and Daemon', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1100, 760));
@@ -599,6 +617,7 @@ void main() {
       const ProviderSettingsRoute(hostId: 'server').location,
     );
     addTearDown(router.dispose);
+    expect(find.text('Projects'), findsOneWidget);
     expect(find.text('Agent'), findsOneWidget);
     expect(find.text('Provider'), findsOneWidget);
     expect(find.text('Daemon'), findsWidgets);

@@ -10,6 +10,7 @@ import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/project_settings_page.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/settings_page.dart';
@@ -164,6 +165,20 @@ class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
       UnifiedSettingsPage(category: SettingsCategory.provider, hostId: hostId);
 }
 
+@TypedGoRoute<ProjectSettingsRoute>(path: '/settings/projects')
+/// Unified settings route with Projects selected.
+class ProjectSettingsRoute extends GoRouteData with $ProjectSettingsRoute {
+  /// Creates the project settings route.
+  const ProjectSettingsRoute({this.hostId});
+
+  /// Preferred daemon in the project selector.
+  final String? hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UnifiedSettingsPage(category: SettingsCategory.project, hostId: hostId);
+}
+
 @TypedGoRoute<AgentSettingsRoute>(path: '/settings/agents')
 /// Unified settings route with Agent selected.
 class AgentSettingsRoute extends GoRouteData with $AgentSettingsRoute {
@@ -216,6 +231,9 @@ class EditHostRoute extends GoRouteData with $EditHostRoute {
 
 /// Top-level settings categories.
 enum SettingsCategory {
+  /// Worktree lifecycle hooks stored in each project's `coder.json`.
+  project,
+
   /// Markdown-backed agent definitions owned by one daemon.
   agent,
 
@@ -260,16 +278,25 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     _hostId ??= online.any((item) => item.id == widget.hostId)
         ? widget.hostId
         : online.firstOrNull?.id;
+    void selectHost(String? value) => setState(() => _hostId = value);
     final detail = switch (widget.category) {
-      SettingsCategory.agent => _AgentSettingsDetail(
+      SettingsCategory.project => _HostScopedDetail(
         hosts: online,
         hostId: _hostId,
-        onChanged: (value) => setState(() => _hostId = value),
+        onChanged: selectHost,
+        builder: (hostId) => ProjectSettingsPage(hostId: hostId),
       ),
-      SettingsCategory.provider => _ProviderSettingsDetail(
+      SettingsCategory.agent => _HostScopedDetail(
         hosts: online,
         hostId: _hostId,
-        onChanged: (value) => setState(() => _hostId = value),
+        onChanged: selectHost,
+        builder: (hostId) => AgentSettingsPage(hostId: hostId),
+      ),
+      SettingsCategory.provider => _HostScopedDetail(
+        hosts: online,
+        hostId: _hostId,
+        onChanged: selectHost,
+        builder: (hostId) => SettingsPage(hostId: hostId, embedded: true),
       ),
       SettingsCategory.daemon => const AppSettingsPage(embedded: true),
     };
@@ -310,6 +337,12 @@ class _SettingsSidebar extends StatelessWidget {
     padding: const EdgeInsets.all(12),
     children: <Widget>[
       ListTile(
+        selected: selected == SettingsCategory.project,
+        leading: const Icon(Icons.folder_copy_outlined),
+        title: const Text('Projects'),
+        onTap: () => const ProjectSettingsRoute().go(context),
+      ),
+      ListTile(
         selected: selected == SettingsCategory.agent,
         leading: const Icon(Icons.smart_toy_outlined),
         title: const Text('Agent'),
@@ -331,16 +364,18 @@ class _SettingsSidebar extends StatelessWidget {
   );
 }
 
-class _AgentSettingsDetail extends StatelessWidget {
-  const _AgentSettingsDetail({
+class _HostScopedDetail extends StatelessWidget {
+  const _HostScopedDetail({
     required this.hosts,
     required this.hostId,
     required this.onChanged,
+    required this.builder,
   });
 
   final List<HostRuntimeSnapshot> hosts;
   final String? hostId;
   final ValueChanged<String?> onChanged;
+  final Widget Function(String hostId) builder;
 
   @override
   Widget build(BuildContext context) {
@@ -365,47 +400,7 @@ class _AgentSettingsDetail extends StatelessWidget {
             onChanged: onChanged,
           ),
         ),
-        Expanded(child: AgentSettingsPage(hostId: hostId!)),
-      ],
-    );
-  }
-}
-
-class _ProviderSettingsDetail extends StatelessWidget {
-  const _ProviderSettingsDetail({
-    required this.hosts,
-    required this.hostId,
-    required this.onChanged,
-  });
-
-  final List<HostRuntimeSnapshot> hosts;
-  final String? hostId;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    if (hosts.isEmpty || hostId == null) {
-      return const Center(child: Text('온라인 daemon 연결이 필요합니다.'));
-    }
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-          child: DropdownButtonFormField<String>(
-            initialValue: hostId,
-            decoration: const InputDecoration(labelText: 'Daemon'),
-            items: hosts
-                .map(
-                  (host) => DropdownMenuItem<String>(
-                    value: host.id,
-                    child: Text(host.label),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: onChanged,
-          ),
-        ),
-        Expanded(child: SettingsPage(hostId: hostId!, embedded: true)),
+        Expanded(child: builder(hostId!)),
       ],
     );
   }

@@ -11,6 +11,7 @@ List<RouteBase> get $appRoutes => [
   $worktreeRoute,
   $sessionRoute,
   $providerSettingsRoute,
+  $projectSettingsRoute,
   $agentSettingsRoute,
   $daemonSettingsRoute,
   $newHostRoute,
@@ -163,6 +164,38 @@ mixin $ProviderSettingsRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/settings/providers',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $projectSettingsRoute => GoRouteData.$route(
+  path: '/settings/projects',
+  hasOverriddenOnExit: false,
+  factory: $ProjectSettingsRoute._fromState,
+);
+
+mixin $ProjectSettingsRoute on GoRouteData {
+  static ProjectSettingsRoute _fromState(GoRouterState state) =>
+      ProjectSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  ProjectSettingsRoute get _self => this as ProjectSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/projects',
     queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
   );
 

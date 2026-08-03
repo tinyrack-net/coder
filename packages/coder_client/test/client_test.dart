@@ -191,13 +191,41 @@ void main() {
           mode: WorktreeCreateMode.newBranch,
           branchName: 'topic',
         ),
-        worktree,
+        WorktreeResultDto(worktree: worktree),
       );
       expect(
         await client.previewWorktreeArchive(worktree.id),
         isA<WorktreeArchivePreviewDto>(),
       );
-      expect(await client.archiveWorktree(worktree.id), worktree);
+      expect(
+        await client.archiveWorktree(worktree.id),
+        WorktreeResultDto(
+          worktree: worktree,
+          hookRuns: const <WorktreeHookRunDto>[
+            WorktreeHookRunDto(
+              phase: WorktreeHookPhase.teardown,
+              command: 'docker compose down',
+              exitCode: 0,
+              stdout: '',
+              stderr: '',
+            ),
+          ],
+        ),
+      );
+      expect(
+        await client.getProjectSettings(workspace.id),
+        const ProjectSettingsResultDto(
+          settings: ProjectSettingsDto(setup: <String>['npm ci']),
+          sourcePath: '/workspace/coder.json',
+        ),
+      );
+      expect(
+        await client.saveProjectSettings(
+          workspace.id,
+          const ProjectSettingsDto(setup: <String>['npm ci']),
+        ),
+        isA<ProjectSettingsResultDto>(),
+      );
       expect(await client.listSessions(worktreeId: worktree.id), <SessionDto>[
         agent,
       ]);
@@ -368,6 +396,8 @@ void main() {
           RpcMethod.worktreeCreate,
           RpcMethod.worktreeArchivePreview,
           RpcMethod.worktreeArchive,
+          RpcMethod.projectSettingsGet,
+          RpcMethod.projectSettingsSave,
           RpcMethod.sessionList,
           RpcMethod.sessionCreate,
           RpcMethod.sessionModelSet,
@@ -409,6 +439,7 @@ void main() {
       'feature_test__workspace_catalog__contract',
       'feature_test__workspace_registration__contract',
       'feature_test__worktree_lifecycle__contract',
+      'feature_test__project_settings__contract',
       'feature_test__session_lifecycle__contract',
       'feature_test__turn_execution__contract',
       'feature_test__agent_definition_management__contract',
@@ -702,7 +733,26 @@ void _registerFixtureMethods(
     RpcMethod.worktreeArchivePreview: const WorktreeArchivePreviewResultDto(
       preview: archivePreview,
     ).toJson(),
-    RpcMethod.worktreeArchive: WorktreeResultDto(worktree: worktree).toJson(),
+    RpcMethod.worktreeArchive: WorktreeResultDto(
+      worktree: worktree,
+      hookRuns: const <WorktreeHookRunDto>[
+        WorktreeHookRunDto(
+          phase: WorktreeHookPhase.teardown,
+          command: 'docker compose down',
+          exitCode: 0,
+          stdout: '',
+          stderr: '',
+        ),
+      ],
+    ).toJson(),
+    RpcMethod.projectSettingsGet: const ProjectSettingsResultDto(
+      settings: ProjectSettingsDto(setup: <String>['npm ci']),
+      sourcePath: '/workspace/coder.json',
+    ).toJson(),
+    RpcMethod.projectSettingsSave: const ProjectSettingsResultDto(
+      settings: ProjectSettingsDto(setup: <String>['npm ci']),
+      sourcePath: '/workspace/coder.json',
+    ).toJson(),
     RpcMethod.sessionList: SessionListResultDto(
       sessions: <SessionDto>[agent],
     ).toJson(),

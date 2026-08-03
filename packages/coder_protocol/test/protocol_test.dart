@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v10 exposes agent definitions and sessions', () {
-    expect(coderProtocolVersion, 10);
+  test('protocol v11 exposes agent definitions and sessions', () {
+    expect(coderProtocolVersion, 11);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -16,6 +16,8 @@ void main() {
     expect(RpcMethod.worktreeCreate, 'worktree.create');
     expect(RpcMethod.worktreeArchivePreview, 'worktree.archive.preview');
     expect(RpcMethod.worktreeArchive, 'worktree.archive');
+    expect(RpcMethod.projectSettingsGet, 'project.settings.get');
+    expect(RpcMethod.projectSettingsSave, 'project.settings.save');
     expect(RpcMethod.agentDefinitionList, 'agentDefinition.list');
     expect(RpcMethod.agentDefinitionUpdate, 'agentDefinition.update');
     expect(RpcMethod.agentToolCatalog, 'agentTool.catalog');
@@ -386,8 +388,68 @@ void main() {
     error: 'none',
   );
 
+  test('project settings and worktree hook contracts round-trip', () {
+    const settings = ProjectSettingsDto(
+      setup: <String>['npm ci', 'npm run build'],
+      teardown: <String>['docker compose down'],
+    );
+    const hookRun = WorktreeHookRunDto(
+      phase: WorktreeHookPhase.setup,
+      command: 'npm ci',
+      exitCode: 1,
+      stdout: 'installing',
+      stderr: 'boom',
+    );
+
+    _roundTrip(
+      settings,
+      (value) => value.toJson(),
+      ProjectSettingsDto.fromJson,
+    );
+    _roundTrip(hookRun, (value) => value.toJson(), WorktreeHookRunDto.fromJson);
+    _roundTrip(
+      const ProjectSettingsGetParamsDto(workspaceId: 'workspace'),
+      (value) => value.toJson(),
+      ProjectSettingsGetParamsDto.fromJson,
+    );
+    _roundTrip(
+      const ProjectSettingsSaveParamsDto(
+        workspaceId: 'workspace',
+        settings: settings,
+      ),
+      (value) => value.toJson(),
+      ProjectSettingsSaveParamsDto.fromJson,
+    );
+    _roundTrip(
+      const ProjectSettingsResultDto(
+        settings: settings,
+        sourcePath: '/workspace/coder.json',
+      ),
+      (value) => value.toJson(),
+      ProjectSettingsResultDto.fromJson,
+    );
+    expect(
+      const ProjectSettingsDto(),
+      ProjectSettingsDto.fromJson(<String, dynamic>{}),
+    );
+    expect(
+      WorktreeResultDto.fromJson(<String, dynamic>{
+        'worktree': WorktreeDto(
+          id: 'worktree',
+          workspaceId: 'workspace',
+          name: 'main',
+          path: '/workspace',
+          kind: WorktreeKind.checkout,
+          isCoderOwned: false,
+          createdAt: now,
+        ).toJson(),
+      }).hookRuns,
+      isEmpty,
+    );
+  });
+
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 10);
+    expect(coderProtocolVersion, 11);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -850,6 +912,7 @@ void main() {
       ...WorkspaceKind.values,
       ...WorktreeKind.values,
       ...WorktreeCreateMode.values,
+      ...WorktreeHookPhase.values,
       ...ProviderApiFormat.values,
       ...ProviderAuthKind.values,
       ...ProviderAuthFlow.values,
