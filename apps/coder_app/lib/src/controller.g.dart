@@ -172,7 +172,7 @@ final class SessionsControllerProvider
 }
 
 String _$sessionsControllerHash() =>
-    r'c9ac0d343bd16590807ee69769b284a85a668e1c';
+    r'3dfe46ed8346ee259dd762a30991b38c0d6db328';
 
 /// SessionsController defines a public contract.
 
@@ -279,7 +279,7 @@ final class AgentDefinitionsControllerProvider
 }
 
 String _$agentDefinitionsControllerHash() =>
-    r'570b9ce07712705d173fa06d2237dc401ff5f34a';
+    r'fa5778398eb8417c6f2a38812edd31fcbd28fab7';
 
 /// Loads and edits one daemon's Markdown agent files.
 
@@ -385,7 +385,7 @@ final class SessionTabsControllerProvider
 }
 
 String _$sessionTabsControllerHash() =>
-    r'945bbb2456062510a5b935f4a8b61b63513fbb12';
+    r'2292ba02b273cc1b4a5bddbc4bfe4e3fb06374cd';
 
 /// Owns local tab visibility independently for each host worktree.
 
@@ -438,6 +438,127 @@ abstract class _$SessionTabsController
               Object?
             >;
     return element.handleCreate(ref, () => build(_$args));
+  }
+}
+
+/// Holds the composer selection used to create the next session.
+
+@ProviderFor(SessionComposerDraftController)
+final sessionComposerDraftControllerProvider =
+    SessionComposerDraftControllerFamily._();
+
+/// Holds the composer selection used to create the next session.
+final class SessionComposerDraftControllerProvider
+    extends
+        $NotifierProvider<
+          SessionComposerDraftController,
+          SessionComposerDraft
+        > {
+  /// Holds the composer selection used to create the next session.
+  SessionComposerDraftControllerProvider._({
+    required SessionComposerDraftControllerFamily super.from,
+    required (String, String?) super.argument,
+  }) : super(
+         retry: null,
+         name: r'sessionComposerDraftControllerProvider',
+         isAutoDispose: false,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$sessionComposerDraftControllerHash();
+
+  @override
+  String toString() {
+    return r'sessionComposerDraftControllerProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  SessionComposerDraftController create() => SessionComposerDraftController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SessionComposerDraft value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SessionComposerDraft>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SessionComposerDraftControllerProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$sessionComposerDraftControllerHash() =>
+    r'648ff43abe298b7802359a24fd9dc1fa39dad53c';
+
+/// Holds the composer selection used to create the next session.
+
+final class SessionComposerDraftControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          SessionComposerDraftController,
+          SessionComposerDraft,
+          SessionComposerDraft,
+          SessionComposerDraft,
+          (String, String?)
+        > {
+  SessionComposerDraftControllerFamily._()
+    : super(
+        retry: null,
+        name: r'sessionComposerDraftControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: false,
+      );
+
+  /// Holds the composer selection used to create the next session.
+
+  SessionComposerDraftControllerProvider call(
+    String hostId,
+    String? worktreeId,
+  ) => SessionComposerDraftControllerProvider._(
+    argument: (hostId, worktreeId),
+    from: this,
+  );
+
+  @override
+  String toString() => r'sessionComposerDraftControllerProvider';
+}
+
+/// Holds the composer selection used to create the next session.
+
+abstract class _$SessionComposerDraftController
+    extends $Notifier<SessionComposerDraft> {
+  late final _$args = ref.$arg as (String, String?);
+  String get hostId => _$args.$1;
+  String? get worktreeId => _$args.$2;
+
+  SessionComposerDraft build(String hostId, String? worktreeId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<SessionComposerDraft, SessionComposerDraft>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<SessionComposerDraft, SessionComposerDraft>,
+              SessionComposerDraft,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args.$1, _$args.$2));
   }
 }
 

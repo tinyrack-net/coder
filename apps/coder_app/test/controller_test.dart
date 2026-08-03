@@ -123,14 +123,36 @@ void main() {
 
       final agentsProvider = sessionsControllerProvider('server', worktree.id);
       expect(await container.read(agentsProvider.future), <SessionDto>[agent]);
+      const override = SessionModelSelectionDto(
+        providerConnectionId: 'openai',
+        modelId: 'gpt-5.6-sol',
+      );
       final created = await container
           .read(agentsProvider.notifier)
           .create(
             title: 'Created',
             agentDefinitionId: 'coder',
+            model: override,
           );
       expect(created.id, 'generated-id');
+      expect(created.model, override);
       expect(container.read(agentsProvider).value!.first, created);
+      expect(
+        (await container
+                .read(agentsProvider.notifier)
+                .setModel(created.id, null))
+            .model,
+        isNull,
+      );
+      expect(api.updatedSessionModels.single.sessionId, created.id);
+      expect(
+        container
+            .read(agentsProvider)
+            .value!
+            .firstWhere((item) => item.id == created.id)
+            .model,
+        isNull,
+      );
       api.emit(
         SessionUpdatedClientEvent(
           agent.copyWith(status: SessionStatus.running),

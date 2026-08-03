@@ -93,8 +93,14 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'session.lifecycle',
-    description: 'Creates sessions with a selected primary Agent.',
-    apiMethods: <String>['listSessions', 'createSession'],
+    description:
+        'Starts sessions from the chat composer with a selected Agent, '
+        'provider, and model, and changes the session model afterwards.',
+    apiMethods: <String>[
+      'listSessions',
+      'createSession',
+      'updateSessionModel',
+    ],
     routes: <String>['SessionRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,

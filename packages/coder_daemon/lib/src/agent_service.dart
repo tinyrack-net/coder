@@ -57,7 +57,14 @@ class SessionService {
     final session = await _sessions.getById(sessionId);
     if (session == null) throw StateError('Session not found: $sessionId');
     final definition = await _definitions.resolve(session.agentDefinitionId);
-    final resolvedModel = await _providers.resolveAgentModel(definition.model);
+    final sessionModel = session.model;
+    // A session override wins over the model of its agent definition.
+    final resolvedModel = sessionModel == null
+        ? await _providers.resolveAgentModel(definition.model)
+        : await _providers.resolveExplicitModel(
+            sessionModel.providerConnectionId,
+            sessionModel.modelId,
+          );
     if (_activeTurns.containsKey(sessionId)) {
       throw StateError('Agent already has a running turn.');
     }
@@ -189,6 +196,29 @@ class SessionService {
   /// The cancelTurn public API member.
   Future<void> cancelTurn(String sessionId) async =>
       _activeTurns[sessionId]?.cancel();
+
+  /// Sets or clears the provider and model override of one session.
+  ///
+  /// A null [model] restores inheritance from the agent definition.
+  Future<SessionDto> setModel(
+    String sessionId,
+    SessionModelSelectionDto? model,
+  ) async {
+    final session = await _sessions.getById(sessionId);
+    if (session == null) throw StateError('Session not found: $sessionId');
+    if (_activeTurns.containsKey(sessionId)) {
+      throw StateError('Cannot change the model while a turn is running.');
+    }
+    if (model != null) {
+      await _providers.validateAgentModel(
+        model.providerConnectionId,
+        model.modelId,
+      );
+    }
+    final updated = await _sessions.updateModel(sessionId, model);
+    _emitSession(updated);
+    return updated;
+  }
 
   /// The resolveApproval public API member.
   Future<ApprovalRequestDto> resolveApproval(

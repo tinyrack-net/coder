@@ -231,11 +231,28 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
         status: session.status.name,
         activeTurnId: Value<String?>(session.activeTurnId),
         lastError: Value<String?>(session.lastError),
+        modelConnectionId: Value<String?>(session.model?.providerConnectionId),
+        modelId: Value<String?>(session.model?.modelId),
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
       ),
     );
     return session;
+  }
+
+  @override
+  Future<SessionDto> updateModel(
+    String id,
+    SessionModelSelectionDto? model,
+  ) async {
+    await (update(sessions)..where((row) => row.id.equals(id))).write(
+      SessionsCompanion(
+        modelConnectionId: Value<String?>(model?.providerConnectionId),
+        modelId: Value<String?>(model?.modelId),
+        updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
+      ),
+    );
+    return (await getById(id))!;
   }
 
   @override
@@ -290,19 +307,30 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
         ),
       );
 
-  SessionDto _toDto(Session row) => SessionDto(
-    id: row.id,
-    worktreeId: row.worktreeId,
-    title: row.title,
-    agentDefinitionId: row.agentDefinitionId,
-    origin: SessionOrigin.values.byName(row.origin),
-    parentSessionId: row.parentSessionId,
-    status: SessionStatus.values.byName(row.status),
-    activeTurnId: row.activeTurnId,
-    lastError: row.lastError,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  );
+  SessionDto _toDto(Session row) {
+    final connectionId = row.modelConnectionId;
+    final modelId = row.modelId;
+    return SessionDto(
+      id: row.id,
+      worktreeId: row.worktreeId,
+      title: row.title,
+      agentDefinitionId: row.agentDefinitionId,
+      origin: SessionOrigin.values.byName(row.origin),
+      parentSessionId: row.parentSessionId,
+      status: SessionStatus.values.byName(row.status),
+      activeTurnId: row.activeTurnId,
+      lastError: row.lastError,
+      // A half-written row cannot pin a model, so it inherits the agent.
+      model: connectionId == null || modelId == null
+          ? null
+          : SessionModelSelectionDto(
+              providerConnectionId: connectionId,
+              modelId: modelId,
+            ),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    );
+  }
 }
 
 @DriftAccessor(tables: <Type>[TimelineEvents, ApprovalRequests, ProviderStates])

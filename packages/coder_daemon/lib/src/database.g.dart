@@ -1103,6 +1103,29 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _modelConnectionIdMeta = const VerificationMeta(
+    'modelConnectionId',
+  );
+  @override
+  late final GeneratedColumn<String> modelConnectionId =
+      GeneratedColumn<String>(
+        'model_connection_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _modelIdMeta = const VerificationMeta(
+    'modelId',
+  );
+  @override
+  late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
+    'model_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1136,6 +1159,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     status,
     activeTurnId,
     lastError,
+    modelConnectionId,
+    modelId,
     createdAt,
     updatedAt,
   ];
@@ -1223,6 +1248,21 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
       );
     }
+    if (data.containsKey('model_connection_id')) {
+      context.handle(
+        _modelConnectionIdMeta,
+        modelConnectionId.isAcceptableOrUnknown(
+          data['model_connection_id']!,
+          _modelConnectionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('model_id')) {
+      context.handle(
+        _modelIdMeta,
+        modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1284,6 +1324,14 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}last_error'],
       ),
+      modelConnectionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_connection_id'],
+      ),
+      modelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1329,6 +1377,12 @@ class Session extends DataClass implements Insertable<Session> {
   /// The lastError public API member.
   final String? lastError;
 
+  /// Provider connection pinned for this session; null inherits the agent.
+  final String? modelConnectionId;
+
+  /// Model pinned for this session; null inherits the agent definition.
+  final String? modelId;
+
   /// The createdAt public API member.
   final DateTime createdAt;
 
@@ -1344,6 +1398,8 @@ class Session extends DataClass implements Insertable<Session> {
     required this.status,
     this.activeTurnId,
     this.lastError,
+    this.modelConnectionId,
+    this.modelId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1364,6 +1420,12 @@ class Session extends DataClass implements Insertable<Session> {
     }
     if (!nullToAbsent || lastError != null) {
       map['last_error'] = Variable<String>(lastError);
+    }
+    if (!nullToAbsent || modelConnectionId != null) {
+      map['model_connection_id'] = Variable<String>(modelConnectionId);
+    }
+    if (!nullToAbsent || modelId != null) {
+      map['model_id'] = Variable<String>(modelId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1387,6 +1449,12 @@ class Session extends DataClass implements Insertable<Session> {
       lastError: lastError == null && nullToAbsent
           ? const Value.absent()
           : Value(lastError),
+      modelConnectionId: modelConnectionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modelConnectionId),
+      modelId: modelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modelId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1407,6 +1475,10 @@ class Session extends DataClass implements Insertable<Session> {
       status: serializer.fromJson<String>(json['status']),
       activeTurnId: serializer.fromJson<String?>(json['activeTurnId']),
       lastError: serializer.fromJson<String?>(json['lastError']),
+      modelConnectionId: serializer.fromJson<String?>(
+        json['modelConnectionId'],
+      ),
+      modelId: serializer.fromJson<String?>(json['modelId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1424,6 +1496,8 @@ class Session extends DataClass implements Insertable<Session> {
       'status': serializer.toJson<String>(status),
       'activeTurnId': serializer.toJson<String?>(activeTurnId),
       'lastError': serializer.toJson<String?>(lastError),
+      'modelConnectionId': serializer.toJson<String?>(modelConnectionId),
+      'modelId': serializer.toJson<String?>(modelId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1439,6 +1513,8 @@ class Session extends DataClass implements Insertable<Session> {
     String? status,
     Value<String?> activeTurnId = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
+    Value<String?> modelConnectionId = const Value.absent(),
+    Value<String?> modelId = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Session(
@@ -1453,6 +1529,10 @@ class Session extends DataClass implements Insertable<Session> {
     status: status ?? this.status,
     activeTurnId: activeTurnId.present ? activeTurnId.value : this.activeTurnId,
     lastError: lastError.present ? lastError.value : this.lastError,
+    modelConnectionId: modelConnectionId.present
+        ? modelConnectionId.value
+        : this.modelConnectionId,
+    modelId: modelId.present ? modelId.value : this.modelId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1475,6 +1555,10 @@ class Session extends DataClass implements Insertable<Session> {
           ? data.activeTurnId.value
           : this.activeTurnId,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      modelConnectionId: data.modelConnectionId.present
+          ? data.modelConnectionId.value
+          : this.modelConnectionId,
+      modelId: data.modelId.present ? data.modelId.value : this.modelId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1492,6 +1576,8 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('status: $status, ')
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
+          ..write('modelConnectionId: $modelConnectionId, ')
+          ..write('modelId: $modelId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1509,6 +1595,8 @@ class Session extends DataClass implements Insertable<Session> {
     status,
     activeTurnId,
     lastError,
+    modelConnectionId,
+    modelId,
     createdAt,
     updatedAt,
   );
@@ -1525,6 +1613,8 @@ class Session extends DataClass implements Insertable<Session> {
           other.status == this.status &&
           other.activeTurnId == this.activeTurnId &&
           other.lastError == this.lastError &&
+          other.modelConnectionId == this.modelConnectionId &&
+          other.modelId == this.modelId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1539,6 +1629,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String> status;
   final Value<String?> activeTurnId;
   final Value<String?> lastError;
+  final Value<String?> modelConnectionId;
+  final Value<String?> modelId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1552,6 +1644,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.status = const Value.absent(),
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.modelConnectionId = const Value.absent(),
+    this.modelId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1566,6 +1660,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     required String status,
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.modelConnectionId = const Value.absent(),
+    this.modelId = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1587,6 +1683,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? status,
     Expression<String>? activeTurnId,
     Expression<String>? lastError,
+    Expression<String>? modelConnectionId,
+    Expression<String>? modelId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1601,6 +1699,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (status != null) 'status': status,
       if (activeTurnId != null) 'active_turn_id': activeTurnId,
       if (lastError != null) 'last_error': lastError,
+      if (modelConnectionId != null) 'model_connection_id': modelConnectionId,
+      if (modelId != null) 'model_id': modelId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1617,6 +1717,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String>? status,
     Value<String?>? activeTurnId,
     Value<String?>? lastError,
+    Value<String?>? modelConnectionId,
+    Value<String?>? modelId,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1631,6 +1733,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       status: status ?? this.status,
       activeTurnId: activeTurnId ?? this.activeTurnId,
       lastError: lastError ?? this.lastError,
+      modelConnectionId: modelConnectionId ?? this.modelConnectionId,
+      modelId: modelId ?? this.modelId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1667,6 +1771,12 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (lastError.present) {
       map['last_error'] = Variable<String>(lastError.value);
     }
+    if (modelConnectionId.present) {
+      map['model_connection_id'] = Variable<String>(modelConnectionId.value);
+    }
+    if (modelId.present) {
+      map['model_id'] = Variable<String>(modelId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1691,6 +1801,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('status: $status, ')
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
+          ..write('modelConnectionId: $modelConnectionId, ')
+          ..write('modelId: $modelId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -6049,6 +6161,8 @@ typedef $$SessionsTableCreateCompanionBuilder =
       required String status,
       Value<String?> activeTurnId,
       Value<String?> lastError,
+      Value<String?> modelConnectionId,
+      Value<String?> modelId,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -6064,6 +6178,8 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String> status,
       Value<String?> activeTurnId,
       Value<String?> lastError,
+      Value<String?> modelConnectionId,
+      Value<String?> modelId,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -6225,6 +6341,16 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get lastError => $composableBuilder(
     column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelConnectionId => $composableBuilder(
+    column: $table.modelConnectionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelId => $composableBuilder(
+    column: $table.modelId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6429,6 +6555,16 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get modelConnectionId => $composableBuilder(
+    column: $table.modelConnectionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -6519,6 +6655,14 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<String> get lastError =>
       $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<String> get modelConnectionId => $composableBuilder(
+    column: $table.modelConnectionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modelId =>
+      $composableBuilder(column: $table.modelId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -6717,6 +6861,8 @@ class $$SessionsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
+                Value<String?> modelConnectionId = const Value.absent(),
+                Value<String?> modelId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -6730,6 +6876,8 @@ class $$SessionsTableTableManager
                 status: status,
                 activeTurnId: activeTurnId,
                 lastError: lastError,
+                modelConnectionId: modelConnectionId,
+                modelId: modelId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -6745,6 +6893,8 @@ class $$SessionsTableTableManager
                 required String status,
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
+                Value<String?> modelConnectionId = const Value.absent(),
+                Value<String?> modelId = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -6758,6 +6908,8 @@ class $$SessionsTableTableManager
                 status: status,
                 activeTurnId: activeTurnId,
                 lastError: lastError,
+                modelConnectionId: modelConnectionId,
+                modelId: modelId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

@@ -256,6 +256,20 @@ const _$ToolRiskEnumMap = {
   ToolRisk.command: 'command',
 };
 
+_SessionModelSelectionDto _$SessionModelSelectionDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionModelSelectionDto(
+  providerConnectionId: json['providerConnectionId'] as String,
+  modelId: json['modelId'] as String,
+);
+
+Map<String, dynamic> _$SessionModelSelectionDtoToJson(
+  _SessionModelSelectionDto instance,
+) => <String, dynamic>{
+  'providerConnectionId': instance.providerConnectionId,
+  'modelId': instance.modelId,
+};
+
 _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   id: json['id'] as String,
   worktreeId: json['worktreeId'] as String,
@@ -265,6 +279,11 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   status: $enumDecode(_$SessionStatusEnumMap, json['status']),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
+  model: json['model'] == null
+      ? null
+      : SessionModelSelectionDto.fromJson(
+          json['model'] as Map<String, dynamic>,
+        ),
   parentSessionId: json['parentSessionId'] as String?,
   activeTurnId: json['activeTurnId'] as String?,
   lastError: json['lastError'] as String?,
@@ -280,6 +299,7 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'status': _$SessionStatusEnumMap[instance.status]!,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'model': instance.model,
       'parentSessionId': instance.parentSessionId,
       'activeTurnId': instance.activeTurnId,
       'lastError': instance.lastError,

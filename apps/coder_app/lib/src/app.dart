@@ -7,6 +7,8 @@ import 'package:coder_app/src/app_settings_page.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/session_composer.dart';
+import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/settings_page.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -1146,7 +1148,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
               ),
               IconButton(
                 tooltip: '새 session',
-                onPressed: state == null ? null : _createSession,
+                onPressed: state == null ? null : _startDraft,
                 icon: const Icon(Icons.add),
               ),
               if (state != null)
@@ -1168,7 +1170,11 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         const Divider(height: 1),
         Expanded(
           child: state?.selectedAgentId == null
-              ? _NoSession(onCreate: _createSession)
+              ? DraftSessionPane(
+                  selection: widget.selection,
+                  onCreated: (session) =>
+                      _goSession(context, widget.selection, session.id),
+                )
               : _ConversationPane(
                   selection: widget.selection,
                   agent: state!.sessions
@@ -1211,64 +1217,11 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     }
   }
 
-  Future<void> _createSession() async {
-    final agentState = await ref.read(
-      agentDefinitionsControllerProvider(widget.selection.hostId).future,
-    );
-    final providerState = await ref.read(
-      providerSettingsControllerProvider(widget.selection.hostId).future,
-    );
-    if (providerState == null) return;
-    final connections = providerState.connections
-        .where(
-          (item) =>
-              item.status == ProviderConnectionStatus.connected ||
-              item.status == ProviderConnectionStatus.degraded,
-        )
-        .toList(growable: false);
-    final availableDefinitions = agentState.definitions
-        .where((definition) {
-          if (definition.mode != AgentMode.primary ||
-              definition.isArchived ||
-              definition.isStale) {
-            return false;
-          }
-          return switch (definition.model.source) {
-            AgentModelSource.daemonDefault => connections.any(
-              (connection) =>
-                  connection.isDefault && connection.defaultModelId != null,
-            ),
-            AgentModelSource.fixed => connections.any(
-              (connection) =>
-                  connection.id == definition.model.providerConnectionId &&
-                  definition.model.modelId != null,
-            ),
-          };
-        })
-        .toList(growable: false);
-    if (availableDefinitions.isEmpty || !mounted) return;
-    final input = await showDialog<_NewSessionInput>(
-      context: context,
-      builder: (context) => _SessionNameDialog(
-        definitions: availableDefinitions,
-      ),
-    );
-    if (input == null || !mounted) return;
-    final session = await ref
-        .read(
-          sessionsControllerProvider(
-            widget.selection.hostId,
-            widget.selection.worktreeId,
-          ).notifier,
-        )
-        .create(
-          title: input.title,
-          agentDefinitionId: input.agentDefinitionId,
-        );
+  Future<void> _startDraft() async {
     await ref
         .read(sessionTabsControllerProvider(widget.selection).notifier)
-        .add(session);
-    if (mounted) _goSession(context, widget.selection, session.id);
+        .startDraft();
+    if (mounted) _goWorktree(context, widget.selection);
   }
 }
 
@@ -1310,101 +1263,6 @@ class _SessionTab extends StatelessWidget {
   );
 }
 
-class _SessionNameDialog extends StatefulWidget {
-  const _SessionNameDialog({required this.definitions});
-
-  final List<AgentDefinitionDto> definitions;
-
-  @override
-  State<_SessionNameDialog> createState() => _SessionNameDialogState();
-}
-
-class _SessionNameDialogState extends State<_SessionNameDialog> {
-  final _title = TextEditingController(text: 'Coding session');
-  late String _agentDefinitionId = widget.definitions.first.id;
-
-  @override
-  void dispose() {
-    _title.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('새 session'),
-    content: SizedBox(
-      width: 420,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          TextField(
-            controller: _title,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: '이름'),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: _agentDefinitionId,
-            decoration: const InputDecoration(labelText: 'Agent'),
-            items: widget.definitions
-                .map(
-                  (definition) => DropdownMenuItem<String>(
-                    value: definition.id,
-                    child: Text(definition.name),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (value) {
-              if (value != null) setState(() => _agentDefinitionId = value);
-            },
-          ),
-        ],
-      ),
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('취소'),
-      ),
-      FilledButton(
-        onPressed: () => Navigator.pop(
-          context,
-          _NewSessionInput(
-            title: _title.text.trim(),
-            agentDefinitionId: _agentDefinitionId,
-          ),
-        ),
-        child: const Text('생성'),
-      ),
-    ],
-  );
-}
-
-final class _NewSessionInput {
-  const _NewSessionInput({
-    required this.title,
-    required this.agentDefinitionId,
-  });
-
-  final String title;
-  final String agentDefinitionId;
-}
-
-class _NoSession extends StatelessWidget {
-  const _NoSession({required this.onCreate});
-
-  final VoidCallback onCreate;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: FilledButton.icon(
-      onPressed: onCreate,
-      icon: const Icon(Icons.add),
-      label: const Text('새 session 시작'),
-    ),
-  );
-}
-
 class _ConversationPane extends ConsumerStatefulWidget {
   const _ConversationPane({required this.selection, required this.agent});
 
@@ -1416,14 +1274,6 @@ class _ConversationPane extends ConsumerStatefulWidget {
 }
 
 class _ConversationPaneState extends ConsumerState<_ConversationPane> {
-  final _composer = TextEditingController();
-
-  @override
-  void dispose() {
-    _composer.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final current =
@@ -1450,6 +1300,28 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final timeline = _coalesceAssistantDeltas(
       value?.timeline ?? const <TimelineEventDto>[],
     );
+    final agents = ref
+        .watch(agentDefinitionsControllerProvider(widget.selection.hostId))
+        .asData
+        ?.value;
+    final definitions = selectableAgentDefinitions(
+      agents?.definitions ?? const <AgentDefinitionDto>[],
+    );
+    final connections =
+        ref
+            .watch(providerSettingsControllerProvider(widget.selection.hostId))
+            .asData
+            ?.value
+            ?.connections ??
+        const <ProviderConnectionDto>[];
+    final definition = definitions
+        .where((item) => item.id == current.agentDefinitionId)
+        .firstOrNull;
+    final effective =
+        current.model ??
+        (definition == null
+            ? null
+            : defaultSelectionFor(definition, connections));
     return Column(
       children: <Widget>[
         ListTile(
@@ -1491,42 +1363,35 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             hostId: widget.selection.hostId,
             approval: approval,
           ),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    controller: _composer,
-                    minLines: 1,
-                    maxLines: 8,
-                    enabled: !busy,
-                    decoration: const InputDecoration(
-                      hintText: '코딩 요청을 입력하세요…',
-                      border: OutlineInputBorder(),
-                    ),
-                    onSubmitted: busy ? null : (_) => _send(current.id),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: busy ? null : () => _send(current.id),
-                  icon: const Icon(Icons.arrow_upward),
-                ),
-              ],
+        SessionComposer(
+          enabled: !busy && effective != null,
+          hint: effective == null ? '사용할 Provider와 모델을 먼저 선택하세요.' : null,
+          bar: SessionComposerBar(
+            hostId: widget.selection.hostId,
+            definitions: definitions,
+            agentDefinitionId: current.agentDefinitionId,
+            selection: effective,
+            agentEnabled: false,
+            enabled: !busy,
+            onAgentChanged: (_) {},
+            onModelChanged: (model) => unawaited(
+              ref
+                  .read(
+                    sessionsControllerProvider(
+                      widget.selection.hostId,
+                      widget.selection.worktreeId,
+                    ).notifier,
+                  )
+                  .setModel(current.id, model),
             ),
           ),
+          onSubmit: (prompt) => unawaited(_send(current.id, prompt)),
         ),
       ],
     );
   }
 
-  Future<void> _send(String sessionId) async {
-    final text = _composer.text.trim();
-    if (text.isEmpty) return;
-    _composer.clear();
+  Future<void> _send(String sessionId, String prompt) async {
     await ref
         .read(
           conversationControllerProvider(
@@ -1534,7 +1399,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             sessionId,
           ).notifier,
         )
-        .startTurn(text);
+        .startTurn(prompt);
   }
 }
 

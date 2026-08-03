@@ -213,6 +213,14 @@ final class ProviderService implements ProviderOAuthConnector {
         connectionId = fixedConnection;
         modelId = fixedModel;
     }
+    return resolveExplicitModel(connectionId, modelId);
+  }
+
+  /// Validates and resolves one explicitly chosen connection and model.
+  Future<ResolvedAgentModel> resolveExplicitModel(
+    String connectionId,
+    String modelId,
+  ) async {
     await validateAgentModel(connectionId, modelId);
     return ResolvedAgentModel(
       connectionId: connectionId,

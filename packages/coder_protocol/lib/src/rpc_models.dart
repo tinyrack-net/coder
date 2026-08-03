@@ -138,11 +138,29 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
+    SessionModelSelectionDto? model,
   }) = _SessionCreateParamsDto;
 
   /// Decodes session creation parameters.
   factory SessionCreateParamsDto.fromJson(Map<String, dynamic> json) =>
       _$SessionCreateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Sets or clears the provider and model override of one session.
+abstract class SessionModelSetParamsDto with _$SessionModelSetParamsDto {
+  /// Creates session model override parameters.
+  ///
+  /// A null [model] clears the override so the session inherits the model
+  /// selection of its agent definition again.
+  const factory SessionModelSetParamsDto({
+    required String sessionId,
+    SessionModelSelectionDto? model,
+  }) = _SessionModelSetParamsDto;
+
+  /// Decodes session model override parameters.
+  factory SessionModelSetParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionModelSetParamsDtoFromJson(json);
 }
 
 @freezed

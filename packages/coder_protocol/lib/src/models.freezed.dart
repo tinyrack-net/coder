@@ -2829,9 +2829,275 @@ as bool,
 
 
 /// @nodoc
+mixin _$SessionModelSelectionDto {
+
+ String get providerConnectionId; String get modelId;
+/// Create a copy of SessionModelSelectionDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SessionModelSelectionDtoCopyWith<SessionModelSelectionDto> get copyWith => _$SessionModelSelectionDtoCopyWithImpl<SessionModelSelectionDto>(this as SessionModelSelectionDto, _$identity);
+
+  /// Serializes this SessionModelSelectionDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionModelSelectionDto&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,providerConnectionId,modelId);
+
+@override
+String toString() {
+  return 'SessionModelSelectionDto(providerConnectionId: $providerConnectionId, modelId: $modelId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SessionModelSelectionDtoCopyWith<$Res>  {
+  factory $SessionModelSelectionDtoCopyWith(SessionModelSelectionDto value, $Res Function(SessionModelSelectionDto) _then) = _$SessionModelSelectionDtoCopyWithImpl;
+@useResult
+$Res call({
+ String providerConnectionId, String modelId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SessionModelSelectionDtoCopyWithImpl<$Res>
+    implements $SessionModelSelectionDtoCopyWith<$Res> {
+  _$SessionModelSelectionDtoCopyWithImpl(this._self, this._then);
+
+  final SessionModelSelectionDto _self;
+  final $Res Function(SessionModelSelectionDto) _then;
+
+/// Create a copy of SessionModelSelectionDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? providerConnectionId = null,Object? modelId = null,}) {
+  return _then(_self.copyWith(
+providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
+as String,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SessionModelSelectionDto].
+extension SessionModelSelectionDtoPatterns on SessionModelSelectionDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionModelSelectionDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SessionModelSelectionDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionModelSelectionDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SessionModelSelectionDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionModelSelectionDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SessionModelSelectionDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String providerConnectionId,  String modelId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SessionModelSelectionDto() when $default != null:
+return $default(_that.providerConnectionId,_that.modelId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String providerConnectionId,  String modelId)  $default,) {final _that = this;
+switch (_that) {
+case _SessionModelSelectionDto():
+return $default(_that.providerConnectionId,_that.modelId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String providerConnectionId,  String modelId)?  $default,) {final _that = this;
+switch (_that) {
+case _SessionModelSelectionDto() when $default != null:
+return $default(_that.providerConnectionId,_that.modelId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SessionModelSelectionDto implements SessionModelSelectionDto {
+  const _SessionModelSelectionDto({required this.providerConnectionId, required this.modelId});
+  factory _SessionModelSelectionDto.fromJson(Map<String, dynamic> json) => _$SessionModelSelectionDtoFromJson(json);
+
+@override final  String providerConnectionId;
+@override final  String modelId;
+
+/// Create a copy of SessionModelSelectionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SessionModelSelectionDtoCopyWith<_SessionModelSelectionDto> get copyWith => __$SessionModelSelectionDtoCopyWithImpl<_SessionModelSelectionDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SessionModelSelectionDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionModelSelectionDto&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,providerConnectionId,modelId);
+
+@override
+String toString() {
+  return 'SessionModelSelectionDto(providerConnectionId: $providerConnectionId, modelId: $modelId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SessionModelSelectionDtoCopyWith<$Res> implements $SessionModelSelectionDtoCopyWith<$Res> {
+  factory _$SessionModelSelectionDtoCopyWith(_SessionModelSelectionDto value, $Res Function(_SessionModelSelectionDto) _then) = __$SessionModelSelectionDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String providerConnectionId, String modelId
+});
+
+
+
+
+}
+/// @nodoc
+class __$SessionModelSelectionDtoCopyWithImpl<$Res>
+    implements _$SessionModelSelectionDtoCopyWith<$Res> {
+  __$SessionModelSelectionDtoCopyWithImpl(this._self, this._then);
+
+  final _SessionModelSelectionDto _self;
+  final $Res Function(_SessionModelSelectionDto) _then;
+
+/// Create a copy of SessionModelSelectionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? providerConnectionId = null,Object? modelId = null,}) {
+  return _then(_SessionModelSelectionDto(
+providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
+as String,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$SessionDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; String? get parentSessionId; String? get activeTurnId; String? get lastError;
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; SessionModelSelectionDto? get model; String? get parentSessionId; String? get activeTurnId; String? get lastError;
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2844,16 +3110,16 @@ $SessionDtoCopyWith<SessionDto> get copyWith => _$SessionDtoCopyWithImpl<Session
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.model, model) || other.model == model)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,parentSessionId,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,model,parentSessionId,activeTurnId,lastError);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, model: $model, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError)';
 }
 
 
@@ -2864,11 +3130,11 @@ abstract mixin class $SessionDtoCopyWith<$Res>  {
   factory $SessionDtoCopyWith(SessionDto value, $Res Function(SessionDto) _then) = _$SessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, String? parentSessionId, String? activeTurnId, String? lastError
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionModelSelectionDto? model, String? parentSessionId, String? activeTurnId, String? lastError
 });
 
 
-
+$SessionModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -2881,7 +3147,7 @@ class _$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -2891,13 +3157,26 @@ as String,origin: null == origin ? _self.origin : origin // ignore: cast_nullabl
 as SessionOrigin,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SessionStatus,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
+as DateTime,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as SessionModelSelectionDto?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
+/// Create a copy of SessionDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SessionModelSelectionDtoCopyWith<$Res>? get model {
+    if (_self.model == null) {
+    return null;
+  }
 
+  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+    return _then(_self.copyWith(model: value));
+  });
+}
 }
 
 
@@ -2979,10 +3258,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  String? parentSessionId,  String? activeTurnId,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionModelSelectionDto? model,  String? parentSessionId,  String? activeTurnId,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
   return orElse();
 
 }
@@ -3000,10 +3279,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  String? parentSessionId,  String? activeTurnId,  String? lastError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionModelSelectionDto? model,  String? parentSessionId,  String? activeTurnId,  String? lastError)  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3020,10 +3299,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  String? parentSessionId,  String? activeTurnId,  String? lastError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionModelSelectionDto? model,  String? parentSessionId,  String? activeTurnId,  String? lastError)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
   return null;
 
 }
@@ -3035,7 +3314,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionDto implements SessionDto {
-  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.parentSessionId, this.activeTurnId, this.lastError});
+  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.model, this.parentSessionId, this.activeTurnId, this.lastError});
   factory _SessionDto.fromJson(Map<String, dynamic> json) => _$SessionDtoFromJson(json);
 
 @override final  String id;
@@ -3046,6 +3325,7 @@ class _SessionDto implements SessionDto {
 @override final  SessionStatus status;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
+@override final  SessionModelSelectionDto? model;
 @override final  String? parentSessionId;
 @override final  String? activeTurnId;
 @override final  String? lastError;
@@ -3063,16 +3343,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.model, model) || other.model == model)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,parentSessionId,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,model,parentSessionId,activeTurnId,lastError);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, model: $model, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError)';
 }
 
 
@@ -3083,11 +3363,11 @@ abstract mixin class _$SessionDtoCopyWith<$Res> implements $SessionDtoCopyWith<$
   factory _$SessionDtoCopyWith(_SessionDto value, $Res Function(_SessionDto) _then) = __$SessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, String? parentSessionId, String? activeTurnId, String? lastError
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionModelSelectionDto? model, String? parentSessionId, String? activeTurnId, String? lastError
 });
 
 
-
+@override $SessionModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -3100,7 +3380,7 @@ class __$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
   return _then(_SessionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -3110,14 +3390,27 @@ as String,origin: null == origin ? _self.origin : origin // ignore: cast_nullabl
 as SessionOrigin,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SessionStatus,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
+as DateTime,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as SessionModelSelectionDto?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
 
+/// Create a copy of SessionDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SessionModelSelectionDtoCopyWith<$Res>? get model {
+    if (_self.model == null) {
+    return null;
+  }
 
+  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+    return _then(_self.copyWith(model: value));
+  });
+}
 }
 
 

@@ -187,6 +187,76 @@ void main() {
       ),
     ),
   );
+
+  unawaited(
+    goldenTest(
+      'session composer adapts to desktop and mobile widths',
+      fileName: 'session_composer',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'desktop light',
+            child: SizedBox(
+              width: 1100,
+              height: 760,
+              child: _sessionComposer(ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'mobile dark',
+            child: SizedBox(
+              width: 390,
+              height: 760,
+              child: _sessionComposer(ThemeMode.dark),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _sessionComposer(ThemeMode mode) {
+  final now = DateTime.utc(2026);
+  final workspace = WorkspaceDto(
+    id: 'workspace',
+    name: 'Coder',
+    rootPath: '/repos/coder',
+    kind: WorkspaceKind.git,
+    createdAt: now,
+  );
+  final checkout = WorktreeDto(
+    id: 'checkout',
+    workspaceId: workspace.id,
+    name: 'main',
+    path: workspace.rootPath,
+    branch: 'main',
+    head: 'abc',
+    kind: WorktreeKind.checkout,
+    isCoderOwned: false,
+    createdAt: now,
+  );
+  final api = FakeCoderApi(
+    workspaces: <WorkspaceDto>[workspace],
+    worktrees: <WorktreeDto>[checkout],
+  );
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(api)),
+    ],
+    child: _material(
+      mode,
+      const WorkspacePage(
+        selection: WorkspaceSelection(
+          hostId: 'server',
+          workspaceId: 'workspace',
+          worktreeId: 'checkout',
+        ),
+      ),
+    ),
+  );
 }
 
 Widget _settings(ThemeMode mode) {

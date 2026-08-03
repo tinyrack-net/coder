@@ -40,6 +40,8 @@ void main() {
       () => sessions.status,
       () => sessions.activeTurnId,
       () => sessions.lastError,
+      () => sessions.modelConnectionId,
+      () => sessions.modelId,
       () => sessions.createdAt,
       () => sessions.updatedAt,
       () => sessions.primaryKey,
@@ -136,7 +138,7 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 6);
+      expect(database.schemaVersion, 7);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

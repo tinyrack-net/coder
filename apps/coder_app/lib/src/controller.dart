@@ -28,6 +28,18 @@ Future<CoderApi> _requireHostApi(Ref ref, String hostId) async {
   final runtime = (await ref.read(
     hostRegistryControllerProvider.future,
   )).runtimes[hostId];
+  return _connectedApi(runtime);
+}
+
+/// Resolves the API inside a `build`, re-running once the daemon connects.
+Future<CoderApi> _watchHostApi(Ref ref, String hostId) async {
+  final runtime = (await ref.watch(
+    hostRegistryControllerProvider.future,
+  )).runtimes[hostId];
+  return _connectedApi(runtime);
+}
+
+CoderApi _connectedApi(HostRuntimeSnapshot? runtime) {
   final api = runtime?.api;
   if (api == null || runtime?.connected != true) {
     throw StateError('Online daemon connection required.');
@@ -221,9 +233,13 @@ class SessionsController extends _$SessionsController {
   }
 
   /// The create public API member.
+  ///
+  /// A non-null [model] pins the session to one provider connection and model
+  /// instead of inheriting the model of its agent definition.
   Future<SessionDto> create({
     required String title,
     required String agentDefinitionId,
+    SessionModelSelectionDto? model,
   }) async {
     final worktreeId = _worktreeId;
     if (worktreeId == null) {
@@ -238,6 +254,7 @@ class SessionsController extends _$SessionsController {
         worktreeId: worktreeId,
         title: title,
         agentDefinitionId: agentDefinitionId,
+        model: model,
       );
       state = AsyncData<List<SessionDto>>(<SessionDto>[session, ...previous]);
       return session;
@@ -245,6 +262,20 @@ class SessionsController extends _$SessionsController {
       state = AsyncError<List<SessionDto>>(error, stackTrace);
       rethrow;
     }
+  }
+
+  /// Sets or clears the provider and model override of one session.
+  ///
+  /// The daemon broadcasts the updated session, so local state is refreshed by
+  /// [_handleEvent] instead of being patched here.
+  Future<SessionDto> setModel(
+    String sessionId,
+    SessionModelSelectionDto? model,
+  ) async {
+    final api = await _requireHostApi(ref, hostId);
+    final session = await api.updateSessionModel(sessionId, model);
+    _replace(session);
+    return session;
   }
 
   void _handleEvent(ClientEvent event) {
@@ -290,7 +321,7 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
 
   @override
   Future<AgentDefinitionsState> build(String hostId) async {
-    final api = await _requireHostApi(ref, hostId);
+    final api = await _watchHostApi(ref, hostId);
     _events = api.events.listen((event) {
       if (event is AgentDefinitionsChangedClientEvent) unawaited(refresh());
     });
@@ -396,9 +427,11 @@ class SessionTabsController extends _$SessionTabsController {
             .where(existingIds.contains)
             .toList(growable: false) ??
         <String>[if (sessions.isNotEmpty) sessions.first.id];
-    final selected = open.contains(saved?.selectedAgentId)
-        ? saved?.selectedAgentId
-        : open.firstOrNull;
+    // A saved null selection means the composer draft is showing, so it must
+    // not snap back to the first open tab on the next rebuild.
+    final selected = saved == null
+        ? open.firstOrNull
+        : (open.contains(saved.selectedAgentId) ? saved.selectedAgentId : null);
     return SessionTabsState(
       sessions: sessions,
       openAgentIds: open,
@@ -419,6 +452,10 @@ class SessionTabsController extends _$SessionTabsController {
   /// Selects an already-open session.
   Future<void> select(String sessionId) =>
       _set(state.requireValue, state.requireValue.openAgentIds, sessionId);
+
+  /// Clears the selection so the composer starts a new session draft.
+  Future<void> startDraft() =>
+      _set(state.requireValue, state.requireValue.openAgentIds, null);
 
   /// Hides a tab without deleting its daemon session or history.
   Future<void> close(String sessionId) async {
@@ -467,6 +504,37 @@ class SessionTabsController extends _$SessionTabsController {
           ),
         );
   }
+}
+
+/// Agent and model chosen in the composer before a session exists.
+final class SessionComposerDraft {
+  /// Creates a composer draft.
+  const SessionComposerDraft({this.agentDefinitionId, this.model});
+
+  /// Explicitly chosen agent definition; null falls back to the first usable.
+  final String? agentDefinitionId;
+
+  /// Explicitly chosen provider and model; null inherits the agent definition.
+  final SessionModelSelectionDto? model;
+}
+
+@Riverpod(keepAlive: true)
+/// Holds the composer selection used to create the next session.
+class SessionComposerDraftController extends _$SessionComposerDraftController {
+  @override
+  SessionComposerDraft build(String hostId, String? worktreeId) =>
+      const SessionComposerDraft();
+
+  /// Chooses the agent definition and drops a model bound to the old agent.
+  void selectAgent(String agentDefinitionId) =>
+      state = SessionComposerDraft(agentDefinitionId: agentDefinitionId);
+
+  /// Chooses the provider and model override, or clears it when null.
+  void selectModel(SessionModelSelectionDto? model) =>
+      state = SessionComposerDraft(
+        agentDefinitionId: state.agentDefinitionId,
+        model: model,
+      );
 }
 
 /// ConversationState defines a public contract.

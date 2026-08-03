@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
+import 'package:coder_app/src/model_picker.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -517,7 +518,7 @@ class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
   Future<void> _chooseModel() async {
     final models = widget.models;
     if (models == null || models.isEmpty || _saving) return;
-    final selected = await _showModelPicker(
+    final selected = await showModelPicker(
       context,
       connectionId: widget.connection.id,
       models: models,
@@ -540,143 +541,6 @@ class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-}
-
-Future<String?> _showModelPicker(
-  BuildContext context, {
-  required String connectionId,
-  required List<ProviderModelDto> models,
-  required String? currentModelId,
-}) {
-  final picker = _ModelPicker(
-    connectionId: connectionId,
-    models: models,
-    currentModelId: currentModelId,
-  );
-  if (MediaQuery.sizeOf(context).width < 760) {
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.8,
-          child: picker,
-        ),
-      ),
-    );
-  }
-  return showDialog<String>(
-    context: context,
-    builder: (context) => Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
-        child: picker,
-      ),
-    ),
-  );
-}
-
-class _ModelPicker extends StatefulWidget {
-  const _ModelPicker({
-    required this.connectionId,
-    required this.models,
-    required this.currentModelId,
-  });
-
-  final String connectionId;
-  final List<ProviderModelDto> models;
-  final String? currentModelId;
-
-  @override
-  State<_ModelPicker> createState() => _ModelPickerState();
-}
-
-class _ModelPickerState extends State<_ModelPicker> {
-  String _query = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final query = _query.trim().toLowerCase();
-    final ordered = <ProviderModelDto>[
-      ...widget.models.where((model) => model.id == widget.currentModelId),
-      ...widget.models.where((model) => model.id != widget.currentModelId),
-    ];
-    final filtered = query.isEmpty
-        ? ordered
-        : ordered
-              .where(
-                (model) =>
-                    model.id.toLowerCase().contains(query) ||
-                    model.label.toLowerCase().contains(query),
-              )
-              .toList(growable: false);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  '기본 모델 선택',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              IconButton(
-                tooltip: '닫기',
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            key: const ValueKey('model-search-field'),
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: '모델 검색',
-              prefixIcon: Icon(Icons.search),
-            ),
-            onChanged: (value) => setState(() => _query = value),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: filtered.isEmpty
-                ? const Center(child: Text('검색 결과가 없습니다.'))
-                : ListView.builder(
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final model = filtered[index];
-                      return ListTile(
-                        key: ValueKey(
-                          'model-option-${widget.connectionId}-${model.id}',
-                        ),
-                        title: Text(
-                          model.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: model.label == model.id
-                            ? null
-                            : Text(
-                                model.id,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                        trailing: model.id == widget.currentModelId
-                            ? const Icon(Icons.check)
-                            : null,
-                        onTap: () => Navigator.pop(context, model.id),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

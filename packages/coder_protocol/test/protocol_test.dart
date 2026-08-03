@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v7 exposes agent definitions and sessions', () {
-    expect(coderProtocolVersion, 7);
+  test('protocol v8 exposes agent definitions and sessions', () {
+    expect(coderProtocolVersion, 8);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -21,6 +21,63 @@ void main() {
     expect(RpcMethod.agentToolCatalog, 'agentTool.catalog');
     expect(RpcMethod.sessionList, 'session.list');
     expect(RpcMethod.sessionCreate, 'session.create');
+    expect(RpcMethod.sessionModelSet, 'session.model.set');
+  });
+
+  test('session model overrides round-trip', () {
+    const selection = SessionModelSelectionDto(
+      providerConnectionId: 'provider',
+      modelId: 'model',
+    );
+    final overridden = SessionDto(
+      id: 'session',
+      worktreeId: 'worktree',
+      title: 'Run the tests',
+      agentDefinitionId: 'coder',
+      origin: SessionOrigin.manual,
+      status: SessionStatus.idle,
+      createdAt: now,
+      updatedAt: now,
+      model: selection,
+    );
+
+    _roundTrip(
+      selection,
+      (value) => value.toJson(),
+      SessionModelSelectionDto.fromJson,
+    );
+    _roundTrip(overridden, (value) => value.toJson(), SessionDto.fromJson);
+    _roundTrip(
+      const SessionCreateParamsDto(
+        id: 'session',
+        worktreeId: 'worktree',
+        title: 'Run the tests',
+        agentDefinitionId: 'coder',
+        model: selection,
+      ),
+      (value) => value.toJson(),
+      SessionCreateParamsDto.fromJson,
+    );
+    _roundTrip(
+      const SessionModelSetParamsDto(sessionId: 'session', model: selection),
+      (value) => value.toJson(),
+      SessionModelSetParamsDto.fromJson,
+    );
+    _roundTrip(
+      const SessionModelSetParamsDto(sessionId: 'session'),
+      (value) => value.toJson(),
+      SessionModelSetParamsDto.fromJson,
+    );
+    expect(
+      SessionDto.fromJson(
+        json.decode(json.encode(overridden.toJson())) as Map<String, dynamic>,
+      ).model,
+      selection,
+    );
+    expect(
+      const SessionModelSetParamsDto(sessionId: 'session').model,
+      isNull,
+    );
   });
 
   test('agent definition and session contracts round-trip', () {
@@ -256,9 +313,10 @@ void main() {
   );
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 7);
+    expect(coderProtocolVersion, 8);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
+    expect(RpcMethod.sessionModelSet, 'session.model.set');
     expect(RpcMethod.providerCatalog, 'provider.catalog');
     expect(RpcMethod.providerAuthStart, 'provider.auth.start');
     expect(RpcMethod.turnStart, 'turn.start');

@@ -431,6 +431,33 @@ void main() {
   });
 
   test(
+    'explicit session models resolve only for usable connections',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>['deepseek-v4-pro'];
+      await fixture.service.connectApiKey('deepseek', 'secret');
+
+      final resolved = await fixture.service.resolveExplicitModel(
+        'deepseek',
+        'deepseek-v4-pro',
+      );
+      expect(resolved.connectionId, 'deepseek');
+      expect(resolved.modelId, 'deepseek-v4-pro');
+
+      await expectLater(
+        fixture.service.resolveExplicitModel('deepseek', 'missing'),
+        throwsA(isA<StateError>()),
+      );
+      await fixture.service.disconnect('deepseek');
+      await expectLater(
+        fixture.service.resolveExplicitModel('deepseek', 'deepseek-v4-pro'),
+        throwsA(isA<ProviderConnectionFailure>()),
+      );
+    },
+    tags: const <String>['feature_test__session_lifecycle__unit'],
+  );
+
+  test(
     'runtime rejects missing credentials and transient refresh failures',
     () async {
       final missing = _ServiceFixture(now);

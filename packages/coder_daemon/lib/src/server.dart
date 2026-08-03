@@ -220,6 +220,7 @@ class _ClientSession {
       RpcMethod.agentToolCatalog,
       RpcMethod.sessionList,
       RpcMethod.sessionCreate,
+      RpcMethod.sessionModelSet,
       RpcMethod.providerCatalog,
       RpcMethod.providerConnectionsList,
       RpcMethod.providerConnectApiKey,
@@ -435,7 +436,17 @@ class _ClientSession {
             'New sessions require an active primary agent definition.',
           );
         }
-        await providers.resolveAgentModel(definition.model);
+        final requestedModel = request.model;
+        // An explicit override replaces the definition model, so an agent
+        // whose own model cannot resolve must not block creation.
+        if (requestedModel == null) {
+          await providers.resolveAgentModel(definition.model);
+        } else {
+          await providers.validateAgentModel(
+            requestedModel.providerConnectionId,
+            requestedModel.modelId,
+          );
+        }
         final now = clock.nowUtc();
         final session = await sessionRepository.create(
           SessionDto(
@@ -445,10 +456,15 @@ class _ClientSession {
             agentDefinitionId: definition.id,
             origin: SessionOrigin.manual,
             status: SessionStatus.idle,
+            model: requestedModel,
             createdAt: now,
             updatedAt: now,
           ),
         );
+        return SessionResultDto(session: session).toJson();
+      case RpcMethod.sessionModelSet:
+        final request = SessionModelSetParamsDto.fromJson(payload);
+        final session = await agents.setModel(request.sessionId, request.model);
         return SessionResultDto(session: session).toJson();
       case RpcMethod.providerCatalog:
         final catalog = await providers.catalog();

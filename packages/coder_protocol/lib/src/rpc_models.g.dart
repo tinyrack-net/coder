@@ -128,6 +128,11 @@ _SessionCreateParamsDto _$SessionCreateParamsDtoFromJson(
   worktreeId: json['worktreeId'] as String,
   title: json['title'] as String,
   agentDefinitionId: json['agentDefinitionId'] as String,
+  model: json['model'] == null
+      ? null
+      : SessionModelSelectionDto.fromJson(
+          json['model'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$SessionCreateParamsDtoToJson(
@@ -137,6 +142,25 @@ Map<String, dynamic> _$SessionCreateParamsDtoToJson(
   'worktreeId': instance.worktreeId,
   'title': instance.title,
   'agentDefinitionId': instance.agentDefinitionId,
+  'model': instance.model,
+};
+
+_SessionModelSetParamsDto _$SessionModelSetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionModelSetParamsDto(
+  sessionId: json['sessionId'] as String,
+  model: json['model'] == null
+      ? null
+      : SessionModelSelectionDto.fromJson(
+          json['model'] as Map<String, dynamic>,
+        ),
+);
+
+Map<String, dynamic> _$SessionModelSetParamsDtoToJson(
+  _SessionModelSetParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'model': instance.model,
 };
 
 _AgentDefinitionIdParamsDto _$AgentDefinitionIdParamsDtoFromJson(

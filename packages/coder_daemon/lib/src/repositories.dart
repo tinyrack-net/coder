@@ -60,6 +60,9 @@ abstract interface class SessionRepository {
   /// The create public API member.
   Future<SessionDto> create(SessionDto session);
 
+  /// Sets or clears the provider and model override of one session.
+  Future<SessionDto> updateModel(String id, SessionModelSelectionDto? model);
+
   /// The updateStatus public API member.
   Future<SessionDto> updateStatus(
     String id,

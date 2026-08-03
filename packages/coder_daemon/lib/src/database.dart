@@ -94,6 +94,12 @@ class Sessions extends Table {
   /// The lastError public API member.
   TextColumn get lastError => text().nullable()();
 
+  /// Provider connection pinned for this session; null inherits the agent.
+  TextColumn get modelConnectionId => text().nullable()();
+
+  /// Model pinned for this session; null inherits the agent definition.
+  TextColumn get modelId => text().nullable()();
+
   /// The createdAt public API member.
   DateTimeColumn get createdAt => dateTime()();
 
@@ -341,7 +347,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

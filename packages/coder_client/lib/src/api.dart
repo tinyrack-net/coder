@@ -118,12 +118,24 @@ abstract interface class CoderApi {
   Future<List<SessionDto>> listSessions({String? worktreeId});
 
   /// The createSession public API member.
+  ///
+  /// A non-null [model] pins the session to one provider connection and model
+  /// instead of inheriting the model selection of its agent definition.
   Future<SessionDto> createSession({
     required String id,
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
+    SessionModelSelectionDto? model,
   });
+
+  /// Sets or clears the provider and model override of one session.
+  ///
+  /// Passing a null [model] restores inheritance from the agent definition.
+  Future<SessionDto> updateSessionModel(
+    String sessionId,
+    SessionModelSelectionDto? model,
+  );
 
   /// Lists all visible Markdown-backed agent definitions.
   Future<List<AgentDefinitionDto>> listAgentDefinitions();

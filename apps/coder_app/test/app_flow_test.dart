@@ -65,7 +65,9 @@ void main() {
 
       expect(find.text('Workspaces'), findsOneWidget);
       expect(find.text('Test daemon'), findsOneWidget);
-      expect(find.text('Coder'), findsOneWidget);
+      // The composer's agent chip is also labelled 'Coder', so the repository
+      // entry is matched through its tile.
+      expect(find.widgetWithText(ListTile, 'Coder'), findsOneWidget);
       expect(find.text('main'), findsOneWidget);
       expect(find.text('Agents'), findsNothing);
       expect(find.text('Session one'), findsWidgets);
@@ -108,7 +110,7 @@ void main() {
 
       await tester.tap(find.byTooltip('탭 닫기'));
       await tester.pumpAndSettle();
-      expect(find.text('새 session 시작'), findsOneWidget);
+      expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
       expect(await api.listSessions(worktreeId: checkout.id), <SessionDto>[
         first,
       ]);
@@ -229,7 +231,7 @@ void main() {
     addTearDown(router.dispose);
 
     expect(find.text('Repositories'), findsNothing);
-    expect(find.text('새 session 시작'), findsOneWidget);
+    expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
     expect(find.text('Repositories'), findsOneWidget);
@@ -273,25 +275,108 @@ void main() {
       );
       addTearDown(router.dispose);
 
-      await tester.tap(find.text('새 session 시작'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextField, '이름'),
-        'Refactor API',
-      );
+      expect(find.byKey(const ValueKey('session-composer-agent')), findsOne);
       expect(find.text('Planner'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, '생성'));
-      await tester.pumpAndSettle();
-      expect(find.text('Refactor API'), findsWidgets);
-      expect((await api.listSessions()).single.agentDefinitionId, 'planner');
+      expect(find.text('OpenAI'), findsOneWidget);
+      expect(find.text('GPT-5.6 Sol'), findsOneWidget);
 
       await tester.enterText(
-        find.widgetWithText(TextField, '코딩 요청을 입력하세요…'),
+        find.byKey(const ValueKey('session-composer-input')),
         'Run the tests',
       );
-      await tester.tap(find.byIcon(Icons.arrow_upward));
-      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      final created = api.createdSessions.single;
+      expect(created.agentDefinitionId, 'planner');
+      expect(created.title, 'Run the tests');
+      expect(created.model, isNull);
       expect(api.startedPrompts, <String>['Run the tests']);
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'composer pins a model at creation and clears it mid-session',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const fast = ProviderModelDto(
+        connectionId: 'openai',
+        id: 'gpt-5.6-fast',
+        label: 'GPT-5.6 Fast',
+        source: ProviderModelSource.bundled,
+        capabilities: ModelCapabilitiesDto(
+          streaming: CapabilitySupport.supported,
+          toolCalling: CapabilitySupport.supported,
+        ),
+      );
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        models: <String, List<ProviderModelDto>>{
+          'openai': <ProviderModelDto>[
+            const ProviderModelDto(
+              connectionId: 'openai',
+              id: 'gpt-5.6-sol',
+              label: 'GPT-5.6 Sol',
+              source: ProviderModelSource.bundled,
+              capabilities: ModelCapabilitiesDto(
+                streaming: CapabilitySupport.supported,
+                toolCalling: CapabilitySupport.supported,
+              ),
+            ),
+            fast,
+          ],
+        },
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-provider')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-provider-openai')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-openai-gpt-5.6-fast')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('GPT-5.6 Fast'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Speed up the build',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+      expect(
+        api.createdSessions.single.model,
+        const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-fast',
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('model-option-inherit')));
+      await tester.pumpAndSettle();
+      expect(api.updatedSessionModels.single.model, isNull);
+      expect((await api.listSessions()).single.model, isNull);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
   );

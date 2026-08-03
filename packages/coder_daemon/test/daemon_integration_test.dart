@@ -146,13 +146,47 @@ void main() {
       expect((await client.getWorkspaceCatalog()).workspaces, hasLength(1));
       final checkout = registered.worktrees.single;
 
+      await expectLater(
+        client.createSession(
+          id: 'agent-rejected',
+          worktreeId: checkout.id,
+          title: 'Rejected',
+          agentDefinitionId: 'coder',
+          model: const SessionModelSelectionDto(
+            providerConnectionId: 'missing-connection',
+            modelId: 'test-model',
+          ),
+        ),
+        throwsA(
+          isA<CoderClientException>().having(
+            (error) => error.code,
+            'code',
+            'provider_not_connected',
+          ),
+        ),
+      );
       final agent = await client.createSession(
         id: 'agent-1',
         worktreeId: checkout.id,
         title: 'Session',
         agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'local-test',
+          modelId: 'test-model',
+        ),
       );
       expect(agent.status, SessionStatus.idle);
+      expect(
+        agent.model,
+        const SessionModelSelectionDto(
+          providerConnectionId: 'local-test',
+          modelId: 'test-model',
+        ),
+      );
+      expect(
+        (await client.listSessions(worktreeId: checkout.id)).single.model,
+        agent.model,
+      );
       final coder = (await client.listAgentDefinitions()).single;
       final configuredDefinition = await client.updateAgentDefinition(
         coder.copyWith(reasoningEffort: 'high'),
@@ -189,6 +223,42 @@ void main() {
         expectedContentHash: configuredDefinition.contentHash,
       );
       expect(afterTurn.reasoningEffort, 'medium');
+
+      final clearedFuture = client.events
+          .where((event) => event is SessionUpdatedClientEvent)
+          .cast<SessionUpdatedClientEvent>()
+          .map((event) => event.session)
+          .firstWhere((session) => session.model == null)
+          .timeout(const Duration(seconds: 5));
+      expect(
+        (await client.updateSessionModel(
+          agent.id,
+          const SessionModelSelectionDto(
+            providerConnectionId: 'local-test',
+            modelId: 'test-model',
+          ),
+        )).model,
+        const SessionModelSelectionDto(
+          providerConnectionId: 'local-test',
+          modelId: 'test-model',
+        ),
+      );
+      expect((await client.updateSessionModel(agent.id, null)).model, isNull);
+      expect((await clearedFuture).id, agent.id);
+      expect(
+        (await client.listSessions(worktreeId: checkout.id)).single.model,
+        isNull,
+      );
+      await expectLater(
+        client.updateSessionModel(
+          agent.id,
+          const SessionModelSelectionDto(
+            providerConnectionId: 'local-test',
+            modelId: 'missing-model',
+          ),
+        ),
+        throwsA(isA<CoderClientException>()),
+      );
 
       expect(
         await File('${workspace.path}/result.txt').readAsString(),

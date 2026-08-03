@@ -488,6 +488,24 @@ abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
 }
 
 @freezed
+/// Explicit provider and model chosen for one session.
+///
+/// A session without this override inherits the model selection of its agent
+/// definition. Both fields are required so a half-specified override cannot be
+/// represented.
+abstract class SessionModelSelectionDto with _$SessionModelSelectionDto {
+  /// Creates a session model selection.
+  const factory SessionModelSelectionDto({
+    required String providerConnectionId,
+    required String modelId,
+  }) = _SessionModelSelectionDto;
+
+  /// Decodes a session model selection.
+  factory SessionModelSelectionDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionModelSelectionDtoFromJson(json);
+}
+
+@freezed
 /// Persistent conversation session using a Markdown agent definition.
 abstract class SessionDto with _$SessionDto {
   /// Creates a session descriptor.
@@ -500,6 +518,7 @@ abstract class SessionDto with _$SessionDto {
     required SessionStatus status,
     required DateTime createdAt,
     required DateTime updatedAt,
+    SessionModelSelectionDto? model,
     String? parentSessionId,
     String? activeTurnId,
     String? lastError,

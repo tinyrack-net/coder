@@ -176,6 +176,14 @@ final class FakeCoderApi implements CoderApi {
   /// Whether [close] released this fake client.
   bool get isClosed => _closed;
 
+  /// Sessions created through the fake, in creation order.
+  final List<SessionDto> createdSessions = <SessionDto>[];
+
+  /// Session model overrides written through the fake.
+  final List<({String sessionId, SessionModelSelectionDto? model})>
+  updatedSessionModels =
+      <({String sessionId, SessionModelSelectionDto? model})>[];
+
   /// Turn prompts received by the fake.
   final List<String> startedPrompts = <String>[];
 
@@ -330,6 +338,7 @@ final class FakeCoderApi implements CoderApi {
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
+    SessionModelSelectionDto? model,
   }) async {
     final agent = SessionDto(
       id: id,
@@ -338,11 +347,27 @@ final class FakeCoderApi implements CoderApi {
       agentDefinitionId: agentDefinitionId,
       origin: SessionOrigin.manual,
       status: SessionStatus.idle,
+      model: model,
       createdAt: _now,
       updatedAt: _now,
     );
     _agents.add(agent);
+    createdSessions.add(agent);
     return agent;
+  }
+
+  @override
+  Future<SessionDto> updateSessionModel(
+    String sessionId,
+    SessionModelSelectionDto? model,
+  ) async {
+    updatedSessionModels.add((sessionId: sessionId, model: model));
+    final index = _agents.indexWhere((agent) => agent.id == sessionId);
+    if (index < 0) throw StateError('Session not found: $sessionId');
+    final updated = _agents[index].copyWith(model: model);
+    _agents[index] = updated;
+    emit(SessionUpdatedClientEvent(updated));
+    return updated;
   }
 
   @override

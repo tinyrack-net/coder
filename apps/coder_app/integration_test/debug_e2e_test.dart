@@ -374,23 +374,20 @@ void main() {
         await tester.pumpAndSettle();
       }
       await tester.tap(find.text('main'));
-      await _pumpUntil(tester, find.text('새 session 시작'));
-      await tester.tap(find.text('새 session 시작'));
+      const composer = ValueKey<String>('session-composer-input');
+      const send = ValueKey<String>('session-composer-send');
+      await _pumpUntil(tester, find.byKey(composer));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('생성'));
-      await _pumpUntil(tester, find.text('코딩 요청을 입력하세요.'));
+      expect(find.byKey(const ValueKey('session-composer-model')), findsOne);
 
-      final composer = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.hintText == '코딩 요청을 입력하세요…',
-      );
-      await tester.enterText(composer, 'Delegate review');
+      await tester.enterText(find.byKey(composer), 'Delegate review');
       await tester.pump();
-      expect(tester.widget<TextField>(composer).controller?.text, isNotEmpty);
-      final sendButton = find.widgetWithIcon(IconButton, Icons.arrow_upward);
-      expect(tester.widget<IconButton>(sendButton).onPressed, isNotNull);
-      await tester.tap(sendButton);
+      expect(
+        tester.widget<TextField>(find.byKey(composer)).controller?.text,
+        isNotEmpty,
+      );
+      expect(tester.widget<IconButton>(find.byKey(send)).onPressed, isNotNull);
+      await tester.tap(find.byKey(send));
       await tester.pump();
       await _pumpUntilWithSessionDiagnostics(
         tester,
@@ -406,14 +403,17 @@ void main() {
         ),
       );
       await _pumpUntil(tester, find.text('reviewer · delegated'));
-      await tester.tap(find.text('Coding session').first);
+      await tester.tap(find.text('Delegate review').first);
       await _pumpUntil(tester, find.text('coder · manual'));
 
-      await tester.enterText(composer, 'Create result.txt');
+      await tester.enterText(find.byKey(composer), 'Create result.txt');
       await tester.pump();
-      expect(tester.widget<TextField>(composer).controller?.text, isNotEmpty);
-      expect(tester.widget<IconButton>(sendButton).onPressed, isNotNull);
-      await tester.tap(sendButton);
+      expect(
+        tester.widget<TextField>(find.byKey(composer)).controller?.text,
+        isNotEmpty,
+      );
+      expect(tester.widget<IconButton>(find.byKey(send)).onPressed, isNotNull);
+      await tester.tap(find.byKey(send));
       await tester.pump();
       await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
       await tester.tap(find.text('승인'));
