@@ -847,102 +847,131 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             !_dismissedPlans.contains(lastPlan.key)
         ? lastPlan
         : null;
-    return Column(
-      children: <Widget>[
-        ListTile(
-          title: Text(current.title),
-          subtitle: Text(
-            '${current.agentDefinitionId} · ${current.origin.name}',
-          ),
-          trailing: busy
-              ? IconButton(
-                  tooltip: AppLocalizations.of(context).commonStop,
-                  onPressed: () => ref
-                      .read(
-                        conversationControllerProvider(
-                          widget.selection.hostId,
-                          current.id,
-                        ).notifier,
-                      )
-                      .cancelTurn(),
-                  icon: const Icon(Icons.stop_circle_outlined),
-                )
-              : null,
-        ),
-        Expanded(
-          child: ChatTimelineView(items: items, busy: busy),
-        ),
-        if (pendingPlan != null)
-          ChatPlanActions(
-            selection: widget.selection,
-            session: current,
-            proposal: pendingPlan,
-            onDismiss: () =>
-                setState(() => _dismissedPlans.add(pendingPlan.key)),
-            onSessionCreated: (session) =>
-                _goSession(context, widget.selection, session.id),
-          ),
-        for (final approval
-            in value?.approvals.values ?? const <ApprovalRequestDto>[])
-          ApprovalCard(
-            hostId: widget.selection.hostId,
-            approval: approval,
-          ),
-        SessionComposer(
-          enabled: !busy && effective != null,
-          hint: effective == null
-              ? AppLocalizations.of(context).composerSelectProviderFirst
-              : null,
-          bar: SessionComposerBar(
-            hostId: widget.selection.hostId,
-            definitions: definitions,
-            agentDefinitionId: current.agentDefinitionId,
-            selection: effective,
-            mode: current.mode,
-            onModeChanged: (mode) => unawaited(
-              ref
-                  .read(
-                    sessionsControllerProvider(
-                      widget.selection.hostId,
-                      widget.selection.worktreeId,
-                    ).notifier,
-                  )
-                  .setMode(current.id, mode),
+    return LayoutBuilder(
+      builder: (context, constraints) => Column(
+        children: <Widget>[
+          ListTile(
+            title: Text(current.title),
+            subtitle: Text(
+              '${current.agentDefinitionId} · ${current.origin.name}',
             ),
-            agentEnabled: false,
-            enabled: !busy,
-            onAgentChanged: (_) {},
-            onModelChanged: (model) => unawaited(
-              ref
-                  .read(
-                    sessionsControllerProvider(
-                      widget.selection.hostId,
-                      widget.selection.worktreeId,
-                    ).notifier,
+            trailing: busy
+                ? IconButton(
+                    tooltip: AppLocalizations.of(context).commonStop,
+                    onPressed: () => ref
+                        .read(
+                          conversationControllerProvider(
+                            widget.selection.hostId,
+                            current.id,
+                          ).notifier,
+                        )
+                        .cancelTurn(),
+                    icon: const Icon(Icons.stop_circle_outlined),
                   )
-                  .setModel(current.id, model),
-            ),
+                : null,
           ),
-          onModeToggled: busy
-              ? null
-              : () => unawaited(
-                  ref
-                      .read(
-                        sessionsControllerProvider(
-                          widget.selection.hostId,
-                          widget.selection.worktreeId,
-                        ).notifier,
-                      )
-                      .setMode(
-                        current.id,
-                        current.mode == SessionMode.plan
-                            ? SessionMode.normal
-                            : SessionMode.plan,
-                      ),
+          Expanded(
+            child: ChatTimelineView(items: items, busy: busy),
+          ),
+          // A plan and any number of approvals sit between the timeline and
+          // the composer, and each grows with the content it previews. The
+          // bottom group is capped so the composer always keeps its natural
+          // size and only the cards scroll; whatever the group leaves over
+          // goes back to the timeline above.
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: constraints.maxHeight / 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        if (pendingPlan != null)
+                          ChatPlanActions(
+                            selection: widget.selection,
+                            session: current,
+                            proposal: pendingPlan,
+                            onDismiss: () => setState(
+                              () => _dismissedPlans.add(pendingPlan.key),
+                            ),
+                            onSessionCreated: (session) => _goSession(
+                              context,
+                              widget.selection,
+                              session.id,
+                            ),
+                          ),
+                        for (final approval
+                            in value?.approvals.values ??
+                                const <ApprovalRequestDto>[])
+                          ApprovalCard(
+                            hostId: widget.selection.hostId,
+                            approval: approval,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-          onSubmit: (prompt) => unawaited(_send(current.id, prompt)),
-        ),
-      ],
+                SessionComposer(
+                  enabled: !busy && effective != null,
+                  hint: effective == null
+                      ? AppLocalizations.of(context).composerSelectProviderFirst
+                      : null,
+                  bar: SessionComposerBar(
+                    hostId: widget.selection.hostId,
+                    definitions: definitions,
+                    agentDefinitionId: current.agentDefinitionId,
+                    selection: effective,
+                    mode: current.mode,
+                    onModeChanged: (mode) => unawaited(
+                      ref
+                          .read(
+                            sessionsControllerProvider(
+                              widget.selection.hostId,
+                              widget.selection.worktreeId,
+                            ).notifier,
+                          )
+                          .setMode(current.id, mode),
+                    ),
+                    agentEnabled: false,
+                    enabled: !busy,
+                    onAgentChanged: (_) {},
+                    onModelChanged: (model) => unawaited(
+                      ref
+                          .read(
+                            sessionsControllerProvider(
+                              widget.selection.hostId,
+                              widget.selection.worktreeId,
+                            ).notifier,
+                          )
+                          .setModel(current.id, model),
+                    ),
+                  ),
+                  onModeToggled: busy
+                      ? null
+                      : () => unawaited(
+                          ref
+                              .read(
+                                sessionsControllerProvider(
+                                  widget.selection.hostId,
+                                  widget.selection.worktreeId,
+                                ).notifier,
+                              )
+                              .setMode(
+                                current.id,
+                                current.mode == SessionMode.plan
+                                    ? SessionMode.normal
+                                    : SessionMode.plan,
+                              ),
+                        ),
+                  onSubmit: (prompt) => unawaited(_send(current.id, prompt)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
