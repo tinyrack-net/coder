@@ -38,6 +38,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       providerSettingsControllerProvider(widget.hostId);
 
   @override
+  void didUpdateWidget(SettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.hostId != widget.hostId) _loadingModels.clear();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final asyncState = ref.watch(_provider);
     final body = asyncState.when(
@@ -70,7 +76,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _body(ProviderSettingsState state) {
-    final canManage = ref.read(_provider.notifier).canManage;
+    final provider = _provider;
     final activeConnections = state.connections
         .where(
           (connection) =>
@@ -82,14 +88,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         unawaited(
-          ref.read(_provider.notifier).loadModels(connection.id),
+          ref.read(provider.notifier).loadModels(connection.id),
         );
       });
     }
     final connected = _ConnectedProviders(
       connections: activeConnections,
       models: state.models,
-      canManage: canManage,
       onDisconnect: _disconnect,
       onSetDefault: (id) => ref.read(_provider.notifier).setDefault(id),
       onSetDefaultModel: (id, model) =>
@@ -104,20 +109,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
           )
           .toList(growable: false),
-      canManage: canManage,
       onAdd: _addDefinition,
       onAddCustom: _addCustom,
     );
     return Column(
       children: <Widget>[
-        if (!canManage)
-          const MaterialBanner(
-            content: Text(
-              '원격 연결에서는 Provider 설정을 조회만 할 수 있습니다. '
-              'daemon 호스트에서 연결을 변경하세요.',
-            ),
-            actions: <Widget>[SizedBox.shrink()],
-          ),
         Expanded(
           child: CustomScrollView(
             slivers: <Widget>[
@@ -286,7 +282,6 @@ class _ConnectedProviders extends StatelessWidget {
   const _ConnectedProviders({
     required this.connections,
     required this.models,
-    required this.canManage,
     required this.onDisconnect,
     required this.onSetDefault,
     required this.onSetDefaultModel,
@@ -295,7 +290,6 @@ class _ConnectedProviders extends StatelessWidget {
 
   final List<ProviderConnectionDto> connections;
   final Map<String, List<ProviderModelDto>> models;
-  final bool canManage;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
   final ValueChanged<String> onSetDefault;
   final Future<void> Function(String, String) onSetDefaultModel;
@@ -321,7 +315,6 @@ class _ConnectedProviders extends StatelessWidget {
           _ProviderConnectionCard(
             connection: connection,
             models: models[connection.id],
-            canManage: canManage,
             onDisconnect: onDisconnect,
             onSetDefault: onSetDefault,
             onSetDefaultModel: (modelId) =>
@@ -337,7 +330,6 @@ class _ProviderConnectionCard extends StatelessWidget {
   const _ProviderConnectionCard({
     required this.connection,
     required this.models,
-    required this.canManage,
     required this.onDisconnect,
     required this.onSetDefault,
     required this.onSetDefaultModel,
@@ -346,7 +338,6 @@ class _ProviderConnectionCard extends StatelessWidget {
 
   final ProviderConnectionDto connection;
   final List<ProviderModelDto>? models;
-  final bool canManage;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
   final ValueChanged<String> onSetDefault;
   final Future<void> Function(String) onSetDefaultModel;
@@ -370,35 +361,34 @@ class _ProviderConnectionCard extends StatelessWidget {
                 ),
               ),
               if (connection.isDefault) const Chip(label: Text('기본')),
-              if (canManage)
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'default':
-                        onSetDefault(connection.id);
-                      case 'edit':
-                        onEditCustom(connection);
-                      case 'disconnect':
-                        onDisconnect(connection);
-                    }
-                  },
-                  itemBuilder: (context) => <PopupMenuEntry<String>>[
-                    if (!connection.isDefault)
-                      const PopupMenuItem(
-                        value: 'default',
-                        child: Text('기본 Provider로 설정'),
-                      ),
-                    if (connection.definitionId == 'custom')
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('고급 설정 편집'),
-                      ),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'default':
+                      onSetDefault(connection.id);
+                    case 'edit':
+                      onEditCustom(connection);
+                    case 'disconnect':
+                      onDisconnect(connection);
+                  }
+                },
+                itemBuilder: (context) => <PopupMenuEntry<String>>[
+                  if (!connection.isDefault)
                     const PopupMenuItem(
-                      value: 'disconnect',
-                      child: Text('연결 해제'),
+                      value: 'default',
+                      child: Text('기본 Provider로 설정'),
                     ),
-                  ],
-                ),
+                  if (connection.definitionId == 'custom')
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Text('고급 설정 편집'),
+                    ),
+                  const PopupMenuItem(
+                    value: 'disconnect',
+                    child: Text('연결 해제'),
+                  ),
+                ],
+              ),
             ],
           ),
           Text(
@@ -414,7 +404,6 @@ class _ProviderConnectionCard extends StatelessWidget {
           _ProviderModelSelector(
             connection: connection,
             models: models,
-            canManage: canManage,
             onSelected: onSetDefaultModel,
           ),
         ],
@@ -427,13 +416,11 @@ class _ProviderModelSelector extends StatefulWidget {
   const _ProviderModelSelector({
     required this.connection,
     required this.models,
-    required this.canManage,
     required this.onSelected,
   });
 
   final ProviderConnectionDto connection;
   final List<ProviderModelDto>? models;
-  final bool canManage;
   final Future<void> Function(String) onSelected;
 
   @override
@@ -452,8 +439,7 @@ class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
         ?.where((model) => model.id == currentId)
         .firstOrNull;
     final missing = currentId != null && models != null && selected == null;
-    final enabled =
-        widget.canManage && models != null && models.isNotEmpty && !_saving;
+    final enabled = models != null && models.isNotEmpty && !_saving;
     final String primaryText;
     if (models == null) {
       primaryText = '모델을 불러오는 중…';
@@ -521,7 +507,7 @@ class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             else
-              Icon(widget.canManage ? Icons.search : Icons.lock_outline),
+              const Icon(Icons.search),
           ],
         ),
       ),
@@ -697,13 +683,11 @@ class _ModelPickerState extends State<_ModelPicker> {
 class _ProviderCatalog extends StatelessWidget {
   const _ProviderCatalog({
     required this.definitions,
-    required this.canManage,
     required this.onAdd,
     required this.onAddCustom,
   });
 
   final List<ProviderDefinitionDto> definitions;
-  final bool canManage;
   final ValueChanged<ProviderDefinitionDto> onAdd;
   final VoidCallback onAddCustom;
 
@@ -730,8 +714,8 @@ class _ProviderCatalog extends StatelessWidget {
               leading: const Icon(Icons.hub_outlined),
               title: Text(definition.name),
               subtitle: Text(definition.description),
-              trailing: canManage ? const Icon(Icons.add_circle_outline) : null,
-              onTap: canManage ? () => onAdd(definition) : null,
+              trailing: const Icon(Icons.add_circle_outline),
+              onTap: () => onAdd(definition),
             ),
           ),
         Card(
@@ -740,8 +724,8 @@ class _ProviderCatalog extends StatelessWidget {
             leading: const Icon(Icons.tune),
             title: const Text('Custom OpenAI Compatible'),
             subtitle: const Text('고급 설정: 자체 endpoint 연결'),
-            trailing: canManage ? const Icon(Icons.chevron_right) : null,
-            onTap: canManage ? onAddCustom : null,
+            trailing: const Icon(Icons.chevron_right),
+            onTap: onAddCustom,
           ),
         ),
       ],

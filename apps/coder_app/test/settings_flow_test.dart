@@ -470,37 +470,109 @@ void main() {
     expect(find.text('재로그인 필요 · Environment credential'), findsOneWidget);
   });
 
-  testWidgets('remote settings is read-only and responsive', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(390, 760));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi(
-      serverInfo: const ServerInfoDto(
-        serverId: 'remote',
-        version: 'test',
-        protocolVersion: coderProtocolVersion,
-        features: <String, bool>{'providerAdmin': false},
+  testWidgets(
+    'remote settings is fully editable and responsive',
+    (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        serverInfo: const ServerInfoDto(
+          serverId: 'remote',
+          version: 'test',
+          protocolVersion: coderProtocolVersion,
+          features: <String, bool>{},
+        ),
+      );
+      await _pumpSettings(tester, api);
+
+      expect(find.textContaining('조회만 할 수 있습니다'), findsNothing);
+      expect(
+        tester
+            .widget<ListTile>(
+              find.byKey(const ValueKey('provider-add-deepseek')),
+            )
+            .onTap,
+        isNotNull,
+      );
+      expect(
+        tester
+            .widget<InkWell>(
+              find.byKey(const ValueKey('model-selector-openai')),
+            )
+            .onTap,
+        isNotNull,
+      );
+      expect(find.byKey(const ValueKey('provider-add-custom')), findsOneWidget);
+    },
+    tags: const <String>['feature_test__daemon_authentication__widget'],
+  );
+
+  testWidgets('switching daemons reloads models with the same connection ID', (
+    tester,
+  ) async {
+    final now = DateTime.utc(2026, 8, 3);
+    final first = FakeCoderApi(
+      serverInfo: _serverInfo('first'),
+      connections: <ProviderConnectionDto>[
+        _connection(defaultModelId: 'shared-model'),
+      ],
+      models: <String, List<ProviderModelDto>>{
+        'provider': <ProviderModelDto>[
+          _longModel(id: 'shared-model', label: 'First daemon model'),
+        ],
+      },
+    );
+    final second = FakeCoderApi(
+      serverInfo: _serverInfo('second'),
+      connections: <ProviderConnectionDto>[
+        _connection(defaultModelId: 'shared-model'),
+      ],
+      models: <String, List<ProviderModelDto>>{
+        'provider': <ProviderModelDto>[
+          _longModel(id: 'shared-model', label: 'Second daemon model'),
+        ],
+      },
+    );
+    final store = MemoryAppStore(
+      settings: const AppSettings(embeddedDaemonEnabled: false),
+      profiles: <RemoteDaemonProfile>[
+        _remoteProfile('first', now),
+        _remoteProfile('second', now),
+      ],
+      tokens: const <String, String>{'first': 'one', 'second': 'two'},
+    );
+    final harness = GlobalKey<_SettingsHostHarnessState>();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appServicesProvider.overrideWithValue(
+            AppServices(
+              settings: store,
+              profiles: store,
+              credentials: store,
+              clients: _MappedHostClients(<String, CoderApi>{
+                'first.test': first,
+                'second.test': second,
+              }),
+              clientKind: 'test',
+            ),
+          ),
+          externalUrlOpenerProvider.overrideWithValue(_ExternalUrlOpener()),
+        ],
+        child: MaterialApp(home: _SettingsHostHarness(key: harness)),
       ),
     );
-    await _pumpSettings(tester, api);
+    await tester.pumpAndSettle();
+    expect(find.text('First daemon model'), findsOneWidget);
 
-    expect(find.textContaining('조회만 할 수 있습니다'), findsOneWidget);
-    expect(
-      tester
-          .widget<ListTile>(
-            find.byKey(const ValueKey('provider-add-deepseek')),
-          )
-          .onTap,
-      isNull,
-    );
-    expect(
-      tester
-          .widget<InkWell>(
-            find.byKey(const ValueKey('model-selector-openai')),
-          )
-          .onTap,
-      isNull,
-    );
-    expect(find.byKey(const ValueKey('provider-add-custom')), findsOneWidget);
+    harness.currentState!.select('second');
+    for (var attempt = 0; attempt < 10; attempt += 1) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(find.text('Second daemon model'), findsOneWidget);
   });
 
   testWidgets('settings renders disconnected and bootstrap error states', (
@@ -643,6 +715,53 @@ final class _Ids implements AppIdGenerator {
   @override
   String generate() => 'new-provider';
 }
+
+final class _SettingsHostHarness extends StatefulWidget {
+  const _SettingsHostHarness({super.key});
+
+  @override
+  State<_SettingsHostHarness> createState() => _SettingsHostHarnessState();
+}
+
+final class _SettingsHostHarnessState extends State<_SettingsHostHarness> {
+  String _hostId = 'first';
+
+  void select(String hostId) => setState(() => _hostId = hostId);
+
+  @override
+  Widget build(BuildContext context) => SettingsPage(hostId: _hostId);
+}
+
+final class _MappedHostClients implements HostClientFactory {
+  const _MappedHostClients(this.apis);
+
+  final Map<String, CoderApi> apis;
+
+  @override
+  Future<CoderApi> connect({
+    required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
+    required String clientId,
+    required String clientKind,
+  }) async => apis[endpoint.websocketUri.host]!;
+}
+
+RemoteDaemonProfile _remoteProfile(String id, DateTime now) =>
+    RemoteDaemonProfile(
+      id: id,
+      label: id,
+      websocketUri: Uri.parse('ws://$id.test/ws'),
+      autoConnect: true,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+ServerInfoDto _serverInfo(String id) => ServerInfoDto(
+  serverId: id,
+  version: 'test',
+  protocolVersion: coderProtocolVersion,
+  features: const <String, bool>{},
+);
 
 final class _FailingStore
     implements

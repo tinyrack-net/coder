@@ -528,6 +528,150 @@ void main() {
   );
 
   test(
+    'embedded exposure restarts only the app-owned daemon and persists mode',
+    () async {
+      final remote = FakeCoderApi(serverInfo: _serverInfo('remote-server'));
+      final embedded = FakeCoderApi(
+        serverInfo: _serverInfo('embedded-server'),
+      );
+      final profile = RemoteDaemonProfile(
+        id: 'remote',
+        label: 'Remote',
+        websocketUri: Uri.parse('wss://remote.test/ws'),
+        autoConnect: true,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final store = MemoryAppStore(
+        profiles: <RemoteDaemonProfile>[profile],
+        tokens: const <String, String>{'remote': 'token'},
+      );
+      final launcher = _EmbeddedLauncher();
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
+          'embedded.test': Future<CoderApi>.value(embedded),
+          'remote.test': Future<CoderApi>.value(remote),
+        }),
+        embeddedLauncher: launcher,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'test',
+      );
+      addTearDown(registry.close);
+
+      await registry.load();
+      await _flush();
+      final firstSession = launcher.session;
+      expect(launcher.exposures, <EmbeddedDaemonExposure>[
+        EmbeddedDaemonExposure.loopback,
+      ]);
+
+      await registry.setEmbeddedDaemonExposure(
+        EmbeddedDaemonExposure.allInterfaces,
+      );
+
+      expect(firstSession.stops, 1);
+      expect(launcher.exposures, <EmbeddedDaemonExposure>[
+        EmbeddedDaemonExposure.loopback,
+        EmbeddedDaemonExposure.allInterfaces,
+      ]);
+      expect(
+        store.settings.embeddedDaemonExposure,
+        EmbeddedDaemonExposure.allInterfaces,
+      );
+      expect(
+        registry.value.runtimes[embeddedHostId]?.status,
+        HostRuntimeStatus.online,
+      );
+      expect(
+        registry.value.runtimes['remote']?.status,
+        HostRuntimeStatus.online,
+      );
+      expect(remote.isClosed, isFalse);
+
+      await registry.setEmbeddedDaemonEnabled(enabled: false);
+      final starts = launcher.starts;
+      await registry.setEmbeddedDaemonExposure(
+        EmbeddedDaemonExposure.loopback,
+      );
+      expect(launcher.starts, starts);
+      expect(
+        store.settings.embeddedDaemonExposure,
+        EmbeddedDaemonExposure.loopback,
+      );
+    },
+    tags: const <String>['feature_test__daemon_exposure__unit'],
+  );
+
+  test(
+    'embedded exposure keeps failed mode and serializes rapid restarts',
+    () async {
+      final stopGate = Completer<void>();
+      final launcher = _EmbeddedLauncher(
+        firstStopGate: stopGate,
+        failingStarts: const <int>{3},
+      );
+      final registry = HostRegistry(
+        store: MemoryAppStore(),
+        clientFactory: _SequenceClientFactory(
+          List<Future<CoderApi> Function()>.generate(
+            3,
+            (index) =>
+                () async => FakeCoderApi(
+                  serverInfo: _serverInfo('embedded-server'),
+                ),
+          ),
+        ),
+        embeddedLauncher: launcher,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'test',
+      );
+      addTearDown(registry.close);
+      await registry.load();
+      await _flush();
+
+      final toNetwork = registry.setEmbeddedDaemonExposure(
+        EmbeddedDaemonExposure.allInterfaces,
+      );
+      await _flush();
+      expect(launcher.session.stops, 1);
+      final backToLoopback = registry.setEmbeddedDaemonExposure(
+        EmbeddedDaemonExposure.loopback,
+      );
+      await _flush();
+      expect(launcher.exposures, <EmbeddedDaemonExposure>[
+        EmbeddedDaemonExposure.loopback,
+      ]);
+
+      stopGate.complete();
+      await Future.wait(<Future<void>>[toNetwork, backToLoopback]);
+
+      expect(launcher.exposures, <EmbeddedDaemonExposure>[
+        EmbeddedDaemonExposure.loopback,
+        EmbeddedDaemonExposure.allInterfaces,
+        EmbeddedDaemonExposure.loopback,
+      ]);
+      expect(
+        registry.value.settings.embeddedDaemonExposure,
+        EmbeddedDaemonExposure.loopback,
+      );
+      expect(
+        registry.value.runtimes[embeddedHostId]?.status,
+        HostRuntimeStatus.error,
+      );
+      expect(
+        registry.value.runtimes[embeddedHostId]?.error,
+        contains('startup failed'),
+      );
+    },
+    tags: const <String>['feature_test__daemon_exposure__unit'],
+  );
+
+  test(
     'protocol mismatch stops retry and closing drops a late connection',
     () async {
       final profile = RemoteDaemonProfile(
@@ -638,24 +782,47 @@ final class _SequenceClientFactory implements HostClientFactory {
 }
 
 final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
-  final _EmbeddedSession session = _EmbeddedSession();
+  _EmbeddedLauncher({
+    this.firstStopGate,
+    this.failingStarts = const <int>{},
+  });
+
+  final Completer<void>? firstStopGate;
+  final Set<int> failingStarts;
+  final List<EmbeddedDaemonExposure> exposures = <EmbeddedDaemonExposure>[];
+  final List<_EmbeddedSession> sessions = <_EmbeddedSession>[];
   int starts = 0;
 
+  _EmbeddedSession get session => sessions.last;
+
   @override
-  Future<EmbeddedDaemonSession> start() async {
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+  }) async {
     starts += 1;
+    exposures.add(exposure);
+    if (failingStarts.contains(starts)) {
+      throw const HostConnectionFailure.network('startup failed');
+    }
+    final session = _EmbeddedSession(
+      stopGate: sessions.isEmpty ? firstStopGate : null,
+    );
+    sessions.add(session);
     return session;
   }
 }
 
 final class _EmbeddedSession implements EmbeddedDaemonSession {
+  _EmbeddedSession({this.stopGate});
+
+  final Completer<void>? stopGate;
+
   @override
   HostEndpoint get endpoint => HostEndpoint.parse('ws://embedded.test/ws');
 
   @override
   DaemonCredentials get credentials => const DaemonCredentials(
     bearerToken: 'embedded-bearer',
-    adminToken: 'embedded-admin',
   );
 
   @override
@@ -665,6 +832,7 @@ final class _EmbeddedSession implements EmbeddedDaemonSession {
   @override
   Future<void> stop() async {
     stops += 1;
+    await stopGate?.future;
   }
 }
 
@@ -723,7 +891,9 @@ final class _FailingEmbeddedLauncher implements EmbeddedDaemonLauncher {
   const _FailingEmbeddedLauncher();
 
   @override
-  Future<EmbeddedDaemonSession> start() => Future<EmbeddedDaemonSession>.error(
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+  }) => Future<EmbeddedDaemonSession>.error(
     const HostConnectionFailure.network('startup failed'),
   );
 }

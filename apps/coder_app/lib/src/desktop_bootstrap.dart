@@ -46,10 +46,13 @@ final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
   final EmbeddedDaemonStarter startDaemon;
 
   @override
-  Future<EmbeddedDaemonSession> start() async {
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+  }) async {
     try {
+      final baseConfig = config ?? DaemonConfig.fromEnvironment();
       return _EmbeddedSession(
-        await startDaemon(config ?? DaemonConfig.fromEnvironment()),
+        await startDaemon(baseConfig.copyWith(host: exposure.bindHost)),
       );
     } on Exception catch (error) {
       throw HostConnectionFailure.network('$error');
@@ -68,7 +71,6 @@ final class _EmbeddedSession implements EmbeddedDaemonSession {
   @override
   DaemonCredentials get credentials => DaemonCredentials(
     bearerToken: _handle.bearerToken,
-    adminToken: _handle.adminToken,
   );
 
   @override

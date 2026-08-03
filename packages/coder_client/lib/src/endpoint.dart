@@ -44,13 +44,10 @@ class HostEndpoint {
 /// Secret credentials sent while opening a daemon transport.
 final class DaemonCredentials {
   /// Creates daemon connection credentials.
-  const DaemonCredentials({required this.bearerToken, this.adminToken});
+  const DaemonCredentials({required this.bearerToken});
 
-  /// Token authenticating ordinary daemon API access.
+  /// Token authenticating full daemon API access.
   final String bearerToken;
-
-  /// Optional local administration token, never used by remote profiles.
-  final String? adminToken;
 
   @override
   String toString() => 'DaemonCredentials(<redacted>)';

@@ -111,6 +111,10 @@ class HostRegistryController extends _$HostRegistryController {
   Future<void> setEmbeddedDaemonEnabled({required bool enabled}) =>
       _registry.setEmbeddedDaemonEnabled(enabled: enabled);
 
+  /// Changes the app-owned daemon listener and restarts it when active.
+  Future<void> setEmbeddedDaemonExposure(EmbeddedDaemonExposure exposure) =>
+      _registry.setEmbeddedDaemonExposure(exposure);
+
   /// Persists a checkout selection and its visible session tabs.
   Future<void> saveWorkspaceUi({
     required WorkspaceSelection selection,
@@ -270,7 +274,6 @@ final class AgentDefinitionsState {
   const AgentDefinitionsState({
     required this.definitions,
     required this.tools,
-    required this.canEdit,
   });
 
   /// Visible primary and subagent definitions.
@@ -278,9 +281,6 @@ final class AgentDefinitionsState {
 
   /// Tools this daemon can execute.
   final List<AgentToolDefinitionDto> tools;
-
-  /// Whether the current connection has the daemon admin credential.
-  final bool canEdit;
 }
 
 @riverpod
@@ -298,7 +298,6 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
     return AgentDefinitionsState(
       definitions: await api.listAgentDefinitions(),
       tools: await api.listAgentTools(),
-      canEdit: api.serverInfo.features['agentDefinitionAdmin'] ?? false,
     );
   }
 
@@ -310,7 +309,6 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
       AgentDefinitionsState(
         definitions: await api.listAgentDefinitions(),
         tools: current?.tools ?? await api.listAgentTools(),
-        canEdit: api.serverInfo.features['agentDefinitionAdmin'] ?? false,
       ),
     );
   }
@@ -667,17 +665,6 @@ final class ProviderSettingsState {
 /// ProviderSettingsController defines a public contract.
 class ProviderSettingsController extends _$ProviderSettingsController {
   StreamSubscription<ClientEvent>? _events;
-
-  /// The canManage public API member.
-  bool get canManage =>
-      ref
-          .read(hostRegistryControllerProvider)
-          .asData
-          ?.value
-          .runtimes[hostId]
-          ?.serverInfo
-          ?.features['providerAdmin'] ==
-      true;
 
   @override
   Future<ProviderSettingsState?> build(String hostId) async {

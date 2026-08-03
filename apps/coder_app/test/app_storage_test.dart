@@ -12,60 +12,69 @@ void main() {
     FlutterSecureStorage.setMockInitialValues(<String, String>{});
   });
 
-  test('persists typed settings and profiles without bearer tokens', () async {
-    final preferences = await SharedPreferences.getInstance();
-    final store = SharedPreferencesAppStore(preferences);
-    const secureStorage = FlutterSecureStorage();
-    const credentials = SecureRemoteHostCredentialStore(secureStorage);
-    final now = DateTime.utc(2026, 8, 3);
-    final profile = RemoteDaemonProfile(
-      id: 'host-id',
-      label: 'Production',
-      websocketUri: Uri.parse('wss://coder.example.com/ws'),
-      autoConnect: true,
-      serverId: 'server-id',
-      createdAt: now,
-      updatedAt: now,
-      lastConnectedAt: now,
-    );
+  test(
+    'persists typed settings and profiles without bearer tokens',
+    () async {
+      final preferences = await SharedPreferences.getInstance();
+      final store = SharedPreferencesAppStore(preferences);
+      const secureStorage = FlutterSecureStorage();
+      const credentials = SecureRemoteHostCredentialStore(secureStorage);
+      final now = DateTime.utc(2026, 8, 3);
+      final profile = RemoteDaemonProfile(
+        id: 'host-id',
+        label: 'Production',
+        websocketUri: Uri.parse('wss://coder.example.com/ws'),
+        autoConnect: true,
+        serverId: 'server-id',
+        createdAt: now,
+        updatedAt: now,
+        lastConnectedAt: now,
+      );
 
-    const selection = WorkspaceSelection(
-      hostId: 'host-id',
-      workspaceId: 'workspace-id',
-      worktreeId: 'worktree-id',
-    );
-    await store.saveSettings(
-      AppSettings(
-        embeddedDaemonEnabled: false,
-        lastActiveHostId: 'host-id',
-        lastWorktree: selection,
-        sessionTabs: <String, SessionTabPreference>{
-          selection.storageKey: const SessionTabPreference(
-            openAgentIds: <String>['agent-1', 'agent-2'],
-            selectedAgentId: 'agent-2',
-          ),
-        },
-      ),
-    );
-    await store.upsertProfile(profile);
-    await credentials.writeBearerToken('host-id', 'bearer-secret');
+      const selection = WorkspaceSelection(
+        hostId: 'host-id',
+        workspaceId: 'workspace-id',
+        worktreeId: 'worktree-id',
+      );
+      await store.saveSettings(
+        AppSettings(
+          embeddedDaemonEnabled: false,
+          embeddedDaemonExposure: EmbeddedDaemonExposure.allInterfaces,
+          lastActiveHostId: 'host-id',
+          lastWorktree: selection,
+          sessionTabs: <String, SessionTabPreference>{
+            selection.storageKey: const SessionTabPreference(
+              openAgentIds: <String>['agent-1', 'agent-2'],
+              selectedAgentId: 'agent-2',
+            ),
+          },
+        ),
+      );
+      await store.upsertProfile(profile);
+      await credentials.writeBearerToken('host-id', 'bearer-secret');
 
-    final restored = await store.loadSettings();
-    expect(restored.lastWorktree, selection);
-    expect(
-      restored.sessionTabs[selection.storageKey]?.openAgentIds,
-      <String>['agent-1', 'agent-2'],
-    );
-    expect(
-      (await store.listProfiles()).single.websocketUri,
-      profile.websocketUri,
-    );
-    expect(await credentials.readBearerToken('host-id'), 'bearer-secret');
-    final document = preferences.getString(
-      SharedPreferencesAppStore.documentKey,
-    );
-    expect(document, isNot(contains('bearer-secret')));
-  });
+      final restored = await store.loadSettings();
+      expect(
+        restored.embeddedDaemonExposure,
+        EmbeddedDaemonExposure.allInterfaces,
+      );
+      expect(restored.lastWorktree, selection);
+      expect(
+        restored.sessionTabs[selection.storageKey]?.openAgentIds,
+        <String>['agent-1', 'agent-2'],
+      );
+      expect(
+        (await store.listProfiles()).single.websocketUri,
+        profile.websocketUri,
+      );
+      expect(await credentials.readBearerToken('host-id'), 'bearer-secret');
+      final document = preferences.getString(
+        SharedPreferencesAppStore.documentKey,
+      );
+      expect(document, isNot(contains('bearer-secret')));
+    },
+    tags: const <String>['feature_test__daemon_exposure__contract'],
+  );
 
   test('fresh storage ignores legacy singleton host keys', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{
@@ -78,6 +87,10 @@ void main() {
 
     expect(await store.listProfiles(), isEmpty);
     expect((await store.loadSettings()).embeddedDaemonEnabled, isTrue);
+    expect(
+      (await store.loadSettings()).embeddedDaemonExposure,
+      EmbeddedDaemonExposure.loopback,
+    );
   });
 
   test('updates and removes profiles and their secure credentials', () async {
@@ -122,6 +135,17 @@ void main() {
     final store = SharedPreferencesAppStore(preferences);
     final invalidDocuments = <Object>[
       <Object>[],
+      <String, Object?>{
+        'version': 2,
+        'settings': <String, Object?>{
+          'embeddedDaemonEnabled': true,
+          'embeddedDaemonExposure': 'invalid',
+          'lastActiveHostId': null,
+          'lastWorktree': null,
+          'sessionTabs': <Object>[],
+        },
+        'profiles': <Object>[],
+      },
       <String, Object?>{
         'version': 2,
         'settings': <String, Object?>{},

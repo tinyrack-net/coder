@@ -1,5 +1,7 @@
 tags:
   feature_test__daemon_management__contract:
+  feature_test__daemon_authentication__unit:
+  feature_test__daemon_authentication__contract:
   feature_test__workspace_catalog__contract:
   feature_test__workspace_registration__contract:
   feature_test__worktree_lifecycle__contract:

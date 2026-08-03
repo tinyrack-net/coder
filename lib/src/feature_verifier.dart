@@ -70,6 +70,7 @@ final class FeatureVerifier {
     required this.contracts,
     this.apiPath = 'packages/coder_client/lib/src/api.dart',
     this.routePath = 'apps/coder_app/lib/src/app.dart',
+    this.forbiddenProductionTerms = const <String>[],
   });
 
   /// Pub workspace root.
@@ -83,6 +84,9 @@ final class FeatureVerifier {
 
   /// Source containing typed route annotations.
   final String routePath;
+
+  /// Retired security concepts that must not return to production or docs.
+  final List<String> forbiddenProductionTerms;
 
   /// Returns every manifest, public-surface, and test-evidence violation.
   List<FeatureViolation> verify() {
@@ -229,7 +233,52 @@ final class FeatureVerifier {
         FeatureViolation('Route $route is missing widget evidence.'),
       );
     }
+    for (final file in _productionSources()) {
+      final source = file.readAsStringSync();
+      for (final term in _effectiveForbiddenProductionTerms) {
+        if (source.contains(term)) {
+          violations.add(
+            FeatureViolation(
+              'Forbidden production term $term in '
+              '${p.relative(file.path, from: workspaceRoot)}.',
+            ),
+          );
+        }
+      }
+    }
     return violations;
+  }
+
+  List<String> get _effectiveForbiddenProductionTerms =>
+      forbiddenProductionTerms.isEmpty
+      ? <String>[
+          <String>['admin', 'Token'].join(),
+          <String>['X-Tinyrack-Coder-', 'Admin'].join(),
+          <String>['TINYRACK_CODER_', 'ADMIN_TOKEN'].join(),
+          <String>['local_admin_', 'required'].join(),
+        ]
+      : forbiddenProductionTerms;
+
+  Iterable<File> _productionSources() sync* {
+    for (final relativeRoot in <String>['apps', 'packages', 'lib', 'docs']) {
+      final directory = Directory(p.join(workspaceRoot, relativeRoot));
+      if (!directory.existsSync()) continue;
+      for (final entity in directory.listSync(recursive: true)) {
+        if (entity is! File) continue;
+        final normalized = p.normalize(entity.path);
+        if (normalized.contains('${p.separator}test${p.separator}') ||
+            normalized.contains(
+              '${p.separator}integration_test${p.separator}',
+            ) ||
+            normalized.endsWith('.g.dart') ||
+            normalized.endsWith('.freezed.dart')) {
+          continue;
+        }
+        if (normalized.endsWith('.dart') || normalized.endsWith('.md')) {
+          yield entity;
+        }
+      }
+    }
   }
 
   String _snakeCase(String value) => value

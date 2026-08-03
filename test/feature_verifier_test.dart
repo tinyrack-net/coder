@@ -97,6 +97,30 @@ void main() {
     expect(messages, contains('GhostRoute'));
     expect(messages, contains('skip'));
   });
+
+  test('feature verifier rejects retired security terms in production', () {
+    final fixture = _fixture(
+      api: 'abstract interface class CoderApi {}',
+      routes: '',
+      tests: '',
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+    File('${fixture.path}/lib/security.dart').writeAsStringSync(
+      "const retired = 'adminToken';",
+    );
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+
+    expect(
+      violations.map((item) => item.message),
+      contains(contains('Forbidden production term adminToken')),
+    );
+  });
 }
 
 Directory _fixture({

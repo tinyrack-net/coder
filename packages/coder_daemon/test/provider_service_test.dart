@@ -613,13 +613,9 @@ final class _ProviderRepository implements ProviderRepository {
 final class _Credentials implements CredentialRepository {
   final Map<String, ProviderCredential> values = <String, ProviderCredential>{};
   String? token;
-  String? localAdminToken;
 
   @override
   String? get bearerToken => token;
-
-  @override
-  String? get adminToken => localAdminToken;
 
   @override
   ProviderCredential? credential(String connectionId) => values[connectionId];
@@ -633,12 +629,8 @@ final class _Credentials implements CredentialRepository {
   }
 
   @override
-  Future<void> setDaemonTokens({
-    required String bearerToken,
-    required String adminToken,
-  }) async {
+  Future<void> setDaemonToken(String bearerToken) async {
     token = bearerToken;
-    localAdminToken = adminToken;
   }
 
   @override

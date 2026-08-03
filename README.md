@@ -31,12 +31,14 @@ directories, macOS uses Application Support, and Windows uses AppData.
 The app shell does not require a daemon connection. Desktop enables its
 app-owned embedded daemon by default, while mobile remains remote-only. Global
 Settings can disable the embedded daemon and save any number of independent
-`ws://` or `wss://` remote daemon profiles. Offline profiles and the last
-selected host remain navigable.
+`ws://` or `wss://` remote daemon profiles. Desktop Settings also controls
+whether the embedded daemon listens only on `127.0.0.1` or on every IPv4
+interface (`0.0.0.0`); changing it restarts only that app-owned daemon. Offline
+profiles and the last selected host remain navigable.
 
-Provider setup belongs to a connected daemon. Embedded clients carry a separate
-local-admin token and can mutate provider credentials; ordinary remote clients
-carry only the bearer token and see provider settings read-only.
+Provider and Markdown Agent setup belongs to a connected daemon. Every client
+uses one bearer token, which grants the complete daemon API for both local and
+remote connections.
 
 Desktop and mobile use separate targets so the mobile bootstrap never starts a
 daemon. Run these commands from `apps/coder_app`:
@@ -46,7 +48,9 @@ flutter run -d linux -t lib/main_desktop.dart
 flutter run -t lib/main_mobile.dart
 ```
 
-The daemon intentionally does not implement TLS or certificate bypasses. Keep it
-bound to loopback and terminate TLS in a reverse proxy for remote access. See
+The daemon intentionally does not implement TLS or certificate bypasses. Keep
+it bound to loopback when terminating TLS in a local reverse proxy. Binding to
+all interfaces exposes the plain daemon port, which must be isolated by the
+operator's firewall when TLS is mandatory. See
 [`docs/remote-daemon.md`](docs/remote-daemon.md) for Caddy/Nginx WebSocket,
 authentication-header, and development-data reset examples.

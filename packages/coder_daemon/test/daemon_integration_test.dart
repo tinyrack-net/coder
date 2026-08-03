@@ -7,7 +7,9 @@ import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 import 'package:test/test.dart';
+import 'package:web_socket_channel/io.dart';
 
 void main() {
   test(
@@ -52,9 +54,8 @@ void main() {
 
       final client = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
-        credentials: DaemonCredentials(
+        credentials: const DaemonCredentials(
           bearerToken: 'test-token-0123456789abcdef0123456789',
-          adminToken: handle.adminToken,
         ),
         clientId: 'integration-test',
         clientKind: 'test',
@@ -62,7 +63,7 @@ void main() {
       addTearDown(client.close);
 
       expect(client.serverInfo.serverId, handle.serverId);
-      expect(client.serverInfo.features['providerAdmin'], isTrue);
+      expect(client.serverInfo.features, isNot(contains('providerAdmin')));
       expect(client.serverInfo.features['jsonRpc2'], isTrue);
       final initialCatalog = await client.listProviderCatalog();
       expect(
@@ -258,9 +259,8 @@ void main() {
       });
       final client = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
-        credentials: DaemonCredentials(
+        credentials: const DaemonCredentials(
           bearerToken: 'delegate-token-0123456789abcdef012345',
-          adminToken: handle.adminToken,
         ),
         clientId: 'delegate-test',
         clientKind: 'test',
@@ -358,10 +358,7 @@ void main() {
       final firstHandle = await DaemonApplication.start(config);
       final firstClient = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: firstHandle.boundEndpoint),
-        credentials: DaemonCredentials(
-          bearerToken: bearerToken,
-          adminToken: firstHandle.adminToken,
-        ),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'agent-create-first',
         clientKind: 'test',
       );
@@ -395,10 +392,7 @@ void main() {
       final secondHandle = await DaemonApplication.start(config);
       final secondClient = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: secondHandle.boundEndpoint),
-        credentials: DaemonCredentials(
-          bearerToken: bearerToken,
-          adminToken: secondHandle.adminToken,
-        ),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'agent-create-second',
         clientKind: 'test',
       );
@@ -415,7 +409,7 @@ void main() {
   );
 
   test(
-    'bearer-only loopback clients cannot mutate provider settings',
+    'bearer-only clients can mutate provider and Agent settings',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-remote-home-');
       final handle = await DaemonApplication.start(
@@ -431,6 +425,46 @@ void main() {
         await handle.stop();
         await home.delete(recursive: true);
       });
+      for (final headers in <Map<String, dynamic>>[
+        const <String, dynamic>{},
+        const <String, dynamic>{'Authorization': 'Bearer incorrect'},
+      ]) {
+        await expectLater(
+          WebSocket.connect(
+            handle.boundEndpoint.toString(),
+            headers: headers,
+          ),
+          throwsA(isA<WebSocketException>()),
+        );
+      }
+      final obsoleteChannel = IOWebSocketChannel.connect(
+        handle.boundEndpoint,
+        headers: const <String, dynamic>{
+          'Authorization': 'Bearer remote-token-0123456789abcdef0123456789',
+        },
+      );
+      await obsoleteChannel.ready;
+      final obsoletePeer = json_rpc.Peer(obsoleteChannel.cast<String>());
+      unawaited(obsoletePeer.listen());
+      await expectLater(
+        obsoletePeer.sendRequest(
+          RpcMethod.hello,
+          const HelloParamsDto(
+            clientId: 'obsolete-client',
+            clientKind: 'test',
+            protocolVersion: 6,
+            capabilities: <String, bool>{},
+          ).toJson(),
+        ),
+        throwsA(
+          isA<json_rpc.RpcException>().having(
+            (error) => error.code,
+            'code',
+            1001,
+          ),
+        ),
+      );
+      await obsoletePeer.close();
       final client = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(
@@ -440,40 +474,27 @@ void main() {
         clientKind: 'mobile',
       );
       addTearDown(client.close);
-      expect(client.serverInfo.features['providerAdmin'], isFalse);
-      expect(
-        client.createCustomProvider(
-          'denied',
-          const CustomProviderConfigDto(
-            name: 'Denied',
-            baseUrl: 'http://127.0.0.1:9999/v1',
-            apiFormat: ProviderApiFormat.chatCompletions,
-            authenticationRequired: false,
-          ),
-        ),
-        throwsA(
-          isA<CoderClientException>().having(
-            (error) => error.code,
-            'code',
-            'local_admin_required',
-          ),
+      expect(client.serverInfo.features, isNot(contains('providerAdmin')));
+      final connection = await client.createCustomProvider(
+        'denied',
+        const CustomProviderConfigDto(
+          name: 'Bearer managed',
+          baseUrl: 'http://127.0.0.1:9999/v1',
+          apiFormat: ProviderApiFormat.chatCompletions,
+          authenticationRequired: false,
         ),
       );
+      expect(connection.id, 'denied');
       final coder = (await client.listAgentDefinitions()).single;
-      await expectLater(
-        client.updateAgentDefinition(
-          coder.copyWith(name: 'Denied'),
-          expectedContentHash: coder.contentHash,
-        ),
-        throwsA(
-          isA<CoderClientException>().having(
-            (error) => error.code,
-            'code',
-            'local_admin_required',
-          ),
-        ),
+      final updated = await client.updateAgentDefinition(
+        coder.copyWith(name: 'Bearer managed Coder'),
+        expectedContentHash: coder.contentHash,
       );
+      expect(updated.name, 'Bearer managed Coder');
     },
+    tags: const <String>[
+      'feature_test__daemon_authentication__verticalSlice',
+    ],
   );
 
   test(
@@ -510,10 +531,7 @@ void main() {
       });
       final client = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
-        credentials: DaemonCredentials(
-          bearerToken: handle.bearerToken,
-          adminToken: handle.adminToken,
-        ),
+        credentials: DaemonCredentials(bearerToken: handle.bearerToken),
         clientId: 'git-vertical-slice',
         clientKind: 'test',
       );
@@ -570,10 +588,7 @@ void main() {
       });
       final client = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
-        credentials: DaemonCredentials(
-          bearerToken: handle.bearerToken,
-          adminToken: handle.adminToken,
-        ),
+        credentials: DaemonCredentials(bearerToken: handle.bearerToken),
         clientId: 'oauth-vertical-slice',
         clientKind: 'test',
       );
@@ -646,7 +661,6 @@ void main() {
     ).readAsString();
     expect(credentials, contains(token));
     expect(credentials, contains(apiKey));
-    expect(credentials, contains(handle.adminToken));
     expect(File('${config.path}/auth.json').existsSync(), isFalse);
     if (!Platform.isWindows) {
       expect(

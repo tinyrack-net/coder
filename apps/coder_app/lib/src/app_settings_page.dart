@@ -56,18 +56,42 @@ class AppSettingsPage extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Card(
-          child: SwitchListTile(
-            title: const Text('내장 daemon'),
-            subtitle: const Text(
-              '앱과 함께 시작하고 앱 종료 시 중지합니다. 시작 실패는 앱 사용을 막지 않습니다.',
-            ),
-            value: registry.settings.embeddedDaemonEnabled,
-            onChanged: (enabled) => _toggleEmbedded(
-              context,
-              ref,
-              currentlyEnabled: registry.settings.embeddedDaemonEnabled,
-              enabled: enabled,
-            ),
+          child: Column(
+            children: <Widget>[
+              SwitchListTile(
+                title: const Text('내장 daemon'),
+                subtitle: const Text(
+                  '앱과 함께 시작하고 앱 종료 시 중지합니다. 시작 실패는 앱 사용을 막지 않습니다.',
+                ),
+                value: registry.settings.embeddedDaemonEnabled,
+                onChanged: (enabled) => _toggleEmbedded(
+                  context,
+                  ref,
+                  currentlyEnabled: registry.settings.embeddedDaemonEnabled,
+                  enabled: enabled,
+                ),
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                key: const ValueKey<String>('embedded-daemon-exposure'),
+                title: const Text('네트워크 접근 허용'),
+                subtitle: const Text(
+                  '끄면 이 기기에서만, 켜면 모든 IPv4 네트워크 인터페이스에서 연결할 수 있습니다.',
+                ),
+                value:
+                    registry.settings.embeddedDaemonExposure ==
+                    EmbeddedDaemonExposure.allInterfaces,
+                onChanged: _embeddedRestarting(registry)
+                    ? null
+                    : (enabled) => ref
+                          .read(hostRegistryControllerProvider.notifier)
+                          .setEmbeddedDaemonExposure(
+                            enabled
+                                ? EmbeddedDaemonExposure.allInterfaces
+                                : EmbeddedDaemonExposure.loopback,
+                          ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),
@@ -104,6 +128,10 @@ class AppSettingsPage extends ConsumerWidget {
         ),
     ],
   );
+
+  bool _embeddedRestarting(HostRegistryState registry) =>
+      registry.settings.embeddedDaemonEnabled &&
+      registry.runtimes[embeddedHostId]?.status == HostRuntimeStatus.connecting;
 
   Future<void> _toggleEmbedded(
     BuildContext context,
@@ -286,13 +314,6 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                   hintText: 'wss://coder.example.com/ws',
                 ),
               ),
-              if (_isInsecureRemote(_address.text))
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                    '경고: 원격 ws:// 연결은 암호화되지 않습니다. reverse proxy에서 TLS를 종료한 wss:// 주소를 권장합니다.',
-                  ),
-                ),
               const SizedBox(height: 12),
               TextField(
                 key: const ValueKey<String>('remote-host-token'),
@@ -418,12 +439,4 @@ String _statusText(HostRuntimeSnapshot? runtime) {
     HostRuntimeStatus.conflict => runtime.error ?? '중복 daemon',
     HostRuntimeStatus.idle => '자동 연결 꺼짐',
   };
-}
-
-bool _isInsecureRemote(String source) {
-  final uri = Uri.tryParse(source.trim());
-  if (uri == null || uri.scheme != 'ws') return false;
-  return uri.host != 'localhost' &&
-      uri.host != '127.0.0.1' &&
-      uri.host != '::1';
 }

@@ -160,14 +160,8 @@ abstract interface class CredentialRepository {
   /// The bearerToken public API member.
   String? get bearerToken;
 
-  /// Secret authorizing daemon-local provider administration.
-  String? get adminToken;
-
-  /// Atomically persists daemon access and local-administration tokens.
-  Future<void> setDaemonTokens({
-    required String bearerToken,
-    required String adminToken,
-  });
+  /// Atomically persists the daemon access token.
+  Future<void> setDaemonToken(String bearerToken);
 
   /// Returns the secret credential for one provider connection.
   ProviderCredential? credential(String connectionId);

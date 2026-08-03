@@ -58,13 +58,15 @@ combine a provider, repositories, tools, and transports.
   timeline events, broadcasts, or RPC responses. Stored credentials live in
   owner-restricted JSON files under the platform config directory; provider
   keys may instead reference daemon environment variables.
-- Credential writes are accepted only from a loopback WebSocket peer. Remote
-  clients receive redacted configuration and capability status.
+- Every authenticated client may update Provider and Markdown Agent settings.
+  The single bearer token grants the complete daemon API; there are no roles or
+  location-based permissions.
 
 ## Network scope
 
-The default listener is loopback-only. LAN mode must be explicitly bound to
-`0.0.0.0` with a stable 256-bit token. Version 1 LAN traffic is plain WebSocket
-and is intended only for a trusted local network. Public internet exposure,
-TLS termination, relay, accounts, and E2EE are deliberately outside this
-milestone.
+The default listener is loopback-only. Desktop Settings can restart the
+app-owned embedded daemon on either `127.0.0.1` or all IPv4 interfaces
+(`0.0.0.0`); standalone daemons retain their CLI/environment listener. The
+client accepts both `ws://` and `wss://` endpoints without applying transport
+policy. Public reachability, firewalling, TLS termination, relay, accounts, and
+E2EE remain the operator's responsibility.

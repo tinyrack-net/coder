@@ -20,6 +20,31 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'daemon.authentication',
+    description:
+        'Uses one bearer token for complete local and remote daemon access.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+  ),
+  FeatureContract(
+    id: 'daemon.exposure',
+    description:
+        'Restarts the embedded daemon on loopback or all IPv4 interfaces.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+      FeatureVerificationLayer.platformSmoke,
+    },
+  ),
+  FeatureContract(
     id: 'workspace.catalog',
     description: 'Merges repositories and worktrees from every online host.',
     apiMethods: <String>['getWorkspaceCatalog', 'refreshWorkspace'],

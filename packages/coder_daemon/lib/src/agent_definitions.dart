@@ -78,7 +78,7 @@ final class AgentDefinitionDocument {
   /// Filename-derived stable agent ID.
   final String id;
 
-  /// Absolute source path shown to administrators.
+  /// Absolute source path shown to connected daemon users.
   final String sourcePath;
 
   /// Complete Markdown source.

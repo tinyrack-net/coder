@@ -15,7 +15,7 @@ embedded-daemon path.
   homes, deterministic provider/OAuth ports, and local Git repositories. They
   cover every command that changes user state without launching Flutter.
 - Widget tests cover loading, data, empty, error, responsive, navigation, approval,
-  conversation, and provider-administration states through `CoderApi` overrides.
+  conversation, and provider settings states through `CoderApi` overrides.
 - Linux canonical golden tests cover light/dark and desktop/mobile presentation.
 - Debug E2E starts an embedded daemon with a deterministic fake model provider,
   drives the real Linux Flutter runner through remote workspace registration,

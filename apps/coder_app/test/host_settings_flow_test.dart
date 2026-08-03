@@ -50,32 +50,37 @@ void main() {
     expect(find.text('자동 연결 꺼짐'), findsOneWidget);
   });
 
-  testWidgets('remote-only app renders and opens settings without a daemon', (
-    tester,
-  ) async {
-    final store = MemoryAppStore(
-      settings: const AppSettings(embeddedDaemonEnabled: false),
-    );
-    await tester.pumpWidget(
-      CoderApp(
-        services: AppServices(
-          settings: store,
-          profiles: store,
-          credentials: store,
-          clients: const _OfflineClients(),
-          clientKind: 'mobile',
+  testWidgets(
+    'remote-only app renders and opens settings without a daemon',
+    (
+      tester,
+    ) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const _OfflineClients(),
+            clientKind: 'mobile',
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
-    await tester.tap(find.byTooltip('설정'));
-    await tester.pumpAndSettle();
-    expect(find.text('설정'), findsOneWidget);
-    expect(find.text('내장 daemon'), findsNothing);
-    expect(find.text('원격 daemon 추가'), findsOneWidget);
-  });
+      expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
+      await tester.tap(find.byTooltip('설정'));
+      await tester.pumpAndSettle();
+      expect(find.text('설정'), findsOneWidget);
+      expect(find.text('내장 daemon'), findsNothing);
+      expect(find.text('네트워크 접근 허용'), findsNothing);
+      expect(find.text('원격 daemon 추가'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__daemon_exposure__widget'],
+  );
 
   testWidgets(
     'remote profiles can be saved offline, edited, and deleted',
@@ -113,15 +118,7 @@ void main() {
         tester.widget<TextField>(_field('WebSocket 주소')).controller?.text,
         'ws://daemon.example/ws',
       );
-      expect(
-        find.textContaining('암호화되지 않습니다'),
-        findsOneWidget,
-        reason: tester
-            .widgetList<Text>(find.byType(Text))
-            .map((widget) => widget.data)
-            .whereType<String>()
-            .join(' | '),
-      );
+      expect(find.textContaining('암호화되지 않습니다'), findsNothing);
       await tester.tap(find.byType(Switch));
       await tester.tap(find.widgetWithText(FilledButton, '저장'));
       await tester.pumpAndSettle();
@@ -149,44 +146,61 @@ void main() {
     tags: const <String>['feature_test__daemon_management__widget'],
   );
 
-  testWidgets('desktop settings toggles the embedded daemon independently', (
-    tester,
-  ) async {
-    final store = MemoryAppStore();
-    final launcher = _FailingLauncher();
-    await tester.pumpWidget(
-      CoderApp(
-        services: AppServices(
-          settings: store,
-          profiles: store,
-          credentials: store,
-          clients: const _OfflineClients(),
-          clientKind: 'desktop',
-          embeddedLauncher: launcher,
+  testWidgets(
+    'desktop settings toggles the embedded daemon independently',
+    (tester) async {
+      final store = MemoryAppStore();
+      final launcher = _FailingLauncher();
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const _OfflineClients(),
+            clientKind: 'desktop',
+            embeddedLauncher: launcher,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('설정'));
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('설정'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('내장 daemon'), findsOneWidget);
-    final toggle = tester.widget<Switch>(find.byType(Switch));
-    expect(toggle.value, isTrue);
-    await tester.tap(find.byType(Switch));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('취소'));
-    await tester.pumpAndSettle();
-    expect(store.settings.embeddedDaemonEnabled, isTrue);
-    await tester.tap(find.byType(Switch));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('중지'));
-    await tester.pumpAndSettle();
-    expect(store.settings.embeddedDaemonEnabled, isFalse);
-    await tester.tap(find.byType(Switch));
-    await tester.pumpAndSettle();
-    expect(store.settings.embeddedDaemonEnabled, isTrue);
-  });
+      expect(find.text('내장 daemon'), findsOneWidget);
+      expect(find.text('네트워크 접근 허용'), findsOneWidget);
+      final embeddedToggle = find.widgetWithText(SwitchListTile, '내장 daemon');
+      final exposureToggle = find.widgetWithText(
+        SwitchListTile,
+        '네트워크 접근 허용',
+      );
+      final toggle = tester.widget<SwitchListTile>(embeddedToggle);
+      expect(toggle.value, isTrue);
+      expect(tester.widget<SwitchListTile>(exposureToggle).value, isFalse);
+
+      await tester.tap(exposureToggle);
+      await tester.pumpAndSettle();
+      expect(
+        store.settings.embeddedDaemonExposure,
+        EmbeddedDaemonExposure.allInterfaces,
+      );
+
+      await tester.tap(embeddedToggle);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('취소'));
+      await tester.pumpAndSettle();
+      expect(store.settings.embeddedDaemonEnabled, isTrue);
+      await tester.tap(embeddedToggle);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('중지'));
+      await tester.pumpAndSettle();
+      expect(store.settings.embeddedDaemonEnabled, isFalse);
+      await tester.tap(embeddedToggle);
+      await tester.pumpAndSettle();
+      expect(store.settings.embeddedDaemonEnabled, isTrue);
+    },
+    tags: const <String>['feature_test__daemon_exposure__widget'],
+  );
 
   testWidgets('host home and settings render independent runtime statuses', (
     tester,
@@ -291,7 +305,9 @@ final class _OfflineClients implements HostClientFactory {
 
 final class _FailingLauncher implements EmbeddedDaemonLauncher {
   @override
-  Future<EmbeddedDaemonSession> start() => Future<EmbeddedDaemonSession>.error(
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+  }) => Future<EmbeddedDaemonSession>.error(
     const HostConnectionFailure.network('not running'),
   );
 }

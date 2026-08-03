@@ -141,6 +141,7 @@ final class _AppDocument {
     'version': 2,
     'settings': <String, dynamic>{
       'embeddedDaemonEnabled': settings.embeddedDaemonEnabled,
+      'embeddedDaemonExposure': settings.embeddedDaemonExposure.name,
       'lastActiveHostId': settings.lastActiveHostId,
       'lastWorktree': _selectionToJson(settings.lastWorktree),
       'sessionTabs': settings.sessionTabs.entries
@@ -159,10 +160,12 @@ final class _AppDocument {
 
 AppSettings _settingsFromJson(Map<String, dynamic> json) {
   final embedded = json['embeddedDaemonEnabled'];
+  final exposure = json['embeddedDaemonExposure'];
   final lastHost = json['lastActiveHostId'];
   final lastWorktree = json['lastWorktree'];
   final tabs = json['sessionTabs'];
   if (embedded is! bool ||
+      (exposure != null && exposure is! String) ||
       (lastHost != null && lastHost is! String) ||
       (lastWorktree != null && lastWorktree is! Map<String, dynamic>) ||
       tabs is! List) {
@@ -189,6 +192,7 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
   }
   return AppSettings(
     embeddedDaemonEnabled: embedded,
+    embeddedDaemonExposure: _exposureFromJson(exposure),
     lastActiveHostId: lastHost as String?,
     lastWorktree: lastWorktree == null
         ? null
@@ -196,6 +200,12 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
     sessionTabs: Map<String, SessionTabPreference>.unmodifiable(sessionTabs),
   );
 }
+
+EmbeddedDaemonExposure _exposureFromJson(Object? value) => switch (value) {
+  null || 'loopback' => EmbeddedDaemonExposure.loopback,
+  'allInterfaces' => EmbeddedDaemonExposure.allInterfaces,
+  _ => throw const FormatException('Invalid embedded daemon exposure.'),
+};
 
 WorkspaceSelection _selectionFromJson(Map<String, dynamic> json) {
   final hostId = json['hostId'];

@@ -5,11 +5,26 @@ import 'package:meta/meta.dart';
 /// Stable identifier reserved for the app-owned desktop daemon.
 const String embeddedHostId = 'embedded';
 
+/// Network interfaces exposed by the app-owned desktop daemon.
+enum EmbeddedDaemonExposure {
+  /// Accept connections only from this machine.
+  loopback('127.0.0.1'),
+
+  /// Accept IPv4 connections on every network interface.
+  allInterfaces('0.0.0.0');
+
+  const EmbeddedDaemonExposure(this.bindHost);
+
+  /// Concrete IPv4 address passed to the daemon listener.
+  final String bindHost;
+}
+
 /// Settings that are meaningful before any daemon connection exists.
 final class AppSettings {
   /// Creates application settings.
   const AppSettings({
     this.embeddedDaemonEnabled = true,
+    this.embeddedDaemonExposure = EmbeddedDaemonExposure.loopback,
     this.lastActiveHostId,
     this.lastWorktree,
     this.sessionTabs = const <String, SessionTabPreference>{},
@@ -17,6 +32,9 @@ final class AppSettings {
 
   /// Whether desktop should manage an app-owned daemon.
   final bool embeddedDaemonEnabled;
+
+  /// Listener exposure selected for the app-owned desktop daemon.
+  final EmbeddedDaemonExposure embeddedDaemonExposure;
 
   /// Last host selected by the user, including an offline host.
   final String? lastActiveHostId;
@@ -30,6 +48,7 @@ final class AppSettings {
   /// Returns settings with selected fields replaced.
   AppSettings copyWith({
     bool? embeddedDaemonEnabled,
+    EmbeddedDaemonExposure? embeddedDaemonExposure,
     String? lastActiveHostId,
     bool clearLastActiveHost = false,
     WorkspaceSelection? lastWorktree,
@@ -37,6 +56,8 @@ final class AppSettings {
     Map<String, SessionTabPreference>? sessionTabs,
   }) => AppSettings(
     embeddedDaemonEnabled: embeddedDaemonEnabled ?? this.embeddedDaemonEnabled,
+    embeddedDaemonExposure:
+        embeddedDaemonExposure ?? this.embeddedDaemonExposure,
     lastActiveHostId: clearLastActiveHost
         ? null
         : lastActiveHostId ?? this.lastActiveHostId,

@@ -52,7 +52,7 @@ abstract interface class EmbeddedDaemonSession {
   /// Bound local endpoint.
   HostEndpoint get endpoint;
 
-  /// Bearer and local-administration credentials.
+  /// Full-access daemon credential.
   DaemonCredentials get credentials;
 
   /// Daemon identity known before the client handshake.
@@ -65,7 +65,9 @@ abstract interface class EmbeddedDaemonSession {
 /// Optional desktop port for starting an app-owned daemon.
 abstract interface class EmbeddedDaemonLauncher {
   /// Starts one daemon session.
-  Future<EmbeddedDaemonSession> start();
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+  });
 }
 
 /// Injectable asynchronous delay used by reconnect loops.

@@ -1,4 +1,5 @@
 tags:
+  feature_test__daemon_authentication__verticalSlice:
   feature_test__workspace_catalog__unit:
   feature_test__workspace_catalog__verticalSlice:
   feature_test__workspace_registration__unit:

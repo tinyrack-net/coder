@@ -161,18 +161,18 @@ void main() {
 
   unawaited(
     goldenTest(
-      'daemon-independent shell renders offline and global settings states',
+      'daemon settings render embedded exposure and remote-only states',
       fileName: 'daemon_hosts',
       constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
       builder: () => GoldenTestGroup(
         columns: 2,
         children: <Widget>[
           GoldenTestScenario(
-            name: 'offline dashboard desktop',
+            name: 'embedded exposure desktop',
             child: SizedBox(
               width: 800,
               height: 700,
-              child: _offlineDashboard(ThemeMode.light),
+              child: _localSettings(ThemeMode.light),
             ),
           ),
           GoldenTestScenario(
@@ -287,17 +287,28 @@ Widget _material(ThemeMode mode, Widget child) => MaterialApp(
   home: Scaffold(body: child),
 );
 
-Widget _offlineDashboard(ThemeMode mode) {
-  final api = FakeCoderApi();
+Widget _localSettings(ThemeMode mode) {
+  final store = MemoryAppStore(
+    settings: const AppSettings(
+      embeddedDaemonExposure: EmbeddedDaemonExposure.allInterfaces,
+    ),
+  );
   return ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(
-        fakeAppServices(api, connected: false),
+        AppServices(
+          settings: store,
+          profiles: store,
+          credentials: store,
+          clients: const _UnusedClients(),
+          clientKind: 'golden',
+          embeddedLauncher: const _GoldenEmbeddedLauncher(),
+        ),
       ),
     ],
     child: _material(
       mode,
-      const WorkspacePage(),
+      const UnifiedSettingsPage(category: SettingsCategory.daemon),
     ),
   );
 }
@@ -347,4 +358,15 @@ final class _UnusedClients implements HostClientFactory {
     required String clientId,
     required String clientKind,
   }) => throw StateError('Golden profiles do not auto-connect.');
+}
+
+final class _GoldenEmbeddedLauncher implements EmbeddedDaemonLauncher {
+  const _GoldenEmbeddedLauncher();
+
+  @override
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+  }) => Future<EmbeddedDaemonSession>.error(
+    const HostConnectionFailure.network('Golden daemon is offline.'),
+  );
 }

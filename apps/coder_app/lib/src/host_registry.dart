@@ -71,6 +71,7 @@ final class HostRegistry {
   final StreamController<HostRegistryState> _changes =
       StreamController<HostRegistryState>.broadcast(sync: true);
   EmbeddedDaemonSession? _embeddedSession;
+  Future<void> _embeddedLifecycle = Future<void>.value();
   HostRegistryState? _state;
   bool _closed = false;
 
@@ -113,7 +114,11 @@ final class HostRegistry {
     scheduleMicrotask(() {
       if (_closed) return;
       if (settings.embeddedDaemonEnabled && _embeddedLauncher != null) {
-        unawaited(_startEmbedded());
+        unawaited(
+          _serializeEmbedded(
+            () => _startEmbedded(settings.embeddedDaemonExposure),
+          ),
+        );
       }
       for (final profile in profiles.where((profile) => profile.autoConnect)) {
         unawaited(_connectRemote(profile.id));
@@ -231,16 +236,18 @@ final class HostRegistry {
   /// Retries one host immediately and resets its backoff.
   Future<void> reconnect(String hostId) async {
     if (hostId == embeddedHostId) {
-      await _stopEmbedded();
-      _replaceRuntime(
-        const HostRuntimeSnapshot(
-          id: embeddedHostId,
-          label: '내장 daemon',
-          kind: HostKind.embedded,
-          status: HostRuntimeStatus.connecting,
-        ),
-      );
-      await _startEmbedded();
+      await _serializeEmbedded(() async {
+        await _stopEmbedded();
+        _replaceRuntime(
+          const HostRuntimeSnapshot(
+            id: embeddedHostId,
+            label: '내장 daemon',
+            kind: HostKind.embedded,
+            status: HostRuntimeStatus.connecting,
+          ),
+        );
+        await _startEmbedded(value.settings.embeddedDaemonExposure);
+      });
       return;
     }
     await _stopRuntime(hostId);
@@ -323,48 +330,85 @@ final class HostRegistry {
   /// Starts or stops only the app-owned desktop daemon.
   Future<void> setEmbeddedDaemonEnabled({required bool enabled}) async {
     if (_embeddedLauncher == null) return;
-    final settings = value.settings.copyWith(
-      embeddedDaemonEnabled: enabled,
-      clearLastActiveHost:
-          !enabled && value.settings.lastActiveHostId == embeddedHostId,
-    );
-    await _settings.saveSettings(settings);
-    if (!enabled) {
-      await _stopEmbedded();
-      final runtimes = Map<String, HostRuntimeSnapshot>.of(value.runtimes)
-        ..remove(embeddedHostId);
+    await _serializeEmbedded(() async {
+      final settings = value.settings.copyWith(
+        embeddedDaemonEnabled: enabled,
+        clearLastActiveHost:
+            !enabled && value.settings.lastActiveHostId == embeddedHostId,
+      );
+      await _settings.saveSettings(settings);
+      if (!enabled) {
+        await _stopEmbedded();
+        final runtimes = Map<String, HostRuntimeSnapshot>.of(value.runtimes)
+          ..remove(embeddedHostId);
+        _emit(
+          value.copyWith(
+            settings: settings,
+            runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(runtimes),
+          ),
+        );
+        return;
+      }
       _emit(
         value.copyWith(
           settings: settings,
-          runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(runtimes),
+          runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(
+            <String, HostRuntimeSnapshot>{
+              ...value.runtimes,
+              embeddedHostId: const HostRuntimeSnapshot(
+                id: embeddedHostId,
+                label: '내장 daemon',
+                kind: HostKind.embedded,
+                status: HostRuntimeStatus.connecting,
+              ),
+            },
+          ),
         ),
       );
-      return;
-    }
-    _emit(
-      value.copyWith(
-        settings: settings,
-        runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(
-          <String, HostRuntimeSnapshot>{
-            ...value.runtimes,
-            embeddedHostId: const HostRuntimeSnapshot(
-              id: embeddedHostId,
-              label: '내장 daemon',
-              kind: HostKind.embedded,
-              status: HostRuntimeStatus.connecting,
-            ),
-          },
-        ),
-      ),
-    );
-    await _startEmbedded();
+      await _startEmbedded(settings.embeddedDaemonExposure);
+    });
   }
 
-  Future<void> _startEmbedded() async {
+  /// Persists and applies a listener exposure to the app-owned daemon.
+  Future<void> setEmbeddedDaemonExposure(
+    EmbeddedDaemonExposure exposure,
+  ) async {
+    if (_embeddedLauncher == null) return;
+    await _serializeEmbedded(() async {
+      final settings = value.settings.copyWith(
+        embeddedDaemonExposure: exposure,
+      );
+      await _settings.saveSettings(settings);
+      if (!settings.embeddedDaemonEnabled) {
+        _emit(value.copyWith(settings: settings));
+        return;
+      }
+      await _stopEmbedded();
+      _emit(
+        value.copyWith(
+          settings: settings,
+          runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(
+            <String, HostRuntimeSnapshot>{
+              ...value.runtimes,
+              embeddedHostId: const HostRuntimeSnapshot(
+                id: embeddedHostId,
+                label: '내장 daemon',
+                kind: HostKind.embedded,
+                status: HostRuntimeStatus.connecting,
+              ),
+            },
+          ),
+        ),
+      );
+      await _startEmbedded(exposure);
+    });
+  }
+
+  Future<void> _startEmbedded(EmbeddedDaemonExposure exposure) async {
     final launcher = _embeddedLauncher;
     if (launcher == null || _closed) return;
     try {
-      final session = await launcher.start();
+      final session = await launcher.start(exposure: exposure);
       if (_closed || !value.settings.embeddedDaemonEnabled) {
         await session.stop();
         return;
@@ -549,6 +593,20 @@ final class HostRegistry {
     _serverOwners.removeWhere((serverId, owner) => owner == hostId);
   }
 
+  Future<void> _serializeEmbedded(
+    Future<void> Function() operation,
+  ) {
+    final result = _embeddedLifecycle.then<void>((_) => operation());
+    _embeddedLifecycle = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {
+        // The caller observes the failure through result; recovering this tail
+        // allows later lifecycle operations to continue safely.
+      },
+    );
+    return result;
+  }
+
   void _replaceProfile(RemoteDaemonProfile profile) {
     _emit(
       value.copyWith(
@@ -605,6 +663,7 @@ final class HostRegistry {
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
+    await _embeddedLifecycle;
     for (final hostId in List<String>.of(_resources.keys)) {
       await _stopRuntime(hostId);
     }

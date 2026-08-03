@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v6 exposes agent definitions and sessions', () {
-    expect(coderProtocolVersion, 6);
+  test('protocol v7 exposes agent definitions and sessions', () {
+    expect(coderProtocolVersion, 7);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -256,7 +256,7 @@ void main() {
   );
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 6);
+    expect(coderProtocolVersion, 7);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.providerCatalog, 'provider.catalog');
@@ -326,7 +326,7 @@ void main() {
         serverId: 'server',
         version: '1.0.0',
         protocolVersion: coderProtocolVersion,
-        features: <String, bool>{'providerAdmin': true},
+        features: <String, bool>{},
       ),
       (value) => value.toJson(),
       ServerInfoDto.fromJson,

@@ -47,7 +47,6 @@ class DaemonConfig {
     this.port = 7337,
     this.apiKey,
     this.bearerToken,
-    this.adminToken,
     this.version = '0.1.0',
     this.useEnvironmentCredentials = true,
   }) : configDirectory = configDirectory ?? homeDirectory;
@@ -61,7 +60,6 @@ class DaemonConfig {
         port: value['port']! as int,
         apiKey: value['apiKey'] as String?,
         bearerToken: value['bearerToken'] as String?,
-        adminToken: value['adminToken'] as String?,
         version: value['version']! as String,
         useEnvironmentCredentials: value['useEnvironmentCredentials']! as bool,
       );
@@ -88,7 +86,6 @@ class DaemonConfig {
       port: int.parse(listen.substring(separator + 1)),
       apiKey: apiKey,
       bearerToken: values['TINYRACK_CODER_TOKEN'],
-      adminToken: values['TINYRACK_CODER_ADMIN_TOKEN'],
     );
   }
 
@@ -110,9 +107,6 @@ class DaemonConfig {
   /// The bearerToken public API member.
   final String? bearerToken;
 
-  /// Optional local-administration secret supplied by the composition root.
-  final String? adminToken;
-
   /// The version public API member.
   final String version;
 
@@ -127,7 +121,6 @@ class DaemonConfig {
     int? port,
     String? apiKey,
     String? bearerToken,
-    String? adminToken,
     bool? useEnvironmentCredentials,
   }) => DaemonConfig(
     homeDirectory: homeDirectory ?? this.homeDirectory,
@@ -136,7 +129,6 @@ class DaemonConfig {
     port: port ?? this.port,
     apiKey: apiKey ?? this.apiKey,
     bearerToken: bearerToken ?? this.bearerToken,
-    adminToken: adminToken ?? this.adminToken,
     version: version,
     useEnvironmentCredentials:
         useEnvironmentCredentials ?? this.useEnvironmentCredentials,
@@ -150,7 +142,6 @@ class DaemonConfig {
     'port': port,
     'apiKey': apiKey,
     'bearerToken': bearerToken,
-    'adminToken': adminToken,
     'version': version,
     'useEnvironmentCredentials': useEnvironmentCredentials,
   };

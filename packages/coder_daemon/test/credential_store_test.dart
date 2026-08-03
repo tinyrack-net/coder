@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_daemon/src/credential_store.dart';
@@ -28,10 +29,7 @@ void main() {
           accountId: 'account-id',
         ),
       );
-      await store.setDaemonTokens(
-        bearerToken: 'daemon-secret',
-        adminToken: 'admin-secret',
-      );
+      await store.setDaemonToken('daemon-secret');
 
       final reloaded = CredentialStore(directory.path);
       await reloaded.load();
@@ -63,13 +61,28 @@ void main() {
             ),
       );
       expect(reloaded.bearerToken, 'daemon-secret');
-      expect(reloaded.adminToken, 'admin-secret');
 
       final credentialsJson = await File(
         '${directory.path}/credentials.json',
       ).readAsString();
+      expect(jsonDecode(credentialsJson), <String, dynamic>{
+        'version': 4,
+        'daemon': <String, dynamic>{'bearerToken': 'daemon-secret'},
+        'providerCredentials': <String, dynamic>{
+          'deepseek': <String, dynamic>{
+            'type': 'apiKey',
+            'key': 'api-secret',
+          },
+          'openai': <String, dynamic>{
+            'type': 'oauth',
+            'accessToken': 'access-secret',
+            'refreshToken': 'refresh-secret',
+            'expiresAt': expiresAt.toIso8601String(),
+            'accountId': 'account-id',
+          },
+        },
+      });
       expect(credentialsJson, contains('daemon-secret'));
-      expect(credentialsJson, contains('admin-secret'));
       expect(credentialsJson, contains('api-secret'));
       expect(credentialsJson, contains('access-secret'));
       expect(File('${directory.path}/auth.json').existsSync(), isFalse);
@@ -82,6 +95,35 @@ void main() {
       }
     },
   );
+
+  test('rejects obsolete dual-token credential documents explicitly', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'coder-obsolete-credential-test-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final file = File('${directory.path}/credentials.json');
+    await file.writeAsString(
+      jsonEncode(<String, dynamic>{
+        'version': 3,
+        'daemon': <String, dynamic>{
+          'bearerToken': 'bearer',
+          'adminToken': 'obsolete',
+        },
+        'providerCredentials': <String, dynamic>{},
+      }),
+    );
+
+    await expectLater(
+      CredentialStore(directory.path).load(),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('incompatible_credentials'),
+        ),
+      ),
+    );
+  });
 
   test('removing one credential preserves the remaining credentials', () async {
     final directory = await Directory.systemTemp.createTemp(

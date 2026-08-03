@@ -139,10 +139,7 @@ void main() {
       final states = <ClientConnectionState>[];
       final clientFuture = CoderClient.connect(
         endpoint: HostEndpoint.parse('127.0.0.1:7337'),
-        credentials: const DaemonCredentials(
-          bearerToken: 'secret-token',
-          adminToken: 'admin-token',
-        ),
+        credentials: const DaemonCredentials(bearerToken: 'secret-token'),
         clientId: 'client',
         clientKind: 'test',
         connector: connector,
@@ -159,7 +156,6 @@ void main() {
         connector.lastHeaders,
         const <String, String>{
           'Authorization': 'Bearer secret-token',
-          'X-Tinyrack-Coder-Admin': 'admin-token',
         },
       );
       expect(
@@ -387,6 +383,7 @@ void main() {
     },
     tags: const <String>[
       'feature_test__daemon_management__contract',
+      'feature_test__daemon_authentication__contract',
       'feature_test__workspace_catalog__contract',
       'feature_test__workspace_registration__contract',
       'feature_test__worktree_lifecycle__contract',
@@ -592,7 +589,7 @@ void _registerHello(json_rpc.Peer peer, List<_Request> requests) {
       serverId: 'server',
       version: 'test',
       protocolVersion: coderProtocolVersion,
-      features: <String, bool>{'providerAdmin': true},
+      features: <String, bool>{},
     ).toJson();
   });
 }

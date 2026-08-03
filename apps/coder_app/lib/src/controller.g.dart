@@ -37,7 +37,7 @@ final class HostRegistryControllerProvider
 }
 
 String _$hostRegistryControllerHash() =>
-    r'1cd01bbf7380d379c71d714129609bf780001fa9';
+    r'ad58e2d2eb42e84e2d24e1014043b3edd6deb785';
 
 /// Riverpod bridge exposing the independently testable [HostRegistry].
 
@@ -279,7 +279,7 @@ final class AgentDefinitionsControllerProvider
 }
 
 String _$agentDefinitionsControllerHash() =>
-    r'0a34e49596a20ca7d515eaa8ddf40bfff49f2205';
+    r'570b9ce07712705d173fa06d2237dc401ff5f34a';
 
 /// Loads and edits one daemon's Markdown agent files.
 
@@ -599,7 +599,7 @@ final class ProviderSettingsControllerProvider
 }
 
 String _$providerSettingsControllerHash() =>
-    r'aca1cb5b04cbf5fce49bf2d9a37660130c3304ae';
+    r'808b946eb06348d7c0b8ff07fffb8894116f5771';
 
 /// ProviderSettingsController defines a public contract.
 

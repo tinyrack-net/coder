@@ -28,7 +28,6 @@ class DaemonRpcServer {
     required this.clock,
     required this.serverInfo,
     required this.token,
-    required this.adminToken,
     required Stream<WireEnvelope> events,
   }) {
     _eventSubscription = events.listen(_broadcast);
@@ -80,8 +79,6 @@ class DaemonRpcServer {
   /// The token public API member.
   final String token;
 
-  /// Secret required for local provider-administration capabilities.
-  final String adminToken;
   final Set<_ClientSession> _sessions = <_ClientSession>{};
   late final StreamSubscription<WireEnvelope> _eventSubscription;
   late final StreamSubscription<ProviderAuthAttemptDto> _authSubscription;
@@ -100,24 +97,17 @@ class DaemonRpcServer {
       );
     }
     if (request.url.path != 'ws') return Response.notFound('Not found');
-    if (request.headers['authorization'] != 'Bearer $token') {
+    final authorization = request.headers['authorization'];
+    final candidate = authorization?.startsWith('Bearer ') == true
+        ? authorization!.substring('Bearer '.length)
+        : null;
+    if (!_constantTimeEquals(candidate, token)) {
       return Response.unauthorized('A valid bearer token is required.');
     }
-    final localAdmin = _constantTimeEquals(
-      request.headers['x-tinyrack-coder-admin'],
-      adminToken,
-    );
-    return webSocketHandler(
-      (channel, protocol) =>
-          _openSession(channel, protocol, localAdmin: localAdmin),
-    )(request);
+    return webSocketHandler(_openSession)(request);
   }
 
-  void _openSession(
-    WebSocketChannel channel,
-    String? protocol, {
-    required bool localAdmin,
-  }) {
+  void _openSession(WebSocketChannel channel, String? protocol) {
     final session = _ClientSession(
       channel: channel,
       workspaces: workspaces,
@@ -129,7 +119,6 @@ class DaemonRpcServer {
       providerAuth: providerAuth,
       clock: clock,
       serverInfo: serverInfo,
-      localAdmin: localAdmin,
       onClosed: () {},
     );
     session.onClosed = () => _sessions.remove(session);
@@ -190,7 +179,6 @@ class _ClientSession {
     required this.providerAuth,
     required this.clock,
     required this.serverInfo,
-    required this.localAdmin,
     required this.onClosed,
   });
 
@@ -204,7 +192,6 @@ class _ClientSession {
   final ProviderAuthCoordinator providerAuth;
   final Clock clock;
   final ServerInfoDto serverInfo;
-  final bool localAdmin;
   void Function() onClosed;
   final Set<String> subscriptions = <String>{};
   late final json_rpc.Peer _peer;
@@ -277,10 +264,6 @@ class _ClientSession {
         .copyWith(
           features: <String, bool>{
             ...serverInfo.features,
-            'providerAdmin': localAdmin,
-            'providerCredentialWrite': localAdmin,
-            'providerDiagnostics': localAdmin,
-            'agentDefinitionAdmin': localAdmin,
             'jsonRpc2': true,
           },
         )
@@ -397,7 +380,6 @@ class _ClientSession {
           definition: await agentDefinitions.get(request.id),
         ).toJson();
       case RpcMethod.agentDefinitionCreate:
-        _requireLocalAdmin();
         final request = AgentDefinitionCreateParamsDto.fromJson(payload);
         return AgentDefinitionResultDto(
           definition: await agentDefinitions.create(
@@ -406,7 +388,6 @@ class _ClientSession {
           ),
         ).toJson();
       case RpcMethod.agentDefinitionUpdate:
-        _requireLocalAdmin();
         final request = AgentDefinitionUpdateParamsDto.fromJson(payload);
         return AgentDefinitionResultDto(
           definition: await agentDefinitions.update(
@@ -416,12 +397,10 @@ class _ClientSession {
           ),
         ).toJson();
       case RpcMethod.agentDefinitionArchive:
-        _requireLocalAdmin();
         final request = AgentDefinitionIdParamsDto.fromJson(payload);
         await agentDefinitions.archive(request.id);
         return const <String, dynamic>{};
       case RpcMethod.agentDefinitionReset:
-        _requireLocalAdmin();
         final request = AgentDefinitionIdParamsDto.fromJson(payload);
         return AgentDefinitionResultDto(
           definition: await agentDefinitions.reset(request.id),
@@ -478,7 +457,6 @@ class _ClientSession {
         final connections = await providers.connections();
         return ProviderConnectionsResultDto(connections: connections).toJson();
       case RpcMethod.providerConnectApiKey:
-        _requireLocalAdmin();
         final request = ProviderConnectApiKeyParamsDto.fromJson(payload);
         final connection = await providers.connectApiKey(
           request.definitionId,
@@ -487,7 +465,6 @@ class _ClientSession {
         );
         return ProviderConnectionResultDto(connection: connection).toJson();
       case RpcMethod.providerConnectNone:
-        _requireLocalAdmin();
         final request = ProviderConnectNoneParamsDto.fromJson(payload);
         final connection = await providers.connectNone(
           request.definitionId,
@@ -495,7 +472,6 @@ class _ClientSession {
         );
         return ProviderConnectionResultDto(connection: connection).toJson();
       case RpcMethod.providerAuthStart:
-        _requireLocalAdmin();
         final request = ProviderAuthStartParamsDto.fromJson(payload);
         final attempt = await providerAuth.start(
           definitionId: request.definitionId,
@@ -508,27 +484,22 @@ class _ClientSession {
         final attempt = await providerAuth.status(request.attemptId);
         return ProviderAuthAttemptResultDto(attempt: attempt).toJson();
       case RpcMethod.providerAuthCancel:
-        _requireLocalAdmin();
         final request = ProviderAuthAttemptParamsDto.fromJson(payload);
         await providerAuth.cancel(request.attemptId);
         return const <String, dynamic>{};
       case RpcMethod.providerDisconnect:
-        _requireLocalAdmin();
         final request = ProviderConnectionIdParamsDto.fromJson(payload);
         await providers.disconnect(request.connectionId);
         return const <String, dynamic>{};
       case RpcMethod.providerDefaultSet:
-        _requireLocalAdmin();
         final request = ProviderDefaultSetParamsDto.fromJson(payload);
         await providers.setDefault(request.connectionId);
         return const <String, dynamic>{};
       case RpcMethod.providerDefaultModelSet:
-        _requireLocalAdmin();
         final request = ProviderDefaultModelSetParamsDto.fromJson(payload);
         await providers.setDefaultModel(request.connectionId, request.modelId);
         return const <String, dynamic>{};
       case RpcMethod.providerCatalogRefresh:
-        _requireLocalAdmin();
         final catalog = await providers.refreshCatalog();
         return ProviderCatalogResultDto(catalog: catalog).toJson();
       case RpcMethod.providerModelsList:
@@ -536,7 +507,6 @@ class _ClientSession {
         final models = await providers.listModels(request.connectionId);
         return ProviderModelsResultDto(models: models).toJson();
       case RpcMethod.providerCustomCreate:
-        _requireLocalAdmin();
         final request = ProviderCustomCreateParamsDto.fromJson(payload);
         final connection = await providers.createCustom(
           request.id,
@@ -546,7 +516,6 @@ class _ClientSession {
         );
         return ProviderConnectionResultDto(connection: connection).toJson();
       case RpcMethod.providerCustomUpdate:
-        _requireLocalAdmin();
         final request = ProviderCustomUpdateParamsDto.fromJson(payload);
         final connection = await providers.updateCustom(
           request.connectionId,
@@ -555,7 +524,6 @@ class _ClientSession {
         );
         return ProviderConnectionResultDto(connection: connection).toJson();
       case RpcMethod.providerCustomDelete:
-        _requireLocalAdmin();
         final request = ProviderConnectionIdParamsDto.fromJson(payload);
         if (await agentDefinitions.referencesProvider(request.connectionId)) {
           throw const FormatException(
@@ -596,15 +564,6 @@ class _ClientSession {
           'unknown_method',
           'Unknown RPC method: $method',
         );
-    }
-  }
-
-  void _requireLocalAdmin() {
-    if (!localAdmin) {
-      throw const _RpcRequestException(
-        'local_admin_required',
-        'This setting can only be changed by a daemon administrator.',
-      );
     }
   }
 

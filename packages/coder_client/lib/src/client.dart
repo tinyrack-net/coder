@@ -102,7 +102,6 @@ class CoderClient implements CoderApi {
         _endpoint.websocketUri,
         headers: <String, String>{
           'Authorization': 'Bearer ${_credentials.bearerToken}',
-          'X-Tinyrack-Coder-Admin': ?_credentials.adminToken,
         },
       );
       final peer = json_rpc.Peer(channel.cast<String>());

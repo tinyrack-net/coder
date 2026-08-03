@@ -66,8 +66,7 @@ Future<void> _runProvider(
   final credentials = CredentialStore(config.configDirectory);
   await credentials.load();
   final token = config.bearerToken ?? credentials.bearerToken;
-  final adminToken = config.adminToken ?? credentials.adminToken;
-  if (token == null || adminToken == null) {
+  if (token == null) {
     throw StateError(
       'No daemon connection token found. Start coder_daemon first.',
     );
@@ -81,10 +80,7 @@ Future<void> _runProvider(
         path: '/ws',
       ),
     ),
-    credentials: DaemonCredentials(
-      bearerToken: token,
-      adminToken: adminToken,
-    ),
+    credentials: DaemonCredentials(bearerToken: token),
     clientId: 'coder-daemon-cli',
     clientKind: 'standalone-cli',
   );
@@ -120,8 +116,7 @@ Future<CoderClient> _connectAdminClient(DaemonConfig config) async {
   final credentials = CredentialStore(config.configDirectory);
   await credentials.load();
   final token = config.bearerToken ?? credentials.bearerToken;
-  final adminToken = config.adminToken ?? credentials.adminToken;
-  if (token == null || adminToken == null) {
+  if (token == null) {
     throw StateError(
       'No daemon connection token found. Start coder_daemon first.',
     );
@@ -135,10 +130,7 @@ Future<CoderClient> _connectAdminClient(DaemonConfig config) async {
         path: '/ws',
       ),
     ),
-    credentials: DaemonCredentials(
-      bearerToken: token,
-      adminToken: adminToken,
-    ),
+    credentials: DaemonCredentials(bearerToken: token),
     clientId: 'coder-daemon-agent-cli',
     clientKind: 'standalone-cli',
   );

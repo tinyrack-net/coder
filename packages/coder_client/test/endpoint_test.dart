@@ -7,15 +7,14 @@ void main() {
     expect(endpoint.websocketUri.toString(), 'ws://127.0.0.1:7337/ws');
   });
 
-  test('credentials keep transport location and secrets separate', () {
-    const credentials = DaemonCredentials(
-      bearerToken: 'bearer',
-      adminToken: 'admin',
-    );
+  test(
+    'credentials keep transport location and the single secret separate',
+    () {
+      const credentials = DaemonCredentials(bearerToken: 'bearer');
 
-    expect(credentials.bearerToken, 'bearer');
-    expect(credentials.adminToken, 'admin');
-    expect(credentials.toString(), isNot(contains('bearer')));
-    expect(credentials.toString(), isNot(contains('admin')));
-  });
+      expect(credentials.bearerToken, 'bearer');
+      expect(credentials.toString(), isNot(contains('bearer')));
+    },
+    tags: const <String>['feature_test__daemon_authentication__unit'],
+  );
 }

@@ -36,9 +36,6 @@ abstract interface class DaemonHandle {
   /// The bearerToken public API member.
   String get bearerToken;
 
-  /// Secret granting provider administration to trusted local clients.
-  String get adminToken;
-
   /// The stop public API member.
   Future<void> stop();
 }
@@ -86,28 +83,17 @@ abstract final class DaemonApplication {
           config.bearerToken ??
           credentials.bearerToken ??
           generateBearerToken();
-      final adminToken =
-          config.adminToken ?? credentials.adminToken ?? generateBearerToken();
       if (utf8.encode(token).length < 32) {
         throw ArgumentError(
           'Bearer token must contain at least 256 bits (32 bytes).',
-        );
-      }
-      if (utf8.encode(adminToken).length < 32) {
-        throw ArgumentError(
-          'Admin token must contain at least 256 bits (32 bytes).',
         );
       }
       await database.settingsDao.setValue(
         'auth.tokenHash',
         sha256.convert(utf8.encode(token)).toString(),
       );
-      if (credentials.bearerToken != token ||
-          credentials.adminToken != adminToken) {
-        await credentials.setDaemonTokens(
-          bearerToken: token,
-          adminToken: adminToken,
-        );
+      if (credentials.bearerToken != token) {
+        await credentials.setDaemonToken(token);
       }
       final events = StreamController<WireEnvelope>.broadcast(sync: true);
       final effectiveOAuthGateway =
@@ -205,7 +191,6 @@ abstract final class DaemonApplication {
         clock: clock,
         serverInfo: info,
         token: token,
-        adminToken: adminToken,
         events: events.stream,
       );
       final http = await shelf_io.serve(
@@ -225,7 +210,6 @@ abstract final class DaemonApplication {
         ),
         serverIdValue: serverId,
         token: token,
-        adminTokenValue: adminToken,
         http: http,
         rpc: rpc,
         database: database,
@@ -247,20 +231,17 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._endpoint,
     required String serverIdValue,
     required this._token,
-    required String adminTokenValue,
     required this._http,
     required this._rpc,
     required this._database,
     required this._events,
     required this._agentDefinitions,
     required this._lock,
-  }) : _serverId = serverIdValue,
-       _adminToken = adminTokenValue;
+  }) : _serverId = serverIdValue;
 
   final Uri _endpoint;
   final String _serverId;
   final String _token;
-  final String _adminToken;
   final HttpServer _http;
   final DaemonRpcServer _rpc;
   final CoderDatabase _database;
@@ -275,8 +256,6 @@ class _LocalDaemonHandle implements DaemonHandle {
   String get serverId => _serverId;
   @override
   String get bearerToken => _token;
-  @override
-  String get adminToken => _adminToken;
   @override
   Future<void> get ready => Future<void>.value();
 

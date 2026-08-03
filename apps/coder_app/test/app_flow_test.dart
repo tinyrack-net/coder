@@ -596,32 +596,32 @@ void main() {
     tags: const <String>['feature_test__agent_delegation__widget'],
   );
 
-  testWidgets('agent settings exposes read-only and load-error states', (
+  testWidgets('remote agent settings stays editable and exposes load errors', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1100, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    const readOnlyInfo = ServerInfoDto(
+    const remoteInfo = ServerInfoDto(
       serverId: 'server',
       version: 'test',
       protocolVersion: coderProtocolVersion,
-      features: <String, bool>{'agentDefinitionAdmin': false},
+      features: <String, bool>{},
     );
-    final readOnlyRouter = await _pumpRoute(
+    final remoteRouter = await _pumpRoute(
       tester,
-      FakeCoderApi(serverInfo: readOnlyInfo),
+      FakeCoderApi(serverInfo: remoteInfo),
       const AgentSettingsRoute(hostId: 'server').location,
     );
-    expect(find.textContaining('읽기만'), findsOneWidget);
+    expect(find.textContaining('읽기만'), findsNothing);
     expect(
       tester
           .widget<IconButton>(
             find.widgetWithIcon(IconButton, Icons.add),
           )
           .onPressed,
-      isNull,
+      isNotNull,
     );
-    readOnlyRouter.dispose();
+    remoteRouter.dispose();
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();

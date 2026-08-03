@@ -475,7 +475,6 @@ void main() {
       );
       expect(initial!.catalog.definitions.first.id, 'openai');
       expect(initial.connections.single.isDefault, isTrue);
-      expect(notifier.canManage, isTrue);
 
       await notifier.loadModels('openai');
       expect(
@@ -646,7 +645,7 @@ ServerInfoDto _serverInfo(String id) => ServerInfoDto(
   serverId: id,
   version: 'test',
   protocolVersion: coderProtocolVersion,
-  features: const <String, bool>{'providerAdmin': true},
+  features: const <String, bool>{},
 );
 
 final class _HostClients implements HostClientFactory {

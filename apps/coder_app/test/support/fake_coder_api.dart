@@ -52,10 +52,7 @@ final class FakeCoderApi implements CoderApi {
     serverId: 'server',
     version: 'test',
     protocolVersion: coderProtocolVersion,
-    features: <String, bool>{
-      'providerAdmin': true,
-      'agentDefinitionAdmin': true,
-    },
+    features: <String, bool>{},
   );
   static final ProviderCatalogDto _defaultCatalog = ProviderCatalogDto(
     definitions: const <ProviderDefinitionDto>[

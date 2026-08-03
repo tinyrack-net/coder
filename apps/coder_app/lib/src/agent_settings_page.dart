@@ -63,7 +63,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
               state: value,
               selectedId: _selectedId,
               onSelected: (id) => setState(() => _selectedId = id),
-              onCreate: value.canEdit ? () => _create(value) : null,
+              onCreate: () => _create(value),
             );
             if (compact) return list;
             return Row(
@@ -153,11 +153,6 @@ class _AgentDefinitionList extends StatelessWidget {
         ),
       ),
       const Divider(height: 1),
-      if (!state.canEdit)
-        const Padding(
-          padding: EdgeInsets.all(12),
-          child: Text('이 원격 연결에서는 Agent 설정을 읽기만 할 수 있습니다.'),
-        ),
       Expanded(
         child: ListView(
           children: <Widget>[
@@ -253,7 +248,7 @@ class _AgentEditorState extends State<_AgentEditor> {
   @override
   Widget build(BuildContext context) {
     final definition = widget.definition;
-    final editable = widget.state.canEdit && !_saving;
+    final editable = !_saving;
     final subagents = widget.state.definitions.where(
       (candidate) =>
           candidate.mode == AgentMode.subagent &&

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/desktop_bootstrap.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -48,7 +50,6 @@ void main() {
         homeDirectory: '/test-home',
         port: 0,
         bearerToken: 'launcher-token-0123456789abcdef012345',
-        adminToken: 'launcher-admin-0123456789abcdef012345',
         useEnvironmentCredentials: false,
       );
       final launcher = IsolateEmbeddedDaemonLauncher(
@@ -59,21 +60,59 @@ void main() {
         },
       );
 
-      final session = await launcher.start();
-      expect(startedConfig, same(config));
+      final session = await launcher.start(
+        exposure: EmbeddedDaemonExposure.allInterfaces,
+      );
+      expect(startedConfig?.host, '0.0.0.0');
+      expect(startedConfig?.port, config.port);
+      expect(startedConfig?.homeDirectory, config.homeDirectory);
+      expect(startedConfig?.bearerToken, config.bearerToken);
       expect(session.endpoint.websocketUri.scheme, 'ws');
       expect(session.serverId, isNotEmpty);
       expect(
         session.credentials.bearerToken,
         'launcher-token-0123456789abcdef012345',
       );
-      expect(
-        session.credentials.adminToken,
-        'launcher-admin-0123456789abcdef012345',
-      );
       await session.stop();
       expect(handle.stops, 1);
     },
+  );
+
+  test(
+    'real embedded launcher starts in loopback and all-interface modes',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'coder-exposure-vertical-slice-',
+      );
+      addTearDown(() {
+        if (home.existsSync()) home.deleteSync(recursive: true);
+      });
+      final launcher = IsolateEmbeddedDaemonLauncher(
+        config: DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'exposure-token-0123456789abcdef012345',
+          useEnvironmentCredentials: false,
+        ),
+      );
+
+      for (final exposure in EmbeddedDaemonExposure.values) {
+        final session = await launcher.start(exposure: exposure);
+        final client = await CoderClient.connect(
+          endpoint: session.endpoint,
+          credentials: session.credentials,
+          clientId: 'exposure-${exposure.name}',
+          clientKind: 'vertical-slice',
+        );
+        expect(client.serverInfo.serverId, session.serverId);
+        await client.close();
+        await session.stop();
+      }
+    },
+    tags: const <String>[
+      'feature_test__daemon_exposure__verticalSlice',
+      'feature_test__daemon_exposure__platformSmoke',
+    ],
   );
 
   test('WebSocket factory classifies typed connection failures', () async {
@@ -169,15 +208,13 @@ final class _UnusedLauncher implements EmbeddedDaemonLauncher {
   const _UnusedLauncher();
 
   @override
-  Future<EmbeddedDaemonSession> start() =>
-      throw StateError('No daemon is expected in a factory test.');
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+  }) => throw StateError('No daemon is expected in a factory test.');
 }
 
 final class _DaemonHandle implements DaemonHandle {
   int stops = 0;
-
-  @override
-  String get adminToken => 'launcher-admin-0123456789abcdef012345';
 
   @override
   String get bearerToken => 'launcher-token-0123456789abcdef012345';

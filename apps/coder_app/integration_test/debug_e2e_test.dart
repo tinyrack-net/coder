@@ -54,6 +54,7 @@ void main() {
         );
         await request.response.close();
       });
+      final agentProvider = _AgentE2eProvider();
       final handle = await EmbeddedDaemonHandle.start(
         DaemonConfig(
           homeDirectory: home.path,
@@ -61,7 +62,14 @@ void main() {
           bearerToken: 'e2e-token-0123456789abcdef0123456789',
           useEnvironmentCredentials: false,
         ),
-        provider: _AgentE2eProvider(),
+        provider: agentProvider,
+      );
+      final embeddedLauncher = _RestartableLauncher(
+        initialHandle: handle,
+        homeDirectory: home.path,
+        bearerToken: 'e2e-token-0123456789abcdef0123456789',
+        port: handle.boundEndpoint.port,
+        provider: agentProvider,
       );
       final remoteHandle = await DaemonApplication.start(
         DaemonConfig(
@@ -73,7 +81,7 @@ void main() {
         provider: _PatchProvider(),
       );
       addTearDown(() async {
-        await handle.stop();
+        await embeddedLauncher.stopCurrent();
         await remoteHandle.stop();
         if (home.existsSync()) home.deleteSync(recursive: true);
         if (remoteHome.existsSync()) remoteHome.deleteSync(recursive: true);
@@ -90,12 +98,20 @@ void main() {
         endpoint: endpoint,
         credentials: DaemonCredentials(
           bearerToken: handle.bearerToken,
-          adminToken: handle.adminToken,
         ),
         clientId: 'e2e-setup',
         clientKind: 'integration-test',
       );
       addTearDown(setupClient.close);
+      final remoteClient = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: remoteHandle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'remote-token-0123456789abcdef0123456789',
+        ),
+        clientId: 'e2e-remote-setup',
+        clientKind: 'integration-test',
+      );
+      addTearDown(remoteClient.close);
       await setupClient.registerWorkspace(
         workspaceId: 'workspace-e2e',
         checkoutId: 'checkout-e2e',
@@ -128,7 +144,7 @@ void main() {
             credentials: appStore,
             clients: const WebSocketHostClientFactory(),
             clientKind: 'desktop-integration-test',
-            embeddedLauncher: _ExistingLauncher(handle),
+            embeddedLauncher: embeddedLauncher,
           ),
         ),
       );
@@ -159,8 +175,68 @@ void main() {
 
       await tester.tap(find.byTooltip('설정'));
       await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'Daemon'));
+      final exposureToggle = find.byKey(
+        const ValueKey<String>('embedded-daemon-exposure'),
+      );
+      await _pumpUntil(tester, exposureToggle);
+      await tester.tap(exposureToggle);
+      await _pumpUntilCondition(
+        tester,
+        () => embeddedLauncher.exposures.length == 2,
+        'embedded daemon to restart on all interfaces',
+      );
+      await _pumpUntilCondition(
+        tester,
+        () => tester.widget<SwitchListTile>(exposureToggle).onChanged != null,
+        'all-interface daemon to reconnect',
+      );
+      expect(
+        embeddedLauncher.exposures,
+        <EmbeddedDaemonExposure>[
+          EmbeddedDaemonExposure.loopback,
+          EmbeddedDaemonExposure.allInterfaces,
+        ],
+      );
+      await tester.tap(exposureToggle);
+      await _pumpUntilCondition(
+        tester,
+        () => embeddedLauncher.exposures.length == 3,
+        'embedded daemon to return to loopback',
+      );
+      await _pumpUntilCondition(
+        tester,
+        () => tester.widget<SwitchListTile>(exposureToggle).onChanged != null,
+        'loopback daemon to reconnect',
+      );
+      expect(
+        embeddedLauncher.exposures.last,
+        EmbeddedDaemonExposure.loopback,
+      );
       await tester.tap(find.text('Agent'));
       await _pumpUntil(tester, find.text('Agents'));
+      await _selectDaemon(tester, 'Remote daemon');
+      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'ID (파일명)'),
+        'remote-agent',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, '이름').last,
+        'Remote Agent',
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      final createRemoteAgent = find.widgetWithText(FilledButton, '생성');
+      await tester.ensureVisible(createRemoteAgent);
+      await tester.pumpAndSettle();
+      await tester.tap(createRemoteAgent);
+      await _pumpUntilGone(tester, find.text('Agent 추가'));
+      final remoteAgent = await _waitForAgentDefinition(
+        remoteClient,
+        'remote-agent',
+      );
+      expect(remoteAgent.sourcePath, startsWith(remoteHome.path));
       await _selectDaemon(tester, '내장 daemon');
       await tester.tap(find.byTooltip('Agent 추가'));
       await tester.pumpAndSettle();
@@ -304,9 +380,18 @@ void main() {
       await tester.tap(find.text('생성'));
       await _pumpUntil(tester, find.text('코딩 요청을 입력하세요.'));
 
-      await tester.enterText(find.byType(TextField).last, 'Delegate review');
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.arrow_upward));
+      final composer = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.hintText == '코딩 요청을 입력하세요…',
+      );
+      await tester.enterText(composer, 'Delegate review');
+      await tester.pump();
+      expect(tester.widget<TextField>(composer).controller?.text, isNotEmpty);
+      final sendButton = find.widgetWithIcon(IconButton, Icons.arrow_upward);
+      expect(tester.widget<IconButton>(sendButton).onPressed, isNotNull);
+      await tester.tap(sendButton);
+      await tester.pump();
       await _pumpUntilWithSessionDiagnostics(
         tester,
         find.text('Parent completed.', findRichText: true),
@@ -324,9 +409,12 @@ void main() {
       await tester.tap(find.text('Coding session').first);
       await _pumpUntil(tester, find.text('coder · manual'));
 
-      await tester.enterText(find.byType(TextField).last, 'Create result.txt');
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.enterText(composer, 'Create result.txt');
+      await tester.pump();
+      expect(tester.widget<TextField>(composer).controller?.text, isNotEmpty);
+      expect(tester.widget<IconButton>(sendButton).onPressed, isNotNull);
+      await tester.tap(sendButton);
+      await tester.pump();
       await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
       await tester.tap(find.text('승인'));
       await _pumpUntil(
@@ -342,7 +430,6 @@ void main() {
         endpoint: endpoint,
         credentials: DaemonCredentials(
           bearerToken: handle.bearerToken,
-          adminToken: handle.adminToken,
         ),
         clientId: 'e2e-reconnect',
         clientKind: 'integration-test',
@@ -368,6 +455,12 @@ void main() {
 
       await tester.tap(find.byTooltip('설정'));
       await _pumpUntil(tester, find.text('Provider 추가'));
+      await _selectDaemon(
+        tester,
+        'Remote daemon',
+        settleAfterSelection: false,
+      );
+      await _pumpUntil(tester, find.text('Provider 추가'));
       expect(find.text('OpenAI'), findsWidgets);
       expect(find.text('DeepSeek'), findsWidgets);
       final addCustom = find.byKey(const ValueKey('provider-add-custom'));
@@ -386,7 +479,7 @@ void main() {
       await tester.tap(find.text('API key 필요'));
       await tester.tap(find.widgetWithText(FilledButton, '저장'));
       await _pumpUntil(tester, find.text('E2E Provider'));
-      final providerConnection = (await setupClient.listProviderConnections())
+      final providerConnection = (await remoteClient.listProviderConnections())
           .singleWhere((item) => item.displayName == 'E2E Provider');
       expect(providerConnection.defaultModelId, 'e2e-model');
       final connectedSection = find.byKey(
@@ -421,7 +514,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        (await setupClient.listProviderConnections())
+        (await remoteClient.listProviderConnections())
             .singleWhere((item) => item.id == providerConnection.id)
             .defaultModelId,
         selectedModelId,
@@ -446,7 +539,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '연결 해제'));
       await tester.pumpAndSettle();
       expect(
-        (await setupClient.listProviderConnections())
+        (await remoteClient.listProviderConnections())
             .singleWhere((item) => item.id == providerConnection.id)
             .status,
         ProviderConnectionStatus.disconnected,
@@ -454,6 +547,8 @@ void main() {
     },
     tags: const <String>[
       'feature_test__daemon_management__e2e',
+      'feature_test__daemon_exposure__e2e',
+      'feature_test__daemon_authentication__e2e',
       'feature_test__workspace_catalog__e2e',
       'feature_test__workspace_registration__e2e',
       'feature_test__worktree_lifecycle__e2e',
@@ -499,7 +594,11 @@ Future<AgentDefinitionDto> _waitForAgentDefinition(
   throw TestFailure('Timed out waiting for Agent definition $id.');
 }
 
-Future<void> _selectDaemon(WidgetTester tester, String label) async {
+Future<void> _selectDaemon(
+  WidgetTester tester,
+  String label, {
+  bool settleAfterSelection = true,
+}) async {
   final dropdown = find.widgetWithText(
     DropdownButtonFormField<String>,
     'Daemon',
@@ -507,7 +606,11 @@ Future<void> _selectDaemon(WidgetTester tester, String label) async {
   await tester.tap(dropdown);
   await tester.pumpAndSettle();
   await tester.tap(find.text(label).last);
-  await tester.pumpAndSettle();
+  if (settleAfterSelection) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 Future<void> _pumpUntilTextFieldValue(
@@ -570,6 +673,19 @@ Future<void> _pumpUntilGone(
   throw TestFailure('Timed out waiting for $finder to disappear.');
 }
 
+Future<void> _pumpUntilCondition(
+  WidgetTester tester,
+  bool Function() condition,
+  String description, {
+  int attempts = 100,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (condition()) return;
+  }
+  throw TestFailure('Timed out waiting for $description.');
+}
+
 Future<void> _pumpUntilWithSessionDiagnostics(
   WidgetTester tester,
   Finder finder,
@@ -593,24 +709,66 @@ Future<void> _pumpUntilWithSessionDiagnostics(
   throw TestFailure('Timed out waiting for $finder: $diagnostics');
 }
 
-final class _ExistingLauncher implements EmbeddedDaemonLauncher {
-  const _ExistingLauncher(this.handle);
+final class _RestartableLauncher implements EmbeddedDaemonLauncher {
+  _RestartableLauncher({
+    required EmbeddedDaemonHandle initialHandle,
+    required this.homeDirectory,
+    required this.bearerToken,
+    required this.port,
+    required this.provider,
+  }) : _current = initialHandle;
 
-  final EmbeddedDaemonHandle handle;
+  final String homeDirectory;
+  final String bearerToken;
+  final int port;
+  final ModelProvider provider;
+  final List<EmbeddedDaemonExposure> exposures = <EmbeddedDaemonExposure>[];
+  EmbeddedDaemonHandle? _current;
+  bool _initial = true;
 
   @override
-  Future<EmbeddedDaemonSession> start() async => _ExistingSession(handle);
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+  }) async {
+    exposures.add(exposure);
+    final handle = _initial
+        ? _current!
+        : await EmbeddedDaemonHandle.start(
+            DaemonConfig(
+              homeDirectory: homeDirectory,
+              host: exposure.bindHost,
+              port: port,
+              bearerToken: bearerToken,
+              useEnvironmentCredentials: false,
+            ),
+            provider: provider,
+          );
+    _initial = false;
+    _current = handle;
+    return _ExistingSession(
+      handle,
+      onStopped: () {
+        if (identical(_current, handle)) _current = null;
+      },
+    );
+  }
+
+  Future<void> stopCurrent() async {
+    final handle = _current;
+    _current = null;
+    await handle?.stop();
+  }
 }
 
 final class _ExistingSession implements EmbeddedDaemonSession {
-  const _ExistingSession(this.handle);
+  const _ExistingSession(this.handle, {required this.onStopped});
 
   final EmbeddedDaemonHandle handle;
+  final void Function() onStopped;
 
   @override
   DaemonCredentials get credentials => DaemonCredentials(
     bearerToken: handle.bearerToken,
-    adminToken: handle.adminToken,
   );
 
   @override
@@ -622,7 +780,10 @@ final class _ExistingSession implements EmbeddedDaemonSession {
   String get serverId => handle.serverId;
 
   @override
-  Future<void> stop() => handle.stop();
+  Future<void> stop() async {
+    await handle.stop();
+    onStopped();
+  }
 }
 
 final class _PatchProvider implements ModelProvider {

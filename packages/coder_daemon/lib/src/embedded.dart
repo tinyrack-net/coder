@@ -23,7 +23,6 @@ class EmbeddedDaemonHandle implements DaemonHandle {
     required this.boundEndpoint,
     required this.serverId,
     required this.bearerToken,
-    required this.adminToken,
     required this._isolate,
     required this._commands,
   });
@@ -56,7 +55,6 @@ class EmbeddedDaemonHandle implements DaemonHandle {
       boundEndpoint: Uri.parse(values['endpoint']! as String),
       serverId: values['serverId']! as String,
       bearerToken: values['token']! as String,
-      adminToken: values['adminToken']! as String,
       isolate: isolate,
       commands: values['commands']! as SendPort,
     );
@@ -68,8 +66,6 @@ class EmbeddedDaemonHandle implements DaemonHandle {
   final String serverId;
   @override
   final String bearerToken;
-  @override
-  final String adminToken;
   final Isolate _isolate;
   final SendPort _commands;
   bool _stopped = false;
@@ -102,7 +98,6 @@ Future<void> _embeddedDaemonMain(List<Object?> message) async {
       'endpoint': handle.boundEndpoint.toString(),
       'serverId': handle.serverId,
       'token': handle.bearerToken,
-      'adminToken': handle.adminToken,
       'commands': commands.sendPort,
     });
     await for (final command in commands) {
