@@ -179,6 +179,10 @@ final class FakeCoderApi implements CoderApi {
   /// Sessions created through the fake, in creation order.
   final List<SessionDto> createdSessions = <SessionDto>[];
 
+  /// Session mode switches written through the fake.
+  final List<({String sessionId, SessionMode mode})> updatedSessionModes =
+      <({String sessionId, SessionMode mode})>[];
+
   /// Session model overrides written through the fake.
   final List<({String sessionId, SessionModelSelectionDto? model})>
   updatedSessionModels =
@@ -205,6 +209,28 @@ final class FakeCoderApi implements CoderApi {
 
   /// Emits a typed daemon notification.
   void emit(ClientEvent event) => _events.add(event);
+
+  /// Appends and broadcasts one timeline event for a session.
+  void emitTimeline(
+    String sessionId,
+    String type,
+    Map<String, dynamic> data,
+  ) {
+    final events = _timelines.putIfAbsent(
+      sessionId,
+      () => <TimelineEventDto>[],
+    );
+    final event = TimelineEventDto(
+      sessionId: sessionId,
+      sequence: events.length + 1,
+      turnId: 'turn-1',
+      type: type,
+      data: data,
+      createdAt: _now,
+    );
+    events.add(event);
+    emit(TimelineClientEvent(event));
+  }
 
   /// Emits a transport connection state.
   void emitState(ClientConnectionState state) => _states.add(state);
@@ -338,6 +364,7 @@ final class FakeCoderApi implements CoderApi {
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
+    SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
   }) async {
     final agent = SessionDto(
@@ -347,6 +374,7 @@ final class FakeCoderApi implements CoderApi {
       agentDefinitionId: agentDefinitionId,
       origin: SessionOrigin.manual,
       status: SessionStatus.idle,
+      mode: mode,
       model: model,
       createdAt: _now,
       updatedAt: _now,
@@ -354,6 +382,20 @@ final class FakeCoderApi implements CoderApi {
     _agents.add(agent);
     createdSessions.add(agent);
     return agent;
+  }
+
+  @override
+  Future<SessionDto> updateSessionMode(
+    String sessionId,
+    SessionMode mode,
+  ) async {
+    updatedSessionModes.add((sessionId: sessionId, mode: mode));
+    final index = _agents.indexWhere((agent) => agent.id == sessionId);
+    if (index < 0) throw StateError('Session not found: $sessionId');
+    final updated = _agents[index].copyWith(mode: mode);
+    _agents[index] = updated;
+    emit(SessionUpdatedClientEvent(updated));
+    return updated;
   }
 
   @override

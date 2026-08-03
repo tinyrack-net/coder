@@ -60,6 +60,9 @@ abstract interface class SessionRepository {
   /// The create public API member.
   Future<SessionDto> create(SessionDto session);
 
+  /// Switches one session between planning and normal collaboration.
+  Future<SessionDto> updateMode(String id, SessionMode mode);
+
   /// Sets or clears the provider and model override of one session.
   Future<SessionDto> updateModel(String id, SessionModelSelectionDto? model);
 

@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Opens external authorization pages outside the Flutter application.
@@ -17,3 +18,8 @@ final class PlatformExternalUrlOpener implements ExternalUrlOpener {
     mode: LaunchMode.externalApplication,
   );
 }
+
+/// External authorization URL adapter supplied by the app composition root.
+final externalUrlOpenerProvider = Provider<ExternalUrlOpener>(
+  (ref) => throw StateError('ExternalUrlOpener must be overridden.'),
+);

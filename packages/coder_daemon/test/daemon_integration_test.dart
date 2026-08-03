@@ -170,6 +170,7 @@ void main() {
         worktreeId: checkout.id,
         title: 'Session',
         agentDefinitionId: 'coder',
+        mode: SessionMode.plan,
         model: const SessionModelSelectionDto(
           providerConnectionId: 'local-test',
           modelId: 'test-model',
@@ -186,6 +187,22 @@ void main() {
       expect(
         (await client.listSessions(worktreeId: checkout.id)).single.model,
         agent.model,
+      );
+      expect(agent.mode, SessionMode.plan);
+      final normalFuture = client.events
+          .where((event) => event is SessionUpdatedClientEvent)
+          .cast<SessionUpdatedClientEvent>()
+          .map((event) => event.session)
+          .firstWhere((session) => session.mode == SessionMode.normal)
+          .timeout(const Duration(seconds: 5));
+      expect(
+        (await client.updateSessionMode(agent.id, SessionMode.normal)).mode,
+        SessionMode.normal,
+      );
+      expect((await normalFuture).id, agent.id);
+      expect(
+        (await client.listSessions(worktreeId: checkout.id)).single.mode,
+        SessionMode.normal,
       );
       final coder = (await client.listAgentDefinitions()).single;
       final configuredDefinition = await client.updateAgentDefinition(

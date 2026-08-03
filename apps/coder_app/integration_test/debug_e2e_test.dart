@@ -394,8 +394,10 @@ void main() {
         find.text('Parent completed.', findRichText: true),
         setupClient,
       );
-      await tester.tap(find.byTooltip('모든 session'));
+      await tester.tap(find.byTooltip('모든 session').hitTestable());
       await _pumpUntil(tester, find.text('Reviewer'));
+      // The popup is still animating when its label first appears.
+      await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
           of: find.byType(PopupMenuItem<String>),
@@ -425,6 +427,36 @@ void main() {
         await File('${workspace.path}/result.txt').readAsString(),
         'done\n',
       );
+      // Tool activity renders as a CLI summary; no raw payload reaches the UI.
+      expect(find.textContaining('Edit('), findsWidgets);
+      expect(find.textContaining('changedFiles'), findsNothing);
+      expect(find.textContaining('"isError"'), findsNothing);
+
+      // Plan mode proposes work and hands it back for approval.
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-mode')).hitTestable(),
+      );
+      await _pumpUntil(tester, find.textContaining('Plan 모드'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(composer), 'Plan the change');
+      await tester.pump();
+      expect(tester.widget<IconButton>(find.byKey(send)).onPressed, isNotNull);
+      await tester.tap(find.byKey(send));
+      await _pumpUntil(
+        tester,
+        find.text('이 계획대로 진행할까요?'),
+        attempts: 300,
+      );
+      expect(find.text('제안된 계획'), findsOneWidget);
+      expect(find.textContaining('proposed_plan'), findsNothing);
+      final implement = find.widgetWithText(FilledButton, '계획대로 실행');
+      await tester.ensureVisible(implement);
+      await tester.pumpAndSettle();
+      await tester.tap(implement);
+      await tester.pump();
+      // The chip returning to 실행 proves the session left plan mode.
+      await _pumpUntil(tester, find.text('실행'));
+      await _pumpUntilGone(tester, find.textContaining('Plan 모드'));
 
       final reconnected = await CoderClient.connect(
         endpoint: endpoint,
@@ -436,6 +468,10 @@ void main() {
       );
       final agents = await reconnected.listSessions(worktreeId: 'checkout-e2e');
       expect(agents, hasLength(2));
+      expect(
+        agents.every((session) => session.mode == SessionMode.normal),
+        isTrue,
+      );
       final parent = agents.singleWhere(
         (session) => session.origin == SessionOrigin.manual,
       );
@@ -488,6 +524,10 @@ void main() {
       final addSection = find.byKey(
         const ValueKey('provider-settings-add'),
       );
+      // The save dialog carries the same label, so wait for the settings list
+      // itself before measuring section order.
+      await _pumpUntil(tester, connectedSection);
+      await tester.pumpAndSettle();
       expect(
         tester.getBottomRight(connectedSection).dy,
         lessThanOrEqualTo(tester.getTopLeft(addSection).dy),
@@ -842,6 +882,18 @@ final class _AgentE2eProvider implements ModelProvider {
         .whereType<UserConversationItem>()
         .last
         .text;
+    if (request.instructions.contains('You are in Plan Mode')) {
+      const plan =
+          'Explored the workspace.\n'
+          '<proposed_plan>\n'
+          '1. Create result.txt\n'
+          '</proposed_plan>';
+      yield const ModelTextDelta(plan);
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: plan),
+      );
+      return;
+    }
     final delegateEnabled = request.tools.any(
       (tool) => tool.name == 'delegate_agent',
     );

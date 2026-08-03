@@ -158,6 +158,7 @@ class SessionService {
           permissionMode: permissionMode,
           history: await _timeline.providerHistory(sessionId),
           safetyIdentifier: _safetyIdentifier,
+          sessionMode: session.mode,
           customSystemPrompt: definition.promptEnabled
               ? definition.systemPrompt
               : null,
@@ -196,6 +197,21 @@ class SessionService {
   /// The cancelTurn public API member.
   Future<void> cancelTurn(String sessionId) async =>
       _activeTurns[sessionId]?.cancel();
+
+  /// Switches one session between planning and normal collaboration.
+  ///
+  /// Plan mode only changes the instructions handed to the model, so it can
+  /// only be switched between turns.
+  Future<SessionDto> setMode(String sessionId, SessionMode mode) async {
+    final session = await _sessions.getById(sessionId);
+    if (session == null) throw StateError('Session not found: $sessionId');
+    if (_activeTurns.containsKey(sessionId)) {
+      throw StateError('Cannot change the mode while a turn is running.');
+    }
+    final updated = await _sessions.updateMode(sessionId, mode);
+    _emitSession(updated);
+    return updated;
+  }
 
   /// Sets or clears the provider and model override of one session.
   ///
@@ -318,6 +334,8 @@ class SessionService {
         agentDefinitionId: childDefinition.id,
         parentSessionId: parentSession.id,
         origin: SessionOrigin.delegated,
+        // A planning parent must not delegate work that mutates the workspace.
+        mode: parentSession.mode,
         status: SessionStatus.idle,
         createdAt: now,
         updatedAt: now,

@@ -128,6 +128,9 @@ _SessionCreateParamsDto _$SessionCreateParamsDtoFromJson(
   worktreeId: json['worktreeId'] as String,
   title: json['title'] as String,
   agentDefinitionId: json['agentDefinitionId'] as String,
+  mode:
+      $enumDecodeNullable(_$SessionModeEnumMap, json['mode']) ??
+      SessionMode.normal,
   model: json['model'] == null
       ? null
       : SessionModelSelectionDto.fromJson(
@@ -142,7 +145,27 @@ Map<String, dynamic> _$SessionCreateParamsDtoToJson(
   'worktreeId': instance.worktreeId,
   'title': instance.title,
   'agentDefinitionId': instance.agentDefinitionId,
+  'mode': _$SessionModeEnumMap[instance.mode]!,
   'model': instance.model,
+};
+
+const _$SessionModeEnumMap = {
+  SessionMode.plan: 'plan',
+  SessionMode.normal: 'normal',
+};
+
+_SessionModeSetParamsDto _$SessionModeSetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionModeSetParamsDto(
+  sessionId: json['sessionId'] as String,
+  mode: $enumDecode(_$SessionModeEnumMap, json['mode']),
+);
+
+Map<String, dynamic> _$SessionModeSetParamsDtoToJson(
+  _SessionModeSetParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'mode': _$SessionModeEnumMap[instance.mode]!,
 };
 
 _SessionModelSetParamsDto _$SessionModelSetParamsDtoFromJson(

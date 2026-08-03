@@ -1,9 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:coder_app/src/agent_settings_page.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/app_settings_page.dart';
+import 'package:coder_app/src/chat/chat_approval_card.dart';
+import 'package:coder_app/src/chat/chat_plan_actions.dart';
+import 'package:coder_app/src/chat/chat_timeline_model.dart';
+import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -14,7 +17,6 @@ import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -1274,6 +1276,8 @@ class _ConversationPane extends ConsumerStatefulWidget {
 }
 
 class _ConversationPaneState extends ConsumerState<_ConversationPane> {
+  final Set<String> _dismissedPlans = <String>{};
+
   @override
   Widget build(BuildContext context) {
     final current =
@@ -1297,7 +1301,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
       conversationControllerProvider(widget.selection.hostId, current.id),
     );
     final value = conversation.asData?.value;
-    final timeline = _coalesceAssistantDeltas(
+    final items = projectChatTimeline(
       value?.timeline ?? const <TimelineEventDto>[],
     );
     final agents = ref
@@ -1322,6 +1326,15 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         (definition == null
             ? null
             : defaultSelectionFor(definition, connections));
+    // Only the newest finished plan can still be acted on.
+    final lastPlan = items.whereType<ChatPlanProposal>().lastOrNull;
+    final pendingPlan =
+        !busy &&
+            lastPlan != null &&
+            lastPlan.isComplete &&
+            !_dismissedPlans.contains(lastPlan.key)
+        ? lastPlan
+        : null;
     return Column(
       children: <Widget>[
         ListTile(
@@ -1345,18 +1358,18 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               : null,
         ),
         Expanded(
-          child: timeline.isEmpty
-              ? const Center(child: Text('코딩 요청을 입력하세요.'))
-              : ListView.separated(
-                  reverse: true,
-                  padding: const EdgeInsets.all(20),
-                  itemCount: timeline.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) => TimelineCard(
-                    event: timeline[timeline.length - index - 1],
-                  ),
-                ),
+          child: ChatTimelineView(items: items, busy: busy),
         ),
+        if (pendingPlan != null)
+          ChatPlanActions(
+            selection: widget.selection,
+            session: current,
+            proposal: pendingPlan,
+            onDismiss: () =>
+                setState(() => _dismissedPlans.add(pendingPlan.key)),
+            onSessionCreated: (session) =>
+                _goSession(context, widget.selection, session.id),
+          ),
         for (final approval
             in value?.approvals.values ?? const <ApprovalRequestDto>[])
           ApprovalCard(
@@ -1371,6 +1384,17 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             definitions: definitions,
             agentDefinitionId: current.agentDefinitionId,
             selection: effective,
+            mode: current.mode,
+            onModeChanged: (mode) => unawaited(
+              ref
+                  .read(
+                    sessionsControllerProvider(
+                      widget.selection.hostId,
+                      widget.selection.worktreeId,
+                    ).notifier,
+                  )
+                  .setMode(current.id, mode),
+            ),
             agentEnabled: false,
             enabled: !busy,
             onAgentChanged: (_) {},
@@ -1385,6 +1409,23 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                   .setModel(current.id, model),
             ),
           ),
+          onModeToggled: busy
+              ? null
+              : () => unawaited(
+                  ref
+                      .read(
+                        sessionsControllerProvider(
+                          widget.selection.hostId,
+                          widget.selection.worktreeId,
+                        ).notifier,
+                      )
+                      .setMode(
+                        current.id,
+                        current.mode == SessionMode.plan
+                            ? SessionMode.normal
+                            : SessionMode.plan,
+                      ),
+                ),
           onSubmit: (prompt) => unawaited(_send(current.id, prompt)),
         ),
       ],
@@ -1401,32 +1442,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         )
         .startTurn(prompt);
   }
-}
-
-List<TimelineEventDto> _coalesceAssistantDeltas(
-  List<TimelineEventDto> events,
-) {
-  final result = <TimelineEventDto>[];
-  for (final event in events) {
-    if (event.type == 'assistant.delta' &&
-        result.isNotEmpty &&
-        result.last.type == 'assistant.delta' &&
-        result.last.turnId == event.turnId) {
-      final previous = result.removeLast();
-      result.add(
-        previous.copyWith(
-          data: <String, dynamic>{
-            'text':
-                '${previous.data['text'] as String? ?? ''}'
-                '${event.data['text'] as String? ?? ''}',
-          },
-        ),
-      );
-    } else {
-      result.add(event);
-    }
-  }
-  return result;
 }
 
 void _goWorktree(BuildContext context, WorkspaceSelection selection) {
@@ -1459,120 +1474,3 @@ String _hostStatusLabel(HostRuntimeStatus status) => switch (status) {
   HostRuntimeStatus.conflict => '중복 daemon',
   HostRuntimeStatus.idle => '자동 연결 꺼짐',
 };
-
-/// Renders one persisted timeline event.
-class TimelineCard extends StatelessWidget {
-  /// Creates a [TimelineCard].
-  const TimelineCard({required this.event, super.key});
-
-  /// The event rendered by this card.
-  final TimelineEventDto event;
-
-  @override
-  Widget build(BuildContext context) {
-    final isUser = event.type == 'user.message';
-    final isAssistant = event.type == 'assistant.delta';
-    final text = event.data['text'] as String?;
-    final display =
-        text ?? const JsonEncoder.withIndent('  ').convert(event.data);
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: Card(
-          color: isUser ? Theme.of(context).colorScheme.primaryContainer : null,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  isUser
-                      ? 'You'
-                      : isAssistant
-                      ? 'Assistant'
-                      : event.type,
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: 5),
-                if (isUser || isAssistant)
-                  MarkdownBody(data: display)
-                else
-                  SelectableText(display),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Renders an actionable tool approval request.
-class ApprovalCard extends ConsumerWidget {
-  /// Creates an [ApprovalCard].
-  const ApprovalCard({required this.hostId, required this.approval, super.key});
-
-  /// Stable host profile containing the approval's agent.
-  final String hostId;
-
-  /// The pending approval rendered by this card.
-  final ApprovalRequestDto approval;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-    child: Card(
-      color: Theme.of(context).colorScheme.tertiaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              '승인 필요 · ${approval.toolName}',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            SelectableText(
-              approval.preview ??
-                  const JsonEncoder.withIndent(
-                    '  ',
-                  ).convert(approval.arguments),
-              maxLines: 12,
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                TextButton(
-                  onPressed: () => ref
-                      .read(
-                        conversationControllerProvider(
-                          hostId,
-                          approval.sessionId,
-                        ).notifier,
-                      )
-                      .resolveApproval(approval.id, approved: false),
-                  child: const Text('거부'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () => ref
-                      .read(
-                        conversationControllerProvider(
-                          hostId,
-                          approval.sessionId,
-                        ).notifier,
-                      )
-                      .resolveApproval(approval.id, approved: true),
-                  child: const Text('승인'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}

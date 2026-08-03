@@ -221,6 +221,7 @@ class _ClientSession {
       RpcMethod.sessionList,
       RpcMethod.sessionCreate,
       RpcMethod.sessionModelSet,
+      RpcMethod.sessionModeSet,
       RpcMethod.providerCatalog,
       RpcMethod.providerConnectionsList,
       RpcMethod.providerConnectApiKey,
@@ -456,11 +457,16 @@ class _ClientSession {
             agentDefinitionId: definition.id,
             origin: SessionOrigin.manual,
             status: SessionStatus.idle,
+            mode: request.mode,
             model: requestedModel,
             createdAt: now,
             updatedAt: now,
           ),
         );
+        return SessionResultDto(session: session).toJson();
+      case RpcMethod.sessionModeSet:
+        final request = SessionModeSetParamsDto.fromJson(payload);
+        final session = await agents.setMode(request.sessionId, request.mode);
         return SessionResultDto(session: session).toJson();
       case RpcMethod.sessionModelSet:
         final request = SessionModelSetParamsDto.fromJson(payload);

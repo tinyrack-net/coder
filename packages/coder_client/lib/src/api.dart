@@ -126,8 +126,12 @@ abstract interface class CoderApi {
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
+    SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
   });
+
+  /// Switches one session between planning and normal collaboration.
+  Future<SessionDto> updateSessionMode(String sessionId, SessionMode mode);
 
   /// Sets or clears the provider and model override of one session.
   ///

@@ -279,6 +279,9 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   status: $enumDecode(_$SessionStatusEnumMap, json['status']),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
+  mode:
+      $enumDecodeNullable(_$SessionModeEnumMap, json['mode']) ??
+      SessionMode.normal,
   model: json['model'] == null
       ? null
       : SessionModelSelectionDto.fromJson(
@@ -299,6 +302,7 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'status': _$SessionStatusEnumMap[instance.status]!,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'mode': _$SessionModeEnumMap[instance.mode]!,
       'model': instance.model,
       'parentSessionId': instance.parentSessionId,
       'activeTurnId': instance.activeTurnId,
@@ -318,6 +322,11 @@ const _$SessionStatusEnumMap = {
   SessionStatus.waitingForSubagent: 'waitingForSubagent',
   SessionStatus.failed: 'failed',
   SessionStatus.closed: 'closed',
+};
+
+const _$SessionModeEnumMap = {
+  SessionMode.plan: 'plan',
+  SessionMode.normal: 'normal',
 };
 
 _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(

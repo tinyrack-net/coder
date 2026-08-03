@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 8;
+const int coderProtocolVersion = 9;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -67,6 +67,9 @@ abstract final class RpcMethod {
 
   /// Sets or clears the per-session provider and model override.
   static const String sessionModelSet = 'session.model.set';
+
+  /// Switches one session between planning and normal collaboration.
+  static const String sessionModeSet = 'session.mode.set';
 
   /// Returns immutable built-in provider definitions.
   static const String providerCatalog = 'provider.catalog';

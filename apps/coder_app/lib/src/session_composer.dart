@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/model_picker.dart';
@@ -7,6 +8,7 @@ import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/session_title.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Agent, provider, and model selectors shown above the chat input.
@@ -19,6 +21,8 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     required this.selection,
     required this.onAgentChanged,
     required this.onModelChanged,
+    required this.mode,
+    required this.onModeChanged,
     this.agentEnabled = true,
     this.enabled = true,
     super.key,
@@ -42,6 +46,12 @@ class SessionComposerBar extends ConsumerStatefulWidget {
   /// Called with the chosen override, or null to inherit the agent definition.
   final ValueChanged<SessionModelSelectionDto?> onModelChanged;
 
+  /// Collaboration mode currently in effect.
+  final SessionMode mode;
+
+  /// Called with the mode to switch to.
+  final ValueChanged<SessionMode> onModeChanged;
+
   /// Whether the agent can still be changed; false once a session exists.
   final bool agentEnabled;
 
@@ -60,6 +70,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final selection = widget.selection;
     final agentEnabled = widget.agentEnabled;
     final enabled = widget.enabled;
+    final planning = widget.mode == SessionMode.plan;
     final providers = ref
         .watch(providerSettingsControllerProvider(hostId))
         .asData
@@ -88,6 +99,21 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: <Widget>[
+          _ComposerChip(
+            valueKey: const ValueKey('session-composer-mode'),
+            icon: Icons.checklist_rtl,
+            label: planning ? 'Plan' : '실행',
+            tooltip: planning
+                ? '계획만 세웁니다. Shift+Tab으로 전환'
+                : '요청을 바로 수행합니다. Shift+Tab으로 전환',
+            selected: planning,
+            onPressed: enabled
+                ? () => widget.onModeChanged(
+                    planning ? SessionMode.normal : SessionMode.plan,
+                  )
+                : null,
+          ),
+          const SizedBox(width: 8),
           _ComposerChip(
             valueKey: const ValueKey('session-composer-agent'),
             icon: Icons.smart_toy_outlined,
@@ -229,6 +255,7 @@ class _ComposerChip extends StatelessWidget {
     required this.label,
     required this.tooltip,
     required this.onPressed,
+    this.selected = false,
   });
 
   final ValueKey<String> valueKey;
@@ -236,6 +263,7 @@ class _ComposerChip extends StatelessWidget {
   final String label;
   final String tooltip;
   final VoidCallback? onPressed;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) => Tooltip(
@@ -244,6 +272,9 @@ class _ComposerChip extends StatelessWidget {
       key: valueKey,
       avatar: Icon(icon, size: 18),
       label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      backgroundColor: selected
+          ? Theme.of(context).colorScheme.primaryContainer
+          : null,
       onPressed: onPressed,
     ),
   );
@@ -314,6 +345,13 @@ class DraftSessionPane extends ConsumerWidget {
             selection: effective,
             onAgentChanged: notifier.selectAgent,
             onModelChanged: notifier.selectModel,
+            mode: draft.mode,
+            onModeChanged: notifier.selectMode,
+          ),
+          onModeToggled: () => notifier.selectMode(
+            draft.mode == SessionMode.plan
+                ? SessionMode.normal
+                : SessionMode.plan,
           ),
           onSubmit: (prompt) => unawaited(_start(ref, prompt, agent!, draft)),
         ),
@@ -327,29 +365,17 @@ class DraftSessionPane extends ConsumerWidget {
     AgentDefinitionDto agent,
     SessionComposerDraft draft,
   ) async {
-    final session = await ref
-        .read(
-          sessionsControllerProvider(
-            selection.hostId,
-            selection.worktreeId,
-          ).notifier,
-        )
-        .create(
-          title: deriveSessionTitle(prompt),
-          agentDefinitionId: agent.id,
-          model: draft.model,
-        );
-    await ref
-        .read(sessionTabsControllerProvider(selection).notifier)
-        .add(session);
-    // Started before navigation because this pane unmounts on route change;
-    // the timeline subscription replays persisted events afterwards.
-    await ref
-        .read(
-          conversationControllerProvider(selection.hostId, session.id).notifier,
-        )
-        .startTurn(prompt);
-    onCreated(session);
+    onCreated(
+      await startSessionWithPrompt(
+        ref,
+        selection: selection,
+        agentDefinitionId: agent.id,
+        title: deriveSessionTitle(prompt),
+        prompt: prompt,
+        mode: draft.mode,
+        model: draft.model,
+      ),
+    );
   }
 }
 
@@ -360,6 +386,7 @@ class SessionComposer extends StatefulWidget {
     required this.bar,
     required this.onSubmit,
     required this.enabled,
+    this.onModeToggled,
     this.hint,
     super.key,
   });
@@ -369,6 +396,9 @@ class SessionComposer extends StatefulWidget {
 
   /// Receives the trimmed prompt text.
   final ValueChanged<String> onSubmit;
+
+  /// Cycles the collaboration mode, mirroring the Shift+Tab shortcut.
+  final VoidCallback? onModeToggled;
 
   /// Whether the prompt can be typed and sent.
   final bool enabled;
@@ -399,21 +429,35 @@ class _SessionComposerState extends State<SessionComposer> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           widget.bar,
+          if (widget.bar.mode == SessionMode.plan)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Plan 모드 · 계획만 세우고 실행하지 않습니다',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
           const SizedBox(height: 8),
           Row(
             children: <Widget>[
               Expanded(
-                child: TextField(
-                  key: const ValueKey('session-composer-input'),
-                  controller: _controller,
-                  minLines: 1,
-                  maxLines: 8,
-                  enabled: widget.enabled,
-                  decoration: const InputDecoration(
-                    hintText: '코딩 요청을 입력하세요…',
-                    border: OutlineInputBorder(),
+                // Shift+Tab cycles the mode instead of moving focus.
+                child: Focus(
+                  onKeyEvent: _handleKey,
+                  child: TextField(
+                    key: const ValueKey('session-composer-input'),
+                    controller: _controller,
+                    minLines: 1,
+                    maxLines: 8,
+                    enabled: widget.enabled,
+                    decoration: const InputDecoration(
+                      hintText: '코딩 요청을 입력하세요…',
+                      border: OutlineInputBorder(),
+                    ),
+                    onSubmitted: widget.enabled ? (_) => _submit() : null,
                   ),
-                  onSubmitted: widget.enabled ? (_) => _submit() : null,
                 ),
               ),
               const SizedBox(width: 8),
@@ -438,6 +482,23 @@ class _SessionComposerState extends State<SessionComposer> {
       ),
     ),
   );
+
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    final toggle = widget.onModeToggled;
+    if (toggle == null || event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey != LogicalKeyboardKey.tab) {
+      return KeyEventResult.ignored;
+    }
+    final pressed = HardwareKeyboard.instance.logicalKeysPressed;
+    if (!pressed.contains(LogicalKeyboardKey.shiftLeft) &&
+        !pressed.contains(LogicalKeyboardKey.shiftRight)) {
+      return KeyEventResult.ignored;
+    }
+    toggle();
+    return KeyEventResult.handled;
+  }
 
   void _submit() {
     final text = _controller.text.trim();

@@ -172,7 +172,7 @@ final class SessionsControllerProvider
 }
 
 String _$sessionsControllerHash() =>
-    r'3dfe46ed8346ee259dd762a30991b38c0d6db328';
+    r'f60475a0d3fd4917df1a10dfedf7867b9f5c42ab';
 
 /// SessionsController defines a public contract.
 
@@ -501,7 +501,7 @@ final class SessionComposerDraftControllerProvider
 }
 
 String _$sessionComposerDraftControllerHash() =>
-    r'648ff43abe298b7802359a24fd9dc1fa39dad53c';
+    r'd92b6e6cd4b7c10c9f1f4c52936c2bfb6ef92253';
 
 /// Holds the composer selection used to create the next session.
 

@@ -356,6 +356,7 @@ class CoderClient implements CoderApi {
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
+    SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
   }) async {
     final response = await _request(
@@ -365,8 +366,21 @@ class CoderClient implements CoderApi {
         worktreeId: worktreeId,
         title: title,
         agentDefinitionId: agentDefinitionId,
+        mode: mode,
         model: model,
       ).toJson(),
+    );
+    return SessionResultDto.fromJson(response).session;
+  }
+
+  @override
+  Future<SessionDto> updateSessionMode(
+    String sessionId,
+    SessionMode mode,
+  ) async {
+    final response = await _request(
+      RpcMethod.sessionModeSet,
+      SessionModeSetParamsDto(sessionId: sessionId, mode: mode).toJson(),
     );
     return SessionResultDto.fromJson(response).session;
   }

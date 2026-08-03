@@ -207,6 +207,7 @@ void main() {
           worktreeId: worktree.id,
           title: agent.title,
           agentDefinitionId: agent.agentDefinitionId,
+          mode: SessionMode.plan,
           model: const SessionModelSelectionDto(
             providerConnectionId: 'provider',
             modelId: 'model',
@@ -225,6 +226,10 @@ void main() {
         agent,
       );
       expect(await client.updateSessionModel(agent.id, null), agent);
+      expect(
+        await client.updateSessionMode(agent.id, SessionMode.plan),
+        agent,
+      );
       expect(await client.listAgentDefinitions(), <AgentDefinitionDto>[
         agentDefinition,
       ]);
@@ -366,6 +371,7 @@ void main() {
           RpcMethod.sessionList,
           RpcMethod.sessionCreate,
           RpcMethod.sessionModelSet,
+          RpcMethod.sessionModeSet,
           RpcMethod.agentDefinitionList,
           RpcMethod.agentDefinitionGet,
           RpcMethod.agentDefinitionCreate,
@@ -677,6 +683,7 @@ void _registerFixtureMethods(
     ).toJson(),
     RpcMethod.sessionCreate: SessionResultDto(session: agent).toJson(),
     RpcMethod.sessionModelSet: SessionResultDto(session: agent).toJson(),
+    RpcMethod.sessionModeSet: SessionResultDto(session: agent).toJson(),
     RpcMethod.agentDefinitionList: AgentDefinitionListResultDto(
       definitions: <AgentDefinitionDto>[agentDefinition],
     ).toJson(),

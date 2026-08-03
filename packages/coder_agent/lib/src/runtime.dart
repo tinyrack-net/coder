@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/plan_mode_prompt.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Signature used by AgentEventCallback.
@@ -30,6 +31,7 @@ class AgentRunRequest {
     required this.safetyIdentifier,
     this.reasoningEffort = 'medium',
     this.maxToolRounds = 64,
+    this.sessionMode = SessionMode.normal,
     this.customSystemPrompt,
   });
 
@@ -62,6 +64,9 @@ class AgentRunRequest {
 
   /// The maxToolRounds public API member.
   final int maxToolRounds;
+
+  /// Collaboration mode of the owning session.
+  final SessionMode sessionMode;
 
   /// Optional Markdown agent prompt appended after immutable safety rules.
   final String? customSystemPrompt;
@@ -292,12 +297,15 @@ class AgentRunner {
 
   String _instructions(AgentRunRequest request) {
     final customPrompt = request.customSystemPrompt?.trim();
+    final planning = request.sessionMode == SessionMode.plan
+        ? '\n${planModeInstructions()}'
+        : '';
     return '''
 You are a coding agent operating in ${request.workspaceRoot}.
 Use only the supplied tools. Read before editing, keep changes scoped to the request,
 and validate relevant behavior before finishing. Never attempt to access paths outside
 the workspace. Approval decisions are enforced by the host; do not work around them.
-${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
+$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
 ''';
   }
 }

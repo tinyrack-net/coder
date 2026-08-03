@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v8 exposes agent definitions and sessions', () {
-    expect(coderProtocolVersion, 8);
+  test('protocol v9 exposes agent definitions and sessions', () {
+    expect(coderProtocolVersion, 9);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -22,6 +22,61 @@ void main() {
     expect(RpcMethod.sessionList, 'session.list');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
+    expect(RpcMethod.sessionModeSet, 'session.mode.set');
+  });
+
+  test('session collaboration modes round-trip', () {
+    final planning = SessionDto(
+      id: 'session',
+      worktreeId: 'worktree',
+      title: 'Plan the migration',
+      agentDefinitionId: 'coder',
+      origin: SessionOrigin.manual,
+      status: SessionStatus.idle,
+      createdAt: now,
+      updatedAt: now,
+      mode: SessionMode.plan,
+    );
+
+    expect(
+      SessionDto(
+        id: 'session',
+        worktreeId: 'worktree',
+        title: 'Default',
+        agentDefinitionId: 'coder',
+        origin: SessionOrigin.manual,
+        status: SessionStatus.idle,
+        createdAt: now,
+        updatedAt: now,
+      ).mode,
+      SessionMode.normal,
+    );
+    _roundTrip(planning, (value) => value.toJson(), SessionDto.fromJson);
+    _roundTrip(
+      const SessionCreateParamsDto(
+        id: 'session',
+        worktreeId: 'worktree',
+        title: 'Plan the migration',
+        agentDefinitionId: 'coder',
+        mode: SessionMode.plan,
+      ),
+      (value) => value.toJson(),
+      SessionCreateParamsDto.fromJson,
+    );
+    _roundTrip(
+      const SessionModeSetParamsDto(
+        sessionId: 'session',
+        mode: SessionMode.normal,
+      ),
+      (value) => value.toJson(),
+      SessionModeSetParamsDto.fromJson,
+    );
+    expect(
+      SessionDto.fromJson(
+        json.decode(json.encode(planning.toJson())) as Map<String, dynamic>,
+      ).mode,
+      SessionMode.plan,
+    );
   });
 
   test('session model overrides round-trip', () {
@@ -313,10 +368,11 @@ void main() {
   );
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 8);
+    expect(coderProtocolVersion, 9);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
+    expect(RpcMethod.sessionModeSet, 'session.mode.set');
     expect(RpcMethod.providerCatalog, 'provider.catalog');
     expect(RpcMethod.providerAuthStart, 'provider.auth.start');
     expect(RpcMethod.turnStart, 'turn.start');
@@ -767,6 +823,7 @@ void main() {
   test('every enum value has a stable JSON name', () {
     final values = <Enum>[
       ...SessionStatus.values,
+      ...SessionMode.values,
       ...TurnStatus.values,
       ...PermissionMode.values,
       ...ApprovalStatus.values,

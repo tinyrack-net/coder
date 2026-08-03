@@ -3,7 +3,11 @@ import 'dart:async';
 import 'package:alchemist/alchemist.dart';
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/chat/chat_approval_card.dart';
+import 'package:coder_app/src/chat/chat_timeline_model.dart';
+import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
@@ -27,32 +31,203 @@ void main() {
     createdAt: now,
     preview: '--- a/lib/main.dart\n+++ b/lib/main.dart\n+safe change',
   );
-  final toolEvent = TimelineEventDto(
-    sessionId: 'agent-1',
-    sequence: 2,
-    turnId: 'turn-1',
-    type: 'tool.completed',
-    data: const <String, dynamic>{
-      'name': 'read_file',
-      'output': 'lib/main.dart',
-      'isError': false,
-    },
-    createdAt: now,
-  );
+  final chatEvents = <TimelineEventDto>[
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 1,
+      turnId: 'turn-1',
+      type: 'user.message',
+      data: const <String, dynamic>{'text': 'Fix the failing parser test'},
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 2,
+      turnId: 'turn-1',
+      type: 'assistant.delta',
+      data: const <String, dynamic>{
+        'text':
+            'Reading the parser and running the suite.\n\n'
+            '```dart\nfinal parser = Parser();\n```\n',
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 3,
+      turnId: 'turn-1',
+      type: 'tool.requested',
+      data: const <String, dynamic>{
+        'callId': 'call-1',
+        'name': 'read_file',
+        'arguments': <String, dynamic>{'path': 'lib/parser.dart'},
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 4,
+      turnId: 'turn-1',
+      type: 'tool.completed',
+      data: const <String, dynamic>{
+        'callId': 'call-1',
+        'name': 'read_file',
+        'output': 'line 1\nline 2\nline 3',
+        'isError': false,
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 5,
+      turnId: 'turn-1',
+      type: 'tool.requested',
+      data: const <String, dynamic>{
+        'callId': 'call-2',
+        'name': 'run_command',
+        'arguments': <String, dynamic>{'command': 'dart test'},
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 6,
+      turnId: 'turn-1',
+      type: 'tool.completed',
+      data: const <String, dynamic>{
+        'callId': 'call-2',
+        'name': 'run_command',
+        'output': '{"exitCode":1,"output":"1 test failed"}',
+        'isError': true,
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 7,
+      turnId: 'turn-1',
+      type: 'turn.completed',
+      data: const <String, dynamic>{'toolRounds': 2},
+      createdAt: now,
+    ),
+  ];
+  final planEvents = <TimelineEventDto>[
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 1,
+      turnId: 'turn-1',
+      type: 'user.message',
+      data: const <String, dynamic>{'text': 'Plan the parser migration'},
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 2,
+      turnId: 'turn-1',
+      type: 'assistant.delta',
+      data: const <String, dynamic>{
+        'text':
+            'Explored the parser and its tests.\n'
+            '<proposed_plan>\n'
+            '## Plan\n\n'
+            '1. Extract the tokenizer\n'
+            '2. Move the parser tests\n'
+            '3. Run `dart test`\n'
+            '</proposed_plan>\n',
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 3,
+      turnId: 'turn-1',
+      type: 'turn.completed',
+      data: const <String, dynamic>{'toolRounds': 0},
+      createdAt: now,
+    ),
+  ];
+  final diffActivity = projectChatTimeline(<TimelineEventDto>[
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 1,
+      turnId: 'turn-1',
+      type: 'tool.requested',
+      data: const <String, dynamic>{
+        'callId': 'call-1',
+        'name': 'apply_patch',
+        'arguments': <String, dynamic>{
+          'patch':
+              '--- a/lib/main.dart\n'
+              '+++ b/lib/main.dart\n'
+              '@@ -1,2 +1,3 @@\n'
+              ' final a = 1;\n'
+              '-final b = 2;\n'
+              '+final b = 3;\n'
+              '+final c = 4;\n',
+        },
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 2,
+      turnId: 'turn-1',
+      type: 'tool.completed',
+      data: const <String, dynamic>{
+        'callId': 'call-1',
+        'name': 'apply_patch',
+        'output': '{"changedFiles":1}',
+        'isError': false,
+      },
+      createdAt: now,
+    ),
+  ]).single;
 
   unawaited(
     goldenTest(
-      'approval and tool cards render in light and dark themes',
+      'chat timeline and approval cards render in light and dark themes',
       fileName: 'core_cards',
-      constraints: const BoxConstraints.tightFor(width: 900, height: 1000),
+      constraints: const BoxConstraints.tightFor(width: 1000, height: 1560),
       builder: () => GoldenTestGroup(
         columns: 2,
         children: <Widget>[
           GoldenTestScenario(
+            name: 'timeline light',
+            child: SizedBox(
+              width: 460,
+              height: 420,
+              child: _chat(ThemeMode.light, chatEvents),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'timeline dark',
+            child: SizedBox(
+              width: 460,
+              height: 420,
+              child: _chat(ThemeMode.dark, chatEvents),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'diff light',
+            child: SizedBox(
+              width: 460,
+              height: 260,
+              child: _chatItem(ThemeMode.light, diffActivity),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'diff dark',
+            child: SizedBox(
+              width: 460,
+              height: 260,
+              child: _chatItem(ThemeMode.dark, diffActivity),
+            ),
+          ),
+          GoldenTestScenario(
             name: 'approval light',
             child: SizedBox(
-              width: 400,
-              height: 400,
+              width: 460,
+              height: 300,
               child: _material(
                 ThemeMode.light,
                 ProviderScope(
@@ -64,8 +239,8 @@ void main() {
           GoldenTestScenario(
             name: 'approval dark',
             child: SizedBox(
-              width: 400,
-              height: 400,
+              width: 460,
+              height: 300,
               child: _material(
                 ThemeMode.dark,
                 ProviderScope(
@@ -75,25 +250,35 @@ void main() {
             ),
           ),
           GoldenTestScenario(
-            name: 'tool light',
+            name: 'plan light',
             child: SizedBox(
-              width: 400,
-              height: 200,
-              child: _material(
-                ThemeMode.light,
-                TimelineCard(event: toolEvent),
-              ),
+              width: 460,
+              height: 340,
+              child: _chat(ThemeMode.light, planEvents),
             ),
           ),
           GoldenTestScenario(
-            name: 'tool dark',
+            name: 'plan dark',
             child: SizedBox(
-              width: 400,
-              height: 200,
-              child: _material(
-                ThemeMode.dark,
-                TimelineCard(event: toolEvent),
-              ),
+              width: 460,
+              height: 340,
+              child: _chat(ThemeMode.dark, planEvents),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'empty light',
+            child: SizedBox(
+              width: 460,
+              height: 220,
+              child: _chat(ThemeMode.light, const <TimelineEventDto>[]),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'empty dark',
+            child: SizedBox(
+              width: 460,
+              height: 220,
+              child: _chat(ThemeMode.dark, const <TimelineEventDto>[]),
             ),
           ),
         ],
@@ -345,6 +530,35 @@ Widget _agentSettings(ThemeMode mode) {
       ),
     ),
   );
+}
+
+Widget _chat(ThemeMode mode, List<TimelineEventDto> events) => ProviderScope(
+  overrides: [
+    externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
+  ],
+  child: _material(
+    mode,
+    ChatTimelineView(items: projectChatTimeline(events), busy: false),
+  ),
+);
+
+Widget _chatItem(ThemeMode mode, ChatItem item) => ProviderScope(
+  overrides: [
+    externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
+  ],
+  child: _material(
+    mode,
+    SingleChildScrollView(
+      child: ChatItemView(item: item, expanded: true),
+    ),
+  ),
+);
+
+final class _NoopUrlOpener implements ExternalUrlOpener {
+  const _NoopUrlOpener();
+
+  @override
+  Future<bool> open(Uri uri) async => true;
 }
 
 Widget _material(ThemeMode mode, Widget child) => MaterialApp(

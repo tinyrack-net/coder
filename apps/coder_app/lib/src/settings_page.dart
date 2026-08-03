@@ -8,11 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// External authorization URL adapter supplied by the app composition root.
-final externalUrlOpenerProvider = Provider<ExternalUrlOpener>(
-  (ref) => throw StateError('ExternalUrlOpener must be overridden.'),
-);
-
 /// Provider connection settings for one daemon host.
 class SettingsPage extends ConsumerStatefulWidget {
   /// Creates a provider connection settings page.

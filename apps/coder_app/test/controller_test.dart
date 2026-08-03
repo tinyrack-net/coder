@@ -132,10 +132,12 @@ void main() {
           .create(
             title: 'Created',
             agentDefinitionId: 'coder',
+            mode: SessionMode.plan,
             model: override,
           );
       expect(created.id, 'generated-id');
       expect(created.model, override);
+      expect(created.mode, SessionMode.plan);
       expect(container.read(agentsProvider).value!.first, created);
       expect(
         (await container
@@ -145,6 +147,14 @@ void main() {
         isNull,
       );
       expect(api.updatedSessionModels.single.sessionId, created.id);
+      expect(
+        (await container
+                .read(agentsProvider.notifier)
+                .setMode(created.id, SessionMode.plan))
+            .mode,
+        SessionMode.plan,
+      );
+      expect(api.updatedSessionModes.single.mode, SessionMode.plan);
       expect(
         container
             .read(agentsProvider)

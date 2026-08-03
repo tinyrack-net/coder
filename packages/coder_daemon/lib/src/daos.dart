@@ -231,6 +231,7 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
         status: session.status.name,
         activeTurnId: Value<String?>(session.activeTurnId),
         lastError: Value<String?>(session.lastError),
+        mode: Value<String>(session.mode.name),
         modelConnectionId: Value<String?>(session.model?.providerConnectionId),
         modelId: Value<String?>(session.model?.modelId),
         createdAt: session.createdAt,
@@ -238,6 +239,17 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
       ),
     );
     return session;
+  }
+
+  @override
+  Future<SessionDto> updateMode(String id, SessionMode mode) async {
+    await (update(sessions)..where((row) => row.id.equals(id))).write(
+      SessionsCompanion(
+        mode: Value<String>(mode.name),
+        updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
+      ),
+    );
+    return (await getById(id))!;
   }
 
   @override
@@ -318,6 +330,12 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
       origin: SessionOrigin.values.byName(row.origin),
       parentSessionId: row.parentSessionId,
       status: SessionStatus.values.byName(row.status),
+      // A row written by a newer build must still render as a session.
+      mode:
+          SessionMode.values
+              .where((value) => value.name == row.mode)
+              .firstOrNull ??
+          SessionMode.normal,
       activeTurnId: row.activeTurnId,
       lastError: row.lastError,
       // A half-written row cannot pin a model, so it inherits the agent.

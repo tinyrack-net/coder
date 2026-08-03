@@ -1,4 +1,7 @@
 import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/chat/chat_approval_card.dart';
+import 'package:coder_app/src/chat/chat_timeline_model.dart';
+import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -377,6 +380,137 @@ void main() {
       await tester.pumpAndSettle();
       expect(api.updatedSessionModels.single.model, isNull);
       expect((await api.listSessions()).single.model, isNull);
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'plan mode starts a planning session and implements the proposal',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      expect(find.text('실행'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
+      await tester.pumpAndSettle();
+      expect(find.text('Plan'), findsOneWidget);
+      expect(find.textContaining('Plan 모드'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Migrate the parser',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      final created = api.createdSessions.single;
+      expect(created.mode, SessionMode.plan);
+      expect(find.textContaining('Plan 모드'), findsOneWidget);
+
+      api
+        ..emitTimeline(
+          created.id,
+          'assistant.delta',
+          <String, dynamic>{
+            'text':
+                'Explored it.\n<proposed_plan>\n'
+                '1. Move the parser\n</proposed_plan>',
+          },
+        )
+        ..emitTimeline(
+          created.id,
+          'turn.completed',
+          <String, dynamic>{'toolRounds': 0},
+        );
+      await tester.pumpAndSettle();
+
+      expect(find.text('제안된 계획'), findsOneWidget);
+      expect(
+        find.textContaining('Move the parser', findRichText: true),
+        findsWidgets,
+      );
+      expect(find.textContaining('proposed_plan'), findsNothing);
+      expect(find.text('이 계획대로 진행할까요?'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, '계획대로 실행'));
+      await tester.pumpAndSettle();
+      expect(api.updatedSessionModes.single.mode, SessionMode.normal);
+      expect(api.startedPrompts.last, '계획을 실행해줘.');
+      expect(find.text('이 계획대로 진행할까요?'), findsNothing);
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'a plan can be handed to a fresh session or postponed',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final planning = session('planning').copyWith(mode: SessionMode.plan);
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[planning],
+        timelines: <String, List<TimelineEventDto>>{
+          planning.id: <TimelineEventDto>[
+            TimelineEventDto(
+              sessionId: planning.id,
+              sequence: 1,
+              turnId: 'turn-1',
+              type: 'assistant.delta',
+              data: const <String, dynamic>{
+                'text': '<proposed_plan>\n1. Move the parser\n</proposed_plan>',
+              },
+              createdAt: now,
+            ),
+            TimelineEventDto(
+              sessionId: planning.id,
+              sequence: 2,
+              turnId: 'turn-1',
+              type: 'turn.completed',
+              data: const <String, dynamic>{'toolRounds': 0},
+              createdAt: now,
+            ),
+          ],
+        },
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: planning.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Plan'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TextButton, '계속 계획'));
+      await tester.pumpAndSettle();
+      expect(find.text('이 계획대로 진행할까요?'), findsNothing);
+      expect(api.startedPrompts, isEmpty);
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
+      await tester.pumpAndSettle();
+      expect(api.updatedSessionModes.single.mode, SessionMode.normal);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
   );
@@ -769,7 +903,11 @@ void main() {
                           : 'waiting',
                     ),
                   ),
-                  TimelineCard(event: event),
+                  ChatItemView(
+                    item: projectChatTimeline(
+                      <TimelineEventDto>[event],
+                    ).single,
+                  ),
                   ApprovalCard(hostId: 'server', approval: approval),
                 ],
               ),
@@ -779,7 +917,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('ready'), findsOneWidget);
-      expect(find.text('You'), findsOneWidget);
+      expect(find.text('>'), findsOneWidget);
       expect(find.text('Inspect this', findRichText: true), findsOneWidget);
       expect(find.text('승인 필요 · apply_patch'), findsOneWidget);
       await tester.tap(find.widgetWithText(TextButton, '거부'));

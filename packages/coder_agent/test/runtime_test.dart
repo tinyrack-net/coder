@@ -144,6 +144,38 @@ void main() {
     );
   });
 
+  test('plan mode adds planning instructions to the turn', () async {
+    final planProvider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
+    await _RunnerHarness(planProvider).runner.startTurn(
+      _request(
+        sessionMode: SessionMode.plan,
+        customSystemPrompt: 'Review every security boundary.',
+      ),
+      CancellationToken(),
+    );
+    expect(
+      planProvider.requests.single.instructions,
+      allOf(
+        contains('You are in Plan Mode'),
+        contains('<proposed_plan>'),
+        contains('Approval decisions are enforced by the host'),
+        contains('Review every security boundary.'),
+      ),
+    );
+
+    final normalProvider = _FakeProvider(<List<ModelEvent>>[
+      _textResponse('ok'),
+    ]);
+    await _RunnerHarness(normalProvider).runner.startTurn(
+      _request(),
+      CancellationToken(),
+    );
+    expect(
+      normalProvider.requests.single.instructions,
+      isNot(contains('Plan Mode')),
+    );
+  });
+
   test('read-only and denied approvals produce error tool results', () async {
     for (final scenario
         in <
@@ -327,6 +359,7 @@ void main() {
 AgentRunRequest _request({
   PermissionMode permissionMode = PermissionMode.workspaceWrite,
   int maxToolRounds = 64,
+  SessionMode sessionMode = SessionMode.normal,
   String? customSystemPrompt,
 }) => AgentRunRequest(
   sessionId: 'agent-1',
@@ -338,6 +371,7 @@ AgentRunRequest _request({
   history: const <ConversationItem>[UserConversationItem('history')],
   safetyIdentifier: 'safe-id',
   maxToolRounds: maxToolRounds,
+  sessionMode: sessionMode,
   customSystemPrompt: customSystemPrompt,
 );
 

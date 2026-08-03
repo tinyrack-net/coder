@@ -487,6 +487,15 @@ abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
       _$AgentToolDefinitionDtoFromJson(json);
 }
 
+/// How a session collaborates: planning first, or working directly.
+enum SessionMode {
+  /// Explores and proposes a plan instead of doing the work.
+  plan,
+
+  /// Carries out the request directly.
+  normal,
+}
+
 @freezed
 /// Explicit provider and model chosen for one session.
 ///
@@ -518,6 +527,7 @@ abstract class SessionDto with _$SessionDto {
     required SessionStatus status,
     required DateTime createdAt,
     required DateTime updatedAt,
+    @Default(SessionMode.normal) SessionMode mode,
     SessionModelSelectionDto? model,
     String? parentSessionId,
     String? activeTurnId,

@@ -239,6 +239,7 @@ class SessionsController extends _$SessionsController {
   Future<SessionDto> create({
     required String title,
     required String agentDefinitionId,
+    SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
   }) async {
     final worktreeId = _worktreeId;
@@ -254,6 +255,7 @@ class SessionsController extends _$SessionsController {
         worktreeId: worktreeId,
         title: title,
         agentDefinitionId: agentDefinitionId,
+        mode: mode,
         model: model,
       );
       state = AsyncData<List<SessionDto>>(<SessionDto>[session, ...previous]);
@@ -262,6 +264,14 @@ class SessionsController extends _$SessionsController {
       state = AsyncError<List<SessionDto>>(error, stackTrace);
       rethrow;
     }
+  }
+
+  /// Switches one session between planning and normal collaboration.
+  Future<SessionDto> setMode(String sessionId, SessionMode mode) async {
+    final api = await _requireHostApi(ref, hostId);
+    final session = await api.updateSessionMode(sessionId, mode);
+    _replace(session);
+    return session;
   }
 
   /// Sets or clears the provider and model override of one session.
@@ -509,13 +519,20 @@ class SessionTabsController extends _$SessionTabsController {
 /// Agent and model chosen in the composer before a session exists.
 final class SessionComposerDraft {
   /// Creates a composer draft.
-  const SessionComposerDraft({this.agentDefinitionId, this.model});
+  const SessionComposerDraft({
+    this.agentDefinitionId,
+    this.model,
+    this.mode = SessionMode.normal,
+  });
 
   /// Explicitly chosen agent definition; null falls back to the first usable.
   final String? agentDefinitionId;
 
   /// Explicitly chosen provider and model; null inherits the agent definition.
   final SessionModelSelectionDto? model;
+
+  /// Collaboration mode the next session starts in.
+  final SessionMode mode;
 }
 
 @Riverpod(keepAlive: true)
@@ -526,15 +543,25 @@ class SessionComposerDraftController extends _$SessionComposerDraftController {
       const SessionComposerDraft();
 
   /// Chooses the agent definition and drops a model bound to the old agent.
-  void selectAgent(String agentDefinitionId) =>
-      state = SessionComposerDraft(agentDefinitionId: agentDefinitionId);
+  void selectAgent(String agentDefinitionId) => state = SessionComposerDraft(
+    agentDefinitionId: agentDefinitionId,
+    mode: state.mode,
+  );
 
   /// Chooses the provider and model override, or clears it when null.
   void selectModel(SessionModelSelectionDto? model) =>
       state = SessionComposerDraft(
         agentDefinitionId: state.agentDefinitionId,
         model: model,
+        mode: state.mode,
       );
+
+  /// Chooses the collaboration mode the next session starts in.
+  void selectMode(SessionMode mode) => state = SessionComposerDraft(
+    agentDefinitionId: state.agentDefinitionId,
+    model: state.model,
+    mode: mode,
+  );
 }
 
 /// ConversationState defines a public contract.

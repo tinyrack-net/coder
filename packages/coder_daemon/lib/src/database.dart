@@ -94,6 +94,9 @@ class Sessions extends Table {
   /// The lastError public API member.
   TextColumn get lastError => text().nullable()();
 
+  /// Collaboration mode: `plan` proposes work, `normal` performs it.
+  TextColumn get mode => text().withDefault(const Constant('normal'))();
+
   /// Provider connection pinned for this session; null inherits the agent.
   TextColumn get modelConnectionId => text().nullable()();
 
@@ -347,7 +350,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

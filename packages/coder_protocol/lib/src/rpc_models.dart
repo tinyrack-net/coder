@@ -138,12 +138,27 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
+    @Default(SessionMode.normal) SessionMode mode,
     SessionModelSelectionDto? model,
   }) = _SessionCreateParamsDto;
 
   /// Decodes session creation parameters.
   factory SessionCreateParamsDto.fromJson(Map<String, dynamic> json) =>
       _$SessionCreateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Switches the collaboration mode of one session.
+abstract class SessionModeSetParamsDto with _$SessionModeSetParamsDto {
+  /// Creates session mode parameters.
+  const factory SessionModeSetParamsDto({
+    required String sessionId,
+    required SessionMode mode,
+  }) = _SessionModeSetParamsDto;
+
+  /// Decodes session mode parameters.
+  factory SessionModeSetParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionModeSetParamsDtoFromJson(json);
 }
 
 @freezed
