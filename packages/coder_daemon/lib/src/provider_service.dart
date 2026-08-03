@@ -7,6 +7,25 @@ import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:coder_provider_openai/coder_provider_openai.dart';
 
+/// Runtime provider selection resolved from one Markdown agent snapshot.
+final class ResolvedAgentModel {
+  /// Creates a resolved executable provider and model pair.
+  const ResolvedAgentModel({
+    required this.connectionId,
+    required this.modelId,
+    required this.provider,
+  });
+
+  /// Selected provider connection.
+  final String connectionId;
+
+  /// Selected model identifier.
+  final String modelId;
+
+  /// Executable provider adapter.
+  final ModelProvider provider;
+}
+
 /// Stable provider connection failure translated to a protocol error code.
 final class ProviderConnectionFailure implements Exception {
   /// Creates a provider connection failure.
@@ -153,6 +172,53 @@ final class ProviderService implements ProviderOAuthConnector {
     final result = await _repository.listConnections();
     result.sort((left, right) => left.displayName.compareTo(right.displayName));
     return result;
+  }
+
+  /// Resolves daemon-default or fixed Markdown agent model configuration.
+  Future<ResolvedAgentModel> resolveAgentModel(
+    AgentModelSelectionDto selection,
+  ) async {
+    final String connectionId;
+    final String modelId;
+    switch (selection.source) {
+      case AgentModelSource.daemonDefault:
+        final connections = await _repository.listConnections();
+        final defaults = connections.where(
+          (connection) => connection.isDefault,
+        );
+        if (defaults.isEmpty) {
+          throw const ProviderConnectionFailure(
+            'provider_not_connected',
+            'No default provider connection is configured.',
+          );
+        }
+        final connection = defaults.first;
+        final defaultModel = connection.defaultModelId;
+        if (defaultModel == null) {
+          throw ProviderConnectionFailure(
+            'provider_not_connected',
+            'Default provider has no model: ${connection.id}',
+          );
+        }
+        connectionId = connection.id;
+        modelId = defaultModel;
+      case AgentModelSource.fixed:
+        final fixedConnection = selection.providerConnectionId;
+        final fixedModel = selection.modelId;
+        if (fixedConnection == null || fixedModel == null) {
+          throw const FormatException(
+            'Fixed agent models require a provider and model.',
+          );
+        }
+        connectionId = fixedConnection;
+        modelId = fixedModel;
+    }
+    await validateAgentModel(connectionId, modelId);
+    return ResolvedAgentModel(
+      connectionId: connectionId,
+      modelId: modelId,
+      provider: await resolve(connectionId, modelId: modelId),
+    );
   }
 
   /// Returns one connection or fails when it does not exist.

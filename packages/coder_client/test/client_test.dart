@@ -26,16 +26,39 @@ void main() {
     isCoderOwned: false,
     createdAt: now,
   );
-  final agent = AgentDto(
+  final agent = SessionDto(
     id: 'agent',
     worktreeId: worktree.id,
     title: 'Agent',
-    providerConnectionId: 'provider',
-    model: 'model',
-    status: AgentStatus.idle,
-    permissionMode: PermissionMode.ask,
+    agentDefinitionId: 'coder',
+    origin: SessionOrigin.manual,
+    status: SessionStatus.idle,
     createdAt: now,
     updatedAt: now,
+  );
+  const agentDefinition = AgentDefinitionDto(
+    id: 'coder',
+    name: 'Coder',
+    description: 'Coding agent',
+    mode: AgentMode.primary,
+    promptEnabled: true,
+    systemPrompt: 'Code carefully.',
+    model: AgentModelSelectionDto(
+      source: AgentModelSource.daemonDefault,
+    ),
+    reasoningEffort: 'medium',
+    permissionMode: PermissionMode.ask,
+    toolIds: <String>['read_file'],
+    callableAgentIds: <String>[],
+    contentHash: 'hash',
+    sourcePath: '/config/agents/coder.md',
+    isBuiltIn: true,
+  );
+  const agentTool = AgentToolDefinitionDto(
+    id: 'read_file',
+    name: 'read_file',
+    description: 'Read a file.',
+    risk: ToolRisk.read,
   );
   const definition = ProviderDefinitionDto(
     id: 'provider',
@@ -74,7 +97,7 @@ void main() {
   );
   final approval = ApprovalRequestDto(
     id: 'approval',
-    agentId: agent.id,
+    sessionId: agent.id,
     turnId: 'turn',
     toolCallId: 'call',
     toolName: 'apply_patch',
@@ -84,7 +107,7 @@ void main() {
     createdAt: now,
   );
   final timeline = TimelineEventDto(
-    agentId: agent.id,
+    sessionId: agent.id,
     sequence: 2,
     turnId: 'turn',
     type: 'assistant.delta',
@@ -103,6 +126,8 @@ void main() {
             workspace: workspace,
             worktree: worktree,
             agent: agent,
+            agentDefinition: agentDefinition,
+            agentTool: agentTool,
             definition: definition,
             connection: connection,
             model: model,
@@ -177,28 +202,42 @@ void main() {
         isA<WorktreeArchivePreviewDto>(),
       );
       expect(await client.archiveWorktree(worktree.id), worktree);
-      expect(await client.listAgents(worktreeId: worktree.id), <AgentDto>[
+      expect(await client.listSessions(worktreeId: worktree.id), <SessionDto>[
         agent,
       ]);
       expect(
-        await client.createAgent(
+        await client.createSession(
           id: agent.id,
           worktreeId: worktree.id,
           title: agent.title,
-          providerConnectionId: agent.providerConnectionId,
-          model: agent.model,
-          permissionMode: agent.permissionMode,
+          agentDefinitionId: agent.agentDefinitionId,
         ),
         agent,
+      );
+      expect(await client.listAgentDefinitions(), <AgentDefinitionDto>[
+        agentDefinition,
+      ]);
+      expect(await client.getAgentDefinition('coder'), agentDefinition);
+      expect(
+        await client.createAgentDefinition('coder', agentDefinition),
+        agentDefinition,
       );
       expect(
-        await client.updateAgentConfiguration(
-          agentId: agent.id,
-          providerConnectionId: connection.id,
-          model: model.id,
+        await client.updateAgentDefinition(
+          agentDefinition,
+          expectedContentHash: agentDefinition.contentHash,
         ),
-        agent,
+        agentDefinition,
       );
+      await client.archiveAgentDefinition('custom');
+      expect(await client.resetAgentDefinition('coder'), agentDefinition);
+      expect(
+        await client.validateAgentDefinition('coder', 'markdown'),
+        agentDefinition,
+      );
+      expect(await client.listAgentTools(), <AgentToolDefinitionDto>[
+        agentTool,
+      ]);
       final catalog = await client.listProviderCatalog();
       expect(catalog.definitions, <ProviderDefinitionDto>[definition]);
       expect(await client.listProviderConnections(), <ProviderConnectionDto>[
@@ -249,7 +288,7 @@ void main() {
       );
       await client.deleteCustomProvider('custom');
       await client.startTurn(
-        agentId: agent.id,
+        sessionId: agent.id,
         turnId: 'turn',
         prompt: 'hello',
       );
@@ -268,7 +307,11 @@ void main() {
           RpcNotification.timelineEvent,
           timeline.copyWith(sequence: 3).toJson(),
         )
-        ..sendNotification(RpcNotification.agentUpdated, agent.toJson())
+        ..sendNotification(RpcNotification.sessionUpdated, agent.toJson())
+        ..sendNotification(
+          RpcNotification.agentDefinitionsChanged,
+          const <String, dynamic>{},
+        )
         ..sendNotification(
           RpcNotification.approvalRequested,
           approval.toJson(),
@@ -280,7 +323,14 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(events.whereType<TimelineClientEvent>(), hasLength(1));
-      expect(events.whereType<AgentUpdatedClientEvent>().single.agent, agent);
+      expect(
+        events.whereType<SessionUpdatedClientEvent>().single.session,
+        agent,
+      );
+      expect(
+        events.whereType<AgentDefinitionsChangedClientEvent>(),
+        hasLength(1),
+      );
       expect(
         events.whereType<ApprovalRequestedClientEvent>().single.approval,
         approval,
@@ -301,9 +351,16 @@ void main() {
           RpcMethod.worktreeCreate,
           RpcMethod.worktreeArchivePreview,
           RpcMethod.worktreeArchive,
-          RpcMethod.agentList,
-          RpcMethod.agentCreate,
-          RpcMethod.agentConfigurationUpdate,
+          RpcMethod.sessionList,
+          RpcMethod.sessionCreate,
+          RpcMethod.agentDefinitionList,
+          RpcMethod.agentDefinitionGet,
+          RpcMethod.agentDefinitionCreate,
+          RpcMethod.agentDefinitionUpdate,
+          RpcMethod.agentDefinitionArchive,
+          RpcMethod.agentDefinitionReset,
+          RpcMethod.agentDefinitionValidate,
+          RpcMethod.agentToolCatalog,
           RpcMethod.providerCatalog,
           RpcMethod.providerConnectionsList,
           RpcMethod.providerConnectApiKey,
@@ -531,7 +588,9 @@ void _registerFixtureMethods(
   List<_Request> requests, {
   required WorkspaceDto workspace,
   required WorktreeDto worktree,
-  required AgentDto agent,
+  required SessionDto agent,
+  required AgentDefinitionDto agentDefinition,
+  required AgentToolDefinitionDto agentTool,
   required ProviderDefinitionDto definition,
   required ProviderConnectionDto connection,
   required ProviderModelDto model,
@@ -586,9 +645,32 @@ void _registerFixtureMethods(
       preview: archivePreview,
     ).toJson(),
     RpcMethod.worktreeArchive: WorktreeResultDto(worktree: worktree).toJson(),
-    RpcMethod.agentList: AgentListResultDto(agents: <AgentDto>[agent]).toJson(),
-    RpcMethod.agentCreate: AgentResultDto(agent: agent).toJson(),
-    RpcMethod.agentConfigurationUpdate: AgentResultDto(agent: agent).toJson(),
+    RpcMethod.sessionList: SessionListResultDto(
+      sessions: <SessionDto>[agent],
+    ).toJson(),
+    RpcMethod.sessionCreate: SessionResultDto(session: agent).toJson(),
+    RpcMethod.agentDefinitionList: AgentDefinitionListResultDto(
+      definitions: <AgentDefinitionDto>[agentDefinition],
+    ).toJson(),
+    RpcMethod.agentDefinitionGet: AgentDefinitionResultDto(
+      definition: agentDefinition,
+    ).toJson(),
+    RpcMethod.agentDefinitionCreate: AgentDefinitionResultDto(
+      definition: agentDefinition,
+    ).toJson(),
+    RpcMethod.agentDefinitionUpdate: AgentDefinitionResultDto(
+      definition: agentDefinition,
+    ).toJson(),
+    RpcMethod.agentDefinitionArchive: const <String, dynamic>{},
+    RpcMethod.agentDefinitionReset: AgentDefinitionResultDto(
+      definition: agentDefinition,
+    ).toJson(),
+    RpcMethod.agentDefinitionValidate: AgentDefinitionResultDto(
+      definition: agentDefinition,
+    ).toJson(),
+    RpcMethod.agentToolCatalog: AgentToolCatalogResultDto(
+      tools: <AgentToolDefinitionDto>[agentTool],
+    ).toJson(),
     RpcMethod.providerCatalog: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
         definitions: <ProviderDefinitionDto>[definition],

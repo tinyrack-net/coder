@@ -196,93 +196,165 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
 }
 
 @riverpod
-/// AgentsController defines a public contract.
-class AgentsController extends _$AgentsController {
+/// SessionsController defines a public contract.
+class SessionsController extends _$SessionsController {
   StreamSubscription<ClientEvent>? _events;
   late String? _worktreeId;
 
   @override
-  Future<List<AgentDto>> build(String hostId, String? worktreeId) async {
+  Future<List<SessionDto>> build(String hostId, String? worktreeId) async {
     _worktreeId = worktreeId;
     final runtime = (await ref.watch(
       hostRegistryControllerProvider.future,
     )).runtimes[hostId];
     if (runtime?.connected != true || worktreeId == null) {
-      return const <AgentDto>[];
+      return const <SessionDto>[];
     }
     final api = runtime!.api!;
     _events = api.events.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
-    return api.listAgents(worktreeId: worktreeId);
+    return api.listSessions(worktreeId: worktreeId);
   }
 
   /// The create public API member.
-  Future<AgentDto> create({
+  Future<SessionDto> create({
     required String title,
-    required String providerConnectionId,
-    required String model,
-    required String reasoningEffort,
-    required PermissionMode permissionMode,
+    required String agentDefinitionId,
   }) async {
     final worktreeId = _worktreeId;
     if (worktreeId == null) {
       throw StateError('Worktree selection and daemon connection required.');
     }
     final api = await _requireHostApi(ref, hostId);
-    final previous = state.asData?.value ?? const <AgentDto>[];
-    state = const AsyncLoading<List<AgentDto>>();
+    final previous = state.asData?.value ?? const <SessionDto>[];
+    state = const AsyncLoading<List<SessionDto>>();
     try {
-      final agent = await api.createAgent(
+      final session = await api.createSession(
         id: ref.read(appIdGeneratorProvider).generate(),
         worktreeId: worktreeId,
         title: title,
-        providerConnectionId: providerConnectionId,
-        model: model,
-        reasoningEffort: reasoningEffort,
-        permissionMode: permissionMode,
+        agentDefinitionId: agentDefinitionId,
       );
-      state = AsyncData<List<AgentDto>>(<AgentDto>[agent, ...previous]);
-      return agent;
+      state = AsyncData<List<SessionDto>>(<SessionDto>[session, ...previous]);
+      return session;
     } catch (error, stackTrace) {
-      state = AsyncError<List<AgentDto>>(error, stackTrace);
+      state = AsyncError<List<SessionDto>>(error, stackTrace);
       rethrow;
     }
   }
 
-  /// The updateConfiguration public API member.
-  Future<AgentDto> updateConfiguration({
-    required String agentId,
-    required String providerConnectionId,
-    required String model,
-    required String reasoningEffort,
-  }) async {
-    final api = await _requireHostApi(ref, hostId);
-    final updated = await api.updateAgentConfiguration(
-      agentId: agentId,
-      providerConnectionId: providerConnectionId,
-      model: model,
-      reasoningEffort: reasoningEffort,
-    );
-    _replace(updated);
-    return updated;
-  }
-
   void _handleEvent(ClientEvent event) {
     if (!ref.mounted) return;
-    if (event case AgentUpdatedClientEvent(
-      :final agent,
-    ) when agent.worktreeId == _worktreeId) {
-      _replace(agent);
+    if (event case SessionUpdatedClientEvent(
+      :final session,
+    ) when session.worktreeId == _worktreeId) {
+      _replace(session);
     }
   }
 
-  void _replace(AgentDto updated) {
+  void _replace(SessionDto updated) {
     final current = state.asData?.value;
     if (current == null) return;
-    state = AsyncData<List<AgentDto>>(<AgentDto>[
+    final exists = current.any((session) => session.id == updated.id);
+    state = AsyncData<List<SessionDto>>(<SessionDto>[
+      if (!exists) updated,
       for (final agent in current)
         if (agent.id == updated.id) updated else agent,
     ]);
+  }
+}
+
+/// Agent definition editor data owned by one daemon.
+final class AgentDefinitionsState {
+  /// Creates an immutable Markdown agent catalog snapshot.
+  const AgentDefinitionsState({
+    required this.definitions,
+    required this.tools,
+    required this.canEdit,
+  });
+
+  /// Visible primary and subagent definitions.
+  final List<AgentDefinitionDto> definitions;
+
+  /// Tools this daemon can execute.
+  final List<AgentToolDefinitionDto> tools;
+
+  /// Whether the current connection has the daemon admin credential.
+  final bool canEdit;
+}
+
+@riverpod
+/// Loads and edits one daemon's Markdown agent files.
+class AgentDefinitionsController extends _$AgentDefinitionsController {
+  StreamSubscription<ClientEvent>? _events;
+
+  @override
+  Future<AgentDefinitionsState> build(String hostId) async {
+    final api = await _requireHostApi(ref, hostId);
+    _events = api.events.listen((event) {
+      if (event is AgentDefinitionsChangedClientEvent) unawaited(refresh());
+    });
+    ref.onDispose(() => unawaited(_events?.cancel()));
+    return AgentDefinitionsState(
+      definitions: await api.listAgentDefinitions(),
+      tools: await api.listAgentTools(),
+      canEdit: api.serverInfo.features['agentDefinitionAdmin'] ?? false,
+    );
+  }
+
+  /// Reloads files and diagnostics from the daemon.
+  Future<void> refresh() async {
+    final api = await _requireHostApi(ref, hostId);
+    final current = state.asData?.value;
+    state = AsyncData<AgentDefinitionsState>(
+      AgentDefinitionsState(
+        definitions: await api.listAgentDefinitions(),
+        tools: current?.tools ?? await api.listAgentTools(),
+        canEdit: api.serverInfo.features['agentDefinitionAdmin'] ?? false,
+      ),
+    );
+  }
+
+  /// Creates a custom Markdown-backed definition.
+  Future<AgentDefinitionDto> create(
+    String id,
+    AgentDefinitionDto definition,
+  ) async {
+    final api = await _requireHostApi(ref, hostId);
+    final created = await api.createAgentDefinition(id, definition);
+    await refresh();
+    return created;
+  }
+
+  /// Saves an edit, rejecting external-file races by default.
+  Future<AgentDefinitionDto> saveDefinition(
+    AgentDefinitionDto definition, {
+    required String expectedContentHash,
+    bool force = false,
+  }) async {
+    final api = await _requireHostApi(ref, hostId);
+    final updated = await api.updateAgentDefinition(
+      definition,
+      expectedContentHash: expectedContentHash,
+      force: force,
+    );
+    await refresh();
+    return updated;
+  }
+
+  /// Archives one custom definition.
+  Future<void> archive(String id) async {
+    final api = await _requireHostApi(ref, hostId);
+    await api.archiveAgentDefinition(id);
+    await refresh();
+  }
+
+  /// Restores the built-in Coder definition.
+  Future<AgentDefinitionDto> resetCoder() async {
+    final api = await _requireHostApi(ref, hostId);
+    final reset = await api.resetAgentDefinition('coder');
+    await refresh();
+    return reset;
   }
 }
 
@@ -296,7 +368,7 @@ final class SessionTabsState {
   });
 
   /// All daemon sessions available to the overflow picker.
-  final List<AgentDto> sessions;
+  final List<SessionDto> sessions;
 
   /// Session IDs visible in the tab strip.
   final List<String> openAgentIds;
@@ -314,7 +386,7 @@ class SessionTabsController extends _$SessionTabsController {
   Future<SessionTabsState> build(WorkspaceSelection selection) async {
     _selection = selection;
     final sessions = await ref.watch(
-      agentsControllerProvider(selection.hostId, selection.worktreeId).future,
+      sessionsControllerProvider(selection.hostId, selection.worktreeId).future,
     );
     final settings = (await ref.watch(
       hostRegistryControllerProvider.future,
@@ -337,37 +409,37 @@ class SessionTabsController extends _$SessionTabsController {
   }
 
   /// Opens and selects a session from the overflow picker.
-  Future<void> open(String agentId) async {
+  Future<void> open(String sessionId) async {
     final current = state.requireValue;
     final open = <String>[
-      ...current.openAgentIds.where((id) => id != agentId),
-      agentId,
+      ...current.openAgentIds.where((id) => id != sessionId),
+      sessionId,
     ];
-    await _set(current, open, agentId);
+    await _set(current, open, sessionId);
   }
 
   /// Selects an already-open session.
-  Future<void> select(String agentId) =>
-      _set(state.requireValue, state.requireValue.openAgentIds, agentId);
+  Future<void> select(String sessionId) =>
+      _set(state.requireValue, state.requireValue.openAgentIds, sessionId);
 
   /// Hides a tab without deleting its daemon session or history.
-  Future<void> close(String agentId) async {
+  Future<void> close(String sessionId) async {
     final current = state.requireValue;
     final open = current.openAgentIds
-        .where((id) => id != agentId)
+        .where((id) => id != sessionId)
         .toList(growable: false);
-    final selected = current.selectedAgentId == agentId
+    final selected = current.selectedAgentId == sessionId
         ? open.lastOrNull
         : current.selectedAgentId;
     await _set(current, open, selected);
   }
 
   /// Adds a newly-created daemon session to the tab strip.
-  Future<void> add(AgentDto agent) async {
+  Future<void> add(SessionDto agent) async {
     final current = state.requireValue;
     await _set(
       SessionTabsState(
-        sessions: <AgentDto>[agent, ...current.sessions],
+        sessions: <SessionDto>[agent, ...current.sessions],
         openAgentIds: current.openAgentIds,
         selectedAgentId: current.selectedAgentId,
       ),
@@ -427,19 +499,19 @@ final class ConversationState {
 /// ConversationController defines a public contract.
 class ConversationController extends _$ConversationController {
   StreamSubscription<ClientEvent>? _events;
-  late String? _agentId;
+  late String? _sessionId;
 
   @override
-  Future<ConversationState> build(String hostId, String? agentId) async {
-    _agentId = agentId;
+  Future<ConversationState> build(String hostId, String? sessionId) async {
+    _sessionId = sessionId;
     final runtime = (await ref.watch(
       hostRegistryControllerProvider.future,
     )).runtimes[hostId];
-    if (runtime?.connected != true || agentId == null) {
+    if (runtime?.connected != true || sessionId == null) {
       return const ConversationState();
     }
     final api = runtime!.api!;
-    final timeline = await api.subscribeTimeline(agentId);
+    final timeline = await api.subscribeTimeline(sessionId);
     _events = api.events.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
     return ConversationState(
@@ -450,11 +522,11 @@ class ConversationController extends _$ConversationController {
 
   /// The startTurn public API member.
   Future<void> startTurn(String prompt) async {
-    final agentId = _agentId;
-    if (agentId == null || prompt.trim().isEmpty) return;
+    final sessionId = _sessionId;
+    if (sessionId == null || prompt.trim().isEmpty) return;
     final api = await _requireHostApi(ref, hostId);
     await api.startTurn(
-      agentId: agentId,
+      sessionId: sessionId,
       turnId: ref.read(appIdGeneratorProvider).generate(),
       prompt: prompt.trim(),
     );
@@ -462,10 +534,10 @@ class ConversationController extends _$ConversationController {
 
   /// The cancelTurn public API member.
   Future<void> cancelTurn() async {
-    final agentId = _agentId;
-    if (agentId != null) {
+    final sessionId = _sessionId;
+    if (sessionId != null) {
       final api = await _requireHostApi(ref, hostId);
-      await api.cancelTurn(agentId);
+      await api.cancelTurn(sessionId);
     }
   }
 
@@ -496,7 +568,7 @@ class ConversationController extends _$ConversationController {
     if (current == null) return;
     switch (clientEvent) {
       case TimelineClientEvent(:final event):
-        if (event.agentId != _agentId ||
+        if (event.sessionId != _sessionId ||
             current.timeline.any((item) => item.sequence == event.sequence)) {
           return;
         }
@@ -513,7 +585,7 @@ class ConversationController extends _$ConversationController {
           ),
         );
       case ApprovalRequestedClientEvent(:final approval):
-        if (approval.agentId == _agentId) {
+        if (approval.sessionId == _sessionId) {
           state = AsyncData<ConversationState>(
             current.copyWith(
               approvals: <String, ApprovalRequestDto>{
@@ -523,8 +595,9 @@ class ConversationController extends _$ConversationController {
             ),
           );
         }
-      case AgentUpdatedClientEvent():
+      case SessionUpdatedClientEvent():
       case ProviderAuthUpdatedClientEvent():
+      case AgentDefinitionsChangedClientEvent():
         break;
     }
   }

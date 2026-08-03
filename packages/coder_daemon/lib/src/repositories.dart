@@ -47,39 +47,31 @@ abstract interface class WorktreeRepository {
 }
 
 /// Public API exposed by this library.
-abstract interface class AgentRepository {
+abstract interface class SessionRepository {
   /// The list public API member.
-  Future<List<AgentDto>> list({String? worktreeId});
+  Future<List<SessionDto>> list({String? worktreeId});
 
   /// The getById public API member.
-  Future<AgentDto?> getById(String id);
+  Future<SessionDto?> getById(String id);
 
   /// Counts sessions with a turn currently running or awaiting approval.
   Future<int> countActive(String worktreeId);
 
   /// The create public API member.
-  Future<AgentDto> create(AgentDto agent);
+  Future<SessionDto> create(SessionDto session);
 
   /// The updateStatus public API member.
-  Future<AgentDto> updateStatus(
+  Future<SessionDto> updateStatus(
     String id,
-    AgentStatus status, {
+    SessionStatus status, {
     String? activeTurnId,
     String? error,
-  });
-
-  /// The updateConfiguration public API member.
-  Future<AgentDto> updateConfiguration({
-    required String id,
-    required String providerConnectionId,
-    required String model,
-    required String reasoningEffort,
   });
 
   /// The createTurn public API member.
   Future<bool> createTurn({
     required String id,
-    required String agentId,
+    required String sessionId,
     required String prompt,
   });
 
@@ -91,23 +83,23 @@ abstract interface class AgentRepository {
 abstract interface class TimelineRepository {
   /// The append public API member.
   Future<TimelineEventDto> append({
-    required String agentId,
+    required String sessionId,
     required String type,
     required Map<String, dynamic> data,
     String? turnId,
   });
 
   /// The after public API member.
-  Future<List<TimelineEventDto>> after(String agentId, int sequence);
+  Future<List<TimelineEventDto>> after(String sessionId, int sequence);
 
   /// The appendProviderItems public API member.
   Future<void> appendProviderItems(
-    String agentId,
+    String sessionId,
     List<ConversationItem> items,
   );
 
   /// The providerHistory public API member.
-  Future<List<ConversationItem>> providerHistory(String agentId);
+  Future<List<ConversationItem>> providerHistory(String sessionId);
 
   /// The createApproval public API member.
   Future<void> createApproval(ApprovalRequestDto approval);

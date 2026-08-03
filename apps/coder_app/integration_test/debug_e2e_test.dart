@@ -7,6 +7,7 @@ import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
+import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,7 +37,7 @@ void main() {
           bearerToken: 'e2e-token-0123456789abcdef0123456789',
           useEnvironmentCredentials: false,
         ),
-        provider: _PatchProvider(),
+        provider: _AgentE2eProvider(),
       );
       final remoteHandle = await DaemonApplication.start(
         DaemonConfig(
@@ -69,13 +70,46 @@ void main() {
         clientId: 'e2e-setup',
         clientKind: 'integration-test',
       );
+      addTearDown(setupClient.close);
       await setupClient.registerWorkspace(
         workspaceId: 'workspace-e2e',
         checkoutId: 'checkout-e2e',
         rootPath: workspace.path,
         name: 'E2E Workspace',
       );
-      await setupClient.close();
+      final coder = await setupClient.getAgentDefinition('coder');
+      final reviewer = await setupClient.createAgentDefinition(
+        'reviewer',
+        coder.copyWith(
+          id: 'reviewer',
+          name: 'Reviewer',
+          description: 'Read-only E2E reviewer',
+          mode: AgentMode.subagent,
+          systemPrompt: 'Review the current change.',
+          permissionMode: PermissionMode.readOnly,
+          callableAgentIds: const <String>[],
+          contentHash: '',
+          sourcePath: '',
+          isBuiltIn: false,
+        ),
+      );
+      await setupClient.updateAgentDefinition(
+        coder.copyWith(callableAgentIds: const <String>['reviewer']),
+        expectedContentHash: coder.contentHash,
+      );
+      final reviewerFile = File(reviewer.sourcePath);
+      await reviewerFile.writeAsString(
+        (await reviewerFile.readAsString()).replaceFirst(
+          'Review the current change.',
+          'Review the current change after external reload.',
+        ),
+        flush: true,
+      );
+      await _waitForAgentPrompt(
+        setupClient,
+        'reviewer',
+        'Review the current change after external reload.',
+      );
       final remoteSetupClient = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: remoteHandle.boundEndpoint),
         credentials: const DaemonCredentials(
@@ -138,7 +172,28 @@ void main() {
       await tester.tap(find.text('생성'));
       await _pumpUntil(tester, find.text('코딩 요청을 입력하세요.'));
 
+      await tester.enterText(find.byType(TextField).last, 'Delegate review');
+      await tester.pumpAndSettle();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await _pumpUntilWithSessionDiagnostics(
+        tester,
+        find.text('Parent completed.', findRichText: true),
+        setupClient,
+      );
+      await tester.tap(find.byTooltip('모든 session'));
+      await _pumpUntil(tester, find.text('Reviewer'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(PopupMenuItem<String>),
+          matching: find.text('Reviewer'),
+        ),
+      );
+      await _pumpUntil(tester, find.text('reviewer · delegated'));
+      await tester.tap(find.text('Coding session').first);
+      await _pumpUntil(tester, find.text('coder · manual'));
+
       await tester.enterText(find.byType(TextField).last, 'Create result.txt');
+      await tester.pumpAndSettle();
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
       await tester.tap(find.text('승인'));
@@ -160,9 +215,16 @@ void main() {
         clientId: 'e2e-reconnect',
         clientKind: 'integration-test',
       );
-      final agents = await reconnected.listAgents(worktreeId: 'checkout-e2e');
-      expect(agents, hasLength(1));
-      final timeline = await reconnected.subscribeTimeline(agents.single.id);
+      final agents = await reconnected.listSessions(worktreeId: 'checkout-e2e');
+      expect(agents, hasLength(2));
+      final parent = agents.singleWhere(
+        (session) => session.origin == SessionOrigin.manual,
+      );
+      final child = agents.singleWhere(
+        (session) => session.origin == SessionOrigin.delegated,
+      );
+      expect(child.parentSessionId, parent.id);
+      final timeline = await reconnected.subscribeTimeline(parent.id);
       expect(timeline.map((event) => event.type), contains('turn.completed'));
       expect(
         timeline.map((event) => event.sequence),
@@ -175,6 +237,20 @@ void main() {
   );
 }
 
+Future<void> _waitForAgentPrompt(
+  CoderApi api,
+  String id,
+  String prompt, {
+  int attempts = 50,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    final definition = await api.getAgentDefinition(id);
+    if (definition.systemPrompt == prompt) return;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw TestFailure('Timed out waiting for external agent file reload.');
+}
+
 Future<void> _pumpUntil(
   WidgetTester tester,
   Finder finder, {
@@ -185,6 +261,29 @@ Future<void> _pumpUntil(
     if (finder.evaluate().isNotEmpty) return;
   }
   throw TestFailure('Timed out waiting for $finder.');
+}
+
+Future<void> _pumpUntilWithSessionDiagnostics(
+  WidgetTester tester,
+  Finder finder,
+  CoderApi api,
+) async {
+  for (var attempt = 0; attempt < 100; attempt += 1) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (finder.evaluate().isNotEmpty) return;
+  }
+  final sessions = await api.listSessions(worktreeId: 'checkout-e2e');
+  final diagnostics = <String, Object?>{};
+  for (final session in sessions) {
+    diagnostics[session.id] = <String, Object?>{
+      'status': session.status.name,
+      'definition': session.agentDefinitionId,
+      'events': (await api.subscribeTimeline(
+        session.id,
+      )).map((event) => event.type).toList(growable: false),
+    };
+  }
+  throw TestFailure('Timed out waiting for $finder: $diagnostics');
 }
 
 final class _ExistingLauncher implements EmbeddedDaemonLauncher {
@@ -232,6 +331,100 @@ final class _PatchProvider implements ModelProvider {
   ) async* {
     if (_round == 0) {
       _round += 1;
+      const arguments = <String, dynamic>{
+        'patch': '--- /dev/null\n+++ b/result.txt\n@@ -0,0 +1,1 @@\n+done\n',
+      };
+      yield const ModelFunctionCall(
+        callId: 'patch-call',
+        name: 'apply_patch',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'patch-call',
+              name: 'apply_patch',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    yield const ModelTextDelta('Created result.txt');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Created result.txt'),
+    );
+  }
+}
+
+final class _AgentE2eProvider implements ModelProvider {
+  @override
+  String get id => 'agent-e2e-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    cancellation.throwIfCancelled();
+    final latestPrompt = request.history
+        .whereType<UserConversationItem>()
+        .last
+        .text;
+    final delegateEnabled = request.tools.any(
+      (tool) => tool.name == 'delegate_agent',
+    );
+    final hasDelegateResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'delegate-call');
+    final hasPatchResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'patch-call');
+
+    if (latestPrompt == 'Delegate review' &&
+        delegateEnabled &&
+        !hasDelegateResult) {
+      const arguments = <String, dynamic>{
+        'agentDefinitionId': 'reviewer',
+        'prompt': 'Review without changing files.',
+      };
+      yield const ModelFunctionCall(
+        callId: 'delegate-call',
+        name: 'delegate_agent',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'delegate-call',
+              name: 'delegate_agent',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (!delegateEnabled) {
+      yield const ModelTextDelta('Review completed.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Review completed.'),
+      );
+      return;
+    }
+    if (latestPrompt == 'Delegate review') {
+      yield const ModelTextDelta('Parent completed.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Parent completed.'),
+      );
+      return;
+    }
+    if (latestPrompt == 'Create result.txt' && !hasPatchResult) {
       const arguments = <String, dynamic>{
         'patch': '--- /dev/null\n+++ b/result.txt\n@@ -0,0 +1,1 @@\n+done\n',
       };

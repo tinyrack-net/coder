@@ -17,7 +17,7 @@ void main() {
   final now = DateTime.utc(2026);
   final approval = ApprovalRequestDto(
     id: 'approval-1',
-    agentId: 'agent-1',
+    sessionId: 'agent-1',
     turnId: 'turn-1',
     toolCallId: 'call-1',
     toolName: 'apply_patch',
@@ -28,7 +28,7 @@ void main() {
     preview: '--- a/lib/main.dart\n+++ b/lib/main.dart\n+safe change',
   );
   final toolEvent = TimelineEventDto(
-    agentId: 'agent-1',
+    sessionId: 'agent-1',
     sequence: 2,
     turnId: 'turn-1',
     type: 'tool.completed',
@@ -132,6 +132,35 @@ void main() {
 
   unawaited(
     goldenTest(
+      'Markdown agent settings adapts to desktop and mobile widths',
+      fileName: 'agent_settings',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'desktop light',
+            child: SizedBox(
+              width: 1100,
+              height: 760,
+              child: _agentSettings(ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'mobile dark',
+            child: SizedBox(
+              width: 390,
+              height: 760,
+              child: _agentSettings(ThemeMode.dark),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'daemon-independent shell renders offline and global settings states',
       fileName: 'daemon_hosts',
       constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
@@ -187,6 +216,22 @@ Widget _settings(ThemeMode mode) {
       mode,
       const UnifiedSettingsPage(
         category: SettingsCategory.provider,
+        hostId: 'server',
+      ),
+    ),
+  );
+}
+
+Widget _agentSettings(ThemeMode mode) {
+  final api = FakeCoderApi();
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(api)),
+    ],
+    child: _material(
+      mode,
+      const UnifiedSettingsPage(
+        category: SettingsCategory.agent,
         hostId: 'server',
       ),
     ),

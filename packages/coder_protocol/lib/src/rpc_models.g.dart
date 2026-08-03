@@ -113,59 +113,81 @@ Map<String, dynamic> _$WorktreeArchiveParamsDtoToJson(
   'force': instance.force,
 };
 
-_AgentListParamsDto _$AgentListParamsDtoFromJson(Map<String, dynamic> json) =>
-    _AgentListParamsDto(worktreeId: json['worktreeId'] as String?);
-
-Map<String, dynamic> _$AgentListParamsDtoToJson(_AgentListParamsDto instance) =>
-    <String, dynamic>{'worktreeId': instance.worktreeId};
-
-_AgentCreateParamsDto _$AgentCreateParamsDtoFromJson(
+_SessionListParamsDto _$SessionListParamsDtoFromJson(
   Map<String, dynamic> json,
-) => _AgentCreateParamsDto(
+) => _SessionListParamsDto(worktreeId: json['worktreeId'] as String?);
+
+Map<String, dynamic> _$SessionListParamsDtoToJson(
+  _SessionListParamsDto instance,
+) => <String, dynamic>{'worktreeId': instance.worktreeId};
+
+_SessionCreateParamsDto _$SessionCreateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionCreateParamsDto(
   id: json['id'] as String,
   worktreeId: json['worktreeId'] as String,
   title: json['title'] as String,
-  providerConnectionId: json['providerConnectionId'] as String,
-  model: json['model'] as String,
-  reasoningEffort: json['reasoningEffort'] as String,
-  permissionMode: $enumDecode(_$PermissionModeEnumMap, json['permissionMode']),
+  agentDefinitionId: json['agentDefinitionId'] as String,
 );
 
-Map<String, dynamic> _$AgentCreateParamsDtoToJson(
-  _AgentCreateParamsDto instance,
+Map<String, dynamic> _$SessionCreateParamsDtoToJson(
+  _SessionCreateParamsDto instance,
 ) => <String, dynamic>{
   'id': instance.id,
   'worktreeId': instance.worktreeId,
   'title': instance.title,
-  'providerConnectionId': instance.providerConnectionId,
-  'model': instance.model,
-  'reasoningEffort': instance.reasoningEffort,
-  'permissionMode': _$PermissionModeEnumMap[instance.permissionMode]!,
+  'agentDefinitionId': instance.agentDefinitionId,
 };
 
-const _$PermissionModeEnumMap = {
-  PermissionMode.readOnly: 'readOnly',
-  PermissionMode.ask: 'ask',
-  PermissionMode.workspaceWrite: 'workspaceWrite',
-};
-
-_AgentConfigurationUpdateParamsDto _$AgentConfigurationUpdateParamsDtoFromJson(
+_AgentDefinitionIdParamsDto _$AgentDefinitionIdParamsDtoFromJson(
   Map<String, dynamic> json,
-) => _AgentConfigurationUpdateParamsDto(
-  agentId: json['agentId'] as String,
-  providerConnectionId: json['providerConnectionId'] as String,
-  model: json['model'] as String,
-  reasoningEffort: json['reasoningEffort'] as String,
+) => _AgentDefinitionIdParamsDto(id: json['id'] as String);
+
+Map<String, dynamic> _$AgentDefinitionIdParamsDtoToJson(
+  _AgentDefinitionIdParamsDto instance,
+) => <String, dynamic>{'id': instance.id};
+
+_AgentDefinitionCreateParamsDto _$AgentDefinitionCreateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentDefinitionCreateParamsDto(
+  id: json['id'] as String,
+  definition: AgentDefinitionDto.fromJson(
+    json['definition'] as Map<String, dynamic>,
+  ),
 );
 
-Map<String, dynamic> _$AgentConfigurationUpdateParamsDtoToJson(
-  _AgentConfigurationUpdateParamsDto instance,
+Map<String, dynamic> _$AgentDefinitionCreateParamsDtoToJson(
+  _AgentDefinitionCreateParamsDto instance,
+) => <String, dynamic>{'id': instance.id, 'definition': instance.definition};
+
+_AgentDefinitionUpdateParamsDto _$AgentDefinitionUpdateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentDefinitionUpdateParamsDto(
+  definition: AgentDefinitionDto.fromJson(
+    json['definition'] as Map<String, dynamic>,
+  ),
+  expectedContentHash: json['expectedContentHash'] as String,
+  force: json['force'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$AgentDefinitionUpdateParamsDtoToJson(
+  _AgentDefinitionUpdateParamsDto instance,
 ) => <String, dynamic>{
-  'agentId': instance.agentId,
-  'providerConnectionId': instance.providerConnectionId,
-  'model': instance.model,
-  'reasoningEffort': instance.reasoningEffort,
+  'definition': instance.definition,
+  'expectedContentHash': instance.expectedContentHash,
+  'force': instance.force,
 };
+
+_AgentDefinitionValidateParamsDto _$AgentDefinitionValidateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentDefinitionValidateParamsDto(
+  id: json['id'] as String,
+  markdown: json['markdown'] as String,
+);
+
+Map<String, dynamic> _$AgentDefinitionValidateParamsDtoToJson(
+  _AgentDefinitionValidateParamsDto instance,
+) => <String, dynamic>{'id': instance.id, 'markdown': instance.markdown};
 
 _ProviderConnectApiKeyParamsDto _$ProviderConnectApiKeyParamsDtoFromJson(
   Map<String, dynamic> json,
@@ -307,23 +329,23 @@ Map<String, dynamic> _$ProviderCustomUpdateParamsDtoToJson(
 
 _TurnStartParamsDto _$TurnStartParamsDtoFromJson(Map<String, dynamic> json) =>
     _TurnStartParamsDto(
-      agentId: json['agentId'] as String,
+      sessionId: json['sessionId'] as String,
       turnId: json['turnId'] as String,
       prompt: json['prompt'] as String,
     );
 
 Map<String, dynamic> _$TurnStartParamsDtoToJson(_TurnStartParamsDto instance) =>
     <String, dynamic>{
-      'agentId': instance.agentId,
+      'sessionId': instance.sessionId,
       'turnId': instance.turnId,
       'prompt': instance.prompt,
     };
 
-_AgentIdParamsDto _$AgentIdParamsDtoFromJson(Map<String, dynamic> json) =>
-    _AgentIdParamsDto(agentId: json['agentId'] as String);
+_SessionIdParamsDto _$SessionIdParamsDtoFromJson(Map<String, dynamic> json) =>
+    _SessionIdParamsDto(sessionId: json['sessionId'] as String);
 
-Map<String, dynamic> _$AgentIdParamsDtoToJson(_AgentIdParamsDto instance) =>
-    <String, dynamic>{'agentId': instance.agentId};
+Map<String, dynamic> _$SessionIdParamsDtoToJson(_SessionIdParamsDto instance) =>
+    <String, dynamic>{'sessionId': instance.sessionId};
 
 _ApprovalResolveParamsDto _$ApprovalResolveParamsDtoFromJson(
   Map<String, dynamic> json,
@@ -342,14 +364,14 @@ Map<String, dynamic> _$ApprovalResolveParamsDtoToJson(
 _TimelineSubscribeParamsDto _$TimelineSubscribeParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _TimelineSubscribeParamsDto(
-  agentId: json['agentId'] as String,
+  sessionId: json['sessionId'] as String,
   afterSequence: (json['afterSequence'] as num).toInt(),
 );
 
 Map<String, dynamic> _$TimelineSubscribeParamsDtoToJson(
   _TimelineSubscribeParamsDto instance,
 ) => <String, dynamic>{
-  'agentId': instance.agentId,
+  'sessionId': instance.sessionId,
   'afterSequence': instance.afterSequence,
 };
 
@@ -433,23 +455,61 @@ Map<String, dynamic> _$WorktreeArchivePreviewResultDtoToJson(
   _WorktreeArchivePreviewResultDto instance,
 ) => <String, dynamic>{'preview': instance.preview};
 
-_AgentListResultDto _$AgentListResultDtoFromJson(Map<String, dynamic> json) =>
-    _AgentListResultDto(
-      agents: (json['agents'] as List<dynamic>)
-          .map((e) => AgentDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
+_SessionListResultDto _$SessionListResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionListResultDto(
+  sessions: (json['sessions'] as List<dynamic>)
+      .map((e) => SessionDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$SessionListResultDtoToJson(
+  _SessionListResultDto instance,
+) => <String, dynamic>{'sessions': instance.sessions};
+
+_SessionResultDto _$SessionResultDtoFromJson(Map<String, dynamic> json) =>
+    _SessionResultDto(
+      session: SessionDto.fromJson(json['session'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$AgentListResultDtoToJson(_AgentListResultDto instance) =>
-    <String, dynamic>{'agents': instance.agents};
+Map<String, dynamic> _$SessionResultDtoToJson(_SessionResultDto instance) =>
+    <String, dynamic>{'session': instance.session};
 
-_AgentResultDto _$AgentResultDtoFromJson(Map<String, dynamic> json) =>
-    _AgentResultDto(
-      agent: AgentDto.fromJson(json['agent'] as Map<String, dynamic>),
-    );
+_AgentDefinitionListResultDto _$AgentDefinitionListResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentDefinitionListResultDto(
+  definitions: (json['definitions'] as List<dynamic>)
+      .map((e) => AgentDefinitionDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
 
-Map<String, dynamic> _$AgentResultDtoToJson(_AgentResultDto instance) =>
-    <String, dynamic>{'agent': instance.agent};
+Map<String, dynamic> _$AgentDefinitionListResultDtoToJson(
+  _AgentDefinitionListResultDto instance,
+) => <String, dynamic>{'definitions': instance.definitions};
+
+_AgentDefinitionResultDto _$AgentDefinitionResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentDefinitionResultDto(
+  definition: AgentDefinitionDto.fromJson(
+    json['definition'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$AgentDefinitionResultDtoToJson(
+  _AgentDefinitionResultDto instance,
+) => <String, dynamic>{'definition': instance.definition};
+
+_AgentToolCatalogResultDto _$AgentToolCatalogResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentToolCatalogResultDto(
+  tools: (json['tools'] as List<dynamic>)
+      .map((e) => AgentToolDefinitionDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$AgentToolCatalogResultDtoToJson(
+  _AgentToolCatalogResultDto instance,
+) => <String, dynamic>{'tools': instance.tools};
 
 _ProviderCatalogResultDto _$ProviderCatalogResultDtoFromJson(
   Map<String, dynamic> json,

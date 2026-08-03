@@ -8,9 +8,9 @@ import 'package:coder_protocol/coder_protocol.dart';
 typedef AgentEventCallback =
     FutureOr<void> Function(String type, Map<String, dynamic> data);
 
-/// Signature used by AgentStatusCallback.
-typedef AgentStatusCallback =
-    FutureOr<void> Function(AgentStatus status, {String? error});
+/// Signature used by SessionStatusCallback.
+typedef SessionStatusCallback =
+    FutureOr<void> Function(SessionStatus status, {String? error});
 
 /// Signature used by ProviderItemsCallback.
 typedef ProviderItemsCallback =
@@ -20,7 +20,7 @@ typedef ProviderItemsCallback =
 class AgentRunRequest {
   /// Creates a [AgentRunRequest].
   const AgentRunRequest({
-    required this.agentId,
+    required this.sessionId,
     required this.turnId,
     required this.workspaceRoot,
     required this.prompt,
@@ -30,10 +30,11 @@ class AgentRunRequest {
     required this.safetyIdentifier,
     this.reasoningEffort = 'medium',
     this.maxToolRounds = 64,
+    this.customSystemPrompt,
   });
 
-  /// The agentId public API member.
-  final String agentId;
+  /// The sessionId public API member.
+  final String sessionId;
 
   /// The turnId public API member.
   final String turnId;
@@ -61,6 +62,9 @@ class AgentRunRequest {
 
   /// The maxToolRounds public API member.
   final int maxToolRounds;
+
+  /// Optional Markdown agent prompt appended after immutable safety rules.
+  final String? customSystemPrompt;
 }
 
 /// AgentRunResult defines a public contract.
@@ -94,7 +98,7 @@ class AgentRunner {
   final Map<String, AgentTool> _tools;
   final ApprovalCoordinator _approvals;
   final AgentEventCallback _onEvent;
-  final AgentStatusCallback _onStatus;
+  final SessionStatusCallback _onStatus;
   final ProviderItemsCallback _onProviderItems;
 
   /// The startTurn public API member.
@@ -106,7 +110,7 @@ class AgentRunner {
     final input = <ConversationItem>[...request.history, userItem];
     final persisted = <ConversationItem>[userItem];
     var toolRounds = 0;
-    await _onStatus(AgentStatus.running);
+    await _onStatus(SessionStatus.running);
     await _onEvent('user.message', <String, dynamic>{'text': request.prompt});
     await _onProviderItems(<ConversationItem>[userItem]);
 
@@ -167,7 +171,7 @@ class AgentRunner {
           await _onEvent('turn.completed', <String, dynamic>{
             'toolRounds': toolRounds,
           });
-          await _onStatus(AgentStatus.idle);
+          await _onStatus(SessionStatus.idle);
           return AgentRunResult(
             conversationItems: persisted,
             toolRounds: toolRounds,
@@ -217,11 +221,11 @@ class AgentRunner {
             ).evaluate(tool.risk);
             var approved = policy == ApprovalEvaluation.allow;
             if (policy == ApprovalEvaluation.ask) {
-              await _onStatus(AgentStatus.waitingForApproval);
+              await _onStatus(SessionStatus.waitingForApproval);
               approved =
                   await _approvals.request(invocation, cancellation) ==
                   ApprovalDecision.approved;
-              await _onStatus(AgentStatus.running);
+              await _onStatus(SessionStatus.running);
             }
             if (policy == ApprovalEvaluation.deny || !approved) {
               final item = ToolResultConversationItem(
@@ -277,20 +281,23 @@ class AgentRunner {
       }
     } on AgentCancelledException {
       await _onEvent('turn.cancelled', const <String, dynamic>{});
-      await _onStatus(AgentStatus.idle);
+      await _onStatus(SessionStatus.idle);
       rethrow;
     } catch (error) {
       await _onEvent('turn.failed', <String, dynamic>{'error': '$error'});
-      await _onStatus(AgentStatus.failed, error: '$error');
+      await _onStatus(SessionStatus.failed, error: '$error');
       rethrow;
     }
   }
 
-  String _instructions(AgentRunRequest request) =>
-      '''
+  String _instructions(AgentRunRequest request) {
+    final customPrompt = request.customSystemPrompt?.trim();
+    return '''
 You are a coding agent operating in ${request.workspaceRoot}.
 Use only the supplied tools. Read before editing, keep changes scoped to the request,
 and validate relevant behavior before finishing. Never attempt to access paths outside
 the workspace. Approval decisions are enforced by the host; do not work around them.
+${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
 ''';
+  }
 }

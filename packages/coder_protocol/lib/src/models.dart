@@ -3,8 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'models.freezed.dart';
 part 'models.g.dart';
 
-/// Values supported by AgentStatus.
-enum AgentStatus {
+/// Runtime lifecycle of an AI session.
+enum SessionStatus {
   /// The initializing public API member.
   initializing,
 
@@ -17,11 +17,41 @@ enum AgentStatus {
   /// The waitingForApproval public API member.
   waitingForApproval,
 
+  /// The parent session is waiting for a delegated child session.
+  waitingForSubagent,
+
   /// The failed public API member.
   failed,
 
   /// The closed public API member.
   closed,
+}
+
+/// Determines how an agent definition can be used.
+enum AgentMode {
+  /// May be selected when a user creates a session.
+  primary,
+
+  /// May only be invoked by an allowlisted primary agent.
+  subagent,
+}
+
+/// Determines how an agent definition resolves its provider and model.
+enum AgentModelSource {
+  /// Resolves the daemon's current default connection and model for each turn.
+  daemonDefault,
+
+  /// Uses one explicit provider connection and model.
+  fixed,
+}
+
+/// Describes whether a session was created by a user or an agent.
+enum SessionOrigin {
+  /// The user explicitly created the session.
+  manual,
+
+  /// A primary agent delegated work to this child session.
+  delegated,
 }
 
 /// Values supported by TurnStatus.
@@ -379,27 +409,105 @@ abstract class GitBranchDto with _$GitBranchDto {
 }
 
 @freezed
-/// AgentDto defines a public contract.
-abstract class AgentDto with _$AgentDto {
-  /// The AgentDto public API member.
-  const factory AgentDto({
+/// Provider and model selection stored in an agent Markdown file.
+abstract class AgentModelSelectionDto with _$AgentModelSelectionDto {
+  /// Creates an agent model selection.
+  const factory AgentModelSelectionDto({
+    required AgentModelSource source,
+    String? providerConnectionId,
+    String? modelId,
+  }) = _AgentModelSelectionDto;
+
+  /// Decodes an agent model selection.
+  factory AgentModelSelectionDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentModelSelectionDtoFromJson(json);
+}
+
+@freezed
+/// A source diagnostic produced while loading an agent Markdown file.
+abstract class AgentDefinitionDiagnosticDto
+    with _$AgentDefinitionDiagnosticDto {
+  /// Creates an agent definition diagnostic.
+  const factory AgentDefinitionDiagnosticDto({
+    required String code,
+    required String message,
+    int? line,
+    int? column,
+  }) = _AgentDefinitionDiagnosticDto;
+
+  /// Decodes an agent definition diagnostic.
+  factory AgentDefinitionDiagnosticDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentDefinitionDiagnosticDtoFromJson(json);
+}
+
+@freezed
+/// Markdown-backed configuration for a primary agent or subagent.
+abstract class AgentDefinitionDto with _$AgentDefinitionDto {
+  /// Creates an agent definition.
+  const factory AgentDefinitionDto({
+    required String id,
+    required String name,
+    required String description,
+    required AgentMode mode,
+    required bool promptEnabled,
+    required String systemPrompt,
+    required AgentModelSelectionDto model,
+    required String reasoningEffort,
+    required PermissionMode permissionMode,
+    required List<String> toolIds,
+    required List<String> callableAgentIds,
+    required String contentHash,
+    required String sourcePath,
+    @Default(false) bool isBuiltIn,
+    @Default(false) bool isArchived,
+    @Default(false) bool isStale,
+    @Default(<AgentDefinitionDiagnosticDto>[])
+    List<AgentDefinitionDiagnosticDto> diagnostics,
+  }) = _AgentDefinitionDto;
+
+  /// Decodes an agent definition.
+  factory AgentDefinitionDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentDefinitionDtoFromJson(json);
+}
+
+@freezed
+/// One tool that can be enabled by an agent definition.
+abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
+  /// Creates an agent tool definition.
+  const factory AgentToolDefinitionDto({
+    required String id,
+    required String name,
+    required String description,
+    required ToolRisk risk,
+    @Default(true) bool available,
+  }) = _AgentToolDefinitionDto;
+
+  /// Decodes an agent tool definition.
+  factory AgentToolDefinitionDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentToolDefinitionDtoFromJson(json);
+}
+
+@freezed
+/// Persistent conversation session using a Markdown agent definition.
+abstract class SessionDto with _$SessionDto {
+  /// Creates a session descriptor.
+  const factory SessionDto({
     required String id,
     required String worktreeId,
     required String title,
-    required String providerConnectionId,
-    required String model,
-    required AgentStatus status,
-    required PermissionMode permissionMode,
+    required String agentDefinitionId,
+    required SessionOrigin origin,
+    required SessionStatus status,
     required DateTime createdAt,
     required DateTime updatedAt,
-    @Default('medium') String reasoningEffort,
+    String? parentSessionId,
     String? activeTurnId,
     String? lastError,
-  }) = _AgentDto;
+  }) = _SessionDto;
 
-  /// Creates a [AgentDto].
-  factory AgentDto.fromJson(Map<String, dynamic> json) =>
-      _$AgentDtoFromJson(json);
+  /// Decodes a session descriptor.
+  factory SessionDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionDtoFromJson(json);
 }
 
 @freezed
@@ -609,7 +717,7 @@ abstract class ProviderDiagnosticDto with _$ProviderDiagnosticDto {
 abstract class TimelineEventDto with _$TimelineEventDto {
   /// The TimelineEventDto public API member.
   const factory TimelineEventDto({
-    required String agentId,
+    required String sessionId,
     required int sequence,
     required String type,
     required Map<String, dynamic> data,
@@ -628,7 +736,7 @@ abstract class ApprovalRequestDto with _$ApprovalRequestDto {
   /// The ApprovalRequestDto public API member.
   const factory ApprovalRequestDto({
     required String id,
-    required String agentId,
+    required String sessionId,
     required String turnId,
     required String toolCallId,
     required String toolName,

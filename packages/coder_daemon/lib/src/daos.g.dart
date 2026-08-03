@@ -45,23 +45,23 @@ class WorktreeDaoManager {
       $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
 }
 
-mixin _$AgentDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$SessionDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
-  $AgentsTable get agents => attachedDatabase.agents;
+  $SessionsTable get sessions => attachedDatabase.sessions;
   $TurnsTable get turns => attachedDatabase.turns;
-  AgentDaoManager get managers => AgentDaoManager(this);
+  SessionDaoManager get managers => SessionDaoManager(this);
 }
 
-class AgentDaoManager {
-  final _$AgentDaoMixin _db;
-  AgentDaoManager(this._db);
+class SessionDaoManager {
+  final _$SessionDaoMixin _db;
+  SessionDaoManager(this._db);
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
   $$WorktreesTableTableManager get worktrees =>
       $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
-  $$AgentsTableTableManager get agents =>
-      $$AgentsTableTableManager(_db.attachedDatabase, _db.agents);
+  $$SessionsTableTableManager get sessions =>
+      $$SessionsTableTableManager(_db.attachedDatabase, _db.sessions);
   $$TurnsTableTableManager get turns =>
       $$TurnsTableTableManager(_db.attachedDatabase, _db.turns);
 }
@@ -69,7 +69,7 @@ class AgentDaoManager {
 mixin _$TimelineDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
-  $AgentsTable get agents => attachedDatabase.agents;
+  $SessionsTable get sessions => attachedDatabase.sessions;
   $TimelineEventsTable get timelineEvents => attachedDatabase.timelineEvents;
   $TurnsTable get turns => attachedDatabase.turns;
   $ApprovalRequestsTable get approvalRequests =>
@@ -85,8 +85,8 @@ class TimelineDaoManager {
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
   $$WorktreesTableTableManager get worktrees =>
       $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
-  $$AgentsTableTableManager get agents =>
-      $$AgentsTableTableManager(_db.attachedDatabase, _db.agents);
+  $$SessionsTableTableManager get sessions =>
+      $$SessionsTableTableManager(_db.attachedDatabase, _db.sessions);
   $$TimelineEventsTableTableManager get timelineEvents =>
       $$TimelineEventsTableTableManager(
         _db.attachedDatabase,
@@ -110,9 +110,6 @@ mixin _$ProviderDaoMixin on DatabaseAccessor<CoderDatabase> {
   $ProviderConnectionsTable get providerConnections =>
       attachedDatabase.providerConnections;
   $ProviderModelsTable get providerModels => attachedDatabase.providerModels;
-  $WorkspacesTable get workspaces => attachedDatabase.workspaces;
-  $WorktreesTable get worktrees => attachedDatabase.worktrees;
-  $AgentsTable get agents => attachedDatabase.agents;
   ProviderDaoManager get managers => ProviderDaoManager(this);
 }
 
@@ -129,18 +126,12 @@ class ProviderDaoManager {
         _db.attachedDatabase,
         _db.providerModels,
       );
-  $$WorkspacesTableTableManager get workspaces =>
-      $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
-  $$WorktreesTableTableManager get worktrees =>
-      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
-  $$AgentsTableTableManager get agents =>
-      $$AgentsTableTableManager(_db.attachedDatabase, _db.agents);
 }
 
 mixin _$RuntimeDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
-  $AgentsTable get agents => attachedDatabase.agents;
+  $SessionsTable get sessions => attachedDatabase.sessions;
   $TurnsTable get turns => attachedDatabase.turns;
   $ApprovalRequestsTable get approvalRequests =>
       attachedDatabase.approvalRequests;
@@ -154,8 +145,8 @@ class RuntimeDaoManager {
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
   $$WorktreesTableTableManager get worktrees =>
       $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
-  $$AgentsTableTableManager get agents =>
-      $$AgentsTableTableManager(_db.attachedDatabase, _db.agents);
+  $$SessionsTableTableManager get sessions =>
+      $$SessionsTableTableManager(_db.attachedDatabase, _db.sessions);
   $$TurnsTableTableManager get turns =>
       $$TurnsTableTableManager(_db.attachedDatabase, _db.turns);
   $$ApprovalRequestsTableTableManager get approvalRequests =>

@@ -15,16 +15,22 @@ final class FakeCoderApi implements CoderApi {
     List<ProviderConnectionDto>? connections,
     List<WorkspaceDto>? workspaces,
     List<WorktreeDto>? worktrees,
-    List<AgentDto>? agents,
+    List<SessionDto>? agents,
+    List<AgentDefinitionDto>? agentDefinitions,
     Map<String, List<TimelineEventDto>>? timelines,
     Map<String, List<ProviderModelDto>>? models,
     this.eventStream,
+    this.agentListError,
+    this.failNextAgentUpdate = false,
   }) : _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
        _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
        _workspaces = workspaces ?? <WorkspaceDto>[],
        _worktrees = worktrees ?? <WorktreeDto>[],
-       _agents = agents ?? <AgentDto>[],
+       _agents = agents ?? <SessionDto>[],
+       _agentDefinitions = List<AgentDefinitionDto>.of(
+         agentDefinitions ?? <AgentDefinitionDto>[_coder],
+       ),
        _timelines = <String, List<TimelineEventDto>>{
          for (final entry
              in (timelines ?? <String, List<TimelineEventDto>>{}).entries)
@@ -42,7 +48,10 @@ final class FakeCoderApi implements CoderApi {
     serverId: 'server',
     version: 'test',
     protocolVersion: coderProtocolVersion,
-    features: <String, bool>{'providerAdmin': true},
+    features: <String, bool>{
+      'providerAdmin': true,
+      'agentDefinitionAdmin': true,
+    },
   );
   static final ProviderCatalogDto _defaultCatalog = ProviderCatalogDto(
     definitions: const <ProviderDefinitionDto>[
@@ -108,18 +117,43 @@ final class FakeCoderApi implements CoderApi {
       source: CapabilitySource.bundled,
     ),
   );
+  static const AgentDefinitionDto _coder = AgentDefinitionDto(
+    id: 'coder',
+    name: 'Coder',
+    description: 'General-purpose coding agent',
+    mode: AgentMode.primary,
+    promptEnabled: true,
+    systemPrompt: 'Code carefully.',
+    model: AgentModelSelectionDto(
+      source: AgentModelSource.daemonDefault,
+    ),
+    reasoningEffort: 'medium',
+    permissionMode: PermissionMode.ask,
+    toolIds: <String>['read_file'],
+    callableAgentIds: <String>[],
+    contentHash: 'coder-hash',
+    sourcePath: '/config/agents/coder.md',
+    isBuiltIn: true,
+  );
 
   final ServerInfoDto _serverInfo;
   ProviderCatalogDto _catalog;
   final List<ProviderConnectionDto> _connections;
   final List<WorkspaceDto> _workspaces;
   final List<WorktreeDto> _worktrees;
-  final List<AgentDto> _agents;
+  final List<SessionDto> _agents;
+  final List<AgentDefinitionDto> _agentDefinitions;
   final Map<String, List<TimelineEventDto>> _timelines;
   final Map<String, List<ProviderModelDto>> _models;
 
   /// Optional event stream that can model transport lifecycle races.
   final Stream<ClientEvent>? eventStream;
+
+  /// Optional failure returned while loading Markdown agent definitions.
+  final Exception? agentListError;
+
+  /// Whether the next guarded Markdown save should simulate a file race.
+  bool failNextAgentUpdate;
   final StreamController<ClientEvent> _events =
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
@@ -273,29 +307,24 @@ final class FakeCoderApi implements CoderApi {
   }
 
   @override
-  Future<List<AgentDto>> listAgents({String? worktreeId}) async => _agents
+  Future<List<SessionDto>> listSessions({String? worktreeId}) async => _agents
       .where((agent) => worktreeId == null || agent.worktreeId == worktreeId)
       .toList(growable: false);
 
   @override
-  Future<AgentDto> createAgent({
+  Future<SessionDto> createSession({
     required String id,
     required String worktreeId,
     required String title,
-    required String providerConnectionId,
-    required String model,
-    required PermissionMode permissionMode,
-    String reasoningEffort = 'medium',
+    required String agentDefinitionId,
   }) async {
-    final agent = AgentDto(
+    final agent = SessionDto(
       id: id,
       worktreeId: worktreeId,
       title: title,
-      providerConnectionId: providerConnectionId,
-      model: model,
-      reasoningEffort: reasoningEffort,
-      status: AgentStatus.idle,
-      permissionMode: permissionMode,
+      agentDefinitionId: agentDefinitionId,
+      origin: SessionOrigin.manual,
+      status: SessionStatus.idle,
       createdAt: _now,
       updatedAt: _now,
     );
@@ -304,21 +333,84 @@ final class FakeCoderApi implements CoderApi {
   }
 
   @override
-  Future<AgentDto> updateAgentConfiguration({
-    required String agentId,
-    required String providerConnectionId,
-    required String model,
-    String reasoningEffort = 'medium',
-  }) async {
-    final index = _agents.indexWhere((agent) => agent.id == agentId);
-    final updated = _agents[index].copyWith(
-      providerConnectionId: providerConnectionId,
-      model: model,
-      reasoningEffort: reasoningEffort,
+  Future<List<AgentDefinitionDto>> listAgentDefinitions() async {
+    final error = agentListError;
+    if (error != null) throw error;
+    return List<AgentDefinitionDto>.unmodifiable(_agentDefinitions);
+  }
+
+  @override
+  Future<AgentDefinitionDto> getAgentDefinition(String id) async =>
+      _agentDefinitions.singleWhere((definition) => definition.id == id);
+
+  @override
+  Future<AgentDefinitionDto> createAgentDefinition(
+    String id,
+    AgentDefinitionDto definition,
+  ) async {
+    final created = definition.copyWith(
+      id: id,
+      contentHash: '$id-hash',
+      sourcePath: '/config/agents/$id.md',
     );
-    _agents[index] = updated;
+    _agentDefinitions.add(created);
+    return created;
+  }
+
+  @override
+  Future<AgentDefinitionDto> updateAgentDefinition(
+    AgentDefinitionDto definition, {
+    required String expectedContentHash,
+    bool force = false,
+  }) async {
+    if (failNextAgentUpdate && !force) {
+      failNextAgentUpdate = false;
+      throw Exception('agent_file_conflict');
+    }
+    final index = _agentDefinitions.indexWhere(
+      (item) => item.id == definition.id,
+    );
+    if (!force && _agentDefinitions[index].contentHash != expectedContentHash) {
+      throw StateError('agent_file_conflict');
+    }
+    final updated = definition.copyWith(
+      contentHash: '${definition.id}-updated-hash',
+    );
+    _agentDefinitions[index] = updated;
     return updated;
   }
+
+  @override
+  Future<void> archiveAgentDefinition(String id) async {
+    _agentDefinitions.removeWhere((definition) => definition.id == id);
+  }
+
+  @override
+  Future<AgentDefinitionDto> resetAgentDefinition(String id) async {
+    if (id != 'coder') throw StateError('Only coder can be reset.');
+    final index = _agentDefinitions.indexWhere(
+      (definition) => definition.id == id,
+    );
+    _agentDefinitions[index] = _coder;
+    return _coder;
+  }
+
+  @override
+  Future<AgentDefinitionDto> validateAgentDefinition(
+    String id,
+    String markdown,
+  ) async => _coder.copyWith(id: id, systemPrompt: markdown);
+
+  @override
+  Future<List<AgentToolDefinitionDto>> listAgentTools() async =>
+      const <AgentToolDefinitionDto>[
+        AgentToolDefinitionDto(
+          id: 'read_file',
+          name: 'read_file',
+          description: 'Read a file.',
+          risk: ToolRisk.read,
+        ),
+      ];
 
   @override
   Future<ProviderCatalogDto> listProviderCatalog() async => _catalog;
@@ -561,7 +653,7 @@ final class FakeCoderApi implements CoderApi {
 
   @override
   Future<void> startTurn({
-    required String agentId,
+    required String sessionId,
     required String turnId,
     required String prompt,
   }) async {
@@ -570,8 +662,8 @@ final class FakeCoderApi implements CoderApi {
   }
 
   @override
-  Future<void> cancelTurn(String agentId) async {
-    cancelledAgents.add(agentId);
+  Future<void> cancelTurn(String sessionId) async {
+    cancelledAgents.add(sessionId);
   }
 
   @override
@@ -584,9 +676,9 @@ final class FakeCoderApi implements CoderApi {
 
   @override
   Future<List<TimelineEventDto>> subscribeTimeline(
-    String agentId, {
+    String sessionId, {
     int afterSequence = 0,
-  }) async => (_timelines[agentId] ?? const <TimelineEventDto>[])
+  }) async => (_timelines[sessionId] ?? const <TimelineEventDto>[])
       .where((event) => event.sequence > afterSequence)
       .toList(growable: false);
 

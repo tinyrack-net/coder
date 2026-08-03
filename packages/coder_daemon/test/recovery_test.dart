@@ -32,29 +32,28 @@ void main() {
           createdAt: now,
         ),
       );
-      await database.agentDao.create(
-        AgentDto(
+      await database.sessionDao.create(
+        SessionDto(
           id: 'agent',
           worktreeId: 'worktree',
           title: 'Agent',
-          providerConnectionId: 'openai',
-          model: 'gpt-5.6-sol',
-          status: AgentStatus.running,
-          permissionMode: PermissionMode.ask,
+          agentDefinitionId: 'coder',
+          origin: SessionOrigin.manual,
+          status: SessionStatus.running,
           activeTurnId: 'turn',
           createdAt: now,
           updatedAt: now,
         ),
       );
-      await database.agentDao.createTurn(
+      await database.sessionDao.createTurn(
         id: 'turn',
-        agentId: 'agent',
+        sessionId: 'agent',
         prompt: 'work',
       );
       await database.timelineDao.createApproval(
         ApprovalRequestDto(
           id: 'approval',
-          agentId: 'agent',
+          sessionId: 'agent',
           turnId: 'turn',
           toolCallId: 'call',
           toolName: 'run_command',
@@ -68,7 +67,7 @@ void main() {
 
       database = CoderDatabase(databasePath);
       await database.runtimeDao.recoverInterruptedRuns();
-      final agent = await database.agentDao.getById('agent');
+      final agent = await database.sessionDao.getById('agent');
       final turn = await (database.select(
         database.turns,
       )..where((row) => row.id.equals('turn'))).getSingle();
@@ -76,7 +75,7 @@ void main() {
         database.approvalRequests,
       )..where((row) => row.id.equals('approval'))).getSingle();
 
-      expect(agent!.status, AgentStatus.failed);
+      expect(agent!.status, SessionStatus.failed);
       expect(agent.activeTurnId, isNull);
       expect(turn.status, TurnStatus.interrupted.name);
       expect(approval.status, ApprovalStatus.cancelled.name);

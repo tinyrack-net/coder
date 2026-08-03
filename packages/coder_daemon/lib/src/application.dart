@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
@@ -136,8 +137,31 @@ abstract final class DaemonApplication {
         connector: providers,
         ids: ids,
       );
-      final service = AgentService(
-        agents: database.agentDao,
+      final builtInTools = <AgentTool>[
+        ListDirectoryTool(),
+        ReadFileTool(),
+        SearchTextTool(),
+        ApplyPatchTool(),
+        RunCommandTool(),
+      ];
+      final toolById = <String, AgentTool>{
+        for (final tool in builtInTools) tool.name: tool,
+      };
+      final agentDefinitions = AgentDefinitionService(
+        store: FileAgentDefinitionStore(config.configDirectory),
+        tools: builtInTools.map(
+          (tool) => AgentToolDefinitionDto(
+            id: tool.name,
+            name: tool.name,
+            description: tool.description,
+            risk: tool.risk,
+          ),
+        ),
+      );
+      await agentDefinitions.initialize();
+      final service = SessionService(
+        sessions: database.sessionDao,
+        definitions: agentDefinitions,
         worktrees: database.worktreeDao,
         timeline: database.timelineDao,
         providers: providers,
@@ -145,18 +169,13 @@ abstract final class DaemonApplication {
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: clock,
         ids: ids,
-        toolsFactory: () => <AgentTool>[
-          ListDirectoryTool(),
-          ReadFileTool(),
-          SearchTextTool(),
-          ApplyPatchTool(),
-          RunCommandTool(),
-        ],
+        toolsFactory: (ids) =>
+            ids.map((id) => toolById[id]).whereType<AgentTool>(),
       );
       final workspaceService = WorkspaceService(
         database.workspaceDao,
         database.worktreeDao,
-        database.agentDao,
+        database.sessionDao,
         workspacePaths,
         git ?? const ProcessGitWorkspaceGateway(IoCommandRunner()),
         clock,
@@ -171,13 +190,16 @@ abstract final class DaemonApplication {
           'approvals': true,
           'embeddedDaemon': true,
           'providerCatalog': true,
+          'agentDefinitions': true,
+          'subagents': true,
         },
       );
       final rpc = DaemonRpcServer(
         workspaces: workspaceService,
-        agentRepository: database.agentDao,
+        sessionRepository: database.sessionDao,
         timeline: database.timelineDao,
         agents: service,
+        agentDefinitions: agentDefinitions,
         providers: providers,
         providerAuth: providerAuth,
         clock: clock,
@@ -208,6 +230,7 @@ abstract final class DaemonApplication {
         rpc: rpc,
         database: database,
         events: events,
+        agentDefinitions: agentDefinitions,
         lock: lock,
       );
     } catch (_) {
@@ -229,6 +252,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._rpc,
     required this._database,
     required this._events,
+    required this._agentDefinitions,
     required this._lock,
   }) : _serverId = serverIdValue,
        _adminToken = adminTokenValue;
@@ -241,6 +265,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final DaemonRpcServer _rpc;
   final CoderDatabase _database;
   final StreamController<WireEnvelope> _events;
+  final AgentDefinitionService _agentDefinitions;
   final RandomAccessFile _lock;
   bool _stopped = false;
 
@@ -261,6 +286,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     _stopped = true;
     await _http.close(force: true);
     await _rpc.close();
+    await _agentDefinitions.close();
     await _events.close();
     await _database.close();
     await _lock.unlock();

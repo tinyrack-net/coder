@@ -115,17 +115,32 @@ void main() {
     );
     expect(
       harness.statuses,
-      <AgentStatus>[
-        AgentStatus.running,
-        AgentStatus.waitingForApproval,
-        AgentStatus.running,
-        AgentStatus.idle,
+      <SessionStatus>[
+        SessionStatus.running,
+        SessionStatus.waitingForApproval,
+        SessionStatus.running,
+        SessionStatus.idle,
       ],
     );
     expect(provider.requests.first.tools.single.name, 'echo');
     expect(
       provider.requests.first.instructions,
       contains(Directory.current.path),
+    );
+    final customProvider = _FakeProvider(<List<ModelEvent>>[
+      _textResponse('done'),
+    ]);
+    final customPromptHarness = _RunnerHarness(customProvider);
+    await customPromptHarness.runner.startTurn(
+      _request(customSystemPrompt: 'Review every security boundary.'),
+      CancellationToken(),
+    );
+    expect(
+      customProvider.requests.single.instructions,
+      allOf(
+        contains('Approval decisions are enforced by the host'),
+        contains('Review every security boundary.'),
+      ),
     );
   });
 
@@ -214,7 +229,7 @@ void main() {
       missingCompletion.runner.startTurn(_request(), CancellationToken()),
       throwsA(isA<StateError>()),
     );
-    expect(missingCompletion.statuses.last, AgentStatus.failed);
+    expect(missingCompletion.statuses.last, SessionStatus.failed);
     expect(missingCompletion.events, contains('turn.failed'));
 
     final maxRounds = _RunnerHarness(
@@ -241,7 +256,7 @@ void main() {
         throwsA(isA<AgentCancelledException>()),
       );
       expect(before.events.last, 'turn.cancelled');
-      expect(before.statuses.last, AgentStatus.idle);
+      expect(before.statuses.last, SessionStatus.idle);
 
       final during = _RunnerHarness(
         _FakeProvider(<List<ModelEvent>>[_toolResponse('cancel')]),
@@ -312,8 +327,9 @@ void main() {
 AgentRunRequest _request({
   PermissionMode permissionMode = PermissionMode.workspaceWrite,
   int maxToolRounds = 64,
+  String? customSystemPrompt,
 }) => AgentRunRequest(
-  agentId: 'agent-1',
+  sessionId: 'agent-1',
   turnId: 'turn-1',
   workspaceRoot: Directory.current.path,
   prompt: 'test',
@@ -322,6 +338,7 @@ AgentRunRequest _request({
   history: const <ConversationItem>[UserConversationItem('history')],
   safetyIdentifier: 'safe-id',
   maxToolRounds: maxToolRounds,
+  customSystemPrompt: customSystemPrompt,
 );
 
 List<ModelEvent> _toolResponse(String name) => <ModelEvent>[
@@ -373,7 +390,7 @@ final class _RunnerHarness {
 
   late AgentRunner runner;
   final List<String> events = <String>[];
-  final List<AgentStatus> statuses = <AgentStatus>[];
+  final List<SessionStatus> statuses = <SessionStatus>[];
   final List<String> statusErrors = <String>[];
   final List<ConversationItem> items = <ConversationItem>[];
 }

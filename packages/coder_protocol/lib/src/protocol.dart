@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 5;
+const int coderProtocolVersion = 6;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -35,14 +35,35 @@ abstract final class RpcMethod {
   /// Archives a worktree and removes it only when Coder owns it.
   static const String worktreeArchive = 'worktree.archive';
 
-  /// The agentList public API member.
-  static const String agentList = 'agent.list';
+  /// Lists Markdown-backed agent definitions.
+  static const String agentDefinitionList = 'agentDefinition.list';
 
-  /// The agentCreate public API member.
-  static const String agentCreate = 'agent.create';
+  /// Returns one Markdown-backed agent definition.
+  static const String agentDefinitionGet = 'agentDefinition.get';
 
-  /// The agentConfigurationUpdate public API member.
-  static const String agentConfigurationUpdate = 'agent.configuration.update';
+  /// Creates one Markdown-backed agent definition.
+  static const String agentDefinitionCreate = 'agentDefinition.create';
+
+  /// Updates one Markdown-backed agent definition.
+  static const String agentDefinitionUpdate = 'agentDefinition.update';
+
+  /// Archives one custom agent definition.
+  static const String agentDefinitionArchive = 'agentDefinition.archive';
+
+  /// Restores the built-in Coder definition.
+  static const String agentDefinitionReset = 'agentDefinition.reset';
+
+  /// Validates Markdown without saving it.
+  static const String agentDefinitionValidate = 'agentDefinition.validate';
+
+  /// Returns tools available to agent definitions.
+  static const String agentToolCatalog = 'agentTool.catalog';
+
+  /// Lists persisted sessions.
+  static const String sessionList = 'session.list';
+
+  /// Creates a persisted session.
+  static const String sessionCreate = 'session.create';
 
   /// Returns immutable built-in provider definitions.
   static const String providerCatalog = 'provider.catalog';
@@ -107,8 +128,11 @@ abstract final class RpcNotification {
   /// The timelineEvent public API member.
   static const String timelineEvent = 'timeline.event';
 
-  /// The agentUpdated public API member.
-  static const String agentUpdated = 'agent.updated';
+  /// Reports one session lifecycle change.
+  static const String sessionUpdated = 'session.updated';
+
+  /// Reports a Markdown agent catalog change.
+  static const String agentDefinitionsChanged = 'agentDefinitions.changed';
 
   /// The approvalRequested public API member.
   static const String approvalRequested = 'approval.requested';

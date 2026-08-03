@@ -37,7 +37,7 @@ branch refs/heads/feature/settings
       final service = WorkspaceService(
         database.workspaceDao,
         database.worktreeDao,
-        database.agentDao,
+        database.sessionDao,
         _FakeWorkspacePaths(),
         git,
         _FixedClock(),
@@ -87,7 +87,7 @@ branch refs/heads/feature/settings
       final service = WorkspaceService(
         database.workspaceDao,
         database.worktreeDao,
-        database.agentDao,
+        database.sessionDao,
         _FakeWorkspacePaths(),
         git,
         _FixedClock(),
@@ -136,7 +136,7 @@ branch refs/heads/feature/settings
       final service = WorkspaceService(
         database.workspaceDao,
         database.worktreeDao,
-        database.agentDao,
+        database.sessionDao,
         paths,
         git,
         _FixedClock(),
@@ -194,7 +194,7 @@ branch refs/heads/feature/settings
       final service = WorkspaceService(
         database.workspaceDao,
         database.worktreeDao,
-        database.agentDao,
+        database.sessionDao,
         _FakeWorkspacePaths(),
         git,
         _FixedClock(),
@@ -261,7 +261,7 @@ branch refs/heads/feature/settings
     final service = WorkspaceService(
       database.workspaceDao,
       database.worktreeDao,
-      database.agentDao,
+      database.sessionDao,
       _FakeWorkspacePaths(),
       _FakeGitGateway(),
       _FixedClock(),
@@ -275,15 +275,14 @@ branch refs/heads/feature/settings
         name: 'Repository',
       ),
     );
-    await database.agentDao.create(
-      AgentDto(
+    await database.sessionDao.create(
+      SessionDto(
         id: 'running-session',
         worktreeId: 'checkout-1',
         title: 'Running',
-        providerConnectionId: 'openai',
-        model: 'model',
-        status: AgentStatus.running,
-        permissionMode: PermissionMode.ask,
+        agentDefinitionId: 'coder',
+        origin: SessionOrigin.manual,
+        status: SessionStatus.running,
         createdAt: _FixedClock.now,
         updatedAt: _FixedClock.now,
       ),

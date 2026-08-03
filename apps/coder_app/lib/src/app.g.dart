@@ -11,6 +11,7 @@ List<RouteBase> get $appRoutes => [
   $worktreeRoute,
   $sessionRoute,
   $providerSettingsRoute,
+  $agentSettingsRoute,
   $daemonSettingsRoute,
   $newHostRoute,
   $editHostRoute,
@@ -78,7 +79,7 @@ mixin $WorktreeRoute on GoRouteData {
 }
 
 RouteBase get $sessionRoute => GoRouteData.$route(
-  path: '/workspaces/:hostId/:workspaceId/:worktreeId/sessions/:agentId',
+  path: '/workspaces/:hostId/:workspaceId/:worktreeId/sessions/:sessionId',
   hasOverriddenOnExit: false,
   factory: $SessionRoute._fromState,
 );
@@ -88,14 +89,14 @@ mixin $SessionRoute on GoRouteData {
     hostId: state.pathParameters['hostId']!,
     workspaceId: state.pathParameters['workspaceId']!,
     worktreeId: state.pathParameters['worktreeId']!,
-    agentId: state.pathParameters['agentId']!,
+    sessionId: state.pathParameters['sessionId']!,
   );
 
   SessionRoute get _self => this as SessionRoute;
 
   @override
   String get location => GoRouteData.$location(
-    '/workspaces/${Uri.encodeComponent(_self.hostId)}/${Uri.encodeComponent(_self.workspaceId)}/${Uri.encodeComponent(_self.worktreeId)}/sessions/${Uri.encodeComponent(_self.agentId)}',
+    '/workspaces/${Uri.encodeComponent(_self.hostId)}/${Uri.encodeComponent(_self.workspaceId)}/${Uri.encodeComponent(_self.worktreeId)}/sessions/${Uri.encodeComponent(_self.sessionId)}',
   );
 
   @override
@@ -127,6 +128,38 @@ mixin $ProviderSettingsRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/settings/providers',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $agentSettingsRoute => GoRouteData.$route(
+  path: '/settings/agents',
+  hasOverriddenOnExit: false,
+  factory: $AgentSettingsRoute._fromState,
+);
+
+mixin $AgentSettingsRoute on GoRouteData {
+  static AgentSettingsRoute _fromState(GoRouterState state) =>
+      AgentSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  AgentSettingsRoute get _self => this as AgentSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/agents',
     queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
   );
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
@@ -18,9 +19,10 @@ class DaemonRpcServer {
   /// Creates a [DaemonRpcServer].
   DaemonRpcServer({
     required this.workspaces,
-    required this.agentRepository,
+    required this.sessionRepository,
     required this.timeline,
     required this.agents,
+    required this.agentDefinitions,
     required this.providers,
     required this.providerAuth,
     required this.clock,
@@ -38,19 +40,30 @@ class DaemonRpcServer {
         ),
       ),
     );
+    _agentDefinitionSubscription = agentDefinitions.changes.listen(
+      (_) => _broadcast(
+        const WireEnvelope(
+          type: RpcNotification.agentDefinitionsChanged,
+          payload: <String, dynamic>{},
+        ),
+      ),
+    );
   }
 
   /// The workspaces public API member.
   final WorkspaceService workspaces;
 
-  /// The agentRepository public API member.
-  final AgentRepository agentRepository;
+  /// The sessionRepository public API member.
+  final SessionRepository sessionRepository;
 
   /// The timeline public API member.
   final TimelineRepository timeline;
 
   /// The agents public API member.
-  final AgentService agents;
+  final SessionService agents;
+
+  /// Markdown-backed agent definition application service.
+  final AgentDefinitionService agentDefinitions;
 
   /// The providers public API member.
   final ProviderService providers;
@@ -72,6 +85,7 @@ class DaemonRpcServer {
   final Set<_ClientSession> _sessions = <_ClientSession>{};
   late final StreamSubscription<WireEnvelope> _eventSubscription;
   late final StreamSubscription<ProviderAuthAttemptDto> _authSubscription;
+  late final StreamSubscription<void> _agentDefinitionSubscription;
 
   /// The call public API member.
   FutureOr<Response> call(Request request) {
@@ -107,9 +121,10 @@ class DaemonRpcServer {
     final session = _ClientSession(
       channel: channel,
       workspaces: workspaces,
-      agentRepository: agentRepository,
+      sessionRepository: sessionRepository,
       timeline: timeline,
       agents: agents,
+      agentDefinitions: agentDefinitions,
       providers: providers,
       providerAuth: providerAuth,
       clock: clock,
@@ -126,8 +141,8 @@ class DaemonRpcServer {
     for (final session in List<_ClientSession>.of(_sessions)) {
       if (event.type == RpcNotification.timelineEvent ||
           event.type == RpcNotification.approvalRequested) {
-        final agentId = event.payload['agentId'] as String?;
-        if (agentId == null || !session.subscriptions.contains(agentId)) {
+        final sessionId = event.payload['sessionId'] as String?;
+        if (sessionId == null || !session.subscriptions.contains(sessionId)) {
           continue;
         }
       }
@@ -139,6 +154,7 @@ class DaemonRpcServer {
   Future<void> close() async {
     await _eventSubscription.cancel();
     await _authSubscription.cancel();
+    await _agentDefinitionSubscription.cancel();
     await providerAuth.close();
     for (final session in List<_ClientSession>.of(_sessions)) {
       await session.close();
@@ -166,9 +182,10 @@ class _ClientSession {
   _ClientSession({
     required this.channel,
     required this.workspaces,
-    required this.agentRepository,
+    required this.sessionRepository,
     required this.timeline,
     required this.agents,
+    required this.agentDefinitions,
     required this.providers,
     required this.providerAuth,
     required this.clock,
@@ -179,9 +196,10 @@ class _ClientSession {
 
   final WebSocketChannel channel;
   final WorkspaceService workspaces;
-  final AgentRepository agentRepository;
+  final SessionRepository sessionRepository;
   final TimelineRepository timeline;
-  final AgentService agents;
+  final SessionService agents;
+  final AgentDefinitionService agentDefinitions;
   final ProviderService providers;
   final ProviderAuthCoordinator providerAuth;
   final Clock clock;
@@ -205,9 +223,16 @@ class _ClientSession {
       RpcMethod.worktreeCreate,
       RpcMethod.worktreeArchivePreview,
       RpcMethod.worktreeArchive,
-      RpcMethod.agentList,
-      RpcMethod.agentCreate,
-      RpcMethod.agentConfigurationUpdate,
+      RpcMethod.agentDefinitionList,
+      RpcMethod.agentDefinitionGet,
+      RpcMethod.agentDefinitionCreate,
+      RpcMethod.agentDefinitionUpdate,
+      RpcMethod.agentDefinitionArchive,
+      RpcMethod.agentDefinitionReset,
+      RpcMethod.agentDefinitionValidate,
+      RpcMethod.agentToolCatalog,
+      RpcMethod.sessionList,
+      RpcMethod.sessionCreate,
       RpcMethod.providerCatalog,
       RpcMethod.providerConnectionsList,
       RpcMethod.providerConnectApiKey,
@@ -255,6 +280,7 @@ class _ClientSession {
             'providerAdmin': localAdmin,
             'providerCredentialWrite': localAdmin,
             'providerDiagnostics': localAdmin,
+            'agentDefinitionAdmin': localAdmin,
             'jsonRpc2': true,
           },
         )
@@ -288,6 +314,15 @@ class _ClientSession {
         1002,
         error.message,
         data: <String, dynamic>{'code': error.code},
+      );
+    } on AgentFileConflict catch (error) {
+      throw json_rpc.RpcException(
+        1002,
+        'Agent file changed outside Coder.',
+        data: <String, dynamic>{
+          'code': 'agent_file_conflict',
+          'currentContentHash': error.currentContentHash,
+        },
       );
     } catch (error) {
       throw json_rpc.RpcException(
@@ -352,58 +387,90 @@ class _ClientSession {
             force: request.force,
           ),
         ).toJson();
-      case RpcMethod.agentList:
-        final request = AgentListParamsDto.fromJson(payload);
-        final items = await agentRepository.list(
+      case RpcMethod.agentDefinitionList:
+        return AgentDefinitionListResultDto(
+          definitions: await agentDefinitions.list(),
+        ).toJson();
+      case RpcMethod.agentDefinitionGet:
+        final request = AgentDefinitionIdParamsDto.fromJson(payload);
+        return AgentDefinitionResultDto(
+          definition: await agentDefinitions.get(request.id),
+        ).toJson();
+      case RpcMethod.agentDefinitionCreate:
+        _requireLocalAdmin();
+        final request = AgentDefinitionCreateParamsDto.fromJson(payload);
+        return AgentDefinitionResultDto(
+          definition: await agentDefinitions.create(
+            request.id,
+            request.definition,
+          ),
+        ).toJson();
+      case RpcMethod.agentDefinitionUpdate:
+        _requireLocalAdmin();
+        final request = AgentDefinitionUpdateParamsDto.fromJson(payload);
+        return AgentDefinitionResultDto(
+          definition: await agentDefinitions.update(
+            request.definition,
+            expectedContentHash: request.expectedContentHash,
+            force: request.force,
+          ),
+        ).toJson();
+      case RpcMethod.agentDefinitionArchive:
+        _requireLocalAdmin();
+        final request = AgentDefinitionIdParamsDto.fromJson(payload);
+        await agentDefinitions.archive(request.id);
+        return const <String, dynamic>{};
+      case RpcMethod.agentDefinitionReset:
+        _requireLocalAdmin();
+        final request = AgentDefinitionIdParamsDto.fromJson(payload);
+        return AgentDefinitionResultDto(
+          definition: await agentDefinitions.reset(request.id),
+        ).toJson();
+      case RpcMethod.agentDefinitionValidate:
+        final request = AgentDefinitionValidateParamsDto.fromJson(payload);
+        return AgentDefinitionResultDto(
+          definition: await agentDefinitions.validate(
+            request.id,
+            request.markdown,
+          ),
+        ).toJson();
+      case RpcMethod.agentToolCatalog:
+        return AgentToolCatalogResultDto(
+          tools: agentDefinitions.toolCatalog(),
+        ).toJson();
+      case RpcMethod.sessionList:
+        final request = SessionListParamsDto.fromJson(payload);
+        final items = await sessionRepository.list(
           worktreeId: request.worktreeId,
         );
-        return AgentListResultDto(agents: items).toJson();
-      case RpcMethod.agentCreate:
-        final request = AgentCreateParamsDto.fromJson(payload);
-        final connections = await providers.connections();
-        final providerConnectionId = request.providerConnectionId.isEmpty
-            ? connections
-                      .where((connection) => connection.isDefault)
-                      .firstOrNull
-                      ?.id ??
-                  (throw const FormatException(
-                    'A connected provider is required.',
-                  ))
-            : request.providerConnectionId;
-        final configuredProvider = await providers.get(providerConnectionId);
-        final model = request.model.isEmpty
-            ? configuredProvider.defaultModelId ??
-                  (throw const FormatException('model is required.'))
-            : request.model;
-        await providers.validateAgentModel(providerConnectionId, model);
+        return SessionListResultDto(sessions: items).toJson();
+      case RpcMethod.sessionCreate:
+        final request = SessionCreateParamsDto.fromJson(payload);
+        final definition = await agentDefinitions.get(
+          request.agentDefinitionId,
+        );
+        if (definition.mode != AgentMode.primary ||
+            definition.isArchived ||
+            definition.isStale) {
+          throw const FormatException(
+            'New sessions require an active primary agent definition.',
+          );
+        }
+        await providers.resolveAgentModel(definition.model);
         final now = clock.nowUtc();
-        final agent = await agentRepository.create(
-          AgentDto(
+        final session = await sessionRepository.create(
+          SessionDto(
             id: request.id,
             worktreeId: request.worktreeId,
             title: request.title,
-            providerConnectionId: providerConnectionId,
-            model: model,
-            reasoningEffort: request.reasoningEffort,
-            status: AgentStatus.idle,
-            permissionMode: request.permissionMode,
+            agentDefinitionId: definition.id,
+            origin: SessionOrigin.manual,
+            status: SessionStatus.idle,
             createdAt: now,
             updatedAt: now,
           ),
         );
-        return AgentResultDto(agent: agent).toJson();
-      case RpcMethod.agentConfigurationUpdate:
-        final request = AgentConfigurationUpdateParamsDto.fromJson(payload);
-        final providerConnectionId = request.providerConnectionId;
-        final model = request.model;
-        await providers.validateAgentModel(providerConnectionId, model);
-        final agent = await agentRepository.updateConfiguration(
-          id: request.agentId,
-          providerConnectionId: providerConnectionId,
-          model: model,
-          reasoningEffort: request.reasoningEffort,
-        );
-        return AgentResultDto(agent: agent).toJson();
+        return SessionResultDto(session: session).toJson();
       case RpcMethod.providerCatalog:
         final catalog = await providers.catalog();
         return ProviderCatalogResultDto(catalog: catalog).toJson();
@@ -490,19 +557,24 @@ class _ClientSession {
       case RpcMethod.providerCustomDelete:
         _requireLocalAdmin();
         final request = ProviderConnectionIdParamsDto.fromJson(payload);
+        if (await agentDefinitions.referencesProvider(request.connectionId)) {
+          throw const FormatException(
+            'Provider connection is referenced by an agent definition.',
+          );
+        }
         await providers.deleteCustom(request.connectionId);
         return const <String, dynamic>{};
       case RpcMethod.turnStart:
         final request = TurnStartParamsDto.fromJson(payload);
         final created = await agents.startTurn(
-          agentId: request.agentId,
+          sessionId: request.sessionId,
           turnId: request.turnId,
           prompt: request.prompt,
         );
         return TurnStartResultDto(created: created).toJson();
       case RpcMethod.turnCancel:
-        final request = AgentIdParamsDto.fromJson(payload);
-        await agents.cancelTurn(request.agentId);
+        final request = SessionIdParamsDto.fromJson(payload);
+        await agents.cancelTurn(request.sessionId);
         return const <String, dynamic>{};
       case RpcMethod.approvalResolve:
         final request = ApprovalResolveParamsDto.fromJson(payload);
@@ -513,9 +585,9 @@ class _ClientSession {
         return ApprovalResultDto(approval: approval).toJson();
       case RpcMethod.timelineSubscribe:
         final request = TimelineSubscribeParamsDto.fromJson(payload);
-        subscriptions.add(request.agentId);
+        subscriptions.add(request.sessionId);
         final items = await timeline.after(
-          request.agentId,
+          request.sessionId,
           request.afterSequence,
         );
         return TimelineResultDto(events: items).toJson();
@@ -531,7 +603,7 @@ class _ClientSession {
     if (!localAdmin) {
       throw const _RpcRequestException(
         'local_admin_required',
-        'Provider settings can only be changed from the daemon host.',
+        'This setting can only be changed by a daemon administrator.',
       );
     }
   }

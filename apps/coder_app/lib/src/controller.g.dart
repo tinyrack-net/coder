@@ -126,43 +126,43 @@ abstract class _$WorkspaceCatalogController
   }
 }
 
-/// AgentsController defines a public contract.
+/// SessionsController defines a public contract.
 
-@ProviderFor(AgentsController)
-final agentsControllerProvider = AgentsControllerFamily._();
+@ProviderFor(SessionsController)
+final sessionsControllerProvider = SessionsControllerFamily._();
 
-/// AgentsController defines a public contract.
-final class AgentsControllerProvider
-    extends $AsyncNotifierProvider<AgentsController, List<AgentDto>> {
-  /// AgentsController defines a public contract.
-  AgentsControllerProvider._({
-    required AgentsControllerFamily super.from,
+/// SessionsController defines a public contract.
+final class SessionsControllerProvider
+    extends $AsyncNotifierProvider<SessionsController, List<SessionDto>> {
+  /// SessionsController defines a public contract.
+  SessionsControllerProvider._({
+    required SessionsControllerFamily super.from,
     required (String, String?) super.argument,
   }) : super(
          retry: null,
-         name: r'agentsControllerProvider',
+         name: r'sessionsControllerProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$agentsControllerHash();
+  String debugGetCreateSourceHash() => _$sessionsControllerHash();
 
   @override
   String toString() {
-    return r'agentsControllerProvider'
+    return r'sessionsControllerProvider'
         ''
         '$argument';
   }
 
   @$internal
   @override
-  AgentsController create() => AgentsController();
+  SessionsController create() => SessionsController();
 
   @override
   bool operator ==(Object other) {
-    return other is AgentsControllerProvider && other.argument == argument;
+    return other is SessionsControllerProvider && other.argument == argument;
   }
 
   @override
@@ -171,58 +171,171 @@ final class AgentsControllerProvider
   }
 }
 
-String _$agentsControllerHash() => r'07c302f3e58214d248267cd8157baeb603b13c14';
+String _$sessionsControllerHash() =>
+    r'c9ac0d343bd16590807ee69769b284a85a668e1c';
 
-/// AgentsController defines a public contract.
+/// SessionsController defines a public contract.
 
-final class AgentsControllerFamily extends $Family
+final class SessionsControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-          AgentsController,
-          AsyncValue<List<AgentDto>>,
-          List<AgentDto>,
-          FutureOr<List<AgentDto>>,
+          SessionsController,
+          AsyncValue<List<SessionDto>>,
+          List<SessionDto>,
+          FutureOr<List<SessionDto>>,
           (String, String?)
         > {
-  AgentsControllerFamily._()
+  SessionsControllerFamily._()
     : super(
         retry: null,
-        name: r'agentsControllerProvider',
+        name: r'sessionsControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  /// AgentsController defines a public contract.
+  /// SessionsController defines a public contract.
 
-  AgentsControllerProvider call(String hostId, String? worktreeId) =>
-      AgentsControllerProvider._(argument: (hostId, worktreeId), from: this);
+  SessionsControllerProvider call(String hostId, String? worktreeId) =>
+      SessionsControllerProvider._(argument: (hostId, worktreeId), from: this);
 
   @override
-  String toString() => r'agentsControllerProvider';
+  String toString() => r'sessionsControllerProvider';
 }
 
-/// AgentsController defines a public contract.
+/// SessionsController defines a public contract.
 
-abstract class _$AgentsController extends $AsyncNotifier<List<AgentDto>> {
+abstract class _$SessionsController extends $AsyncNotifier<List<SessionDto>> {
   late final _$args = ref.$arg as (String, String?);
   String get hostId => _$args.$1;
   String? get worktreeId => _$args.$2;
 
-  FutureOr<List<AgentDto>> build(String hostId, String? worktreeId);
+  FutureOr<List<SessionDto>> build(String hostId, String? worktreeId);
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<List<AgentDto>>, List<AgentDto>>;
+    final ref =
+        this.ref as $Ref<AsyncValue<List<SessionDto>>, List<SessionDto>>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<AgentDto>>, List<AgentDto>>,
-              AsyncValue<List<AgentDto>>,
+              AnyNotifier<AsyncValue<List<SessionDto>>, List<SessionDto>>,
+              AsyncValue<List<SessionDto>>,
               Object?,
               Object?
             >;
     return element.handleCreate(ref, () => build(_$args.$1, _$args.$2));
+  }
+}
+
+/// Loads and edits one daemon's Markdown agent files.
+
+@ProviderFor(AgentDefinitionsController)
+final agentDefinitionsControllerProvider = AgentDefinitionsControllerFamily._();
+
+/// Loads and edits one daemon's Markdown agent files.
+final class AgentDefinitionsControllerProvider
+    extends
+        $AsyncNotifierProvider<
+          AgentDefinitionsController,
+          AgentDefinitionsState
+        > {
+  /// Loads and edits one daemon's Markdown agent files.
+  AgentDefinitionsControllerProvider._({
+    required AgentDefinitionsControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'agentDefinitionsControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentDefinitionsControllerHash();
+
+  @override
+  String toString() {
+    return r'agentDefinitionsControllerProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  AgentDefinitionsController create() => AgentDefinitionsController();
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentDefinitionsControllerProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentDefinitionsControllerHash() =>
+    r'0a34e49596a20ca7d515eaa8ddf40bfff49f2205';
+
+/// Loads and edits one daemon's Markdown agent files.
+
+final class AgentDefinitionsControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          AgentDefinitionsController,
+          AsyncValue<AgentDefinitionsState>,
+          AgentDefinitionsState,
+          FutureOr<AgentDefinitionsState>,
+          String
+        > {
+  AgentDefinitionsControllerFamily._()
+    : super(
+        retry: null,
+        name: r'agentDefinitionsControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Loads and edits one daemon's Markdown agent files.
+
+  AgentDefinitionsControllerProvider call(String hostId) =>
+      AgentDefinitionsControllerProvider._(argument: hostId, from: this);
+
+  @override
+  String toString() => r'agentDefinitionsControllerProvider';
+}
+
+/// Loads and edits one daemon's Markdown agent files.
+
+abstract class _$AgentDefinitionsController
+    extends $AsyncNotifier<AgentDefinitionsState> {
+  late final _$args = ref.$arg as String;
+  String get hostId => _$args;
+
+  FutureOr<AgentDefinitionsState> build(String hostId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref
+            as $Ref<AsyncValue<AgentDefinitionsState>, AgentDefinitionsState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<AgentDefinitionsState>,
+                AgentDefinitionsState
+              >,
+              AsyncValue<AgentDefinitionsState>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args));
   }
 }
 
@@ -272,7 +385,7 @@ final class SessionTabsControllerProvider
 }
 
 String _$sessionTabsControllerHash() =>
-    r'11c6749b8fc3bfb3c0a415c0dfe102860f2ffc07';
+    r'945bbb2456062510a5b935f4a8b61b63513fbb12';
 
 /// Owns local tab visibility independently for each host worktree.
 
@@ -375,7 +488,7 @@ final class ConversationControllerProvider
 }
 
 String _$conversationControllerHash() =>
-    r'dd73111cbc37321541072256ce24f11d830a8f33';
+    r'5c20b1f9145555cf008db003476887083263e7b8';
 
 /// ConversationController defines a public contract.
 
@@ -399,8 +512,11 @@ final class ConversationControllerFamily extends $Family
 
   /// ConversationController defines a public contract.
 
-  ConversationControllerProvider call(String hostId, String? agentId) =>
-      ConversationControllerProvider._(argument: (hostId, agentId), from: this);
+  ConversationControllerProvider call(String hostId, String? sessionId) =>
+      ConversationControllerProvider._(
+        argument: (hostId, sessionId),
+        from: this,
+      );
 
   @override
   String toString() => r'conversationControllerProvider';
@@ -412,9 +528,9 @@ abstract class _$ConversationController
     extends $AsyncNotifier<ConversationState> {
   late final _$args = ref.$arg as (String, String?);
   String get hostId => _$args.$1;
-  String? get agentId => _$args.$2;
+  String? get sessionId => _$args.$2;
 
-  FutureOr<ConversationState> build(String hostId, String? agentId);
+  FutureOr<ConversationState> build(String hostId, String? sessionId);
   @$mustCallSuper
   @override
   WhenComplete runBuild() {

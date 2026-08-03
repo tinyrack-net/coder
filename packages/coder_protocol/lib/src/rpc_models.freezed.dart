@@ -2159,22 +2159,22 @@ as bool,
 
 
 /// @nodoc
-mixin _$AgentListParamsDto {
+mixin _$SessionListParamsDto {
 
  String? get worktreeId;
-/// Create a copy of AgentListParamsDto
+/// Create a copy of SessionListParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AgentListParamsDtoCopyWith<AgentListParamsDto> get copyWith => _$AgentListParamsDtoCopyWithImpl<AgentListParamsDto>(this as AgentListParamsDto, _$identity);
+$SessionListParamsDtoCopyWith<SessionListParamsDto> get copyWith => _$SessionListParamsDtoCopyWithImpl<SessionListParamsDto>(this as SessionListParamsDto, _$identity);
 
-  /// Serializes this AgentListParamsDto to a JSON map.
+  /// Serializes this SessionListParamsDto to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentListParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionListParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2183,15 +2183,15 @@ int get hashCode => Object.hash(runtimeType,worktreeId);
 
 @override
 String toString() {
-  return 'AgentListParamsDto(worktreeId: $worktreeId)';
+  return 'SessionListParamsDto(worktreeId: $worktreeId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AgentListParamsDtoCopyWith<$Res>  {
-  factory $AgentListParamsDtoCopyWith(AgentListParamsDto value, $Res Function(AgentListParamsDto) _then) = _$AgentListParamsDtoCopyWithImpl;
+abstract mixin class $SessionListParamsDtoCopyWith<$Res>  {
+  factory $SessionListParamsDtoCopyWith(SessionListParamsDto value, $Res Function(SessionListParamsDto) _then) = _$SessionListParamsDtoCopyWithImpl;
 @useResult
 $Res call({
  String? worktreeId
@@ -2202,14 +2202,14 @@ $Res call({
 
 }
 /// @nodoc
-class _$AgentListParamsDtoCopyWithImpl<$Res>
-    implements $AgentListParamsDtoCopyWith<$Res> {
-  _$AgentListParamsDtoCopyWithImpl(this._self, this._then);
+class _$SessionListParamsDtoCopyWithImpl<$Res>
+    implements $SessionListParamsDtoCopyWith<$Res> {
+  _$SessionListParamsDtoCopyWithImpl(this._self, this._then);
 
-  final AgentListParamsDto _self;
-  final $Res Function(AgentListParamsDto) _then;
+  final SessionListParamsDto _self;
+  final $Res Function(SessionListParamsDto) _then;
 
-/// Create a copy of AgentListParamsDto
+/// Create a copy of SessionListParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? worktreeId = freezed,}) {
   return _then(_self.copyWith(
@@ -2221,8 +2221,8 @@ as String?,
 }
 
 
-/// Adds pattern-matching-related methods to [AgentListParamsDto].
-extension AgentListParamsDtoPatterns on AgentListParamsDto {
+/// Adds pattern-matching-related methods to [SessionListParamsDto].
+extension SessionListParamsDtoPatterns on SessionListParamsDto {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -2235,10 +2235,10 @@ extension AgentListParamsDtoPatterns on AgentListParamsDto {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentListParamsDto value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionListParamsDto value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AgentListParamsDto() when $default != null:
+case _SessionListParamsDto() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -2257,10 +2257,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentListParamsDto value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionListParamsDto value)  $default,){
 final _that = this;
 switch (_that) {
-case _AgentListParamsDto():
+case _SessionListParamsDto():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -2278,10 +2278,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentListParamsDto value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionListParamsDto value)?  $default,){
 final _that = this;
 switch (_that) {
-case _AgentListParamsDto() when $default != null:
+case _SessionListParamsDto() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -2301,7 +2301,7 @@ return $default(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? worktreeId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AgentListParamsDto() when $default != null:
+case _SessionListParamsDto() when $default != null:
 return $default(_that.worktreeId);case _:
   return orElse();
 
@@ -2322,7 +2322,7 @@ return $default(_that.worktreeId);case _:
 
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? worktreeId)  $default,) {final _that = this;
 switch (_that) {
-case _AgentListParamsDto():
+case _SessionListParamsDto():
 return $default(_that.worktreeId);case _:
   throw StateError('Unexpected subclass');
 
@@ -2342,7 +2342,7 @@ return $default(_that.worktreeId);case _:
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? worktreeId)?  $default,) {final _that = this;
 switch (_that) {
-case _AgentListParamsDto() when $default != null:
+case _SessionListParamsDto() when $default != null:
 return $default(_that.worktreeId);case _:
   return null;
 
@@ -2354,26 +2354,26 @@ return $default(_that.worktreeId);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _AgentListParamsDto implements AgentListParamsDto {
-  const _AgentListParamsDto({this.worktreeId});
-  factory _AgentListParamsDto.fromJson(Map<String, dynamic> json) => _$AgentListParamsDtoFromJson(json);
+class _SessionListParamsDto implements SessionListParamsDto {
+  const _SessionListParamsDto({this.worktreeId});
+  factory _SessionListParamsDto.fromJson(Map<String, dynamic> json) => _$SessionListParamsDtoFromJson(json);
 
 @override final  String? worktreeId;
 
-/// Create a copy of AgentListParamsDto
+/// Create a copy of SessionListParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$AgentListParamsDtoCopyWith<_AgentListParamsDto> get copyWith => __$AgentListParamsDtoCopyWithImpl<_AgentListParamsDto>(this, _$identity);
+_$SessionListParamsDtoCopyWith<_SessionListParamsDto> get copyWith => __$SessionListParamsDtoCopyWithImpl<_SessionListParamsDto>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$AgentListParamsDtoToJson(this, );
+  return _$SessionListParamsDtoToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentListParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionListParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2382,15 +2382,15 @@ int get hashCode => Object.hash(runtimeType,worktreeId);
 
 @override
 String toString() {
-  return 'AgentListParamsDto(worktreeId: $worktreeId)';
+  return 'SessionListParamsDto(worktreeId: $worktreeId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$AgentListParamsDtoCopyWith<$Res> implements $AgentListParamsDtoCopyWith<$Res> {
-  factory _$AgentListParamsDtoCopyWith(_AgentListParamsDto value, $Res Function(_AgentListParamsDto) _then) = __$AgentListParamsDtoCopyWithImpl;
+abstract mixin class _$SessionListParamsDtoCopyWith<$Res> implements $SessionListParamsDtoCopyWith<$Res> {
+  factory _$SessionListParamsDtoCopyWith(_SessionListParamsDto value, $Res Function(_SessionListParamsDto) _then) = __$SessionListParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
  String? worktreeId
@@ -2401,17 +2401,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$AgentListParamsDtoCopyWithImpl<$Res>
-    implements _$AgentListParamsDtoCopyWith<$Res> {
-  __$AgentListParamsDtoCopyWithImpl(this._self, this._then);
+class __$SessionListParamsDtoCopyWithImpl<$Res>
+    implements _$SessionListParamsDtoCopyWith<$Res> {
+  __$SessionListParamsDtoCopyWithImpl(this._self, this._then);
 
-  final _AgentListParamsDto _self;
-  final $Res Function(_AgentListParamsDto) _then;
+  final _SessionListParamsDto _self;
+  final $Res Function(_SessionListParamsDto) _then;
 
-/// Create a copy of AgentListParamsDto
+/// Create a copy of SessionListParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? worktreeId = freezed,}) {
-  return _then(_AgentListParamsDto(
+  return _then(_SessionListParamsDto(
 worktreeId: freezed == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -2422,42 +2422,42 @@ as String?,
 
 
 /// @nodoc
-mixin _$AgentCreateParamsDto {
+mixin _$SessionCreateParamsDto {
 
- String get id; String get worktreeId; String get title; String get providerConnectionId; String get model; String get reasoningEffort; PermissionMode get permissionMode;
-/// Create a copy of AgentCreateParamsDto
+ String get id; String get worktreeId; String get title; String get agentDefinitionId;
+/// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AgentCreateParamsDtoCopyWith<AgentCreateParamsDto> get copyWith => _$AgentCreateParamsDtoCopyWithImpl<AgentCreateParamsDto>(this as AgentCreateParamsDto, _$identity);
+$SessionCreateParamsDtoCopyWith<SessionCreateParamsDto> get copyWith => _$SessionCreateParamsDtoCopyWithImpl<SessionCreateParamsDto>(this as SessionCreateParamsDto, _$identity);
 
-  /// Serializes this AgentCreateParamsDto to a JSON map.
+  /// Serializes this SessionCreateParamsDto to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,providerConnectionId,model,reasoningEffort,permissionMode);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId);
 
 @override
 String toString() {
-  return 'AgentCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, providerConnectionId: $providerConnectionId, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AgentCreateParamsDtoCopyWith<$Res>  {
-  factory $AgentCreateParamsDtoCopyWith(AgentCreateParamsDto value, $Res Function(AgentCreateParamsDto) _then) = _$AgentCreateParamsDtoCopyWithImpl;
+abstract mixin class $SessionCreateParamsDtoCopyWith<$Res>  {
+  factory $SessionCreateParamsDtoCopyWith(SessionCreateParamsDto value, $Res Function(SessionCreateParamsDto) _then) = _$SessionCreateParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String providerConnectionId, String model, String reasoningEffort, PermissionMode permissionMode
+ String id, String worktreeId, String title, String agentDefinitionId
 });
 
 
@@ -2465,302 +2465,21 @@ $Res call({
 
 }
 /// @nodoc
-class _$AgentCreateParamsDtoCopyWithImpl<$Res>
-    implements $AgentCreateParamsDtoCopyWith<$Res> {
-  _$AgentCreateParamsDtoCopyWithImpl(this._self, this._then);
+class _$SessionCreateParamsDtoCopyWithImpl<$Res>
+    implements $SessionCreateParamsDtoCopyWith<$Res> {
+  _$SessionCreateParamsDtoCopyWithImpl(this._self, this._then);
 
-  final AgentCreateParamsDto _self;
-  final $Res Function(AgentCreateParamsDto) _then;
+  final SessionCreateParamsDto _self;
+  final $Res Function(SessionCreateParamsDto) _then;
 
-/// Create a copy of AgentCreateParamsDto
+/// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? providerConnectionId = null,Object? model = null,Object? reasoningEffort = null,Object? permissionMode = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
-as String,providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
-as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as String,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String,permissionMode: null == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [AgentCreateParamsDto].
-extension AgentCreateParamsDtoPatterns on AgentCreateParamsDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentCreateParamsDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _AgentCreateParamsDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentCreateParamsDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _AgentCreateParamsDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentCreateParamsDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _AgentCreateParamsDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String providerConnectionId,  String model,  String reasoningEffort,  PermissionMode permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _AgentCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.providerConnectionId,_that.model,_that.reasoningEffort,_that.permissionMode);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String providerConnectionId,  String model,  String reasoningEffort,  PermissionMode permissionMode)  $default,) {final _that = this;
-switch (_that) {
-case _AgentCreateParamsDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.providerConnectionId,_that.model,_that.reasoningEffort,_that.permissionMode);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String providerConnectionId,  String model,  String reasoningEffort,  PermissionMode permissionMode)?  $default,) {final _that = this;
-switch (_that) {
-case _AgentCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.providerConnectionId,_that.model,_that.reasoningEffort,_that.permissionMode);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _AgentCreateParamsDto implements AgentCreateParamsDto {
-  const _AgentCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.providerConnectionId, required this.model, required this.reasoningEffort, required this.permissionMode});
-  factory _AgentCreateParamsDto.fromJson(Map<String, dynamic> json) => _$AgentCreateParamsDtoFromJson(json);
-
-@override final  String id;
-@override final  String worktreeId;
-@override final  String title;
-@override final  String providerConnectionId;
-@override final  String model;
-@override final  String reasoningEffort;
-@override final  PermissionMode permissionMode;
-
-/// Create a copy of AgentCreateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$AgentCreateParamsDtoCopyWith<_AgentCreateParamsDto> get copyWith => __$AgentCreateParamsDtoCopyWithImpl<_AgentCreateParamsDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$AgentCreateParamsDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,providerConnectionId,model,reasoningEffort,permissionMode);
-
-@override
-String toString() {
-  return 'AgentCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, providerConnectionId: $providerConnectionId, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$AgentCreateParamsDtoCopyWith<$Res> implements $AgentCreateParamsDtoCopyWith<$Res> {
-  factory _$AgentCreateParamsDtoCopyWith(_AgentCreateParamsDto value, $Res Function(_AgentCreateParamsDto) _then) = __$AgentCreateParamsDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String id, String worktreeId, String title, String providerConnectionId, String model, String reasoningEffort, PermissionMode permissionMode
-});
-
-
-
-
-}
-/// @nodoc
-class __$AgentCreateParamsDtoCopyWithImpl<$Res>
-    implements _$AgentCreateParamsDtoCopyWith<$Res> {
-  __$AgentCreateParamsDtoCopyWithImpl(this._self, this._then);
-
-  final _AgentCreateParamsDto _self;
-  final $Res Function(_AgentCreateParamsDto) _then;
-
-/// Create a copy of AgentCreateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? providerConnectionId = null,Object? model = null,Object? reasoningEffort = null,Object? permissionMode = null,}) {
-  return _then(_AgentCreateParamsDto(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
-as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
-as String,providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
-as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as String,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String,permissionMode: null == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode,
-  ));
-}
-
-
-}
-
-
-/// @nodoc
-mixin _$AgentConfigurationUpdateParamsDto {
-
- String get agentId; String get providerConnectionId; String get model; String get reasoningEffort;
-/// Create a copy of AgentConfigurationUpdateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$AgentConfigurationUpdateParamsDtoCopyWith<AgentConfigurationUpdateParamsDto> get copyWith => _$AgentConfigurationUpdateParamsDtoCopyWithImpl<AgentConfigurationUpdateParamsDto>(this as AgentConfigurationUpdateParamsDto, _$identity);
-
-  /// Serializes this AgentConfigurationUpdateParamsDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentConfigurationUpdateParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,agentId,providerConnectionId,model,reasoningEffort);
-
-@override
-String toString() {
-  return 'AgentConfigurationUpdateParamsDto(agentId: $agentId, providerConnectionId: $providerConnectionId, model: $model, reasoningEffort: $reasoningEffort)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $AgentConfigurationUpdateParamsDtoCopyWith<$Res>  {
-  factory $AgentConfigurationUpdateParamsDtoCopyWith(AgentConfigurationUpdateParamsDto value, $Res Function(AgentConfigurationUpdateParamsDto) _then) = _$AgentConfigurationUpdateParamsDtoCopyWithImpl;
-@useResult
-$Res call({
- String agentId, String providerConnectionId, String model, String reasoningEffort
-});
-
-
-
-
-}
-/// @nodoc
-class _$AgentConfigurationUpdateParamsDtoCopyWithImpl<$Res>
-    implements $AgentConfigurationUpdateParamsDtoCopyWith<$Res> {
-  _$AgentConfigurationUpdateParamsDtoCopyWithImpl(this._self, this._then);
-
-  final AgentConfigurationUpdateParamsDto _self;
-  final $Res Function(AgentConfigurationUpdateParamsDto) _then;
-
-/// Create a copy of AgentConfigurationUpdateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,Object? providerConnectionId = null,Object? model = null,Object? reasoningEffort = null,}) {
-  return _then(_self.copyWith(
-agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
-as String,providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
-as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as String,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -2768,8 +2487,8 @@ as String,
 }
 
 
-/// Adds pattern-matching-related methods to [AgentConfigurationUpdateParamsDto].
-extension AgentConfigurationUpdateParamsDtoPatterns on AgentConfigurationUpdateParamsDto {
+/// Adds pattern-matching-related methods to [SessionCreateParamsDto].
+extension SessionCreateParamsDtoPatterns on SessionCreateParamsDto {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -2782,10 +2501,10 @@ extension AgentConfigurationUpdateParamsDtoPatterns on AgentConfigurationUpdateP
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentConfigurationUpdateParamsDto value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionCreateParamsDto value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AgentConfigurationUpdateParamsDto() when $default != null:
+case _SessionCreateParamsDto() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -2804,10 +2523,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentConfigurationUpdateParamsDto value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionCreateParamsDto value)  $default,){
 final _that = this;
 switch (_that) {
-case _AgentConfigurationUpdateParamsDto():
+case _SessionCreateParamsDto():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -2825,10 +2544,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentConfigurationUpdateParamsDto value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionCreateParamsDto value)?  $default,){
 final _that = this;
 switch (_that) {
-case _AgentConfigurationUpdateParamsDto() when $default != null:
+case _SessionCreateParamsDto() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -2846,10 +2565,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId,  String providerConnectionId,  String model,  String reasoningEffort)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AgentConfigurationUpdateParamsDto() when $default != null:
-return $default(_that.agentId,_that.providerConnectionId,_that.model,_that.reasoningEffort);case _:
+case _SessionCreateParamsDto() when $default != null:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId);case _:
   return orElse();
 
 }
@@ -2867,10 +2586,10 @@ return $default(_that.agentId,_that.providerConnectionId,_that.model,_that.reaso
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId,  String providerConnectionId,  String model,  String reasoningEffort)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId)  $default,) {final _that = this;
 switch (_that) {
-case _AgentConfigurationUpdateParamsDto():
-return $default(_that.agentId,_that.providerConnectionId,_that.model,_that.reasoningEffort);case _:
+case _SessionCreateParamsDto():
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2887,10 +2606,10 @@ return $default(_that.agentId,_that.providerConnectionId,_that.model,_that.reaso
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId,  String providerConnectionId,  String model,  String reasoningEffort)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId)?  $default,) {final _that = this;
 switch (_that) {
-case _AgentConfigurationUpdateParamsDto() when $default != null:
-return $default(_that.agentId,_that.providerConnectionId,_that.model,_that.reasoningEffort);case _:
+case _SessionCreateParamsDto() when $default != null:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId);case _:
   return null;
 
 }
@@ -2901,49 +2620,49 @@ return $default(_that.agentId,_that.providerConnectionId,_that.model,_that.reaso
 /// @nodoc
 @JsonSerializable()
 
-class _AgentConfigurationUpdateParamsDto implements AgentConfigurationUpdateParamsDto {
-  const _AgentConfigurationUpdateParamsDto({required this.agentId, required this.providerConnectionId, required this.model, required this.reasoningEffort});
-  factory _AgentConfigurationUpdateParamsDto.fromJson(Map<String, dynamic> json) => _$AgentConfigurationUpdateParamsDtoFromJson(json);
+class _SessionCreateParamsDto implements SessionCreateParamsDto {
+  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId});
+  factory _SessionCreateParamsDto.fromJson(Map<String, dynamic> json) => _$SessionCreateParamsDtoFromJson(json);
 
-@override final  String agentId;
-@override final  String providerConnectionId;
-@override final  String model;
-@override final  String reasoningEffort;
+@override final  String id;
+@override final  String worktreeId;
+@override final  String title;
+@override final  String agentDefinitionId;
 
-/// Create a copy of AgentConfigurationUpdateParamsDto
+/// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$AgentConfigurationUpdateParamsDtoCopyWith<_AgentConfigurationUpdateParamsDto> get copyWith => __$AgentConfigurationUpdateParamsDtoCopyWithImpl<_AgentConfigurationUpdateParamsDto>(this, _$identity);
+_$SessionCreateParamsDtoCopyWith<_SessionCreateParamsDto> get copyWith => __$SessionCreateParamsDtoCopyWithImpl<_SessionCreateParamsDto>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$AgentConfigurationUpdateParamsDtoToJson(this, );
+  return _$SessionCreateParamsDtoToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentConfigurationUpdateParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agentId,providerConnectionId,model,reasoningEffort);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId);
 
 @override
 String toString() {
-  return 'AgentConfigurationUpdateParamsDto(agentId: $agentId, providerConnectionId: $providerConnectionId, model: $model, reasoningEffort: $reasoningEffort)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$AgentConfigurationUpdateParamsDtoCopyWith<$Res> implements $AgentConfigurationUpdateParamsDtoCopyWith<$Res> {
-  factory _$AgentConfigurationUpdateParamsDtoCopyWith(_AgentConfigurationUpdateParamsDto value, $Res Function(_AgentConfigurationUpdateParamsDto) _then) = __$AgentConfigurationUpdateParamsDtoCopyWithImpl;
+abstract mixin class _$SessionCreateParamsDtoCopyWith<$Res> implements $SessionCreateParamsDtoCopyWith<$Res> {
+  factory _$SessionCreateParamsDtoCopyWith(_SessionCreateParamsDto value, $Res Function(_SessionCreateParamsDto) _then) = __$SessionCreateParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String agentId, String providerConnectionId, String model, String reasoningEffort
+ String id, String worktreeId, String title, String agentDefinitionId
 });
 
 
@@ -2951,21 +2670,1121 @@ $Res call({
 
 }
 /// @nodoc
-class __$AgentConfigurationUpdateParamsDtoCopyWithImpl<$Res>
-    implements _$AgentConfigurationUpdateParamsDtoCopyWith<$Res> {
-  __$AgentConfigurationUpdateParamsDtoCopyWithImpl(this._self, this._then);
+class __$SessionCreateParamsDtoCopyWithImpl<$Res>
+    implements _$SessionCreateParamsDtoCopyWith<$Res> {
+  __$SessionCreateParamsDtoCopyWithImpl(this._self, this._then);
 
-  final _AgentConfigurationUpdateParamsDto _self;
-  final $Res Function(_AgentConfigurationUpdateParamsDto) _then;
+  final _SessionCreateParamsDto _self;
+  final $Res Function(_SessionCreateParamsDto) _then;
 
-/// Create a copy of AgentConfigurationUpdateParamsDto
+/// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? providerConnectionId = null,Object? model = null,Object? reasoningEffort = null,}) {
-  return _then(_AgentConfigurationUpdateParamsDto(
-agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
-as String,providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
-as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as String,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,}) {
+  return _then(_SessionCreateParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$AgentDefinitionIdParamsDto {
+
+ String get id;
+/// Create a copy of AgentDefinitionIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentDefinitionIdParamsDtoCopyWith<AgentDefinitionIdParamsDto> get copyWith => _$AgentDefinitionIdParamsDtoCopyWithImpl<AgentDefinitionIdParamsDto>(this as AgentDefinitionIdParamsDto, _$identity);
+
+  /// Serializes this AgentDefinitionIdParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionIdParamsDto&&(identical(other.id, id) || other.id == id));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'AgentDefinitionIdParamsDto(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentDefinitionIdParamsDtoCopyWith<$Res>  {
+  factory $AgentDefinitionIdParamsDtoCopyWith(AgentDefinitionIdParamsDto value, $Res Function(AgentDefinitionIdParamsDto) _then) = _$AgentDefinitionIdParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentDefinitionIdParamsDtoCopyWithImpl<$Res>
+    implements $AgentDefinitionIdParamsDtoCopyWith<$Res> {
+  _$AgentDefinitionIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final AgentDefinitionIdParamsDto _self;
+  final $Res Function(AgentDefinitionIdParamsDto) _then;
+
+/// Create a copy of AgentDefinitionIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentDefinitionIdParamsDto].
+extension AgentDefinitionIdParamsDtoPatterns on AgentDefinitionIdParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentDefinitionIdParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentDefinitionIdParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionIdParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentDefinitionIdParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentDefinitionIdParamsDto() when $default != null:
+return $default(_that.id);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id)  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionIdParamsDto():
+return $default(_that.id);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionIdParamsDto() when $default != null:
+return $default(_that.id);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentDefinitionIdParamsDto implements AgentDefinitionIdParamsDto {
+  const _AgentDefinitionIdParamsDto({required this.id});
+  factory _AgentDefinitionIdParamsDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionIdParamsDtoFromJson(json);
+
+@override final  String id;
+
+/// Create a copy of AgentDefinitionIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentDefinitionIdParamsDtoCopyWith<_AgentDefinitionIdParamsDto> get copyWith => __$AgentDefinitionIdParamsDtoCopyWithImpl<_AgentDefinitionIdParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentDefinitionIdParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionIdParamsDto&&(identical(other.id, id) || other.id == id));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'AgentDefinitionIdParamsDto(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentDefinitionIdParamsDtoCopyWith<$Res> implements $AgentDefinitionIdParamsDtoCopyWith<$Res> {
+  factory _$AgentDefinitionIdParamsDtoCopyWith(_AgentDefinitionIdParamsDto value, $Res Function(_AgentDefinitionIdParamsDto) _then) = __$AgentDefinitionIdParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentDefinitionIdParamsDtoCopyWithImpl<$Res>
+    implements _$AgentDefinitionIdParamsDtoCopyWith<$Res> {
+  __$AgentDefinitionIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentDefinitionIdParamsDto _self;
+  final $Res Function(_AgentDefinitionIdParamsDto) _then;
+
+/// Create a copy of AgentDefinitionIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(_AgentDefinitionIdParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$AgentDefinitionCreateParamsDto {
+
+ String get id; AgentDefinitionDto get definition;
+/// Create a copy of AgentDefinitionCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentDefinitionCreateParamsDtoCopyWith<AgentDefinitionCreateParamsDto> get copyWith => _$AgentDefinitionCreateParamsDtoCopyWithImpl<AgentDefinitionCreateParamsDto>(this as AgentDefinitionCreateParamsDto, _$identity);
+
+  /// Serializes this AgentDefinitionCreateParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definition, definition) || other.definition == definition));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,definition);
+
+@override
+String toString() {
+  return 'AgentDefinitionCreateParamsDto(id: $id, definition: $definition)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentDefinitionCreateParamsDtoCopyWith<$Res>  {
+  factory $AgentDefinitionCreateParamsDtoCopyWith(AgentDefinitionCreateParamsDto value, $Res Function(AgentDefinitionCreateParamsDto) _then) = _$AgentDefinitionCreateParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, AgentDefinitionDto definition
+});
+
+
+$AgentDefinitionDtoCopyWith<$Res> get definition;
+
+}
+/// @nodoc
+class _$AgentDefinitionCreateParamsDtoCopyWithImpl<$Res>
+    implements $AgentDefinitionCreateParamsDtoCopyWith<$Res> {
+  _$AgentDefinitionCreateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final AgentDefinitionCreateParamsDto _self;
+  final $Res Function(AgentDefinitionCreateParamsDto) _then;
+
+/// Create a copy of AgentDefinitionCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? definition = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,definition: null == definition ? _self.definition : definition // ignore: cast_nullable_to_non_nullable
+as AgentDefinitionDto,
+  ));
+}
+/// Create a copy of AgentDefinitionCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentDefinitionDtoCopyWith<$Res> get definition {
+  
+  return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
+    return _then(_self.copyWith(definition: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [AgentDefinitionCreateParamsDto].
+extension AgentDefinitionCreateParamsDtoPatterns on AgentDefinitionCreateParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentDefinitionCreateParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionCreateParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentDefinitionCreateParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionCreateParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentDefinitionCreateParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionCreateParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  AgentDefinitionDto definition)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentDefinitionCreateParamsDto() when $default != null:
+return $default(_that.id,_that.definition);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  AgentDefinitionDto definition)  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionCreateParamsDto():
+return $default(_that.id,_that.definition);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  AgentDefinitionDto definition)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionCreateParamsDto() when $default != null:
+return $default(_that.id,_that.definition);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentDefinitionCreateParamsDto implements AgentDefinitionCreateParamsDto {
+  const _AgentDefinitionCreateParamsDto({required this.id, required this.definition});
+  factory _AgentDefinitionCreateParamsDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionCreateParamsDtoFromJson(json);
+
+@override final  String id;
+@override final  AgentDefinitionDto definition;
+
+/// Create a copy of AgentDefinitionCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentDefinitionCreateParamsDtoCopyWith<_AgentDefinitionCreateParamsDto> get copyWith => __$AgentDefinitionCreateParamsDtoCopyWithImpl<_AgentDefinitionCreateParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentDefinitionCreateParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definition, definition) || other.definition == definition));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,definition);
+
+@override
+String toString() {
+  return 'AgentDefinitionCreateParamsDto(id: $id, definition: $definition)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentDefinitionCreateParamsDtoCopyWith<$Res> implements $AgentDefinitionCreateParamsDtoCopyWith<$Res> {
+  factory _$AgentDefinitionCreateParamsDtoCopyWith(_AgentDefinitionCreateParamsDto value, $Res Function(_AgentDefinitionCreateParamsDto) _then) = __$AgentDefinitionCreateParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, AgentDefinitionDto definition
+});
+
+
+@override $AgentDefinitionDtoCopyWith<$Res> get definition;
+
+}
+/// @nodoc
+class __$AgentDefinitionCreateParamsDtoCopyWithImpl<$Res>
+    implements _$AgentDefinitionCreateParamsDtoCopyWith<$Res> {
+  __$AgentDefinitionCreateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentDefinitionCreateParamsDto _self;
+  final $Res Function(_AgentDefinitionCreateParamsDto) _then;
+
+/// Create a copy of AgentDefinitionCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? definition = null,}) {
+  return _then(_AgentDefinitionCreateParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,definition: null == definition ? _self.definition : definition // ignore: cast_nullable_to_non_nullable
+as AgentDefinitionDto,
+  ));
+}
+
+/// Create a copy of AgentDefinitionCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentDefinitionDtoCopyWith<$Res> get definition {
+  
+  return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
+    return _then(_self.copyWith(definition: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$AgentDefinitionUpdateParamsDto {
+
+ AgentDefinitionDto get definition; String get expectedContentHash; bool get force;
+/// Create a copy of AgentDefinitionUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentDefinitionUpdateParamsDtoCopyWith<AgentDefinitionUpdateParamsDto> get copyWith => _$AgentDefinitionUpdateParamsDtoCopyWithImpl<AgentDefinitionUpdateParamsDto>(this as AgentDefinitionUpdateParamsDto, _$identity);
+
+  /// Serializes this AgentDefinitionUpdateParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionUpdateParamsDto&&(identical(other.definition, definition) || other.definition == definition)&&(identical(other.expectedContentHash, expectedContentHash) || other.expectedContentHash == expectedContentHash)&&(identical(other.force, force) || other.force == force));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,definition,expectedContentHash,force);
+
+@override
+String toString() {
+  return 'AgentDefinitionUpdateParamsDto(definition: $definition, expectedContentHash: $expectedContentHash, force: $force)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentDefinitionUpdateParamsDtoCopyWith<$Res>  {
+  factory $AgentDefinitionUpdateParamsDtoCopyWith(AgentDefinitionUpdateParamsDto value, $Res Function(AgentDefinitionUpdateParamsDto) _then) = _$AgentDefinitionUpdateParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ AgentDefinitionDto definition, String expectedContentHash, bool force
+});
+
+
+$AgentDefinitionDtoCopyWith<$Res> get definition;
+
+}
+/// @nodoc
+class _$AgentDefinitionUpdateParamsDtoCopyWithImpl<$Res>
+    implements $AgentDefinitionUpdateParamsDtoCopyWith<$Res> {
+  _$AgentDefinitionUpdateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final AgentDefinitionUpdateParamsDto _self;
+  final $Res Function(AgentDefinitionUpdateParamsDto) _then;
+
+/// Create a copy of AgentDefinitionUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? definition = null,Object? expectedContentHash = null,Object? force = null,}) {
+  return _then(_self.copyWith(
+definition: null == definition ? _self.definition : definition // ignore: cast_nullable_to_non_nullable
+as AgentDefinitionDto,expectedContentHash: null == expectedContentHash ? _self.expectedContentHash : expectedContentHash // ignore: cast_nullable_to_non_nullable
+as String,force: null == force ? _self.force : force // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+/// Create a copy of AgentDefinitionUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentDefinitionDtoCopyWith<$Res> get definition {
+  
+  return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
+    return _then(_self.copyWith(definition: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [AgentDefinitionUpdateParamsDto].
+extension AgentDefinitionUpdateParamsDtoPatterns on AgentDefinitionUpdateParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentDefinitionUpdateParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionUpdateParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentDefinitionUpdateParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionUpdateParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentDefinitionUpdateParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionUpdateParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AgentDefinitionDto definition,  String expectedContentHash,  bool force)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentDefinitionUpdateParamsDto() when $default != null:
+return $default(_that.definition,_that.expectedContentHash,_that.force);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AgentDefinitionDto definition,  String expectedContentHash,  bool force)  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionUpdateParamsDto():
+return $default(_that.definition,_that.expectedContentHash,_that.force);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AgentDefinitionDto definition,  String expectedContentHash,  bool force)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionUpdateParamsDto() when $default != null:
+return $default(_that.definition,_that.expectedContentHash,_that.force);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentDefinitionUpdateParamsDto implements AgentDefinitionUpdateParamsDto {
+  const _AgentDefinitionUpdateParamsDto({required this.definition, required this.expectedContentHash, this.force = false});
+  factory _AgentDefinitionUpdateParamsDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionUpdateParamsDtoFromJson(json);
+
+@override final  AgentDefinitionDto definition;
+@override final  String expectedContentHash;
+@override@JsonKey() final  bool force;
+
+/// Create a copy of AgentDefinitionUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentDefinitionUpdateParamsDtoCopyWith<_AgentDefinitionUpdateParamsDto> get copyWith => __$AgentDefinitionUpdateParamsDtoCopyWithImpl<_AgentDefinitionUpdateParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentDefinitionUpdateParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionUpdateParamsDto&&(identical(other.definition, definition) || other.definition == definition)&&(identical(other.expectedContentHash, expectedContentHash) || other.expectedContentHash == expectedContentHash)&&(identical(other.force, force) || other.force == force));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,definition,expectedContentHash,force);
+
+@override
+String toString() {
+  return 'AgentDefinitionUpdateParamsDto(definition: $definition, expectedContentHash: $expectedContentHash, force: $force)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentDefinitionUpdateParamsDtoCopyWith<$Res> implements $AgentDefinitionUpdateParamsDtoCopyWith<$Res> {
+  factory _$AgentDefinitionUpdateParamsDtoCopyWith(_AgentDefinitionUpdateParamsDto value, $Res Function(_AgentDefinitionUpdateParamsDto) _then) = __$AgentDefinitionUpdateParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ AgentDefinitionDto definition, String expectedContentHash, bool force
+});
+
+
+@override $AgentDefinitionDtoCopyWith<$Res> get definition;
+
+}
+/// @nodoc
+class __$AgentDefinitionUpdateParamsDtoCopyWithImpl<$Res>
+    implements _$AgentDefinitionUpdateParamsDtoCopyWith<$Res> {
+  __$AgentDefinitionUpdateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentDefinitionUpdateParamsDto _self;
+  final $Res Function(_AgentDefinitionUpdateParamsDto) _then;
+
+/// Create a copy of AgentDefinitionUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? definition = null,Object? expectedContentHash = null,Object? force = null,}) {
+  return _then(_AgentDefinitionUpdateParamsDto(
+definition: null == definition ? _self.definition : definition // ignore: cast_nullable_to_non_nullable
+as AgentDefinitionDto,expectedContentHash: null == expectedContentHash ? _self.expectedContentHash : expectedContentHash // ignore: cast_nullable_to_non_nullable
+as String,force: null == force ? _self.force : force // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+/// Create a copy of AgentDefinitionUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentDefinitionDtoCopyWith<$Res> get definition {
+  
+  return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
+    return _then(_self.copyWith(definition: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$AgentDefinitionValidateParamsDto {
+
+ String get id; String get markdown;
+/// Create a copy of AgentDefinitionValidateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentDefinitionValidateParamsDtoCopyWith<AgentDefinitionValidateParamsDto> get copyWith => _$AgentDefinitionValidateParamsDtoCopyWithImpl<AgentDefinitionValidateParamsDto>(this as AgentDefinitionValidateParamsDto, _$identity);
+
+  /// Serializes this AgentDefinitionValidateParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionValidateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.markdown, markdown) || other.markdown == markdown));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,markdown);
+
+@override
+String toString() {
+  return 'AgentDefinitionValidateParamsDto(id: $id, markdown: $markdown)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentDefinitionValidateParamsDtoCopyWith<$Res>  {
+  factory $AgentDefinitionValidateParamsDtoCopyWith(AgentDefinitionValidateParamsDto value, $Res Function(AgentDefinitionValidateParamsDto) _then) = _$AgentDefinitionValidateParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String markdown
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentDefinitionValidateParamsDtoCopyWithImpl<$Res>
+    implements $AgentDefinitionValidateParamsDtoCopyWith<$Res> {
+  _$AgentDefinitionValidateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final AgentDefinitionValidateParamsDto _self;
+  final $Res Function(AgentDefinitionValidateParamsDto) _then;
+
+/// Create a copy of AgentDefinitionValidateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? markdown = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,markdown: null == markdown ? _self.markdown : markdown // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentDefinitionValidateParamsDto].
+extension AgentDefinitionValidateParamsDtoPatterns on AgentDefinitionValidateParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentDefinitionValidateParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionValidateParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentDefinitionValidateParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionValidateParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentDefinitionValidateParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionValidateParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String markdown)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentDefinitionValidateParamsDto() when $default != null:
+return $default(_that.id,_that.markdown);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String markdown)  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionValidateParamsDto():
+return $default(_that.id,_that.markdown);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String markdown)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionValidateParamsDto() when $default != null:
+return $default(_that.id,_that.markdown);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentDefinitionValidateParamsDto implements AgentDefinitionValidateParamsDto {
+  const _AgentDefinitionValidateParamsDto({required this.id, required this.markdown});
+  factory _AgentDefinitionValidateParamsDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionValidateParamsDtoFromJson(json);
+
+@override final  String id;
+@override final  String markdown;
+
+/// Create a copy of AgentDefinitionValidateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentDefinitionValidateParamsDtoCopyWith<_AgentDefinitionValidateParamsDto> get copyWith => __$AgentDefinitionValidateParamsDtoCopyWithImpl<_AgentDefinitionValidateParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentDefinitionValidateParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionValidateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.markdown, markdown) || other.markdown == markdown));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,markdown);
+
+@override
+String toString() {
+  return 'AgentDefinitionValidateParamsDto(id: $id, markdown: $markdown)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentDefinitionValidateParamsDtoCopyWith<$Res> implements $AgentDefinitionValidateParamsDtoCopyWith<$Res> {
+  factory _$AgentDefinitionValidateParamsDtoCopyWith(_AgentDefinitionValidateParamsDto value, $Res Function(_AgentDefinitionValidateParamsDto) _then) = __$AgentDefinitionValidateParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String markdown
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentDefinitionValidateParamsDtoCopyWithImpl<$Res>
+    implements _$AgentDefinitionValidateParamsDtoCopyWith<$Res> {
+  __$AgentDefinitionValidateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentDefinitionValidateParamsDto _self;
+  final $Res Function(_AgentDefinitionValidateParamsDto) _then;
+
+/// Create a copy of AgentDefinitionValidateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? markdown = null,}) {
+  return _then(_AgentDefinitionValidateParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,markdown: null == markdown ? _self.markdown : markdown // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -5679,7 +6498,7 @@ $CustomProviderConfigDtoCopyWith<$Res> get config {
 /// @nodoc
 mixin _$TurnStartParamsDto {
 
- String get agentId; String get turnId; String get prompt;
+ String get sessionId; String get turnId; String get prompt;
 /// Create a copy of TurnStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -5692,16 +6511,16 @@ $TurnStartParamsDtoCopyWith<TurnStartParamsDto> get copyWith => _$TurnStartParam
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TurnStartParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.turnId, turnId) || other.turnId == turnId)&&(identical(other.prompt, prompt) || other.prompt == prompt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TurnStartParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.turnId, turnId) || other.turnId == turnId)&&(identical(other.prompt, prompt) || other.prompt == prompt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agentId,turnId,prompt);
+int get hashCode => Object.hash(runtimeType,sessionId,turnId,prompt);
 
 @override
 String toString() {
-  return 'TurnStartParamsDto(agentId: $agentId, turnId: $turnId, prompt: $prompt)';
+  return 'TurnStartParamsDto(sessionId: $sessionId, turnId: $turnId, prompt: $prompt)';
 }
 
 
@@ -5712,7 +6531,7 @@ abstract mixin class $TurnStartParamsDtoCopyWith<$Res>  {
   factory $TurnStartParamsDtoCopyWith(TurnStartParamsDto value, $Res Function(TurnStartParamsDto) _then) = _$TurnStartParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String agentId, String turnId, String prompt
+ String sessionId, String turnId, String prompt
 });
 
 
@@ -5729,9 +6548,9 @@ class _$TurnStartParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TurnStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,Object? turnId = null,Object? prompt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? turnId = null,Object? prompt = null,}) {
   return _then(_self.copyWith(
-agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,turnId: null == turnId ? _self.turnId : turnId // ignore: cast_nullable_to_non_nullable
 as String,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
 as String,
@@ -5819,10 +6638,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId,  String turnId,  String prompt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String turnId,  String prompt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TurnStartParamsDto() when $default != null:
-return $default(_that.agentId,_that.turnId,_that.prompt);case _:
+return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
   return orElse();
 
 }
@@ -5840,10 +6659,10 @@ return $default(_that.agentId,_that.turnId,_that.prompt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId,  String turnId,  String prompt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String turnId,  String prompt)  $default,) {final _that = this;
 switch (_that) {
 case _TurnStartParamsDto():
-return $default(_that.agentId,_that.turnId,_that.prompt);case _:
+return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -5860,10 +6679,10 @@ return $default(_that.agentId,_that.turnId,_that.prompt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId,  String turnId,  String prompt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String turnId,  String prompt)?  $default,) {final _that = this;
 switch (_that) {
 case _TurnStartParamsDto() when $default != null:
-return $default(_that.agentId,_that.turnId,_that.prompt);case _:
+return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
   return null;
 
 }
@@ -5875,10 +6694,10 @@ return $default(_that.agentId,_that.turnId,_that.prompt);case _:
 @JsonSerializable()
 
 class _TurnStartParamsDto implements TurnStartParamsDto {
-  const _TurnStartParamsDto({required this.agentId, required this.turnId, required this.prompt});
+  const _TurnStartParamsDto({required this.sessionId, required this.turnId, required this.prompt});
   factory _TurnStartParamsDto.fromJson(Map<String, dynamic> json) => _$TurnStartParamsDtoFromJson(json);
 
-@override final  String agentId;
+@override final  String sessionId;
 @override final  String turnId;
 @override final  String prompt;
 
@@ -5895,16 +6714,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TurnStartParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.turnId, turnId) || other.turnId == turnId)&&(identical(other.prompt, prompt) || other.prompt == prompt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TurnStartParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.turnId, turnId) || other.turnId == turnId)&&(identical(other.prompt, prompt) || other.prompt == prompt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agentId,turnId,prompt);
+int get hashCode => Object.hash(runtimeType,sessionId,turnId,prompt);
 
 @override
 String toString() {
-  return 'TurnStartParamsDto(agentId: $agentId, turnId: $turnId, prompt: $prompt)';
+  return 'TurnStartParamsDto(sessionId: $sessionId, turnId: $turnId, prompt: $prompt)';
 }
 
 
@@ -5915,7 +6734,7 @@ abstract mixin class _$TurnStartParamsDtoCopyWith<$Res> implements $TurnStartPar
   factory _$TurnStartParamsDtoCopyWith(_TurnStartParamsDto value, $Res Function(_TurnStartParamsDto) _then) = __$TurnStartParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String agentId, String turnId, String prompt
+ String sessionId, String turnId, String prompt
 });
 
 
@@ -5932,9 +6751,9 @@ class __$TurnStartParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TurnStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? turnId = null,Object? prompt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? turnId = null,Object? prompt = null,}) {
   return _then(_TurnStartParamsDto(
-agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,turnId: null == turnId ? _self.turnId : turnId // ignore: cast_nullable_to_non_nullable
 as String,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
 as String,
@@ -5946,42 +6765,42 @@ as String,
 
 
 /// @nodoc
-mixin _$AgentIdParamsDto {
+mixin _$SessionIdParamsDto {
 
- String get agentId;
-/// Create a copy of AgentIdParamsDto
+ String get sessionId;
+/// Create a copy of SessionIdParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AgentIdParamsDtoCopyWith<AgentIdParamsDto> get copyWith => _$AgentIdParamsDtoCopyWithImpl<AgentIdParamsDto>(this as AgentIdParamsDto, _$identity);
+$SessionIdParamsDtoCopyWith<SessionIdParamsDto> get copyWith => _$SessionIdParamsDtoCopyWithImpl<SessionIdParamsDto>(this as SessionIdParamsDto, _$identity);
 
-  /// Serializes this AgentIdParamsDto to a JSON map.
+  /// Serializes this SessionIdParamsDto to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentIdParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionIdParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agentId);
+int get hashCode => Object.hash(runtimeType,sessionId);
 
 @override
 String toString() {
-  return 'AgentIdParamsDto(agentId: $agentId)';
+  return 'SessionIdParamsDto(sessionId: $sessionId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AgentIdParamsDtoCopyWith<$Res>  {
-  factory $AgentIdParamsDtoCopyWith(AgentIdParamsDto value, $Res Function(AgentIdParamsDto) _then) = _$AgentIdParamsDtoCopyWithImpl;
+abstract mixin class $SessionIdParamsDtoCopyWith<$Res>  {
+  factory $SessionIdParamsDtoCopyWith(SessionIdParamsDto value, $Res Function(SessionIdParamsDto) _then) = _$SessionIdParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String agentId
+ String sessionId
 });
 
 
@@ -5989,18 +6808,18 @@ $Res call({
 
 }
 /// @nodoc
-class _$AgentIdParamsDtoCopyWithImpl<$Res>
-    implements $AgentIdParamsDtoCopyWith<$Res> {
-  _$AgentIdParamsDtoCopyWithImpl(this._self, this._then);
+class _$SessionIdParamsDtoCopyWithImpl<$Res>
+    implements $SessionIdParamsDtoCopyWith<$Res> {
+  _$SessionIdParamsDtoCopyWithImpl(this._self, this._then);
 
-  final AgentIdParamsDto _self;
-  final $Res Function(AgentIdParamsDto) _then;
+  final SessionIdParamsDto _self;
+  final $Res Function(SessionIdParamsDto) _then;
 
-/// Create a copy of AgentIdParamsDto
+/// Create a copy of SessionIdParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,}) {
   return _then(_self.copyWith(
-agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -6008,8 +6827,8 @@ as String,
 }
 
 
-/// Adds pattern-matching-related methods to [AgentIdParamsDto].
-extension AgentIdParamsDtoPatterns on AgentIdParamsDto {
+/// Adds pattern-matching-related methods to [SessionIdParamsDto].
+extension SessionIdParamsDtoPatterns on SessionIdParamsDto {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -6022,10 +6841,10 @@ extension AgentIdParamsDtoPatterns on AgentIdParamsDto {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentIdParamsDto value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionIdParamsDto value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AgentIdParamsDto() when $default != null:
+case _SessionIdParamsDto() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -6044,10 +6863,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentIdParamsDto value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionIdParamsDto value)  $default,){
 final _that = this;
 switch (_that) {
-case _AgentIdParamsDto():
+case _SessionIdParamsDto():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -6065,10 +6884,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentIdParamsDto value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionIdParamsDto value)?  $default,){
 final _that = this;
 switch (_that) {
-case _AgentIdParamsDto() when $default != null:
+case _SessionIdParamsDto() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -6086,10 +6905,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AgentIdParamsDto() when $default != null:
-return $default(_that.agentId);case _:
+case _SessionIdParamsDto() when $default != null:
+return $default(_that.sessionId);case _:
   return orElse();
 
 }
@@ -6107,10 +6926,10 @@ return $default(_that.agentId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId)  $default,) {final _that = this;
 switch (_that) {
-case _AgentIdParamsDto():
-return $default(_that.agentId);case _:
+case _SessionIdParamsDto():
+return $default(_that.sessionId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -6127,10 +6946,10 @@ return $default(_that.agentId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId)?  $default,) {final _that = this;
 switch (_that) {
-case _AgentIdParamsDto() when $default != null:
-return $default(_that.agentId);case _:
+case _SessionIdParamsDto() when $default != null:
+return $default(_that.sessionId);case _:
   return null;
 
 }
@@ -6141,46 +6960,46 @@ return $default(_that.agentId);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _AgentIdParamsDto implements AgentIdParamsDto {
-  const _AgentIdParamsDto({required this.agentId});
-  factory _AgentIdParamsDto.fromJson(Map<String, dynamic> json) => _$AgentIdParamsDtoFromJson(json);
+class _SessionIdParamsDto implements SessionIdParamsDto {
+  const _SessionIdParamsDto({required this.sessionId});
+  factory _SessionIdParamsDto.fromJson(Map<String, dynamic> json) => _$SessionIdParamsDtoFromJson(json);
 
-@override final  String agentId;
+@override final  String sessionId;
 
-/// Create a copy of AgentIdParamsDto
+/// Create a copy of SessionIdParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$AgentIdParamsDtoCopyWith<_AgentIdParamsDto> get copyWith => __$AgentIdParamsDtoCopyWithImpl<_AgentIdParamsDto>(this, _$identity);
+_$SessionIdParamsDtoCopyWith<_SessionIdParamsDto> get copyWith => __$SessionIdParamsDtoCopyWithImpl<_SessionIdParamsDto>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$AgentIdParamsDtoToJson(this, );
+  return _$SessionIdParamsDtoToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentIdParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionIdParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agentId);
+int get hashCode => Object.hash(runtimeType,sessionId);
 
 @override
 String toString() {
-  return 'AgentIdParamsDto(agentId: $agentId)';
+  return 'SessionIdParamsDto(sessionId: $sessionId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$AgentIdParamsDtoCopyWith<$Res> implements $AgentIdParamsDtoCopyWith<$Res> {
-  factory _$AgentIdParamsDtoCopyWith(_AgentIdParamsDto value, $Res Function(_AgentIdParamsDto) _then) = __$AgentIdParamsDtoCopyWithImpl;
+abstract mixin class _$SessionIdParamsDtoCopyWith<$Res> implements $SessionIdParamsDtoCopyWith<$Res> {
+  factory _$SessionIdParamsDtoCopyWith(_SessionIdParamsDto value, $Res Function(_SessionIdParamsDto) _then) = __$SessionIdParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String agentId
+ String sessionId
 });
 
 
@@ -6188,18 +7007,18 @@ $Res call({
 
 }
 /// @nodoc
-class __$AgentIdParamsDtoCopyWithImpl<$Res>
-    implements _$AgentIdParamsDtoCopyWith<$Res> {
-  __$AgentIdParamsDtoCopyWithImpl(this._self, this._then);
+class __$SessionIdParamsDtoCopyWithImpl<$Res>
+    implements _$SessionIdParamsDtoCopyWith<$Res> {
+  __$SessionIdParamsDtoCopyWithImpl(this._self, this._then);
 
-  final _AgentIdParamsDto _self;
-  final $Res Function(_AgentIdParamsDto) _then;
+  final _SessionIdParamsDto _self;
+  final $Res Function(_SessionIdParamsDto) _then;
 
-/// Create a copy of AgentIdParamsDto
+/// Create a copy of SessionIdParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,}) {
-  return _then(_AgentIdParamsDto(
-agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,}) {
+  return _then(_SessionIdParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -6477,7 +7296,7 @@ as bool,
 /// @nodoc
 mixin _$TimelineSubscribeParamsDto {
 
- String get agentId; int get afterSequence;
+ String get sessionId; int get afterSequence;
 /// Create a copy of TimelineSubscribeParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -6490,16 +7309,16 @@ $TimelineSubscribeParamsDtoCopyWith<TimelineSubscribeParamsDto> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineSubscribeParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineSubscribeParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agentId,afterSequence);
+int get hashCode => Object.hash(runtimeType,sessionId,afterSequence);
 
 @override
 String toString() {
-  return 'TimelineSubscribeParamsDto(agentId: $agentId, afterSequence: $afterSequence)';
+  return 'TimelineSubscribeParamsDto(sessionId: $sessionId, afterSequence: $afterSequence)';
 }
 
 
@@ -6510,7 +7329,7 @@ abstract mixin class $TimelineSubscribeParamsDtoCopyWith<$Res>  {
   factory $TimelineSubscribeParamsDtoCopyWith(TimelineSubscribeParamsDto value, $Res Function(TimelineSubscribeParamsDto) _then) = _$TimelineSubscribeParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String agentId, int afterSequence
+ String sessionId, int afterSequence
 });
 
 
@@ -6527,9 +7346,9 @@ class _$TimelineSubscribeParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TimelineSubscribeParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,Object? afterSequence = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? afterSequence = null,}) {
   return _then(_self.copyWith(
-agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
 as int,
   ));
@@ -6616,10 +7435,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId,  int afterSequence)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  int afterSequence)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TimelineSubscribeParamsDto() when $default != null:
-return $default(_that.agentId,_that.afterSequence);case _:
+return $default(_that.sessionId,_that.afterSequence);case _:
   return orElse();
 
 }
@@ -6637,10 +7456,10 @@ return $default(_that.agentId,_that.afterSequence);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId,  int afterSequence)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  int afterSequence)  $default,) {final _that = this;
 switch (_that) {
 case _TimelineSubscribeParamsDto():
-return $default(_that.agentId,_that.afterSequence);case _:
+return $default(_that.sessionId,_that.afterSequence);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -6657,10 +7476,10 @@ return $default(_that.agentId,_that.afterSequence);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId,  int afterSequence)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  int afterSequence)?  $default,) {final _that = this;
 switch (_that) {
 case _TimelineSubscribeParamsDto() when $default != null:
-return $default(_that.agentId,_that.afterSequence);case _:
+return $default(_that.sessionId,_that.afterSequence);case _:
   return null;
 
 }
@@ -6672,10 +7491,10 @@ return $default(_that.agentId,_that.afterSequence);case _:
 @JsonSerializable()
 
 class _TimelineSubscribeParamsDto implements TimelineSubscribeParamsDto {
-  const _TimelineSubscribeParamsDto({required this.agentId, required this.afterSequence});
+  const _TimelineSubscribeParamsDto({required this.sessionId, required this.afterSequence});
   factory _TimelineSubscribeParamsDto.fromJson(Map<String, dynamic> json) => _$TimelineSubscribeParamsDtoFromJson(json);
 
-@override final  String agentId;
+@override final  String sessionId;
 @override final  int afterSequence;
 
 /// Create a copy of TimelineSubscribeParamsDto
@@ -6691,16 +7510,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelineSubscribeParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelineSubscribeParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agentId,afterSequence);
+int get hashCode => Object.hash(runtimeType,sessionId,afterSequence);
 
 @override
 String toString() {
-  return 'TimelineSubscribeParamsDto(agentId: $agentId, afterSequence: $afterSequence)';
+  return 'TimelineSubscribeParamsDto(sessionId: $sessionId, afterSequence: $afterSequence)';
 }
 
 
@@ -6711,7 +7530,7 @@ abstract mixin class _$TimelineSubscribeParamsDtoCopyWith<$Res> implements $Time
   factory _$TimelineSubscribeParamsDtoCopyWith(_TimelineSubscribeParamsDto value, $Res Function(_TimelineSubscribeParamsDto) _then) = __$TimelineSubscribeParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String agentId, int afterSequence
+ String sessionId, int afterSequence
 });
 
 
@@ -6728,9 +7547,9 @@ class __$TimelineSubscribeParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TimelineSubscribeParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? afterSequence = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? afterSequence = null,}) {
   return _then(_TimelineSubscribeParamsDto(
-agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
 as int,
   ));
@@ -8675,42 +9494,42 @@ $WorktreeArchivePreviewDtoCopyWith<$Res> get preview {
 
 
 /// @nodoc
-mixin _$AgentListResultDto {
+mixin _$SessionListResultDto {
 
- List<AgentDto> get agents;
-/// Create a copy of AgentListResultDto
+ List<SessionDto> get sessions;
+/// Create a copy of SessionListResultDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AgentListResultDtoCopyWith<AgentListResultDto> get copyWith => _$AgentListResultDtoCopyWithImpl<AgentListResultDto>(this as AgentListResultDto, _$identity);
+$SessionListResultDtoCopyWith<SessionListResultDto> get copyWith => _$SessionListResultDtoCopyWithImpl<SessionListResultDto>(this as SessionListResultDto, _$identity);
 
-  /// Serializes this AgentListResultDto to a JSON map.
+  /// Serializes this SessionListResultDto to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentListResultDto&&const DeepCollectionEquality().equals(other.agents, agents));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionListResultDto&&const DeepCollectionEquality().equals(other.sessions, sessions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(agents));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(sessions));
 
 @override
 String toString() {
-  return 'AgentListResultDto(agents: $agents)';
+  return 'SessionListResultDto(sessions: $sessions)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AgentListResultDtoCopyWith<$Res>  {
-  factory $AgentListResultDtoCopyWith(AgentListResultDto value, $Res Function(AgentListResultDto) _then) = _$AgentListResultDtoCopyWithImpl;
+abstract mixin class $SessionListResultDtoCopyWith<$Res>  {
+  factory $SessionListResultDtoCopyWith(SessionListResultDto value, $Res Function(SessionListResultDto) _then) = _$SessionListResultDtoCopyWithImpl;
 @useResult
 $Res call({
- List<AgentDto> agents
+ List<SessionDto> sessions
 });
 
 
@@ -8718,27 +9537,27 @@ $Res call({
 
 }
 /// @nodoc
-class _$AgentListResultDtoCopyWithImpl<$Res>
-    implements $AgentListResultDtoCopyWith<$Res> {
-  _$AgentListResultDtoCopyWithImpl(this._self, this._then);
+class _$SessionListResultDtoCopyWithImpl<$Res>
+    implements $SessionListResultDtoCopyWith<$Res> {
+  _$SessionListResultDtoCopyWithImpl(this._self, this._then);
 
-  final AgentListResultDto _self;
-  final $Res Function(AgentListResultDto) _then;
+  final SessionListResultDto _self;
+  final $Res Function(SessionListResultDto) _then;
 
-/// Create a copy of AgentListResultDto
+/// Create a copy of SessionListResultDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? agents = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessions = null,}) {
   return _then(_self.copyWith(
-agents: null == agents ? _self.agents : agents // ignore: cast_nullable_to_non_nullable
-as List<AgentDto>,
+sessions: null == sessions ? _self.sessions : sessions // ignore: cast_nullable_to_non_nullable
+as List<SessionDto>,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [AgentListResultDto].
-extension AgentListResultDtoPatterns on AgentListResultDto {
+/// Adds pattern-matching-related methods to [SessionListResultDto].
+extension SessionListResultDtoPatterns on SessionListResultDto {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -8751,10 +9570,10 @@ extension AgentListResultDtoPatterns on AgentListResultDto {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentListResultDto value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionListResultDto value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AgentListResultDto() when $default != null:
+case _SessionListResultDto() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -8773,10 +9592,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentListResultDto value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionListResultDto value)  $default,){
 final _that = this;
 switch (_that) {
-case _AgentListResultDto():
+case _SessionListResultDto():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -8794,10 +9613,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentListResultDto value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionListResultDto value)?  $default,){
 final _that = this;
 switch (_that) {
-case _AgentListResultDto() when $default != null:
+case _SessionListResultDto() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -8815,10 +9634,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AgentDto> agents)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<SessionDto> sessions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AgentListResultDto() when $default != null:
-return $default(_that.agents);case _:
+case _SessionListResultDto() when $default != null:
+return $default(_that.sessions);case _:
   return orElse();
 
 }
@@ -8836,10 +9655,10 @@ return $default(_that.agents);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AgentDto> agents)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<SessionDto> sessions)  $default,) {final _that = this;
 switch (_that) {
-case _AgentListResultDto():
-return $default(_that.agents);case _:
+case _SessionListResultDto():
+return $default(_that.sessions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -8856,10 +9675,10 @@ return $default(_that.agents);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AgentDto> agents)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<SessionDto> sessions)?  $default,) {final _that = this;
 switch (_that) {
-case _AgentListResultDto() when $default != null:
-return $default(_that.agents);case _:
+case _SessionListResultDto() when $default != null:
+return $default(_that.sessions);case _:
   return null;
 
 }
@@ -8870,52 +9689,52 @@ return $default(_that.agents);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _AgentListResultDto implements AgentListResultDto {
-  const _AgentListResultDto({required final  List<AgentDto> agents}): _agents = agents;
-  factory _AgentListResultDto.fromJson(Map<String, dynamic> json) => _$AgentListResultDtoFromJson(json);
+class _SessionListResultDto implements SessionListResultDto {
+  const _SessionListResultDto({required final  List<SessionDto> sessions}): _sessions = sessions;
+  factory _SessionListResultDto.fromJson(Map<String, dynamic> json) => _$SessionListResultDtoFromJson(json);
 
- final  List<AgentDto> _agents;
-@override List<AgentDto> get agents {
-  if (_agents is EqualUnmodifiableListView) return _agents;
+ final  List<SessionDto> _sessions;
+@override List<SessionDto> get sessions {
+  if (_sessions is EqualUnmodifiableListView) return _sessions;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_agents);
+  return EqualUnmodifiableListView(_sessions);
 }
 
 
-/// Create a copy of AgentListResultDto
+/// Create a copy of SessionListResultDto
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$AgentListResultDtoCopyWith<_AgentListResultDto> get copyWith => __$AgentListResultDtoCopyWithImpl<_AgentListResultDto>(this, _$identity);
+_$SessionListResultDtoCopyWith<_SessionListResultDto> get copyWith => __$SessionListResultDtoCopyWithImpl<_SessionListResultDto>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$AgentListResultDtoToJson(this, );
+  return _$SessionListResultDtoToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentListResultDto&&const DeepCollectionEquality().equals(other._agents, _agents));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionListResultDto&&const DeepCollectionEquality().equals(other._sessions, _sessions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_agents));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_sessions));
 
 @override
 String toString() {
-  return 'AgentListResultDto(agents: $agents)';
+  return 'SessionListResultDto(sessions: $sessions)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$AgentListResultDtoCopyWith<$Res> implements $AgentListResultDtoCopyWith<$Res> {
-  factory _$AgentListResultDtoCopyWith(_AgentListResultDto value, $Res Function(_AgentListResultDto) _then) = __$AgentListResultDtoCopyWithImpl;
+abstract mixin class _$SessionListResultDtoCopyWith<$Res> implements $SessionListResultDtoCopyWith<$Res> {
+  factory _$SessionListResultDtoCopyWith(_SessionListResultDto value, $Res Function(_SessionListResultDto) _then) = __$SessionListResultDtoCopyWithImpl;
 @override @useResult
 $Res call({
- List<AgentDto> agents
+ List<SessionDto> sessions
 });
 
 
@@ -8923,19 +9742,19 @@ $Res call({
 
 }
 /// @nodoc
-class __$AgentListResultDtoCopyWithImpl<$Res>
-    implements _$AgentListResultDtoCopyWith<$Res> {
-  __$AgentListResultDtoCopyWithImpl(this._self, this._then);
+class __$SessionListResultDtoCopyWithImpl<$Res>
+    implements _$SessionListResultDtoCopyWith<$Res> {
+  __$SessionListResultDtoCopyWithImpl(this._self, this._then);
 
-  final _AgentListResultDto _self;
-  final $Res Function(_AgentListResultDto) _then;
+  final _SessionListResultDto _self;
+  final $Res Function(_SessionListResultDto) _then;
 
-/// Create a copy of AgentListResultDto
+/// Create a copy of SessionListResultDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? agents = null,}) {
-  return _then(_AgentListResultDto(
-agents: null == agents ? _self._agents : agents // ignore: cast_nullable_to_non_nullable
-as List<AgentDto>,
+@override @pragma('vm:prefer-inline') $Res call({Object? sessions = null,}) {
+  return _then(_SessionListResultDto(
+sessions: null == sessions ? _self._sessions : sessions // ignore: cast_nullable_to_non_nullable
+as List<SessionDto>,
   ));
 }
 
@@ -8944,79 +9763,79 @@ as List<AgentDto>,
 
 
 /// @nodoc
-mixin _$AgentResultDto {
+mixin _$SessionResultDto {
 
- AgentDto get agent;
-/// Create a copy of AgentResultDto
+ SessionDto get session;
+/// Create a copy of SessionResultDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AgentResultDtoCopyWith<AgentResultDto> get copyWith => _$AgentResultDtoCopyWithImpl<AgentResultDto>(this as AgentResultDto, _$identity);
+$SessionResultDtoCopyWith<SessionResultDto> get copyWith => _$SessionResultDtoCopyWithImpl<SessionResultDto>(this as SessionResultDto, _$identity);
 
-  /// Serializes this AgentResultDto to a JSON map.
+  /// Serializes this SessionResultDto to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentResultDto&&(identical(other.agent, agent) || other.agent == agent));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionResultDto&&(identical(other.session, session) || other.session == session));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agent);
+int get hashCode => Object.hash(runtimeType,session);
 
 @override
 String toString() {
-  return 'AgentResultDto(agent: $agent)';
+  return 'SessionResultDto(session: $session)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AgentResultDtoCopyWith<$Res>  {
-  factory $AgentResultDtoCopyWith(AgentResultDto value, $Res Function(AgentResultDto) _then) = _$AgentResultDtoCopyWithImpl;
+abstract mixin class $SessionResultDtoCopyWith<$Res>  {
+  factory $SessionResultDtoCopyWith(SessionResultDto value, $Res Function(SessionResultDto) _then) = _$SessionResultDtoCopyWithImpl;
 @useResult
 $Res call({
- AgentDto agent
+ SessionDto session
 });
 
 
-$AgentDtoCopyWith<$Res> get agent;
+$SessionDtoCopyWith<$Res> get session;
 
 }
 /// @nodoc
-class _$AgentResultDtoCopyWithImpl<$Res>
-    implements $AgentResultDtoCopyWith<$Res> {
-  _$AgentResultDtoCopyWithImpl(this._self, this._then);
+class _$SessionResultDtoCopyWithImpl<$Res>
+    implements $SessionResultDtoCopyWith<$Res> {
+  _$SessionResultDtoCopyWithImpl(this._self, this._then);
 
-  final AgentResultDto _self;
-  final $Res Function(AgentResultDto) _then;
+  final SessionResultDto _self;
+  final $Res Function(SessionResultDto) _then;
 
-/// Create a copy of AgentResultDto
+/// Create a copy of SessionResultDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? agent = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? session = null,}) {
   return _then(_self.copyWith(
-agent: null == agent ? _self.agent : agent // ignore: cast_nullable_to_non_nullable
-as AgentDto,
+session: null == session ? _self.session : session // ignore: cast_nullable_to_non_nullable
+as SessionDto,
   ));
 }
-/// Create a copy of AgentResultDto
+/// Create a copy of SessionResultDto
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AgentDtoCopyWith<$Res> get agent {
+$SessionDtoCopyWith<$Res> get session {
   
-  return $AgentDtoCopyWith<$Res>(_self.agent, (value) {
-    return _then(_self.copyWith(agent: value));
+  return $SessionDtoCopyWith<$Res>(_self.session, (value) {
+    return _then(_self.copyWith(session: value));
   });
 }
 }
 
 
-/// Adds pattern-matching-related methods to [AgentResultDto].
-extension AgentResultDtoPatterns on AgentResultDto {
+/// Adds pattern-matching-related methods to [SessionResultDto].
+extension SessionResultDtoPatterns on SessionResultDto {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -9029,10 +9848,10 @@ extension AgentResultDtoPatterns on AgentResultDto {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentResultDto value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionResultDto value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AgentResultDto() when $default != null:
+case _SessionResultDto() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -9051,10 +9870,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentResultDto value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionResultDto value)  $default,){
 final _that = this;
 switch (_that) {
-case _AgentResultDto():
+case _SessionResultDto():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -9072,10 +9891,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentResultDto value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionResultDto value)?  $default,){
 final _that = this;
 switch (_that) {
-case _AgentResultDto() when $default != null:
+case _SessionResultDto() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -9093,10 +9912,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AgentDto agent)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionDto session)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AgentResultDto() when $default != null:
-return $default(_that.agent);case _:
+case _SessionResultDto() when $default != null:
+return $default(_that.session);case _:
   return orElse();
 
 }
@@ -9114,10 +9933,10 @@ return $default(_that.agent);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AgentDto agent)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionDto session)  $default,) {final _that = this;
 switch (_that) {
-case _AgentResultDto():
-return $default(_that.agent);case _:
+case _SessionResultDto():
+return $default(_that.session);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -9134,10 +9953,10 @@ return $default(_that.agent);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AgentDto agent)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionDto session)?  $default,) {final _that = this;
 switch (_that) {
-case _AgentResultDto() when $default != null:
-return $default(_that.agent);case _:
+case _SessionResultDto() when $default != null:
+return $default(_that.session);case _:
   return null;
 
 }
@@ -9148,79 +9967,898 @@ return $default(_that.agent);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _AgentResultDto implements AgentResultDto {
-  const _AgentResultDto({required this.agent});
-  factory _AgentResultDto.fromJson(Map<String, dynamic> json) => _$AgentResultDtoFromJson(json);
+class _SessionResultDto implements SessionResultDto {
+  const _SessionResultDto({required this.session});
+  factory _SessionResultDto.fromJson(Map<String, dynamic> json) => _$SessionResultDtoFromJson(json);
 
-@override final  AgentDto agent;
+@override final  SessionDto session;
 
-/// Create a copy of AgentResultDto
+/// Create a copy of SessionResultDto
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$AgentResultDtoCopyWith<_AgentResultDto> get copyWith => __$AgentResultDtoCopyWithImpl<_AgentResultDto>(this, _$identity);
+_$SessionResultDtoCopyWith<_SessionResultDto> get copyWith => __$SessionResultDtoCopyWithImpl<_SessionResultDto>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$AgentResultDtoToJson(this, );
+  return _$SessionResultDtoToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentResultDto&&(identical(other.agent, agent) || other.agent == agent));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionResultDto&&(identical(other.session, session) || other.session == session));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agent);
+int get hashCode => Object.hash(runtimeType,session);
 
 @override
 String toString() {
-  return 'AgentResultDto(agent: $agent)';
+  return 'SessionResultDto(session: $session)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$AgentResultDtoCopyWith<$Res> implements $AgentResultDtoCopyWith<$Res> {
-  factory _$AgentResultDtoCopyWith(_AgentResultDto value, $Res Function(_AgentResultDto) _then) = __$AgentResultDtoCopyWithImpl;
+abstract mixin class _$SessionResultDtoCopyWith<$Res> implements $SessionResultDtoCopyWith<$Res> {
+  factory _$SessionResultDtoCopyWith(_SessionResultDto value, $Res Function(_SessionResultDto) _then) = __$SessionResultDtoCopyWithImpl;
 @override @useResult
 $Res call({
- AgentDto agent
+ SessionDto session
 });
 
 
-@override $AgentDtoCopyWith<$Res> get agent;
+@override $SessionDtoCopyWith<$Res> get session;
 
 }
 /// @nodoc
-class __$AgentResultDtoCopyWithImpl<$Res>
-    implements _$AgentResultDtoCopyWith<$Res> {
-  __$AgentResultDtoCopyWithImpl(this._self, this._then);
+class __$SessionResultDtoCopyWithImpl<$Res>
+    implements _$SessionResultDtoCopyWith<$Res> {
+  __$SessionResultDtoCopyWithImpl(this._self, this._then);
 
-  final _AgentResultDto _self;
-  final $Res Function(_AgentResultDto) _then;
+  final _SessionResultDto _self;
+  final $Res Function(_SessionResultDto) _then;
 
-/// Create a copy of AgentResultDto
+/// Create a copy of SessionResultDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? agent = null,}) {
-  return _then(_AgentResultDto(
-agent: null == agent ? _self.agent : agent // ignore: cast_nullable_to_non_nullable
-as AgentDto,
+@override @pragma('vm:prefer-inline') $Res call({Object? session = null,}) {
+  return _then(_SessionResultDto(
+session: null == session ? _self.session : session // ignore: cast_nullable_to_non_nullable
+as SessionDto,
   ));
 }
 
-/// Create a copy of AgentResultDto
+/// Create a copy of SessionResultDto
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AgentDtoCopyWith<$Res> get agent {
+$SessionDtoCopyWith<$Res> get session {
   
-  return $AgentDtoCopyWith<$Res>(_self.agent, (value) {
-    return _then(_self.copyWith(agent: value));
+  return $SessionDtoCopyWith<$Res>(_self.session, (value) {
+    return _then(_self.copyWith(session: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$AgentDefinitionListResultDto {
+
+ List<AgentDefinitionDto> get definitions;
+/// Create a copy of AgentDefinitionListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentDefinitionListResultDtoCopyWith<AgentDefinitionListResultDto> get copyWith => _$AgentDefinitionListResultDtoCopyWithImpl<AgentDefinitionListResultDto>(this as AgentDefinitionListResultDto, _$identity);
+
+  /// Serializes this AgentDefinitionListResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionListResultDto&&const DeepCollectionEquality().equals(other.definitions, definitions));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(definitions));
+
+@override
+String toString() {
+  return 'AgentDefinitionListResultDto(definitions: $definitions)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentDefinitionListResultDtoCopyWith<$Res>  {
+  factory $AgentDefinitionListResultDtoCopyWith(AgentDefinitionListResultDto value, $Res Function(AgentDefinitionListResultDto) _then) = _$AgentDefinitionListResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<AgentDefinitionDto> definitions
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentDefinitionListResultDtoCopyWithImpl<$Res>
+    implements $AgentDefinitionListResultDtoCopyWith<$Res> {
+  _$AgentDefinitionListResultDtoCopyWithImpl(this._self, this._then);
+
+  final AgentDefinitionListResultDto _self;
+  final $Res Function(AgentDefinitionListResultDto) _then;
+
+/// Create a copy of AgentDefinitionListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? definitions = null,}) {
+  return _then(_self.copyWith(
+definitions: null == definitions ? _self.definitions : definitions // ignore: cast_nullable_to_non_nullable
+as List<AgentDefinitionDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentDefinitionListResultDto].
+extension AgentDefinitionListResultDtoPatterns on AgentDefinitionListResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentDefinitionListResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionListResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentDefinitionListResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionListResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentDefinitionListResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionListResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AgentDefinitionDto> definitions)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentDefinitionListResultDto() when $default != null:
+return $default(_that.definitions);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AgentDefinitionDto> definitions)  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionListResultDto():
+return $default(_that.definitions);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AgentDefinitionDto> definitions)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionListResultDto() when $default != null:
+return $default(_that.definitions);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentDefinitionListResultDto implements AgentDefinitionListResultDto {
+  const _AgentDefinitionListResultDto({required final  List<AgentDefinitionDto> definitions}): _definitions = definitions;
+  factory _AgentDefinitionListResultDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionListResultDtoFromJson(json);
+
+ final  List<AgentDefinitionDto> _definitions;
+@override List<AgentDefinitionDto> get definitions {
+  if (_definitions is EqualUnmodifiableListView) return _definitions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_definitions);
+}
+
+
+/// Create a copy of AgentDefinitionListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentDefinitionListResultDtoCopyWith<_AgentDefinitionListResultDto> get copyWith => __$AgentDefinitionListResultDtoCopyWithImpl<_AgentDefinitionListResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentDefinitionListResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionListResultDto&&const DeepCollectionEquality().equals(other._definitions, _definitions));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_definitions));
+
+@override
+String toString() {
+  return 'AgentDefinitionListResultDto(definitions: $definitions)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentDefinitionListResultDtoCopyWith<$Res> implements $AgentDefinitionListResultDtoCopyWith<$Res> {
+  factory _$AgentDefinitionListResultDtoCopyWith(_AgentDefinitionListResultDto value, $Res Function(_AgentDefinitionListResultDto) _then) = __$AgentDefinitionListResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<AgentDefinitionDto> definitions
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentDefinitionListResultDtoCopyWithImpl<$Res>
+    implements _$AgentDefinitionListResultDtoCopyWith<$Res> {
+  __$AgentDefinitionListResultDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentDefinitionListResultDto _self;
+  final $Res Function(_AgentDefinitionListResultDto) _then;
+
+/// Create a copy of AgentDefinitionListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? definitions = null,}) {
+  return _then(_AgentDefinitionListResultDto(
+definitions: null == definitions ? _self._definitions : definitions // ignore: cast_nullable_to_non_nullable
+as List<AgentDefinitionDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$AgentDefinitionResultDto {
+
+ AgentDefinitionDto get definition;
+/// Create a copy of AgentDefinitionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentDefinitionResultDtoCopyWith<AgentDefinitionResultDto> get copyWith => _$AgentDefinitionResultDtoCopyWithImpl<AgentDefinitionResultDto>(this as AgentDefinitionResultDto, _$identity);
+
+  /// Serializes this AgentDefinitionResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionResultDto&&(identical(other.definition, definition) || other.definition == definition));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,definition);
+
+@override
+String toString() {
+  return 'AgentDefinitionResultDto(definition: $definition)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentDefinitionResultDtoCopyWith<$Res>  {
+  factory $AgentDefinitionResultDtoCopyWith(AgentDefinitionResultDto value, $Res Function(AgentDefinitionResultDto) _then) = _$AgentDefinitionResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ AgentDefinitionDto definition
+});
+
+
+$AgentDefinitionDtoCopyWith<$Res> get definition;
+
+}
+/// @nodoc
+class _$AgentDefinitionResultDtoCopyWithImpl<$Res>
+    implements $AgentDefinitionResultDtoCopyWith<$Res> {
+  _$AgentDefinitionResultDtoCopyWithImpl(this._self, this._then);
+
+  final AgentDefinitionResultDto _self;
+  final $Res Function(AgentDefinitionResultDto) _then;
+
+/// Create a copy of AgentDefinitionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? definition = null,}) {
+  return _then(_self.copyWith(
+definition: null == definition ? _self.definition : definition // ignore: cast_nullable_to_non_nullable
+as AgentDefinitionDto,
+  ));
+}
+/// Create a copy of AgentDefinitionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentDefinitionDtoCopyWith<$Res> get definition {
+  
+  return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
+    return _then(_self.copyWith(definition: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [AgentDefinitionResultDto].
+extension AgentDefinitionResultDtoPatterns on AgentDefinitionResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentDefinitionResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentDefinitionResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentDefinitionResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentDefinitionResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AgentDefinitionDto definition)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentDefinitionResultDto() when $default != null:
+return $default(_that.definition);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AgentDefinitionDto definition)  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionResultDto():
+return $default(_that.definition);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AgentDefinitionDto definition)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentDefinitionResultDto() when $default != null:
+return $default(_that.definition);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentDefinitionResultDto implements AgentDefinitionResultDto {
+  const _AgentDefinitionResultDto({required this.definition});
+  factory _AgentDefinitionResultDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionResultDtoFromJson(json);
+
+@override final  AgentDefinitionDto definition;
+
+/// Create a copy of AgentDefinitionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentDefinitionResultDtoCopyWith<_AgentDefinitionResultDto> get copyWith => __$AgentDefinitionResultDtoCopyWithImpl<_AgentDefinitionResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentDefinitionResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionResultDto&&(identical(other.definition, definition) || other.definition == definition));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,definition);
+
+@override
+String toString() {
+  return 'AgentDefinitionResultDto(definition: $definition)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentDefinitionResultDtoCopyWith<$Res> implements $AgentDefinitionResultDtoCopyWith<$Res> {
+  factory _$AgentDefinitionResultDtoCopyWith(_AgentDefinitionResultDto value, $Res Function(_AgentDefinitionResultDto) _then) = __$AgentDefinitionResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ AgentDefinitionDto definition
+});
+
+
+@override $AgentDefinitionDtoCopyWith<$Res> get definition;
+
+}
+/// @nodoc
+class __$AgentDefinitionResultDtoCopyWithImpl<$Res>
+    implements _$AgentDefinitionResultDtoCopyWith<$Res> {
+  __$AgentDefinitionResultDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentDefinitionResultDto _self;
+  final $Res Function(_AgentDefinitionResultDto) _then;
+
+/// Create a copy of AgentDefinitionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? definition = null,}) {
+  return _then(_AgentDefinitionResultDto(
+definition: null == definition ? _self.definition : definition // ignore: cast_nullable_to_non_nullable
+as AgentDefinitionDto,
+  ));
+}
+
+/// Create a copy of AgentDefinitionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentDefinitionDtoCopyWith<$Res> get definition {
+  
+  return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
+    return _then(_self.copyWith(definition: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$AgentToolCatalogResultDto {
+
+ List<AgentToolDefinitionDto> get tools;
+/// Create a copy of AgentToolCatalogResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentToolCatalogResultDtoCopyWith<AgentToolCatalogResultDto> get copyWith => _$AgentToolCatalogResultDtoCopyWithImpl<AgentToolCatalogResultDto>(this as AgentToolCatalogResultDto, _$identity);
+
+  /// Serializes this AgentToolCatalogResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentToolCatalogResultDto&&const DeepCollectionEquality().equals(other.tools, tools));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(tools));
+
+@override
+String toString() {
+  return 'AgentToolCatalogResultDto(tools: $tools)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentToolCatalogResultDtoCopyWith<$Res>  {
+  factory $AgentToolCatalogResultDtoCopyWith(AgentToolCatalogResultDto value, $Res Function(AgentToolCatalogResultDto) _then) = _$AgentToolCatalogResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<AgentToolDefinitionDto> tools
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentToolCatalogResultDtoCopyWithImpl<$Res>
+    implements $AgentToolCatalogResultDtoCopyWith<$Res> {
+  _$AgentToolCatalogResultDtoCopyWithImpl(this._self, this._then);
+
+  final AgentToolCatalogResultDto _self;
+  final $Res Function(AgentToolCatalogResultDto) _then;
+
+/// Create a copy of AgentToolCatalogResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? tools = null,}) {
+  return _then(_self.copyWith(
+tools: null == tools ? _self.tools : tools // ignore: cast_nullable_to_non_nullable
+as List<AgentToolDefinitionDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentToolCatalogResultDto].
+extension AgentToolCatalogResultDtoPatterns on AgentToolCatalogResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentToolCatalogResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentToolCatalogResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentToolCatalogResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentToolCatalogResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentToolCatalogResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentToolCatalogResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AgentToolDefinitionDto> tools)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentToolCatalogResultDto() when $default != null:
+return $default(_that.tools);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AgentToolDefinitionDto> tools)  $default,) {final _that = this;
+switch (_that) {
+case _AgentToolCatalogResultDto():
+return $default(_that.tools);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AgentToolDefinitionDto> tools)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentToolCatalogResultDto() when $default != null:
+return $default(_that.tools);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentToolCatalogResultDto implements AgentToolCatalogResultDto {
+  const _AgentToolCatalogResultDto({required final  List<AgentToolDefinitionDto> tools}): _tools = tools;
+  factory _AgentToolCatalogResultDto.fromJson(Map<String, dynamic> json) => _$AgentToolCatalogResultDtoFromJson(json);
+
+ final  List<AgentToolDefinitionDto> _tools;
+@override List<AgentToolDefinitionDto> get tools {
+  if (_tools is EqualUnmodifiableListView) return _tools;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_tools);
+}
+
+
+/// Create a copy of AgentToolCatalogResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentToolCatalogResultDtoCopyWith<_AgentToolCatalogResultDto> get copyWith => __$AgentToolCatalogResultDtoCopyWithImpl<_AgentToolCatalogResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentToolCatalogResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentToolCatalogResultDto&&const DeepCollectionEquality().equals(other._tools, _tools));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_tools));
+
+@override
+String toString() {
+  return 'AgentToolCatalogResultDto(tools: $tools)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentToolCatalogResultDtoCopyWith<$Res> implements $AgentToolCatalogResultDtoCopyWith<$Res> {
+  factory _$AgentToolCatalogResultDtoCopyWith(_AgentToolCatalogResultDto value, $Res Function(_AgentToolCatalogResultDto) _then) = __$AgentToolCatalogResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<AgentToolDefinitionDto> tools
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentToolCatalogResultDtoCopyWithImpl<$Res>
+    implements _$AgentToolCatalogResultDtoCopyWith<$Res> {
+  __$AgentToolCatalogResultDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentToolCatalogResultDto _self;
+  final $Res Function(_AgentToolCatalogResultDto) _then;
+
+/// Create a copy of AgentToolCatalogResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? tools = null,}) {
+  return _then(_AgentToolCatalogResultDto(
+tools: null == tools ? _self._tools : tools // ignore: cast_nullable_to_non_nullable
+as List<AgentToolDefinitionDto>,
+  ));
+}
+
+
 }
 
 

@@ -1000,11 +1000,11 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
   }
 }
 
-class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
+class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $AgentsTable(this.attachedDatabase, [this._alias]);
+  $SessionsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -1037,53 +1037,45 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _providerConnectionIdMeta =
-      const VerificationMeta('providerConnectionId');
+  static const VerificationMeta _agentDefinitionIdMeta = const VerificationMeta(
+    'agentDefinitionId',
+  );
   @override
-  late final GeneratedColumn<String> providerConnectionId =
+  late final GeneratedColumn<String> agentDefinitionId =
       GeneratedColumn<String>(
-        'provider_connection_id',
+        'agent_definition_id',
         aliasedName,
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       );
-  static const VerificationMeta _modelMeta = const VerificationMeta('model');
+  static const VerificationMeta _originMeta = const VerificationMeta('origin');
   @override
-  late final GeneratedColumn<String> model = GeneratedColumn<String>(
-    'model',
+  late final GeneratedColumn<String> origin = GeneratedColumn<String>(
+    'origin',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _reasoningEffortMeta = const VerificationMeta(
-    'reasoningEffort',
+  static const VerificationMeta _parentSessionIdMeta = const VerificationMeta(
+    'parentSessionId',
   );
   @override
-  late final GeneratedColumn<String> reasoningEffort = GeneratedColumn<String>(
-    'reasoning_effort',
+  late final GeneratedColumn<String> parentSessionId = GeneratedColumn<String>(
+    'parent_session_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('medium'),
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sessions (id)',
+    ),
   );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
     'status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _permissionModeMeta = const VerificationMeta(
-    'permissionMode',
-  );
-  @override
-  late final GeneratedColumn<String> permissionMode = GeneratedColumn<String>(
-    'permission_mode',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -1138,11 +1130,10 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
     id,
     worktreeId,
     title,
-    providerConnectionId,
-    model,
-    reasoningEffort,
+    agentDefinitionId,
+    origin,
+    parentSessionId,
     status,
-    permissionMode,
     activeTurnId,
     lastError,
     createdAt,
@@ -1152,10 +1143,10 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'agents';
+  static const String $name = 'sessions';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Agent> instance, {
+    Insertable<Session> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -1181,31 +1172,31 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
     } else if (isInserting) {
       context.missing(_titleMeta);
     }
-    if (data.containsKey('provider_connection_id')) {
+    if (data.containsKey('agent_definition_id')) {
       context.handle(
-        _providerConnectionIdMeta,
-        providerConnectionId.isAcceptableOrUnknown(
-          data['provider_connection_id']!,
-          _providerConnectionIdMeta,
+        _agentDefinitionIdMeta,
+        agentDefinitionId.isAcceptableOrUnknown(
+          data['agent_definition_id']!,
+          _agentDefinitionIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_providerConnectionIdMeta);
+      context.missing(_agentDefinitionIdMeta);
     }
-    if (data.containsKey('model')) {
+    if (data.containsKey('origin')) {
       context.handle(
-        _modelMeta,
-        model.isAcceptableOrUnknown(data['model']!, _modelMeta),
+        _originMeta,
+        origin.isAcceptableOrUnknown(data['origin']!, _originMeta),
       );
     } else if (isInserting) {
-      context.missing(_modelMeta);
+      context.missing(_originMeta);
     }
-    if (data.containsKey('reasoning_effort')) {
+    if (data.containsKey('parent_session_id')) {
       context.handle(
-        _reasoningEffortMeta,
-        reasoningEffort.isAcceptableOrUnknown(
-          data['reasoning_effort']!,
-          _reasoningEffortMeta,
+        _parentSessionIdMeta,
+        parentSessionId.isAcceptableOrUnknown(
+          data['parent_session_id']!,
+          _parentSessionIdMeta,
         ),
       );
     }
@@ -1216,17 +1207,6 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
       );
     } else if (isInserting) {
       context.missing(_statusMeta);
-    }
-    if (data.containsKey('permission_mode')) {
-      context.handle(
-        _permissionModeMeta,
-        permissionMode.isAcceptableOrUnknown(
-          data['permission_mode']!,
-          _permissionModeMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_permissionModeMeta);
     }
     if (data.containsKey('active_turn_id')) {
       context.handle(
@@ -1265,9 +1245,9 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Agent map(Map<String, dynamic> data, {String? tablePrefix}) {
+  Session map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Agent(
+    return Session(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -1280,25 +1260,21 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
-      providerConnectionId: attachedDatabase.typeMapping.read(
+      agentDefinitionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}provider_connection_id'],
+        data['${effectivePrefix}agent_definition_id'],
       )!,
-      model: attachedDatabase.typeMapping.read(
+      origin: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}model'],
+        data['${effectivePrefix}origin'],
       )!,
-      reasoningEffort: attachedDatabase.typeMapping.read(
+      parentSessionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}reasoning_effort'],
-      )!,
+        data['${effectivePrefix}parent_session_id'],
+      ),
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}status'],
-      )!,
-      permissionMode: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}permission_mode'],
       )!,
       activeTurnId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1320,12 +1296,12 @@ class $AgentsTable extends Agents with TableInfo<$AgentsTable, Agent> {
   }
 
   @override
-  $AgentsTable createAlias(String alias) {
-    return $AgentsTable(attachedDatabase, alias);
+  $SessionsTable createAlias(String alias) {
+    return $SessionsTable(attachedDatabase, alias);
   }
 }
 
-class Agent extends DataClass implements Insertable<Agent> {
+class Session extends DataClass implements Insertable<Session> {
   /// The id public API member.
   final String id;
 
@@ -1335,20 +1311,17 @@ class Agent extends DataClass implements Insertable<Agent> {
   /// The title public API member.
   final String title;
 
-  /// Provider connection selected for this agent.
-  final String providerConnectionId;
+  /// Markdown agent definition resolved for each turn.
+  final String agentDefinitionId;
 
-  /// The model public API member.
-  final String model;
+  /// Whether this session was created directly or by delegation.
+  final String origin;
 
-  /// The reasoningEffort public API member.
-  final String reasoningEffort;
+  /// Parent session for delegated subagents.
+  final String? parentSessionId;
 
   /// The status public API member.
   final String status;
-
-  /// The permissionMode public API member.
-  final String permissionMode;
 
   /// The activeTurnId public API member.
   final String? activeTurnId;
@@ -1361,15 +1334,14 @@ class Agent extends DataClass implements Insertable<Agent> {
 
   /// The updatedAt public API member.
   final DateTime updatedAt;
-  const Agent({
+  const Session({
     required this.id,
     required this.worktreeId,
     required this.title,
-    required this.providerConnectionId,
-    required this.model,
-    required this.reasoningEffort,
+    required this.agentDefinitionId,
+    required this.origin,
+    this.parentSessionId,
     required this.status,
-    required this.permissionMode,
     this.activeTurnId,
     this.lastError,
     required this.createdAt,
@@ -1381,11 +1353,12 @@ class Agent extends DataClass implements Insertable<Agent> {
     map['id'] = Variable<String>(id);
     map['worktree_id'] = Variable<String>(worktreeId);
     map['title'] = Variable<String>(title);
-    map['provider_connection_id'] = Variable<String>(providerConnectionId);
-    map['model'] = Variable<String>(model);
-    map['reasoning_effort'] = Variable<String>(reasoningEffort);
+    map['agent_definition_id'] = Variable<String>(agentDefinitionId);
+    map['origin'] = Variable<String>(origin);
+    if (!nullToAbsent || parentSessionId != null) {
+      map['parent_session_id'] = Variable<String>(parentSessionId);
+    }
     map['status'] = Variable<String>(status);
-    map['permission_mode'] = Variable<String>(permissionMode);
     if (!nullToAbsent || activeTurnId != null) {
       map['active_turn_id'] = Variable<String>(activeTurnId);
     }
@@ -1397,16 +1370,17 @@ class Agent extends DataClass implements Insertable<Agent> {
     return map;
   }
 
-  AgentsCompanion toCompanion(bool nullToAbsent) {
-    return AgentsCompanion(
+  SessionsCompanion toCompanion(bool nullToAbsent) {
+    return SessionsCompanion(
       id: Value(id),
       worktreeId: Value(worktreeId),
       title: Value(title),
-      providerConnectionId: Value(providerConnectionId),
-      model: Value(model),
-      reasoningEffort: Value(reasoningEffort),
+      agentDefinitionId: Value(agentDefinitionId),
+      origin: Value(origin),
+      parentSessionId: parentSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentSessionId),
       status: Value(status),
-      permissionMode: Value(permissionMode),
       activeTurnId: activeTurnId == null && nullToAbsent
           ? const Value.absent()
           : Value(activeTurnId),
@@ -1418,22 +1392,19 @@ class Agent extends DataClass implements Insertable<Agent> {
     );
   }
 
-  factory Agent.fromJson(
+  factory Session.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Agent(
+    return Session(
       id: serializer.fromJson<String>(json['id']),
       worktreeId: serializer.fromJson<String>(json['worktreeId']),
       title: serializer.fromJson<String>(json['title']),
-      providerConnectionId: serializer.fromJson<String>(
-        json['providerConnectionId'],
-      ),
-      model: serializer.fromJson<String>(json['model']),
-      reasoningEffort: serializer.fromJson<String>(json['reasoningEffort']),
+      agentDefinitionId: serializer.fromJson<String>(json['agentDefinitionId']),
+      origin: serializer.fromJson<String>(json['origin']),
+      parentSessionId: serializer.fromJson<String?>(json['parentSessionId']),
       status: serializer.fromJson<String>(json['status']),
-      permissionMode: serializer.fromJson<String>(json['permissionMode']),
       activeTurnId: serializer.fromJson<String?>(json['activeTurnId']),
       lastError: serializer.fromJson<String?>(json['lastError']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -1447,11 +1418,10 @@ class Agent extends DataClass implements Insertable<Agent> {
       'id': serializer.toJson<String>(id),
       'worktreeId': serializer.toJson<String>(worktreeId),
       'title': serializer.toJson<String>(title),
-      'providerConnectionId': serializer.toJson<String>(providerConnectionId),
-      'model': serializer.toJson<String>(model),
-      'reasoningEffort': serializer.toJson<String>(reasoningEffort),
+      'agentDefinitionId': serializer.toJson<String>(agentDefinitionId),
+      'origin': serializer.toJson<String>(origin),
+      'parentSessionId': serializer.toJson<String?>(parentSessionId),
       'status': serializer.toJson<String>(status),
-      'permissionMode': serializer.toJson<String>(permissionMode),
       'activeTurnId': serializer.toJson<String?>(activeTurnId),
       'lastError': serializer.toJson<String?>(lastError),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -1459,51 +1429,48 @@ class Agent extends DataClass implements Insertable<Agent> {
     };
   }
 
-  Agent copyWith({
+  Session copyWith({
     String? id,
     String? worktreeId,
     String? title,
-    String? providerConnectionId,
-    String? model,
-    String? reasoningEffort,
+    String? agentDefinitionId,
+    String? origin,
+    Value<String?> parentSessionId = const Value.absent(),
     String? status,
-    String? permissionMode,
     Value<String?> activeTurnId = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) => Agent(
+  }) => Session(
     id: id ?? this.id,
     worktreeId: worktreeId ?? this.worktreeId,
     title: title ?? this.title,
-    providerConnectionId: providerConnectionId ?? this.providerConnectionId,
-    model: model ?? this.model,
-    reasoningEffort: reasoningEffort ?? this.reasoningEffort,
+    agentDefinitionId: agentDefinitionId ?? this.agentDefinitionId,
+    origin: origin ?? this.origin,
+    parentSessionId: parentSessionId.present
+        ? parentSessionId.value
+        : this.parentSessionId,
     status: status ?? this.status,
-    permissionMode: permissionMode ?? this.permissionMode,
     activeTurnId: activeTurnId.present ? activeTurnId.value : this.activeTurnId,
     lastError: lastError.present ? lastError.value : this.lastError,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
-  Agent copyWithCompanion(AgentsCompanion data) {
-    return Agent(
+  Session copyWithCompanion(SessionsCompanion data) {
+    return Session(
       id: data.id.present ? data.id.value : this.id,
       worktreeId: data.worktreeId.present
           ? data.worktreeId.value
           : this.worktreeId,
       title: data.title.present ? data.title.value : this.title,
-      providerConnectionId: data.providerConnectionId.present
-          ? data.providerConnectionId.value
-          : this.providerConnectionId,
-      model: data.model.present ? data.model.value : this.model,
-      reasoningEffort: data.reasoningEffort.present
-          ? data.reasoningEffort.value
-          : this.reasoningEffort,
+      agentDefinitionId: data.agentDefinitionId.present
+          ? data.agentDefinitionId.value
+          : this.agentDefinitionId,
+      origin: data.origin.present ? data.origin.value : this.origin,
+      parentSessionId: data.parentSessionId.present
+          ? data.parentSessionId.value
+          : this.parentSessionId,
       status: data.status.present ? data.status.value : this.status,
-      permissionMode: data.permissionMode.present
-          ? data.permissionMode.value
-          : this.permissionMode,
       activeTurnId: data.activeTurnId.present
           ? data.activeTurnId.value
           : this.activeTurnId,
@@ -1515,15 +1482,14 @@ class Agent extends DataClass implements Insertable<Agent> {
 
   @override
   String toString() {
-    return (StringBuffer('Agent(')
+    return (StringBuffer('Session(')
           ..write('id: $id, ')
           ..write('worktreeId: $worktreeId, ')
           ..write('title: $title, ')
-          ..write('providerConnectionId: $providerConnectionId, ')
-          ..write('model: $model, ')
-          ..write('reasoningEffort: $reasoningEffort, ')
+          ..write('agentDefinitionId: $agentDefinitionId, ')
+          ..write('origin: $origin, ')
+          ..write('parentSessionId: $parentSessionId, ')
           ..write('status: $status, ')
-          ..write('permissionMode: $permissionMode, ')
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
           ..write('createdAt: $createdAt, ')
@@ -1537,11 +1503,10 @@ class Agent extends DataClass implements Insertable<Agent> {
     id,
     worktreeId,
     title,
-    providerConnectionId,
-    model,
-    reasoningEffort,
+    agentDefinitionId,
+    origin,
+    parentSessionId,
     status,
-    permissionMode,
     activeTurnId,
     lastError,
     createdAt,
@@ -1550,59 +1515,55 @@ class Agent extends DataClass implements Insertable<Agent> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Agent &&
+      (other is Session &&
           other.id == this.id &&
           other.worktreeId == this.worktreeId &&
           other.title == this.title &&
-          other.providerConnectionId == this.providerConnectionId &&
-          other.model == this.model &&
-          other.reasoningEffort == this.reasoningEffort &&
+          other.agentDefinitionId == this.agentDefinitionId &&
+          other.origin == this.origin &&
+          other.parentSessionId == this.parentSessionId &&
           other.status == this.status &&
-          other.permissionMode == this.permissionMode &&
           other.activeTurnId == this.activeTurnId &&
           other.lastError == this.lastError &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
 
-class AgentsCompanion extends UpdateCompanion<Agent> {
+class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String> id;
   final Value<String> worktreeId;
   final Value<String> title;
-  final Value<String> providerConnectionId;
-  final Value<String> model;
-  final Value<String> reasoningEffort;
+  final Value<String> agentDefinitionId;
+  final Value<String> origin;
+  final Value<String?> parentSessionId;
   final Value<String> status;
-  final Value<String> permissionMode;
   final Value<String?> activeTurnId;
   final Value<String?> lastError;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  const AgentsCompanion({
+  const SessionsCompanion({
     this.id = const Value.absent(),
     this.worktreeId = const Value.absent(),
     this.title = const Value.absent(),
-    this.providerConnectionId = const Value.absent(),
-    this.model = const Value.absent(),
-    this.reasoningEffort = const Value.absent(),
+    this.agentDefinitionId = const Value.absent(),
+    this.origin = const Value.absent(),
+    this.parentSessionId = const Value.absent(),
     this.status = const Value.absent(),
-    this.permissionMode = const Value.absent(),
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  AgentsCompanion.insert({
+  SessionsCompanion.insert({
     required String id,
     required String worktreeId,
     required String title,
-    required String providerConnectionId,
-    required String model,
-    this.reasoningEffort = const Value.absent(),
+    required String agentDefinitionId,
+    required String origin,
+    this.parentSessionId = const Value.absent(),
     required String status,
-    required String permissionMode,
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
     required DateTime createdAt,
@@ -1611,21 +1572,19 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
   }) : id = Value(id),
        worktreeId = Value(worktreeId),
        title = Value(title),
-       providerConnectionId = Value(providerConnectionId),
-       model = Value(model),
+       agentDefinitionId = Value(agentDefinitionId),
+       origin = Value(origin),
        status = Value(status),
-       permissionMode = Value(permissionMode),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
-  static Insertable<Agent> custom({
+  static Insertable<Session> custom({
     Expression<String>? id,
     Expression<String>? worktreeId,
     Expression<String>? title,
-    Expression<String>? providerConnectionId,
-    Expression<String>? model,
-    Expression<String>? reasoningEffort,
+    Expression<String>? agentDefinitionId,
+    Expression<String>? origin,
+    Expression<String>? parentSessionId,
     Expression<String>? status,
-    Expression<String>? permissionMode,
     Expression<String>? activeTurnId,
     Expression<String>? lastError,
     Expression<DateTime>? createdAt,
@@ -1636,12 +1595,10 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
       if (id != null) 'id': id,
       if (worktreeId != null) 'worktree_id': worktreeId,
       if (title != null) 'title': title,
-      if (providerConnectionId != null)
-        'provider_connection_id': providerConnectionId,
-      if (model != null) 'model': model,
-      if (reasoningEffort != null) 'reasoning_effort': reasoningEffort,
+      if (agentDefinitionId != null) 'agent_definition_id': agentDefinitionId,
+      if (origin != null) 'origin': origin,
+      if (parentSessionId != null) 'parent_session_id': parentSessionId,
       if (status != null) 'status': status,
-      if (permissionMode != null) 'permission_mode': permissionMode,
       if (activeTurnId != null) 'active_turn_id': activeTurnId,
       if (lastError != null) 'last_error': lastError,
       if (createdAt != null) 'created_at': createdAt,
@@ -1650,30 +1607,28 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     });
   }
 
-  AgentsCompanion copyWith({
+  SessionsCompanion copyWith({
     Value<String>? id,
     Value<String>? worktreeId,
     Value<String>? title,
-    Value<String>? providerConnectionId,
-    Value<String>? model,
-    Value<String>? reasoningEffort,
+    Value<String>? agentDefinitionId,
+    Value<String>? origin,
+    Value<String?>? parentSessionId,
     Value<String>? status,
-    Value<String>? permissionMode,
     Value<String?>? activeTurnId,
     Value<String?>? lastError,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
-    return AgentsCompanion(
+    return SessionsCompanion(
       id: id ?? this.id,
       worktreeId: worktreeId ?? this.worktreeId,
       title: title ?? this.title,
-      providerConnectionId: providerConnectionId ?? this.providerConnectionId,
-      model: model ?? this.model,
-      reasoningEffort: reasoningEffort ?? this.reasoningEffort,
+      agentDefinitionId: agentDefinitionId ?? this.agentDefinitionId,
+      origin: origin ?? this.origin,
+      parentSessionId: parentSessionId ?? this.parentSessionId,
       status: status ?? this.status,
-      permissionMode: permissionMode ?? this.permissionMode,
       activeTurnId: activeTurnId ?? this.activeTurnId,
       lastError: lastError ?? this.lastError,
       createdAt: createdAt ?? this.createdAt,
@@ -1694,22 +1649,17 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
-    if (providerConnectionId.present) {
-      map['provider_connection_id'] = Variable<String>(
-        providerConnectionId.value,
-      );
+    if (agentDefinitionId.present) {
+      map['agent_definition_id'] = Variable<String>(agentDefinitionId.value);
     }
-    if (model.present) {
-      map['model'] = Variable<String>(model.value);
+    if (origin.present) {
+      map['origin'] = Variable<String>(origin.value);
     }
-    if (reasoningEffort.present) {
-      map['reasoning_effort'] = Variable<String>(reasoningEffort.value);
+    if (parentSessionId.present) {
+      map['parent_session_id'] = Variable<String>(parentSessionId.value);
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
-    }
-    if (permissionMode.present) {
-      map['permission_mode'] = Variable<String>(permissionMode.value);
     }
     if (activeTurnId.present) {
       map['active_turn_id'] = Variable<String>(activeTurnId.value);
@@ -1731,15 +1681,14 @@ class AgentsCompanion extends UpdateCompanion<Agent> {
 
   @override
   String toString() {
-    return (StringBuffer('AgentsCompanion(')
+    return (StringBuffer('SessionsCompanion(')
           ..write('id: $id, ')
           ..write('worktreeId: $worktreeId, ')
           ..write('title: $title, ')
-          ..write('providerConnectionId: $providerConnectionId, ')
-          ..write('model: $model, ')
-          ..write('reasoningEffort: $reasoningEffort, ')
+          ..write('agentDefinitionId: $agentDefinitionId, ')
+          ..write('origin: $origin, ')
+          ..write('parentSessionId: $parentSessionId, ')
           ..write('status: $status, ')
-          ..write('permissionMode: $permissionMode, ')
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
           ..write('createdAt: $createdAt, ')
@@ -1764,18 +1713,18 @@ class $TurnsTable extends Turns with TableInfo<$TurnsTable, Turn> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _agentIdMeta = const VerificationMeta(
-    'agentId',
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
   );
   @override
-  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
-    'agent_id',
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES agents (id)',
+      'REFERENCES sessions (id)',
     ),
   );
   static const VerificationMeta _promptMeta = const VerificationMeta('prompt');
@@ -1830,7 +1779,7 @@ class $TurnsTable extends Turns with TableInfo<$TurnsTable, Turn> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    agentId,
+    sessionId,
     prompt,
     status,
     error,
@@ -1854,13 +1803,13 @@ class $TurnsTable extends Turns with TableInfo<$TurnsTable, Turn> {
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('agent_id')) {
+    if (data.containsKey('session_id')) {
       context.handle(
-        _agentIdMeta,
-        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_agentIdMeta);
+      context.missing(_sessionIdMeta);
     }
     if (data.containsKey('prompt')) {
       context.handle(
@@ -1913,9 +1862,9 @@ class $TurnsTable extends Turns with TableInfo<$TurnsTable, Turn> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      agentId: attachedDatabase.typeMapping.read(
+      sessionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}agent_id'],
+        data['${effectivePrefix}session_id'],
       )!,
       prompt: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1950,8 +1899,8 @@ class Turn extends DataClass implements Insertable<Turn> {
   /// The id public API member.
   final String id;
 
-  /// The agentId public API member.
-  final String agentId;
+  /// The sessionId public API member.
+  final String sessionId;
 
   /// The prompt public API member.
   final String prompt;
@@ -1969,7 +1918,7 @@ class Turn extends DataClass implements Insertable<Turn> {
   final DateTime updatedAt;
   const Turn({
     required this.id,
-    required this.agentId,
+    required this.sessionId,
     required this.prompt,
     required this.status,
     this.error,
@@ -1980,7 +1929,7 @@ class Turn extends DataClass implements Insertable<Turn> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['agent_id'] = Variable<String>(agentId);
+    map['session_id'] = Variable<String>(sessionId);
     map['prompt'] = Variable<String>(prompt);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || error != null) {
@@ -1994,7 +1943,7 @@ class Turn extends DataClass implements Insertable<Turn> {
   TurnsCompanion toCompanion(bool nullToAbsent) {
     return TurnsCompanion(
       id: Value(id),
-      agentId: Value(agentId),
+      sessionId: Value(sessionId),
       prompt: Value(prompt),
       status: Value(status),
       error: error == null && nullToAbsent
@@ -2012,7 +1961,7 @@ class Turn extends DataClass implements Insertable<Turn> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Turn(
       id: serializer.fromJson<String>(json['id']),
-      agentId: serializer.fromJson<String>(json['agentId']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
       prompt: serializer.fromJson<String>(json['prompt']),
       status: serializer.fromJson<String>(json['status']),
       error: serializer.fromJson<String?>(json['error']),
@@ -2025,7 +1974,7 @@ class Turn extends DataClass implements Insertable<Turn> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'agentId': serializer.toJson<String>(agentId),
+      'sessionId': serializer.toJson<String>(sessionId),
       'prompt': serializer.toJson<String>(prompt),
       'status': serializer.toJson<String>(status),
       'error': serializer.toJson<String?>(error),
@@ -2036,7 +1985,7 @@ class Turn extends DataClass implements Insertable<Turn> {
 
   Turn copyWith({
     String? id,
-    String? agentId,
+    String? sessionId,
     String? prompt,
     String? status,
     Value<String?> error = const Value.absent(),
@@ -2044,7 +1993,7 @@ class Turn extends DataClass implements Insertable<Turn> {
     DateTime? updatedAt,
   }) => Turn(
     id: id ?? this.id,
-    agentId: agentId ?? this.agentId,
+    sessionId: sessionId ?? this.sessionId,
     prompt: prompt ?? this.prompt,
     status: status ?? this.status,
     error: error.present ? error.value : this.error,
@@ -2054,7 +2003,7 @@ class Turn extends DataClass implements Insertable<Turn> {
   Turn copyWithCompanion(TurnsCompanion data) {
     return Turn(
       id: data.id.present ? data.id.value : this.id,
-      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       prompt: data.prompt.present ? data.prompt.value : this.prompt,
       status: data.status.present ? data.status.value : this.status,
       error: data.error.present ? data.error.value : this.error,
@@ -2067,7 +2016,7 @@ class Turn extends DataClass implements Insertable<Turn> {
   String toString() {
     return (StringBuffer('Turn(')
           ..write('id: $id, ')
-          ..write('agentId: $agentId, ')
+          ..write('sessionId: $sessionId, ')
           ..write('prompt: $prompt, ')
           ..write('status: $status, ')
           ..write('error: $error, ')
@@ -2079,13 +2028,13 @@ class Turn extends DataClass implements Insertable<Turn> {
 
   @override
   int get hashCode =>
-      Object.hash(id, agentId, prompt, status, error, createdAt, updatedAt);
+      Object.hash(id, sessionId, prompt, status, error, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Turn &&
           other.id == this.id &&
-          other.agentId == this.agentId &&
+          other.sessionId == this.sessionId &&
           other.prompt == this.prompt &&
           other.status == this.status &&
           other.error == this.error &&
@@ -2095,7 +2044,7 @@ class Turn extends DataClass implements Insertable<Turn> {
 
 class TurnsCompanion extends UpdateCompanion<Turn> {
   final Value<String> id;
-  final Value<String> agentId;
+  final Value<String> sessionId;
   final Value<String> prompt;
   final Value<String> status;
   final Value<String?> error;
@@ -2104,7 +2053,7 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
   final Value<int> rowid;
   const TurnsCompanion({
     this.id = const Value.absent(),
-    this.agentId = const Value.absent(),
+    this.sessionId = const Value.absent(),
     this.prompt = const Value.absent(),
     this.status = const Value.absent(),
     this.error = const Value.absent(),
@@ -2114,7 +2063,7 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
   });
   TurnsCompanion.insert({
     required String id,
-    required String agentId,
+    required String sessionId,
     required String prompt,
     required String status,
     this.error = const Value.absent(),
@@ -2122,14 +2071,14 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       agentId = Value(agentId),
+       sessionId = Value(sessionId),
        prompt = Value(prompt),
        status = Value(status),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<Turn> custom({
     Expression<String>? id,
-    Expression<String>? agentId,
+    Expression<String>? sessionId,
     Expression<String>? prompt,
     Expression<String>? status,
     Expression<String>? error,
@@ -2139,7 +2088,7 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (agentId != null) 'agent_id': agentId,
+      if (sessionId != null) 'session_id': sessionId,
       if (prompt != null) 'prompt': prompt,
       if (status != null) 'status': status,
       if (error != null) 'error': error,
@@ -2151,7 +2100,7 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
 
   TurnsCompanion copyWith({
     Value<String>? id,
-    Value<String>? agentId,
+    Value<String>? sessionId,
     Value<String>? prompt,
     Value<String>? status,
     Value<String?>? error,
@@ -2161,7 +2110,7 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
   }) {
     return TurnsCompanion(
       id: id ?? this.id,
-      agentId: agentId ?? this.agentId,
+      sessionId: sessionId ?? this.sessionId,
       prompt: prompt ?? this.prompt,
       status: status ?? this.status,
       error: error ?? this.error,
@@ -2177,8 +2126,8 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (agentId.present) {
-      map['agent_id'] = Variable<String>(agentId.value);
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
     }
     if (prompt.present) {
       map['prompt'] = Variable<String>(prompt.value);
@@ -2205,7 +2154,7 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
   String toString() {
     return (StringBuffer('TurnsCompanion(')
           ..write('id: $id, ')
-          ..write('agentId: $agentId, ')
+          ..write('sessionId: $sessionId, ')
           ..write('prompt: $prompt, ')
           ..write('status: $status, ')
           ..write('error: $error, ')
@@ -2223,18 +2172,18 @@ class $TimelineEventsTable extends TimelineEvents
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $TimelineEventsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _agentIdMeta = const VerificationMeta(
-    'agentId',
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
   );
   @override
-  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
-    'agent_id',
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES agents (id)',
+      'REFERENCES sessions (id)',
     ),
   );
   static const VerificationMeta _sequenceMeta = const VerificationMeta(
@@ -2290,7 +2239,7 @@ class $TimelineEventsTable extends TimelineEvents
   );
   @override
   List<GeneratedColumn> get $columns => [
-    agentId,
+    sessionId,
     sequence,
     turnId,
     type,
@@ -2309,13 +2258,13 @@ class $TimelineEventsTable extends TimelineEvents
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('agent_id')) {
+    if (data.containsKey('session_id')) {
       context.handle(
-        _agentIdMeta,
-        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_agentIdMeta);
+      context.missing(_sessionIdMeta);
     }
     if (data.containsKey('sequence')) {
       context.handle(
@@ -2359,14 +2308,14 @@ class $TimelineEventsTable extends TimelineEvents
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {agentId, sequence};
+  Set<GeneratedColumn> get $primaryKey => {sessionId, sequence};
   @override
   TimelineEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return TimelineEvent(
-      agentId: attachedDatabase.typeMapping.read(
+      sessionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}agent_id'],
+        data['${effectivePrefix}session_id'],
       )!,
       sequence: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -2398,8 +2347,8 @@ class $TimelineEventsTable extends TimelineEvents
 }
 
 class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
-  /// The agentId public API member.
-  final String agentId;
+  /// The sessionId public API member.
+  final String sessionId;
 
   /// The sequence public API member.
   final int sequence;
@@ -2416,7 +2365,7 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
   /// The createdAt public API member.
   final DateTime createdAt;
   const TimelineEvent({
-    required this.agentId,
+    required this.sessionId,
     required this.sequence,
     this.turnId,
     required this.type,
@@ -2426,7 +2375,7 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['agent_id'] = Variable<String>(agentId);
+    map['session_id'] = Variable<String>(sessionId);
     map['sequence'] = Variable<int>(sequence);
     if (!nullToAbsent || turnId != null) {
       map['turn_id'] = Variable<String>(turnId);
@@ -2439,7 +2388,7 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
 
   TimelineEventsCompanion toCompanion(bool nullToAbsent) {
     return TimelineEventsCompanion(
-      agentId: Value(agentId),
+      sessionId: Value(sessionId),
       sequence: Value(sequence),
       turnId: turnId == null && nullToAbsent
           ? const Value.absent()
@@ -2456,7 +2405,7 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return TimelineEvent(
-      agentId: serializer.fromJson<String>(json['agentId']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
       sequence: serializer.fromJson<int>(json['sequence']),
       turnId: serializer.fromJson<String?>(json['turnId']),
       type: serializer.fromJson<String>(json['type']),
@@ -2468,7 +2417,7 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'agentId': serializer.toJson<String>(agentId),
+      'sessionId': serializer.toJson<String>(sessionId),
       'sequence': serializer.toJson<int>(sequence),
       'turnId': serializer.toJson<String?>(turnId),
       'type': serializer.toJson<String>(type),
@@ -2478,14 +2427,14 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
   }
 
   TimelineEvent copyWith({
-    String? agentId,
+    String? sessionId,
     int? sequence,
     Value<String?> turnId = const Value.absent(),
     String? type,
     String? dataJson,
     DateTime? createdAt,
   }) => TimelineEvent(
-    agentId: agentId ?? this.agentId,
+    sessionId: sessionId ?? this.sessionId,
     sequence: sequence ?? this.sequence,
     turnId: turnId.present ? turnId.value : this.turnId,
     type: type ?? this.type,
@@ -2494,7 +2443,7 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
   );
   TimelineEvent copyWithCompanion(TimelineEventsCompanion data) {
     return TimelineEvent(
-      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       sequence: data.sequence.present ? data.sequence.value : this.sequence,
       turnId: data.turnId.present ? data.turnId.value : this.turnId,
       type: data.type.present ? data.type.value : this.type,
@@ -2506,7 +2455,7 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
   @override
   String toString() {
     return (StringBuffer('TimelineEvent(')
-          ..write('agentId: $agentId, ')
+          ..write('sessionId: $sessionId, ')
           ..write('sequence: $sequence, ')
           ..write('turnId: $turnId, ')
           ..write('type: $type, ')
@@ -2518,12 +2467,12 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
 
   @override
   int get hashCode =>
-      Object.hash(agentId, sequence, turnId, type, dataJson, createdAt);
+      Object.hash(sessionId, sequence, turnId, type, dataJson, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is TimelineEvent &&
-          other.agentId == this.agentId &&
+          other.sessionId == this.sessionId &&
           other.sequence == this.sequence &&
           other.turnId == this.turnId &&
           other.type == this.type &&
@@ -2532,7 +2481,7 @@ class TimelineEvent extends DataClass implements Insertable<TimelineEvent> {
 }
 
 class TimelineEventsCompanion extends UpdateCompanion<TimelineEvent> {
-  final Value<String> agentId;
+  final Value<String> sessionId;
   final Value<int> sequence;
   final Value<String?> turnId;
   final Value<String> type;
@@ -2540,7 +2489,7 @@ class TimelineEventsCompanion extends UpdateCompanion<TimelineEvent> {
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const TimelineEventsCompanion({
-    this.agentId = const Value.absent(),
+    this.sessionId = const Value.absent(),
     this.sequence = const Value.absent(),
     this.turnId = const Value.absent(),
     this.type = const Value.absent(),
@@ -2549,20 +2498,20 @@ class TimelineEventsCompanion extends UpdateCompanion<TimelineEvent> {
     this.rowid = const Value.absent(),
   });
   TimelineEventsCompanion.insert({
-    required String agentId,
+    required String sessionId,
     required int sequence,
     this.turnId = const Value.absent(),
     required String type,
     required String dataJson,
     required DateTime createdAt,
     this.rowid = const Value.absent(),
-  }) : agentId = Value(agentId),
+  }) : sessionId = Value(sessionId),
        sequence = Value(sequence),
        type = Value(type),
        dataJson = Value(dataJson),
        createdAt = Value(createdAt);
   static Insertable<TimelineEvent> custom({
-    Expression<String>? agentId,
+    Expression<String>? sessionId,
     Expression<int>? sequence,
     Expression<String>? turnId,
     Expression<String>? type,
@@ -2571,7 +2520,7 @@ class TimelineEventsCompanion extends UpdateCompanion<TimelineEvent> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (agentId != null) 'agent_id': agentId,
+      if (sessionId != null) 'session_id': sessionId,
       if (sequence != null) 'sequence': sequence,
       if (turnId != null) 'turn_id': turnId,
       if (type != null) 'type': type,
@@ -2582,7 +2531,7 @@ class TimelineEventsCompanion extends UpdateCompanion<TimelineEvent> {
   }
 
   TimelineEventsCompanion copyWith({
-    Value<String>? agentId,
+    Value<String>? sessionId,
     Value<int>? sequence,
     Value<String?>? turnId,
     Value<String>? type,
@@ -2591,7 +2540,7 @@ class TimelineEventsCompanion extends UpdateCompanion<TimelineEvent> {
     Value<int>? rowid,
   }) {
     return TimelineEventsCompanion(
-      agentId: agentId ?? this.agentId,
+      sessionId: sessionId ?? this.sessionId,
       sequence: sequence ?? this.sequence,
       turnId: turnId ?? this.turnId,
       type: type ?? this.type,
@@ -2604,8 +2553,8 @@ class TimelineEventsCompanion extends UpdateCompanion<TimelineEvent> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (agentId.present) {
-      map['agent_id'] = Variable<String>(agentId.value);
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
     }
     if (sequence.present) {
       map['sequence'] = Variable<int>(sequence.value);
@@ -2631,7 +2580,7 @@ class TimelineEventsCompanion extends UpdateCompanion<TimelineEvent> {
   @override
   String toString() {
     return (StringBuffer('TimelineEventsCompanion(')
-          ..write('agentId: $agentId, ')
+          ..write('sessionId: $sessionId, ')
           ..write('sequence: $sequence, ')
           ..write('turnId: $turnId, ')
           ..write('type: $type, ')
@@ -2658,18 +2607,18 @@ class $ApprovalRequestsTable extends ApprovalRequests
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _agentIdMeta = const VerificationMeta(
-    'agentId',
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
   );
   @override
-  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
-    'agent_id',
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES agents (id)',
+      'REFERENCES sessions (id)',
     ),
   );
   static const VerificationMeta _turnIdMeta = const VerificationMeta('turnId');
@@ -2760,7 +2709,7 @@ class $ApprovalRequestsTable extends ApprovalRequests
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    agentId,
+    sessionId,
     turnId,
     toolCallId,
     toolName,
@@ -2787,13 +2736,13 @@ class $ApprovalRequestsTable extends ApprovalRequests
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('agent_id')) {
+    if (data.containsKey('session_id')) {
       context.handle(
-        _agentIdMeta,
-        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_agentIdMeta);
+      context.missing(_sessionIdMeta);
     }
     if (data.containsKey('turn_id')) {
       context.handle(
@@ -2876,9 +2825,9 @@ class $ApprovalRequestsTable extends ApprovalRequests
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      agentId: attachedDatabase.typeMapping.read(
+      sessionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}agent_id'],
+        data['${effectivePrefix}session_id'],
       )!,
       turnId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -2925,8 +2874,8 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
   /// The id public API member.
   final String id;
 
-  /// The agentId public API member.
-  final String agentId;
+  /// The sessionId public API member.
+  final String sessionId;
 
   /// The turnId public API member.
   final String turnId;
@@ -2953,7 +2902,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
   final DateTime createdAt;
   const ApprovalRequest({
     required this.id,
-    required this.agentId,
+    required this.sessionId,
     required this.turnId,
     required this.toolCallId,
     required this.toolName,
@@ -2967,7 +2916,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['agent_id'] = Variable<String>(agentId);
+    map['session_id'] = Variable<String>(sessionId);
     map['turn_id'] = Variable<String>(turnId);
     map['tool_call_id'] = Variable<String>(toolCallId);
     map['tool_name'] = Variable<String>(toolName);
@@ -2984,7 +2933,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
   ApprovalRequestsCompanion toCompanion(bool nullToAbsent) {
     return ApprovalRequestsCompanion(
       id: Value(id),
-      agentId: Value(agentId),
+      sessionId: Value(sessionId),
       turnId: Value(turnId),
       toolCallId: Value(toolCallId),
       toolName: Value(toolName),
@@ -3005,7 +2954,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ApprovalRequest(
       id: serializer.fromJson<String>(json['id']),
-      agentId: serializer.fromJson<String>(json['agentId']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
       turnId: serializer.fromJson<String>(json['turnId']),
       toolCallId: serializer.fromJson<String>(json['toolCallId']),
       toolName: serializer.fromJson<String>(json['toolName']),
@@ -3021,7 +2970,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'agentId': serializer.toJson<String>(agentId),
+      'sessionId': serializer.toJson<String>(sessionId),
       'turnId': serializer.toJson<String>(turnId),
       'toolCallId': serializer.toJson<String>(toolCallId),
       'toolName': serializer.toJson<String>(toolName),
@@ -3035,7 +2984,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
 
   ApprovalRequest copyWith({
     String? id,
-    String? agentId,
+    String? sessionId,
     String? turnId,
     String? toolCallId,
     String? toolName,
@@ -3046,7 +2995,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
     DateTime? createdAt,
   }) => ApprovalRequest(
     id: id ?? this.id,
-    agentId: agentId ?? this.agentId,
+    sessionId: sessionId ?? this.sessionId,
     turnId: turnId ?? this.turnId,
     toolCallId: toolCallId ?? this.toolCallId,
     toolName: toolName ?? this.toolName,
@@ -3059,7 +3008,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
   ApprovalRequest copyWithCompanion(ApprovalRequestsCompanion data) {
     return ApprovalRequest(
       id: data.id.present ? data.id.value : this.id,
-      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       turnId: data.turnId.present ? data.turnId.value : this.turnId,
       toolCallId: data.toolCallId.present
           ? data.toolCallId.value
@@ -3079,7 +3028,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
   String toString() {
     return (StringBuffer('ApprovalRequest(')
           ..write('id: $id, ')
-          ..write('agentId: $agentId, ')
+          ..write('sessionId: $sessionId, ')
           ..write('turnId: $turnId, ')
           ..write('toolCallId: $toolCallId, ')
           ..write('toolName: $toolName, ')
@@ -3095,7 +3044,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
   @override
   int get hashCode => Object.hash(
     id,
-    agentId,
+    sessionId,
     turnId,
     toolCallId,
     toolName,
@@ -3110,7 +3059,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
       identical(this, other) ||
       (other is ApprovalRequest &&
           other.id == this.id &&
-          other.agentId == this.agentId &&
+          other.sessionId == this.sessionId &&
           other.turnId == this.turnId &&
           other.toolCallId == this.toolCallId &&
           other.toolName == this.toolName &&
@@ -3123,7 +3072,7 @@ class ApprovalRequest extends DataClass implements Insertable<ApprovalRequest> {
 
 class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
   final Value<String> id;
-  final Value<String> agentId;
+  final Value<String> sessionId;
   final Value<String> turnId;
   final Value<String> toolCallId;
   final Value<String> toolName;
@@ -3135,7 +3084,7 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
   final Value<int> rowid;
   const ApprovalRequestsCompanion({
     this.id = const Value.absent(),
-    this.agentId = const Value.absent(),
+    this.sessionId = const Value.absent(),
     this.turnId = const Value.absent(),
     this.toolCallId = const Value.absent(),
     this.toolName = const Value.absent(),
@@ -3148,7 +3097,7 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
   });
   ApprovalRequestsCompanion.insert({
     required String id,
-    required String agentId,
+    required String sessionId,
     required String turnId,
     required String toolCallId,
     required String toolName,
@@ -3159,7 +3108,7 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       agentId = Value(agentId),
+       sessionId = Value(sessionId),
        turnId = Value(turnId),
        toolCallId = Value(toolCallId),
        toolName = Value(toolName),
@@ -3169,7 +3118,7 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
        createdAt = Value(createdAt);
   static Insertable<ApprovalRequest> custom({
     Expression<String>? id,
-    Expression<String>? agentId,
+    Expression<String>? sessionId,
     Expression<String>? turnId,
     Expression<String>? toolCallId,
     Expression<String>? toolName,
@@ -3182,7 +3131,7 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (agentId != null) 'agent_id': agentId,
+      if (sessionId != null) 'session_id': sessionId,
       if (turnId != null) 'turn_id': turnId,
       if (toolCallId != null) 'tool_call_id': toolCallId,
       if (toolName != null) 'tool_name': toolName,
@@ -3197,7 +3146,7 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
 
   ApprovalRequestsCompanion copyWith({
     Value<String>? id,
-    Value<String>? agentId,
+    Value<String>? sessionId,
     Value<String>? turnId,
     Value<String>? toolCallId,
     Value<String>? toolName,
@@ -3210,7 +3159,7 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
   }) {
     return ApprovalRequestsCompanion(
       id: id ?? this.id,
-      agentId: agentId ?? this.agentId,
+      sessionId: sessionId ?? this.sessionId,
       turnId: turnId ?? this.turnId,
       toolCallId: toolCallId ?? this.toolCallId,
       toolName: toolName ?? this.toolName,
@@ -3229,8 +3178,8 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (agentId.present) {
-      map['agent_id'] = Variable<String>(agentId.value);
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
     }
     if (turnId.present) {
       map['turn_id'] = Variable<String>(turnId.value);
@@ -3266,7 +3215,7 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
   String toString() {
     return (StringBuffer('ApprovalRequestsCompanion(')
           ..write('id: $id, ')
-          ..write('agentId: $agentId, ')
+          ..write('sessionId: $sessionId, ')
           ..write('turnId: $turnId, ')
           ..write('toolCallId: $toolCallId, ')
           ..write('toolName: $toolName, ')
@@ -3287,18 +3236,18 @@ class $ProviderStatesTable extends ProviderStates
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ProviderStatesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _agentIdMeta = const VerificationMeta(
-    'agentId',
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
   );
   @override
-  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
-    'agent_id',
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES agents (id)',
+      'REFERENCES sessions (id)',
     ),
   );
   static const VerificationMeta _ordinalMeta = const VerificationMeta(
@@ -3335,7 +3284,12 @@ class $ProviderStatesTable extends ProviderStates
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [agentId, ordinal, itemJson, createdAt];
+  List<GeneratedColumn> get $columns => [
+    sessionId,
+    ordinal,
+    itemJson,
+    createdAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3348,13 +3302,13 @@ class $ProviderStatesTable extends ProviderStates
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('agent_id')) {
+    if (data.containsKey('session_id')) {
       context.handle(
-        _agentIdMeta,
-        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_agentIdMeta);
+      context.missing(_sessionIdMeta);
     }
     if (data.containsKey('ordinal')) {
       context.handle(
@@ -3384,14 +3338,14 @@ class $ProviderStatesTable extends ProviderStates
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {agentId, ordinal};
+  Set<GeneratedColumn> get $primaryKey => {sessionId, ordinal};
   @override
   ProviderState map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ProviderState(
-      agentId: attachedDatabase.typeMapping.read(
+      sessionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}agent_id'],
+        data['${effectivePrefix}session_id'],
       )!,
       ordinal: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -3415,8 +3369,8 @@ class $ProviderStatesTable extends ProviderStates
 }
 
 class ProviderState extends DataClass implements Insertable<ProviderState> {
-  /// The agentId public API member.
-  final String agentId;
+  /// The sessionId public API member.
+  final String sessionId;
 
   /// The ordinal public API member.
   final int ordinal;
@@ -3427,7 +3381,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
   /// The createdAt public API member.
   final DateTime createdAt;
   const ProviderState({
-    required this.agentId,
+    required this.sessionId,
     required this.ordinal,
     required this.itemJson,
     required this.createdAt,
@@ -3435,7 +3389,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['agent_id'] = Variable<String>(agentId);
+    map['session_id'] = Variable<String>(sessionId);
     map['ordinal'] = Variable<int>(ordinal);
     map['item_json'] = Variable<String>(itemJson);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -3444,7 +3398,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
 
   ProviderStatesCompanion toCompanion(bool nullToAbsent) {
     return ProviderStatesCompanion(
-      agentId: Value(agentId),
+      sessionId: Value(sessionId),
       ordinal: Value(ordinal),
       itemJson: Value(itemJson),
       createdAt: Value(createdAt),
@@ -3457,7 +3411,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ProviderState(
-      agentId: serializer.fromJson<String>(json['agentId']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
       ordinal: serializer.fromJson<int>(json['ordinal']),
       itemJson: serializer.fromJson<String>(json['itemJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -3467,7 +3421,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'agentId': serializer.toJson<String>(agentId),
+      'sessionId': serializer.toJson<String>(sessionId),
       'ordinal': serializer.toJson<int>(ordinal),
       'itemJson': serializer.toJson<String>(itemJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -3475,19 +3429,19 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
   }
 
   ProviderState copyWith({
-    String? agentId,
+    String? sessionId,
     int? ordinal,
     String? itemJson,
     DateTime? createdAt,
   }) => ProviderState(
-    agentId: agentId ?? this.agentId,
+    sessionId: sessionId ?? this.sessionId,
     ordinal: ordinal ?? this.ordinal,
     itemJson: itemJson ?? this.itemJson,
     createdAt: createdAt ?? this.createdAt,
   );
   ProviderState copyWithCompanion(ProviderStatesCompanion data) {
     return ProviderState(
-      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
       itemJson: data.itemJson.present ? data.itemJson.value : this.itemJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -3497,7 +3451,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
   @override
   String toString() {
     return (StringBuffer('ProviderState(')
-          ..write('agentId: $agentId, ')
+          ..write('sessionId: $sessionId, ')
           ..write('ordinal: $ordinal, ')
           ..write('itemJson: $itemJson, ')
           ..write('createdAt: $createdAt')
@@ -3506,49 +3460,49 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
   }
 
   @override
-  int get hashCode => Object.hash(agentId, ordinal, itemJson, createdAt);
+  int get hashCode => Object.hash(sessionId, ordinal, itemJson, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ProviderState &&
-          other.agentId == this.agentId &&
+          other.sessionId == this.sessionId &&
           other.ordinal == this.ordinal &&
           other.itemJson == this.itemJson &&
           other.createdAt == this.createdAt);
 }
 
 class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
-  final Value<String> agentId;
+  final Value<String> sessionId;
   final Value<int> ordinal;
   final Value<String> itemJson;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ProviderStatesCompanion({
-    this.agentId = const Value.absent(),
+    this.sessionId = const Value.absent(),
     this.ordinal = const Value.absent(),
     this.itemJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProviderStatesCompanion.insert({
-    required String agentId,
+    required String sessionId,
     required int ordinal,
     required String itemJson,
     required DateTime createdAt,
     this.rowid = const Value.absent(),
-  }) : agentId = Value(agentId),
+  }) : sessionId = Value(sessionId),
        ordinal = Value(ordinal),
        itemJson = Value(itemJson),
        createdAt = Value(createdAt);
   static Insertable<ProviderState> custom({
-    Expression<String>? agentId,
+    Expression<String>? sessionId,
     Expression<int>? ordinal,
     Expression<String>? itemJson,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (agentId != null) 'agent_id': agentId,
+      if (sessionId != null) 'session_id': sessionId,
       if (ordinal != null) 'ordinal': ordinal,
       if (itemJson != null) 'item_json': itemJson,
       if (createdAt != null) 'created_at': createdAt,
@@ -3557,14 +3511,14 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
   }
 
   ProviderStatesCompanion copyWith({
-    Value<String>? agentId,
+    Value<String>? sessionId,
     Value<int>? ordinal,
     Value<String>? itemJson,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
     return ProviderStatesCompanion(
-      agentId: agentId ?? this.agentId,
+      sessionId: sessionId ?? this.sessionId,
       ordinal: ordinal ?? this.ordinal,
       itemJson: itemJson ?? this.itemJson,
       createdAt: createdAt ?? this.createdAt,
@@ -3575,8 +3529,8 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (agentId.present) {
-      map['agent_id'] = Variable<String>(agentId.value);
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
     }
     if (ordinal.present) {
       map['ordinal'] = Variable<int>(ordinal.value);
@@ -3596,7 +3550,7 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
   @override
   String toString() {
     return (StringBuffer('ProviderStatesCompanion(')
-          ..write('agentId: $agentId, ')
+          ..write('sessionId: $sessionId, ')
           ..write('ordinal: $ordinal, ')
           ..write('itemJson: $itemJson, ')
           ..write('createdAt: $createdAt, ')
@@ -5240,7 +5194,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   $CoderDatabaseManager get managers => $CoderDatabaseManager(this);
   late final $WorkspacesTable workspaces = $WorkspacesTable(this);
   late final $WorktreesTable worktrees = $WorktreesTable(this);
-  late final $AgentsTable agents = $AgentsTable(this);
+  late final $SessionsTable sessions = $SessionsTable(this);
   late final $TurnsTable turns = $TurnsTable(this);
   late final $TimelineEventsTable timelineEvents = $TimelineEventsTable(this);
   late final $ApprovalRequestsTable approvalRequests = $ApprovalRequestsTable(
@@ -5254,7 +5208,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final SettingsDao settingsDao = SettingsDao(this as CoderDatabase);
   late final WorkspaceDao workspaceDao = WorkspaceDao(this as CoderDatabase);
   late final WorktreeDao worktreeDao = WorktreeDao(this as CoderDatabase);
-  late final AgentDao agentDao = AgentDao(this as CoderDatabase);
+  late final SessionDao sessionDao = SessionDao(this as CoderDatabase);
   late final TimelineDao timelineDao = TimelineDao(this as CoderDatabase);
   late final ProviderDao providerDao = ProviderDao(this as CoderDatabase);
   late final RuntimeDao runtimeDao = RuntimeDao(this as CoderDatabase);
@@ -5265,7 +5219,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     workspaces,
     worktrees,
-    agents,
+    sessions,
     turns,
     timelineEvents,
     approvalRequests,
@@ -5629,20 +5583,20 @@ final class $$WorktreesTableReferences
     );
   }
 
-  static MultiTypedResultKey<$AgentsTable, List<Agent>> _agentsRefsTable(
+  static MultiTypedResultKey<$SessionsTable, List<Session>> _sessionsRefsTable(
     _$CoderDatabase db,
   ) => MultiTypedResultKey.fromTable(
-    db.agents,
-    aliasName: 'worktrees__id__agents__worktree_id',
+    db.sessions,
+    aliasName: 'worktrees__id__sessions__worktree_id',
   );
 
-  $$AgentsTableProcessedTableManager get agentsRefs {
-    final manager = $$AgentsTableTableManager(
+  $$SessionsTableProcessedTableManager get sessionsRefs {
+    final manager = $$SessionsTableTableManager(
       $_db,
-      $_db.agents,
+      $_db.sessions,
     ).filter((f) => f.worktreeId.id.sqlEquals($_itemColumn<String>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_agentsRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(_sessionsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -5726,22 +5680,22 @@ class $$WorktreesTableFilterComposer
     return composer;
   }
 
-  Expression<bool> agentsRefs(
-    Expression<bool> Function($$AgentsTableFilterComposer f) f,
+  Expression<bool> sessionsRefs(
+    Expression<bool> Function($$SessionsTableFilterComposer f) f,
   ) {
-    final $$AgentsTableFilterComposer composer = $composerBuilder(
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.agents,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.worktreeId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableFilterComposer(
+          }) => $$SessionsTableFilterComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5893,22 +5847,22 @@ class $$WorktreesTableAnnotationComposer
     return composer;
   }
 
-  Expression<T> agentsRefs<T extends Object>(
-    Expression<T> Function($$AgentsTableAnnotationComposer a) f,
+  Expression<T> sessionsRefs<T extends Object>(
+    Expression<T> Function($$SessionsTableAnnotationComposer a) f,
   ) {
-    final $$AgentsTableAnnotationComposer composer = $composerBuilder(
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.agents,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.worktreeId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableAnnotationComposer(
+          }) => $$SessionsTableAnnotationComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5932,7 +5886,7 @@ class $$WorktreesTableTableManager
           $$WorktreesTableUpdateCompanionBuilder,
           (Worktree, $$WorktreesTableReferences),
           Worktree,
-          PrefetchHooks Function({bool workspaceId, bool agentsRefs})
+          PrefetchHooks Function({bool workspaceId, bool sessionsRefs})
         > {
   $$WorktreesTableTableManager(_$CoderDatabase db, $WorktreesTable table)
     : super(
@@ -6005,10 +5959,10 @@ class $$WorktreesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({workspaceId = false, agentsRefs = false}) {
+          prefetchHooksCallback: ({workspaceId = false, sessionsRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (agentsRefs) db.agents],
+              explicitlyWatchedTables: [if (sessionsRefs) db.sessions],
               addJoins:
                   <
                     T extends TableManagerState<
@@ -6043,13 +5997,21 @@ class $$WorktreesTableTableManager
                   },
               getPrefetchedDataCallback: (items) async {
                 return [
-                  if (agentsRefs)
-                    await $_getPrefetchedData<Worktree, $WorktreesTable, Agent>(
+                  if (sessionsRefs)
+                    await $_getPrefetchedData<
+                      Worktree,
+                      $WorktreesTable,
+                      Session
+                    >(
                       currentTable: table,
                       referencedTable: $$WorktreesTableReferences
-                          ._agentsRefsTable(db),
+                          ._sessionsRefsTable(db),
                       managerFromTypedResult: (p0) =>
-                          $$WorktreesTableReferences(db, table, p0).agentsRefs,
+                          $$WorktreesTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).sessionsRefs,
                       referencedItemsForCurrentItem: (item, referencedItems) =>
                           referencedItems.where((e) => e.worktreeId == item.id),
                       typedResults: items,
@@ -6074,34 +6036,32 @@ typedef $$WorktreesTableProcessedTableManager =
       $$WorktreesTableUpdateCompanionBuilder,
       (Worktree, $$WorktreesTableReferences),
       Worktree,
-      PrefetchHooks Function({bool workspaceId, bool agentsRefs})
+      PrefetchHooks Function({bool workspaceId, bool sessionsRefs})
     >;
-typedef $$AgentsTableCreateCompanionBuilder =
-    AgentsCompanion Function({
+typedef $$SessionsTableCreateCompanionBuilder =
+    SessionsCompanion Function({
       required String id,
       required String worktreeId,
       required String title,
-      required String providerConnectionId,
-      required String model,
-      Value<String> reasoningEffort,
+      required String agentDefinitionId,
+      required String origin,
+      Value<String?> parentSessionId,
       required String status,
-      required String permissionMode,
       Value<String?> activeTurnId,
       Value<String?> lastError,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
     });
-typedef $$AgentsTableUpdateCompanionBuilder =
-    AgentsCompanion Function({
+typedef $$SessionsTableUpdateCompanionBuilder =
+    SessionsCompanion Function({
       Value<String> id,
       Value<String> worktreeId,
       Value<String> title,
-      Value<String> providerConnectionId,
-      Value<String> model,
-      Value<String> reasoningEffort,
+      Value<String> agentDefinitionId,
+      Value<String> origin,
+      Value<String?> parentSessionId,
       Value<String> status,
-      Value<String> permissionMode,
       Value<String?> activeTurnId,
       Value<String?> lastError,
       Value<DateTime> createdAt,
@@ -6109,12 +6069,12 @@ typedef $$AgentsTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$AgentsTableReferences
-    extends BaseReferences<_$CoderDatabase, $AgentsTable, Agent> {
-  $$AgentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+final class $$SessionsTableReferences
+    extends BaseReferences<_$CoderDatabase, $SessionsTable, Session> {
+  $$SessionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $WorktreesTable _worktreeIdTable(_$CoderDatabase db) =>
-      db.worktrees.createAlias('agents__worktree_id__worktrees__id');
+      db.worktrees.createAlias('sessions__worktree_id__worktrees__id');
 
   $$WorktreesTableProcessedTableManager get worktreeId {
     final $_column = $_itemColumn<String>('worktree_id')!;
@@ -6130,18 +6090,35 @@ final class $$AgentsTableReferences
     );
   }
 
+  static $SessionsTable _parentSessionIdTable(_$CoderDatabase db) =>
+      db.sessions.createAlias('sessions__parent_session_id__sessions__id');
+
+  $$SessionsTableProcessedTableManager? get parentSessionId {
+    final $_column = $_itemColumn<String>('parent_session_id');
+    if ($_column == null) return null;
+    final manager = $$SessionsTableTableManager(
+      $_db,
+      $_db.sessions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_parentSessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
   static MultiTypedResultKey<$TurnsTable, List<Turn>> _turnsRefsTable(
     _$CoderDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.turns,
-    aliasName: 'agents__id__turns__agent_id',
+    aliasName: 'sessions__id__turns__session_id',
   );
 
   $$TurnsTableProcessedTableManager get turnsRefs {
     final manager = $$TurnsTableTableManager(
       $_db,
       $_db.turns,
-    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_turnsRefsTable($_db));
     return ProcessedTableManager(
@@ -6152,14 +6129,14 @@ final class $$AgentsTableReferences
   static MultiTypedResultKey<$TimelineEventsTable, List<TimelineEvent>>
   _timelineEventsRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
     db.timelineEvents,
-    aliasName: 'agents__id__timeline_events__agent_id',
+    aliasName: 'sessions__id__timeline_events__session_id',
   );
 
   $$TimelineEventsTableProcessedTableManager get timelineEventsRefs {
     final manager = $$TimelineEventsTableTableManager(
       $_db,
       $_db.timelineEvents,
-    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_timelineEventsRefsTable($_db));
     return ProcessedTableManager(
@@ -6171,14 +6148,14 @@ final class $$AgentsTableReferences
   _approvalRequestsRefsTable(_$CoderDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.approvalRequests,
-        aliasName: 'agents__id__approval_requests__agent_id',
+        aliasName: 'sessions__id__approval_requests__session_id',
       );
 
   $$ApprovalRequestsTableProcessedTableManager get approvalRequestsRefs {
     final manager = $$ApprovalRequestsTableTableManager(
       $_db,
       $_db.approvalRequests,
-    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(
       _approvalRequestsRefsTable($_db),
@@ -6191,14 +6168,14 @@ final class $$AgentsTableReferences
   static MultiTypedResultKey<$ProviderStatesTable, List<ProviderState>>
   _providerStatesRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
     db.providerStates,
-    aliasName: 'agents__id__provider_states__agent_id',
+    aliasName: 'sessions__id__provider_states__session_id',
   );
 
   $$ProviderStatesTableProcessedTableManager get providerStatesRefs {
     final manager = $$ProviderStatesTableTableManager(
       $_db,
       $_db.providerStates,
-    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_providerStatesRefsTable($_db));
     return ProcessedTableManager(
@@ -6207,9 +6184,9 @@ final class $$AgentsTableReferences
   }
 }
 
-class $$AgentsTableFilterComposer
-    extends Composer<_$CoderDatabase, $AgentsTable> {
-  $$AgentsTableFilterComposer({
+class $$SessionsTableFilterComposer
+    extends Composer<_$CoderDatabase, $SessionsTable> {
+  $$SessionsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6226,28 +6203,18 @@ class $$AgentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get providerConnectionId => $composableBuilder(
-    column: $table.providerConnectionId,
+  ColumnFilters<String> get agentDefinitionId => $composableBuilder(
+    column: $table.agentDefinitionId,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get model => $composableBuilder(
-    column: $table.model,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get reasoningEffort => $composableBuilder(
-    column: $table.reasoningEffort,
+  ColumnFilters<String> get origin => $composableBuilder(
+    column: $table.origin,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get permissionMode => $composableBuilder(
-    column: $table.permissionMode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6294,6 +6261,29 @@ class $$AgentsTableFilterComposer
     return composer;
   }
 
+  $$SessionsTableFilterComposer get parentSessionId {
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.parentSessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<bool> turnsRefs(
     Expression<bool> Function($$TurnsTableFilterComposer f) f,
   ) {
@@ -6301,7 +6291,7 @@ class $$AgentsTableFilterComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.turns,
-      getReferencedColumn: (t) => t.agentId,
+      getReferencedColumn: (t) => t.sessionId,
       builder:
           (
             joinBuilder, {
@@ -6326,7 +6316,7 @@ class $$AgentsTableFilterComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.timelineEvents,
-      getReferencedColumn: (t) => t.agentId,
+      getReferencedColumn: (t) => t.sessionId,
       builder:
           (
             joinBuilder, {
@@ -6351,7 +6341,7 @@ class $$AgentsTableFilterComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.approvalRequests,
-      getReferencedColumn: (t) => t.agentId,
+      getReferencedColumn: (t) => t.sessionId,
       builder:
           (
             joinBuilder, {
@@ -6376,7 +6366,7 @@ class $$AgentsTableFilterComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.providerStates,
-      getReferencedColumn: (t) => t.agentId,
+      getReferencedColumn: (t) => t.sessionId,
       builder:
           (
             joinBuilder, {
@@ -6395,9 +6385,9 @@ class $$AgentsTableFilterComposer
   }
 }
 
-class $$AgentsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $AgentsTable> {
-  $$AgentsTableOrderingComposer({
+class $$SessionsTableOrderingComposer
+    extends Composer<_$CoderDatabase, $SessionsTable> {
+  $$SessionsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6414,28 +6404,18 @@ class $$AgentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get providerConnectionId => $composableBuilder(
-    column: $table.providerConnectionId,
+  ColumnOrderings<String> get agentDefinitionId => $composableBuilder(
+    column: $table.agentDefinitionId,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get model => $composableBuilder(
-    column: $table.model,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get reasoningEffort => $composableBuilder(
-    column: $table.reasoningEffort,
+  ColumnOrderings<String> get origin => $composableBuilder(
+    column: $table.origin,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get permissionMode => $composableBuilder(
-    column: $table.permissionMode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -6481,11 +6461,34 @@ class $$AgentsTableOrderingComposer
     );
     return composer;
   }
+
+  $$SessionsTableOrderingComposer get parentSessionId {
+    final $$SessionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.parentSessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
-class $$AgentsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $AgentsTable> {
-  $$AgentsTableAnnotationComposer({
+class $$SessionsTableAnnotationComposer
+    extends Composer<_$CoderDatabase, $SessionsTable> {
+  $$SessionsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6498,26 +6501,16 @@ class $$AgentsTableAnnotationComposer
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
-  GeneratedColumn<String> get providerConnectionId => $composableBuilder(
-    column: $table.providerConnectionId,
+  GeneratedColumn<String> get agentDefinitionId => $composableBuilder(
+    column: $table.agentDefinitionId,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get model =>
-      $composableBuilder(column: $table.model, builder: (column) => column);
-
-  GeneratedColumn<String> get reasoningEffort => $composableBuilder(
-    column: $table.reasoningEffort,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get origin =>
+      $composableBuilder(column: $table.origin, builder: (column) => column);
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
-
-  GeneratedColumn<String> get permissionMode => $composableBuilder(
-    column: $table.permissionMode,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get activeTurnId => $composableBuilder(
     column: $table.activeTurnId,
@@ -6556,6 +6549,29 @@ class $$AgentsTableAnnotationComposer
     return composer;
   }
 
+  $$SessionsTableAnnotationComposer get parentSessionId {
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.parentSessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> turnsRefs<T extends Object>(
     Expression<T> Function($$TurnsTableAnnotationComposer a) f,
   ) {
@@ -6563,7 +6579,7 @@ class $$AgentsTableAnnotationComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.turns,
-      getReferencedColumn: (t) => t.agentId,
+      getReferencedColumn: (t) => t.sessionId,
       builder:
           (
             joinBuilder, {
@@ -6588,7 +6604,7 @@ class $$AgentsTableAnnotationComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.timelineEvents,
-      getReferencedColumn: (t) => t.agentId,
+      getReferencedColumn: (t) => t.sessionId,
       builder:
           (
             joinBuilder, {
@@ -6613,7 +6629,7 @@ class $$AgentsTableAnnotationComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.approvalRequests,
-      getReferencedColumn: (t) => t.agentId,
+      getReferencedColumn: (t) => t.sessionId,
       builder:
           (
             joinBuilder, {
@@ -6638,7 +6654,7 @@ class $$AgentsTableAnnotationComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.providerStates,
-      getReferencedColumn: (t) => t.agentId,
+      getReferencedColumn: (t) => t.sessionId,
       builder:
           (
             joinBuilder, {
@@ -6657,62 +6673,61 @@ class $$AgentsTableAnnotationComposer
   }
 }
 
-class $$AgentsTableTableManager
+class $$SessionsTableTableManager
     extends
         RootTableManager<
           _$CoderDatabase,
-          $AgentsTable,
-          Agent,
-          $$AgentsTableFilterComposer,
-          $$AgentsTableOrderingComposer,
-          $$AgentsTableAnnotationComposer,
-          $$AgentsTableCreateCompanionBuilder,
-          $$AgentsTableUpdateCompanionBuilder,
-          (Agent, $$AgentsTableReferences),
-          Agent,
+          $SessionsTable,
+          Session,
+          $$SessionsTableFilterComposer,
+          $$SessionsTableOrderingComposer,
+          $$SessionsTableAnnotationComposer,
+          $$SessionsTableCreateCompanionBuilder,
+          $$SessionsTableUpdateCompanionBuilder,
+          (Session, $$SessionsTableReferences),
+          Session,
           PrefetchHooks Function({
             bool worktreeId,
+            bool parentSessionId,
             bool turnsRefs,
             bool timelineEventsRefs,
             bool approvalRequestsRefs,
             bool providerStatesRefs,
           })
         > {
-  $$AgentsTableTableManager(_$CoderDatabase db, $AgentsTable table)
+  $$SessionsTableTableManager(_$CoderDatabase db, $SessionsTable table)
     : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$AgentsTableFilterComposer($db: db, $table: table),
+              $$SessionsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$AgentsTableOrderingComposer($db: db, $table: table),
+              $$SessionsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$AgentsTableAnnotationComposer($db: db, $table: table),
+              $$SessionsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> worktreeId = const Value.absent(),
                 Value<String> title = const Value.absent(),
-                Value<String> providerConnectionId = const Value.absent(),
-                Value<String> model = const Value.absent(),
-                Value<String> reasoningEffort = const Value.absent(),
+                Value<String> agentDefinitionId = const Value.absent(),
+                Value<String> origin = const Value.absent(),
+                Value<String?> parentSessionId = const Value.absent(),
                 Value<String> status = const Value.absent(),
-                Value<String> permissionMode = const Value.absent(),
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => AgentsCompanion(
+              }) => SessionsCompanion(
                 id: id,
                 worktreeId: worktreeId,
                 title: title,
-                providerConnectionId: providerConnectionId,
-                model: model,
-                reasoningEffort: reasoningEffort,
+                agentDefinitionId: agentDefinitionId,
+                origin: origin,
+                parentSessionId: parentSessionId,
                 status: status,
-                permissionMode: permissionMode,
                 activeTurnId: activeTurnId,
                 lastError: lastError,
                 createdAt: createdAt,
@@ -6724,25 +6739,23 @@ class $$AgentsTableTableManager
                 required String id,
                 required String worktreeId,
                 required String title,
-                required String providerConnectionId,
-                required String model,
-                Value<String> reasoningEffort = const Value.absent(),
+                required String agentDefinitionId,
+                required String origin,
+                Value<String?> parentSessionId = const Value.absent(),
                 required String status,
-                required String permissionMode,
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
-              }) => AgentsCompanion.insert(
+              }) => SessionsCompanion.insert(
                 id: id,
                 worktreeId: worktreeId,
                 title: title,
-                providerConnectionId: providerConnectionId,
-                model: model,
-                reasoningEffort: reasoningEffort,
+                agentDefinitionId: agentDefinitionId,
+                origin: origin,
+                parentSessionId: parentSessionId,
                 status: status,
-                permissionMode: permissionMode,
                 activeTurnId: activeTurnId,
                 lastError: lastError,
                 createdAt: createdAt,
@@ -6751,13 +6764,16 @@ class $$AgentsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$AgentsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable(table),
+                  $$SessionsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
               ({
                 worktreeId = false,
+                parentSessionId = false,
                 turnsRefs = false,
                 timelineEventsRefs = false,
                 approvalRequestsRefs = false,
@@ -6792,10 +6808,23 @@ class $$AgentsTableTableManager
                               state.withJoin(
                                     currentTable: table,
                                     currentColumn: table.worktreeId,
-                                    referencedTable: $$AgentsTableReferences
+                                    referencedTable: $$SessionsTableReferences
                                         ._worktreeIdTable(db),
-                                    referencedColumn: $$AgentsTableReferences
+                                    referencedColumn: $$SessionsTableReferences
                                         ._worktreeIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (parentSessionId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.parentSessionId,
+                                    referencedTable: $$SessionsTableReferences
+                                        ._parentSessionIdTable(db),
+                                    referencedColumn: $$SessionsTableReferences
+                                        ._parentSessionIdTable(db)
                                         .id,
                                   )
                                   as T;
@@ -6806,78 +6835,86 @@ class $$AgentsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (turnsRefs)
-                        await $_getPrefetchedData<Agent, $AgentsTable, Turn>(
+                        await $_getPrefetchedData<
+                          Session,
+                          $SessionsTable,
+                          Turn
+                        >(
                           currentTable: table,
-                          referencedTable: $$AgentsTableReferences
+                          referencedTable: $$SessionsTableReferences
                               ._turnsRefsTable(db),
                           managerFromTypedResult: (p0) =>
-                              $$AgentsTableReferences(db, table, p0).turnsRefs,
+                              $$SessionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).turnsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
-                                (e) => e.agentId == item.id,
+                                (e) => e.sessionId == item.id,
                               ),
                           typedResults: items,
                         ),
                       if (timelineEventsRefs)
                         await $_getPrefetchedData<
-                          Agent,
-                          $AgentsTable,
+                          Session,
+                          $SessionsTable,
                           TimelineEvent
                         >(
                           currentTable: table,
-                          referencedTable: $$AgentsTableReferences
+                          referencedTable: $$SessionsTableReferences
                               ._timelineEventsRefsTable(db),
                           managerFromTypedResult: (p0) =>
-                              $$AgentsTableReferences(
+                              $$SessionsTableReferences(
                                 db,
                                 table,
                                 p0,
                               ).timelineEventsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
-                                (e) => e.agentId == item.id,
+                                (e) => e.sessionId == item.id,
                               ),
                           typedResults: items,
                         ),
                       if (approvalRequestsRefs)
                         await $_getPrefetchedData<
-                          Agent,
-                          $AgentsTable,
+                          Session,
+                          $SessionsTable,
                           ApprovalRequest
                         >(
                           currentTable: table,
-                          referencedTable: $$AgentsTableReferences
+                          referencedTable: $$SessionsTableReferences
                               ._approvalRequestsRefsTable(db),
                           managerFromTypedResult: (p0) =>
-                              $$AgentsTableReferences(
+                              $$SessionsTableReferences(
                                 db,
                                 table,
                                 p0,
                               ).approvalRequestsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
-                                (e) => e.agentId == item.id,
+                                (e) => e.sessionId == item.id,
                               ),
                           typedResults: items,
                         ),
                       if (providerStatesRefs)
                         await $_getPrefetchedData<
-                          Agent,
-                          $AgentsTable,
+                          Session,
+                          $SessionsTable,
                           ProviderState
                         >(
                           currentTable: table,
-                          referencedTable: $$AgentsTableReferences
+                          referencedTable: $$SessionsTableReferences
                               ._providerStatesRefsTable(db),
                           managerFromTypedResult: (p0) =>
-                              $$AgentsTableReferences(
+                              $$SessionsTableReferences(
                                 db,
                                 table,
                                 p0,
                               ).providerStatesRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
-                                (e) => e.agentId == item.id,
+                                (e) => e.sessionId == item.id,
                               ),
                           typedResults: items,
                         ),
@@ -6889,20 +6926,21 @@ class $$AgentsTableTableManager
       );
 }
 
-typedef $$AgentsTableProcessedTableManager =
+typedef $$SessionsTableProcessedTableManager =
     ProcessedTableManager<
       _$CoderDatabase,
-      $AgentsTable,
-      Agent,
-      $$AgentsTableFilterComposer,
-      $$AgentsTableOrderingComposer,
-      $$AgentsTableAnnotationComposer,
-      $$AgentsTableCreateCompanionBuilder,
-      $$AgentsTableUpdateCompanionBuilder,
-      (Agent, $$AgentsTableReferences),
-      Agent,
+      $SessionsTable,
+      Session,
+      $$SessionsTableFilterComposer,
+      $$SessionsTableOrderingComposer,
+      $$SessionsTableAnnotationComposer,
+      $$SessionsTableCreateCompanionBuilder,
+      $$SessionsTableUpdateCompanionBuilder,
+      (Session, $$SessionsTableReferences),
+      Session,
       PrefetchHooks Function({
         bool worktreeId,
+        bool parentSessionId,
         bool turnsRefs,
         bool timelineEventsRefs,
         bool approvalRequestsRefs,
@@ -6912,7 +6950,7 @@ typedef $$AgentsTableProcessedTableManager =
 typedef $$TurnsTableCreateCompanionBuilder =
     TurnsCompanion Function({
       required String id,
-      required String agentId,
+      required String sessionId,
       required String prompt,
       required String status,
       Value<String?> error,
@@ -6923,7 +6961,7 @@ typedef $$TurnsTableCreateCompanionBuilder =
 typedef $$TurnsTableUpdateCompanionBuilder =
     TurnsCompanion Function({
       Value<String> id,
-      Value<String> agentId,
+      Value<String> sessionId,
       Value<String> prompt,
       Value<String> status,
       Value<String?> error,
@@ -6936,17 +6974,17 @@ final class $$TurnsTableReferences
     extends BaseReferences<_$CoderDatabase, $TurnsTable, Turn> {
   $$TurnsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $AgentsTable _agentIdTable(_$CoderDatabase db) =>
-      db.agents.createAlias('turns__agent_id__agents__id');
+  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+      db.sessions.createAlias('turns__session_id__sessions__id');
 
-  $$AgentsTableProcessedTableManager get agentId {
-    final $_column = $_itemColumn<String>('agent_id')!;
+  $$SessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
 
-    final manager = $$AgentsTableTableManager(
+    final manager = $$SessionsTableTableManager(
       $_db,
-      $_db.agents,
+      $_db.sessions,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -7014,20 +7052,20 @@ class $$TurnsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$AgentsTableFilterComposer get agentId {
-    final $$AgentsTableFilterComposer composer = $composerBuilder(
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableFilterComposer(
+          }) => $$SessionsTableFilterComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7102,20 +7140,20 @@ class $$TurnsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$AgentsTableOrderingComposer get agentId {
-    final $$AgentsTableOrderingComposer composer = $composerBuilder(
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableOrderingComposer(
+          }) => $$SessionsTableOrderingComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7153,20 +7191,20 @@ class $$TurnsTableAnnotationComposer
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
-  $$AgentsTableAnnotationComposer get agentId {
-    final $$AgentsTableAnnotationComposer composer = $composerBuilder(
+  $$SessionsTableAnnotationComposer get sessionId {
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableAnnotationComposer(
+          }) => $$SessionsTableAnnotationComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7215,7 +7253,7 @@ class $$TurnsTableTableManager
           $$TurnsTableUpdateCompanionBuilder,
           (Turn, $$TurnsTableReferences),
           Turn,
-          PrefetchHooks Function({bool agentId, bool approvalRequestsRefs})
+          PrefetchHooks Function({bool sessionId, bool approvalRequestsRefs})
         > {
   $$TurnsTableTableManager(_$CoderDatabase db, $TurnsTable table)
     : super(
@@ -7231,7 +7269,7 @@ class $$TurnsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> agentId = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
                 Value<String> prompt = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> error = const Value.absent(),
@@ -7240,7 +7278,7 @@ class $$TurnsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => TurnsCompanion(
                 id: id,
-                agentId: agentId,
+                sessionId: sessionId,
                 prompt: prompt,
                 status: status,
                 error: error,
@@ -7251,7 +7289,7 @@ class $$TurnsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String agentId,
+                required String sessionId,
                 required String prompt,
                 required String status,
                 Value<String?> error = const Value.absent(),
@@ -7260,7 +7298,7 @@ class $$TurnsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => TurnsCompanion.insert(
                 id: id,
-                agentId: agentId,
+                sessionId: sessionId,
                 prompt: prompt,
                 status: status,
                 error: error,
@@ -7275,7 +7313,7 @@ class $$TurnsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({agentId = false, approvalRequestsRefs = false}) {
+              ({sessionId = false, approvalRequestsRefs = false}) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
@@ -7297,15 +7335,15 @@ class $$TurnsTableTableManager
                           dynamic
                         >
                       >(state) {
-                        if (agentId) {
+                        if (sessionId) {
                           state =
                               state.withJoin(
                                     currentTable: table,
-                                    currentColumn: table.agentId,
+                                    currentColumn: table.sessionId,
                                     referencedTable: $$TurnsTableReferences
-                                        ._agentIdTable(db),
+                                        ._sessionIdTable(db),
                                     referencedColumn: $$TurnsTableReferences
-                                        ._agentIdTable(db)
+                                        ._sessionIdTable(db)
                                         .id,
                                   )
                                   as T;
@@ -7356,11 +7394,11 @@ typedef $$TurnsTableProcessedTableManager =
       $$TurnsTableUpdateCompanionBuilder,
       (Turn, $$TurnsTableReferences),
       Turn,
-      PrefetchHooks Function({bool agentId, bool approvalRequestsRefs})
+      PrefetchHooks Function({bool sessionId, bool approvalRequestsRefs})
     >;
 typedef $$TimelineEventsTableCreateCompanionBuilder =
     TimelineEventsCompanion Function({
-      required String agentId,
+      required String sessionId,
       required int sequence,
       Value<String?> turnId,
       required String type,
@@ -7370,7 +7408,7 @@ typedef $$TimelineEventsTableCreateCompanionBuilder =
     });
 typedef $$TimelineEventsTableUpdateCompanionBuilder =
     TimelineEventsCompanion Function({
-      Value<String> agentId,
+      Value<String> sessionId,
       Value<int> sequence,
       Value<String?> turnId,
       Value<String> type,
@@ -7388,17 +7426,17 @@ final class $$TimelineEventsTableReferences
     super.$_typedResult,
   );
 
-  static $AgentsTable _agentIdTable(_$CoderDatabase db) =>
-      db.agents.createAlias('timeline_events__agent_id__agents__id');
+  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+      db.sessions.createAlias('timeline_events__session_id__sessions__id');
 
-  $$AgentsTableProcessedTableManager get agentId {
-    final $_column = $_itemColumn<String>('agent_id')!;
+  $$SessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
 
-    final manager = $$AgentsTableTableManager(
+    final manager = $$SessionsTableTableManager(
       $_db,
-      $_db.agents,
+      $_db.sessions,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -7440,20 +7478,20 @@ class $$TimelineEventsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$AgentsTableFilterComposer get agentId {
-    final $$AgentsTableFilterComposer composer = $composerBuilder(
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableFilterComposer(
+          }) => $$SessionsTableFilterComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7498,20 +7536,20 @@ class $$TimelineEventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$AgentsTableOrderingComposer get agentId {
-    final $$AgentsTableOrderingComposer composer = $composerBuilder(
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableOrderingComposer(
+          }) => $$SessionsTableOrderingComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7546,20 +7584,20 @@ class $$TimelineEventsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  $$AgentsTableAnnotationComposer get agentId {
-    final $$AgentsTableAnnotationComposer composer = $composerBuilder(
+  $$SessionsTableAnnotationComposer get sessionId {
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableAnnotationComposer(
+          }) => $$SessionsTableAnnotationComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7583,7 +7621,7 @@ class $$TimelineEventsTableTableManager
           $$TimelineEventsTableUpdateCompanionBuilder,
           (TimelineEvent, $$TimelineEventsTableReferences),
           TimelineEvent,
-          PrefetchHooks Function({bool agentId})
+          PrefetchHooks Function({bool sessionId})
         > {
   $$TimelineEventsTableTableManager(
     _$CoderDatabase db,
@@ -7600,7 +7638,7 @@ class $$TimelineEventsTableTableManager
               $$TimelineEventsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> agentId = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
                 Value<int> sequence = const Value.absent(),
                 Value<String?> turnId = const Value.absent(),
                 Value<String> type = const Value.absent(),
@@ -7608,7 +7646,7 @@ class $$TimelineEventsTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TimelineEventsCompanion(
-                agentId: agentId,
+                sessionId: sessionId,
                 sequence: sequence,
                 turnId: turnId,
                 type: type,
@@ -7618,7 +7656,7 @@ class $$TimelineEventsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String agentId,
+                required String sessionId,
                 required int sequence,
                 Value<String?> turnId = const Value.absent(),
                 required String type,
@@ -7626,7 +7664,7 @@ class $$TimelineEventsTableTableManager
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => TimelineEventsCompanion.insert(
-                agentId: agentId,
+                sessionId: sessionId,
                 sequence: sequence,
                 turnId: turnId,
                 type: type,
@@ -7642,7 +7680,7 @@ class $$TimelineEventsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({agentId = false}) {
+          prefetchHooksCallback: ({sessionId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -7662,16 +7700,16 @@ class $$TimelineEventsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (agentId) {
+                    if (sessionId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.agentId,
+                                currentColumn: table.sessionId,
                                 referencedTable: $$TimelineEventsTableReferences
-                                    ._agentIdTable(db),
+                                    ._sessionIdTable(db),
                                 referencedColumn:
                                     $$TimelineEventsTableReferences
-                                        ._agentIdTable(db)
+                                        ._sessionIdTable(db)
                                         .id,
                               )
                               as T;
@@ -7700,12 +7738,12 @@ typedef $$TimelineEventsTableProcessedTableManager =
       $$TimelineEventsTableUpdateCompanionBuilder,
       (TimelineEvent, $$TimelineEventsTableReferences),
       TimelineEvent,
-      PrefetchHooks Function({bool agentId})
+      PrefetchHooks Function({bool sessionId})
     >;
 typedef $$ApprovalRequestsTableCreateCompanionBuilder =
     ApprovalRequestsCompanion Function({
       required String id,
-      required String agentId,
+      required String sessionId,
       required String turnId,
       required String toolCallId,
       required String toolName,
@@ -7719,7 +7757,7 @@ typedef $$ApprovalRequestsTableCreateCompanionBuilder =
 typedef $$ApprovalRequestsTableUpdateCompanionBuilder =
     ApprovalRequestsCompanion Function({
       Value<String> id,
-      Value<String> agentId,
+      Value<String> sessionId,
       Value<String> turnId,
       Value<String> toolCallId,
       Value<String> toolName,
@@ -7744,17 +7782,17 @@ final class $$ApprovalRequestsTableReferences
     super.$_typedResult,
   );
 
-  static $AgentsTable _agentIdTable(_$CoderDatabase db) =>
-      db.agents.createAlias('approval_requests__agent_id__agents__id');
+  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+      db.sessions.createAlias('approval_requests__session_id__sessions__id');
 
-  $$AgentsTableProcessedTableManager get agentId {
-    final $_column = $_itemColumn<String>('agent_id')!;
+  $$SessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
 
-    final manager = $$AgentsTableTableManager(
+    final manager = $$SessionsTableTableManager(
       $_db,
-      $_db.agents,
+      $_db.sessions,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -7828,20 +7866,20 @@ class $$ApprovalRequestsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$AgentsTableFilterComposer get agentId {
-    final $$AgentsTableFilterComposer composer = $composerBuilder(
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableFilterComposer(
+          }) => $$SessionsTableFilterComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7924,20 +7962,20 @@ class $$ApprovalRequestsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$AgentsTableOrderingComposer get agentId {
-    final $$AgentsTableOrderingComposer composer = $composerBuilder(
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableOrderingComposer(
+          }) => $$SessionsTableOrderingComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8008,20 +8046,20 @@ class $$ApprovalRequestsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  $$AgentsTableAnnotationComposer get agentId {
-    final $$AgentsTableAnnotationComposer composer = $composerBuilder(
+  $$SessionsTableAnnotationComposer get sessionId {
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableAnnotationComposer(
+          }) => $$SessionsTableAnnotationComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8068,7 +8106,7 @@ class $$ApprovalRequestsTableTableManager
           $$ApprovalRequestsTableUpdateCompanionBuilder,
           (ApprovalRequest, $$ApprovalRequestsTableReferences),
           ApprovalRequest,
-          PrefetchHooks Function({bool agentId, bool turnId})
+          PrefetchHooks Function({bool sessionId, bool turnId})
         > {
   $$ApprovalRequestsTableTableManager(
     _$CoderDatabase db,
@@ -8086,7 +8124,7 @@ class $$ApprovalRequestsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> agentId = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
                 Value<String> turnId = const Value.absent(),
                 Value<String> toolCallId = const Value.absent(),
                 Value<String> toolName = const Value.absent(),
@@ -8098,7 +8136,7 @@ class $$ApprovalRequestsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ApprovalRequestsCompanion(
                 id: id,
-                agentId: agentId,
+                sessionId: sessionId,
                 turnId: turnId,
                 toolCallId: toolCallId,
                 toolName: toolName,
@@ -8112,7 +8150,7 @@ class $$ApprovalRequestsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String agentId,
+                required String sessionId,
                 required String turnId,
                 required String toolCallId,
                 required String toolName,
@@ -8124,7 +8162,7 @@ class $$ApprovalRequestsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ApprovalRequestsCompanion.insert(
                 id: id,
-                agentId: agentId,
+                sessionId: sessionId,
                 turnId: turnId,
                 toolCallId: toolCallId,
                 toolName: toolName,
@@ -8143,7 +8181,7 @@ class $$ApprovalRequestsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({agentId = false, turnId = false}) {
+          prefetchHooksCallback: ({sessionId = false, turnId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -8163,17 +8201,17 @@ class $$ApprovalRequestsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (agentId) {
+                    if (sessionId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.agentId,
+                                currentColumn: table.sessionId,
                                 referencedTable:
                                     $$ApprovalRequestsTableReferences
-                                        ._agentIdTable(db),
+                                        ._sessionIdTable(db),
                                 referencedColumn:
                                     $$ApprovalRequestsTableReferences
-                                        ._agentIdTable(db)
+                                        ._sessionIdTable(db)
                                         .id,
                               )
                               as T;
@@ -8217,11 +8255,11 @@ typedef $$ApprovalRequestsTableProcessedTableManager =
       $$ApprovalRequestsTableUpdateCompanionBuilder,
       (ApprovalRequest, $$ApprovalRequestsTableReferences),
       ApprovalRequest,
-      PrefetchHooks Function({bool agentId, bool turnId})
+      PrefetchHooks Function({bool sessionId, bool turnId})
     >;
 typedef $$ProviderStatesTableCreateCompanionBuilder =
     ProviderStatesCompanion Function({
-      required String agentId,
+      required String sessionId,
       required int ordinal,
       required String itemJson,
       required DateTime createdAt,
@@ -8229,7 +8267,7 @@ typedef $$ProviderStatesTableCreateCompanionBuilder =
     });
 typedef $$ProviderStatesTableUpdateCompanionBuilder =
     ProviderStatesCompanion Function({
-      Value<String> agentId,
+      Value<String> sessionId,
       Value<int> ordinal,
       Value<String> itemJson,
       Value<DateTime> createdAt,
@@ -8245,17 +8283,17 @@ final class $$ProviderStatesTableReferences
     super.$_typedResult,
   );
 
-  static $AgentsTable _agentIdTable(_$CoderDatabase db) =>
-      db.agents.createAlias('provider_states__agent_id__agents__id');
+  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+      db.sessions.createAlias('provider_states__session_id__sessions__id');
 
-  $$AgentsTableProcessedTableManager get agentId {
-    final $_column = $_itemColumn<String>('agent_id')!;
+  $$SessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
 
-    final manager = $$AgentsTableTableManager(
+    final manager = $$SessionsTableTableManager(
       $_db,
-      $_db.agents,
+      $_db.sessions,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -8287,20 +8325,20 @@ class $$ProviderStatesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$AgentsTableFilterComposer get agentId {
-    final $$AgentsTableFilterComposer composer = $composerBuilder(
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableFilterComposer(
+          }) => $$SessionsTableFilterComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8335,20 +8373,20 @@ class $$ProviderStatesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$AgentsTableOrderingComposer get agentId {
-    final $$AgentsTableOrderingComposer composer = $composerBuilder(
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableOrderingComposer(
+          }) => $$SessionsTableOrderingComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8377,20 +8415,20 @@ class $$ProviderStatesTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  $$AgentsTableAnnotationComposer get agentId {
-    final $$AgentsTableAnnotationComposer composer = $composerBuilder(
+  $$SessionsTableAnnotationComposer get sessionId {
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.agentId,
-      referencedTable: $db.agents,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$AgentsTableAnnotationComposer(
+          }) => $$SessionsTableAnnotationComposer(
             $db: $db,
-            $table: $db.agents,
+            $table: $db.sessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8414,7 +8452,7 @@ class $$ProviderStatesTableTableManager
           $$ProviderStatesTableUpdateCompanionBuilder,
           (ProviderState, $$ProviderStatesTableReferences),
           ProviderState,
-          PrefetchHooks Function({bool agentId})
+          PrefetchHooks Function({bool sessionId})
         > {
   $$ProviderStatesTableTableManager(
     _$CoderDatabase db,
@@ -8431,13 +8469,13 @@ class $$ProviderStatesTableTableManager
               $$ProviderStatesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> agentId = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
                 Value<int> ordinal = const Value.absent(),
                 Value<String> itemJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProviderStatesCompanion(
-                agentId: agentId,
+                sessionId: sessionId,
                 ordinal: ordinal,
                 itemJson: itemJson,
                 createdAt: createdAt,
@@ -8445,13 +8483,13 @@ class $$ProviderStatesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String agentId,
+                required String sessionId,
                 required int ordinal,
                 required String itemJson,
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => ProviderStatesCompanion.insert(
-                agentId: agentId,
+                sessionId: sessionId,
                 ordinal: ordinal,
                 itemJson: itemJson,
                 createdAt: createdAt,
@@ -8465,7 +8503,7 @@ class $$ProviderStatesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({agentId = false}) {
+          prefetchHooksCallback: ({sessionId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -8485,16 +8523,16 @@ class $$ProviderStatesTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (agentId) {
+                    if (sessionId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.agentId,
+                                currentColumn: table.sessionId,
                                 referencedTable: $$ProviderStatesTableReferences
-                                    ._agentIdTable(db),
+                                    ._sessionIdTable(db),
                                 referencedColumn:
                                     $$ProviderStatesTableReferences
-                                        ._agentIdTable(db)
+                                        ._sessionIdTable(db)
                                         .id,
                               )
                               as T;
@@ -8523,7 +8561,7 @@ typedef $$ProviderStatesTableProcessedTableManager =
       $$ProviderStatesTableUpdateCompanionBuilder,
       (ProviderState, $$ProviderStatesTableReferences),
       ProviderState,
-      PrefetchHooks Function({bool agentId})
+      PrefetchHooks Function({bool sessionId})
     >;
 typedef $$SettingsTableCreateCompanionBuilder =
     SettingsCompanion Function({
@@ -9566,8 +9604,8 @@ class $CoderDatabaseManager {
       $$WorkspacesTableTableManager(_db, _db.workspaces);
   $$WorktreesTableTableManager get worktrees =>
       $$WorktreesTableTableManager(_db, _db.worktrees);
-  $$AgentsTableTableManager get agents =>
-      $$AgentsTableTableManager(_db, _db.agents);
+  $$SessionsTableTableManager get sessions =>
+      $$SessionsTableTableManager(_db, _db.sessions);
   $$TurnsTableTableManager get turns =>
       $$TurnsTableTableManager(_db, _db.turns);
   $$TimelineEventsTableTableManager get timelineEvents =>

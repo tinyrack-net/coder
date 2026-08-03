@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_app/src/agent_settings_page.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/app_settings_page.dart';
 import 'package:coder_app/src/controller.dart';
@@ -104,7 +105,7 @@ class WorktreeRoute extends GoRouteData with $WorktreeRoute {
 }
 
 @TypedGoRoute<SessionRoute>(
-  path: '/workspaces/:hostId/:workspaceId/:worktreeId/sessions/:agentId',
+  path: '/workspaces/:hostId/:workspaceId/:worktreeId/sessions/:sessionId',
 )
 /// Opens one AI session in the checkout tab strip.
 class SessionRoute extends GoRouteData with $SessionRoute {
@@ -113,7 +114,7 @@ class SessionRoute extends GoRouteData with $SessionRoute {
     required this.hostId,
     required this.workspaceId,
     required this.worktreeId,
-    required this.agentId,
+    required this.sessionId,
   });
 
   /// App-local daemon ID.
@@ -126,7 +127,7 @@ class SessionRoute extends GoRouteData with $SessionRoute {
   final String worktreeId;
 
   /// Daemon-local AI session ID.
-  final String agentId;
+  final String sessionId;
 
   @override
   Widget build(BuildContext context, GoRouterState state) => WorkspacePage(
@@ -135,7 +136,7 @@ class SessionRoute extends GoRouteData with $SessionRoute {
       workspaceId: workspaceId,
       worktreeId: worktreeId,
     ),
-    requestedAgentId: agentId,
+    requestedAgentId: sessionId,
   );
 }
 
@@ -151,6 +152,20 @@ class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       UnifiedSettingsPage(category: SettingsCategory.provider, hostId: hostId);
+}
+
+@TypedGoRoute<AgentSettingsRoute>(path: '/settings/agents')
+/// Unified settings route with Agent selected.
+class AgentSettingsRoute extends GoRouteData with $AgentSettingsRoute {
+  /// Creates the agent settings route.
+  const AgentSettingsRoute({this.hostId});
+
+  /// Preferred daemon in the agent selector.
+  final String? hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UnifiedSettingsPage(category: SettingsCategory.agent, hostId: hostId);
 }
 
 @TypedGoRoute<DaemonSettingsRoute>(path: '/settings/daemons')
@@ -191,6 +206,9 @@ class EditHostRoute extends GoRouteData with $EditHostRoute {
 
 /// Top-level settings categories.
 enum SettingsCategory {
+  /// Markdown-backed agent definitions owned by one daemon.
+  agent,
+
   /// API provider connections owned by one daemon.
   provider,
 
@@ -232,13 +250,19 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     _hostId ??= online.any((item) => item.id == widget.hostId)
         ? widget.hostId
         : online.firstOrNull?.id;
-    final detail = widget.category == SettingsCategory.daemon
-        ? const AppSettingsPage(embedded: true)
-        : _ProviderSettingsDetail(
-            hosts: online,
-            hostId: _hostId,
-            onChanged: (value) => setState(() => _hostId = value),
-          );
+    final detail = switch (widget.category) {
+      SettingsCategory.agent => _AgentSettingsDetail(
+        hosts: online,
+        hostId: _hostId,
+        onChanged: (value) => setState(() => _hostId = value),
+      ),
+      SettingsCategory.provider => _ProviderSettingsDetail(
+        hosts: online,
+        hostId: _hostId,
+        onChanged: (value) => setState(() => _hostId = value),
+      ),
+      SettingsCategory.daemon => const AppSettingsPage(embedded: true),
+    };
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -276,6 +300,12 @@ class _SettingsSidebar extends StatelessWidget {
     padding: const EdgeInsets.all(12),
     children: <Widget>[
       ListTile(
+        selected: selected == SettingsCategory.agent,
+        leading: const Icon(Icons.smart_toy_outlined),
+        title: const Text('Agent'),
+        onTap: () => const AgentSettingsRoute().go(context),
+      ),
+      ListTile(
         selected: selected == SettingsCategory.provider,
         leading: const Icon(Icons.hub_outlined),
         title: const Text('Provider'),
@@ -289,6 +319,46 @@ class _SettingsSidebar extends StatelessWidget {
       ),
     ],
   );
+}
+
+class _AgentSettingsDetail extends StatelessWidget {
+  const _AgentSettingsDetail({
+    required this.hosts,
+    required this.hostId,
+    required this.onChanged,
+  });
+
+  final List<HostRuntimeSnapshot> hosts;
+  final String? hostId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (hosts.isEmpty || hostId == null) {
+      return const Center(child: Text('온라인 daemon 연결이 필요합니다.'));
+    }
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: DropdownButtonFormField<String>(
+            initialValue: hostId,
+            decoration: const InputDecoration(labelText: 'Daemon'),
+            items: hosts
+                .map(
+                  (host) => DropdownMenuItem<String>(
+                    value: host.id,
+                    child: Text(host.label),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: onChanged,
+          ),
+        ),
+        Expanded(child: AgentSettingsPage(hostId: hostId!)),
+      ],
+    );
+  }
 }
 
 class _ProviderSettingsDetail extends StatelessWidget {
@@ -1142,45 +1212,63 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
   }
 
   Future<void> _createSession() async {
+    final agentState = await ref.read(
+      agentDefinitionsControllerProvider(widget.selection.hostId).future,
+    );
     final providerState = await ref.read(
       providerSettingsControllerProvider(widget.selection.hostId).future,
     );
-    final connections = providerState?.connections
+    if (providerState == null) return;
+    final connections = providerState.connections
         .where(
           (item) =>
               item.status == ProviderConnectionStatus.connected ||
               item.status == ProviderConnectionStatus.degraded,
         )
         .toList(growable: false);
-    if (connections == null || connections.isEmpty || !mounted) return;
-    final defaultConnection =
-        connections.where((item) => item.isDefault).firstOrNull ??
-        connections.first;
-    final title = await showDialog<String>(
+    final availableDefinitions = agentState.definitions
+        .where((definition) {
+          if (definition.mode != AgentMode.primary ||
+              definition.isArchived ||
+              definition.isStale) {
+            return false;
+          }
+          return switch (definition.model.source) {
+            AgentModelSource.daemonDefault => connections.any(
+              (connection) =>
+                  connection.isDefault && connection.defaultModelId != null,
+            ),
+            AgentModelSource.fixed => connections.any(
+              (connection) =>
+                  connection.id == definition.model.providerConnectionId &&
+                  definition.model.modelId != null,
+            ),
+          };
+        })
+        .toList(growable: false);
+    if (availableDefinitions.isEmpty || !mounted) return;
+    final input = await showDialog<_NewSessionInput>(
       context: context,
-      builder: (context) => const _SessionNameDialog(),
+      builder: (context) => _SessionNameDialog(
+        definitions: availableDefinitions,
+      ),
     );
-    if (title == null || !mounted) return;
-    final model = defaultConnection.defaultModelId;
-    if (model == null) return;
-    final agent = await ref
+    if (input == null || !mounted) return;
+    final session = await ref
         .read(
-          agentsControllerProvider(
+          sessionsControllerProvider(
             widget.selection.hostId,
             widget.selection.worktreeId,
           ).notifier,
         )
         .create(
-          title: title,
-          providerConnectionId: defaultConnection.id,
-          model: model,
-          reasoningEffort: 'medium',
-          permissionMode: PermissionMode.ask,
+          title: input.title,
+          agentDefinitionId: input.agentDefinitionId,
         );
     await ref
         .read(sessionTabsControllerProvider(widget.selection).notifier)
-        .add(agent);
-    if (mounted) _goSession(context, widget.selection, agent.id);
+        .add(session);
+    if (mounted) _goSession(context, widget.selection, session.id);
   }
 }
 
@@ -1192,7 +1280,7 @@ class _SessionTab extends StatelessWidget {
     required this.onClose,
   });
 
-  final AgentDto agent;
+  final SessionDto agent;
   final bool selected;
   final VoidCallback onSelect;
   final VoidCallback onClose;
@@ -1223,7 +1311,9 @@ class _SessionTab extends StatelessWidget {
 }
 
 class _SessionNameDialog extends StatefulWidget {
-  const _SessionNameDialog();
+  const _SessionNameDialog({required this.definitions});
+
+  final List<AgentDefinitionDto> definitions;
 
   @override
   State<_SessionNameDialog> createState() => _SessionNameDialogState();
@@ -1231,6 +1321,7 @@ class _SessionNameDialog extends StatefulWidget {
 
 class _SessionNameDialogState extends State<_SessionNameDialog> {
   final _title = TextEditingController(text: 'Coding session');
+  late String _agentDefinitionId = widget.definitions.first.id;
 
   @override
   void dispose() {
@@ -1241,10 +1332,34 @@ class _SessionNameDialogState extends State<_SessionNameDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('새 session'),
-    content: TextField(
-      controller: _title,
-      autofocus: true,
-      decoration: const InputDecoration(labelText: '이름'),
+    content: SizedBox(
+      width: 420,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          TextField(
+            controller: _title,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: '이름'),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: _agentDefinitionId,
+            decoration: const InputDecoration(labelText: 'Agent'),
+            items: widget.definitions
+                .map(
+                  (definition) => DropdownMenuItem<String>(
+                    value: definition.id,
+                    child: Text(definition.name),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (value) {
+              if (value != null) setState(() => _agentDefinitionId = value);
+            },
+          ),
+        ],
+      ),
     ),
     actions: <Widget>[
       TextButton(
@@ -1252,11 +1367,27 @@ class _SessionNameDialogState extends State<_SessionNameDialog> {
         child: const Text('취소'),
       ),
       FilledButton(
-        onPressed: () => Navigator.pop(context, _title.text.trim()),
+        onPressed: () => Navigator.pop(
+          context,
+          _NewSessionInput(
+            title: _title.text.trim(),
+            agentDefinitionId: _agentDefinitionId,
+          ),
+        ),
         child: const Text('생성'),
       ),
     ],
   );
+}
+
+final class _NewSessionInput {
+  const _NewSessionInput({
+    required this.title,
+    required this.agentDefinitionId,
+  });
+
+  final String title;
+  final String agentDefinitionId;
 }
 
 class _NoSession extends StatelessWidget {
@@ -1278,7 +1409,7 @@ class _ConversationPane extends ConsumerStatefulWidget {
   const _ConversationPane({required this.selection, required this.agent});
 
   final WorkspaceSelection selection;
-  final AgentDto agent;
+  final SessionDto agent;
 
   @override
   ConsumerState<_ConversationPane> createState() => _ConversationPaneState();
@@ -1298,7 +1429,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final current =
         ref
             .watch(
-              agentsControllerProvider(
+              sessionsControllerProvider(
                 widget.selection.hostId,
                 widget.selection.worktreeId,
               ),
@@ -1309,8 +1440,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             .firstOrNull ??
         widget.agent;
     final busy =
-        current.status == AgentStatus.running ||
-        current.status == AgentStatus.waitingForApproval;
+        current.status == SessionStatus.running ||
+        current.status == SessionStatus.waitingForApproval ||
+        current.status == SessionStatus.waitingForSubagent;
     final conversation = ref.watch(
       conversationControllerProvider(widget.selection.hostId, current.id),
     );
@@ -1323,8 +1455,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         ListTile(
           title: Text(current.title),
           subtitle: Text(
-            '${current.providerConnectionId}/${current.model} · '
-            '${current.permissionMode.name}',
+            '${current.agentDefinitionId} · ${current.origin.name}',
           ),
           trailing: busy
               ? IconButton(
@@ -1392,7 +1523,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     );
   }
 
-  Future<void> _send(String agentId) async {
+  Future<void> _send(String sessionId) async {
     final text = _composer.text.trim();
     if (text.isEmpty) return;
     _composer.clear();
@@ -1400,7 +1531,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         .read(
           conversationControllerProvider(
             widget.selection.hostId,
-            agentId,
+            sessionId,
           ).notifier,
         )
         .startTurn(text);
@@ -1444,13 +1575,13 @@ void _goWorktree(BuildContext context, WorkspaceSelection selection) {
 void _goSession(
   BuildContext context,
   WorkspaceSelection selection,
-  String agentId,
+  String sessionId,
 ) {
   SessionRoute(
     hostId: selection.hostId,
     workspaceId: selection.workspaceId,
     worktreeId: selection.worktreeId,
-    agentId: agentId,
+    sessionId: sessionId,
   ).go(context);
 }
 
@@ -1554,7 +1685,7 @@ class ApprovalCard extends ConsumerWidget {
                       .read(
                         conversationControllerProvider(
                           hostId,
-                          approval.agentId,
+                          approval.sessionId,
                         ).notifier,
                       )
                       .resolveApproval(approval.id, approved: false),
@@ -1566,7 +1697,7 @@ class ApprovalCard extends ConsumerWidget {
                       .read(
                         conversationControllerProvider(
                           hostId,
-                          approval.agentId,
+                          approval.sessionId,
                         ).notifier,
                       )
                       .resolveApproval(approval.id, approved: true),

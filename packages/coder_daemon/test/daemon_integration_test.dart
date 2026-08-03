@@ -112,6 +112,7 @@ void main() {
             .defaultModelId,
         'discovered-model',
       );
+      await client.setDefaultProviderModel('local-test', 'test-model');
       await client.setDefaultProvider('local-test');
       final temporary = await client.createCustomProvider(
         'temporary',
@@ -142,23 +143,20 @@ void main() {
       expect((await client.getWorkspaceCatalog()).workspaces, hasLength(1));
       final checkout = registered.worktrees.single;
 
-      final agent = await client.createAgent(
+      final agent = await client.createSession(
         id: 'agent-1',
         worktreeId: checkout.id,
         title: 'Session',
-        providerConnectionId: 'local-test',
-        model: 'test-model',
-        permissionMode: PermissionMode.ask,
+        agentDefinitionId: 'coder',
       );
-      expect(agent.status, AgentStatus.idle);
-      final configuredAgent = await client.updateAgentConfiguration(
-        agentId: agent.id,
-        providerConnectionId: 'local-test',
-        model: 'test-model',
-        reasoningEffort: 'high',
+      expect(agent.status, SessionStatus.idle);
+      final coder = (await client.listAgentDefinitions()).single;
+      final configuredDefinition = await client.updateAgentDefinition(
+        coder.copyWith(reasoningEffort: 'high'),
+        expectedContentHash: coder.contentHash,
       );
-      expect(configuredAgent.reasoningEffort, 'high');
-      expect(await client.listAgents(worktreeId: checkout.id), hasLength(1));
+      expect(configuredDefinition.reasoningEffort, 'high');
+      expect(await client.listSessions(worktreeId: checkout.id), hasLength(1));
       expect(await client.subscribeTimeline(agent.id), isEmpty);
 
       final approvalFuture = client.events
@@ -174,7 +172,7 @@ void main() {
           .firstWhere((event) => event.type == 'turn.completed')
           .timeout(const Duration(seconds: 5));
       await client.startTurn(
-        agentId: agent.id,
+        sessionId: agent.id,
         turnId: 'turn-1',
         prompt: 'Create result.txt',
       );
@@ -183,14 +181,11 @@ void main() {
       expect(approval.preview, contains('result.txt'));
       await client.resolveApproval(approvalId: approval.id, approved: true);
       await completedFuture;
-      expect(
-        client.updateAgentConfiguration(
-          agentId: agent.id,
-          providerConnectionId: 'local-test',
-          model: 'discovered-model',
-        ),
-        throwsA(isA<CoderClientException>()),
+      final afterTurn = await client.updateAgentDefinition(
+        configuredDefinition.copyWith(reasoningEffort: 'medium'),
+        expectedContentHash: configuredDefinition.contentHash,
       );
+      expect(afterTurn.reasoningEffort, 'medium');
 
       expect(
         await File('${workspace.path}/result.txt').readAsString(),
@@ -208,7 +203,7 @@ void main() {
       await client.disconnectProvider('local-test');
       await expectLater(
         client.startTurn(
-          agentId: agent.id,
+          sessionId: agent.id,
           turnId: 'turn-stale-provider',
           prompt: 'This must not run.',
         ),
@@ -221,8 +216,112 @@ void main() {
         ),
       );
       expect(
-        (await client.listAgents(worktreeId: checkout.id)).single.status,
-        AgentStatus.idle,
+        (await client.listSessions(worktreeId: checkout.id)).single.status,
+        SessionStatus.idle,
+      );
+    },
+  );
+
+  test(
+    'primary agents delegate to allowlisted Markdown subagents at depth one',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'coder-delegate-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-delegate-workspace-',
+      );
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'delegate-token-0123456789abcdef012345',
+          useEnvironmentCredentials: false,
+        ),
+        provider: _DelegatingProvider(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: DaemonCredentials(
+          bearerToken: 'delegate-token-0123456789abcdef012345',
+          adminToken: handle.adminToken,
+        ),
+        clientId: 'delegate-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+      final coder = (await client.listAgentDefinitions()).single;
+      final reviewer = await client.createAgentDefinition(
+        'reviewer',
+        coder.copyWith(
+          id: 'reviewer',
+          name: 'Reviewer',
+          mode: AgentMode.subagent,
+          permissionMode: PermissionMode.readOnly,
+          toolIds: const <String>['apply_patch'],
+          callableAgentIds: const <String>[],
+          contentHash: '',
+          sourcePath: '',
+          isBuiltIn: false,
+        ),
+      );
+      await client.updateAgentDefinition(
+        coder.copyWith(
+          permissionMode: PermissionMode.workspaceWrite,
+          callableAgentIds: <String>[reviewer.id],
+        ),
+        expectedContentHash: coder.contentHash,
+      );
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final parent = await client.createSession(
+        id: 'parent',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Parent',
+        agentDefinitionId: 'coder',
+      );
+      final completed = client.events
+          .where((event) => event is TimelineClientEvent)
+          .cast<TimelineClientEvent>()
+          .map((event) => event.event)
+          .firstWhere(
+            (event) =>
+                event.sessionId == parent.id && event.type == 'turn.completed',
+          )
+          .timeout(const Duration(seconds: 5));
+      await client.subscribeTimeline(parent.id);
+      await client.startTurn(
+        sessionId: parent.id,
+        turnId: 'parent-turn',
+        prompt: 'Review this workspace.',
+      );
+      await completed;
+
+      final sessions = await client.listSessions(
+        worktreeId: registered.worktrees.single.id,
+      );
+      final child = sessions.singleWhere(
+        (session) => session.origin == SessionOrigin.delegated,
+      );
+      expect(child.parentSessionId, parent.id);
+      expect(child.agentDefinitionId, reviewer.id);
+      final childTimeline = await client.subscribeTimeline(child.id);
+      expect(childTimeline.map((event) => event.type), contains('tool.denied'));
+      expect(
+        childTimeline
+            .where((event) => event.type == 'tool.requested')
+            .single
+            .data['name'],
+        'apply_patch',
       );
     },
   );
@@ -263,6 +362,20 @@ void main() {
             apiFormat: ProviderApiFormat.chatCompletions,
             authenticationRequired: false,
           ),
+        ),
+        throwsA(
+          isA<CoderClientException>().having(
+            (error) => error.code,
+            'code',
+            'local_admin_required',
+          ),
+        ),
+      );
+      final coder = (await client.listAgentDefinitions()).single;
+      await expectLater(
+        client.updateAgentDefinition(
+          coder.copyWith(name: 'Denied'),
+          expectedContentHash: coder.contentHash,
         ),
         throwsA(
           isA<CoderClientException>().having(
@@ -384,6 +497,79 @@ class _PatchProvider implements ModelProvider {
     yield const ModelTextDelta('Created result.txt');
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'Created result.txt'),
+    );
+  }
+}
+
+final class _DelegatingProvider implements ModelProvider {
+  @override
+  String get id => 'delegate-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    cancellation.throwIfCancelled();
+    final delegateEnabled = request.tools.any(
+      (tool) => tool.name == 'delegate_agent',
+    );
+    final hasToolResult = request.history.any(
+      (item) => item is ToolResultConversationItem,
+    );
+    if (delegateEnabled && !hasToolResult) {
+      const arguments = <String, dynamic>{
+        'agentDefinitionId': 'reviewer',
+        'prompt': 'Review without changing files.',
+      };
+      yield const ModelFunctionCall(
+        callId: 'delegate-call',
+        name: 'delegate_agent',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'delegate-call',
+              name: 'delegate_agent',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (!delegateEnabled && !hasToolResult) {
+      const arguments = <String, dynamic>{
+        'patch':
+            '--- /dev/null\n+++ b/forbidden.txt\n'
+            '@@ -0,0 +1,1 @@\n+forbidden\n',
+      };
+      yield const ModelFunctionCall(
+        callId: 'write-call',
+        name: 'apply_patch',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'write-call',
+              name: 'apply_patch',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    final text = delegateEnabled ? 'Parent completed.' : 'Review completed.';
+    yield ModelTextDelta(text);
+    yield ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: text),
     );
   }
 }

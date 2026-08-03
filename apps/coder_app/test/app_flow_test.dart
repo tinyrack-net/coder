@@ -28,14 +28,13 @@ void main() {
     isCoderOwned: false,
     createdAt: now,
   );
-  AgentDto session(String id) => AgentDto(
+  SessionDto session(String id) => SessionDto(
     id: id,
     worktreeId: checkout.id,
     title: 'Session $id',
-    providerConnectionId: 'openai',
-    model: 'gpt-5.6-sol',
-    status: AgentStatus.idle,
-    permissionMode: PermissionMode.ask,
+    agentDefinitionId: 'coder',
+    origin: SessionOrigin.manual,
+    status: SessionStatus.idle,
     createdAt: now,
     updatedAt: now,
   );
@@ -50,7 +49,7 @@ void main() {
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
-        agents: <AgentDto>[first, second],
+        agents: <SessionDto>[first, second],
       );
       final router = await _pumpRoute(
         tester,
@@ -59,7 +58,7 @@ void main() {
           hostId: 'server',
           workspaceId: workspace.id,
           worktreeId: checkout.id,
-          agentId: first.id,
+          sessionId: first.id,
         ).location,
       );
       addTearDown(router.dispose);
@@ -90,7 +89,7 @@ void main() {
     final api = FakeCoderApi(
       workspaces: <WorkspaceDto>[workspace],
       worktrees: <WorktreeDto>[checkout],
-      agents: <AgentDto>[first],
+      agents: <SessionDto>[first],
     );
     final router = await _pumpRoute(
       tester,
@@ -99,7 +98,7 @@ void main() {
         hostId: 'server',
         workspaceId: workspace.id,
         worktreeId: checkout.id,
-        agentId: first.id,
+        sessionId: first.id,
       ).location,
     );
     addTearDown(router.dispose);
@@ -107,7 +106,9 @@ void main() {
     await tester.tap(find.byTooltip('탭 닫기'));
     await tester.pumpAndSettle();
     expect(find.text('새 session 시작'), findsOneWidget);
-    expect(await api.listAgents(worktreeId: checkout.id), <AgentDto>[first]);
+    expect(await api.listSessions(worktreeId: checkout.id), <SessionDto>[
+      first,
+    ]);
 
     await tester.tap(find.byTooltip('모든 session'));
     await tester.pumpAndSettle();
@@ -224,9 +225,27 @@ void main() {
   testWidgets('creates a session and sends a coding request', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1100, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    const planner = AgentDefinitionDto(
+      id: 'planner',
+      name: 'Planner',
+      description: 'Plans changes',
+      mode: AgentMode.primary,
+      promptEnabled: true,
+      systemPrompt: 'Plan first.',
+      model: AgentModelSelectionDto(
+        source: AgentModelSource.daemonDefault,
+      ),
+      reasoningEffort: 'medium',
+      permissionMode: PermissionMode.readOnly,
+      toolIds: <String>['read_file'],
+      callableAgentIds: <String>[],
+      contentHash: 'planner-hash',
+      sourcePath: '/config/agents/planner.md',
+    );
     final api = FakeCoderApi(
       workspaces: <WorkspaceDto>[workspace],
       worktrees: <WorktreeDto>[checkout],
+      agentDefinitions: const <AgentDefinitionDto>[planner],
     );
     final router = await _pumpRoute(
       tester,
@@ -245,9 +264,11 @@ void main() {
       find.widgetWithText(TextField, '이름'),
       'Refactor API',
     );
+    expect(find.text('Planner'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, '생성'));
     await tester.pumpAndSettle();
     expect(find.text('Refactor API'), findsWidgets);
+    expect((await api.listSessions()).single.agentDefinitionId, 'planner');
 
     await tester.enterText(
       find.widgetWithText(TextField, '코딩 요청을 입력하세요…'),
@@ -282,7 +303,7 @@ void main() {
     expect(find.byTooltip('설정'), findsOneWidget);
   });
 
-  testWidgets('settings combines Provider and Daemon categories', (
+  testWidgets('settings combines Agent, Provider, and Daemon categories', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1100, 760));
@@ -294,6 +315,7 @@ void main() {
       const ProviderSettingsRoute(hostId: 'server').location,
     );
     addTearDown(router.dispose);
+    expect(find.text('Agent'), findsOneWidget);
     expect(find.text('Provider'), findsOneWidget);
     expect(find.text('Daemon'), findsWidgets);
     expect(find.text('Test daemon'), findsOneWidget);
@@ -302,13 +324,243 @@ void main() {
     expect(find.text('원격 daemons'), findsOneWidget);
   });
 
+  testWidgets(
+    'agent settings edits Markdown definitions and creates subagents',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi();
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      expect(find.text('Agents'), findsOneWidget);
+      expect(find.text('Coder'), findsWidgets);
+      final prompt = find.widgetWithText(
+        TextField,
+        'System prompt (Markdown)',
+      );
+      await tester.enterText(prompt, 'Always run focused tests.');
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.getAgentDefinition('coder')).systemPrompt,
+        'Always run focused tests.',
+      );
+      await tester.scrollUntilVisible(
+        find.text('내장 도구'),
+        400,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text('내장 도구'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'ID (파일명)'),
+        'reviewer',
+      );
+      await tester.enterText(find.widgetWithText(TextField, '이름'), 'Reviewer');
+      await tester.tap(
+        find.widgetWithText(DropdownButtonFormField<AgentMode>, '유형'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('subagent').last);
+      tester.testTextInput.hide();
+      final createButton = find.widgetWithText(FilledButton, '생성');
+      await tester.ensureVisible(createButton);
+      await tester.pumpAndSettle();
+      await tester.tap(createButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Reviewer'), findsWidgets);
+      expect(
+        (await api.getAgentDefinition('reviewer')).mode,
+        AgentMode.subagent,
+      );
+    },
+  );
+
+  testWidgets('mobile agent settings navigates from list to Markdown detail', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 780));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = FakeCoderApi();
+    final router = await _pumpRoute(
+      tester,
+      api,
+      const AgentSettingsRoute(hostId: 'server').location,
+    );
+    addTearDown(router.dispose);
+
+    expect(find.text('Agents'), findsOneWidget);
+    expect(find.text('System prompt (Markdown)'), findsNothing);
+    await tester.tap(find.text('Coder').first);
+    await tester.pumpAndSettle();
+    expect(find.text('System prompt (Markdown)'), findsOneWidget);
+    await tester.tap(find.byTooltip('Agent 목록'));
+    await tester.pumpAndSettle();
+    expect(find.text('Agents'), findsOneWidget);
+  });
+
+  testWidgets(
+    'agent editor handles conflicts, policy controls, reset, and archive',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const coder = AgentDefinitionDto(
+        id: 'coder',
+        name: 'Coder',
+        description: 'General coding',
+        mode: AgentMode.primary,
+        promptEnabled: true,
+        systemPrompt: 'Code carefully.',
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.daemonDefault,
+        ),
+        reasoningEffort: 'medium',
+        permissionMode: PermissionMode.ask,
+        toolIds: <String>['read_file'],
+        callableAgentIds: <String>[],
+        contentHash: 'coder-hash',
+        sourcePath: '/config/agents/coder.md',
+        isBuiltIn: true,
+        diagnostics: <AgentDefinitionDiagnosticDto>[
+          AgentDefinitionDiagnosticDto(
+            code: 'unavailable_tool',
+            message: 'A future tool is unavailable.',
+          ),
+        ],
+      );
+      const reviewer = AgentDefinitionDto(
+        id: 'reviewer',
+        name: 'Reviewer',
+        description: 'Reviews changes',
+        mode: AgentMode.subagent,
+        promptEnabled: true,
+        systemPrompt: 'Review.',
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.daemonDefault,
+        ),
+        reasoningEffort: 'medium',
+        permissionMode: PermissionMode.readOnly,
+        toolIds: <String>['read_file'],
+        callableAgentIds: <String>[],
+        contentHash: 'reviewer-hash',
+        sourcePath: '/config/agents/reviewer.md',
+      );
+      final api = FakeCoderApi(
+        agentDefinitions: const <AgentDefinitionDto>[coder, reviewer],
+        failNextAgentUpdate: true,
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      expect(find.text('unavailable_tool'), findsOneWidget);
+      await tester.tap(find.byTooltip('파일 위치 복사'));
+      await tester.tap(find.text('Custom system prompt 사용'));
+      final editorList = find.byType(ListView).last;
+      await tester.drag(editorList, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('고정 provider/model'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Provider connection ID'),
+        'openai',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Model ID'),
+        'gpt-test',
+      );
+      await tester.drag(editorList, const Offset(0, -600));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('read_file').last);
+      await tester.tap(find.text('Reviewer').last);
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(find.text('Agent 저장 실패'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Overwrite'));
+      await tester.pumpAndSettle();
+
+      final updated = await api.getAgentDefinition('coder');
+      expect(updated.promptEnabled, isFalse);
+      expect(updated.model.providerConnectionId, 'openai');
+      expect(updated.model.modelId, 'gpt-test');
+      expect(updated.toolIds, isEmpty);
+      expect(updated.callableAgentIds, <String>['reviewer']);
+
+      await tester.tap(find.byTooltip('기본값으로 초기화'));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.getAgentDefinition('coder')).systemPrompt,
+        'Code carefully.',
+      );
+      await tester.tap(find.text('Reviewer').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Archive'));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.listAgentDefinitions()).map((definition) => definition.id),
+        isNot(contains('reviewer')),
+      );
+    },
+  );
+
+  testWidgets('agent settings exposes read-only and load-error states', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1100, 760));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const readOnlyInfo = ServerInfoDto(
+      serverId: 'server',
+      version: 'test',
+      protocolVersion: coderProtocolVersion,
+      features: <String, bool>{'agentDefinitionAdmin': false},
+    );
+    final readOnlyRouter = await _pumpRoute(
+      tester,
+      FakeCoderApi(serverInfo: readOnlyInfo),
+      const AgentSettingsRoute(hostId: 'server').location,
+    );
+    expect(find.textContaining('읽기만'), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.add),
+          )
+          .onPressed,
+      isNull,
+    );
+    readOnlyRouter.dispose();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    final errorRouter = await _pumpRoute(
+      tester,
+      FakeCoderApi(agentListError: Exception('definition load failed')),
+      const AgentSettingsRoute(hostId: 'server').location,
+    );
+    addTearDown(errorRouter.dispose);
+    expect(find.textContaining('definition load failed'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, '다시 시도'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('definition load failed'), findsOneWidget);
+  });
+
   testWidgets('timeline and approval cards render typed event content', (
     tester,
   ) async {
     final agent = session('approval');
     final approval = ApprovalRequestDto(
       id: 'approval',
-      agentId: agent.id,
+      sessionId: agent.id,
       turnId: 'turn',
       toolCallId: 'call',
       toolName: 'apply_patch',
@@ -318,13 +570,13 @@ void main() {
       createdAt: now,
     );
     final event = TimelineEventDto(
-      agentId: agent.id,
+      sessionId: agent.id,
       sequence: 1,
       type: 'user.message',
       data: const <String, dynamic>{'text': 'Inspect this'},
       createdAt: now,
     );
-    final api = FakeCoderApi(agents: <AgentDto>[agent]);
+    final api = FakeCoderApi(agents: <SessionDto>[agent]);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [

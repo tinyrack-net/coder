@@ -21,7 +21,7 @@ final class WorkspaceService {
 
   final WorkspaceRepository _workspaces;
   final WorktreeRepository _worktrees;
-  final AgentRepository _agents;
+  final SessionRepository _agents;
   final WorkspacePathGateway _paths;
   final GitWorkspaceGateway _git;
   final Clock _clock;

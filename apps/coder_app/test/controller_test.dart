@@ -29,20 +29,19 @@ void main() {
     isCoderOwned: false,
     createdAt: now,
   );
-  final agent = AgentDto(
+  final agent = SessionDto(
     id: 'agent',
     worktreeId: worktree.id,
     title: 'Agent',
-    providerConnectionId: 'openai',
-    model: 'gpt-5.6-sol',
-    status: AgentStatus.idle,
-    permissionMode: PermissionMode.ask,
+    agentDefinitionId: 'coder',
+    origin: SessionOrigin.manual,
+    status: SessionStatus.idle,
     createdAt: now,
     updatedAt: now,
   );
   final approval = ApprovalRequestDto(
     id: 'approval',
-    agentId: agent.id,
+    sessionId: agent.id,
     turnId: 'turn',
     toolCallId: 'call',
     toolName: 'apply_patch',
@@ -52,7 +51,7 @@ void main() {
     createdAt: now,
   );
   final approvalEvent = TimelineEventDto(
-    agentId: agent.id,
+    sessionId: agent.id,
     sequence: 1,
     turnId: 'turn',
     type: 'approval.requested',
@@ -76,7 +75,7 @@ void main() {
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
-        agents: <AgentDto>[agent],
+        agents: <SessionDto>[agent],
       );
       final container = _container(api);
       addTearDown(container.dispose);
@@ -122,38 +121,39 @@ void main() {
         hasLength(2),
       );
 
-      final agentsProvider = agentsControllerProvider('server', worktree.id);
-      expect(await container.read(agentsProvider.future), <AgentDto>[agent]);
+      final agentsProvider = sessionsControllerProvider('server', worktree.id);
+      expect(await container.read(agentsProvider.future), <SessionDto>[agent]);
       final created = await container
           .read(agentsProvider.notifier)
           .create(
             title: 'Created',
-            providerConnectionId: 'openai',
-            model: 'gpt-5.6-sol',
-            reasoningEffort: 'high',
-            permissionMode: PermissionMode.workspaceWrite,
+            agentDefinitionId: 'coder',
           );
       expect(created.id, 'generated-id');
       expect(container.read(agentsProvider).value!.first, created);
-      final updated = await container
-          .read(agentsProvider.notifier)
-          .updateConfiguration(
-            agentId: agent.id,
-            providerConnectionId: 'openai',
-            model: 'gpt-5.6-terra',
-            reasoningEffort: 'low',
-          );
-      expect(updated.model, 'gpt-5.6-terra');
       api.emit(
-        AgentUpdatedClientEvent(updated.copyWith(status: AgentStatus.running)),
+        SessionUpdatedClientEvent(
+          agent.copyWith(status: SessionStatus.running),
+        ),
       );
       expect(
         container.read(agentsProvider).value!.last.status,
-        AgentStatus.running,
+        SessionStatus.running,
+      );
+      final delegated = agent.copyWith(
+        id: 'delegated',
+        title: 'Reviewer',
+        parentSessionId: agent.id,
+        origin: SessionOrigin.delegated,
+      );
+      api.emit(SessionUpdatedClientEvent(delegated));
+      expect(
+        container.read(agentsProvider).value!.map((item) => item.id),
+        contains(delegated.id),
       );
 
       expect(
-        await container.read(agentsControllerProvider('server', null).future),
+        await container.read(sessionsControllerProvider('server', null).future),
         isEmpty,
       );
     },
@@ -167,9 +167,9 @@ void main() {
       kind: WorkspaceKind.directory,
       createdAt: now,
     );
-    AgentDto hostAgent(String host) => agent.copyWith(title: '$host agent');
+    SessionDto hostAgent(String host) => agent.copyWith(title: '$host agent');
     TimelineEventDto hostEvent(String host) => TimelineEventDto(
-      agentId: agent.id,
+      sessionId: agent.id,
       sequence: 1,
       turnId: 'turn',
       type: 'assistant.delta',
@@ -192,7 +192,7 @@ void main() {
       serverInfo: _serverInfo('first-server'),
       workspaces: <WorkspaceDto>[hostWorkspace('first')],
       worktrees: <WorktreeDto>[worktree],
-      agents: <AgentDto>[hostAgent('first')],
+      agents: <SessionDto>[hostAgent('first')],
       timelines: <String, List<TimelineEventDto>>{
         agent.id: <TimelineEventDto>[hostEvent('first')],
       },
@@ -202,7 +202,7 @@ void main() {
       serverInfo: _serverInfo('second-server'),
       workspaces: <WorkspaceDto>[hostWorkspace('second')],
       worktrees: <WorktreeDto>[worktree],
-      agents: <AgentDto>[hostAgent('second')],
+      agents: <SessionDto>[hostAgent('second')],
       timelines: <String, List<TimelineEventDto>>{
         agent.id: <TimelineEventDto>[hostEvent('second')],
       },
@@ -250,13 +250,13 @@ void main() {
     );
     expect(
       (await container.read(
-        agentsControllerProvider('first', 'worktree').future,
+        sessionsControllerProvider('first', 'worktree').future,
       )).single.title,
       'first agent',
     );
     expect(
       (await container.read(
-        agentsControllerProvider('second', 'worktree').future,
+        sessionsControllerProvider('second', 'worktree').future,
       )).single.title,
       'second agent',
     );
@@ -293,7 +293,7 @@ void main() {
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
-        agents: <AgentDto>[agent, second],
+        agents: <SessionDto>[agent, second],
       );
       final store = MemoryAppStore(
         settings: const AppSettings(embeddedDaemonEnabled: false),
@@ -338,7 +338,7 @@ void main() {
         store.settings.sessionTabs[selection.storageKey]?.selectedAgentId,
         second.id,
       );
-      expect(await api.listAgents(worktreeId: worktree.id), hasLength(2));
+      expect(await api.listSessions(worktreeId: worktree.id), hasLength(2));
     },
   );
 
@@ -346,7 +346,7 @@ void main() {
     'conversation notifier deduplicates timeline and resolves approvals',
     () async {
       final api = FakeCoderApi(
-        agents: <AgentDto>[agent],
+        agents: <SessionDto>[agent],
         timelines: <String, List<TimelineEventDto>>{
           agent.id: <TimelineEventDto>[approvalEvent],
         },
@@ -365,7 +365,7 @@ void main() {
         ..emit(
           TimelineClientEvent(
             TimelineEventDto(
-              agentId: agent.id,
+              sessionId: agent.id,
               sequence: 2,
               turnId: 'turn',
               type: 'assistant.delta',
@@ -398,7 +398,7 @@ void main() {
       api.emit(
         TimelineClientEvent(
           TimelineEventDto(
-            agentId: agent.id,
+            sessionId: agent.id,
             sequence: 3,
             turnId: 'turn',
             type: 'approval.resolved',
@@ -422,7 +422,7 @@ void main() {
     () async {
       final lateEvents = _LateClientEventStream();
       final api = FakeCoderApi(
-        agents: <AgentDto>[agent],
+        agents: <SessionDto>[agent],
         eventStream: lateEvents,
       );
       final container = _container(api);
@@ -440,7 +440,7 @@ void main() {
         () => lateEvents.emit(
           TimelineClientEvent(
             TimelineEventDto(
-              agentId: agent.id,
+              sessionId: agent.id,
               sequence: 1,
               type: 'assistant.delta',
               data: const <String, dynamic>{'text': 'late'},

@@ -64,8 +64,8 @@ class Worktrees extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
-/// Agents defines a public contract.
-class Agents extends Table {
+/// Persisted AI coding sessions.
+class Sessions extends Table {
   /// The id public API member.
   TextColumn get id => text()();
 
@@ -75,21 +75,18 @@ class Agents extends Table {
   /// The title public API member.
   TextColumn get title => text()();
 
-  /// Provider connection selected for this agent.
-  TextColumn get providerConnectionId => text()();
+  /// Markdown agent definition resolved for each turn.
+  TextColumn get agentDefinitionId => text()();
 
-  /// The model public API member.
-  TextColumn get model => text()();
+  /// Whether this session was created directly or by delegation.
+  TextColumn get origin => text()();
 
-  /// The reasoningEffort public API member.
-  TextColumn get reasoningEffort =>
-      text().withDefault(const Constant('medium'))();
+  /// Parent session for delegated subagents.
+  TextColumn get parentSessionId =>
+      text().nullable().references(Sessions, #id)();
 
   /// The status public API member.
   TextColumn get status => text()();
-
-  /// The permissionMode public API member.
-  TextColumn get permissionMode => text()();
 
   /// The activeTurnId public API member.
   TextColumn get activeTurnId => text().nullable()();
@@ -112,8 +109,8 @@ class Turns extends Table {
   /// The id public API member.
   TextColumn get id => text()();
 
-  /// The agentId public API member.
-  TextColumn get agentId => text().references(Agents, #id)();
+  /// The sessionId public API member.
+  TextColumn get sessionId => text().references(Sessions, #id)();
 
   /// The prompt public API member.
   TextColumn get prompt => text()();
@@ -136,8 +133,8 @@ class Turns extends Table {
 
 /// TimelineEvents defines a public contract.
 class TimelineEvents extends Table {
-  /// The agentId public API member.
-  TextColumn get agentId => text().references(Agents, #id)();
+  /// The sessionId public API member.
+  TextColumn get sessionId => text().references(Sessions, #id)();
 
   /// The sequence public API member.
   IntColumn get sequence => integer()();
@@ -155,7 +152,7 @@ class TimelineEvents extends Table {
   DateTimeColumn get createdAt => dateTime()();
 
   @override
-  Set<Column<Object>> get primaryKey => <Column<Object>>{agentId, sequence};
+  Set<Column<Object>> get primaryKey => <Column<Object>>{sessionId, sequence};
 }
 
 /// ApprovalRequests defines a public contract.
@@ -163,8 +160,8 @@ class ApprovalRequests extends Table {
   /// The id public API member.
   TextColumn get id => text()();
 
-  /// The agentId public API member.
-  TextColumn get agentId => text().references(Agents, #id)();
+  /// The sessionId public API member.
+  TextColumn get sessionId => text().references(Sessions, #id)();
 
   /// The turnId public API member.
   TextColumn get turnId => text().references(Turns, #id)();
@@ -196,8 +193,8 @@ class ApprovalRequests extends Table {
 
 /// ProviderStates defines a public contract.
 class ProviderStates extends Table {
-  /// The agentId public API member.
-  TextColumn get agentId => text().references(Agents, #id)();
+  /// The sessionId public API member.
+  TextColumn get sessionId => text().references(Sessions, #id)();
 
   /// The ordinal public API member.
   IntColumn get ordinal => integer()();
@@ -209,7 +206,7 @@ class ProviderStates extends Table {
   DateTimeColumn get createdAt => dateTime()();
 
   @override
-  Set<Column<Object>> get primaryKey => <Column<Object>>{agentId, ordinal};
+  Set<Column<Object>> get primaryKey => <Column<Object>>{sessionId, ordinal};
 }
 
 /// Settings defines a public contract.
@@ -307,7 +304,7 @@ class ProviderModels extends Table {
   tables: <Type>[
     Workspaces,
     Worktrees,
-    Agents,
+    Sessions,
     Turns,
     TimelineEvents,
     ApprovalRequests,
@@ -320,7 +317,7 @@ class ProviderModels extends Table {
     SettingsDao,
     WorkspaceDao,
     WorktreeDao,
-    AgentDao,
+    SessionDao,
     TimelineDao,
     ProviderDao,
     RuntimeDao,
@@ -344,7 +341,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

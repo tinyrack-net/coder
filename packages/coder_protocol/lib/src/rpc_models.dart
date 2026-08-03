@@ -118,51 +118,90 @@ abstract class WorktreeArchiveParamsDto with _$WorktreeArchiveParamsDto {
 }
 
 @freezed
-/// AgentListParamsDto defines a public contract.
-abstract class AgentListParamsDto with _$AgentListParamsDto {
-  /// The AgentListParamsDto public API member.
-  const factory AgentListParamsDto({String? worktreeId}) = _AgentListParamsDto;
+/// Filters sessions by worktree.
+abstract class SessionListParamsDto with _$SessionListParamsDto {
+  /// Creates session list parameters.
+  const factory SessionListParamsDto({String? worktreeId}) =
+      _SessionListParamsDto;
 
-  /// Creates a [AgentListParamsDto].
-  factory AgentListParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$AgentListParamsDtoFromJson(json);
+  /// Decodes session list parameters.
+  factory SessionListParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionListParamsDtoFromJson(json);
 }
 
 @freezed
-/// AgentCreateParamsDto defines a public contract.
-abstract class AgentCreateParamsDto with _$AgentCreateParamsDto {
-  /// The AgentCreateParamsDto public API member.
-  const factory AgentCreateParamsDto({
+/// Creates a user-visible session from a primary agent definition.
+abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
+  /// Creates session creation parameters.
+  const factory SessionCreateParamsDto({
     required String id,
     required String worktreeId,
     required String title,
-    required String providerConnectionId,
-    required String model,
-    required String reasoningEffort,
-    required PermissionMode permissionMode,
-  }) = _AgentCreateParamsDto;
+    required String agentDefinitionId,
+  }) = _SessionCreateParamsDto;
 
-  /// Creates a [AgentCreateParamsDto].
-  factory AgentCreateParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$AgentCreateParamsDtoFromJson(json);
+  /// Decodes session creation parameters.
+  factory SessionCreateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionCreateParamsDtoFromJson(json);
 }
 
 @freezed
-/// AgentConfigurationUpdateParamsDto defines a public contract.
-abstract class AgentConfigurationUpdateParamsDto
-    with _$AgentConfigurationUpdateParamsDto {
-  /// The AgentConfigurationUpdateParamsDto public API member.
-  const factory AgentConfigurationUpdateParamsDto({
-    required String agentId,
-    required String providerConnectionId,
-    required String model,
-    required String reasoningEffort,
-  }) = _AgentConfigurationUpdateParamsDto;
+/// Identifies one Markdown-backed agent definition.
+abstract class AgentDefinitionIdParamsDto with _$AgentDefinitionIdParamsDto {
+  /// Creates agent definition identifier parameters.
+  const factory AgentDefinitionIdParamsDto({required String id}) =
+      _AgentDefinitionIdParamsDto;
 
-  /// Creates a [AgentConfigurationUpdateParamsDto].
-  factory AgentConfigurationUpdateParamsDto.fromJson(
+  /// Decodes agent definition identifier parameters.
+  factory AgentDefinitionIdParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentDefinitionIdParamsDtoFromJson(json);
+}
+
+@freezed
+/// Creates one Markdown-backed agent definition.
+abstract class AgentDefinitionCreateParamsDto
+    with _$AgentDefinitionCreateParamsDto {
+  /// Creates agent definition creation parameters.
+  const factory AgentDefinitionCreateParamsDto({
+    required String id,
+    required AgentDefinitionDto definition,
+  }) = _AgentDefinitionCreateParamsDto;
+
+  /// Decodes agent definition creation parameters.
+  factory AgentDefinitionCreateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentDefinitionCreateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Updates one Markdown-backed agent definition with optimistic concurrency.
+abstract class AgentDefinitionUpdateParamsDto
+    with _$AgentDefinitionUpdateParamsDto {
+  /// Creates agent definition update parameters.
+  const factory AgentDefinitionUpdateParamsDto({
+    required AgentDefinitionDto definition,
+    required String expectedContentHash,
+    @Default(false) bool force,
+  }) = _AgentDefinitionUpdateParamsDto;
+
+  /// Decodes agent definition update parameters.
+  factory AgentDefinitionUpdateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentDefinitionUpdateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Validates an agent Markdown document without saving it.
+abstract class AgentDefinitionValidateParamsDto
+    with _$AgentDefinitionValidateParamsDto {
+  /// Creates agent definition validation parameters.
+  const factory AgentDefinitionValidateParamsDto({
+    required String id,
+    required String markdown,
+  }) = _AgentDefinitionValidateParamsDto;
+
+  /// Decodes agent definition validation parameters.
+  factory AgentDefinitionValidateParamsDto.fromJson(
     Map<String, dynamic> json,
-  ) => _$AgentConfigurationUpdateParamsDtoFromJson(json);
+  ) => _$AgentDefinitionValidateParamsDtoFromJson(json);
 }
 
 @freezed
@@ -317,7 +356,7 @@ abstract class ProviderCustomUpdateParamsDto
 abstract class TurnStartParamsDto with _$TurnStartParamsDto {
   /// The TurnStartParamsDto public API member.
   const factory TurnStartParamsDto({
-    required String agentId,
+    required String sessionId,
     required String turnId,
     required String prompt,
   }) = _TurnStartParamsDto;
@@ -328,14 +367,15 @@ abstract class TurnStartParamsDto with _$TurnStartParamsDto {
 }
 
 @freezed
-/// AgentIdParamsDto defines a public contract.
-abstract class AgentIdParamsDto with _$AgentIdParamsDto {
-  /// The AgentIdParamsDto public API member.
-  const factory AgentIdParamsDto({required String agentId}) = _AgentIdParamsDto;
+/// Identifies one session.
+abstract class SessionIdParamsDto with _$SessionIdParamsDto {
+  /// Creates session identifier parameters.
+  const factory SessionIdParamsDto({required String sessionId}) =
+      _SessionIdParamsDto;
 
-  /// Creates a [AgentIdParamsDto].
-  factory AgentIdParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$AgentIdParamsDtoFromJson(json);
+  /// Decodes session identifier parameters.
+  factory SessionIdParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionIdParamsDtoFromJson(json);
 }
 
 @freezed
@@ -357,7 +397,7 @@ abstract class ApprovalResolveParamsDto with _$ApprovalResolveParamsDto {
 abstract class TimelineSubscribeParamsDto with _$TimelineSubscribeParamsDto {
   /// The TimelineSubscribeParamsDto public API member.
   const factory TimelineSubscribeParamsDto({
-    required String agentId,
+    required String sessionId,
     required int afterSequence,
   }) = _TimelineSubscribeParamsDto;
 
@@ -460,26 +500,67 @@ abstract class WorktreeArchivePreviewResultDto
 }
 
 @freezed
-/// AgentListResultDto defines a public contract.
-abstract class AgentListResultDto with _$AgentListResultDto {
-  /// The AgentListResultDto public API member.
-  const factory AgentListResultDto({required List<AgentDto> agents}) =
-      _AgentListResultDto;
+/// Returns sessions visible in a worktree.
+abstract class SessionListResultDto with _$SessionListResultDto {
+  /// Creates a session list result.
+  const factory SessionListResultDto({required List<SessionDto> sessions}) =
+      _SessionListResultDto;
 
-  /// Creates a [AgentListResultDto].
-  factory AgentListResultDto.fromJson(Map<String, dynamic> json) =>
-      _$AgentListResultDtoFromJson(json);
+  /// Decodes a session list result.
+  factory SessionListResultDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionListResultDtoFromJson(json);
 }
 
 @freezed
-/// AgentResultDto defines a public contract.
-abstract class AgentResultDto with _$AgentResultDto {
-  /// The AgentResultDto public API member.
-  const factory AgentResultDto({required AgentDto agent}) = _AgentResultDto;
+/// Returns one session.
+abstract class SessionResultDto with _$SessionResultDto {
+  /// Creates a session result.
+  const factory SessionResultDto({required SessionDto session}) =
+      _SessionResultDto;
 
-  /// Creates a [AgentResultDto].
-  factory AgentResultDto.fromJson(Map<String, dynamic> json) =>
-      _$AgentResultDtoFromJson(json);
+  /// Decodes a session result.
+  factory SessionResultDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns agent definitions and source diagnostics.
+abstract class AgentDefinitionListResultDto
+    with _$AgentDefinitionListResultDto {
+  /// Creates an agent definition list result.
+  const factory AgentDefinitionListResultDto({
+    required List<AgentDefinitionDto> definitions,
+  }) = _AgentDefinitionListResultDto;
+
+  /// Decodes an agent definition list result.
+  factory AgentDefinitionListResultDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentDefinitionListResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns one agent definition.
+abstract class AgentDefinitionResultDto with _$AgentDefinitionResultDto {
+  /// Creates an agent definition result.
+  const factory AgentDefinitionResultDto({
+    required AgentDefinitionDto definition,
+  }) = _AgentDefinitionResultDto;
+
+  /// Decodes an agent definition result.
+  factory AgentDefinitionResultDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentDefinitionResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns the daemon's agent tool catalog.
+abstract class AgentToolCatalogResultDto with _$AgentToolCatalogResultDto {
+  /// Creates an agent tool catalog result.
+  const factory AgentToolCatalogResultDto({
+    required List<AgentToolDefinitionDto> tools,
+  }) = _AgentToolCatalogResultDto;
+
+  /// Decodes an agent tool catalog result.
+  factory AgentToolCatalogResultDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentToolCatalogResultDtoFromJson(json);
 }
 
 @freezed

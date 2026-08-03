@@ -109,7 +109,8 @@ class CoderClient implements CoderApi {
       _peer = peer;
       for (final type in <String>[
         RpcNotification.timelineEvent,
-        RpcNotification.agentUpdated,
+        RpcNotification.sessionUpdated,
+        RpcNotification.agentDefinitionsChanged,
         RpcNotification.approvalRequested,
         RpcNotification.providerAuthUpdated,
       ]) {
@@ -162,12 +163,16 @@ class CoderClient implements CoderApi {
       switch (type) {
         case RpcNotification.timelineEvent:
           final event = TimelineEventDto.fromJson(parameters);
-          final current = _timelineSubscriptions[event.agentId] ?? 0;
+          final current = _timelineSubscriptions[event.sessionId] ?? 0;
           if (event.sequence <= current) return;
-          _timelineSubscriptions[event.agentId] = event.sequence;
+          _timelineSubscriptions[event.sessionId] = event.sequence;
           _events.add(TimelineClientEvent(event));
-        case RpcNotification.agentUpdated:
-          _events.add(AgentUpdatedClientEvent(AgentDto.fromJson(parameters)));
+        case RpcNotification.sessionUpdated:
+          _events.add(
+            SessionUpdatedClientEvent(SessionDto.fromJson(parameters)),
+          );
+        case RpcNotification.agentDefinitionsChanged:
+          _events.add(const AgentDefinitionsChangedClientEvent());
         case RpcNotification.approvalRequested:
           _events.add(
             ApprovalRequestedClientEvent(
@@ -338,56 +343,114 @@ class CoderClient implements CoderApi {
   }
 
   @override
-  Future<List<AgentDto>> listAgents({String? worktreeId}) async {
+  Future<List<SessionDto>> listSessions({String? worktreeId}) async {
     final response = await _request(
-      RpcMethod.agentList,
-      AgentListParamsDto(worktreeId: worktreeId).toJson(),
+      RpcMethod.sessionList,
+      SessionListParamsDto(worktreeId: worktreeId).toJson(),
     );
-    return AgentListResultDto.fromJson(response).agents;
+    return SessionListResultDto.fromJson(response).sessions;
   }
 
   @override
-  Future<AgentDto> createAgent({
+  Future<SessionDto> createSession({
     required String id,
     required String worktreeId,
     required String title,
-    required String providerConnectionId,
-    required String model,
-    required PermissionMode permissionMode,
-    String reasoningEffort = 'medium',
+    required String agentDefinitionId,
   }) async {
     final response = await _request(
-      RpcMethod.agentCreate,
-      AgentCreateParamsDto(
+      RpcMethod.sessionCreate,
+      SessionCreateParamsDto(
         id: id,
         worktreeId: worktreeId,
         title: title,
-        providerConnectionId: providerConnectionId,
-        model: model,
-        reasoningEffort: reasoningEffort,
-        permissionMode: permissionMode,
+        agentDefinitionId: agentDefinitionId,
       ).toJson(),
     );
-    return AgentResultDto.fromJson(response).agent;
+    return SessionResultDto.fromJson(response).session;
   }
 
   @override
-  Future<AgentDto> updateAgentConfiguration({
-    required String agentId,
-    required String providerConnectionId,
-    required String model,
-    String reasoningEffort = 'medium',
+  Future<List<AgentDefinitionDto>> listAgentDefinitions() async {
+    final response = await _request(
+      RpcMethod.agentDefinitionList,
+      const <String, dynamic>{},
+    );
+    return AgentDefinitionListResultDto.fromJson(response).definitions;
+  }
+
+  @override
+  Future<AgentDefinitionDto> getAgentDefinition(String id) async {
+    final response = await _request(
+      RpcMethod.agentDefinitionGet,
+      AgentDefinitionIdParamsDto(id: id).toJson(),
+    );
+    return AgentDefinitionResultDto.fromJson(response).definition;
+  }
+
+  @override
+  Future<AgentDefinitionDto> createAgentDefinition(
+    String id,
+    AgentDefinitionDto definition,
+  ) async {
+    final response = await _request(
+      RpcMethod.agentDefinitionCreate,
+      AgentDefinitionCreateParamsDto(id: id, definition: definition).toJson(),
+    );
+    return AgentDefinitionResultDto.fromJson(response).definition;
+  }
+
+  @override
+  Future<AgentDefinitionDto> updateAgentDefinition(
+    AgentDefinitionDto definition, {
+    required String expectedContentHash,
+    bool force = false,
   }) async {
     final response = await _request(
-      RpcMethod.agentConfigurationUpdate,
-      AgentConfigurationUpdateParamsDto(
-        agentId: agentId,
-        providerConnectionId: providerConnectionId,
-        model: model,
-        reasoningEffort: reasoningEffort,
+      RpcMethod.agentDefinitionUpdate,
+      AgentDefinitionUpdateParamsDto(
+        definition: definition,
+        expectedContentHash: expectedContentHash,
+        force: force,
       ).toJson(),
     );
-    return AgentResultDto.fromJson(response).agent;
+    return AgentDefinitionResultDto.fromJson(response).definition;
+  }
+
+  @override
+  Future<void> archiveAgentDefinition(String id) => _request(
+    RpcMethod.agentDefinitionArchive,
+    AgentDefinitionIdParamsDto(id: id).toJson(),
+  );
+
+  @override
+  Future<AgentDefinitionDto> resetAgentDefinition(String id) async {
+    final response = await _request(
+      RpcMethod.agentDefinitionReset,
+      AgentDefinitionIdParamsDto(id: id).toJson(),
+    );
+    return AgentDefinitionResultDto.fromJson(response).definition;
+  }
+
+  @override
+  Future<AgentDefinitionDto> validateAgentDefinition(
+    String id,
+    String markdown,
+  ) async {
+    final response = await _request(
+      RpcMethod.agentDefinitionValidate,
+      AgentDefinitionValidateParamsDto(id: id, markdown: markdown).toJson(),
+    );
+    return AgentDefinitionResultDto.fromJson(response).definition;
+  }
+
+  @override
+  Future<List<AgentToolDefinitionDto>> listAgentTools() async {
+    final response = await _request(
+      RpcMethod.agentToolCatalog,
+      const <String, dynamic>{},
+    );
+    return AgentToolCatalogResultDto.fromJson(response).tools;
   }
 
   @override
@@ -570,14 +633,14 @@ class CoderClient implements CoderApi {
 
   @override
   Future<void> startTurn({
-    required String agentId,
+    required String sessionId,
     required String turnId,
     required String prompt,
   }) async {
     await _request(
       RpcMethod.turnStart,
       TurnStartParamsDto(
-        agentId: agentId,
+        sessionId: sessionId,
         turnId: turnId,
         prompt: prompt,
       ).toJson(),
@@ -585,10 +648,10 @@ class CoderClient implements CoderApi {
   }
 
   @override
-  Future<void> cancelTurn(String agentId) async {
+  Future<void> cancelTurn(String sessionId) async {
     await _request(
       RpcMethod.turnCancel,
-      AgentIdParamsDto(agentId: agentId).toJson(),
+      SessionIdParamsDto(sessionId: sessionId).toJson(),
     );
   }
 
@@ -608,22 +671,22 @@ class CoderClient implements CoderApi {
 
   @override
   Future<List<TimelineEventDto>> subscribeTimeline(
-    String agentId, {
+    String sessionId, {
     int afterSequence = 0,
   }) async {
-    _timelineSubscriptions[agentId] = afterSequence;
+    _timelineSubscriptions[sessionId] = afterSequence;
     final response = await _request(
       RpcMethod.timelineSubscribe,
       TimelineSubscribeParamsDto(
-        agentId: agentId,
+        sessionId: sessionId,
         afterSequence: afterSequence,
       ).toJson(),
     );
     final events = TimelineResultDto.fromJson(response).events;
     for (final event in events) {
-      final current = _timelineSubscriptions[agentId] ?? 0;
+      final current = _timelineSubscriptions[sessionId] ?? 0;
       if (event.sequence > current) {
-        _timelineSubscriptions[agentId] = event.sequence;
+        _timelineSubscriptions[sessionId] = event.sequence;
       }
     }
     return events;

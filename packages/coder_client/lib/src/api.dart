@@ -29,13 +29,19 @@ final class TimelineClientEvent extends ClientEvent {
   final TimelineEventDto event;
 }
 
-/// AgentUpdatedClientEvent defines a public contract.
-final class AgentUpdatedClientEvent extends ClientEvent {
-  /// Creates a [AgentUpdatedClientEvent].
-  const AgentUpdatedClientEvent(this.agent);
+/// SessionUpdatedClientEvent defines a public contract.
+final class SessionUpdatedClientEvent extends ClientEvent {
+  /// Creates a [SessionUpdatedClientEvent].
+  const SessionUpdatedClientEvent(this.session);
 
   /// The agent public API member.
-  final AgentDto agent;
+  final SessionDto session;
+}
+
+/// Signals that the daemon's Markdown agent files changed.
+final class AgentDefinitionsChangedClientEvent extends ClientEvent {
+  /// Creates a catalog invalidation event.
+  const AgentDefinitionsChangedClientEvent();
 }
 
 /// ApprovalRequestedClientEvent defines a public contract.
@@ -108,27 +114,50 @@ abstract interface class CoderApi {
   /// Archives a worktree registration and optionally its managed checkout.
   Future<WorktreeDto> archiveWorktree(String worktreeId, {bool force = false});
 
-  /// The listAgents public API member.
-  Future<List<AgentDto>> listAgents({String? worktreeId});
+  /// The listSessions public API member.
+  Future<List<SessionDto>> listSessions({String? worktreeId});
 
-  /// The createAgent public API member.
-  Future<AgentDto> createAgent({
+  /// The createSession public API member.
+  Future<SessionDto> createSession({
     required String id,
     required String worktreeId,
     required String title,
-    required String providerConnectionId,
-    required String model,
-    required PermissionMode permissionMode,
-    String reasoningEffort = 'medium',
+    required String agentDefinitionId,
   });
 
-  /// The updateAgentConfiguration public API member.
-  Future<AgentDto> updateAgentConfiguration({
-    required String agentId,
-    required String providerConnectionId,
-    required String model,
-    String reasoningEffort = 'medium',
+  /// Lists all visible Markdown-backed agent definitions.
+  Future<List<AgentDefinitionDto>> listAgentDefinitions();
+
+  /// Returns one Markdown-backed agent definition.
+  Future<AgentDefinitionDto> getAgentDefinition(String id);
+
+  /// Creates one custom Markdown-backed agent definition.
+  Future<AgentDefinitionDto> createAgentDefinition(
+    String id,
+    AgentDefinitionDto definition,
+  );
+
+  /// Updates one definition with optimistic concurrency control.
+  Future<AgentDefinitionDto> updateAgentDefinition(
+    AgentDefinitionDto definition, {
+    required String expectedContentHash,
+    bool force = false,
   });
+
+  /// Archives a custom definition while preserving existing sessions.
+  Future<void> archiveAgentDefinition(String id);
+
+  /// Restores the built-in Coder definition.
+  Future<AgentDefinitionDto> resetAgentDefinition(String id);
+
+  /// Validates a Markdown document without writing it.
+  Future<AgentDefinitionDto> validateAgentDefinition(
+    String id,
+    String markdown,
+  );
+
+  /// Lists built-in tools available to agent definitions.
+  Future<List<AgentToolDefinitionDto>> listAgentTools();
 
   /// The listProviderCatalog public API member.
   Future<ProviderCatalogDto> listProviderCatalog();
@@ -197,13 +226,13 @@ abstract interface class CoderApi {
 
   /// The startTurn public API member.
   Future<void> startTurn({
-    required String agentId,
+    required String sessionId,
     required String turnId,
     required String prompt,
   });
 
   /// The cancelTurn public API member.
-  Future<void> cancelTurn(String agentId);
+  Future<void> cancelTurn(String sessionId);
 
   /// The resolveApproval public API member.
   Future<void> resolveApproval({
@@ -213,7 +242,7 @@ abstract interface class CoderApi {
 
   /// The subscribeTimeline public API member.
   Future<List<TimelineEventDto>> subscribeTimeline(
-    String agentId, {
+    String sessionId, {
     int afterSequence = 0,
   });
 

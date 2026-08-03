@@ -171,82 +171,82 @@ class WorktreeDao extends DatabaseAccessor<CoderDatabase>
   );
 }
 
-@DriftAccessor(tables: <Type>[Agents, Turns])
-/// AgentDao defines a public contract.
-class AgentDao extends DatabaseAccessor<CoderDatabase>
-    with _$AgentDaoMixin
-    implements AgentRepository {
-  /// Creates a [AgentDao].
-  AgentDao(super.attachedDatabase);
+@DriftAccessor(tables: <Type>[Sessions, Turns])
+/// SessionDao defines a public contract.
+class SessionDao extends DatabaseAccessor<CoderDatabase>
+    with _$SessionDaoMixin
+    implements SessionRepository {
+  /// Creates a [SessionDao].
+  SessionDao(super.attachedDatabase);
 
   @override
-  Future<List<AgentDto>> list({String? worktreeId}) async {
-    final query = select(agents);
+  Future<List<SessionDto>> list({String? worktreeId}) async {
+    final query = select(sessions);
     if (worktreeId != null) {
       query.where((row) => row.worktreeId.equals(worktreeId));
     }
-    query.orderBy(<OrderClauseGenerator<$AgentsTable>>[
+    query.orderBy(<OrderClauseGenerator<$SessionsTable>>[
       (row) => OrderingTerm.desc(row.updatedAt),
     ]);
     return (await query.get()).map(_toDto).toList(growable: false);
   }
 
   @override
-  Future<AgentDto?> getById(String id) async {
+  Future<SessionDto?> getById(String id) async {
     final row = await (select(
-      agents,
+      sessions,
     )..where((table) => table.id.equals(id))).getSingleOrNull();
     return row == null ? null : _toDto(row);
   }
 
   @override
   Future<int> countActive(String worktreeId) async {
-    final count = agents.id.count();
-    final query = selectOnly(agents)
+    final count = sessions.id.count();
+    final query = selectOnly(sessions)
       ..addColumns(<Expression<Object>>[count])
       ..where(
-        agents.worktreeId.equals(worktreeId) &
-            agents.status.isIn(<String>[
-              AgentStatus.running.name,
-              AgentStatus.waitingForApproval.name,
-              AgentStatus.initializing.name,
+        sessions.worktreeId.equals(worktreeId) &
+            sessions.status.isIn(<String>[
+              SessionStatus.running.name,
+              SessionStatus.waitingForApproval.name,
+              SessionStatus.waitingForSubagent.name,
+              SessionStatus.initializing.name,
             ]),
       );
     return (await query.getSingle()).read(count) ?? 0;
   }
 
   @override
-  Future<AgentDto> create(AgentDto agent) async {
-    final existing = await getById(agent.id);
+  Future<SessionDto> create(SessionDto session) async {
+    final existing = await getById(session.id);
     if (existing != null) return existing;
-    await into(agents).insert(
-      AgentsCompanion.insert(
-        id: agent.id,
-        worktreeId: agent.worktreeId,
-        title: agent.title,
-        providerConnectionId: agent.providerConnectionId,
-        model: agent.model,
-        reasoningEffort: Value<String>(agent.reasoningEffort),
-        status: agent.status.name,
-        permissionMode: agent.permissionMode.name,
-        activeTurnId: Value<String?>(agent.activeTurnId),
-        lastError: Value<String?>(agent.lastError),
-        createdAt: agent.createdAt,
-        updatedAt: agent.updatedAt,
+    await into(sessions).insert(
+      SessionsCompanion.insert(
+        id: session.id,
+        worktreeId: session.worktreeId,
+        title: session.title,
+        agentDefinitionId: session.agentDefinitionId,
+        origin: session.origin.name,
+        parentSessionId: Value<String?>(session.parentSessionId),
+        status: session.status.name,
+        activeTurnId: Value<String?>(session.activeTurnId),
+        lastError: Value<String?>(session.lastError),
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
       ),
     );
-    return agent;
+    return session;
   }
 
   @override
-  Future<AgentDto> updateStatus(
+  Future<SessionDto> updateStatus(
     String id,
-    AgentStatus status, {
+    SessionStatus status, {
     String? activeTurnId,
     String? error,
   }) async {
-    await (update(agents)..where((row) => row.id.equals(id))).write(
-      AgentsCompanion(
+    await (update(sessions)..where((row) => row.id.equals(id))).write(
+      SessionsCompanion(
         status: Value<String>(status.name),
         activeTurnId: Value<String?>(activeTurnId),
         lastError: Value<String?>(error),
@@ -256,42 +256,10 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
     return (await getById(id))!;
   }
 
-  /// The hasTurns public API member.
-  Future<bool> hasTurns(String agentId) async {
-    final count = turns.id.count();
-    final query = selectOnly(turns)
-      ..addColumns(<Expression<Object>>[count])
-      ..where(turns.agentId.equals(agentId));
-    return (await query.getSingle()).read(count)! > 0;
-  }
-
-  @override
-  Future<AgentDto> updateConfiguration({
-    required String id,
-    required String providerConnectionId,
-    required String model,
-    required String reasoningEffort,
-  }) async {
-    if (await hasTurns(id)) {
-      throw StateError(
-        'Agent provider and model are locked after the first turn.',
-      );
-    }
-    await (update(agents)..where((row) => row.id.equals(id))).write(
-      AgentsCompanion(
-        providerConnectionId: Value<String>(providerConnectionId),
-        model: Value<String>(model),
-        reasoningEffort: Value<String>(reasoningEffort),
-        updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
-      ),
-    );
-    return (await getById(id))!;
-  }
-
   @override
   Future<bool> createTurn({
     required String id,
-    required String agentId,
+    required String sessionId,
     required String prompt,
   }) async {
     final exists = await (select(
@@ -302,7 +270,7 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
     await into(turns).insert(
       TurnsCompanion.insert(
         id: id,
-        agentId: agentId,
+        sessionId: sessionId,
         prompt: prompt,
         status: TurnStatus.running.name,
         createdAt: now,
@@ -322,15 +290,14 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
         ),
       );
 
-  AgentDto _toDto(Agent row) => AgentDto(
+  SessionDto _toDto(Session row) => SessionDto(
     id: row.id,
     worktreeId: row.worktreeId,
     title: row.title,
-    providerConnectionId: row.providerConnectionId,
-    model: row.model,
-    reasoningEffort: row.reasoningEffort,
-    status: AgentStatus.values.byName(row.status),
-    permissionMode: PermissionMode.values.byName(row.permissionMode),
+    agentDefinitionId: row.agentDefinitionId,
+    origin: SessionOrigin.values.byName(row.origin),
+    parentSessionId: row.parentSessionId,
+    status: SessionStatus.values.byName(row.status),
     activeTurnId: row.activeTurnId,
     lastError: row.lastError,
     createdAt: row.createdAt,
@@ -348,7 +315,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
 
   @override
   Future<TimelineEventDto> append({
-    required String agentId,
+    required String sessionId,
     required String type,
     required Map<String, dynamic> data,
     String? turnId,
@@ -356,10 +323,10 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
     final maxSequence = timelineEvents.sequence.max();
     final query = selectOnly(timelineEvents)
       ..addColumns(<Expression<Object>>[maxSequence])
-      ..where(timelineEvents.agentId.equals(agentId));
+      ..where(timelineEvents.sessionId.equals(sessionId));
     final current = (await query.getSingle()).read(maxSequence) ?? 0;
     final event = TimelineEventDto(
-      agentId: agentId,
+      sessionId: sessionId,
       sequence: current + 1,
       turnId: turnId,
       type: type,
@@ -368,7 +335,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
     );
     await into(timelineEvents).insert(
       TimelineEventsCompanion.insert(
-        agentId: event.agentId,
+        sessionId: event.sessionId,
         sequence: event.sequence,
         turnId: Value<String?>(event.turnId),
         type: event.type,
@@ -380,11 +347,11 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
   });
 
   @override
-  Future<List<TimelineEventDto>> after(String agentId, int sequence) async =>
+  Future<List<TimelineEventDto>> after(String sessionId, int sequence) async =>
       (await (select(timelineEvents)
                 ..where(
                   (row) =>
-                      row.agentId.equals(agentId) &
+                      row.sessionId.equals(sessionId) &
                       row.sequence.isBiggerThanValue(sequence),
                 )
                 ..orderBy(<OrderClauseGenerator<$TimelineEventsTable>>[
@@ -393,7 +360,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
               .get())
           .map(
             (row) => TimelineEventDto(
-              agentId: row.agentId,
+              sessionId: row.sessionId,
               sequence: row.sequence,
               turnId: row.turnId,
               type: row.type,
@@ -405,7 +372,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
 
   @override
   Future<void> appendProviderItems(
-    String agentId,
+    String sessionId,
     List<ConversationItem> items,
   ) async {
     if (items.isEmpty) return;
@@ -413,13 +380,13 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
       final maxOrdinal = providerStates.ordinal.max();
       final query = selectOnly(providerStates)
         ..addColumns(<Expression<Object>>[maxOrdinal])
-        ..where(providerStates.agentId.equals(agentId));
+        ..where(providerStates.sessionId.equals(sessionId));
       var ordinal = (await query.getSingle()).read(maxOrdinal) ?? 0;
       for (final item in items) {
         ordinal += 1;
         await into(providerStates).insert(
           ProviderStatesCompanion.insert(
-            agentId: agentId,
+            sessionId: sessionId,
             ordinal: ordinal,
             itemJson: jsonEncode(item.toJson()),
             createdAt: attachedDatabase.clock.nowUtc(),
@@ -430,9 +397,9 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
   }
 
   @override
-  Future<List<ConversationItem>> providerHistory(String agentId) async =>
+  Future<List<ConversationItem>> providerHistory(String sessionId) async =>
       (await (select(providerStates)
-                ..where((row) => row.agentId.equals(agentId))
+                ..where((row) => row.sessionId.equals(sessionId))
                 ..orderBy(<OrderClauseGenerator<$ProviderStatesTable>>[
                   (row) => OrderingTerm.asc(row.ordinal),
                 ]))
@@ -449,7 +416,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
       into(approvalRequests).insert(
         ApprovalRequestsCompanion.insert(
           id: approval.id,
-          agentId: approval.agentId,
+          sessionId: approval.sessionId,
           turnId: approval.turnId,
           toolCallId: approval.toolCallId,
           toolName: approval.toolName,
@@ -474,7 +441,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
         .write(ApprovalRequestsCompanion(status: Value<String>(status.name)));
     return ApprovalRequestDto(
       id: row.id,
-      agentId: row.agentId,
+      sessionId: row.sessionId,
       turnId: row.turnId,
       toolCallId: row.toolCallId,
       toolName: row.toolName,
@@ -489,7 +456,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
   }
 }
 
-@DriftAccessor(tables: <Type>[ProviderConnections, ProviderModels, Agents])
+@DriftAccessor(tables: <Type>[ProviderConnections, ProviderModels])
 /// ProviderDao defines a public contract.
 class ProviderDao extends DatabaseAccessor<CoderDatabase>
     with _$ProviderDaoMixin
@@ -544,15 +511,6 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
 
   @override
   Future<void> deleteConnection(String id) async {
-    final count = agents.id.count();
-    final query = selectOnly(agents)
-      ..addColumns(<Expression<Object>>[count])
-      ..where(agents.providerConnectionId.equals(id));
-    if ((await query.getSingle()).read(count)! > 0) {
-      throw StateError(
-        'Provider connection is referenced by one or more agents.',
-      );
-    }
     await transaction(() async {
       await (delete(
         providerModels,
@@ -699,7 +657,7 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
   );
 }
 
-@DriftAccessor(tables: <Type>[Agents, Turns, ApprovalRequests])
+@DriftAccessor(tables: <Type>[Sessions, Turns, ApprovalRequests])
 /// RuntimeDao defines a public contract.
 class RuntimeDao extends DatabaseAccessor<CoderDatabase>
     with _$RuntimeDaoMixin
@@ -724,16 +682,17 @@ class RuntimeDao extends DatabaseAccessor<CoderDatabase>
               updatedAt: Value<DateTime>(now),
             ),
           );
-      await (update(agents)..where(
+      await (update(sessions)..where(
             (row) => row.status.isIn(<String>[
-              AgentStatus.running.name,
-              AgentStatus.waitingForApproval.name,
-              AgentStatus.initializing.name,
+              SessionStatus.running.name,
+              SessionStatus.waitingForApproval.name,
+              SessionStatus.waitingForSubagent.name,
+              SessionStatus.initializing.name,
             ]),
           ))
           .write(
-            AgentsCompanion(
-              status: Value<String>(AgentStatus.failed.name),
+            SessionsCompanion(
+              status: Value<String>(SessionStatus.failed.name),
               activeTurnId: const Value<String?>(null),
               lastError: const Value<String?>(
                 'Daemon restarted during the turn.',

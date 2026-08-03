@@ -127,49 +127,177 @@ Map<String, dynamic> _$GitBranchDtoToJson(_GitBranchDto instance) =>
       'checkedOut': instance.checkedOut,
     };
 
-_AgentDto _$AgentDtoFromJson(Map<String, dynamic> json) => _AgentDto(
-  id: json['id'] as String,
-  worktreeId: json['worktreeId'] as String,
-  title: json['title'] as String,
-  providerConnectionId: json['providerConnectionId'] as String,
-  model: json['model'] as String,
-  status: $enumDecode(_$AgentStatusEnumMap, json['status']),
-  permissionMode: $enumDecode(_$PermissionModeEnumMap, json['permissionMode']),
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: DateTime.parse(json['updatedAt'] as String),
-  reasoningEffort: json['reasoningEffort'] as String? ?? 'medium',
-  activeTurnId: json['activeTurnId'] as String?,
-  lastError: json['lastError'] as String?,
+_AgentModelSelectionDto _$AgentModelSelectionDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentModelSelectionDto(
+  source: $enumDecode(_$AgentModelSourceEnumMap, json['source']),
+  providerConnectionId: json['providerConnectionId'] as String?,
+  modelId: json['modelId'] as String?,
 );
 
-Map<String, dynamic> _$AgentDtoToJson(_AgentDto instance) => <String, dynamic>{
-  'id': instance.id,
-  'worktreeId': instance.worktreeId,
-  'title': instance.title,
+Map<String, dynamic> _$AgentModelSelectionDtoToJson(
+  _AgentModelSelectionDto instance,
+) => <String, dynamic>{
+  'source': _$AgentModelSourceEnumMap[instance.source]!,
   'providerConnectionId': instance.providerConnectionId,
-  'model': instance.model,
-  'status': _$AgentStatusEnumMap[instance.status]!,
-  'permissionMode': _$PermissionModeEnumMap[instance.permissionMode]!,
-  'createdAt': instance.createdAt.toIso8601String(),
-  'updatedAt': instance.updatedAt.toIso8601String(),
-  'reasoningEffort': instance.reasoningEffort,
-  'activeTurnId': instance.activeTurnId,
-  'lastError': instance.lastError,
+  'modelId': instance.modelId,
 };
 
-const _$AgentStatusEnumMap = {
-  AgentStatus.initializing: 'initializing',
-  AgentStatus.idle: 'idle',
-  AgentStatus.running: 'running',
-  AgentStatus.waitingForApproval: 'waitingForApproval',
-  AgentStatus.failed: 'failed',
-  AgentStatus.closed: 'closed',
+const _$AgentModelSourceEnumMap = {
+  AgentModelSource.daemonDefault: 'daemonDefault',
+  AgentModelSource.fixed: 'fixed',
+};
+
+_AgentDefinitionDiagnosticDto _$AgentDefinitionDiagnosticDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentDefinitionDiagnosticDto(
+  code: json['code'] as String,
+  message: json['message'] as String,
+  line: (json['line'] as num?)?.toInt(),
+  column: (json['column'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$AgentDefinitionDiagnosticDtoToJson(
+  _AgentDefinitionDiagnosticDto instance,
+) => <String, dynamic>{
+  'code': instance.code,
+  'message': instance.message,
+  'line': instance.line,
+  'column': instance.column,
+};
+
+_AgentDefinitionDto _$AgentDefinitionDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentDefinitionDto(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  description: json['description'] as String,
+  mode: $enumDecode(_$AgentModeEnumMap, json['mode']),
+  promptEnabled: json['promptEnabled'] as bool,
+  systemPrompt: json['systemPrompt'] as String,
+  model: AgentModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
+  reasoningEffort: json['reasoningEffort'] as String,
+  permissionMode: $enumDecode(_$PermissionModeEnumMap, json['permissionMode']),
+  toolIds: (json['toolIds'] as List<dynamic>).map((e) => e as String).toList(),
+  callableAgentIds: (json['callableAgentIds'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  contentHash: json['contentHash'] as String,
+  sourcePath: json['sourcePath'] as String,
+  isBuiltIn: json['isBuiltIn'] as bool? ?? false,
+  isArchived: json['isArchived'] as bool? ?? false,
+  isStale: json['isStale'] as bool? ?? false,
+  diagnostics:
+      (json['diagnostics'] as List<dynamic>?)
+          ?.map(
+            (e) => AgentDefinitionDiagnosticDto.fromJson(
+              e as Map<String, dynamic>,
+            ),
+          )
+          .toList() ??
+      const <AgentDefinitionDiagnosticDto>[],
+);
+
+Map<String, dynamic> _$AgentDefinitionDtoToJson(_AgentDefinitionDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'description': instance.description,
+      'mode': _$AgentModeEnumMap[instance.mode]!,
+      'promptEnabled': instance.promptEnabled,
+      'systemPrompt': instance.systemPrompt,
+      'model': instance.model,
+      'reasoningEffort': instance.reasoningEffort,
+      'permissionMode': _$PermissionModeEnumMap[instance.permissionMode]!,
+      'toolIds': instance.toolIds,
+      'callableAgentIds': instance.callableAgentIds,
+      'contentHash': instance.contentHash,
+      'sourcePath': instance.sourcePath,
+      'isBuiltIn': instance.isBuiltIn,
+      'isArchived': instance.isArchived,
+      'isStale': instance.isStale,
+      'diagnostics': instance.diagnostics,
+    };
+
+const _$AgentModeEnumMap = {
+  AgentMode.primary: 'primary',
+  AgentMode.subagent: 'subagent',
 };
 
 const _$PermissionModeEnumMap = {
   PermissionMode.readOnly: 'readOnly',
   PermissionMode.ask: 'ask',
   PermissionMode.workspaceWrite: 'workspaceWrite',
+};
+
+_AgentToolDefinitionDto _$AgentToolDefinitionDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentToolDefinitionDto(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  description: json['description'] as String,
+  risk: $enumDecode(_$ToolRiskEnumMap, json['risk']),
+  available: json['available'] as bool? ?? true,
+);
+
+Map<String, dynamic> _$AgentToolDefinitionDtoToJson(
+  _AgentToolDefinitionDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'description': instance.description,
+  'risk': _$ToolRiskEnumMap[instance.risk]!,
+  'available': instance.available,
+};
+
+const _$ToolRiskEnumMap = {
+  ToolRisk.read: 'read',
+  ToolRisk.write: 'write',
+  ToolRisk.command: 'command',
+};
+
+_SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
+  id: json['id'] as String,
+  worktreeId: json['worktreeId'] as String,
+  title: json['title'] as String,
+  agentDefinitionId: json['agentDefinitionId'] as String,
+  origin: $enumDecode(_$SessionOriginEnumMap, json['origin']),
+  status: $enumDecode(_$SessionStatusEnumMap, json['status']),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  parentSessionId: json['parentSessionId'] as String?,
+  activeTurnId: json['activeTurnId'] as String?,
+  lastError: json['lastError'] as String?,
+);
+
+Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'worktreeId': instance.worktreeId,
+      'title': instance.title,
+      'agentDefinitionId': instance.agentDefinitionId,
+      'origin': _$SessionOriginEnumMap[instance.origin]!,
+      'status': _$SessionStatusEnumMap[instance.status]!,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'parentSessionId': instance.parentSessionId,
+      'activeTurnId': instance.activeTurnId,
+      'lastError': instance.lastError,
+    };
+
+const _$SessionOriginEnumMap = {
+  SessionOrigin.manual: 'manual',
+  SessionOrigin.delegated: 'delegated',
+};
+
+const _$SessionStatusEnumMap = {
+  SessionStatus.initializing: 'initializing',
+  SessionStatus.idle: 'idle',
+  SessionStatus.running: 'running',
+  SessionStatus.waitingForApproval: 'waitingForApproval',
+  SessionStatus.waitingForSubagent: 'waitingForSubagent',
+  SessionStatus.failed: 'failed',
+  SessionStatus.closed: 'closed',
 };
 
 _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
@@ -548,7 +676,7 @@ Map<String, dynamic> _$ProviderDiagnosticDtoToJson(
 
 _TimelineEventDto _$TimelineEventDtoFromJson(Map<String, dynamic> json) =>
     _TimelineEventDto(
-      agentId: json['agentId'] as String,
+      sessionId: json['sessionId'] as String,
       sequence: (json['sequence'] as num).toInt(),
       type: json['type'] as String,
       data: json['data'] as Map<String, dynamic>,
@@ -558,7 +686,7 @@ _TimelineEventDto _$TimelineEventDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$TimelineEventDtoToJson(_TimelineEventDto instance) =>
     <String, dynamic>{
-      'agentId': instance.agentId,
+      'sessionId': instance.sessionId,
       'sequence': instance.sequence,
       'type': instance.type,
       'data': instance.data,
@@ -569,7 +697,7 @@ Map<String, dynamic> _$TimelineEventDtoToJson(_TimelineEventDto instance) =>
 _ApprovalRequestDto _$ApprovalRequestDtoFromJson(Map<String, dynamic> json) =>
     _ApprovalRequestDto(
       id: json['id'] as String,
-      agentId: json['agentId'] as String,
+      sessionId: json['sessionId'] as String,
       turnId: json['turnId'] as String,
       toolCallId: json['toolCallId'] as String,
       toolName: json['toolName'] as String,
@@ -583,7 +711,7 @@ _ApprovalRequestDto _$ApprovalRequestDtoFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$ApprovalRequestDtoToJson(_ApprovalRequestDto instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'agentId': instance.agentId,
+      'sessionId': instance.sessionId,
       'turnId': instance.turnId,
       'toolCallId': instance.toolCallId,
       'toolName': instance.toolName,
@@ -593,12 +721,6 @@ Map<String, dynamic> _$ApprovalRequestDtoToJson(_ApprovalRequestDto instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'preview': instance.preview,
     };
-
-const _$ToolRiskEnumMap = {
-  ToolRisk.read: 'read',
-  ToolRisk.write: 'write',
-  ToolRisk.command: 'command',
-};
 
 const _$ApprovalStatusEnumMap = {
   ApprovalStatus.pending: 'pending',

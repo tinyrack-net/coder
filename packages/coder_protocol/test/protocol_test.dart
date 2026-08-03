@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v5 exposes workspace, worktree, and directory RPCs', () {
-    expect(coderProtocolVersion, 5);
+  test('protocol v6 exposes agent definitions and sessions', () {
+    expect(coderProtocolVersion, 6);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -16,6 +16,46 @@ void main() {
     expect(RpcMethod.worktreeCreate, 'worktree.create');
     expect(RpcMethod.worktreeArchivePreview, 'worktree.archive.preview');
     expect(RpcMethod.worktreeArchive, 'worktree.archive');
+    expect(RpcMethod.agentDefinitionList, 'agentDefinition.list');
+    expect(RpcMethod.agentDefinitionUpdate, 'agentDefinition.update');
+    expect(RpcMethod.agentToolCatalog, 'agentTool.catalog');
+    expect(RpcMethod.sessionList, 'session.list');
+    expect(RpcMethod.sessionCreate, 'session.create');
+  });
+
+  test('agent definition and session contracts round-trip', () {
+    const definition = AgentDefinitionDto(
+      id: 'reviewer',
+      name: 'Reviewer',
+      description: 'Reviews code without editing it.',
+      mode: AgentMode.subagent,
+      promptEnabled: true,
+      systemPrompt: 'Review the requested code.',
+      model: AgentModelSelectionDto(source: AgentModelSource.daemonDefault),
+      reasoningEffort: 'medium',
+      permissionMode: PermissionMode.readOnly,
+      toolIds: <String>['read_file', 'search_text'],
+      callableAgentIds: <String>[],
+      contentHash: 'hash',
+      sourcePath: '/config/agents/reviewer.md',
+    );
+    final session = SessionDto(
+      id: 'session',
+      worktreeId: 'worktree',
+      title: 'Review',
+      agentDefinitionId: definition.id,
+      origin: SessionOrigin.manual,
+      status: SessionStatus.idle,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    _roundTrip(
+      definition,
+      (value) => value.toJson(),
+      AgentDefinitionDto.fromJson,
+    );
+    _roundTrip(session, (value) => value.toJson(), SessionDto.fromJson);
   });
 
   test('workspace and worktree contracts round-trip', () {
@@ -172,21 +212,20 @@ void main() {
     instructions: 'Enter the code.',
     expiresAt: now.add(const Duration(minutes: 15)),
   );
-  final agent = AgentDto(
+  final agent = SessionDto(
     id: 'agent',
     worktreeId: worktree.id,
     title: 'Agent',
-    providerConnectionId: connection.id,
-    model: model.id,
-    status: AgentStatus.waitingForApproval,
-    permissionMode: PermissionMode.ask,
+    agentDefinitionId: 'coder',
+    origin: SessionOrigin.manual,
+    status: SessionStatus.waitingForApproval,
     createdAt: now,
     updatedAt: now,
     activeTurnId: 'turn',
     lastError: 'none',
   );
   final timeline = TimelineEventDto(
-    agentId: agent.id,
+    sessionId: agent.id,
     sequence: 4,
     turnId: 'turn',
     type: 'approval.requested',
@@ -195,7 +234,7 @@ void main() {
   );
   final approval = ApprovalRequestDto(
     id: 'approval',
-    agentId: agent.id,
+    sessionId: agent.id,
     turnId: 'turn',
     toolCallId: 'call',
     toolName: 'apply_patch',
@@ -217,9 +256,9 @@ void main() {
   );
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 5);
+    expect(coderProtocolVersion, 6);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
-    expect(RpcMethod.agentCreate, 'agent.create');
+    expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.providerCatalog, 'provider.catalog');
     expect(RpcMethod.providerAuthStart, 'provider.auth.start');
     expect(RpcMethod.turnStart, 'turn.start');
@@ -228,7 +267,7 @@ void main() {
 
   test('all domain DTOs round-trip with additive fields', () {
     _roundTrip(workspace, (value) => value.toJson(), WorkspaceDto.fromJson);
-    _roundTrip(agent, (value) => value.toJson(), AgentDto.fromJson);
+    _roundTrip(agent, (value) => value.toJson(), SessionDto.fromJson);
     _roundTrip(
       capabilities,
       (value) => value.toJson(),
@@ -362,32 +401,43 @@ void main() {
       WorktreeArchiveParamsDto.fromJson,
     );
     _roundTrip(
-      const AgentListParamsDto(worktreeId: 'worktree'),
+      const SessionListParamsDto(worktreeId: 'worktree'),
       (value) => value.toJson(),
-      AgentListParamsDto.fromJson,
+      SessionListParamsDto.fromJson,
     );
     _roundTrip(
-      const AgentCreateParamsDto(
+      const SessionCreateParamsDto(
         id: 'agent',
         worktreeId: 'worktree',
         title: 'Agent',
-        providerConnectionId: 'provider',
-        model: 'model',
-        reasoningEffort: 'medium',
-        permissionMode: PermissionMode.workspaceWrite,
+        agentDefinitionId: 'coder',
       ),
       (value) => value.toJson(),
-      AgentCreateParamsDto.fromJson,
+      SessionCreateParamsDto.fromJson,
     );
     _roundTrip(
-      const AgentConfigurationUpdateParamsDto(
-        agentId: 'agent',
-        providerConnectionId: 'provider',
-        model: 'model',
-        reasoningEffort: 'high',
+      const AgentDefinitionUpdateParamsDto(
+        definition: AgentDefinitionDto(
+          id: 'reviewer',
+          name: 'Reviewer',
+          description: 'Reviews code.',
+          mode: AgentMode.subagent,
+          promptEnabled: true,
+          systemPrompt: 'Review code.',
+          model: AgentModelSelectionDto(
+            source: AgentModelSource.daemonDefault,
+          ),
+          reasoningEffort: 'medium',
+          permissionMode: PermissionMode.readOnly,
+          toolIds: <String>['read_file'],
+          callableAgentIds: <String>[],
+          contentHash: 'hash',
+          sourcePath: '/config/agents/reviewer.md',
+        ),
+        expectedContentHash: 'hash',
       ),
       (value) => value.toJson(),
-      AgentConfigurationUpdateParamsDto.fromJson,
+      AgentDefinitionUpdateParamsDto.fromJson,
     );
     _roundTrip(
       const ProviderConnectApiKeyParamsDto(
@@ -467,7 +517,7 @@ void main() {
     );
     _roundTrip(
       const TurnStartParamsDto(
-        agentId: 'agent',
+        sessionId: 'agent',
         turnId: 'turn',
         prompt: 'hello',
       ),
@@ -475,9 +525,9 @@ void main() {
       TurnStartParamsDto.fromJson,
     );
     _roundTrip(
-      const AgentIdParamsDto(agentId: 'agent'),
+      const SessionIdParamsDto(sessionId: 'agent'),
       (value) => value.toJson(),
-      AgentIdParamsDto.fromJson,
+      SessionIdParamsDto.fromJson,
     );
     _roundTrip(
       const ApprovalResolveParamsDto(
@@ -489,7 +539,7 @@ void main() {
     );
     _roundTrip(
       const TimelineSubscribeParamsDto(
-        agentId: 'agent',
+        sessionId: 'agent',
         afterSequence: 12,
       ),
       (value) => value.toJson(),
@@ -558,14 +608,14 @@ void main() {
       WorktreeArchivePreviewResultDto.fromJson,
     );
     _roundTrip(
-      AgentListResultDto(agents: <AgentDto>[agent]),
+      SessionListResultDto(sessions: <SessionDto>[agent]),
       (value) => value.toJson(),
-      AgentListResultDto.fromJson,
+      SessionListResultDto.fromJson,
     );
     _roundTrip(
-      AgentResultDto(agent: agent),
+      SessionResultDto(session: agent),
       (value) => value.toJson(),
-      AgentResultDto.fromJson,
+      SessionResultDto.fromJson,
     );
     _roundTrip(
       ProviderCatalogResultDto(catalog: catalog),
@@ -658,7 +708,7 @@ void main() {
 
   test('every enum value has a stable JSON name', () {
     final values = <Enum>[
-      ...AgentStatus.values,
+      ...SessionStatus.values,
       ...TurnStatus.values,
       ...PermissionMode.values,
       ...ApprovalStatus.values,

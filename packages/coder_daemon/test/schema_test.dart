@@ -29,27 +29,26 @@ void main() {
       () => worktrees.primaryKey,
     ]);
 
-    final agents = Agents();
+    final sessions = Sessions();
     _expectGeneratedDsl(<Object? Function()>[
-      () => agents.id,
-      () => agents.worktreeId,
-      () => agents.title,
-      () => agents.providerConnectionId,
-      () => agents.model,
-      () => agents.reasoningEffort,
-      () => agents.status,
-      () => agents.permissionMode,
-      () => agents.activeTurnId,
-      () => agents.lastError,
-      () => agents.createdAt,
-      () => agents.updatedAt,
-      () => agents.primaryKey,
+      () => sessions.id,
+      () => sessions.worktreeId,
+      () => sessions.title,
+      () => sessions.agentDefinitionId,
+      () => sessions.origin,
+      () => sessions.parentSessionId,
+      () => sessions.status,
+      () => sessions.activeTurnId,
+      () => sessions.lastError,
+      () => sessions.createdAt,
+      () => sessions.updatedAt,
+      () => sessions.primaryKey,
     ]);
 
     final turns = Turns();
     _expectGeneratedDsl(<Object? Function()>[
       () => turns.id,
-      () => turns.agentId,
+      () => turns.sessionId,
       () => turns.prompt,
       () => turns.status,
       () => turns.error,
@@ -60,7 +59,7 @@ void main() {
 
     final timeline = TimelineEvents();
     _expectGeneratedDsl(<Object? Function()>[
-      () => timeline.agentId,
+      () => timeline.sessionId,
       () => timeline.sequence,
       () => timeline.turnId,
       () => timeline.type,
@@ -72,7 +71,7 @@ void main() {
     final approvals = ApprovalRequests();
     _expectGeneratedDsl(<Object? Function()>[
       () => approvals.id,
-      () => approvals.agentId,
+      () => approvals.sessionId,
       () => approvals.turnId,
       () => approvals.toolCallId,
       () => approvals.toolName,
@@ -86,7 +85,7 @@ void main() {
 
     final states = ProviderStates();
     _expectGeneratedDsl(<Object? Function()>[
-      () => states.agentId,
+      () => states.sessionId,
       () => states.ordinal,
       () => states.itemJson,
       () => states.createdAt,
@@ -137,7 +136,7 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 5);
+      expect(database.schemaVersion, 6);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),
