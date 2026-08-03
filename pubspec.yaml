@@ -63,9 +63,13 @@ melos:
     run:daemon:
       run: dart run packages/coder_daemon/bin/coder_daemon.dart
     run:desktop:
-      run: dart run melos exec --scope=coder_app -- flutter run -d linux -t lib/main_desktop.dart
+      # `stdio: inherit` gives flutter run a real terminal so r/R/q work; it is
+      # incompatible with melos exec, hence the explicit package directory.
+      run: cd apps/coder_app && flutter run -d linux -t lib/main_desktop.dart
+      stdio: inherit
     run:mobile:
-      run: dart run melos exec --scope=coder_app -- flutter run -t lib/main_mobile.dart
+      run: cd apps/coder_app && flutter run -t lib/main_mobile.dart
+      stdio: inherit
     build:linux:
       run: dart run melos exec --scope=coder_app -- flutter build linux --debug -t lib/main_desktop.dart
     build:android:
