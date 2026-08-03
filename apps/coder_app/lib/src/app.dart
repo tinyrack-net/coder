@@ -483,6 +483,9 @@ class WorkspacePage extends ConsumerStatefulWidget {
 }
 
 class _WorkspacePageState extends ConsumerState<WorkspacePage> {
+  /// Whether this state already queued the saved-worktree restore.
+  bool _restoreScheduled = false;
+
   @override
   Widget build(BuildContext context) {
     final registry = ref.watch(hostRegistryControllerProvider);
@@ -571,6 +574,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   ) {
     // Opening the composer is an explicit choice; never bounce out of it.
     if (widget.compose || widget.selection != null) return;
+    if (_restoreScheduled) return;
     if (ref.read(selectionRestoreControllerProvider)) return;
     final saved = registry?.settings.lastWorktree;
     if (saved == null || catalog == null) return;
@@ -582,9 +586,14 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
         ) ??
         false;
     if (!exists) return;
-    ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
+    // This runs from build, where writing a provider is not allowed, so the
+    // restore is both marked and navigated after the frame. The local flag
+    // covers the frames in between, which the provider cannot yet reject.
+    _restoreScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _goWorktree(context, saved);
+      if (!mounted) return;
+      ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
+      _goWorktree(context, saved);
     });
   }
 }
