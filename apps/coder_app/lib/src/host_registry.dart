@@ -308,6 +308,13 @@ final class HostRegistry {
     _emit(value.copyWith(settings: settings));
   }
 
+  /// Persists whether the workspace sidebar is hidden on wide layouts.
+  Future<void> setSidebarCollapsed({required bool collapsed}) async {
+    final settings = value.settings.copyWith(sidebarCollapsed: collapsed);
+    await _settings.saveSettings(settings);
+    _emit(value.copyWith(settings: settings));
+  }
+
   /// Persists the selected checkout and its locally-visible session tabs.
   Future<void> saveWorkspaceUi({
     required WorkspaceSelection selection,

@@ -37,28 +37,72 @@ final class ProcessGitWorkspaceGateway implements GitWorkspaceGateway {
       'git',
       const <String>[
         'for-each-ref',
-        '--format=%(refname:short)%00%(HEAD)',
+        '--format=%(refname)%00%(refname:short)%00%(HEAD)%00%(symref:short)',
         'refs/heads',
+        'refs/remotes',
       ],
       workingDirectory: repositoryRoot,
     );
-    _requireSuccess(result, 'Unable to list local branches.');
+    _requireSuccess(result, 'Unable to list branches.');
     final checkedOut = (await listWorktrees(
       repositoryRoot,
     )).map((item) => item.branch).nonNulls.toSet();
+    final branches = <GitBranchDto>[];
+    final defaults = <String>{};
+    for (final line in result.stdout.split('\n')) {
+      if (line.isEmpty) continue;
+      final fields = line.split('\u0000');
+      if (fields.length < 2) continue;
+      final refname = fields.first;
+      final name = fields[1];
+      final isRemote = refname.startsWith('refs/remotes/');
+      final symref = fields.length > 3 ? fields[3] : '';
+      // `origin/HEAD` is a pointer, not a branch: record its target instead.
+      if (symref.isNotEmpty) {
+        defaults.add(symref);
+        continue;
+      }
+      branches.add(
+        GitBranchDto(
+          name: name,
+          current: fields.length > 2 && fields[2] == '*',
+          checkedOut: !isRemote && checkedOut.contains(name),
+          isRemote: isRemote,
+        ),
+      );
+    }
+    return branches
+        .map(
+          (branch) => defaults.contains(branch.name)
+              ? branch.copyWith(isDefault: true)
+              : branch,
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<String>> listRemotes(String repositoryRoot) async {
+    final result = await _commands.run(
+      'git',
+      const <String>['remote'],
+      workingDirectory: repositoryRoot,
+    );
+    _requireSuccess(result, 'Unable to list Git remotes.');
     return result.stdout
         .split('\n')
+        .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
-        .map((line) {
-          final fields = line.split('\u0000');
-          final name = fields.first;
-          return GitBranchDto(
-            name: name,
-            current: fields.length > 1 && fields[1] == '*',
-            checkedOut: checkedOut.contains(name),
-          );
-        })
         .toList(growable: false);
+  }
+
+  @override
+  Future<bool> fetchRemote(String repositoryRoot, String remote) async {
+    final result = await _commands.run(
+      'git',
+      <String>['fetch', remote],
+      workingDirectory: repositoryRoot,
+    );
+    return result.exitCode == 0;
   }
 
   @override

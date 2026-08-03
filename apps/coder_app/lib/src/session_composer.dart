@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
+import 'package:coder_app/src/composer_menu.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/model_picker.dart';
@@ -71,10 +72,10 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final agentEnabled = widget.agentEnabled;
     final enabled = widget.enabled;
     final planning = widget.mode == SessionMode.plan;
+    // Keep the loaded connections while the provider refreshes.
     final providers = ref
         .watch(providerSettingsControllerProvider(hostId))
-        .asData
-        ?.value;
+        .value;
     final connections = usableConnections(
       providers?.connections ?? const <ProviderConnectionDto>[],
     );
@@ -99,7 +100,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: <Widget>[
-          _ComposerChip(
+          ComposerChip(
             valueKey: const ValueKey('session-composer-mode'),
             icon: Icons.checklist_rtl,
             label: planning ? 'Plan' : '실행',
@@ -108,39 +109,39 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                 : '요청을 바로 수행합니다. Shift+Tab으로 전환',
             selected: planning,
             onPressed: enabled
-                ? () => widget.onModeChanged(
+                ? (_) => widget.onModeChanged(
                     planning ? SessionMode.normal : SessionMode.plan,
                   )
                 : null,
           ),
           const SizedBox(width: 8),
-          _ComposerChip(
+          ComposerChip(
             valueKey: const ValueKey('session-composer-agent'),
             icon: Icons.smart_toy_outlined,
             label: agent?.name ?? 'Agent',
             tooltip: agentEnabled ? 'Agent 선택' : '세션 생성 후에는 Agent를 바꿀 수 없습니다.',
             onPressed: enabled && agentEnabled && definitions.isNotEmpty
-                ? () => _chooseAgent(context)
+                ? _chooseAgent
                 : null,
           ),
           const SizedBox(width: 8),
-          _ComposerChip(
+          ComposerChip(
             valueKey: const ValueKey('session-composer-provider'),
             icon: Icons.cloud_outlined,
             label: connection?.displayName ?? 'Provider',
             tooltip: 'Provider 선택',
             onPressed: enabled && connections.isNotEmpty
-                ? () => _chooseProvider(context, connections)
+                ? (chipContext) => _chooseProvider(chipContext, connections)
                 : null,
           ),
           const SizedBox(width: 8),
-          _ComposerChip(
+          ComposerChip(
             valueKey: const ValueKey('session-composer-model'),
             icon: Icons.memory_outlined,
             label: modelLabel ?? selection?.modelId ?? '모델',
             tooltip: '모델 선택',
             onPressed: enabled && connection != null
-                ? () => _chooseModel(context, connection.id)
+                ? (chipContext) => _chooseModel(chipContext, connection.id)
                 : null,
           ),
         ],
@@ -150,8 +151,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
 
   List<ProviderModelDto>? _loadedModels(String connectionId) => ref
       .read(providerSettingsControllerProvider(widget.hostId))
-      .asData
-      ?.value
+      .value
       ?.models[connectionId];
 
   Future<void> _ensureModelsLoaded(String connectionId) async {
@@ -162,9 +162,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
   }
 
   Future<void> _chooseAgent(BuildContext context) async {
-    final chosen = await showMenu<String>(
-      context: context,
-      position: _anchorAt(context),
+    final chosen = await showComposerMenu<String>(
+      context,
       items: <PopupMenuEntry<String>>[
         for (final definition in widget.definitions)
           PopupMenuItem<String>(
@@ -181,9 +180,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     BuildContext context,
     List<ProviderConnectionDto> connections,
   ) async {
-    final chosen = await showMenu<String>(
-      context: context,
-      position: _anchorAt(context),
+    final chosen = await showComposerMenu<String>(
+      context,
       items: <PopupMenuEntry<String>>[
         for (final connection in connections)
           PopupMenuItem<String>(
@@ -235,34 +233,37 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
             ),
     );
   }
-
-  RelativeRect _anchorAt(BuildContext context) {
-    final box = context.findRenderObject()! as RenderBox;
-    final origin = box.localToGlobal(Offset.zero);
-    return RelativeRect.fromLTRB(
-      origin.dx,
-      origin.dy,
-      origin.dx + box.size.width,
-      origin.dy + box.size.height,
-    );
-  }
 }
 
-class _ComposerChip extends StatelessWidget {
-  const _ComposerChip({
+/// Compact selector chip shared by the composers.
+class ComposerChip extends StatelessWidget {
+  /// Creates a composer chip.
+  const ComposerChip({
     required this.valueKey,
     required this.icon,
     required this.label,
     required this.tooltip,
     required this.onPressed,
     this.selected = false,
+    super.key,
   });
 
+  /// Stable key used by tests and by the enclosing row.
   final ValueKey<String> valueKey;
+
+  /// Leading glyph.
   final IconData icon;
+
+  /// Chip label.
   final String label;
+
+  /// Hover and long-press description.
   final String tooltip;
-  final VoidCallback? onPressed;
+
+  /// Tap handler receiving the chip's own context; null disables the chip.
+  final void Function(BuildContext chipContext)? onPressed;
+
+  /// Whether the chip renders as active.
   final bool selected;
 
   @override
@@ -275,7 +276,7 @@ class _ComposerChip extends StatelessWidget {
       backgroundColor: selected
           ? Theme.of(context).colorScheme.primaryContainer
           : null,
-      onPressed: onPressed,
+      onPressed: onPressed == null ? null : () => onPressed!(context),
     ),
   );
 }
@@ -299,12 +300,10 @@ class DraftSessionPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final agents = ref
         .watch(agentDefinitionsControllerProvider(selection.hostId))
-        .asData
-        ?.value;
+        .value;
     final providers = ref
         .watch(providerSettingsControllerProvider(selection.hostId))
-        .asData
-        ?.value;
+        .value;
     final draft = ref.watch(
       sessionComposerDraftControllerProvider(
         selection.hostId,
@@ -387,6 +386,7 @@ class SessionComposer extends StatefulWidget {
     required this.onSubmit,
     required this.enabled,
     this.onModeToggled,
+    this.header,
     this.hint,
     super.key,
   });
@@ -399,6 +399,9 @@ class SessionComposer extends StatefulWidget {
 
   /// Cycles the collaboration mode, mirroring the Shift+Tab shortcut.
   final VoidCallback? onModeToggled;
+
+  /// Extra selectors rendered above [bar].
+  final Widget? header;
 
   /// Whether the prompt can be typed and sent.
   final bool enabled;
@@ -428,6 +431,10 @@ class _SessionComposerState extends State<SessionComposer> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
+          if (widget.header != null) ...<Widget>[
+            widget.header!,
+            const SizedBox(height: 8),
+          ],
           widget.bar,
           if (widget.bar.mode == SessionMode.plan)
             Padding(

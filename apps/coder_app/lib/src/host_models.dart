@@ -28,6 +28,7 @@ final class AppSettings {
     this.lastActiveHostId,
     this.lastWorktree,
     this.sessionTabs = const <String, SessionTabPreference>{},
+    this.sidebarCollapsed = false,
   });
 
   /// Whether desktop should manage an app-owned daemon.
@@ -45,6 +46,9 @@ final class AppSettings {
   /// Locally-open session tabs keyed by [WorkspaceSelection.storageKey].
   final Map<String, SessionTabPreference> sessionTabs;
 
+  /// Whether the workspace sidebar is hidden on wide layouts.
+  final bool sidebarCollapsed;
+
   /// Returns settings with selected fields replaced.
   AppSettings copyWith({
     bool? embeddedDaemonEnabled,
@@ -54,6 +58,7 @@ final class AppSettings {
     WorkspaceSelection? lastWorktree,
     bool clearLastWorktree = false,
     Map<String, SessionTabPreference>? sessionTabs,
+    bool? sidebarCollapsed,
   }) => AppSettings(
     embeddedDaemonEnabled: embeddedDaemonEnabled ?? this.embeddedDaemonEnabled,
     embeddedDaemonExposure:
@@ -63,6 +68,7 @@ final class AppSettings {
         : lastActiveHostId ?? this.lastActiveHostId,
     lastWorktree: clearLastWorktree ? null : lastWorktree ?? this.lastWorktree,
     sessionTabs: sessionTabs ?? this.sessionTabs,
+    sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
   );
 }
 

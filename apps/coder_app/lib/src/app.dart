@@ -13,9 +13,9 @@ import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/settings_page.dart';
-import 'package:coder_client/coder_client.dart';
+import 'package:coder_app/src/workspace/new_workspace_pane.dart';
+import 'package:coder_app/src/workspace/workspace_sidebar.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,6 +55,9 @@ class CoderApp extends StatelessWidget {
   );
 }
 
+/// Width at which the workspace and settings shells show both panes.
+const double wideLayoutBreakpoint = 760;
+
 ThemeData _theme(Brightness brightness) => ThemeData(
   colorScheme: ColorScheme.fromSeed(
     seedColor: brightness == Brightness.light
@@ -70,11 +73,14 @@ ThemeData _theme(Brightness brightness) => ThemeData(
 /// Unified workspace home shown before daemon connections complete.
 class WorkspaceHomeRoute extends GoRouteData with $WorkspaceHomeRoute {
   /// Creates the workspace home route.
-  const WorkspaceHomeRoute();
+  const WorkspaceHomeRoute({this.compose = false});
+
+  /// Whether the right pane opens the new-workspace composer directly.
+  final bool compose;
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const WorkspacePage();
+      WorkspacePage(compose: compose);
 }
 
 @TypedGoRoute<WorktreeRoute>(
@@ -411,8 +417,12 @@ class WorkspacePage extends ConsumerStatefulWidget {
   const WorkspacePage({
     this.selection,
     this.requestedAgentId,
+    this.compose = false,
     super.key,
   });
+
+  /// Whether the right pane opens the new-workspace composer directly.
+  final bool compose;
 
   /// Selected checkout, if any.
   final WorkspaceSelection? selection;
@@ -425,28 +435,25 @@ class WorkspacePage extends ConsumerStatefulWidget {
 }
 
 class _WorkspacePageState extends ConsumerState<WorkspacePage> {
-  bool _restoreScheduled = false;
-
   @override
   Widget build(BuildContext context) {
     final registry = ref.watch(hostRegistryControllerProvider);
     final catalog = ref.watch(workspaceCatalogControllerProvider);
-    _restoreSelection(registry.asData?.value, catalog.asData?.value);
+    final collapsed = registry.value?.settings.sidebarCollapsed ?? false;
+    _restoreSelection(registry.value, catalog.value);
     return Scaffold(
       appBar: AppBar(
+        // The toggle keeps one position in both states: the very top left.
+        leading: MediaQuery.sizeOf(context).width < wideLayoutBreakpoint
+            ? null
+            : IconButton(
+                key: const ValueKey('workspace-sidebar-toggle'),
+                tooltip: collapsed ? '사이드바 열기' : '사이드바 접기',
+                onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
+                icon: Icon(collapsed ? Icons.menu : Icons.menu_open),
+              ),
         title: const Text('Workspaces'),
         actions: <Widget>[
-          IconButton(
-            tooltip: '폴더 추가',
-            onPressed:
-                registry.asData?.value.runtimes.values.any(
-                      (item) => item.connected,
-                    ) ==
-                    true
-                ? () => _addFolder(registry.requireValue)
-                : null,
-            icon: const Icon(Icons.create_new_folder_outlined),
-          ),
           IconButton(
             tooltip: '설정',
             onPressed: () {
@@ -463,35 +470,40 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final tree = _WorkspaceTree(
-            registry: registry.asData?.value,
+          final sidebar = WorkspaceSidebar(
+            registry: registry.value,
             catalog: catalog,
             selected: widget.selection,
-            onAddFolder: registry.asData == null
-                ? null
-                : () => _addFolder(registry.requireValue),
+            onNewWorkspace: () =>
+                const WorkspaceHomeRoute(compose: true).go(context),
+            onSelect: (selection) => _goWorktree(context, selection),
+            onOpenDaemonSettings: () => const DaemonSettingsRoute().go(context),
+            onArchivedSelection: () => const WorkspaceHomeRoute().go(context),
           );
-          if (constraints.maxWidth < 760) {
-            return widget.selection == null
-                ? tree
-                : _SessionArea(
-                    selection: widget.selection!,
-                    requestedAgentId: widget.requestedAgentId,
-                    showBack: true,
-                  );
+          final detail = widget.selection == null
+              ? NewWorkspacePane(
+                  showBack: constraints.maxWidth < wideLayoutBreakpoint,
+                  onBack: () => const WorkspaceHomeRoute().go(context),
+                  onStarted: (selection, session) =>
+                      _goSession(context, selection, session.id),
+                )
+              : _SessionArea(
+                  selection: widget.selection!,
+                  requestedAgentId: widget.requestedAgentId,
+                  showBack: constraints.maxWidth < wideLayoutBreakpoint,
+                );
+          if (constraints.maxWidth < wideLayoutBreakpoint) {
+            return widget.selection == null && !widget.compose
+                ? sidebar
+                : detail;
           }
           return Row(
             children: <Widget>[
-              SizedBox(width: 320, child: tree),
-              const VerticalDivider(width: 1),
-              Expanded(
-                child: widget.selection == null
-                    ? const _EmptyWorkspaceDetail()
-                    : _SessionArea(
-                        selection: widget.selection!,
-                        requestedAgentId: widget.requestedAgentId,
-                      ),
-              ),
+              if (!collapsed) ...<Widget>[
+                SizedBox(width: 320, child: sidebar),
+                const VerticalDivider(width: 1),
+              ],
+              Expanded(child: detail),
             ],
           );
         },
@@ -499,11 +511,17 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     );
   }
 
+  Future<void> _setSidebarCollapsed(bool collapsed) => ref
+      .read(hostRegistryControllerProvider.notifier)
+      .setSidebarCollapsed(collapsed: collapsed);
+
   void _restoreSelection(
     HostRegistryState? registry,
     UnifiedWorkspaceCatalogState? catalog,
   ) {
-    if (_restoreScheduled || widget.selection != null) return;
+    // Opening the composer is an explicit choice; never bounce out of it.
+    if (widget.compose || widget.selection != null) return;
+    if (ref.read(selectionRestoreControllerProvider)) return;
     final saved = registry?.settings.lastWorktree;
     if (saved == null || catalog == null) return;
     final exists =
@@ -514,572 +532,10 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
         ) ??
         false;
     if (!exists) return;
-    _restoreScheduled = true;
+    ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _goWorktree(context, saved);
     });
-  }
-
-  Future<void> _addFolder(HostRegistryState registry) async {
-    final online = registry.runtimes.values
-        .where((item) => item.connected)
-        .toList(growable: false);
-    final hostId = await showDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('폴더를 추가할 daemon'),
-        children: <Widget>[
-          for (final host in online)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, host.id),
-              child: ListTile(
-                leading: Icon(
-                  host.kind == HostKind.embedded
-                      ? Icons.computer_outlined
-                      : Icons.cloud_outlined,
-                ),
-                title: Text(host.label),
-              ),
-            ),
-        ],
-      ),
-    );
-    if (hostId == null || !mounted) return;
-    final host = registry.runtimes[hostId]!;
-    final path =
-        host.kind == HostKind.embedded &&
-            ref.read(appServicesProvider).supportsEmbeddedDaemon
-        ? await getDirectoryPath(confirmButtonText: 'Workspace 선택')
-        : await showDialog<String>(
-            context: context,
-            builder: (context) => _RemoteDirectoryDialog(api: host.api!),
-          );
-    if (path == null || !mounted) return;
-    final result = await ref
-        .read(workspaceCatalogControllerProvider.notifier)
-        .register(hostId, path);
-    if (!mounted || result.worktrees.isEmpty) return;
-    _goWorktree(
-      context,
-      WorkspaceSelection(
-        hostId: hostId,
-        workspaceId: result.workspace.id,
-        worktreeId: result.worktrees.first.id,
-      ),
-    );
-  }
-}
-
-class _WorkspaceTree extends StatelessWidget {
-  const _WorkspaceTree({
-    required this.registry,
-    required this.catalog,
-    required this.selected,
-    required this.onAddFolder,
-  });
-
-  final HostRegistryState? registry;
-  final AsyncValue<UnifiedWorkspaceCatalogState> catalog;
-  final WorkspaceSelection? selected;
-  final VoidCallback? onAddFolder;
-
-  @override
-  Widget build(BuildContext context) {
-    final runtimes =
-        registry?.runtimes.values.toList(growable: false) ??
-        const <HostRuntimeSnapshot>[];
-    final catalogs =
-        catalog.asData?.value.catalogs ?? const <String, WorkspaceCatalogDto>{};
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        ListTile(
-          title: const Text('Repositories'),
-          trailing: IconButton(
-            tooltip: '폴더 추가',
-            onPressed: onAddFolder,
-            icon: const Icon(Icons.add),
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: runtimes.isEmpty
-              ? _NoDaemonState(
-                  onSettings: () {
-                    const DaemonSettingsRoute().go(context);
-                  },
-                )
-              : ListView(
-                  children: <Widget>[
-                    for (final host in runtimes)
-                      _HostTreeNode(
-                        host: host,
-                        catalog: catalogs[host.id],
-                        selected: selected,
-                      ),
-                  ],
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HostTreeNode extends StatelessWidget {
-  const _HostTreeNode({
-    required this.host,
-    required this.catalog,
-    required this.selected,
-  });
-
-  final HostRuntimeSnapshot host;
-  final WorkspaceCatalogDto? catalog;
-  final WorkspaceSelection? selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final workspaces = catalog?.workspaces ?? const <WorkspaceDto>[];
-    if (!host.connected) {
-      return ListTile(
-        leading: const Icon(Icons.cloud_off_outlined),
-        title: Text(host.label),
-        subtitle: Text(
-          '${_hostStatusLabel(host.status)}'
-          '${host.error == null ? '' : ' · ${host.error}'}',
-        ),
-      );
-    }
-    return ExpansionTile(
-      initiallyExpanded: true,
-      leading: const Icon(Icons.dns_outlined),
-      title: Text(host.label),
-      subtitle: Text(_hostStatusLabel(host.status)),
-      children: <Widget>[
-        for (final workspace in workspaces)
-          _RepositoryTreeNode(
-            hostId: host.id,
-            workspace: workspace,
-            worktrees: catalog!.worktrees
-                .where((item) => item.workspaceId == workspace.id)
-                .toList(growable: false),
-            selected: selected,
-          ),
-      ],
-    );
-  }
-}
-
-class _RepositoryTreeNode extends ConsumerWidget {
-  const _RepositoryTreeNode({
-    required this.hostId,
-    required this.workspace,
-    required this.worktrees,
-    required this.selected,
-  });
-
-  final String hostId;
-  final WorkspaceDto workspace;
-  final List<WorktreeDto> worktrees;
-  final WorkspaceSelection? selected;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.only(left: 16),
-    child: ExpansionTile(
-      initiallyExpanded: selected?.workspaceId == workspace.id,
-      leading: Icon(
-        workspace.kind == WorkspaceKind.git
-            ? Icons.account_tree_outlined
-            : Icons.folder_outlined,
-      ),
-      title: Row(
-        children: <Widget>[
-          Expanded(child: Text(workspace.name)),
-          if (workspace.kind == WorkspaceKind.git)
-            IconButton(
-              tooltip: '새 worktree',
-              visualDensity: VisualDensity.compact,
-              onPressed: () => _createWorktree(context, ref),
-              icon: const Icon(Icons.add, size: 18),
-            ),
-        ],
-      ),
-      subtitle: Text(
-        workspace.rootPath,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      children: <Widget>[
-        for (final worktree in worktrees)
-          ListTile(
-            contentPadding: const EdgeInsets.only(left: 48, right: 12),
-            selected:
-                selected?.hostId == hostId &&
-                selected?.worktreeId == worktree.id,
-            leading: Icon(
-              worktree.kind == WorktreeKind.checkout
-                  ? Icons.home_work_outlined
-                  : Icons.call_split_outlined,
-              size: 20,
-            ),
-            title: Text(worktree.branch ?? worktree.name),
-            subtitle: Text(
-              worktree.path,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: PopupMenuButton<String>(
-              tooltip: 'Worktree 메뉴',
-              onSelected: (action) {
-                if (action == 'archive') {
-                  unawaited(_archiveWorktree(context, ref, worktree));
-                }
-              },
-              itemBuilder: (context) => const <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                  value: 'archive',
-                  child: Text('Archive'),
-                ),
-              ],
-            ),
-            onTap: () => _goWorktree(
-              context,
-              WorkspaceSelection(
-                hostId: hostId,
-                workspaceId: workspace.id,
-                worktreeId: worktree.id,
-              ),
-            ),
-          ),
-      ],
-    ),
-  );
-
-  Future<void> _createWorktree(BuildContext context, WidgetRef ref) async {
-    final api = await _api(ref);
-    final branches = await api.listGitBranches(workspace.id);
-    if (!context.mounted) return;
-    final draft = await showDialog<_WorktreeDraft>(
-      context: context,
-      builder: (context) => _CreateWorktreeDialog(branches: branches),
-    );
-    if (draft == null || !context.mounted) return;
-    final worktree = await api.createWorktree(
-      id: ref.read(appIdGeneratorProvider).generate(),
-      workspaceId: workspace.id,
-      mode: draft.mode,
-      branchName: draft.branchName,
-      baseBranch: draft.baseBranch,
-    );
-    await ref
-        .read(workspaceCatalogControllerProvider.notifier)
-        .refreshHost(hostId);
-    if (!context.mounted) return;
-    _goWorktree(
-      context,
-      WorkspaceSelection(
-        hostId: hostId,
-        workspaceId: workspace.id,
-        worktreeId: worktree.id,
-      ),
-    );
-  }
-
-  Future<void> _archiveWorktree(
-    BuildContext context,
-    WidgetRef ref,
-    WorktreeDto worktree,
-  ) async {
-    final api = await _api(ref);
-    final preview = await api.previewWorktreeArchive(worktree.id);
-    if (!context.mounted) return;
-    if (preview.runningSessionCount > 0) {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Archive할 수 없습니다'),
-          content: Text(
-            '실행 중인 session ${preview.runningSessionCount}개를 먼저 '
-            '중지하세요.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('확인'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-    final risky = preview.dirty || preview.unpushedCommitCount > 0;
-    final dirtyWarning = preview.dirty ? '커밋하지 않은 변경이 있습니다.\n' : '';
-    final unpushedWarning = preview.unpushedCommitCount > 0
-        ? '${preview.unpushedCommitCount}개의 push하지 않은 commit이 있습니다.\n'
-        : '';
-    final removalWarning = preview.removesDirectory
-        ? 'Coder가 만든 checkout 디렉터리가 제거됩니다.'
-        : '등록만 숨기고 디스크의 checkout은 유지합니다.';
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${worktree.name}을 Archive할까요?'),
-        content: Text('$dirtyWarning$unpushedWarning$removalWarning'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(risky ? '위험을 확인하고 Archive' : 'Archive'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await api.archiveWorktree(worktree.id, force: risky);
-    await ref
-        .read(workspaceCatalogControllerProvider.notifier)
-        .refreshHost(hostId);
-    if (context.mounted && selected?.worktreeId == worktree.id) {
-      const WorkspaceHomeRoute().go(context);
-    }
-  }
-
-  Future<CoderApi> _api(WidgetRef ref) async {
-    final runtime = (await ref.read(
-      hostRegistryControllerProvider.future,
-    )).runtimes[hostId];
-    return runtime?.api ??
-        (throw StateError('Online daemon connection required.'));
-  }
-}
-
-final class _WorktreeDraft {
-  const _WorktreeDraft({
-    required this.mode,
-    required this.branchName,
-    this.baseBranch,
-  });
-
-  final WorktreeCreateMode mode;
-  final String branchName;
-  final String? baseBranch;
-}
-
-class _CreateWorktreeDialog extends StatefulWidget {
-  const _CreateWorktreeDialog({required this.branches});
-
-  final List<GitBranchDto> branches;
-
-  @override
-  State<_CreateWorktreeDialog> createState() => _CreateWorktreeDialogState();
-}
-
-class _CreateWorktreeDialogState extends State<_CreateWorktreeDialog> {
-  final _branch = TextEditingController();
-  WorktreeCreateMode _mode = WorktreeCreateMode.newBranch;
-  String? _baseBranch;
-
-  @override
-  void initState() {
-    super.initState();
-    _baseBranch = widget.branches
-        .where((item) => item.current)
-        .firstOrNull
-        ?.name;
-  }
-
-  @override
-  void dispose() {
-    _branch.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('새 worktree'),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        SegmentedButton<WorktreeCreateMode>(
-          segments: const <ButtonSegment<WorktreeCreateMode>>[
-            ButtonSegment<WorktreeCreateMode>(
-              value: WorktreeCreateMode.newBranch,
-              label: Text('새 branch'),
-            ),
-            ButtonSegment<WorktreeCreateMode>(
-              value: WorktreeCreateMode.existingBranch,
-              label: Text('기존 branch'),
-            ),
-          ],
-          selected: <WorktreeCreateMode>{_mode},
-          onSelectionChanged: (value) => setState(() {
-            _mode = value.single;
-            _branch.clear();
-          }),
-        ),
-        const SizedBox(height: 16),
-        if (_mode == WorktreeCreateMode.newBranch) ...<Widget>[
-          TextField(
-            controller: _branch,
-            decoration: const InputDecoration(labelText: '새 branch 이름'),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _baseBranch,
-            decoration: const InputDecoration(labelText: 'Base branch'),
-            items: widget.branches
-                .map(
-                  (branch) => DropdownMenuItem<String>(
-                    value: branch.name,
-                    child: Text(branch.name),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (value) => _baseBranch = value,
-          ),
-        ] else
-          DropdownButtonFormField<String>(
-            decoration: const InputDecoration(labelText: 'Local branch'),
-            items: widget.branches
-                .where((branch) => !branch.checkedOut)
-                .map(
-                  (branch) => DropdownMenuItem<String>(
-                    value: branch.name,
-                    child: Text(branch.name),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (value) => _branch.text = value ?? '',
-          ),
-      ],
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('취소'),
-      ),
-      FilledButton(
-        onPressed: () {
-          final branch = _branch.text.trim();
-          if (branch.isEmpty) return;
-          Navigator.pop(
-            context,
-            _WorktreeDraft(
-              mode: _mode,
-              branchName: branch,
-              baseBranch: _mode == WorktreeCreateMode.newBranch
-                  ? _baseBranch
-                  : null,
-            ),
-          );
-        },
-        child: const Text('생성'),
-      ),
-    ],
-  );
-}
-
-class _NoDaemonState extends StatelessWidget {
-  const _NoDaemonState({required this.onSettings});
-
-  final VoidCallback onSettings;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const Text('설정된 daemon이 없습니다.'),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: onSettings,
-            child: const Text('Daemon 설정'),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _EmptyWorkspaceDetail extends StatelessWidget {
-  const _EmptyWorkspaceDetail();
-
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('왼쪽 트리에서 checkout 또는 worktree를 선택하세요.'),
-  );
-}
-
-class _RemoteDirectoryDialog extends StatefulWidget {
-  const _RemoteDirectoryDialog({required this.api});
-
-  final CoderApi api;
-
-  @override
-  State<_RemoteDirectoryDialog> createState() => _RemoteDirectoryDialogState();
-}
-
-class _RemoteDirectoryDialogState extends State<_RemoteDirectoryDialog> {
-  final _path = TextEditingController();
-  List<DirectorySuggestionDto> _suggestions = const <DirectorySuggestionDto>[];
-
-  @override
-  void dispose() {
-    _path.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Daemon의 폴더 선택'),
-    content: SizedBox(
-      width: 520,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          TextField(
-            controller: _path,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Daemon 경로',
-              hintText: '/srv/repositories/project',
-            ),
-            onChanged: _search,
-          ),
-          for (final suggestion in _suggestions)
-            ListTile(
-              dense: true,
-              leading: const Icon(Icons.folder_outlined),
-              title: Text(suggestion.name),
-              subtitle: Text(suggestion.path),
-              onTap: () => setState(() => _path.text = suggestion.path),
-            ),
-        ],
-      ),
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('취소'),
-      ),
-      FilledButton(
-        onPressed: () {
-          final value = _path.text.trim();
-          if (value.isNotEmpty) Navigator.pop(context, value);
-        },
-        child: const Text('등록'),
-      ),
-    ],
-  );
-
-  Future<void> _search(String query) async {
-    final suggestions = await widget.api.suggestDirectories(query);
-    if (mounted) setState(() => _suggestions = suggestions);
   }
 }
 
@@ -1288,9 +744,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                 widget.selection.worktreeId,
               ),
             )
-            .asData
-            ?.value
-            .where((item) => item.id == widget.agent.id)
+            .value
+            ?.where((item) => item.id == widget.agent.id)
             .firstOrNull ??
         widget.agent;
     final busy =
@@ -1306,16 +761,14 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     );
     final agents = ref
         .watch(agentDefinitionsControllerProvider(widget.selection.hostId))
-        .asData
-        ?.value;
+        .value;
     final definitions = selectableAgentDefinitions(
       agents?.definitions ?? const <AgentDefinitionDto>[],
     );
     final connections =
         ref
             .watch(providerSettingsControllerProvider(widget.selection.hostId))
-            .asData
-            ?.value
+            .value
             ?.connections ??
         const <ProviderConnectionDto>[];
     final definition = definitions
@@ -1464,13 +917,3 @@ void _goSession(
     sessionId: sessionId,
   ).go(context);
 }
-
-String _hostStatusLabel(HostRuntimeStatus status) => switch (status) {
-  HostRuntimeStatus.online => '온라인',
-  HostRuntimeStatus.connecting => '연결 중',
-  HostRuntimeStatus.reconnecting => '재연결 중',
-  HostRuntimeStatus.offline => '오프라인',
-  HostRuntimeStatus.error => '오류',
-  HostRuntimeStatus.conflict => '중복 daemon',
-  HostRuntimeStatus.idle => '자동 연결 꺼짐',
-};

@@ -419,6 +419,31 @@ void main() {
     ],
   );
 
+  test('requests in flight when the peer closes fail as retryable', () async {
+    final connector = _TestConnector(onConfigure: _registerHello);
+    final clientFuture = CoderClient.connect(
+      endpoint: HostEndpoint.parse('127.0.0.1:7337'),
+      credentials: const DaemonCredentials(bearerToken: 'secret-token'),
+      clientId: 'client',
+      clientKind: 'test',
+      connector: connector,
+    );
+    await Future<void>.delayed(Duration.zero);
+    final client = await clientFuture;
+    await client.close();
+
+    await expectLater(
+      client.getWorkspaceCatalog(),
+      throwsA(
+        isA<CoderClientException>().having(
+          (error) => error.retryable,
+          'retryable',
+          isTrue,
+        ),
+      ),
+    );
+  });
+
   test('RPC errors preserve daemon code and retryability', () async {
     final connector = _TestConnector(
       onConfigure: (peer, requests) {

@@ -37,7 +37,7 @@ final class HostRegistryControllerProvider
 }
 
 String _$hostRegistryControllerHash() =>
-    r'ad58e2d2eb42e84e2d24e1014043b3edd6deb785';
+    r'7edaa99e7724e7c887690bfb535273ed1a30981d';
 
 /// Riverpod bridge exposing the independently testable [HostRegistry].
 
@@ -54,6 +54,78 @@ abstract class _$HostRegistryController
             as $ClassProviderElement<
               AnyNotifier<AsyncValue<HostRegistryState>, HostRegistryState>,
               AsyncValue<HostRegistryState>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// Tracks whether the saved worktree was already restored this run.
+///
+/// The workspace page is rebuilt whenever the route changes, so the guard has
+/// to outlive its state or leaving a session would snap straight back into it.
+
+@ProviderFor(SelectionRestoreController)
+final selectionRestoreControllerProvider =
+    SelectionRestoreControllerProvider._();
+
+/// Tracks whether the saved worktree was already restored this run.
+///
+/// The workspace page is rebuilt whenever the route changes, so the guard has
+/// to outlive its state or leaving a session would snap straight back into it.
+final class SelectionRestoreControllerProvider
+    extends $NotifierProvider<SelectionRestoreController, bool> {
+  /// Tracks whether the saved worktree was already restored this run.
+  ///
+  /// The workspace page is rebuilt whenever the route changes, so the guard has
+  /// to outlive its state or leaving a session would snap straight back into it.
+  SelectionRestoreControllerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'selectionRestoreControllerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$selectionRestoreControllerHash();
+
+  @$internal
+  @override
+  SelectionRestoreController create() => SelectionRestoreController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$selectionRestoreControllerHash() =>
+    r'392030769d1af6173d49ecf3505645831dd34e2a';
+
+/// Tracks whether the saved worktree was already restored this run.
+///
+/// The workspace page is rebuilt whenever the route changes, so the guard has
+/// to outlive its state or leaving a session would snap straight back into it.
+
+abstract class _$SelectionRestoreController extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
               Object?,
               Object?
             >;
@@ -124,6 +196,96 @@ abstract class _$WorkspaceCatalogController
             >;
     return element.handleCreate(ref, build);
   }
+}
+
+/// Lists local Git branches for one repository.
+
+@ProviderFor(gitBranches)
+final gitBranchesProvider = GitBranchesFamily._();
+
+/// Lists local Git branches for one repository.
+
+final class GitBranchesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<GitBranchDto>>,
+          List<GitBranchDto>,
+          FutureOr<List<GitBranchDto>>
+        >
+    with
+        $FutureModifier<List<GitBranchDto>>,
+        $FutureProvider<List<GitBranchDto>> {
+  /// Lists local Git branches for one repository.
+  GitBranchesProvider._({
+    required GitBranchesFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: null,
+         name: r'gitBranchesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$gitBranchesHash();
+
+  @override
+  String toString() {
+    return r'gitBranchesProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<GitBranchDto>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<GitBranchDto>> create(Ref ref) {
+    final argument = this.argument as (String, String);
+    return gitBranches(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is GitBranchesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$gitBranchesHash() => r'8ed117daa9605b3730061862348d18685bf4ee8b';
+
+/// Lists local Git branches for one repository.
+
+final class GitBranchesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<GitBranchDto>>,
+          (String, String)
+        > {
+  GitBranchesFamily._()
+    : super(
+        retry: null,
+        name: r'gitBranchesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Lists local Git branches for one repository.
+
+  GitBranchesProvider call(String hostId, String workspaceId) =>
+      GitBranchesProvider._(argument: (hostId, workspaceId), from: this);
+
+  @override
+  String toString() => r'gitBranchesProvider';
 }
 
 /// SessionsController defines a public contract.
@@ -720,7 +882,7 @@ final class ProviderSettingsControllerProvider
 }
 
 String _$providerSettingsControllerHash() =>
-    r'808b946eb06348d7c0b8ff07fffb8894116f5771';
+    r'148b9e3f09318643e1268179871e538c40d3d9b7';
 
 /// ProviderSettingsController defines a public contract.
 

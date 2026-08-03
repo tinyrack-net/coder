@@ -1399,7 +1399,7 @@ as String,
 /// @nodoc
 mixin _$GitBranchDto {
 
- String get name; bool get current; bool get checkedOut;
+ String get name; bool get current; bool get checkedOut; bool get isRemote; bool get isDefault;
 /// Create a copy of GitBranchDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1412,16 +1412,16 @@ $GitBranchDtoCopyWith<GitBranchDto> get copyWith => _$GitBranchDtoCopyWithImpl<G
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GitBranchDto&&(identical(other.name, name) || other.name == name)&&(identical(other.current, current) || other.current == current)&&(identical(other.checkedOut, checkedOut) || other.checkedOut == checkedOut));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GitBranchDto&&(identical(other.name, name) || other.name == name)&&(identical(other.current, current) || other.current == current)&&(identical(other.checkedOut, checkedOut) || other.checkedOut == checkedOut)&&(identical(other.isRemote, isRemote) || other.isRemote == isRemote)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,current,checkedOut);
+int get hashCode => Object.hash(runtimeType,name,current,checkedOut,isRemote,isDefault);
 
 @override
 String toString() {
-  return 'GitBranchDto(name: $name, current: $current, checkedOut: $checkedOut)';
+  return 'GitBranchDto(name: $name, current: $current, checkedOut: $checkedOut, isRemote: $isRemote, isDefault: $isDefault)';
 }
 
 
@@ -1432,7 +1432,7 @@ abstract mixin class $GitBranchDtoCopyWith<$Res>  {
   factory $GitBranchDtoCopyWith(GitBranchDto value, $Res Function(GitBranchDto) _then) = _$GitBranchDtoCopyWithImpl;
 @useResult
 $Res call({
- String name, bool current, bool checkedOut
+ String name, bool current, bool checkedOut, bool isRemote, bool isDefault
 });
 
 
@@ -1449,11 +1449,13 @@ class _$GitBranchDtoCopyWithImpl<$Res>
 
 /// Create a copy of GitBranchDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? current = null,Object? checkedOut = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? current = null,Object? checkedOut = null,Object? isRemote = null,Object? isDefault = null,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,current: null == current ? _self.current : current // ignore: cast_nullable_to_non_nullable
 as bool,checkedOut: null == checkedOut ? _self.checkedOut : checkedOut // ignore: cast_nullable_to_non_nullable
+as bool,isRemote: null == isRemote ? _self.isRemote : isRemote // ignore: cast_nullable_to_non_nullable
+as bool,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -1539,10 +1541,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  bool current,  bool checkedOut)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  bool current,  bool checkedOut,  bool isRemote,  bool isDefault)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GitBranchDto() when $default != null:
-return $default(_that.name,_that.current,_that.checkedOut);case _:
+return $default(_that.name,_that.current,_that.checkedOut,_that.isRemote,_that.isDefault);case _:
   return orElse();
 
 }
@@ -1560,10 +1562,10 @@ return $default(_that.name,_that.current,_that.checkedOut);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  bool current,  bool checkedOut)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  bool current,  bool checkedOut,  bool isRemote,  bool isDefault)  $default,) {final _that = this;
 switch (_that) {
 case _GitBranchDto():
-return $default(_that.name,_that.current,_that.checkedOut);case _:
+return $default(_that.name,_that.current,_that.checkedOut,_that.isRemote,_that.isDefault);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1580,10 +1582,10 @@ return $default(_that.name,_that.current,_that.checkedOut);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  bool current,  bool checkedOut)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  bool current,  bool checkedOut,  bool isRemote,  bool isDefault)?  $default,) {final _that = this;
 switch (_that) {
 case _GitBranchDto() when $default != null:
-return $default(_that.name,_that.current,_that.checkedOut);case _:
+return $default(_that.name,_that.current,_that.checkedOut,_that.isRemote,_that.isDefault);case _:
   return null;
 
 }
@@ -1595,12 +1597,14 @@ return $default(_that.name,_that.current,_that.checkedOut);case _:
 @JsonSerializable()
 
 class _GitBranchDto implements GitBranchDto {
-  const _GitBranchDto({required this.name, required this.current, required this.checkedOut});
+  const _GitBranchDto({required this.name, required this.current, required this.checkedOut, this.isRemote = false, this.isDefault = false});
   factory _GitBranchDto.fromJson(Map<String, dynamic> json) => _$GitBranchDtoFromJson(json);
 
 @override final  String name;
 @override final  bool current;
 @override final  bool checkedOut;
+@override@JsonKey() final  bool isRemote;
+@override@JsonKey() final  bool isDefault;
 
 /// Create a copy of GitBranchDto
 /// with the given fields replaced by the non-null parameter values.
@@ -1615,16 +1619,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GitBranchDto&&(identical(other.name, name) || other.name == name)&&(identical(other.current, current) || other.current == current)&&(identical(other.checkedOut, checkedOut) || other.checkedOut == checkedOut));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GitBranchDto&&(identical(other.name, name) || other.name == name)&&(identical(other.current, current) || other.current == current)&&(identical(other.checkedOut, checkedOut) || other.checkedOut == checkedOut)&&(identical(other.isRemote, isRemote) || other.isRemote == isRemote)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,current,checkedOut);
+int get hashCode => Object.hash(runtimeType,name,current,checkedOut,isRemote,isDefault);
 
 @override
 String toString() {
-  return 'GitBranchDto(name: $name, current: $current, checkedOut: $checkedOut)';
+  return 'GitBranchDto(name: $name, current: $current, checkedOut: $checkedOut, isRemote: $isRemote, isDefault: $isDefault)';
 }
 
 
@@ -1635,7 +1639,7 @@ abstract mixin class _$GitBranchDtoCopyWith<$Res> implements $GitBranchDtoCopyWi
   factory _$GitBranchDtoCopyWith(_GitBranchDto value, $Res Function(_GitBranchDto) _then) = __$GitBranchDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String name, bool current, bool checkedOut
+ String name, bool current, bool checkedOut, bool isRemote, bool isDefault
 });
 
 
@@ -1652,11 +1656,13 @@ class __$GitBranchDtoCopyWithImpl<$Res>
 
 /// Create a copy of GitBranchDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? current = null,Object? checkedOut = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? current = null,Object? checkedOut = null,Object? isRemote = null,Object? isDefault = null,}) {
   return _then(_GitBranchDto(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,current: null == current ? _self.current : current // ignore: cast_nullable_to_non_nullable
 as bool,checkedOut: null == checkedOut ? _self.checkedOut : checkedOut // ignore: cast_nullable_to_non_nullable
+as bool,isRemote: null == isRemote ? _self.isRemote : isRemote // ignore: cast_nullable_to_non_nullable
+as bool,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

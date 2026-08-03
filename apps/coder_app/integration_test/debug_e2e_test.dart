@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,6 +7,7 @@ import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/workspace/directory_browser.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -148,11 +150,19 @@ void main() {
           ),
         ),
       );
+      // Unmount before the daemons stop so no provider request outlives its
+      // client; tear-downs registered earlier run after this one.
+      addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
       await _pumpUntil(tester, find.text('내장 daemon'));
       await _pumpUntil(tester, find.text('Remote daemon'));
       await _pumpUntil(tester, find.text('E2E Workspace'));
 
-      await tester.tap(find.byTooltip('폴더 추가').first);
+      // Projects are added from inside the new-workspace project select.
+      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('new-workspace-project-add')));
       await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
@@ -160,12 +170,14 @@ void main() {
           matching: find.text('Remote daemon'),
         ),
       );
-      await tester.pumpAndSettle();
+      await _pumpUntil(tester, find.text('Daemon의 폴더 선택'));
       await tester.enterText(
-        find.widgetWithText(TextField, 'Daemon 경로'),
+        find.byKey(const ValueKey('directory-browser-path')),
         remoteWorkspace.path,
       );
-      await tester.tap(find.widgetWithText(FilledButton, '등록'));
+      await tester.pump(directoryBrowserDebounce);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '이 폴더 선택'));
       await tester.pumpAndSettle();
       await _pumpUntilGone(tester, find.text('Daemon의 폴더 선택'));
       final remoteWorkspaceName = remoteWorkspace.path
@@ -343,13 +355,35 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('E2E Workspace').last);
       await tester.pumpAndSettle();
-      final newWorktree = find.byTooltip('새 worktree');
-      await tester.ensureVisible(newWorktree);
-      await tester.tap(newWorktree);
-      final branchField = find.widgetWithText(TextField, '새 branch 이름');
-      await _pumpUntil(tester, branchField);
-      await tester.enterText(branchField, 'feature/e2e');
-      await tester.tap(find.widgetWithText(FilledButton, '생성'));
+      // Worktrees are created by the new-workspace composer, not the tree.
+      expect(find.byTooltip('새 worktree'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(PopupMenuItem<String>),
+              matching: find.text('E2E Workspace'),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Feature e2e',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await _pumpUntilCondition(
+        tester,
+        () async => (await setupClient.getWorkspaceCatalog()).worktrees.any(
+          (worktree) => worktree.branch == 'feature-e2e',
+        ),
+        'the composer to create a worktree',
+        attempts: 300,
+      );
+      // The session route keeps the sidebar, so the new worktree is listed.
       await _pumpUntil(tester, find.text('feature-e2e'));
       await tester.pumpAndSettle();
       final managedTile = find.ancestor(
@@ -442,12 +476,12 @@ void main() {
       await tester.pump();
       expect(tester.widget<IconButton>(find.byKey(send)).onPressed, isNotNull);
       await tester.tap(find.byKey(send));
+      await _pumpUntil(tester, find.text('제안된 계획'), attempts: 600);
       await _pumpUntil(
         tester,
         find.text('이 계획대로 진행할까요?'),
-        attempts: 300,
+        attempts: 600,
       );
-      expect(find.text('제안된 계획'), findsOneWidget);
       expect(find.textContaining('proposed_plan'), findsNothing);
       final implement = find.widgetWithText(FilledButton, '계획대로 실행');
       await tester.ensureVisible(implement);
@@ -578,6 +612,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, '연결 해제'));
       await tester.pumpAndSettle();
+      // The daemon call outlives the frame, so poll instead of asserting once.
+      await _pumpUntilCondition(
+        tester,
+        () async =>
+            (await remoteClient.listProviderConnections())
+                .singleWhere((item) => item.id == providerConnection.id)
+                .status ==
+            ProviderConnectionStatus.disconnected,
+        'remote provider to disconnect',
+      );
       expect(
         (await remoteClient.listProviderConnections())
             .singleWhere((item) => item.id == providerConnection.id)
@@ -715,13 +759,13 @@ Future<void> _pumpUntilGone(
 
 Future<void> _pumpUntilCondition(
   WidgetTester tester,
-  bool Function() condition,
+  FutureOr<bool> Function() condition,
   String description, {
   int attempts = 100,
 }) async {
   for (var attempt = 0; attempt < attempts; attempt += 1) {
     await tester.pump(const Duration(milliseconds: 100));
-    if (condition()) return;
+    if (await condition()) return;
   }
   throw TestFailure('Timed out waiting for $description.');
 }

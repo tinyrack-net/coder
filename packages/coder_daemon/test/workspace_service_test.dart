@@ -213,7 +213,58 @@ branch refs/heads/feature/settings
           name: 'Repository',
         ),
       );
-      expect(await service.listBranches('repo-1'), hasLength(2));
+      final branches = await service.listBranches('repo-1');
+      expect(branches, hasLength(3));
+      expect(
+        branches.where((branch) => branch.isRemote).single.name,
+        'origin/main',
+      );
+
+      // A remote base ref is refreshed before the worktree is created.
+      await service.createWorktree(
+        const WorktreeCreateParamsDto(
+          id: 'managed-remote',
+          workspaceId: 'repo-1',
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'from-remote',
+          baseBranch: 'origin/main',
+        ),
+      );
+      expect(git.fetched, <String>['origin']);
+      expect(git.created.single.baseBranch, 'origin/main');
+
+      // A local base ref and an unknown remote never trigger a fetch.
+      git
+        ..fetched.clear()
+        ..created.clear()
+        ..fetchSucceeds = false;
+      await service.createWorktree(
+        const WorktreeCreateParamsDto(
+          id: 'managed-local',
+          workspaceId: 'repo-1',
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'from-local',
+          baseBranch: 'main',
+        ),
+      );
+      expect(git.fetched, isEmpty);
+
+      // A failing fetch still creates the worktree from the cached ref.
+      final offline = await service.createWorktree(
+        const WorktreeCreateParamsDto(
+          id: 'managed-offline',
+          workspaceId: 'repo-1',
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'offline',
+          baseBranch: 'origin/main',
+        ),
+      );
+      expect(git.fetched, <String>['origin']);
+      expect(offline.branch, 'offline');
+      git
+        ..fetched.clear()
+        ..created.clear()
+        ..fetchSucceeds = true;
 
       const request = WorktreeCreateParamsDto(
         id: 'managed-1',
@@ -307,7 +358,14 @@ branch refs/heads/feature/settings
         final commands = _FakeCommandRunner(<CommandResult>[
           _result(stdout: '/repo\n'),
           _result(stdout: _worktreePorcelain),
-          _result(stdout: 'main\u0000*\ntopic\u0000\n'),
+          _result(
+            stdout:
+                'refs/heads/main\u0000main\u0000*\u0000\n'
+                'refs/heads/topic\u0000topic\u0000\u0000\n'
+                'refs/remotes/origin/HEAD\u0000origin/HEAD'
+                '\u0000\u0000origin/main\n'
+                'refs/remotes/origin/main\u0000origin/main\u0000\u0000\n',
+          ),
           _result(stdout: _worktreePorcelain),
         ]);
         final gateway = ProcessGitWorkspaceGateway(commands);
@@ -329,7 +387,18 @@ branch refs/heads/feature/settings
               current: false,
               checkedOut: false,
             ),
+            const GitBranchDto(
+              name: 'origin/main',
+              current: false,
+              checkedOut: false,
+              isRemote: true,
+              isDefault: true,
+            ),
           ],
+        );
+        expect(
+          commands.invocations[2].arguments,
+          containsAll(<String>['refs/heads', 'refs/remotes']),
         );
         expect(commands.invocations.first.executable, 'git');
         expect(commands.invocations.first.workingDirectory, '/repo/child');
@@ -554,7 +623,32 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
       const <GitBranchDto>[
         GitBranchDto(name: 'main', current: true, checkedOut: true),
         GitBranchDto(name: 'topic', current: false, checkedOut: false),
+        GitBranchDto(
+          name: 'origin/main',
+          current: false,
+          checkedOut: false,
+          isRemote: true,
+          isDefault: true,
+        ),
       ];
+
+  /// Remote names reported to the service.
+  List<String> remotes = <String>['origin'];
+
+  /// Remotes fetched through this gateway, in call order.
+  final List<String> fetched = <String>[];
+
+  /// Whether the next fetch reports a network failure.
+  bool fetchSucceeds = true;
+
+  @override
+  Future<List<String>> listRemotes(String repositoryRoot) async => remotes;
+
+  @override
+  Future<bool> fetchRemote(String repositoryRoot, String remote) async {
+    fetched.add(remote);
+    return fetchSucceeds;
+  }
 
   @override
   Future<void> createWorktree(GitWorktreeCreateRequest request) async {

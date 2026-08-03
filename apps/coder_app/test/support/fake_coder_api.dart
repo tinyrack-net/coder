@@ -26,7 +26,12 @@ final class FakeCoderApi implements CoderApi {
     this.defaultModelSetGate,
     this.defaultModelSetError,
     this.modelListGate,
-  }) : _serverInfo = serverInfo ?? _defaultServerInfo,
+    this.suggestDirectoriesGate,
+    this.createWorktreeError,
+    this.suggestDirectoriesError,
+    Map<String, List<String>>? directories,
+  }) : directories = directories ?? const <String, List<String>>{},
+       _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
        _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
        _workspaces = workspaces ?? <WorkspaceDto>[],
@@ -167,6 +172,26 @@ final class FakeCoderApi implements CoderApi {
 
   /// Optional gate used to keep model discovery in its loading state.
   final Future<void>? modelListGate;
+
+  /// Daemon-side directory tree keyed by parent path.
+  final Map<String, List<String>> directories;
+
+  /// Optional gate used to order concurrent directory listings.
+  final Future<void>? suggestDirectoriesGate;
+
+  /// Optional daemon failure returned while creating a worktree.
+  final CoderClientException? createWorktreeError;
+
+  /// Optional daemon failure returned while listing directories.
+  final CoderClientException? suggestDirectoriesError;
+
+  /// Directory queries received by the fake, in call order.
+  final List<String> suggestedQueries = <String>[];
+
+  /// Worktree creations recorded by the fake.
+  final List<({WorktreeCreateMode mode, String branchName, String? baseBranch})>
+  createdWorktrees =
+      <({WorktreeCreateMode mode, String branchName, String? baseBranch})>[];
   final StreamController<ClientEvent> _events =
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
@@ -175,6 +200,9 @@ final class FakeCoderApi implements CoderApi {
 
   /// Whether [close] released this fake client.
   bool get isClosed => _closed;
+
+  /// Paths registered through the fake, in call order.
+  final List<String> registeredPaths = <String>[];
 
   /// Sessions created through the fake, in creation order.
   final List<SessionDto> createdSessions = <SessionDto>[];
@@ -258,6 +286,7 @@ final class FakeCoderApi implements CoderApi {
     required String rootPath,
     required String name,
   }) async {
+    registeredPaths.add(rootPath);
     final workspace = WorkspaceDto(
       id: workspaceId,
       name: name,
@@ -296,15 +325,52 @@ final class FakeCoderApi implements CoderApi {
   Future<List<DirectorySuggestionDto>> suggestDirectories(
     String query, {
     int limit = 30,
-  }) async => <DirectorySuggestionDto>[
-    DirectorySuggestionDto(path: query, name: query.split('/').last),
-  ];
+  }) async {
+    suggestedQueries.add(query);
+    await suggestDirectoriesGate;
+    final failure = suggestDirectoriesError;
+    if (failure != null) throw failure;
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const <DirectorySuggestionDto>[];
+    // Mirrors the daemon: an existing directory lists its children, anything
+    // else filters the siblings of the typed basename.
+    final children = directories[trimmed];
+    if (children != null) return _entries(children);
+    final separator = trimmed.lastIndexOf('/');
+    if (separator < 0) return const <DirectorySuggestionDto>[];
+    final parent = separator == 0 ? '/' : trimmed.substring(0, separator);
+    final needle = trimmed.substring(separator + 1).toLowerCase();
+    final siblings = directories[parent] ?? const <String>[];
+    return _entries(
+      siblings
+          .where((path) => _basename(path).toLowerCase().contains(needle))
+          .toList(growable: false),
+    );
+  }
+
+  List<DirectorySuggestionDto> _entries(List<String> paths) => paths
+      .map((path) => DirectorySuggestionDto(path: path, name: _basename(path)))
+      .toList(growable: false);
+
+  static String _basename(String path) =>
+      path.split('/').where((part) => part.isNotEmpty).lastOrNull ?? path;
 
   @override
   Future<List<GitBranchDto>> listGitBranches(String workspaceId) async =>
-      const <GitBranchDto>[
-        GitBranchDto(name: 'main', current: true, checkedOut: true),
-      ];
+      branches;
+
+  /// Branches reported for every workspace.
+  List<GitBranchDto> branches = const <GitBranchDto>[
+    GitBranchDto(name: 'main', current: true, checkedOut: true),
+    GitBranchDto(name: 'feature', current: false, checkedOut: false),
+    GitBranchDto(
+      name: 'origin/main',
+      current: false,
+      checkedOut: false,
+      isRemote: true,
+      isDefault: true,
+    ),
+  ];
 
   @override
   Future<WorktreeDto> createWorktree({
@@ -314,6 +380,13 @@ final class FakeCoderApi implements CoderApi {
     required String branchName,
     String? baseBranch,
   }) async {
+    final failure = createWorktreeError;
+    if (failure != null) throw failure;
+    createdWorktrees.add((
+      mode: mode,
+      branchName: branchName,
+      baseBranch: baseBranch,
+    ));
     final worktree = WorktreeDto(
       id: id,
       workspaceId: workspaceId,
@@ -791,26 +864,38 @@ AppServices fakeAppServices(
   FakeCoderApi api, {
   bool connected = true,
   String hostId = 'server',
+  MemoryAppStore? store,
 }) {
   final now = DateTime.utc(2026, 8, 2);
-  final store = MemoryAppStore(
-    settings: const AppSettings(embeddedDaemonEnabled: false),
-    profiles: <RemoteDaemonProfile>[
-      RemoteDaemonProfile(
-        id: hostId,
-        label: 'Test daemon',
-        websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
-        autoConnect: connected,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    ],
-    tokens: <String, String>{hostId: 'test-token'},
-  );
+  final profiles = <RemoteDaemonProfile>[
+    RemoteDaemonProfile(
+      id: hostId,
+      label: 'Test daemon',
+      websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+      autoConnect: connected,
+      createdAt: now,
+      updatedAt: now,
+    ),
+  ];
+  final tokens = <String, String>{hostId: 'test-token'};
+  final effectiveStore =
+      store ??
+      MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: profiles,
+        tokens: tokens,
+      );
+  if (store != null) {
+    // Keep caller-provided settings such as a collapsed sidebar.
+    store
+      ..settings = store.settings.copyWith(embeddedDaemonEnabled: false)
+      ..profiles.addAll(profiles)
+      ..tokens.addAll(tokens);
+  }
   return AppServices(
-    settings: store,
-    profiles: store,
-    credentials: store,
+    settings: effectiveStore,
+    profiles: effectiveStore,
+    credentials: effectiveStore,
     clients: _FakeHostClientFactory(api),
     clientKind: 'test',
   );

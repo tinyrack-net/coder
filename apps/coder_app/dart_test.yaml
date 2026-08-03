@@ -12,10 +12,13 @@ tags:
   feature_test__daemon_exposure__platformSmoke:
   feature_test__daemon_authentication__widget:
   feature_test__daemon_authentication__e2e:
+  feature_test__workspace_catalog__unit:
   feature_test__workspace_catalog__widget:
   feature_test__workspace_catalog__e2e:
+  feature_test__workspace_registration__unit:
   feature_test__workspace_registration__widget:
   feature_test__workspace_registration__e2e:
+  feature_test__worktree_lifecycle__unit:
   feature_test__worktree_lifecycle__widget:
   feature_test__worktree_lifecycle__e2e:
   feature_test__session_lifecycle__unit:

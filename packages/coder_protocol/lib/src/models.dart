@@ -401,6 +401,8 @@ abstract class GitBranchDto with _$GitBranchDto {
     required String name,
     required bool current,
     required bool checkedOut,
+    @Default(false) bool isRemote,
+    @Default(false) bool isDefault,
   }) = _GitBranchDto;
 
   /// Decodes a Git branch descriptor.

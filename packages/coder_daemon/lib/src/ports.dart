@@ -176,8 +176,14 @@ abstract interface class GitWorkspaceGateway {
   /// Lists active Git worktrees.
   Future<List<GitWorktreeSnapshot>> listWorktrees(String repositoryRoot);
 
-  /// Lists local branches and checkout state.
+  /// Lists local and remote-tracking branches with checkout state.
   Future<List<GitBranchDto>> listBranches(String repositoryRoot);
+
+  /// Lists configured remote names.
+  Future<List<String>> listRemotes(String repositoryRoot);
+
+  /// Updates one remote, reporting whether the network call succeeded.
+  Future<bool> fetchRemote(String repositoryRoot, String remote);
 
   /// Creates a managed checkout.
   Future<void> createWorktree(GitWorktreeCreateRequest request);

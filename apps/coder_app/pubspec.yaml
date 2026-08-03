@@ -11,7 +11,6 @@ dependencies:
   coder_client: ^0.1.0
   coder_daemon: ^0.1.0
   coder_protocol: ^0.1.0
-  file_selector: ^1.1.0
   flutter:
     sdk: flutter
   flutter_markdown_plus: ^1.0.12

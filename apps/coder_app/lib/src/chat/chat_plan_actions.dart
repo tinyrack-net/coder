@@ -89,25 +89,26 @@ class ChatPlanActions extends ConsumerWidget {
   );
 
   Future<void> _implementHere(WidgetRef ref) async {
+    // Read the notifiers first: dismissing unmounts this widget, and `ref` is
+    // unusable afterwards.
+    final sessions = ref.read(
+      sessionsControllerProvider(
+        selection.hostId,
+        selection.worktreeId,
+      ).notifier,
+    );
+    final conversation = ref.read(
+      conversationControllerProvider(selection.hostId, session.id).notifier,
+    );
     onDismiss();
-    await ref
-        .read(
-          sessionsControllerProvider(
-            selection.hostId,
-            selection.worktreeId,
-          ).notifier,
-        )
-        .setMode(session.id, SessionMode.normal);
-    await ref
-        .read(
-          conversationControllerProvider(selection.hostId, session.id).notifier,
-        )
-        .startTurn(implementPlanPrompt);
+    await sessions.setMode(session.id, SessionMode.normal);
+    await conversation.startTurn(implementPlanPrompt);
   }
 
   Future<void> _startFreshSession(WidgetRef ref) async {
-    onDismiss();
     final prompt = '$freshSessionPlanPreamble\n\n${proposal.markdown}';
+    // Dismiss only after the work is done; this widget owns the `ref` used by
+    // `startSessionWithPrompt` and unmounts as soon as the card is dismissed.
     final created = await startSessionWithPrompt(
       ref,
       selection: selection,
@@ -116,6 +117,7 @@ class ChatPlanActions extends ConsumerWidget {
       title: deriveSessionTitle(proposal.markdown),
       prompt: prompt,
     );
+    onDismiss();
     onSessionCreated(created);
   }
 }
@@ -133,26 +135,47 @@ Future<SessionDto> startSessionWithPrompt(
   SessionMode mode = SessionMode.normal,
   SessionModelSelectionDto? model,
 }) async {
-  final session = await ref
-      .read(
-        sessionsControllerProvider(
-          selection.hostId,
-          selection.worktreeId,
-        ).notifier,
-      )
-      .create(
-        title: title,
-        agentDefinitionId: agentDefinitionId,
-        mode: mode,
-        model: model,
-      );
-  await ref
-      .read(sessionTabsControllerProvider(selection).notifier)
-      .add(session);
-  await ref
-      .read(
-        conversationControllerProvider(selection.hostId, session.id).notifier,
-      )
-      .startTurn(prompt);
-  return session;
+  final sessions = sessionsControllerProvider(
+    selection.hostId,
+    selection.worktreeId,
+  );
+  // The caller may never have rendered this worktree - the new-workspace
+  // composer starts a session on one it just created - so hold the providers
+  // alive across the awaits instead of letting them dispose mid-sequence.
+  final sessionsHandle = ref.listenManual(sessions, (previous, next) {});
+  final tabsHandle = ref.listenManual(
+    sessionTabsControllerProvider(selection),
+    (previous, next) {},
+  );
+  try {
+    await ref.read(sessions.future);
+    final session = await ref
+        .read(sessions.notifier)
+        .create(
+          title: title,
+          agentDefinitionId: agentDefinitionId,
+          mode: mode,
+          model: model,
+        );
+    await ref
+        .read(sessionTabsControllerProvider(selection).notifier)
+        .add(session);
+    final conversation = conversationControllerProvider(
+      selection.hostId,
+      session.id,
+    );
+    final conversationHandle = ref.listenManual(
+      conversation,
+      (previous, next) {},
+    );
+    try {
+      await ref.read(conversation.notifier).startTurn(prompt);
+    } finally {
+      conversationHandle.close();
+    }
+    return session;
+  } finally {
+    tabsHandle.close();
+    sessionsHandle.close();
+  }
 }

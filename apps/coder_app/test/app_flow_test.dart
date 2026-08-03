@@ -3,6 +3,7 @@ import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,6 +68,7 @@ void main() {
       addTearDown(router.dispose);
 
       expect(find.text('Workspaces'), findsOneWidget);
+      expect(find.byKey(const ValueKey('workspace-new-button')), findsOne);
       expect(find.text('Test daemon'), findsOneWidget);
       // The composer's agent chip is also labelled 'Coder', so the repository
       // entry is matched through its tile.
@@ -74,7 +76,6 @@ void main() {
       expect(find.text('main'), findsOneWidget);
       expect(find.text('Agents'), findsNothing);
       expect(find.text('Session one'), findsWidgets);
-      expect(find.byTooltip('새 worktree'), findsOneWidget);
 
       await tester.tap(find.byTooltip('모든 session'));
       await tester.pumpAndSettle();
@@ -128,15 +129,25 @@ void main() {
   );
 
   testWidgets(
-    'creates and archives a managed worktree from the repository',
+    'archives a managed worktree from the sidebar',
     (
       tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
+      final managed = WorktreeDto(
+        id: 'managed',
+        workspaceId: workspace.id,
+        name: 'feature/settings',
+        path: '/worktrees/feature-settings',
+        branch: 'feature/settings',
+        kind: WorktreeKind.managed,
+        isCoderOwned: true,
+        createdAt: now,
+      );
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],
-        worktrees: <WorktreeDto>[checkout],
+        worktrees: <WorktreeDto>[checkout, managed],
       );
       final router = await _pumpRoute(
         tester,
@@ -144,19 +155,13 @@ void main() {
         WorktreeRoute(
           hostId: 'server',
           workspaceId: workspace.id,
-          worktreeId: checkout.id,
+          worktreeId: managed.id,
         ).location,
       );
       addTearDown(router.dispose);
+      await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('새 worktree'));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextField, '새 branch 이름'),
-        'feature/settings',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, '생성'));
-      await tester.pumpAndSettle();
+      expect(find.byTooltip('새 worktree'), findsNothing);
       expect(find.text('feature/settings'), findsWidgets);
 
       final menus = find.byTooltip('Worktree 메뉴');
@@ -174,43 +179,86 @@ void main() {
   );
 
   testWidgets(
-    'folder add selects a daemon and remote path before register',
-    (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+    'the project select registers a project through the daemon browser',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi();
+      final api = FakeCoderApi(
+        directories: const <String, List<String>>{
+          '/': <String>['/srv'],
+          '/srv': <String>['/srv/repositories'],
+          '/srv/repositories': <String>['/srv/repositories/project'],
+        },
+      );
       final router = await _pumpRoute(
         tester,
         api,
         const WorkspaceHomeRoute().location,
       );
       addTearDown(router.dispose);
+      await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('폴더 추가').first);
+      expect(find.text('폴더 추가'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
       await tester.pumpAndSettle();
       await tester.tap(
-        find.descendant(
-          of: find.byType(SimpleDialog),
-          matching: find.text('Test daemon'),
-        ),
+        find.byKey(const ValueKey('new-workspace-project-add')),
       );
-      await tester.pumpAndSettle();
-      final pathField = find.widgetWithText(TextField, 'Daemon 경로');
-      await tester.enterText(pathField, '/srv/repositories/project');
-      await tester.pumpAndSettle();
-      expect(find.text('project'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, '등록'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Daemon의 폴더 선택'), findsOneWidget);
+      await tester.tap(find.text('srv'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('repositories'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('project'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '이 폴더 선택'));
+      await tester.pumpAndSettle();
+
+      expect(api.registeredPaths, <String>['/srv/repositories/project']);
       expect(find.text('project'), findsWidgets);
-      expect(
-        router.routeInformationProvider.value.uri.path,
-        startsWith('/workspaces/server/'),
-      );
     },
     tags: const <String>['feature_test__workspace_registration__widget'],
+  );
+
+  testWidgets(
+    'the sidebar collapses and restores from persisted settings',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final store = MemoryAppStore();
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const WorkspaceHomeRoute().location,
+        store: store,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('workspace-new-button')), findsOne);
+      await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
+      // Toggling refreshes the host registry; the composer must keep its
+      // loaded state instead of flashing an empty-state error.
+      await tester.pump();
+      expect(find.text('먼저 프로젝트를 추가하세요.'), findsNothing);
+      expect(find.text('사용할 Provider와 모델을 먼저 선택하세요.'), findsNothing);
+      expect(find.text('사용 가능한 primary Agent가 없습니다.'), findsNothing);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-new-button')), findsNothing);
+      expect(store.settings.sidebarCollapsed, isTrue);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-new-button')), findsOne);
+      expect(store.settings.sidebarCollapsed, isFalse);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
   );
 
   testWidgets('mobile opens selected worktree as a session-only detail', (
@@ -233,11 +281,11 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    expect(find.text('Repositories'), findsNothing);
+    expect(find.byKey(const ValueKey('workspace-new-button')), findsNothing);
     expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
-    expect(find.text('Repositories'), findsOneWidget);
+    expect(find.byKey(const ValueKey('workspace-new-button')), findsOne);
   });
 
   testWidgets(
@@ -939,13 +987,16 @@ void main() {
 Future<GoRouter> _pumpRoute(
   WidgetTester tester,
   FakeCoderApi api,
-  String location,
-) async {
+  String location, {
+  MemoryAppStore? store,
+}) async {
   final router = GoRouter(initialLocation: location, routes: $appRoutes);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        appServicesProvider.overrideWithValue(fakeAppServices(api)),
+        appServicesProvider.overrideWithValue(
+          fakeAppServices(api, store: store),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),

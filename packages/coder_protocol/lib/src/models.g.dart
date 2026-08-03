@@ -118,6 +118,8 @@ _GitBranchDto _$GitBranchDtoFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       current: json['current'] as bool,
       checkedOut: json['checkedOut'] as bool,
+      isRemote: json['isRemote'] as bool? ?? false,
+      isDefault: json['isDefault'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$GitBranchDtoToJson(_GitBranchDto instance) =>
@@ -125,6 +127,8 @@ Map<String, dynamic> _$GitBranchDtoToJson(_GitBranchDto instance) =>
       'name': instance.name,
       'current': instance.current,
       'checkedOut': instance.checkedOut,
+      'isRemote': instance.isRemote,
+      'isDefault': instance.isDefault,
     };
 
 _AgentModelSelectionDto _$AgentModelSelectionDtoFromJson(

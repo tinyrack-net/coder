@@ -127,6 +127,10 @@ class HostRegistryController extends _$HostRegistryController {
   Future<void> setEmbeddedDaemonExposure(EmbeddedDaemonExposure exposure) =>
       _registry.setEmbeddedDaemonExposure(exposure);
 
+  /// Persists whether the workspace sidebar is hidden.
+  Future<void> setSidebarCollapsed({required bool collapsed}) =>
+      _registry.setSidebarCollapsed(collapsed: collapsed);
+
   /// Persists a checkout selection and its visible session tabs.
   Future<void> saveWorkspaceUi({
     required WorkspaceSelection selection,
@@ -137,6 +141,19 @@ class HostRegistryController extends _$HostRegistryController {
     await _changes?.cancel();
     await _registry.close();
   }
+}
+
+@Riverpod(keepAlive: true)
+/// Tracks whether the saved worktree was already restored this run.
+///
+/// The workspace page is rebuilt whenever the route changes, so the guard has
+/// to outlive its state or leaving a session would snap straight back into it.
+class SelectionRestoreController extends _$SelectionRestoreController {
+  @override
+  bool build() => false;
+
+  /// Marks the saved selection as consumed for this app run.
+  void markConsumed() => state = true;
 }
 
 /// Catalogs from every host, kept separate by app-local host identity.
@@ -209,6 +226,17 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
       ),
     );
   }
+}
+
+@riverpod
+/// Lists local Git branches for one repository.
+Future<List<GitBranchDto>> gitBranches(
+  Ref ref,
+  String hostId,
+  String workspaceId,
+) async {
+  final api = await _watchHostApi(ref, hostId);
+  return api.listGitBranches(workspaceId);
 }
 
 @riverpod
@@ -941,10 +969,23 @@ class ProviderSettingsController extends _$ProviderSettingsController {
 
   Future<void> _reload(CoderApi api) async {
     final current = state.asData?.value;
+    final ProviderCatalogDto catalog;
+    final List<ProviderConnectionDto> connections;
+    try {
+      catalog = await api.listProviderCatalog();
+      connections = await api.listProviderConnections();
+    } on CoderClientException catch (error, stackTrace) {
+      // A refresh that loses its daemon must not escape as an unhandled error.
+      if (ref.mounted) {
+        state = AsyncError<ProviderSettingsState?>(error, stackTrace);
+      }
+      return;
+    }
+    if (!ref.mounted) return;
     state = AsyncData<ProviderSettingsState?>(
       ProviderSettingsState(
-        catalog: await api.listProviderCatalog(),
-        connections: await api.listProviderConnections(),
+        catalog: catalog,
+        connections: connections,
         models: current?.models ?? const <String, List<ProviderModelDto>>{},
         authAttempts:
             current?.authAttempts ?? const <String, ProviderAuthAttemptDto>{},

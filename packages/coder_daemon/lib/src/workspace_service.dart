@@ -121,6 +121,21 @@ final class WorkspaceService {
     int limit,
   ) => _paths.suggest(query, limit);
 
+  /// Updates the remote a base ref belongs to so the new branch starts from
+  /// the latest upstream commit; a failed fetch falls back to the cached ref.
+  Future<void> _fetchBaseRemote(
+    String repositoryRoot,
+    WorktreeCreateParamsDto request,
+  ) async {
+    final base = request.baseBranch;
+    if (request.mode != WorktreeCreateMode.newBranch || base == null) return;
+    final separator = base.indexOf('/');
+    if (separator <= 0) return;
+    final remote = base.substring(0, separator);
+    if (!(await _git.listRemotes(repositoryRoot)).contains(remote)) return;
+    await _git.fetchRemote(repositoryRoot, remote);
+  }
+
   /// Lists local branches in one Git workspace.
   Future<List<GitBranchDto>> listBranches(String workspaceId) async {
     final workspace = await _requireWorkspace(workspaceId);
@@ -140,6 +155,7 @@ final class WorkspaceService {
       return existing;
     }
     final branch = _normalizeBranch(request.branchName);
+    await _fetchBaseRemote(workspace.rootPath, request);
     final repositoryHash = sha256
         .convert(utf8.encode(workspace.rootPath))
         .toString()

@@ -48,6 +48,7 @@ void main() {
               selectedAgentId: 'agent-2',
             ),
           },
+          sidebarCollapsed: true,
         ),
       );
       await store.upsertProfile(profile);
@@ -59,6 +60,7 @@ void main() {
         EmbeddedDaemonExposure.allInterfaces,
       );
       expect(restored.lastWorktree, selection);
+      expect(restored.sidebarCollapsed, isTrue);
       expect(
         restored.sessionTabs[selection.storageKey]?.openAgentIds,
         <String>['agent-1', 'agent-2'],
@@ -136,7 +138,7 @@ void main() {
     final invalidDocuments = <Object>[
       <Object>[],
       <String, Object?>{
-        'version': 2,
+        'version': 3,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'invalid',
@@ -147,7 +149,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 2,
+        'version': 3,
         'settings': <String, Object?>{},
         'profiles': <Object>[],
       },

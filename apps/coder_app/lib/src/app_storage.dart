@@ -13,7 +13,7 @@ final class SharedPreferencesAppStore
   SharedPreferencesAppStore(this._preferences);
 
   /// Single versioned document key; legacy singleton keys are not read.
-  static const String documentKey = 'tinyrack_coder.app_document_v2';
+  static const String documentKey = 'tinyrack_coder.app_document_v3';
 
   final SharedPreferences _preferences;
   Future<void> _writes = Future<void>.value();
@@ -102,9 +102,9 @@ final class _AppDocument {
   });
 
   factory _AppDocument.fromJson(Map<String, dynamic> json) {
-    if (json['version'] != 2) {
+    if (json['version'] != 3) {
       throw const FormatException(
-        'Incompatible app settings. Remove the app_document_v2 preference '
+        'Incompatible app settings. Remove the app_document_v3 preference '
         'to reset development data.',
       );
     }
@@ -138,7 +138,7 @@ final class _AppDocument {
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'version': 2,
+    'version': 3,
     'settings': <String, dynamic>{
       'embeddedDaemonEnabled': settings.embeddedDaemonEnabled,
       'embeddedDaemonExposure': settings.embeddedDaemonExposure.name,
@@ -153,6 +153,7 @@ final class _AppDocument {
             },
           )
           .toList(growable: false),
+      'sidebarCollapsed': settings.sidebarCollapsed,
     },
     'profiles': profiles.map(_profileToJson).toList(growable: false),
   };
@@ -164,7 +165,9 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
   final lastHost = json['lastActiveHostId'];
   final lastWorktree = json['lastWorktree'];
   final tabs = json['sessionTabs'];
+  final collapsed = json['sidebarCollapsed'];
   if (embedded is! bool ||
+      collapsed is! bool ||
       (exposure != null && exposure is! String) ||
       (lastHost != null && lastHost is! String) ||
       (lastWorktree != null && lastWorktree is! Map<String, dynamic>) ||
@@ -198,6 +201,7 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
         ? null
         : _selectionFromJson(lastWorktree as Map<String, dynamic>),
     sessionTabs: Map<String, SessionTabPreference>.unmodifiable(sessionTabs),
+    sidebarCollapsed: collapsed,
   );
 }
 

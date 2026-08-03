@@ -375,6 +375,35 @@ void main() {
 
   unawaited(
     goldenTest(
+      'workspace shell adapts to sidebar state and width',
+      fileName: 'workspace_shell',
+      constraints: const BoxConstraints.tightFor(width: 1060, height: 1400),
+      builder: () => GoldenTestGroup(
+        columns: 1,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'desktop light',
+            child: SizedBox(
+              width: 1000,
+              height: 620,
+              child: _shell(ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'desktop collapsed dark',
+            child: SizedBox(
+              width: 1000,
+              height: 620,
+              child: _shell(ThemeMode.dark, collapsed: true),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'session composer adapts to desktop and mobile widths',
       fileName: 'session_composer',
       constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
@@ -559,6 +588,45 @@ final class _NoopUrlOpener implements ExternalUrlOpener {
 
   @override
   Future<bool> open(Uri uri) async => true;
+}
+
+Widget _shell(ThemeMode mode, {bool collapsed = false}) {
+  final now = DateTime.utc(2026);
+  final workspace = WorkspaceDto(
+    id: 'workspace',
+    name: 'Coder',
+    rootPath: '/repos/coder',
+    kind: WorkspaceKind.git,
+    createdAt: now,
+  );
+  final checkout = WorktreeDto(
+    id: 'checkout',
+    workspaceId: workspace.id,
+    name: 'main',
+    path: workspace.rootPath,
+    branch: 'main',
+    kind: WorktreeKind.checkout,
+    isCoderOwned: false,
+    createdAt: now,
+  );
+  final api = FakeCoderApi(
+    workspaces: <WorkspaceDto>[workspace],
+    worktrees: <WorktreeDto>[checkout],
+  );
+  final store = MemoryAppStore(
+    settings: AppSettings(
+      embeddedDaemonEnabled: false,
+      sidebarCollapsed: collapsed,
+    ),
+  );
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(
+        fakeAppServices(api, store: store),
+      ),
+    ],
+    child: _material(mode, const WorkspacePage(compose: true)),
+  );
 }
 
 Widget _material(ThemeMode mode, Widget child) => MaterialApp(

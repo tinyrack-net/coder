@@ -228,6 +228,11 @@ class CoderClient implements CoderApi {
         code: data['code'] as String?,
         retryable: data['retryable'] == true,
       );
+      // json_rpc_2 reports a closed peer as a StateError and offers no typed
+      // alternative; converting it keeps shutdown races off the error zone.
+      // ignore: avoid_catching_errors
+    } on StateError catch (error) {
+      throw CoderClientException(error.message, retryable: true);
     }
   }
 

@@ -728,6 +728,28 @@ void main() {
       expect(lateApi.isClosed, isTrue);
     },
   );
+  test('sidebar collapse is persisted through the settings store', () async {
+    final store = MemoryAppStore(
+      settings: const AppSettings(embeddedDaemonEnabled: false),
+    );
+    final registry = HostRegistry(
+      store: store,
+      clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+      ids: const _Ids(),
+      clock: _Clock(now),
+      delay: const _NoDelay(),
+      clientKind: 'test',
+    );
+    addTearDown(registry.close);
+    await registry.load();
+
+    await registry.setSidebarCollapsed(collapsed: true);
+    expect(store.settings.sidebarCollapsed, isTrue);
+    expect(registry.value.settings.sidebarCollapsed, isTrue);
+
+    await registry.setSidebarCollapsed(collapsed: false);
+    expect(store.settings.sidebarCollapsed, isFalse);
+  });
 }
 
 ServerInfoDto _serverInfo(String id) => ServerInfoDto(

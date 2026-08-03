@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v9 exposes agent definitions and sessions', () {
-    expect(coderProtocolVersion, 9);
+  test('protocol v10 exposes agent definitions and sessions', () {
+    expect(coderProtocolVersion, 10);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -229,6 +229,25 @@ void main() {
       (value) => value.toJson(),
       GitBranchDto.fromJson,
     );
+    _roundTrip(
+      const GitBranchDto(
+        name: 'origin/main',
+        current: false,
+        checkedOut: false,
+        isRemote: true,
+        isDefault: true,
+      ),
+      (value) => value.toJson(),
+      GitBranchDto.fromJson,
+    );
+    expect(
+      const GitBranchDto(
+        name: 'main',
+        current: true,
+        checkedOut: true,
+      ).isRemote,
+      isFalse,
+    );
   });
 
   final workspace = WorkspaceDto(
@@ -368,7 +387,7 @@ void main() {
   );
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 9);
+    expect(coderProtocolVersion, 10);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
