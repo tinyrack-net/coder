@@ -58,7 +58,7 @@ void main() {
         },
       );
 
-      final projects = collectProjects(state);
+      final projects = collectProjects(testL10n, state);
       expect(
         projects.map((item) => '${item.hostLabel}/${item.workspace.name}'),
         <String>[
@@ -71,6 +71,7 @@ void main() {
       expect(projects[1].worktrees, isEmpty);
       expect(
         collectProjects(
+          testL10n,
           const UnifiedWorkspaceCatalogState(
             hosts: <String, HostRuntimeSnapshot>{},
             catalogs: <String, WorkspaceCatalogDto>{},

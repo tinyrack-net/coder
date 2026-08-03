@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/remote_path.dart';
 import 'package:coder_client/coder_client.dart';
@@ -196,7 +197,7 @@ class DaemonPickerDialog extends StatelessWidget {
                   ? Icons.computer_outlined
                   : Icons.cloud_outlined,
             ),
-            title: Text(host.label),
+            title: Text(hostLabel(AppLocalizations.of(context), host)),
           ),
         ),
     ],
