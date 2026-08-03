@@ -418,6 +418,42 @@ void main() {
   );
 
   test(
+    'conversation ignores a transport event delivered after disposal',
+    () async {
+      final lateEvents = _LateClientEventStream();
+      final api = FakeCoderApi(
+        agents: <AgentDto>[agent],
+        eventStream: lateEvents,
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      await container.read(provider.future);
+
+      listener.close();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        () => lateEvents.emit(
+          TimelineClientEvent(
+            TimelineEventDto(
+              agentId: agent.id,
+              sequence: 1,
+              type: 'assistant.delta',
+              data: const <String, dynamic>{'text': 'late'},
+              createdAt: now,
+            ),
+          ),
+        ),
+        returnsNormally,
+      );
+    },
+  );
+
+  test(
     'provider settings notifier performs every administrative command',
     () async {
       final api = FakeCoderApi(
@@ -583,4 +619,26 @@ final class _FixedIdGenerator implements AppIdGenerator {
 
   @override
   String generate() => 'generated-id';
+}
+
+final class _LateClientEventStream extends Stream<ClientEvent> {
+  void Function(ClientEvent)? _onData;
+
+  @override
+  StreamSubscription<ClientEvent> listen(
+    void Function(ClientEvent)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    _onData = onData;
+    return const Stream<ClientEvent>.empty().listen(
+      null,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  void emit(ClientEvent event) => _onData?.call(event);
 }

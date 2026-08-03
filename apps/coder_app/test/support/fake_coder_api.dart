@@ -18,6 +18,7 @@ final class FakeCoderApi implements CoderApi {
     List<AgentDto>? agents,
     Map<String, List<TimelineEventDto>>? timelines,
     Map<String, List<ProviderModelDto>>? models,
+    this.eventStream,
   }) : _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
        _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
@@ -116,6 +117,9 @@ final class FakeCoderApi implements CoderApi {
   final List<AgentDto> _agents;
   final Map<String, List<TimelineEventDto>> _timelines;
   final Map<String, List<ProviderModelDto>> _models;
+
+  /// Optional event stream that can model transport lifecycle races.
+  final Stream<ClientEvent>? eventStream;
   final StreamController<ClientEvent> _events =
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
@@ -151,7 +155,7 @@ final class FakeCoderApi implements CoderApi {
   void emitState(ClientConnectionState state) => _states.add(state);
 
   @override
-  Stream<ClientEvent> get events => _events.stream;
+  Stream<ClientEvent> get events => eventStream ?? _events.stream;
 
   @override
   Stream<ClientConnectionState> get states => _states.stream;

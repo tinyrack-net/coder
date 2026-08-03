@@ -171,7 +171,7 @@ final class AgentsControllerProvider
   }
 }
 
-String _$agentsControllerHash() => r'567a999c8471bd70b04ec43eb2f064f838bb5d59';
+String _$agentsControllerHash() => r'07c302f3e58214d248267cd8157baeb603b13c14';
 
 /// AgentsController defines a public contract.
 
@@ -375,7 +375,7 @@ final class ConversationControllerProvider
 }
 
 String _$conversationControllerHash() =>
-    r'81662b5dd7bb8d0129cde3e09f6a5085f33ea1ea';
+    r'dd73111cbc37321541072256ce24f11d830a8f33';
 
 /// ConversationController defines a public contract.
 
@@ -483,7 +483,7 @@ final class ProviderSettingsControllerProvider
 }
 
 String _$providerSettingsControllerHash() =>
-    r'd058f4875231242b0c6162cf7576675f71ee62d1';
+    r'3acb9b0d8e72bc00c45a657d5c267d1bde0fedf7';
 
 /// ProviderSettingsController defines a public contract.
 

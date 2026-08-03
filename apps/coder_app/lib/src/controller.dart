@@ -268,6 +268,7 @@ class AgentsController extends _$AgentsController {
   }
 
   void _handleEvent(ClientEvent event) {
+    if (!ref.mounted) return;
     if (event case AgentUpdatedClientEvent(
       :final agent,
     ) when agent.worktreeId == _worktreeId) {
@@ -490,6 +491,7 @@ class ConversationController extends _$ConversationController {
   }
 
   void _handleEvent(ClientEvent clientEvent) {
+    if (!ref.mounted) return;
     final current = state.asData?.value;
     if (current == null) return;
     switch (clientEvent) {
@@ -795,6 +797,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   }
 
   void _handleEvent(ClientEvent event) {
+    if (!ref.mounted) return;
     if (event case ProviderAuthUpdatedClientEvent(:final attempt)) {
       final current = state.asData?.value;
       if (current == null) return;
