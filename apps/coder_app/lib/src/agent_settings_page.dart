@@ -90,34 +90,39 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   }
 
   Future<void> _create(AgentDefinitionsState state) async {
-    final input = await showDialog<_CreateAgentInput>(
+    final created = await showDialog<AgentDefinitionDto>(
       context: context,
-      builder: (context) => const _CreateAgentDialog(),
+      builder: (context) => _CreateAgentDialog(
+        existingIds: state.definitions
+            .map((definition) => definition.id)
+            .toSet(),
+        onCreate: (input) {
+          final template = state.definitions
+              .where((definition) => definition.id == 'coder')
+              .first;
+          final definition = template.copyWith(
+            id: input.id,
+            name: input.name,
+            description: '',
+            mode: input.mode,
+            systemPrompt: '',
+            callableAgentIds: const <String>[],
+            contentHash: '',
+            sourcePath: '',
+            isBuiltIn: false,
+            isArchived: false,
+            diagnostics: const <AgentDefinitionDiagnosticDto>[],
+          );
+          return ref
+              .read(
+                agentDefinitionsControllerProvider(widget.hostId).notifier,
+              )
+              .create(input.id, definition);
+        },
+      ),
     );
-    if (input == null || !mounted) return;
-    final template = state.definitions
-        .where((definition) => definition.id == 'coder')
-        .first;
-    final definition = template.copyWith(
-      id: input.id,
-      name: input.name,
-      description: '',
-      mode: input.mode,
-      systemPrompt: '',
-      callableAgentIds: const <String>[],
-      contentHash: '',
-      sourcePath: '',
-      isBuiltIn: false,
-      isArchived: false,
-      diagnostics: const <AgentDefinitionDiagnosticDto>[],
-    );
-    try {
-      await ref
-          .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
-          .create(input.id, definition);
-      if (mounted) setState(() => _selectedId = input.id);
-    } on Exception catch (error) {
-      if (mounted) _showError(context, error);
+    if (created != null && mounted) {
+      setState(() => _selectedId = created.id);
     }
   }
 }
@@ -541,7 +546,13 @@ class _CreateAgentInput {
 }
 
 class _CreateAgentDialog extends StatefulWidget {
-  const _CreateAgentDialog();
+  const _CreateAgentDialog({
+    required this.existingIds,
+    required this.onCreate,
+  });
+
+  final Set<String> existingIds;
+  final Future<AgentDefinitionDto> Function(_CreateAgentInput input) onCreate;
 
   @override
   State<_CreateAgentDialog> createState() => _CreateAgentDialogState();
@@ -551,6 +562,23 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
   final _id = TextEditingController();
   final _name = TextEditingController();
   AgentMode _mode = AgentMode.primary;
+  bool _saving = false;
+  Object? _error;
+
+  String? get _idError {
+    final id = _id.text.trim();
+    if (id.isEmpty) return null;
+    if (!RegExp(r'^[a-z0-9][a-z0-9_-]{0,63}$').hasMatch(id)) {
+      return '영문 소문자, 숫자, -, _만 사용할 수 있습니다.';
+    }
+    if (widget.existingIds.contains(id)) return '이미 존재하는 Agent ID입니다.';
+    return null;
+  }
+
+  bool get _valid =>
+      _id.text.trim().isNotEmpty &&
+      _name.text.trim().isNotEmpty &&
+      _idError == null;
 
   @override
   void dispose() {
@@ -570,14 +598,23 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
           TextField(
             controller: _id,
             autofocus: true,
+            enabled: !_saving,
+            onChanged: (_) => setState(() => _error = null),
             decoration: const InputDecoration(
               labelText: 'ID (파일명)',
               hintText: 'reviewer',
-            ),
+            ).copyWith(errorText: _idError),
           ),
           TextField(
             controller: _name,
-            decoration: const InputDecoration(labelText: '이름'),
+            enabled: !_saving,
+            onChanged: (_) => setState(() => _error = null),
+            decoration: InputDecoration(
+              labelText: '이름',
+              errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
+                  ? null
+                  : '이름을 입력하세요.',
+            ),
           ),
           DropdownButtonFormField<AgentMode>(
             initialValue: _mode,
@@ -590,29 +627,55 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
                   ),
                 )
                 .toList(growable: false),
-            onChanged: (value) => setState(() => _mode = value!),
+            onChanged: _saving
+                ? null
+                : (value) => setState(() => _mode = value!),
           ),
+          if (_error case final error?) ...<Widget>[
+            const SizedBox(height: 12),
+            Text(
+              '$error',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
         ],
       ),
     ),
     actions: <Widget>[
       TextButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: _saving ? null : () => Navigator.pop(context),
         child: const Text('취소'),
       ),
       FilledButton(
-        onPressed: () => Navigator.pop(
-          context,
-          _CreateAgentInput(
-            id: _id.text.trim(),
-            name: _name.text.trim(),
-            mode: _mode,
-          ),
-        ),
-        child: const Text('생성'),
+        onPressed: _valid && !_saving ? _submit : null,
+        child: Text(_saving ? '생성 중…' : '생성'),
       ),
     ],
   );
+
+  Future<void> _submit() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final created = await widget.onCreate(
+        _CreateAgentInput(
+          id: _id.text.trim(),
+          name: _name.text.trim(),
+          mode: _mode,
+        ),
+      );
+      if (mounted) Navigator.pop(context, created);
+    } on Exception catch (error) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = error;
+        });
+      }
+    }
+  }
 }
 
 class _AgentSettingsError extends StatelessWidget {
@@ -632,8 +695,4 @@ class _AgentSettingsError extends StatelessWidget {
       ],
     ),
   );
-}
-
-void _showError(BuildContext context, Object error) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
 }

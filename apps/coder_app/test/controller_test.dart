@@ -157,6 +157,7 @@ void main() {
         isEmpty,
       );
     },
+    tags: const <String>['feature_test__session_lifecycle__unit'],
   );
 
   test('feature families never mix state between connected hosts', () async {
@@ -340,6 +341,7 @@ void main() {
       );
       expect(await api.listSessions(worktreeId: worktree.id), hasLength(2));
     },
+    tags: const <String>['feature_test__session_tabs__unit'],
   );
 
   test(
@@ -415,6 +417,7 @@ void main() {
         const ConversationState(),
       );
     },
+    tags: const <String>['feature_test__turn_execution__unit'],
   );
 
   test(

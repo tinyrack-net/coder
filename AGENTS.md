@@ -18,10 +18,14 @@ the user explicitly requests them.
 4. Add unit and contract tests for every behavior change. UI changes also require
    widget tests and an updated Linux golden when pixels change. Protocol or daemon
    changes require contract and daemon integration tests.
-5. Before reporting completion, run `dart run melos verify` and
+5. Register every new or changed capability in the typed feature manifest and
+   add executable `feature_test__<feature_id>__<layer>` tags for every required
+   layer. User-state mutations require contract, real-daemon vertical-slice, and
+   widget evidence; primary screen happy paths require Linux E2E evidence.
+6. Before reporting completion, run `dart run melos verify` and
    `dart run melos verify:debug`. The latter must exercise the real Debug Flutter
    runner and embedded daemon, not only a mocked widget tree.
-6. Run a platform Debug build for every platform-specific change. If the current
+7. Run a platform Debug build for every platform-specific change. If the current
    machine cannot run that platform, explicitly report it as unverified and name
    the CI job responsible for it.
 
@@ -30,6 +34,8 @@ the user explicitly requests them.
 - `dart analyze --fatal-infos` has zero diagnostics under strict casts,
   inference, raw types, and `very_good_analysis`.
 - Dependency and architecture verification have zero violations.
+- Feature verification has no unregistered `CoderApi` method, typed route,
+  unknown/skip tag, or missing required test layer.
 - Each package independently has at least 90% line and 80% branch coverage.
   Missing production files count as 0%; only generated sources are excluded.
 - Tests use deterministic clocks, IDs, memory filesystems, fake processes,

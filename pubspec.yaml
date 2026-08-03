@@ -36,6 +36,8 @@ melos:
       run: dart run melos exec -c 1 -- dart run dependency_validator
     architecture:check:
       run: dart run tool/verify_architecture.dart
+    features:check:
+      run: dart run tool/verify_features.dart
     test:
       run: dart run melos test:unit && dart run melos test:widget
     test:unit:
@@ -44,6 +46,8 @@ melos:
       run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test test --exclude-tags=golden --test-randomize-ordering-seed=random
     test:contract:
       run: dart run melos exec --no-flutter --scope=coder_protocol --scope=coder_client --scope=coder_provider_openai --scope=coder_daemon -c 1 -- dart test --test-randomize-ordering-seed=random
+    test:vertical-slice:
+      run: dart test packages/coder_daemon/test/daemon_integration_test.dart --test-randomize-ordering-seed=random
     test:golden:
       run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test test/golden --tags=golden --test-randomize-ordering-seed=random
     test:coverage:
@@ -51,7 +55,7 @@ melos:
     test:e2e:linux:
       run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test integration_test/debug_e2e_test.dart -d linux
     verify:fast:
-      run: dart run melos format:check && dart run melos analyze && dart run melos dependencies:check && dart run melos architecture:check && dart run melos generate:check && dart run melos test:unit && dart run melos test:widget && dart run melos test:contract
+      run: dart run melos format:check && dart run melos analyze && dart run melos dependencies:check && dart run melos architecture:check && dart run melos features:check && dart run melos generate:check && dart run melos test:unit && dart run melos test:widget && dart run melos test:contract && dart run melos test:vertical-slice
     verify:
       run: dart run melos verify:fast && dart run melos test:golden && dart run melos test:coverage
     verify:debug:

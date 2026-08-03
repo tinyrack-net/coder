@@ -107,17 +107,15 @@ void main() {
     'loopback callback binder falls back when its primary port is busy',
     () async {
       final occupied = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      final candidate = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      final fallbackPort = candidate.port;
-      await candidate.close(force: true);
       final binder = LoopbackOAuthCallbackServerBinder(
         primaryPort: occupied.port,
-        fallbackPort: fallbackPort,
+        fallbackPort: 0,
       );
 
       final server = await binder.bind();
       try {
-        expect(server.port, fallbackPort);
+        expect(server.port, isNot(occupied.port));
+        expect(server.port, greaterThan(0));
       } finally {
         await server.close(force: true);
         await occupied.close(force: true);

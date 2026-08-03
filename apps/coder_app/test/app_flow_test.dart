@@ -78,122 +78,135 @@ void main() {
       await tester.pumpAndSettle();
       expect(router.routeInformationProvider.value.uri.path, contains('two'));
     },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
   );
 
-  testWidgets('session tabs close locally and reopen from the picker', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(1100, 760));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final first = session('one');
-    final api = FakeCoderApi(
-      workspaces: <WorkspaceDto>[workspace],
-      worktrees: <WorktreeDto>[checkout],
-      agents: <SessionDto>[first],
-    );
-    final router = await _pumpRoute(
+  testWidgets(
+    'session tabs close locally and reopen from the picker',
+    (
       tester,
-      api,
-      SessionRoute(
-        hostId: 'server',
-        workspaceId: workspace.id,
-        worktreeId: checkout.id,
-        sessionId: first.id,
-      ).location,
-    );
-    addTearDown(router.dispose);
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final first = session('one');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[first],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: first.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
 
-    await tester.tap(find.byTooltip('탭 닫기'));
-    await tester.pumpAndSettle();
-    expect(find.text('새 session 시작'), findsOneWidget);
-    expect(await api.listSessions(worktreeId: checkout.id), <SessionDto>[
-      first,
-    ]);
+      await tester.tap(find.byTooltip('탭 닫기'));
+      await tester.pumpAndSettle();
+      expect(find.text('새 session 시작'), findsOneWidget);
+      expect(await api.listSessions(worktreeId: checkout.id), <SessionDto>[
+        first,
+      ]);
 
-    await tester.tap(find.byTooltip('모든 session'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Session one'));
-    await tester.pumpAndSettle();
-    expect(find.byTooltip('탭 닫기'), findsOneWidget);
-  });
+      await tester.tap(find.byTooltip('모든 session'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Session one'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('탭 닫기'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__session_tabs__widget'],
+  );
 
-  testWidgets('creates and archives a managed worktree from the repository', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(1100, 760));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi(
-      workspaces: <WorkspaceDto>[workspace],
-      worktrees: <WorktreeDto>[checkout],
-    );
-    final router = await _pumpRoute(
+  testWidgets(
+    'creates and archives a managed worktree from the repository',
+    (
       tester,
-      api,
-      WorktreeRoute(
-        hostId: 'server',
-        workspaceId: workspace.id,
-        worktreeId: checkout.id,
-      ).location,
-    );
-    addTearDown(router.dispose);
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
 
-    await tester.tap(find.byTooltip('새 worktree'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.widgetWithText(TextField, '새 branch 이름'),
-      'feature/settings',
-    );
-    await tester.tap(find.widgetWithText(FilledButton, '생성'));
-    await tester.pumpAndSettle();
-    expect(find.text('feature/settings'), findsWidgets);
+      await tester.tap(find.byTooltip('새 worktree'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, '새 branch 이름'),
+        'feature/settings',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, '생성'));
+      await tester.pumpAndSettle();
+      expect(find.text('feature/settings'), findsWidgets);
 
-    final menus = find.byTooltip('Worktree 메뉴');
-    await tester.tap(menus.last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Archive'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Archive할까요?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
-    await tester.pumpAndSettle();
-    expect(find.text('feature/settings'), findsNothing);
-    expect(router.routeInformationProvider.value.uri.path, '/');
-  });
+      final menus = find.byTooltip('Worktree 메뉴');
+      await tester.tap(menus.last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Archive할까요?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+      await tester.pumpAndSettle();
+      expect(find.text('feature/settings'), findsNothing);
+      expect(router.routeInformationProvider.value.uri.path, '/');
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__widget'],
+  );
 
-  testWidgets('folder add selects a daemon and remote path before register', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(1100, 760));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi();
-    final router = await _pumpRoute(
+  testWidgets(
+    'folder add selects a daemon and remote path before register',
+    (
       tester,
-      api,
-      const WorkspaceHomeRoute().location,
-    );
-    addTearDown(router.dispose);
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi();
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const WorkspaceHomeRoute().location,
+      );
+      addTearDown(router.dispose);
 
-    await tester.tap(find.byTooltip('폴더 추가').first);
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(SimpleDialog),
-        matching: find.text('Test daemon'),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final pathField = find.widgetWithText(TextField, 'Daemon 경로');
-    await tester.enterText(pathField, '/srv/repositories/project');
-    await tester.pumpAndSettle();
-    expect(find.text('project'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, '등록'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('폴더 추가').first);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SimpleDialog),
+          matching: find.text('Test daemon'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final pathField = find.widgetWithText(TextField, 'Daemon 경로');
+      await tester.enterText(pathField, '/srv/repositories/project');
+      await tester.pumpAndSettle();
+      expect(find.text('project'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, '등록'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('project'), findsWidgets);
-    expect(
-      router.routeInformationProvider.value.uri.path,
-      startsWith('/workspaces/server/'),
-    );
-  });
+      expect(find.text('project'), findsWidgets);
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        startsWith('/workspaces/server/'),
+      );
+    },
+    tags: const <String>['feature_test__workspace_registration__widget'],
+  );
 
   testWidgets('mobile opens selected worktree as a session-only detail', (
     tester,
@@ -222,62 +235,66 @@ void main() {
     expect(find.text('Repositories'), findsOneWidget);
   });
 
-  testWidgets('creates a session and sends a coding request', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(1100, 760));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    const planner = AgentDefinitionDto(
-      id: 'planner',
-      name: 'Planner',
-      description: 'Plans changes',
-      mode: AgentMode.primary,
-      promptEnabled: true,
-      systemPrompt: 'Plan first.',
-      model: AgentModelSelectionDto(
-        source: AgentModelSource.daemonDefault,
-      ),
-      reasoningEffort: 'medium',
-      permissionMode: PermissionMode.readOnly,
-      toolIds: <String>['read_file'],
-      callableAgentIds: <String>[],
-      contentHash: 'planner-hash',
-      sourcePath: '/config/agents/planner.md',
-    );
-    final api = FakeCoderApi(
-      workspaces: <WorkspaceDto>[workspace],
-      worktrees: <WorktreeDto>[checkout],
-      agentDefinitions: const <AgentDefinitionDto>[planner],
-    );
-    final router = await _pumpRoute(
-      tester,
-      api,
-      WorktreeRoute(
-        hostId: 'server',
-        workspaceId: workspace.id,
-        worktreeId: checkout.id,
-      ).location,
-    );
-    addTearDown(router.dispose);
+  testWidgets(
+    'creates a session and sends a coding request',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const planner = AgentDefinitionDto(
+        id: 'planner',
+        name: 'Planner',
+        description: 'Plans changes',
+        mode: AgentMode.primary,
+        promptEnabled: true,
+        systemPrompt: 'Plan first.',
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.daemonDefault,
+        ),
+        reasoningEffort: 'medium',
+        permissionMode: PermissionMode.readOnly,
+        toolIds: <String>['read_file'],
+        callableAgentIds: <String>[],
+        contentHash: 'planner-hash',
+        sourcePath: '/config/agents/planner.md',
+      );
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agentDefinitions: const <AgentDefinitionDto>[planner],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
 
-    await tester.tap(find.text('새 session 시작'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.widgetWithText(TextField, '이름'),
-      'Refactor API',
-    );
-    expect(find.text('Planner'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, '생성'));
-    await tester.pumpAndSettle();
-    expect(find.text('Refactor API'), findsWidgets);
-    expect((await api.listSessions()).single.agentDefinitionId, 'planner');
+      await tester.tap(find.text('새 session 시작'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, '이름'),
+        'Refactor API',
+      );
+      expect(find.text('Planner'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, '생성'));
+      await tester.pumpAndSettle();
+      expect(find.text('Refactor API'), findsWidgets);
+      expect((await api.listSessions()).single.agentDefinitionId, 'planner');
 
-    await tester.enterText(
-      find.widgetWithText(TextField, '코딩 요청을 입력하세요…'),
-      'Run the tests',
-    );
-    await tester.tap(find.byIcon(Icons.arrow_upward));
-    await tester.pump();
-    expect(api.startedPrompts, <String>['Run the tests']);
-  });
+      await tester.enterText(
+        find.widgetWithText(TextField, '코딩 요청을 입력하세요…'),
+        'Run the tests',
+      );
+      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.pump();
+      expect(api.startedPrompts, <String>['Run the tests']);
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
 
   testWidgets('workspace shell is visible before any daemon exists', (
     tester,
@@ -363,7 +380,10 @@ void main() {
         find.widgetWithText(TextField, 'ID (파일명)'),
         'reviewer',
       );
-      await tester.enterText(find.widgetWithText(TextField, '이름'), 'Reviewer');
+      await tester.enterText(
+        find.widgetWithText(TextField, '이름').last,
+        'Reviewer',
+      );
       await tester.tap(
         find.widgetWithText(DropdownButtonFormField<AgentMode>, '유형'),
       );
@@ -380,6 +400,68 @@ void main() {
         (await api.getAgentDefinition('reviewer')).mode,
         AgentMode.subagent,
       );
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
+    ],
+  );
+
+  testWidgets(
+    'agent create validates input and keeps daemon failures in the dialog',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(failNextAgentCreate: true);
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.pumpAndSettle();
+      var create = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, '생성'),
+      );
+      expect(create.onPressed, isNull);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'ID (파일명)'),
+        'Invalid ID',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, '이름').last,
+        'Reviewer',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('영문 소문자, 숫자, -, _만 사용할 수 있습니다.'), findsOneWidget);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'ID (파일명)'),
+        'coder',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('이미 존재하는 Agent ID입니다.'), findsOneWidget);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'ID (파일명)'),
+        'reviewer',
+      );
+      await tester.pumpAndSettle();
+      create = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, '생성'),
+      );
+      expect(create.onPressed, isNotNull);
+      await tester.tap(find.widgetWithText(FilledButton, '생성'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('agent_create_failed'), findsOneWidget);
+      expect(find.text('Agent 추가'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, '생성'));
+      await tester.pumpAndSettle();
+      expect(find.text('Agent 추가'), findsNothing);
+      expect(find.text('Reviewer'), findsWidgets);
     },
   );
 
@@ -511,6 +593,7 @@ void main() {
         isNot(contains('reviewer')),
       );
     },
+    tags: const <String>['feature_test__agent_delegation__widget'],
   );
 
   testWidgets('agent settings exposes read-only and load-error states', (
@@ -554,76 +637,80 @@ void main() {
     expect(find.textContaining('definition load failed'), findsOneWidget);
   });
 
-  testWidgets('timeline and approval cards render typed event content', (
-    tester,
-  ) async {
-    final agent = session('approval');
-    final approval = ApprovalRequestDto(
-      id: 'approval',
-      sessionId: agent.id,
-      turnId: 'turn',
-      toolCallId: 'call',
-      toolName: 'apply_patch',
-      risk: ToolRisk.write,
-      arguments: const <String, dynamic>{'patch': 'diff'},
-      status: ApprovalStatus.pending,
-      createdAt: now,
-    );
-    final event = TimelineEventDto(
-      sessionId: agent.id,
-      sequence: 1,
-      type: 'user.message',
-      data: const <String, dynamic>{'text': 'Inspect this'},
-      createdAt: now,
-    );
-    final api = FakeCoderApi(agents: <SessionDto>[agent]);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          appServicesProvider.overrideWithValue(fakeAppServices(api)),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: ListView(
-              children: <Widget>[
-                Consumer(
-                  builder: (context, ref, child) => Text(
-                    ref
-                                .watch(hostRegistryControllerProvider)
-                                .asData
-                                ?.value
-                                .runtimes['server']
-                                ?.connected ==
-                            true
-                        ? 'ready'
-                        : 'waiting',
+  testWidgets(
+    'timeline and approval cards render typed event content',
+    (
+      tester,
+    ) async {
+      final agent = session('approval');
+      final approval = ApprovalRequestDto(
+        id: 'approval',
+        sessionId: agent.id,
+        turnId: 'turn',
+        toolCallId: 'call',
+        toolName: 'apply_patch',
+        risk: ToolRisk.write,
+        arguments: const <String, dynamic>{'patch': 'diff'},
+        status: ApprovalStatus.pending,
+        createdAt: now,
+      );
+      final event = TimelineEventDto(
+        sessionId: agent.id,
+        sequence: 1,
+        type: 'user.message',
+        data: const <String, dynamic>{'text': 'Inspect this'},
+        createdAt: now,
+      );
+      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ListView(
+                children: <Widget>[
+                  Consumer(
+                    builder: (context, ref, child) => Text(
+                      ref
+                                  .watch(hostRegistryControllerProvider)
+                                  .asData
+                                  ?.value
+                                  .runtimes['server']
+                                  ?.connected ==
+                              true
+                          ? 'ready'
+                          : 'waiting',
+                    ),
                   ),
-                ),
-                TimelineCard(event: event),
-                ApprovalCard(hostId: 'server', approval: approval),
-              ],
+                  TimelineCard(event: event),
+                  ApprovalCard(hostId: 'server', approval: approval),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('ready'), findsOneWidget);
-    expect(find.text('You'), findsOneWidget);
-    expect(find.text('Inspect this', findRichText: true), findsOneWidget);
-    expect(find.text('승인 필요 · apply_patch'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TextButton, '거부'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, '승인'));
-    await tester.pumpAndSettle();
-    expect(
-      api.approvalDecisions,
-      <({bool approved, String id})>[
-        (id: 'approval', approved: false),
-        (id: 'approval', approved: true),
-      ],
-    );
-  });
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('ready'), findsOneWidget);
+      expect(find.text('You'), findsOneWidget);
+      expect(find.text('Inspect this', findRichText: true), findsOneWidget);
+      expect(find.text('승인 필요 · apply_patch'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TextButton, '거부'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '승인'));
+      await tester.pumpAndSettle();
+      expect(
+        api.approvalDecisions,
+        <({bool approved, String id})>[
+          (id: 'approval', approved: false),
+          (id: 'approval', approved: true),
+        ],
+      );
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
 }
 
 Future<GoRouter> _pumpRoute(

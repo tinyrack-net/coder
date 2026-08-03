@@ -11,36 +11,40 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('catalog hides runtime configuration and exposes simple auth', () async {
-    final fixture = _ServiceFixture(now);
+  test(
+    'catalog hides runtime configuration and exposes simple auth',
+    () async {
+      final fixture = _ServiceFixture(now);
 
-    final catalog = await fixture.service.catalog();
+      final catalog = await fixture.service.catalog();
 
-    expect(catalog.source, ProviderCatalogSource.bundled);
-    expect(
-      catalog.definitions.map((definition) => definition.id),
-      containsAll(<String>['openai', 'deepseek', 'ollama']),
-    );
-    expect(
-      catalog.definitions
-          .singleWhere((definition) => definition.id == 'openai')
-          .authMethods
-          .map((method) => method.flow),
-      <ProviderAuthFlow>[
-        ProviderAuthFlow.oauthBrowser,
-        ProviderAuthFlow.oauthDevice,
+      expect(catalog.source, ProviderCatalogSource.bundled);
+      expect(
+        catalog.definitions.map((definition) => definition.id),
+        containsAll(<String>['openai', 'deepseek', 'ollama']),
+      );
+      expect(
+        catalog.definitions
+            .singleWhere((definition) => definition.id == 'openai')
+            .authMethods
+            .map((method) => method.flow),
+        <ProviderAuthFlow>[
+          ProviderAuthFlow.oauthBrowser,
+          ProviderAuthFlow.oauthDevice,
+          ProviderAuthFlow.apiKey,
+        ],
+      );
+      expect(
+        catalog.definitions
+            .singleWhere((definition) => definition.id == 'deepseek')
+            .authMethods
+            .single
+            .flow,
         ProviderAuthFlow.apiKey,
-      ],
-    );
-    expect(
-      catalog.definitions
-          .singleWhere((definition) => definition.id == 'deepseek')
-          .authMethods
-          .single
-          .flow,
-      ProviderAuthFlow.apiKey,
-    );
-  });
+      );
+    },
+    tags: const <String>['feature_test__provider_catalog__unit'],
+  );
 
   test('initialization auto-connects environment credentials', () async {
     final fixture = _ServiceFixture(
@@ -125,6 +129,9 @@ void main() {
       );
       expect(fixture.credentials.values, isNot(contains('deepseek')));
     },
+    tags: const <String>[
+      'feature_test__provider_connection_management__unit',
+    ],
   );
 
   test('discovery failures degrade but invalid credentials fail', () async {
@@ -330,70 +337,74 @@ void main() {
     );
   });
 
-  test('custom lifecycle normalizes, edits, and deletes connections', () async {
-    final fixture = _ServiceFixture(now);
-    fixture.discovery.ids = <String>['discovered'];
-    const noAuth = CustomProviderConfigDto(
-      name: '  Local Lab  ',
-      baseUrl: 'http://127.0.0.1:9000/v1///',
-      apiFormat: ProviderApiFormat.responses,
-      authenticationRequired: false,
-      manualModelIds: <String>[' manual ', '', 'manual'],
-    );
+  test(
+    'custom lifecycle normalizes, edits, and deletes connections',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>['discovered'];
+      const noAuth = CustomProviderConfigDto(
+        name: '  Local Lab  ',
+        baseUrl: 'http://127.0.0.1:9000/v1///',
+        apiFormat: ProviderApiFormat.responses,
+        authenticationRequired: false,
+        manualModelIds: <String>[' manual ', '', 'manual'],
+      );
 
-    final created = await fixture.service.createCustom('lab', noAuth);
-    expect(created.displayName, 'Local Lab');
-    expect(created.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
-    expect(created.customConfig!.manualModelIds, <String>['manual']);
-    expect(created.authKind, ProviderAuthKind.none);
-    expect(created.defaultModelId, 'manual');
-    expect(await fixture.service.listModels('lab'), hasLength(2));
+      final created = await fixture.service.createCustom('lab', noAuth);
+      expect(created.displayName, 'Local Lab');
+      expect(created.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
+      expect(created.customConfig!.manualModelIds, <String>['manual']);
+      expect(created.authKind, ProviderAuthKind.none);
+      expect(created.defaultModelId, 'manual');
+      expect(await fixture.service.listModels('lab'), hasLength(2));
 
-    await expectLater(
-      fixture.service.createCustom('', noAuth),
-      throwsA(isA<FormatException>()),
-    );
-    await expectLater(
-      fixture.service.createCustom('lab', noAuth),
-      throwsA(isA<StateError>()),
-    );
-    await expectLater(
-      fixture.service.createCustom(
-        'key-required',
+      await expectLater(
+        fixture.service.createCustom('', noAuth),
+        throwsA(isA<FormatException>()),
+      );
+      await expectLater(
+        fixture.service.createCustom('lab', noAuth),
+        throwsA(isA<StateError>()),
+      );
+      await expectLater(
+        fixture.service.createCustom(
+          'key-required',
+          noAuth.copyWith(authenticationRequired: true),
+        ),
+        throwsA(isA<FormatException>()),
+      );
+
+      final updated = await fixture.service.updateCustom(
+        'lab',
         noAuth.copyWith(authenticationRequired: true),
-      ),
-      throwsA(isA<FormatException>()),
-    );
+        apiKey: 'new-secret',
+      );
+      expect(updated.credentialOrigin, ProviderCredentialOrigin.stored);
+      expect(fixture.credentials.values['lab'], isA<ApiKeyCredential>());
+      await fixture.service.updateCustom(
+        'lab',
+        noAuth,
+        apiKey: '',
+      );
+      expect(fixture.credentials.values, isNot(contains('lab')));
 
-    final updated = await fixture.service.updateCustom(
-      'lab',
-      noAuth.copyWith(authenticationRequired: true),
-      apiKey: 'new-secret',
-    );
-    expect(updated.credentialOrigin, ProviderCredentialOrigin.stored);
-    expect(fixture.credentials.values['lab'], isA<ApiKeyCredential>());
-    await fixture.service.updateCustom(
-      'lab',
-      noAuth,
-      apiKey: '',
-    );
-    expect(fixture.credentials.values, isNot(contains('lab')));
-
-    await fixture.service.connectApiKey('deepseek', 'secret');
-    await expectLater(
-      fixture.service.updateCustom('deepseek', noAuth),
-      throwsA(isA<StateError>()),
-    );
-    await expectLater(
-      fixture.service.deleteCustom('deepseek'),
-      throwsA(isA<StateError>()),
-    );
-    await fixture.service.deleteCustom('lab');
-    await expectLater(
-      fixture.service.get('lab'),
-      throwsA(isA<ProviderConnectionFailure>()),
-    );
-  });
+      await fixture.service.connectApiKey('deepseek', 'secret');
+      await expectLater(
+        fixture.service.updateCustom('deepseek', noAuth),
+        throwsA(isA<StateError>()),
+      );
+      await expectLater(
+        fixture.service.deleteCustom('deepseek'),
+        throwsA(isA<StateError>()),
+      );
+      await fixture.service.deleteCustom('lab');
+      await expectLater(
+        fixture.service.get('lab'),
+        throwsA(isA<ProviderConnectionFailure>()),
+      );
+    },
+    tags: const <String>['feature_test__provider_custom__unit'],
+  );
 
   test('default and model validation reject unusable selections', () async {
     final fixture = _ServiceFixture(now);

@@ -384,6 +384,19 @@ void main() {
       );
       expect(states, isNot(contains(ClientConnectionState.disconnected)));
     },
+    tags: const <String>[
+      'feature_test__daemon_management__contract',
+      'feature_test__workspace_catalog__contract',
+      'feature_test__workspace_registration__contract',
+      'feature_test__worktree_lifecycle__contract',
+      'feature_test__session_lifecycle__contract',
+      'feature_test__turn_execution__contract',
+      'feature_test__agent_definition_management__contract',
+      'feature_test__provider_catalog__contract',
+      'feature_test__provider_connection_management__contract',
+      'feature_test__provider_oauth__contract',
+      'feature_test__provider_custom__contract',
+    ],
   );
 
   test('RPC errors preserve daemon code and retryability', () async {

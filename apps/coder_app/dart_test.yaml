@@ -1,2 +1,32 @@
 tags:
   golden:
+  feature_test__daemon_management__unit:
+  feature_test__daemon_management__widget:
+  feature_test__daemon_management__e2e:
+  feature_test__daemon_management__platformSmoke:
+  feature_test__workspace_catalog__widget:
+  feature_test__workspace_catalog__e2e:
+  feature_test__workspace_registration__widget:
+  feature_test__workspace_registration__e2e:
+  feature_test__worktree_lifecycle__widget:
+  feature_test__worktree_lifecycle__e2e:
+  feature_test__session_lifecycle__unit:
+  feature_test__session_lifecycle__widget:
+  feature_test__session_lifecycle__e2e:
+  feature_test__session_tabs__unit:
+  feature_test__session_tabs__widget:
+  feature_test__session_tabs__e2e:
+  feature_test__turn_execution__unit:
+  feature_test__turn_execution__widget:
+  feature_test__turn_execution__e2e:
+  feature_test__agent_definition_management__widget:
+  feature_test__agent_definition_management__e2e:
+  feature_test__agent_delegation__widget:
+  feature_test__agent_delegation__e2e:
+  feature_test__provider_catalog__widget:
+  feature_test__provider_catalog__e2e:
+  feature_test__provider_connection_management__widget:
+  feature_test__provider_connection_management__e2e:
+  feature_test__provider_oauth__widget:
+  feature_test__provider_custom__widget:
+  feature_test__provider_custom__e2e:

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
@@ -30,6 +31,23 @@ void main() {
       final remoteWorkspace = await Directory.systemTemp.createTemp(
         'coder-e2e-remote-workspace-',
       );
+      await _initializeGitRepository(workspace.path);
+      final modelServer = await HttpServer.bind(
+        InternetAddress.loopbackIPv4,
+        0,
+      );
+      modelServer.listen((request) async {
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(
+          jsonEncode(<String, dynamic>{
+            'object': 'list',
+            'data': <Map<String, dynamic>>[
+              <String, dynamic>{'id': 'e2e-model', 'owned_by': 'test'},
+            ],
+          }),
+        );
+        await request.response.close();
+      });
       final handle = await EmbeddedDaemonHandle.start(
         DaemonConfig(
           homeDirectory: home.path,
@@ -57,6 +75,7 @@ void main() {
         if (remoteWorkspace.existsSync()) {
           remoteWorkspace.deleteSync(recursive: true);
         }
+        await modelServer.close(force: true);
       });
       final endpoint = HostEndpoint(
         websocketUri: handle.boundEndpoint,
@@ -77,54 +96,6 @@ void main() {
         rootPath: workspace.path,
         name: 'E2E Workspace',
       );
-      final coder = await setupClient.getAgentDefinition('coder');
-      final reviewer = await setupClient.createAgentDefinition(
-        'reviewer',
-        coder.copyWith(
-          id: 'reviewer',
-          name: 'Reviewer',
-          description: 'Read-only E2E reviewer',
-          mode: AgentMode.subagent,
-          systemPrompt: 'Review the current change.',
-          permissionMode: PermissionMode.readOnly,
-          callableAgentIds: const <String>[],
-          contentHash: '',
-          sourcePath: '',
-          isBuiltIn: false,
-        ),
-      );
-      await setupClient.updateAgentDefinition(
-        coder.copyWith(callableAgentIds: const <String>['reviewer']),
-        expectedContentHash: coder.contentHash,
-      );
-      final reviewerFile = File(reviewer.sourcePath);
-      await reviewerFile.writeAsString(
-        (await reviewerFile.readAsString()).replaceFirst(
-          'Review the current change.',
-          'Review the current change after external reload.',
-        ),
-        flush: true,
-      );
-      await _waitForAgentPrompt(
-        setupClient,
-        'reviewer',
-        'Review the current change after external reload.',
-      );
-      final remoteSetupClient = await CoderClient.connect(
-        endpoint: HostEndpoint(websocketUri: remoteHandle.boundEndpoint),
-        credentials: const DaemonCredentials(
-          bearerToken: 'remote-token-0123456789abcdef0123456789',
-        ),
-        clientId: 'remote-e2e-setup',
-        clientKind: 'integration-test',
-      );
-      await remoteSetupClient.registerWorkspace(
-        workspaceId: 'remote-workspace-e2e',
-        checkoutId: 'remote-checkout-e2e',
-        rootPath: remoteWorkspace.path,
-        name: 'Remote Workspace',
-      );
-      await remoteSetupClient.close();
 
       final now = DateTime.utc(2026, 8, 3);
       final appStore = MemoryAppStore(
@@ -158,14 +129,169 @@ void main() {
       await _pumpUntil(tester, find.text('내장 daemon'));
       await _pumpUntil(tester, find.text('Remote daemon'));
       await _pumpUntil(tester, find.text('E2E Workspace'));
-      await _pumpUntil(tester, find.text('Remote Workspace'));
+
+      await tester.tap(find.byTooltip('폴더 추가').first);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SimpleDialog),
+          matching: find.text('Remote daemon'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Daemon 경로'),
+        remoteWorkspace.path,
+      );
+      await tester.tap(find.widgetWithText(FilledButton, '등록'));
+      await tester.pumpAndSettle();
+      await _pumpUntilGone(tester, find.text('Daemon의 폴더 선택'));
+      final remoteWorkspaceName = remoteWorkspace.path
+          .split(Platform.pathSeparator)
+          .last;
+      await _pumpUntil(tester, find.text(remoteWorkspaceName));
+
+      await tester.tap(find.byTooltip('설정'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Agent'));
+      await _pumpUntil(tester, find.text('Agents'));
+      await _selectDaemon(tester, '내장 daemon');
+      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'ID (파일명)'),
+        'reviewer',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, '이름').last,
+        'Reviewer',
+      );
+      await tester.tap(
+        find.widgetWithText(DropdownButtonFormField<AgentMode>, '유형'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('subagent').last);
+      await tester.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      final createAgent = find.widgetWithText(FilledButton, '생성');
+      await tester.ensureVisible(createAgent);
+      await tester.pumpAndSettle();
+      await tester.tap(createAgent);
+      await _pumpUntilGone(tester, find.text('Agent 추가'));
+      final reviewer = await _waitForAgentDefinition(setupClient, 'reviewer');
+      final reviewerFile = File(reviewer.sourcePath);
+      expect(reviewerFile.existsSync(), isTrue);
+
+      final promptField = find.widgetWithText(
+        TextField,
+        'System prompt (Markdown)',
+      );
+      await tester.enterText(promptField, 'Review the current change.');
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await _waitForAgentPrompt(
+        setupClient,
+        'reviewer',
+        'Review the current change.',
+      );
+      await reviewerFile.writeAsString(
+        (await reviewerFile.readAsString()).replaceFirst(
+          'Review the current change.',
+          'Review the current change after external reload.',
+        ),
+        flush: true,
+      );
+      await _waitForAgentPrompt(
+        setupClient,
+        'reviewer',
+        'Review the current change after external reload.',
+      );
+      await _pumpUntilTextFieldValue(
+        tester,
+        promptField,
+        'Review the current change after external reload.',
+      );
+
+      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'ID (파일명)'),
+        'temporary',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, '이름').last,
+        'Temporary',
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      final createTemporary = find.widgetWithText(FilledButton, '생성');
+      await tester.ensureVisible(createTemporary);
+      await tester.pumpAndSettle();
+      await tester.tap(createTemporary);
+      await _pumpUntilGone(tester, find.text('Agent 추가'));
+      await _waitForAgentDefinition(setupClient, 'temporary');
+      await tester.tap(find.byTooltip('Archive'));
+      await tester.pumpAndSettle();
+      expect(
+        (await setupClient.listAgentDefinitions()).map((item) => item.id),
+        isNot(contains('temporary')),
+      );
+
+      await tester.tap(find.text('Coder').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('기본값으로 초기화'));
+      await tester.pumpAndSettle();
+      final editorList = find.byType(ListView).last;
+      final editorScrollable = find
+          .descendant(of: editorList, matching: find.byType(Scrollable))
+          .first;
+      await tester.scrollUntilVisible(
+        find.text('호출 가능한 Subagent'),
+        400,
+        scrollable: editorScrollable,
+      );
+      await tester.tap(find.text('Reviewer').last);
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(
+        (await setupClient.getAgentDefinition('coder')).callableAgentIds,
+        <String>['reviewer'],
+      );
+
+      await tester.tap(find.byIcon(Icons.arrow_back).first);
+      await _pumpUntil(tester, find.text('E2E Workspace'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('E2E Workspace').last);
       await tester.pumpAndSettle();
-      await _pumpUntil(
-        tester,
-        find.text(workspace.path),
+      final newWorktree = find.byTooltip('새 worktree');
+      await tester.ensureVisible(newWorktree);
+      await tester.tap(newWorktree);
+      final branchField = find.widgetWithText(TextField, '새 branch 이름');
+      await _pumpUntil(tester, branchField);
+      await tester.enterText(branchField, 'feature/e2e');
+      await tester.tap(find.widgetWithText(FilledButton, '생성'));
+      await _pumpUntil(tester, find.text('feature-e2e'));
+      await tester.pumpAndSettle();
+      final managedTile = find.ancestor(
+        of: find.text('feature-e2e'),
+        matching: find.byType(ListTile),
       );
-      await tester.tap(find.text('E2E Workspace').last);
+      final managedMenu = find.descendant(
+        of: managedTile.last,
+        matching: find.byTooltip('Worktree 메뉴'),
+      );
+      await tester.ensureVisible(managedMenu);
+      await tester.pumpAndSettle();
+      await tester.tap(managedMenu);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+      await _pumpUntil(tester, find.text('E2E Workspace'));
+      await tester.pumpAndSettle();
+      if (find.text('main').evaluate().isEmpty) {
+        await tester.tap(find.text('E2E Workspace').last);
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.text('main'));
       await _pumpUntil(tester, find.text('새 session 시작'));
       await tester.tap(find.text('새 session 시작'));
       await tester.pumpAndSettle();
@@ -174,7 +300,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField).last, 'Delegate review');
       await tester.pumpAndSettle();
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(find.byIcon(Icons.arrow_upward));
       await _pumpUntilWithSessionDiagnostics(
         tester,
         find.text('Parent completed.', findRichText: true),
@@ -194,7 +320,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField).last, 'Create result.txt');
       await tester.pumpAndSettle();
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(find.byIcon(Icons.arrow_upward));
       await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
       await tester.tap(find.text('승인'));
       await _pumpUntil(
@@ -233,7 +359,66 @@ void main() {
         ),
       );
       await reconnected.close();
+
+      await tester.tap(find.byTooltip('설정'));
+      await _pumpUntil(tester, find.text('Provider 추가'));
+      expect(find.text('OpenAI'), findsWidgets);
+      expect(find.text('DeepSeek'), findsWidgets);
+      final addCustom = find.byKey(const ValueKey('provider-add-custom'));
+      await tester.ensureVisible(addCustom);
+      await tester.pumpAndSettle();
+      await tester.tap(addCustom);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, '이름'),
+        'E2E Provider',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Base URL'),
+        'http://127.0.0.1:${modelServer.port}/v1',
+      );
+      await tester.tap(find.text('API key 필요'));
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await _pumpUntil(tester, find.text('E2E Provider'));
+      final providerConnection = (await setupClient.listProviderConnections())
+          .singleWhere((item) => item.displayName == 'E2E Provider');
+      expect(providerConnection.defaultModelId, 'e2e-model');
+      final providerCard = find.ancestor(
+        of: find.text('E2E Provider'),
+        matching: find.byType(Card),
+      );
+      await tester.tap(
+        find.descendant(
+          of: providerCard.first,
+          matching: find.byType(PopupMenuButton<String>),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('연결 해제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '연결 해제'));
+      await tester.pumpAndSettle();
+      expect(
+        (await setupClient.listProviderConnections())
+            .singleWhere((item) => item.id == providerConnection.id)
+            .status,
+        ProviderConnectionStatus.disconnected,
+      );
     },
+    tags: const <String>[
+      'feature_test__daemon_management__e2e',
+      'feature_test__workspace_catalog__e2e',
+      'feature_test__workspace_registration__e2e',
+      'feature_test__worktree_lifecycle__e2e',
+      'feature_test__session_lifecycle__e2e',
+      'feature_test__session_tabs__e2e',
+      'feature_test__turn_execution__e2e',
+      'feature_test__agent_definition_management__e2e',
+      'feature_test__agent_delegation__e2e',
+      'feature_test__provider_catalog__e2e',
+      'feature_test__provider_connection_management__e2e',
+      'feature_test__provider_custom__e2e',
+    ],
   );
 }
 
@@ -251,6 +436,69 @@ Future<void> _waitForAgentPrompt(
   throw TestFailure('Timed out waiting for external agent file reload.');
 }
 
+Future<AgentDefinitionDto> _waitForAgentDefinition(
+  CoderApi api,
+  String id, {
+  int attempts = 50,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await api.getAgentDefinition(id);
+    } on CoderClientException catch (error) {
+      if (error.code != 'request_failed') rethrow;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw TestFailure('Timed out waiting for Agent definition $id.');
+}
+
+Future<void> _selectDaemon(WidgetTester tester, String label) async {
+  final dropdown = find.widgetWithText(
+    DropdownButtonFormField<String>,
+    'Daemon',
+  );
+  await tester.tap(dropdown);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpUntilTextFieldValue(
+  WidgetTester tester,
+  Finder finder,
+  String value, {
+  int attempts = 100,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    await tester.pump(const Duration(milliseconds: 100));
+    final fields = tester.widgetList<TextField>(finder);
+    if (fields.any((field) => field.controller?.text == value)) return;
+  }
+  throw TestFailure('Timed out waiting for text field value "$value".');
+}
+
+Future<void> _initializeGitRepository(String path) async {
+  await _runGit(path, <String>['init', '-b', 'main']);
+  await File('$path/README.md').writeAsString('# E2E fixture\n');
+  await _runGit(path, <String>['add', 'README.md']);
+  await _runGit(path, <String>[
+    '-c',
+    'user.name=Coder E2E',
+    '-c',
+    'user.email=coder-e2e@example.invalid',
+    'commit',
+    '-m',
+    'Initial fixture',
+  ]);
+}
+
+Future<void> _runGit(String path, List<String> arguments) async {
+  final result = await Process.run('git', arguments, workingDirectory: path);
+  if (result.exitCode != 0) {
+    throw TestFailure('git ${arguments.join(' ')} failed: ${result.stderr}');
+  }
+}
+
 Future<void> _pumpUntil(
   WidgetTester tester,
   Finder finder, {
@@ -261,6 +509,18 @@ Future<void> _pumpUntil(
     if (finder.evaluate().isNotEmpty) return;
   }
   throw TestFailure('Timed out waiting for $finder.');
+}
+
+Future<void> _pumpUntilGone(
+  WidgetTester tester,
+  Finder finder, {
+  int attempts = 100,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (finder.evaluate().isEmpty) return;
+  }
+  throw TestFailure('Timed out waiting for $finder to disappear.');
 }
 
 Future<void> _pumpUntilWithSessionDiagnostics(

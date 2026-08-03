@@ -81,6 +81,7 @@ void main() {
         containsAll(<String>['first.test', 'second.test']),
       );
     },
+    tags: const <String>['feature_test__daemon_management__unit'],
   );
 
   test(

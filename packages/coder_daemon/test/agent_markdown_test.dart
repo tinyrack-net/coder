@@ -88,6 +88,25 @@ Review the requested code without modifying it.
     );
   });
 
+  test(
+    'accepts an intentionally empty agent description',
+    () {
+      final parsed = const AgentMarkdownCodec().decode(
+        id: 'reviewer',
+        sourcePath: '/config/agents/reviewer.md',
+        source: source.replaceFirst(
+          'description: Reviews code',
+          'description: ""',
+        ),
+      );
+
+      expect(parsed.description, isEmpty);
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__unit',
+    ],
+  );
+
   test('rejects every malformed Markdown boundary with typed diagnostics', () {
     const codec = AgentMarkdownCodec();
     final malformed = <String>[
@@ -168,6 +187,23 @@ Review the requested code without modifying it.
       expect(await store.get('reviewer'), isNull);
       expect(await store.resolve('reviewer'), isNotNull);
       expect((await store.resolve('reviewer'))!.isArchived, isTrue);
+
+      await expectLater(
+        store.create(
+          'invalid',
+          reviewer.copyWith(
+            id: 'invalid',
+            name: '',
+            sourcePath: '',
+            contentHash: '',
+          ),
+        ),
+        throwsA(isA<FormatException>()),
+      );
+      expect(
+        File('${directory.path}/agents/invalid.md').existsSync(),
+        isFalse,
+      );
     },
   );
 
@@ -289,6 +325,7 @@ Review the requested code without modifying it.
       expect((await service.get('coder')).callableAgentIds, isEmpty);
       await expectLater(service.archive('coder'), throwsA(isA<StateError>()));
     },
+    tags: const <String>['feature_test__agent_delegation__unit'],
   );
 
   test(

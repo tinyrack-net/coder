@@ -13,132 +13,150 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/fake_coder_api.dart';
 
 void main() {
-  testWidgets('preset providers hide technical settings and connect with key', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 900));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi();
-    await _pumpSettings(tester, api);
+  testWidgets(
+    'preset providers hide technical settings and connect with key',
+    (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi();
+      await _pumpSettings(tester, api);
 
-    expect(find.text('연결됨'), findsWidgets);
-    expect(find.text('Provider 추가'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
-    await tester.pumpAndSettle();
+      expect(find.text('연결됨'), findsWidgets);
+      expect(find.text('Provider 추가'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
+      await tester.pumpAndSettle();
 
-    expect(_field('API key'), findsOneWidget);
-    expect(_field('Base URL'), findsNothing);
-    expect(find.text('API 형식'), findsNothing);
-    await tester.enterText(_field('API key'), 'deepseek-secret');
-    await tester.tap(find.widgetWithText(FilledButton, '연결'));
-    await tester.pumpAndSettle();
+      expect(_field('API key'), findsOneWidget);
+      expect(_field('Base URL'), findsNothing);
+      expect(find.text('API 형식'), findsNothing);
+      await tester.enterText(_field('API key'), 'deepseek-secret');
+      await tester.tap(find.widgetWithText(FilledButton, '연결'));
+      await tester.pumpAndSettle();
 
-    expect(api.credentials['deepseek'], 'deepseek-secret');
-    expect(
-      (await api.listProviderConnections()).map((item) => item.id),
-      contains('deepseek'),
-    );
-    expect(find.text('DeepSeek'), findsWidgets);
-  });
+      expect(api.credentials['deepseek'], 'deepseek-secret');
+      expect(
+        (await api.listProviderConnections()).map((item) => item.id),
+        contains('deepseek'),
+      );
+      expect(find.text('DeepSeek'), findsWidgets);
+    },
+    tags: const <String>['feature_test__provider_catalog__widget'],
+  );
 
-  testWidgets('OpenAI offers ChatGPT OAuth and API key choices', (
-    tester,
-  ) async {
-    final api = FakeCoderApi(connections: <ProviderConnectionDto>[]);
-    final opener = _ExternalUrlOpener();
-    await _pumpSettings(tester, api, externalUrlOpener: opener);
+  testWidgets(
+    'OpenAI offers ChatGPT OAuth and API key choices',
+    (
+      tester,
+    ) async {
+      final api = FakeCoderApi(connections: <ProviderConnectionDto>[]);
+      final opener = _ExternalUrlOpener();
+      await _pumpSettings(tester, api, externalUrlOpener: opener);
 
-    await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
-    await tester.pumpAndSettle();
-    expect(find.text('Sign in with ChatGPT'), findsOneWidget);
-    expect(find.text('실험적'), findsOneWidget);
-    expect(find.text('API key'), findsOneWidget);
-    expect(find.text('Base URL'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+      await tester.pumpAndSettle();
+      expect(find.text('Sign in with ChatGPT'), findsOneWidget);
+      expect(find.text('실험적'), findsOneWidget);
+      expect(find.text('API key'), findsOneWidget);
+      expect(find.text('Base URL'), findsNothing);
 
-    await tester.tap(find.text('Sign in with ChatGPT'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('ChatGPT 로그인 대기 중'), findsOneWidget);
-    expect(find.textContaining('auth.example'), findsOneWidget);
-    expect(opener.opened.single.host, 'auth.example');
+      await tester.tap(find.text('Sign in with ChatGPT'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('ChatGPT 로그인 대기 중'), findsOneWidget);
+      expect(find.textContaining('auth.example'), findsOneWidget);
+      expect(opener.opened.single.host, 'auth.example');
 
-    await tester.tap(find.widgetWithText(TextButton, '취소'));
-    await tester.pump();
-    expect(api.cancelledAuthAttempts, <String>['attempt']);
-  });
+      await tester.tap(find.widgetWithText(TextButton, '취소'));
+      await tester.pump();
+      expect(api.cancelledAuthAttempts, <String>['attempt']);
+    },
+    tags: const <String>['feature_test__provider_oauth__widget'],
+  );
 
-  testWidgets('OpenAI API key and local providers connect in one step', (
-    tester,
-  ) async {
-    final api = FakeCoderApi(
-      connections: <ProviderConnectionDto>[],
-      catalog: ProviderCatalogDto(
-        definitions: <ProviderDefinitionDto>[
-          ..._catalogDefinitions,
-          _localDefinition,
-        ],
-        source: ProviderCatalogSource.bundled,
-        updatedAt: DateTime.utc(2026),
-      ),
-    );
-    await _pumpSettings(tester, api);
+  testWidgets(
+    'OpenAI API key and local providers connect in one step',
+    (
+      tester,
+    ) async {
+      final api = FakeCoderApi(
+        connections: <ProviderConnectionDto>[],
+        catalog: ProviderCatalogDto(
+          definitions: <ProviderDefinitionDto>[
+            ..._catalogDefinitions,
+            _localDefinition,
+          ],
+          source: ProviderCatalogSource.bundled,
+          updatedAt: DateTime.utc(2026),
+        ),
+      );
+      await _pumpSettings(tester, api);
 
-    await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('API key'));
-    await tester.pumpAndSettle();
-    await tester.enterText(_field('API key'), 'openai-secret');
-    await tester.tap(find.widgetWithText(FilledButton, '연결'));
-    await tester.pumpAndSettle();
-    expect(api.credentials['openai'], 'openai-secret');
+      await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('API key'));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('API key'), 'openai-secret');
+      await tester.tap(find.widgetWithText(FilledButton, '연결'));
+      await tester.pumpAndSettle();
+      expect(api.credentials['openai'], 'openai-secret');
 
-    await tester.tap(find.byKey(const ValueKey('provider-add-ollama')));
-    await tester.pumpAndSettle();
-    final ollama = (await api.listProviderConnections()).singleWhere(
-      (connection) => connection.id == 'ollama',
-    );
-    expect(ollama.credentialOrigin, ProviderCredentialOrigin.none);
+      await tester.tap(find.byKey(const ValueKey('provider-add-ollama')));
+      await tester.pumpAndSettle();
+      final ollama = (await api.listProviderConnections()).singleWhere(
+        (connection) => connection.id == 'ollama',
+      );
+      expect(ollama.credentialOrigin, ProviderCredentialOrigin.none);
 
-    await tester.tap(find.byTooltip('Catalog 갱신'));
-    await tester.pumpAndSettle();
-    expect(
-      (await api.listProviderCatalog()).source,
-      ProviderCatalogSource.refreshed,
-    );
-  });
+      await tester.tap(find.byTooltip('Catalog 갱신'));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.listProviderCatalog()).source,
+        ProviderCatalogSource.refreshed,
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_connection_management__widget',
+    ],
+  );
 
-  testWidgets('custom provider opens a separate advanced wizard', (
-    tester,
-  ) async {
-    final api = FakeCoderApi();
-    await _pumpSettings(tester, api);
+  testWidgets(
+    'custom provider opens a separate advanced wizard',
+    (
+      tester,
+    ) async {
+      final api = FakeCoderApi();
+      await _pumpSettings(tester, api);
 
-    final customButton = find.byKey(const ValueKey('provider-add-custom'));
-    await tester.ensureVisible(customButton);
-    await tester.pumpAndSettle();
-    await tester.tap(customButton);
-    await tester.pumpAndSettle();
-    expect(find.text('Custom Provider 고급 설정'), findsOneWidget);
-    expect(_field('Base URL'), findsOneWidget);
-    expect(find.text('API 형식'), findsOneWidget);
-    expect(_field('수동 model ID'), findsNothing);
-    await tester.enterText(_field('이름'), 'Lab');
-    await tester.enterText(_field('Base URL'), 'http://127.0.0.1:9000/v1');
-    await tester.enterText(_field('API key'), 'secret');
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
-    await tester.pumpAndSettle();
-    expect(find.text('Model 자동 조회 실패'), findsOneWidget);
-    await tester.enterText(_field('수동 model ID'), 'lab-model');
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
-    await tester.pumpAndSettle();
+      final customButton = find.byKey(const ValueKey('provider-add-custom'));
+      await tester.ensureVisible(customButton);
+      await tester.pumpAndSettle();
+      await tester.tap(customButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Custom Provider 고급 설정'), findsOneWidget);
+      expect(_field('Base URL'), findsOneWidget);
+      expect(find.text('API 형식'), findsOneWidget);
+      expect(_field('수동 model ID'), findsNothing);
+      await tester.enterText(_field('이름'), 'Lab');
+      await tester.enterText(_field('Base URL'), 'http://127.0.0.1:9000/v1');
+      await tester.enterText(_field('API key'), 'secret');
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(find.text('Model 자동 조회 실패'), findsOneWidget);
+      await tester.enterText(_field('수동 model ID'), 'lab-model');
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
 
-    final custom = (await api.listProviderConnections()).singleWhere(
-      (connection) => connection.id == 'new-provider',
-    );
-    expect(custom.displayName, 'Lab');
-    expect(custom.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
-    expect(custom.customConfig!.manualModelIds, <String>['lab-model']);
-  });
+      final custom = (await api.listProviderConnections()).singleWhere(
+        (connection) => connection.id == 'new-provider',
+      );
+      expect(custom.displayName, 'Lab');
+      expect(custom.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
+      expect(custom.customConfig!.manualModelIds, <String>['lab-model']);
+    },
+    tags: const <String>['feature_test__provider_custom__widget'],
+  );
 
   testWidgets('connection cards manage defaults, custom edits, and removal', (
     tester,

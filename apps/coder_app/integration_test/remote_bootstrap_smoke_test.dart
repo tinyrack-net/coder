@@ -9,31 +9,35 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('mobile bootstrap remains remote-only', (tester) async {
-    final store = MemoryAppStore(
-      settings: const AppSettings(embeddedDaemonEnabled: false),
-    );
-    await tester.pumpWidget(
-      CoderApp(
-        services: AppServices(
-          settings: store,
-          profiles: store,
-          credentials: store,
-          clients: const _UnusedClients(),
-          clientKind: 'mobile-integration-test',
+  testWidgets(
+    'mobile bootstrap remains remote-only',
+    (tester) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const _UnusedClients(),
+            clientKind: 'mobile-integration-test',
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
-    await tester.tap(find.byTooltip('설정'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Daemon'));
-    await tester.pumpAndSettle();
-    expect(find.text('내장 daemon'), findsNothing);
-    expect(find.text('원격 daemon 추가'), findsOneWidget);
-  });
+      expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
+      await tester.tap(find.byTooltip('설정'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Daemon'));
+      await tester.pumpAndSettle();
+      expect(find.text('내장 daemon'), findsNothing);
+      expect(find.text('원격 daemon 추가'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__daemon_management__platformSmoke'],
+  );
 }
 
 final class _UnusedClients implements HostClientFactory {

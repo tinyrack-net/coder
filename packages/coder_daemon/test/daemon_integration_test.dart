@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
+import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
@@ -220,6 +222,15 @@ void main() {
         SessionStatus.idle,
       );
     },
+    tags: const <String>[
+      'feature_test__workspace_catalog__verticalSlice',
+      'feature_test__workspace_registration__verticalSlice',
+      'feature_test__session_lifecycle__verticalSlice',
+      'feature_test__turn_execution__verticalSlice',
+      'feature_test__provider_catalog__verticalSlice',
+      'feature_test__provider_connection_management__verticalSlice',
+      'feature_test__provider_custom__verticalSlice',
+    ],
   );
 
   test(
@@ -324,6 +335,83 @@ void main() {
         'apply_patch',
       );
     },
+    tags: const <String>['feature_test__agent_delegation__verticalSlice'],
+  );
+
+  test(
+    'agent create survives watcher reload and daemon restart',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'coder-agent-create-home-',
+      );
+      const bearerToken = 'agent-create-token-0123456789abcdef012345';
+      final config = DaemonConfig(
+        homeDirectory: home.path,
+        port: 0,
+        bearerToken: bearerToken,
+        useEnvironmentCredentials: false,
+      );
+      addTearDown(() async {
+        if (home.existsSync()) await home.delete(recursive: true);
+      });
+
+      final firstHandle = await DaemonApplication.start(config);
+      final firstClient = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: firstHandle.boundEndpoint),
+        credentials: DaemonCredentials(
+          bearerToken: bearerToken,
+          adminToken: firstHandle.adminToken,
+        ),
+        clientId: 'agent-create-first',
+        clientKind: 'test',
+      );
+      final coder = (await firstClient.listAgentDefinitions()).single;
+      await firstClient.createAgentDefinition(
+        'reviewer',
+        coder.copyWith(
+          id: 'reviewer',
+          name: 'Reviewer',
+          description: '',
+          mode: AgentMode.subagent,
+          callableAgentIds: const <String>[],
+          contentHash: '',
+          sourcePath: '',
+          isBuiltIn: false,
+        ),
+      );
+      expect(
+        (await firstClient.listAgentDefinitions()).map((item) => item.id),
+        contains('reviewer'),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(
+        (await firstClient.listAgentDefinitions()).map((item) => item.id),
+        contains('reviewer'),
+      );
+      expect(File('${home.path}/agents/reviewer.md').existsSync(), isTrue);
+      await firstClient.close();
+      await firstHandle.stop();
+
+      final secondHandle = await DaemonApplication.start(config);
+      final secondClient = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: secondHandle.boundEndpoint),
+        credentials: DaemonCredentials(
+          bearerToken: bearerToken,
+          adminToken: secondHandle.adminToken,
+        ),
+        clientId: 'agent-create-second',
+        clientKind: 'test',
+      );
+      expect(
+        (await secondClient.listAgentDefinitions()).map((item) => item.id),
+        contains('reviewer'),
+      );
+      await secondClient.close();
+      await secondHandle.stop();
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__verticalSlice',
+    ],
   );
 
   test(
@@ -388,6 +476,144 @@ void main() {
     },
   );
 
+  test(
+    'real daemon creates and archives a Git worktree over WebSocket',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-git-home-');
+      final repository = await Directory.systemTemp.createTemp(
+        'coder-git-repository-',
+      );
+      await _runGit(repository.path, <String>['init', '-b', 'main']);
+      await File('${repository.path}/README.md').writeAsString('# fixture\n');
+      await _runGit(repository.path, <String>['add', 'README.md']);
+      await _runGit(repository.path, <String>[
+        '-c',
+        'user.name=Coder Test',
+        '-c',
+        'user.email=coder@example.invalid',
+        'commit',
+        '-m',
+        'Initial fixture',
+      ]);
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'git-token-0123456789abcdef0123456789',
+          useEnvironmentCredentials: false,
+        ),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await repository.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: DaemonCredentials(
+          bearerToken: handle.bearerToken,
+          adminToken: handle.adminToken,
+        ),
+        clientId: 'git-vertical-slice',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'git-workspace',
+        checkoutId: 'main-checkout',
+        rootPath: repository.path,
+        name: 'Git fixture',
+      );
+      expect(registered.workspace.kind, WorkspaceKind.git);
+      expect(await client.listGitBranches('git-workspace'), hasLength(1));
+      final managed = await client.createWorktree(
+        id: 'managed-worktree',
+        workspaceId: 'git-workspace',
+        mode: WorktreeCreateMode.newBranch,
+        branchName: 'feature/vertical-slice',
+        baseBranch: 'main',
+      );
+      expect(Directory(managed.path).existsSync(), isTrue);
+      expect(
+        (await client.refreshWorkspace('git-workspace')).worktrees,
+        isNotEmpty,
+      );
+      final preview = await client.previewWorktreeArchive(managed.id);
+      expect(preview.removesDirectory, isTrue);
+      await client.archiveWorktree(managed.id);
+      expect(Directory(managed.path).existsSync(), isFalse);
+      await client.unregisterWorkspace('git-workspace');
+      expect((await client.getWorkspaceCatalog()).workspaces, isEmpty);
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__verticalSlice'],
+  );
+
+  test(
+    'real daemon completes and cancels OAuth attempts over WebSocket',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-oauth-home-');
+      final gateway = _IntegrationOAuthGateway();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'oauth-token-0123456789abcdef01234567',
+          useEnvironmentCredentials: false,
+        ),
+        oauthGateway: gateway,
+        modelDiscovery: const _StaticDiscovery(<String>['gpt-test']),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: DaemonCredentials(
+          bearerToken: handle.bearerToken,
+          adminToken: handle.adminToken,
+        ),
+        clientId: 'oauth-vertical-slice',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final completed = await client.startProviderAuth(
+        'openai',
+        'chatgpt-device',
+      );
+      gateway.sessions.single.completer.complete(
+        OAuthCredential(
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
+          expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+        ),
+      );
+      await _waitForAuthStatus(
+        client,
+        completed.id,
+        ProviderAuthAttemptStatus.succeeded,
+      );
+      expect(
+        (await client.listProviderConnections()).single.credentialOrigin,
+        ProviderCredentialOrigin.oauth,
+      );
+
+      final cancelled = await client.startProviderAuth(
+        'openai',
+        'chatgpt-browser',
+      );
+      await client.cancelProviderAuth(cancelled.id);
+      expect(
+        (await client.providerAuthStatus(cancelled.id)).status,
+        ProviderAuthAttemptStatus.cancelled,
+      );
+      expect(gateway.sessions.last.cancelled, isTrue);
+    },
+    tags: const <String>['feature_test__provider_oauth__verticalSlice'],
+  );
+
   test('secrets are not persisted in daemon files', () async {
     final home = await Directory.systemTemp.createTemp('coder-secret-home-');
     final config = await Directory.systemTemp.createTemp(
@@ -446,6 +672,75 @@ void main() {
     await handle.stop();
     await home.delete(recursive: true);
   });
+}
+
+Future<void> _runGit(String workingDirectory, List<String> arguments) async {
+  final result = await Process.run(
+    'git',
+    arguments,
+    workingDirectory: workingDirectory,
+  );
+  if (result.exitCode != 0) {
+    throw TestFailure('git ${arguments.join(' ')} failed: ${result.stderr}');
+  }
+}
+
+Future<void> _waitForAuthStatus(
+  CoderApi client,
+  String attemptId,
+  ProviderAuthAttemptStatus status,
+) async {
+  for (var attempt = 0; attempt < 50; attempt += 1) {
+    final current = await client.providerAuthStatus(attemptId);
+    if (current.status == status) return;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  throw TestFailure('Timed out waiting for OAuth status ${status.name}.');
+}
+
+final class _IntegrationOAuthGateway implements ProviderOAuthGateway {
+  final List<_IntegrationOAuthSession> sessions = <_IntegrationOAuthSession>[];
+
+  @override
+  Future<OAuthCredential> refresh(OAuthCredential credential) async =>
+      credential;
+
+  @override
+  Future<ProviderOAuthSession> start(ProviderAuthFlow flow) async {
+    final session = _IntegrationOAuthSession(flow);
+    sessions.add(session);
+    return session;
+  }
+}
+
+final class _IntegrationOAuthSession implements ProviderOAuthSession {
+  _IntegrationOAuthSession(this.flow);
+
+  final ProviderAuthFlow flow;
+  final Completer<OAuthCredential> completer = Completer<OAuthCredential>();
+  bool cancelled = false;
+
+  @override
+  String get authorizationUrl => 'https://auth.example/${flow.name}';
+
+  @override
+  Future<OAuthCredential> get completion => completer.future;
+
+  @override
+  DateTime get expiresAt =>
+      DateTime.now().toUtc().add(const Duration(minutes: 15));
+
+  @override
+  String? get instructions => 'Complete the test authorization.';
+
+  @override
+  String? get userCode =>
+      flow == ProviderAuthFlow.oauthDevice ? 'TEST-CODE' : null;
+
+  @override
+  Future<void> cancel() async {
+    cancelled = true;
+  }
 }
 
 final class _StaticDiscovery implements ProviderModelDiscovery {

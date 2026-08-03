@@ -21,6 +21,7 @@ final class FakeCoderApi implements CoderApi {
     Map<String, List<ProviderModelDto>>? models,
     this.eventStream,
     this.agentListError,
+    this.failNextAgentCreate = false,
     this.failNextAgentUpdate = false,
   }) : _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
@@ -154,6 +155,9 @@ final class FakeCoderApi implements CoderApi {
 
   /// Whether the next guarded Markdown save should simulate a file race.
   bool failNextAgentUpdate;
+
+  /// Whether the next Markdown create should simulate a daemon failure.
+  bool failNextAgentCreate;
   final StreamController<ClientEvent> _events =
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
@@ -348,6 +352,13 @@ final class FakeCoderApi implements CoderApi {
     String id,
     AgentDefinitionDto definition,
   ) async {
+    if (failNextAgentCreate) {
+      failNextAgentCreate = false;
+      throw Exception('agent_create_failed');
+    }
+    if (_agentDefinitions.any((item) => item.id == id)) {
+      throw StateError('Agent definition already exists: $id');
+    }
     final created = definition.copyWith(
       id: id,
       contentHash: '$id-hash',

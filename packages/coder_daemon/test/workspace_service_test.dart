@@ -72,6 +72,11 @@ branch refs/heads/feature/settings
       expect(managed.path, contains('/state/worktrees/'));
       expect(git.created.single.branchName, 'feature-user-settings');
     },
+    tags: const <String>[
+      'feature_test__workspace_catalog__unit',
+      'feature_test__workspace_registration__unit',
+      'feature_test__worktree_lifecycle__unit',
+    ],
   );
 
   test(

@@ -66,302 +66,150 @@ abstract interface class AgentDefinitionStore {
   Future<void> close();
 }
 
-/// Production atomic filesystem adapter for `<configDirectory>/agents/*.md`.
-final class FileAgentDefinitionStore implements AgentDefinitionStore {
-  /// Creates a store rooted at the daemon config directory.
-  FileAgentDefinitionStore(
-    String configDirectory, {
-    this.codec = const AgentMarkdownCodec(),
-  }) : _directory = Directory(p.join(configDirectory, 'agents')),
-       _archiveDirectory = Directory(
-         p.join(configDirectory, 'agents', '.archive'),
-       );
+/// One Markdown document read from the agent definition filesystem boundary.
+final class AgentDefinitionDocument {
+  /// Creates an immutable document snapshot.
+  const AgentDefinitionDocument({
+    required this.id,
+    required this.sourcePath,
+    required this.source,
+  });
 
-  /// Codec used for preserving frontmatter formatting and unknown fields.
-  final AgentMarkdownCodec codec;
+  /// Filename-derived stable agent ID.
+  final String id;
+
+  /// Absolute source path shown to administrators.
+  final String sourcePath;
+
+  /// Complete Markdown source.
+  final String source;
+}
+
+/// Typed filesystem and watcher boundary used by the Markdown catalog.
+abstract interface class AgentDefinitionFiles {
+  /// Emits when active or archived source files may have changed.
+  Stream<void> get changes;
+
+  /// Creates protected directories and starts native observation.
+  Future<void> initialize();
+
+  /// Returns a point-in-time snapshot of active Markdown files.
+  Future<List<AgentDefinitionDocument>> readActive();
+
+  /// Returns a point-in-time snapshot of archived Markdown files.
+  Future<List<AgentDefinitionDocument>> readArchived();
+
+  /// Returns the canonical active path for [id].
+  String activePath(String id);
+
+  /// Returns the canonical archive path for [id].
+  String archivePath(String id);
+
+  /// Atomically writes one active Markdown document.
+  Future<void> writeActive(String id, String source);
+
+  /// Atomically moves one active document into the archive.
+  Future<void> archive(String id);
+
+  /// Stops native observation.
+  Future<void> close();
+}
+
+/// Native atomic filesystem adapter for `<configDirectory>/agents/*.md`.
+final class NativeAgentDefinitionFiles implements AgentDefinitionFiles {
+  /// Creates a native adapter rooted at the daemon config directory.
+  NativeAgentDefinitionFiles(String configDirectory)
+    : _directory = Directory(p.join(configDirectory, 'agents')),
+      _archiveDirectory = Directory(
+        p.join(configDirectory, 'agents', '.archive'),
+      );
+
   final Directory _directory;
   final Directory _archiveDirectory;
-  final Map<String, AgentDefinitionDto> _active =
-      <String, AgentDefinitionDto>{};
-  final Map<String, AgentDefinitionDto> _archived =
-      <String, AgentDefinitionDto>{};
-  final Map<String, String> _sources = <String, String>{};
   final StreamController<void> _changes = StreamController<void>.broadcast(
     sync: true,
   );
   StreamSubscription<FileSystemEvent>? _watchSubscription;
-  Timer? _reloadTimer;
-  Future<void>? _reloadInFlight;
   bool _initialized = false;
-  bool _writing = false;
-  bool _closed = false;
 
   @override
   Stream<void> get changes => _changes.stream;
 
   @override
+  String activePath(String id) => p.join(_directory.path, '$id.md');
+
+  @override
+  String archivePath(String id) => p.join(_archiveDirectory.path, '$id.md');
+
+  @override
   Future<void> initialize() async {
     if (_initialized) return;
-    await _ensureDirectories();
-    await _ensureCoder();
-    _initialized = true;
-    await reload();
+    await _directory.create(recursive: true);
+    await _archiveDirectory.create(recursive: true);
+    await _restrictDirectory(_directory);
+    await _restrictDirectory(_archiveDirectory);
     _watchSubscription = _directory.watch(recursive: true).listen((_) {
-      if (_writing || _closed) return;
-      _reloadTimer?.cancel();
-      _reloadTimer = Timer(const Duration(milliseconds: 200), () {
-        if (_closed) return;
-        final reloadFuture = reload();
-        _reloadInFlight = reloadFuture;
-        unawaited(
-          reloadFuture.whenComplete(() {
-            if (identical(_reloadInFlight, reloadFuture)) {
-              _reloadInFlight = null;
-            }
-          }),
-        );
-      });
+      _changes.add(null);
     });
+    _initialized = true;
   }
 
   @override
-  Future<List<AgentDefinitionDto>> list() async {
-    await initialize();
-    final definitions = _active.values.toList(growable: false)
-      ..sort((left, right) {
-        if (left.id == 'coder') return -1;
-        if (right.id == 'coder') return 1;
-        return left.name.compareTo(right.name);
-      });
-    return definitions;
-  }
+  Future<List<AgentDefinitionDocument>> readActive() =>
+      _readDirectory(_directory);
 
   @override
-  Future<List<AgentDefinitionDto>> listArchived() async {
-    await initialize();
-    return List<AgentDefinitionDto>.unmodifiable(_archived.values);
-  }
+  Future<List<AgentDefinitionDocument>> readArchived() =>
+      _readDirectory(_archiveDirectory);
 
-  @override
-  Future<AgentDefinitionDto?> get(String id) async {
-    await initialize();
-    return _active[id];
-  }
-
-  @override
-  Future<AgentDefinitionDto?> resolve(String id) async {
-    await initialize();
-    return _active[id] ?? _archived[id];
-  }
-
-  @override
-  Future<AgentDefinitionDto> create(
-    String id,
-    AgentDefinitionDto definition,
+  Future<List<AgentDefinitionDocument>> _readDirectory(
+    Directory directory,
   ) async {
-    await initialize();
-    _validateId(id);
-    if (id == 'coder' || _active.containsKey(id) || _archived.containsKey(id)) {
-      throw StateError('Agent definition already exists: $id');
-    }
-    if (definition.id != id) {
-      throw const FormatException('Filename ID and definition ID must match.');
-    }
-    final path = _pathFor(id);
-    final source = codec.encodeNew(definition);
-    await _writeAtomic(path, source);
-    final parsed = codec.decode(id: id, sourcePath: path, source: source);
-    _active[id] = parsed;
-    _sources[id] = source;
-    _changes.add(null);
-    return parsed;
-  }
-
-  @override
-  Future<AgentDefinitionDto> update(
-    AgentDefinitionDto definition, {
-    required String expectedContentHash,
-    bool force = false,
-  }) async {
-    await initialize();
-    final current = _active[definition.id];
-    if (current == null) {
-      throw StateError('Agent definition not found: ${definition.id}');
-    }
-    if (!force && current.contentHash != expectedContentHash) {
-      throw AgentFileConflict(current.contentHash);
-    }
-    if (current.mode != definition.mode) {
-      throw const FormatException('Agent mode cannot be changed after create.');
-    }
-    final original = _sources[definition.id];
-    if (original == null) {
-      throw StateError('Agent source is unavailable: ${definition.id}');
-    }
-    final source = codec.encodeUpdate(
-      originalSource: original,
-      definition: definition,
-    );
-    await _writeAtomic(current.sourcePath, source);
-    final parsed = codec.decode(
-      id: definition.id,
-      sourcePath: current.sourcePath,
-      source: source,
-    );
-    _active[definition.id] = parsed;
-    _sources[definition.id] = source;
-    _changes.add(null);
-    return parsed;
-  }
-
-  @override
-  Future<void> archive(String id) async {
-    await initialize();
-    if (id == 'coder') {
-      throw StateError('The built-in Coder agent cannot be archived.');
-    }
-    final current = _active[id];
-    if (current == null) throw StateError('Agent definition not found: $id');
-    final destination = p.join(_archiveDirectory.path, '$id.md');
-    _writing = true;
-    try {
-      final destinationFile = File(destination);
-      if (destinationFile.existsSync()) destinationFile.deleteSync();
-      await File(current.sourcePath).rename(destination);
-      await _restrictFile(destinationFile);
-    } finally {
-      _writing = false;
-    }
-    _active.remove(id);
-    final archived = current.copyWith(
-      sourcePath: destination,
-      isArchived: true,
-    );
-    _archived[id] = archived;
-    _sources[id] = await File(destination).readAsString();
-    _changes.add(null);
-  }
-
-  @override
-  Future<AgentDefinitionDto> resetCoder() async {
-    await initialize();
-    final source = codec.encodeNew(_defaultCoder(_pathFor('coder')));
-    await _writeAtomic(_pathFor('coder'), source);
-    final parsed = codec.decode(
-      id: 'coder',
-      sourcePath: _pathFor('coder'),
-      source: source,
-    );
-    _active['coder'] = parsed;
-    _sources['coder'] = source;
-    _changes.add(null);
-    return parsed;
-  }
-
-  @override
-  Future<void> reload() async {
-    await _ensureDirectories();
-    await _ensureCoder();
-    final seenActive = <String>{};
-    await _loadDirectory(_directory, isArchived: false, seen: seenActive);
-    for (final id in _active.keys.toList(growable: false)) {
-      if (!seenActive.contains(id)) _active.remove(id);
-    }
-    if (!_active.containsKey('coder')) await resetCoder();
-    final seenArchived = <String>{};
-    await _loadDirectory(
-      _archiveDirectory,
-      isArchived: true,
-      seen: seenArchived,
-    );
-    for (final id in _archived.keys.toList(growable: false)) {
-      if (!seenArchived.contains(id)) _archived.remove(id);
-    }
-    _changes.add(null);
-  }
-
-  Future<void> _loadDirectory(
-    Directory directory, {
-    required bool isArchived,
-    required Set<String> seen,
-  }) async {
+    final documents = <AgentDefinitionDocument>[];
     await for (final entity in directory.list(followLinks: false)) {
       if (entity is! File || p.extension(entity.path) != '.md') continue;
       if (FileSystemEntity.typeSync(entity.path, followLinks: false) ==
           FileSystemEntityType.link) {
         continue;
       }
-      final id = p.basenameWithoutExtension(entity.path);
       try {
-        _validateId(id);
-        final source = await entity.readAsString();
-        final parsed = codec.decode(
-          id: id,
-          sourcePath: entity.path,
-          source: source,
-          isArchived: isArchived,
+        documents.add(
+          AgentDefinitionDocument(
+            id: p.basenameWithoutExtension(entity.path),
+            sourcePath: entity.path,
+            source: await entity.readAsString(),
+          ),
         );
-        (isArchived ? _archived : _active)[id] = parsed;
-        _sources[id] = source;
-        seen.add(id);
-      } on FormatException catch (error) {
-        final target = isArchived ? _archived : _active;
-        final previous = target[id];
-        if (previous != null) {
-          target[id] = previous.copyWith(
-            isStale: true,
-            diagnostics: <AgentDefinitionDiagnosticDto>[
-              AgentDefinitionDiagnosticDto(
-                code: 'invalid_agent_markdown',
-                message: error.message,
-                line: switch (error) {
-                  YamlException(:final span?) => span.start.line + 1,
-                  _ => null,
-                },
-                column: switch (error) {
-                  YamlException(:final span?) => span.start.column + 1,
-                  _ => null,
-                },
-              ),
-            ],
-          );
-          seen.add(id);
-        }
       } on FileSystemException {
-        // Editors commonly implement atomic save by replacing the enumerated
-        // path. A vanished entry belongs to the next debounced snapshot; an
-        // error for a path that still exists remains a real storage failure.
+        // Atomic editors may replace an entry after directory enumeration.
         if (entity.existsSync()) rethrow;
       }
     }
+    return documents;
   }
 
-  Future<void> _ensureCoder() async {
-    final file = File(_pathFor('coder'));
-    if (file.existsSync()) return;
-    final source = codec.encodeNew(_defaultCoder(file.path));
-    await _writeAtomic(file.path, source);
+  @override
+  Future<void> writeActive(String id, String source) =>
+      _writeAtomic(File(activePath(id)), source);
+
+  @override
+  Future<void> archive(String id) async {
+    final source = File(activePath(id));
+    final destination = File(archivePath(id));
+    if (destination.existsSync()) destination.deleteSync();
+    await source.rename(destination.path);
+    await _restrictFile(destination);
   }
 
-  Future<void> _ensureDirectories() async {
-    await _directory.create(recursive: true);
-    await _archiveDirectory.create(recursive: true);
-    await _restrictDirectory(_directory);
-    await _restrictDirectory(_archiveDirectory);
-  }
-
-  Future<void> _writeAtomic(String path, String source) async {
-    final file = File(path);
-    final temporary = File('$path.$pid.tmp');
-    _writing = true;
+  Future<void> _writeAtomic(File file, String source) async {
+    final temporary = File('${file.path}.$pid.tmp');
     try {
       await temporary.writeAsString(source, flush: true);
       await _restrictFile(temporary);
       if (Platform.isWindows && file.existsSync()) file.deleteSync();
-      await temporary.rename(path);
+      await temporary.rename(file.path);
       await _restrictFile(file);
     } finally {
-      _writing = false;
       if (temporary.existsSync()) temporary.deleteSync();
     }
   }
@@ -378,16 +226,351 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
     }
   }
 
-  String _pathFor(String id) => p.join(_directory.path, '$id.md');
+  @override
+  Future<void> close() async {
+    await _watchSubscription?.cancel();
+    await _changes.close();
+  }
+}
+
+/// Serialized source-of-truth catalog for Markdown agent definitions.
+final class FileAgentDefinitionStore implements AgentDefinitionStore {
+  /// Creates a production store rooted at the daemon config directory.
+  FileAgentDefinitionStore(
+    String configDirectory, {
+    AgentMarkdownCodec codec = const AgentMarkdownCodec(),
+    Duration watchDebounce = const Duration(milliseconds: 200),
+  }) : this.withFiles(
+         NativeAgentDefinitionFiles(configDirectory),
+         codec: codec,
+         watchDebounce: watchDebounce,
+       );
+
+  /// Creates a store with an injected deterministic filesystem boundary.
+  FileAgentDefinitionStore.withFiles(
+    this._files, {
+    this.codec = const AgentMarkdownCodec(),
+    this.watchDebounce = const Duration(milliseconds: 200),
+  });
+
+  /// Codec used for preserving frontmatter formatting and unknown fields.
+  final AgentMarkdownCodec codec;
+
+  /// Delay used to coalesce native editor event bursts.
+  final Duration watchDebounce;
+
+  final AgentDefinitionFiles _files;
+  Map<String, AgentDefinitionDto> _active = <String, AgentDefinitionDto>{};
+  Map<String, AgentDefinitionDto> _archived = <String, AgentDefinitionDto>{};
+  Map<String, String> _sources = <String, String>{};
+  final StreamController<void> _changes = StreamController<void>.broadcast(
+    sync: true,
+  );
+  Future<void> _operationTail = Future<void>.value();
+  Future<void>? _initializeFuture;
+  StreamSubscription<void>? _watchSubscription;
+  Timer? _reloadTimer;
+  Future<void>? _watchReload;
+  bool _closed = false;
+
+  @override
+  Stream<void> get changes => _changes.stream;
+
+  @override
+  Future<void> initialize() {
+    _ensureOpen();
+    return _initializeFuture ??= _serialize(() async {
+      await _files.initialize();
+      await _reloadLocked();
+      if (!_closed) {
+        _watchSubscription = _files.changes.listen((_) => _scheduleReload());
+      }
+    });
+  }
+
+  @override
+  Future<List<AgentDefinitionDto>> list() async {
+    await initialize();
+    return _serialize(() async {
+      final definitions = _active.values.toList(growable: false)
+        ..sort((left, right) {
+          if (left.id == 'coder') return -1;
+          if (right.id == 'coder') return 1;
+          return left.name.compareTo(right.name);
+        });
+      return definitions;
+    });
+  }
+
+  @override
+  Future<List<AgentDefinitionDto>> listArchived() async {
+    await initialize();
+    return _serialize(
+      () async => List<AgentDefinitionDto>.unmodifiable(_archived.values),
+    );
+  }
+
+  @override
+  Future<AgentDefinitionDto?> get(String id) async {
+    await initialize();
+    return _serialize(() async => _active[id]);
+  }
+
+  @override
+  Future<AgentDefinitionDto?> resolve(String id) async {
+    await initialize();
+    return _serialize(() async => _active[id] ?? _archived[id]);
+  }
+
+  @override
+  Future<AgentDefinitionDto> create(
+    String id,
+    AgentDefinitionDto definition,
+  ) async {
+    await initialize();
+    return _serialize(() async {
+      _validateId(id);
+      if (id == 'coder' ||
+          _active.containsKey(id) ||
+          _archived.containsKey(id)) {
+        throw StateError('Agent definition already exists: $id');
+      }
+      if (definition.id != id) {
+        throw const FormatException(
+          'Filename ID and definition ID must match.',
+        );
+      }
+      final source = codec.encodeNew(definition);
+      codec.decode(
+        id: id,
+        sourcePath: _files.activePath(id),
+        source: source,
+      );
+      await _files.writeActive(id, source);
+      await _reloadLocked();
+      return _active[id]!;
+    });
+  }
+
+  @override
+  Future<AgentDefinitionDto> update(
+    AgentDefinitionDto definition, {
+    required String expectedContentHash,
+    bool force = false,
+  }) async {
+    await initialize();
+    return _serialize(() async {
+      final current = _active[definition.id];
+      if (current == null) {
+        throw StateError('Agent definition not found: ${definition.id}');
+      }
+      if (!force && current.contentHash != expectedContentHash) {
+        throw AgentFileConflict(current.contentHash);
+      }
+      if (current.mode != definition.mode) {
+        throw const FormatException(
+          'Agent mode cannot be changed after create.',
+        );
+      }
+      final original = _sources[definition.id];
+      if (original == null) {
+        throw StateError('Agent source is unavailable: ${definition.id}');
+      }
+      final source = codec.encodeUpdate(
+        originalSource: original,
+        definition: definition,
+      );
+      codec.decode(
+        id: definition.id,
+        sourcePath: current.sourcePath,
+        source: source,
+      );
+      await _files.writeActive(definition.id, source);
+      await _reloadLocked();
+      return _active[definition.id]!;
+    });
+  }
+
+  @override
+  Future<void> archive(String id) async {
+    await initialize();
+    await _serialize(() async {
+      if (id == 'coder') {
+        throw StateError('The built-in Coder agent cannot be archived.');
+      }
+      if (!_active.containsKey(id)) {
+        throw StateError('Agent definition not found: $id');
+      }
+      await _files.archive(id);
+      await _reloadLocked();
+    });
+  }
+
+  @override
+  Future<AgentDefinitionDto> resetCoder() async {
+    await initialize();
+    return _serialize(() async {
+      final source = codec.encodeNew(_defaultCoder(_files.activePath('coder')));
+      await _files.writeActive('coder', source);
+      await _reloadLocked();
+      return _active['coder']!;
+    });
+  }
+
+  @override
+  Future<void> reload() async {
+    await initialize();
+    await _serialize(_reloadLocked);
+  }
+
+  Future<void> _reloadLocked() async {
+    var activeDocuments = await _files.readActive();
+    if (!activeDocuments.any((document) => document.id == 'coder')) {
+      await _writeDefaultCoder();
+      activeDocuments = await _files.readActive();
+    }
+    var snapshot = _parseSnapshot(
+      activeDocuments: activeDocuments,
+      archivedDocuments: await _files.readArchived(),
+    );
+    if (!snapshot.active.containsKey('coder')) {
+      await _writeDefaultCoder();
+      snapshot = _parseSnapshot(
+        activeDocuments: await _files.readActive(),
+        archivedDocuments: await _files.readArchived(),
+      );
+    }
+    _active = snapshot.active;
+    _archived = snapshot.archived;
+    _sources = snapshot.sources;
+    _changes.add(null);
+  }
+
+  _AgentCatalogSnapshot _parseSnapshot({
+    required List<AgentDefinitionDocument> activeDocuments,
+    required List<AgentDefinitionDocument> archivedDocuments,
+  }) {
+    final active = <String, AgentDefinitionDto>{};
+    final archived = <String, AgentDefinitionDto>{};
+    final sources = <String, String>{};
+    void parse(
+      AgentDefinitionDocument document, {
+      required bool isArchived,
+    }) {
+      final previous = (isArchived ? _archived : _active)[document.id];
+      try {
+        _validateId(document.id);
+        final parsed = codec.decode(
+          id: document.id,
+          sourcePath: document.sourcePath,
+          source: document.source,
+          isArchived: isArchived,
+        );
+        (isArchived ? archived : active)[document.id] = parsed;
+        sources[document.id] = document.source;
+      } on FormatException catch (error) {
+        if (previous == null) return;
+        (isArchived ? archived : active)[document.id] = previous.copyWith(
+          isStale: true,
+          diagnostics: <AgentDefinitionDiagnosticDto>[
+            AgentDefinitionDiagnosticDto(
+              code: 'invalid_agent_markdown',
+              message: error.message,
+              line: switch (error) {
+                YamlException(:final span?) => span.start.line + 1,
+                _ => null,
+              },
+              column: switch (error) {
+                YamlException(:final span?) => span.start.column + 1,
+                _ => null,
+              },
+            ),
+          ],
+        );
+        final previousSource = _sources[document.id];
+        if (previousSource != null) sources[document.id] = previousSource;
+      }
+    }
+
+    for (final document in activeDocuments) {
+      parse(document, isArchived: false);
+    }
+    for (final document in archivedDocuments) {
+      parse(document, isArchived: true);
+    }
+    return _AgentCatalogSnapshot(
+      active: active,
+      archived: archived,
+      sources: sources,
+    );
+  }
+
+  Future<void> _writeDefaultCoder() => _files.writeActive(
+    'coder',
+    codec.encodeNew(_defaultCoder(_files.activePath('coder'))),
+  );
+
+  void _scheduleReload() {
+    if (_closed) return;
+    _reloadTimer?.cancel();
+    _reloadTimer = Timer(watchDebounce, () {
+      if (_closed) return;
+      final reloadFuture = _serialize(_reloadLocked);
+      _watchReload = reloadFuture;
+      unawaited(
+        reloadFuture.then<void>(
+          (_) {},
+          onError: (Object error, StackTrace stackTrace) {
+            if (!_closed) Zone.current.handleUncaughtError(error, stackTrace);
+          },
+        ),
+      );
+    });
+  }
+
+  Future<T> _serialize<T>(Future<T> Function() operation) {
+    final previous = _operationTail;
+    final release = Completer<void>();
+    _operationTail = release.future;
+    Future<T> run() async {
+      await previous;
+      try {
+        return await operation();
+      } finally {
+        release.complete();
+      }
+    }
+
+    return run();
+  }
+
+  void _ensureOpen() {
+    if (_closed) throw StateError('Agent definition store is closed.');
+  }
 
   @override
   Future<void> close() async {
+    if (_closed) return;
     _closed = true;
     _reloadTimer?.cancel();
     await _watchSubscription?.cancel();
-    await _reloadInFlight;
+    await _watchReload;
+    await _operationTail;
+    await _files.close();
     await _changes.close();
   }
+}
+
+final class _AgentCatalogSnapshot {
+  const _AgentCatalogSnapshot({
+    required this.active,
+    required this.archived,
+    required this.sources,
+  });
+
+  final Map<String, AgentDefinitionDto> active;
+  final Map<String, AgentDefinitionDto> archived;
+  final Map<String, String> sources;
 }
 
 AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
@@ -638,7 +821,7 @@ final class AgentMarkdownCodec {
     return AgentDefinitionDto(
       id: id,
       name: _requiredString(frontmatter, 'name'),
-      description: _requiredString(frontmatter, 'description'),
+      description: _requiredStringAllowEmpty(frontmatter, 'description'),
       mode: mode,
       promptEnabled: _requiredBool(frontmatter, 'promptEnabled'),
       systemPrompt: document.body.trim(),
@@ -778,6 +961,12 @@ String _requiredString(Map<String, Object?> map, String key) {
   final value = _optionalString(map, key);
   if (value == null) throw FormatException('$key must be a non-empty string.');
   return value;
+}
+
+String _requiredStringAllowEmpty(Map<String, Object?> map, String key) {
+  final value = map[key];
+  if (value is! String) throw FormatException('$key must be a string.');
+  return value.trim();
 }
 
 String? _optionalString(Map<String, Object?> map, String key) {

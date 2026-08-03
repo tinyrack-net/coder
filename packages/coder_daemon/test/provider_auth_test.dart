@@ -52,6 +52,7 @@ void main() {
       expect(connector.credential, isA<OAuthCredential>());
       expect(events.last.status, ProviderAuthAttemptStatus.succeeded);
     },
+    tags: const <String>['feature_test__provider_oauth__unit'],
   );
 
   test('cancel stops the session and ignores late completion', () async {

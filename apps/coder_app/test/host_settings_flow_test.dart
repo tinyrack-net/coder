@@ -77,73 +77,77 @@ void main() {
     expect(find.text('원격 daemon 추가'), findsOneWidget);
   });
 
-  testWidgets('remote profiles can be saved offline, edited, and deleted', (
-    tester,
-  ) async {
-    final store = MemoryAppStore(
-      settings: const AppSettings(embeddedDaemonEnabled: false),
-    );
-    await tester.pumpWidget(
-      CoderApp(
-        services: AppServices(
-          settings: store,
-          profiles: store,
-          credentials: store,
-          clients: const _OfflineClients(),
-          clientKind: 'mobile',
+  testWidgets(
+    'remote profiles can be saved offline, edited, and deleted',
+    (
+      tester,
+    ) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const _OfflineClients(),
+            clientKind: 'mobile',
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('설정'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, '원격 daemon 추가'));
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('설정'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '원격 daemon 추가'));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(_field('이름'), 'Production');
-    await tester.enterText(
-      _field('WebSocket 주소'),
-      'ws://daemon.example/ws',
-    );
-    await tester.enterText(_field('Bearer token'), 'secret-token');
-    await tester.pump();
-    expect(
-      tester.widget<TextField>(_field('WebSocket 주소')).controller?.text,
-      'ws://daemon.example/ws',
-    );
-    expect(
-      find.textContaining('암호화되지 않습니다'),
-      findsOneWidget,
-      reason: tester
-          .widgetList<Text>(find.byType(Text))
-          .map((widget) => widget.data)
-          .whereType<String>()
-          .join(' | '),
-    );
-    await tester.tap(find.byType(Switch));
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
-    await tester.pumpAndSettle();
+      await tester.enterText(_field('이름'), 'Production');
+      await tester.enterText(
+        _field('WebSocket 주소'),
+        'ws://daemon.example/ws',
+      );
+      await tester.enterText(_field('Bearer token'), 'secret-token');
+      await tester.pump();
+      expect(
+        tester.widget<TextField>(_field('WebSocket 주소')).controller?.text,
+        'ws://daemon.example/ws',
+      );
+      expect(
+        find.textContaining('암호화되지 않습니다'),
+        findsOneWidget,
+        reason: tester
+            .widgetList<Text>(find.byType(Text))
+            .map((widget) => widget.data)
+            .whereType<String>()
+            .join(' | '),
+      );
+      await tester.tap(find.byType(Switch));
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
 
-    expect(store.profiles.single.label, 'Production');
-    expect(store.profiles.single.autoConnect, isFalse);
-    expect(store.tokens[store.profiles.single.id], 'secret-token');
-    await tester.tap(find.byTooltip('연결 편집'));
-    await tester.pumpAndSettle();
-    await tester.enterText(_field('이름'), 'Renamed');
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
-    await tester.pumpAndSettle();
-    expect(store.profiles.single.label, 'Renamed');
+      expect(store.profiles.single.label, 'Production');
+      expect(store.profiles.single.autoConnect, isFalse);
+      expect(store.tokens[store.profiles.single.id], 'secret-token');
+      await tester.tap(find.byTooltip('연결 편집'));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('이름'), 'Renamed');
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(store.profiles.single.label, 'Renamed');
 
-    await tester.tap(find.byTooltip('연결 편집'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, '삭제'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, '삭제'));
-    await tester.pumpAndSettle();
-    expect(store.profiles, isEmpty);
-    expect(store.tokens, isEmpty);
-    expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
-  });
+      await tester.tap(find.byTooltip('연결 편집'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, '삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.pumpAndSettle();
+      expect(store.profiles, isEmpty);
+      expect(store.tokens, isEmpty);
+      expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__daemon_management__widget'],
+  );
 
   testWidgets('desktop settings toggles the embedded daemon independently', (
     tester,
