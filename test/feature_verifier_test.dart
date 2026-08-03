@@ -8,6 +8,9 @@ void main() {
     const markerPrefix =
         'feature_'
         'test__';
+    const routeMarkerPrefix =
+        'route_'
+        'test__';
     final fixture = _fixture(
       api:
           'abstract interface class CoderApi {'
@@ -16,7 +19,8 @@ void main() {
       tests: <String>[
         "test('works', () {}, tags: <String>[",
         "'${markerPrefix}thing_create__contract', ",
-        "'${markerPrefix}thing_create__e2e']);",
+        "'${markerPrefix}thing_create__e2e', ",
+        "'${routeMarkerPrefix}home_route__widget']);",
       ].join(),
     );
     addTearDown(() => fixture.delete(recursive: true));
@@ -46,6 +50,9 @@ void main() {
     const markerPrefix =
         'feature_'
         'test__';
+    const routeMarkerPrefix =
+        'route_'
+        'test__';
     final fixture = _fixture(
       api:
           'abstract interface class CoderApi {'
@@ -56,7 +63,9 @@ void main() {
       tests: <String>[
         "test('skipped', () {}, skip: true, tags: <String>[",
         "'${markerPrefix}thing_create__contract', ",
-        "'${markerPrefix}unknown_feature__widget']);",
+        "'${markerPrefix}unknown_feature__widget', ",
+        "'${routeMarkerPrefix}home_route__widget', ",
+        "'${routeMarkerPrefix}ghost_route__widget']);",
       ].join(),
     );
     addTearDown(() => fixture.delete(recursive: true));
@@ -84,6 +93,8 @@ void main() {
     expect(messages, contains('SettingsRoute'));
     expect(messages, contains('verticalSlice'));
     expect(messages, contains('unknown.feature'));
+    expect(messages, contains('SettingsRoute'));
+    expect(messages, contains('GhostRoute'));
     expect(messages, contains('skip'));
   });
 }

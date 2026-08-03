@@ -190,13 +190,43 @@ void main() {
 }
 
 Widget _settings(ThemeMode mode) {
+  final now = DateTime.utc(2026);
+  const longModelId =
+      'vendor/reasoning-model-with-an-extremely-long-identifier';
   final api = FakeCoderApi(
+    connections: <ProviderConnectionDto>[
+      ProviderConnectionDto(
+        id: 'openai',
+        definitionId: 'openai',
+        displayName: 'OpenAI',
+        status: ProviderConnectionStatus.connected,
+        authKind: ProviderAuthKind.apiKey,
+        credentialOrigin: ProviderCredentialOrigin.stored,
+        isDefault: true,
+        defaultModelId: longModelId,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      ProviderConnectionDto(
+        id: 'lab',
+        definitionId: 'custom',
+        displayName: 'Lab compatible provider',
+        status: ProviderConnectionStatus.degraded,
+        authKind: ProviderAuthKind.none,
+        credentialOrigin: ProviderCredentialOrigin.none,
+        isDefault: false,
+        defaultModelId: 'retired-model',
+        error: 'Live model discovery is unavailable.',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ],
     models: const <String, List<ProviderModelDto>>{
       'openai': <ProviderModelDto>[
         ProviderModelDto(
           connectionId: 'openai',
-          id: 'gpt-5.6-sol',
-          label: 'gpt-5.6-sol',
+          id: longModelId,
+          label: 'Long reasoning model display name for coding workflows',
           source: ProviderModelSource.bundled,
           capabilities: ModelCapabilitiesDto(
             streaming: CapabilitySupport.supported,
@@ -204,6 +234,15 @@ Widget _settings(ThemeMode mode) {
             reasoningEffort: CapabilitySupport.supported,
             source: CapabilitySource.bundled,
           ),
+        ),
+      ],
+      'lab': <ProviderModelDto>[
+        ProviderModelDto(
+          connectionId: 'lab',
+          id: 'available-model',
+          label: 'Available model',
+          source: ProviderModelSource.discovered,
+          capabilities: ModelCapabilitiesDto(),
         ),
       ],
     },

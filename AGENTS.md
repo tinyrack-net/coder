@@ -21,7 +21,9 @@ the user explicitly requests them.
 5. Register every new or changed capability in the typed feature manifest and
    add executable `feature_test__<feature_id>__<layer>` tags for every required
    layer. User-state mutations require contract, real-daemon vertical-slice, and
-   widget evidence; primary screen happy paths require Linux E2E evidence.
+   widget evidence; primary screen happy paths require Linux E2E evidence. Every
+   typed route also requires executable `route_test__<route>__widget` evidence at
+   desktop and mobile sizes.
 6. Before reporting completion, run `dart run melos verify` and
    `dart run melos verify:debug`. The latter must exercise the real Debug Flutter
    runner and embedded daemon, not only a mocked widget tree.

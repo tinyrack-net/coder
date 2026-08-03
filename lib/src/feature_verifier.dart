@@ -153,12 +153,18 @@ final class FeatureVerifier {
     }
 
     final evidence = <String, Set<FeatureVerificationLayer>>{};
+    final routeEvidence = <String>{};
     final marker = RegExp(
       'feature_test__([a-z0-9_]+)__'
       '(unit|contract|verticalSlice|widget|e2e|platformSmoke)',
     );
+    final routeMarker = RegExp('route_test__([a-z0-9_]+)__widget');
+    final routesByTag = <String, String>{
+      for (final route in routes) _snakeCase(route): route,
+    };
     for (final file in _testSources()) {
       final source = file.readAsStringSync();
+      final hasSkip = RegExp(r'''\bskip\s*:\s*(true|["'])''').hasMatch(source);
       for (final match in marker.allMatches(source)) {
         final id = match.group(1)!.replaceAll('_', '.');
         final layerName = match.group(2)!;
@@ -176,7 +182,7 @@ final class FeatureVerifier {
           );
           continue;
         }
-        if (RegExp(r'''\bskip\s*:\s*(true|["'])''').hasMatch(source)) {
+        if (hasSkip) {
           violations.add(
             FeatureViolation(
               'Feature evidence for $id cannot use skip in '
@@ -185,6 +191,27 @@ final class FeatureVerifier {
           );
         }
         evidence.putIfAbsent(id, () => <FeatureVerificationLayer>{}).add(layer);
+      }
+      for (final match in routeMarker.allMatches(source)) {
+        final tagId = match.group(1)!;
+        final route = routesByTag[tagId];
+        if (route == null) {
+          violations.add(
+            FeatureViolation(
+              'Unknown route test tag: ${_upperCamelCase(tagId)}',
+            ),
+          );
+          continue;
+        }
+        if (hasSkip) {
+          violations.add(
+            FeatureViolation(
+              'Route evidence for $route cannot use skip in '
+              '${p.relative(file.path, from: workspaceRoot)}.',
+            ),
+          );
+        }
+        routeEvidence.add(route);
       }
     }
     for (final contract in contracts) {
@@ -197,8 +224,26 @@ final class FeatureVerifier {
         );
       }
     }
+    for (final route in routes.difference(routeEvidence)) {
+      violations.add(
+        FeatureViolation('Route $route is missing widget evidence.'),
+      );
+    }
     return violations;
   }
+
+  String _snakeCase(String value) => value
+      .replaceAllMapped(
+        RegExp('(?<=[a-z0-9])(?=[A-Z])'),
+        (_) => '_',
+      )
+      .toLowerCase();
+
+  String _upperCamelCase(String value) => value
+      .split('_')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join();
 
   Set<String> _apiMethods(String source) {
     final declaration = RegExp(

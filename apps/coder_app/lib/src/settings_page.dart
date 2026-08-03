@@ -97,11 +97,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       onEditCustom: _editCustom,
     );
     final catalog = _ProviderCatalog(
-      definitions: state.catalog.definitions,
-      connectedDefinitionIds: activeConnections
-          .where((connection) => connection.definitionId != 'custom')
-          .map((connection) => connection.definitionId)
-          .toSet(),
+      definitions: state.catalog.definitions
+          .where(
+            (definition) => !activeConnections.any(
+              (connection) => connection.definitionId == definition.id,
+            ),
+          )
+          .toList(growable: false),
       canManage: canManage,
       onAdd: _addDefinition,
       onAddCustom: _addCustom,
@@ -117,26 +119,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             actions: <Widget>[SizedBox.shrink()],
           ),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth >= 900) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(child: connected),
-                    const VerticalDivider(width: 1),
-                    Expanded(child: catalog),
-                  ],
-                );
-              }
-              return ListView(
-                children: <Widget>[
-                  SizedBox(height: 340, child: connected),
-                  const Divider(height: 1),
-                  SizedBox(height: 420, child: catalog),
-                ],
-              );
-            },
+          child: CustomScrollView(
+            slivers: <Widget>[
+              SliverToBoxAdapter(child: connected),
+              const SliverToBoxAdapter(child: Divider(height: 1)),
+              SliverToBoxAdapter(child: catalog),
+            ],
           ),
         ),
         for (final attempt in state.authAttempts.values)
@@ -310,162 +298,454 @@ class _ConnectedProviders extends StatelessWidget {
   final bool canManage;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
   final ValueChanged<String> onSetDefault;
-  final void Function(String, String) onSetDefaultModel;
+  final Future<void> Function(String, String) onSetDefaultModel;
   final ValueChanged<ProviderConnectionDto> onEditCustom;
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) => Padding(
     key: const ValueKey('provider-settings-connected'),
     padding: const EdgeInsets.all(20),
-    children: <Widget>[
-      Text('연결됨', style: Theme.of(context).textTheme.headlineSmall),
-      const SizedBox(height: 12),
-      if (connections.isEmpty)
-        const Card(
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: Text('연결된 Provider가 없습니다.'),
-          ),
-        ),
-      for (final connection in connections)
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        connection.displayName,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    if (connection.isDefault) const Chip(label: Text('기본')),
-                    if (canManage)
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          switch (value) {
-                            case 'default':
-                              onSetDefault(connection.id);
-                            case 'edit':
-                              onEditCustom(connection);
-                            case 'disconnect':
-                              onDisconnect(connection);
-                          }
-                        },
-                        itemBuilder: (context) => <PopupMenuEntry<String>>[
-                          if (!connection.isDefault)
-                            const PopupMenuItem(
-                              value: 'default',
-                              child: Text('기본 Provider로 설정'),
-                            ),
-                          if (connection.definitionId == 'custom')
-                            const PopupMenuItem(
-                              value: 'edit',
-                              child: Text('고급 설정 편집'),
-                            ),
-                          const PopupMenuItem(
-                            value: 'disconnect',
-                            child: Text('연결 해제'),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-                Text(
-                  '${_statusLabel(connection.status)} · '
-                  '${_authLabel(connection.credentialOrigin)}',
-                ),
-                if (connection.error != null)
-                  Text(
-                    connection.error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                if ((models[connection.id] ?? const <ProviderModelDto>[])
-                    .isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    key: ValueKey('default-model-${connection.id}'),
-                    initialValue: connection.defaultModelId,
-                    decoration: const InputDecoration(labelText: '기본 모델'),
-                    items: (models[connection.id] ?? const <ProviderModelDto>[])
-                        .map(
-                          (model) => DropdownMenuItem(
-                            value: model.id,
-                            child: Text(model.label),
-                          ),
-                        )
-                        .toList(growable: false),
-                    onChanged: canManage
-                        ? (model) {
-                            if (model != null) {
-                              onSetDefaultModel(connection.id, model);
-                            }
-                          }
-                        : null,
-                  ),
-                ],
-              ],
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text('연결됨', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        if (connections.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('연결된 Provider가 없습니다.'),
             ),
           ),
-        ),
-    ],
+        for (final connection in connections)
+          _ProviderConnectionCard(
+            connection: connection,
+            models: models[connection.id],
+            canManage: canManage,
+            onDisconnect: onDisconnect,
+            onSetDefault: onSetDefault,
+            onSetDefaultModel: (modelId) =>
+                onSetDefaultModel(connection.id, modelId),
+            onEditCustom: onEditCustom,
+          ),
+      ],
+    ),
   );
+}
+
+class _ProviderConnectionCard extends StatelessWidget {
+  const _ProviderConnectionCard({
+    required this.connection,
+    required this.models,
+    required this.canManage,
+    required this.onDisconnect,
+    required this.onSetDefault,
+    required this.onSetDefaultModel,
+    required this.onEditCustom,
+  });
+
+  final ProviderConnectionDto connection;
+  final List<ProviderModelDto>? models;
+  final bool canManage;
+  final ValueChanged<ProviderConnectionDto> onDisconnect;
+  final ValueChanged<String> onSetDefault;
+  final Future<void> Function(String) onSetDefaultModel;
+  final ValueChanged<ProviderConnectionDto> onEditCustom;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  connection.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              if (connection.isDefault) const Chip(label: Text('기본')),
+              if (canManage)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'default':
+                        onSetDefault(connection.id);
+                      case 'edit':
+                        onEditCustom(connection);
+                      case 'disconnect':
+                        onDisconnect(connection);
+                    }
+                  },
+                  itemBuilder: (context) => <PopupMenuEntry<String>>[
+                    if (!connection.isDefault)
+                      const PopupMenuItem(
+                        value: 'default',
+                        child: Text('기본 Provider로 설정'),
+                      ),
+                    if (connection.definitionId == 'custom')
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('고급 설정 편집'),
+                      ),
+                    const PopupMenuItem(
+                      value: 'disconnect',
+                      child: Text('연결 해제'),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          Text(
+            '${_statusLabel(connection.status)} · '
+            '${_authLabel(connection.credentialOrigin)}',
+          ),
+          if (connection.error != null)
+            Text(
+              connection.error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          const SizedBox(height: 12),
+          _ProviderModelSelector(
+            connection: connection,
+            models: models,
+            canManage: canManage,
+            onSelected: onSetDefaultModel,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _ProviderModelSelector extends StatefulWidget {
+  const _ProviderModelSelector({
+    required this.connection,
+    required this.models,
+    required this.canManage,
+    required this.onSelected,
+  });
+
+  final ProviderConnectionDto connection;
+  final List<ProviderModelDto>? models;
+  final bool canManage;
+  final Future<void> Function(String) onSelected;
+
+  @override
+  State<_ProviderModelSelector> createState() => _ProviderModelSelectorState();
+}
+
+class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
+  bool _saving = false;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    final models = widget.models;
+    final currentId = widget.connection.defaultModelId;
+    final selected = models
+        ?.where((model) => model.id == currentId)
+        .firstOrNull;
+    final missing = currentId != null && models != null && selected == null;
+    final enabled =
+        widget.canManage && models != null && models.isNotEmpty && !_saving;
+    final String primaryText;
+    if (models == null) {
+      primaryText = '모델을 불러오는 중…';
+    } else if (models.isEmpty) {
+      primaryText = '사용 가능한 모델이 없습니다.';
+    } else if (selected != null) {
+      primaryText = selected.label;
+    } else if (currentId != null) {
+      primaryText = currentId;
+    } else {
+      primaryText = '모델 선택';
+    }
+    return InkWell(
+      key: ValueKey('model-selector-${widget.connection.id}'),
+      borderRadius: BorderRadius.circular(4),
+      onTap: enabled ? _chooseModel : null,
+      child: InputDecorator(
+        isEmpty: currentId == null,
+        decoration: InputDecoration(
+          labelText: '기본 모델',
+          enabled: enabled,
+          errorText: _error,
+        ),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    primaryText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (selected != null && selected.id != selected.label)
+                    Text(
+                      selected.id,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  if (missing)
+                    Text(
+                      '카탈로그에 없음',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (_saving)
+              SizedBox.square(
+                key: ValueKey(
+                  'model-selector-saving-${widget.connection.id}',
+                ),
+                dimension: 20,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (models == null)
+              const SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(widget.canManage ? Icons.search : Icons.lock_outline),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _chooseModel() async {
+    final models = widget.models;
+    if (models == null || models.isEmpty || _saving) return;
+    final selected = await _showModelPicker(
+      context,
+      connectionId: widget.connection.id,
+      models: models,
+      currentModelId: widget.connection.defaultModelId,
+    );
+    if (!mounted ||
+        selected == null ||
+        selected == widget.connection.defaultModelId) {
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.onSelected(selected);
+    } on Exception catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+}
+
+Future<String?> _showModelPicker(
+  BuildContext context, {
+  required String connectionId,
+  required List<ProviderModelDto> models,
+  required String? currentModelId,
+}) {
+  final picker = _ModelPicker(
+    connectionId: connectionId,
+    models: models,
+    currentModelId: currentModelId,
+  );
+  if (MediaQuery.sizeOf(context).width < 760) {
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.8,
+          child: picker,
+        ),
+      ),
+    );
+  }
+  return showDialog<String>(
+    context: context,
+    builder: (context) => Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
+        child: picker,
+      ),
+    ),
+  );
+}
+
+class _ModelPicker extends StatefulWidget {
+  const _ModelPicker({
+    required this.connectionId,
+    required this.models,
+    required this.currentModelId,
+  });
+
+  final String connectionId;
+  final List<ProviderModelDto> models;
+  final String? currentModelId;
+
+  @override
+  State<_ModelPicker> createState() => _ModelPickerState();
+}
+
+class _ModelPickerState extends State<_ModelPicker> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _query.trim().toLowerCase();
+    final ordered = <ProviderModelDto>[
+      ...widget.models.where((model) => model.id == widget.currentModelId),
+      ...widget.models.where((model) => model.id != widget.currentModelId),
+    ];
+    final filtered = query.isEmpty
+        ? ordered
+        : ordered
+              .where(
+                (model) =>
+                    model.id.toLowerCase().contains(query) ||
+                    model.label.toLowerCase().contains(query),
+              )
+              .toList(growable: false);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  '기본 모델 선택',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              IconButton(
+                tooltip: '닫기',
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            key: const ValueKey('model-search-field'),
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: '모델 검색',
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (value) => setState(() => _query = value),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: filtered.isEmpty
+                ? const Center(child: Text('검색 결과가 없습니다.'))
+                : ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final model = filtered[index];
+                      return ListTile(
+                        key: ValueKey(
+                          'model-option-${widget.connectionId}-${model.id}',
+                        ),
+                        title: Text(
+                          model.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: model.label == model.id
+                            ? null
+                            : Text(
+                                model.id,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                        trailing: model.id == widget.currentModelId
+                            ? const Icon(Icons.check)
+                            : null,
+                        onTap: () => Navigator.pop(context, model.id),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ProviderCatalog extends StatelessWidget {
   const _ProviderCatalog({
     required this.definitions,
-    required this.connectedDefinitionIds,
     required this.canManage,
     required this.onAdd,
     required this.onAddCustom,
   });
 
   final List<ProviderDefinitionDto> definitions;
-  final Set<String> connectedDefinitionIds;
   final bool canManage;
   final ValueChanged<ProviderDefinitionDto> onAdd;
   final VoidCallback onAddCustom;
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) => Padding(
+    key: const ValueKey('provider-settings-add'),
     padding: const EdgeInsets.all(20),
-    children: <Widget>[
-      Text('Provider 추가', style: Theme.of(context).textTheme.headlineSmall),
-      const SizedBox(height: 12),
-      for (final definition in definitions)
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text('Provider 추가', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        if (definitions.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('추가 가능한 preset이 없습니다.'),
+            ),
+          ),
+        for (final definition in definitions)
+          Card(
+            child: ListTile(
+              key: ValueKey('provider-add-${definition.id}'),
+              leading: const Icon(Icons.hub_outlined),
+              title: Text(definition.name),
+              subtitle: Text(definition.description),
+              trailing: canManage ? const Icon(Icons.add_circle_outline) : null,
+              onTap: canManage ? () => onAdd(definition) : null,
+            ),
+          ),
         Card(
           child: ListTile(
-            key: ValueKey('provider-add-${definition.id}'),
-            leading: const Icon(Icons.hub_outlined),
-            title: Text(definition.name),
-            subtitle: Text(definition.description),
-            trailing: connectedDefinitionIds.contains(definition.id)
-                ? const Icon(Icons.check_circle, semanticLabel: '연결됨')
-                : canManage
-                ? const Icon(Icons.add_circle_outline)
-                : null,
-            onTap: canManage && !connectedDefinitionIds.contains(definition.id)
-                ? () => onAdd(definition)
-                : null,
+            key: const ValueKey('provider-add-custom'),
+            leading: const Icon(Icons.tune),
+            title: const Text('Custom OpenAI Compatible'),
+            subtitle: const Text('고급 설정: 자체 endpoint 연결'),
+            trailing: canManage ? const Icon(Icons.chevron_right) : null,
+            onTap: canManage ? onAddCustom : null,
           ),
         ),
-      Card(
-        child: ListTile(
-          key: const ValueKey('provider-add-custom'),
-          leading: const Icon(Icons.tune),
-          title: const Text('Custom OpenAI Compatible'),
-          subtitle: const Text('고급 설정: 자체 endpoint 연결'),
-          trailing: canManage ? const Icon(Icons.chevron_right) : null,
-          onTap: canManage ? onAddCustom : null,
-        ),
-      ),
-    ],
+      ],
+    ),
   );
 }
 

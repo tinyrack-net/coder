@@ -699,9 +699,10 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     final runtime = (await ref.read(
       hostRegistryControllerProvider.future,
     )).runtimes[hostId];
-    final current = state.asData?.value;
-    if (runtime?.connected != true || current == null) return;
+    if (runtime?.connected != true || state.asData?.value == null) return;
     final models = await runtime!.api!.listProviderModels(connectionId);
+    final current = state.asData?.value;
+    if (current == null) return;
     state = AsyncData<ProviderSettingsState?>(
       current.copyWith(
         models: <String, List<ProviderModelDto>>{

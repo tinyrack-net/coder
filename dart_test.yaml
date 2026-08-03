@@ -60,3 +60,11 @@ tags:
   feature_test__provider_custom__verticalSlice:
   feature_test__provider_custom__widget:
   feature_test__provider_custom__e2e:
+  route_test__workspace_home_route__widget:
+  route_test__worktree_route__widget:
+  route_test__session_route__widget:
+  route_test__provider_settings_route__widget:
+  route_test__agent_settings_route__widget:
+  route_test__daemon_settings_route__widget:
+  route_test__new_host_route__widget:
+  route_test__edit_host_route__widget:

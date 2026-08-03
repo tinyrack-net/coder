@@ -72,13 +72,15 @@ class AppSettingsPage extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
       ],
-      Row(
+      Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 12,
+        runSpacing: 8,
         children: <Widget>[
-          Expanded(
-            child: Text(
-              '원격 daemons',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+          Text(
+            '원격 daemons',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           FilledButton.icon(
             onPressed: () => context.go('/settings/daemons/new'),
@@ -170,8 +172,10 @@ class _RemoteHostCard extends ConsumerWidget {
                 .read(hostRegistryControllerProvider.notifier)
                 .setRemoteAutoConnect(profile.id, enabled: enabled),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 4,
             children: <Widget>[
               TextButton.icon(
                 onPressed: () => ref

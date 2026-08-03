@@ -31,6 +31,8 @@ void main() {
       final remoteWorkspace = await Directory.systemTemp.createTemp(
         'coder-e2e-remote-workspace-',
       );
+      const selectedModelId =
+          'vendor/reasoning-model-with-an-extremely-long-identifier';
       await _initializeGitRepository(workspace.path);
       final modelServer = await HttpServer.bind(
         InternetAddress.loopbackIPv4,
@@ -43,6 +45,10 @@ void main() {
             'object': 'list',
             'data': <Map<String, dynamic>>[
               <String, dynamic>{'id': 'e2e-model', 'owned_by': 'test'},
+              <String, dynamic>{
+                'id': selectedModelId,
+                'owned_by': 'test',
+              },
             ],
           }),
         );
@@ -383,16 +389,57 @@ void main() {
       final providerConnection = (await setupClient.listProviderConnections())
           .singleWhere((item) => item.displayName == 'E2E Provider');
       expect(providerConnection.defaultModelId, 'e2e-model');
+      final connectedSection = find.byKey(
+        const ValueKey('provider-settings-connected'),
+      );
+      final addSection = find.byKey(
+        const ValueKey('provider-settings-add'),
+      );
+      expect(
+        tester.getBottomRight(connectedSection).dy,
+        lessThanOrEqualTo(tester.getTopLeft(addSection).dy),
+      );
+      final modelSelector = find.byKey(
+        ValueKey('model-selector-${providerConnection.id}'),
+      );
+      await _pumpUntil(tester, modelSelector);
+      await tester.ensureVisible(modelSelector);
+      await tester.pumpAndSettle();
+      await tester.tap(modelSelector);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('model-search-field')),
+        'extremely-long',
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(
+          ValueKey(
+            'model-option-${providerConnection.id}-$selectedModelId',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        (await setupClient.listProviderConnections())
+            .singleWhere((item) => item.id == providerConnection.id)
+            .defaultModelId,
+        selectedModelId,
+      );
       final providerCard = find.ancestor(
         of: find.text('E2E Provider'),
         matching: find.byType(Card),
       );
-      await tester.tap(
-        find.descendant(
-          of: providerCard.first,
-          matching: find.byType(PopupMenuButton<String>),
-        ),
+      final providerMenu = find.descendant(
+        of: providerCard.first,
+        matching: find.byType(PopupMenuButton<String>),
       );
+      await Scrollable.ensureVisible(
+        tester.element(providerMenu),
+        alignment: 0.3,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(providerMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('연결 해제'));
       await tester.pumpAndSettle();

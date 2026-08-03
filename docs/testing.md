@@ -40,6 +40,12 @@ test that actually exercises the stated behavior; a marker without behavior is
 not acceptable evidence. `features:check` fails for unknown tags, skipped tagged
 files, missing layers, unregistered API methods/routes, and duplicate ownership.
 
+Every typed route must also render at desktop and mobile sizes without Flutter
+exceptions. Route tests use `route_test__<snake_case_route_class>__widget`, for
+example `route_test__provider_settings_route__widget`. `features:check` fails
+when a typed route has no matching executable route test or when the tag is
+unknown or skipped.
+
 ## Commands
 
 ```sh

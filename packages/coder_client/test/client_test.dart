@@ -81,14 +81,14 @@ void main() {
     authKind: ProviderAuthKind.apiKey,
     credentialOrigin: ProviderCredentialOrigin.stored,
     isDefault: true,
-    defaultModelId: 'model',
+    defaultModelId: 'retired/model-not-in-current-catalog',
     createdAt: now,
     updatedAt: now,
   );
   const model = ProviderModelDto(
     connectionId: 'provider',
-    id: 'model',
-    label: 'Model',
+    id: 'vendor/model-with-an-extremely-long-identifier',
+    label: 'Model with an extremely long display label',
     source: ProviderModelSource.manual,
     capabilities: ModelCapabilitiesDto(
       streaming: CapabilitySupport.supported,
@@ -269,6 +269,7 @@ void main() {
         await client.listProviderModels(connection.id),
         <ProviderModelDto>[model],
       );
+      expect(connection.defaultModelId, isNot(model.id));
       const customConfig = CustomProviderConfigDto(
         name: 'Custom',
         baseUrl: 'http://localhost/v1',

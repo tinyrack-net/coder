@@ -23,6 +23,9 @@ final class FakeCoderApi implements CoderApi {
     this.agentListError,
     this.failNextAgentCreate = false,
     this.failNextAgentUpdate = false,
+    this.defaultModelSetGate,
+    this.defaultModelSetError,
+    this.modelListGate,
   }) : _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
        _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
@@ -158,6 +161,15 @@ final class FakeCoderApi implements CoderApi {
 
   /// Whether the next Markdown create should simulate a daemon failure.
   bool failNextAgentCreate;
+
+  /// Optional gate used to observe the model-saving state.
+  final Future<void>? defaultModelSetGate;
+
+  /// Optional daemon error returned while selecting a default model.
+  final Exception? defaultModelSetError;
+
+  /// Optional gate used to keep model discovery in its loading state.
+  final Future<void>? modelListGate;
   final StreamController<ClientEvent> _events =
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
@@ -537,6 +549,10 @@ final class FakeCoderApi implements CoderApi {
     String connectionId,
     String modelId,
   ) async {
+    final gate = defaultModelSetGate;
+    if (gate != null) await gate;
+    final error = defaultModelSetError;
+    if (error != null) throw error;
     final connection = _connections.singleWhere(
       (item) => item.id == connectionId,
     );
@@ -550,9 +566,13 @@ final class FakeCoderApi implements CoderApi {
   @override
   Future<List<ProviderModelDto>> listProviderModels(
     String connectionId,
-  ) async => List<ProviderModelDto>.unmodifiable(
-    _models[connectionId] ?? const <ProviderModelDto>[],
-  );
+  ) async {
+    final gate = modelListGate;
+    if (gate != null) await gate;
+    return List<ProviderModelDto>.unmodifiable(
+      _models[connectionId] ?? const <ProviderModelDto>[],
+    );
+  }
 
   @override
   Future<ProviderConnectionDto> createCustomProvider(

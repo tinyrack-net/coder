@@ -532,6 +532,52 @@ void main() {
   );
 
   test(
+    'provider settings retains every concurrent model catalog result',
+    () async {
+      const first = ProviderModelDto(
+        connectionId: 'first',
+        id: 'first/very-long-model-identifier',
+        label: 'First very long model label',
+        source: ProviderModelSource.discovered,
+        capabilities: ModelCapabilitiesDto(),
+      );
+      const second = ProviderModelDto(
+        connectionId: 'second',
+        id: 'second/very-long-model-identifier',
+        label: 'Second very long model label',
+        source: ProviderModelSource.discovered,
+        capabilities: ModelCapabilitiesDto(),
+      );
+      final api = FakeCoderApi(
+        models: const <String, List<ProviderModelDto>>{
+          'first': <ProviderModelDto>[first],
+          'second': <ProviderModelDto>[second],
+        },
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = providerSettingsControllerProvider('server');
+      await container.read(provider.future);
+
+      await Future.wait(<Future<void>>[
+        container.read(provider.notifier).loadModels('first'),
+        container.read(provider.notifier).loadModels('second'),
+      ]);
+
+      expect(
+        container.read(provider).value!.models,
+        const <String, List<ProviderModelDto>>{
+          'first': <ProviderModelDto>[first],
+          'second': <ProviderModelDto>[second],
+        },
+      );
+    },
+    tags: const <String>['feature_test__provider_catalog__unit'],
+  );
+
+  test(
     'feature state value objects and production ports are deterministic',
     () {
       final api = FakeCoderApi();
