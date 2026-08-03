@@ -25,7 +25,8 @@ abstract class HelloParamsDto with _$HelloParamsDto {
 abstract class WorkspaceRegisterParamsDto with _$WorkspaceRegisterParamsDto {
   /// The WorkspaceRegisterParamsDto public API member.
   const factory WorkspaceRegisterParamsDto({
-    required String id,
+    required String workspaceId,
+    required String checkoutId,
     required String rootPath,
     required String name,
   }) = _WorkspaceRegisterParamsDto;
@@ -36,10 +37,91 @@ abstract class WorkspaceRegisterParamsDto with _$WorkspaceRegisterParamsDto {
 }
 
 @freezed
+/// Selects one registered workspace for refresh or removal.
+abstract class WorkspaceIdParamsDto with _$WorkspaceIdParamsDto {
+  /// Creates workspace identifier parameters.
+  const factory WorkspaceIdParamsDto({required String workspaceId}) =
+      _WorkspaceIdParamsDto;
+
+  /// Decodes workspace identifier parameters.
+  factory WorkspaceIdParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$WorkspaceIdParamsDtoFromJson(json);
+}
+
+@freezed
+/// Searches directories on the daemon host.
+abstract class DirectorySuggestParamsDto with _$DirectorySuggestParamsDto {
+  /// Creates directory search parameters.
+  const factory DirectorySuggestParamsDto({
+    required String query,
+    @Default(30) int limit,
+  }) = _DirectorySuggestParamsDto;
+
+  /// Decodes directory search parameters.
+  factory DirectorySuggestParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$DirectorySuggestParamsDtoFromJson(json);
+}
+
+@freezed
+/// Requests local branches for one Git workspace.
+abstract class GitBranchesListParamsDto with _$GitBranchesListParamsDto {
+  /// Creates branch-list parameters.
+  const factory GitBranchesListParamsDto({required String workspaceId}) =
+      _GitBranchesListParamsDto;
+
+  /// Decodes branch-list parameters.
+  factory GitBranchesListParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$GitBranchesListParamsDtoFromJson(json);
+}
+
+@freezed
+/// Creates a managed Git worktree from a new or existing local branch.
+abstract class WorktreeCreateParamsDto with _$WorktreeCreateParamsDto {
+  /// Creates managed-worktree parameters.
+  const factory WorktreeCreateParamsDto({
+    required String id,
+    required String workspaceId,
+    required WorktreeCreateMode mode,
+    required String branchName,
+    String? baseBranch,
+  }) = _WorktreeCreateParamsDto;
+
+  /// Decodes managed-worktree parameters.
+  factory WorktreeCreateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$WorktreeCreateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Identifies one worktree.
+abstract class WorktreeIdParamsDto with _$WorktreeIdParamsDto {
+  /// Creates worktree identifier parameters.
+  const factory WorktreeIdParamsDto({required String worktreeId}) =
+      _WorktreeIdParamsDto;
+
+  /// Decodes worktree identifier parameters.
+  factory WorktreeIdParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$WorktreeIdParamsDtoFromJson(json);
+}
+
+@freezed
+/// Confirms archive risks for one worktree.
+abstract class WorktreeArchiveParamsDto with _$WorktreeArchiveParamsDto {
+  /// Creates worktree archive parameters.
+  const factory WorktreeArchiveParamsDto({
+    required String worktreeId,
+    required bool force,
+  }) = _WorktreeArchiveParamsDto;
+
+  /// Decodes worktree archive parameters.
+  factory WorktreeArchiveParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$WorktreeArchiveParamsDtoFromJson(json);
+}
+
+@freezed
 /// AgentListParamsDto defines a public contract.
 abstract class AgentListParamsDto with _$AgentListParamsDto {
   /// The AgentListParamsDto public API member.
-  const factory AgentListParamsDto({String? workspaceId}) = _AgentListParamsDto;
+  const factory AgentListParamsDto({String? worktreeId}) = _AgentListParamsDto;
 
   /// Creates a [AgentListParamsDto].
   factory AgentListParamsDto.fromJson(Map<String, dynamic> json) =>
@@ -52,7 +134,7 @@ abstract class AgentCreateParamsDto with _$AgentCreateParamsDto {
   /// The AgentCreateParamsDto public API member.
   const factory AgentCreateParamsDto({
     required String id,
-    required String workspaceId,
+    required String worktreeId,
     required String title,
     required String providerConnectionId,
     required String model,
@@ -285,28 +367,96 @@ abstract class TimelineSubscribeParamsDto with _$TimelineSubscribeParamsDto {
 }
 
 @freezed
-/// WorkspaceListResultDto defines a public contract.
-abstract class WorkspaceListResultDto with _$WorkspaceListResultDto {
-  /// The WorkspaceListResultDto public API member.
-  const factory WorkspaceListResultDto({
-    required List<WorkspaceDto> workspaces,
-  }) = _WorkspaceListResultDto;
+/// Result containing an atomic workspace catalog.
+abstract class WorkspaceCatalogResultDto with _$WorkspaceCatalogResultDto {
+  /// Creates a workspace catalog result.
+  const factory WorkspaceCatalogResultDto({
+    required WorkspaceCatalogDto catalog,
+  }) = _WorkspaceCatalogResultDto;
 
-  /// Creates a [WorkspaceListResultDto].
-  factory WorkspaceListResultDto.fromJson(Map<String, dynamic> json) =>
-      _$WorkspaceListResultDtoFromJson(json);
+  /// Decodes a workspace catalog result.
+  factory WorkspaceCatalogResultDto.fromJson(Map<String, dynamic> json) =>
+      _$WorkspaceCatalogResultDtoFromJson(json);
 }
 
 @freezed
-/// WorkspaceResultDto defines a public contract.
-abstract class WorkspaceResultDto with _$WorkspaceResultDto {
-  /// The WorkspaceResultDto public API member.
-  const factory WorkspaceResultDto({required WorkspaceDto workspace}) =
-      _WorkspaceResultDto;
+/// Result of registering one workspace and its discovered checkouts.
+abstract class WorkspaceRegisterResultDto with _$WorkspaceRegisterResultDto {
+  /// Creates a workspace registration result.
+  const factory WorkspaceRegisterResultDto({
+    required WorkspaceDto workspace,
+    required List<WorktreeDto> worktrees,
+  }) = _WorkspaceRegisterResultDto;
 
-  /// Creates a [WorkspaceResultDto].
-  factory WorkspaceResultDto.fromJson(Map<String, dynamic> json) =>
-      _$WorkspaceResultDtoFromJson(json);
+  /// Decodes a workspace registration result.
+  factory WorkspaceRegisterResultDto.fromJson(Map<String, dynamic> json) =>
+      _$WorkspaceRegisterResultDtoFromJson(json);
+}
+
+@freezed
+/// Boolean result for unregistering a workspace.
+abstract class WorkspaceUnregisterResultDto
+    with _$WorkspaceUnregisterResultDto {
+  /// Creates an unregister result.
+  const factory WorkspaceUnregisterResultDto({required bool unregistered}) =
+      _WorkspaceUnregisterResultDto;
+
+  /// Decodes an unregister result.
+  factory WorkspaceUnregisterResultDto.fromJson(Map<String, dynamic> json) =>
+      _$WorkspaceUnregisterResultDtoFromJson(json);
+}
+
+@freezed
+/// Result of daemon-side directory search.
+abstract class DirectorySuggestResultDto with _$DirectorySuggestResultDto {
+  /// Creates directory suggestions.
+  const factory DirectorySuggestResultDto({
+    required List<DirectorySuggestionDto> suggestions,
+  }) = _DirectorySuggestResultDto;
+
+  /// Decodes directory suggestions.
+  factory DirectorySuggestResultDto.fromJson(Map<String, dynamic> json) =>
+      _$DirectorySuggestResultDtoFromJson(json);
+}
+
+@freezed
+/// Result containing local Git branches.
+abstract class GitBranchesListResultDto with _$GitBranchesListResultDto {
+  /// Creates a branch-list result.
+  const factory GitBranchesListResultDto({
+    required List<GitBranchDto> branches,
+  }) = _GitBranchesListResultDto;
+
+  /// Decodes a branch-list result.
+  factory GitBranchesListResultDto.fromJson(Map<String, dynamic> json) =>
+      _$GitBranchesListResultDtoFromJson(json);
+}
+
+@freezed
+/// Result containing one worktree.
+abstract class WorktreeResultDto with _$WorktreeResultDto {
+  /// Creates a worktree result.
+  const factory WorktreeResultDto({required WorktreeDto worktree}) =
+      _WorktreeResultDto;
+
+  /// Decodes a worktree result.
+  factory WorktreeResultDto.fromJson(Map<String, dynamic> json) =>
+      _$WorktreeResultDtoFromJson(json);
+}
+
+@freezed
+/// Result containing archive risk information.
+abstract class WorktreeArchivePreviewResultDto
+    with _$WorktreeArchivePreviewResultDto {
+  /// Creates an archive preview result.
+  const factory WorktreeArchivePreviewResultDto({
+    required WorktreeArchivePreviewDto preview,
+  }) = _WorktreeArchivePreviewResultDto;
+
+  /// Decodes an archive preview result.
+  factory WorktreeArchivePreviewResultDto.fromJson(
+    Map<String, dynamic> json,
+  ) => _$WorktreeArchivePreviewResultDtoFromJson(json);
 }
 
 @freezed

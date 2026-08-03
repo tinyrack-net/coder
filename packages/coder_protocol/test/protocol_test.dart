@@ -5,10 +5,96 @@ import 'package:test/test.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 2);
+
+  test('protocol v5 exposes workspace, worktree, and directory RPCs', () {
+    expect(coderProtocolVersion, 5);
+    expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
+    expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
+    expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
+    expect(RpcMethod.directorySuggest, 'directory.suggest');
+    expect(RpcMethod.gitBranchesList, 'git.branches.list');
+    expect(RpcMethod.worktreeCreate, 'worktree.create');
+    expect(RpcMethod.worktreeArchivePreview, 'worktree.archive.preview');
+    expect(RpcMethod.worktreeArchive, 'worktree.archive');
+  });
+
+  test('workspace and worktree contracts round-trip', () {
+    final workspace = WorkspaceDto(
+      id: 'workspace',
+      name: 'Coder',
+      rootPath: '/workspace',
+      kind: WorkspaceKind.git,
+      createdAt: now,
+    );
+    final worktree = WorktreeDto(
+      id: 'worktree',
+      workspaceId: workspace.id,
+      name: 'feature/settings',
+      path: '/daemon/worktrees/feature-settings',
+      kind: WorktreeKind.managed,
+      branch: 'feature/settings',
+      head: 'abc123',
+      isCoderOwned: true,
+      createdAt: now,
+    );
+    final catalog = WorkspaceCatalogDto(
+      workspaces: <WorkspaceDto>[workspace],
+      worktrees: <WorktreeDto>[worktree],
+    );
+
+    _roundTrip(workspace, (value) => value.toJson(), WorkspaceDto.fromJson);
+    _roundTrip(worktree, (value) => value.toJson(), WorktreeDto.fromJson);
+    _roundTrip(
+      catalog,
+      (value) => value.toJson(),
+      WorkspaceCatalogDto.fromJson,
+    );
+    _roundTrip(
+      const WorktreeArchivePreviewDto(
+        worktreeId: 'worktree',
+        dirty: true,
+        unpushedCommitCount: 2,
+        runningSessionCount: 0,
+        removesDirectory: true,
+      ),
+      (value) => value.toJson(),
+      WorktreeArchivePreviewDto.fromJson,
+    );
+    _roundTrip(
+      const DirectorySuggestionDto(
+        path: '/workspace',
+        name: 'workspace',
+      ),
+      (value) => value.toJson(),
+      DirectorySuggestionDto.fromJson,
+    );
+    _roundTrip(
+      const GitBranchDto(
+        name: 'main',
+        current: true,
+        checkedOut: true,
+      ),
+      (value) => value.toJson(),
+      GitBranchDto.fromJson,
+    );
+  });
+
   final workspace = WorkspaceDto(
     id: 'workspace',
     name: 'Coder',
     rootPath: '/workspace',
+    kind: WorkspaceKind.git,
+    createdAt: now,
+  );
+  final worktree = WorktreeDto(
+    id: 'worktree',
+    workspaceId: workspace.id,
+    name: 'main',
+    path: workspace.rootPath,
+    kind: WorktreeKind.checkout,
+    branch: 'main',
+    head: 'abc123',
+    isCoderOwned: false,
     createdAt: now,
   );
   const capabilities = ModelCapabilitiesDto(
@@ -88,7 +174,7 @@ void main() {
   );
   final agent = AgentDto(
     id: 'agent',
-    workspaceId: workspace.id,
+    worktreeId: worktree.id,
     title: 'Agent',
     providerConnectionId: connection.id,
     model: model.id,
@@ -131,8 +217,8 @@ void main() {
   );
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 3);
-    expect(RpcMethod.workspaceList, 'workspace.list');
+    expect(coderProtocolVersion, 5);
+    expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.agentCreate, 'agent.create');
     expect(RpcMethod.providerCatalog, 'provider.catalog');
     expect(RpcMethod.providerAuthStart, 'provider.auth.start');
@@ -231,7 +317,8 @@ void main() {
     );
     _roundTrip(
       const WorkspaceRegisterParamsDto(
-        id: 'workspace',
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
         rootPath: '/workspace',
         name: 'Workspace',
       ),
@@ -239,14 +326,50 @@ void main() {
       WorkspaceRegisterParamsDto.fromJson,
     );
     _roundTrip(
-      const AgentListParamsDto(workspaceId: 'workspace'),
+      const WorkspaceIdParamsDto(workspaceId: 'workspace'),
+      (value) => value.toJson(),
+      WorkspaceIdParamsDto.fromJson,
+    );
+    _roundTrip(
+      const DirectorySuggestParamsDto(query: '~/Workspaces', limit: 20),
+      (value) => value.toJson(),
+      DirectorySuggestParamsDto.fromJson,
+    );
+    _roundTrip(
+      const GitBranchesListParamsDto(workspaceId: 'workspace'),
+      (value) => value.toJson(),
+      GitBranchesListParamsDto.fromJson,
+    );
+    _roundTrip(
+      const WorktreeCreateParamsDto(
+        id: 'worktree',
+        workspaceId: 'workspace',
+        mode: WorktreeCreateMode.newBranch,
+        branchName: 'feature/settings',
+        baseBranch: 'main',
+      ),
+      (value) => value.toJson(),
+      WorktreeCreateParamsDto.fromJson,
+    );
+    _roundTrip(
+      const WorktreeIdParamsDto(worktreeId: 'worktree'),
+      (value) => value.toJson(),
+      WorktreeIdParamsDto.fromJson,
+    );
+    _roundTrip(
+      const WorktreeArchiveParamsDto(worktreeId: 'worktree', force: true),
+      (value) => value.toJson(),
+      WorktreeArchiveParamsDto.fromJson,
+    );
+    _roundTrip(
+      const AgentListParamsDto(worktreeId: 'worktree'),
       (value) => value.toJson(),
       AgentListParamsDto.fromJson,
     );
     _roundTrip(
       const AgentCreateParamsDto(
         id: 'agent',
-        workspaceId: 'workspace',
+        worktreeId: 'worktree',
         title: 'Agent',
         providerConnectionId: 'provider',
         model: 'model',
@@ -376,14 +499,63 @@ void main() {
 
   test('all result DTOs round-trip', () {
     _roundTrip(
-      WorkspaceListResultDto(workspaces: <WorkspaceDto>[workspace]),
+      WorkspaceCatalogResultDto(
+        catalog: WorkspaceCatalogDto(
+          workspaces: <WorkspaceDto>[workspace],
+          worktrees: <WorktreeDto>[worktree],
+        ),
+      ),
       (value) => value.toJson(),
-      WorkspaceListResultDto.fromJson,
+      WorkspaceCatalogResultDto.fromJson,
     );
     _roundTrip(
-      WorkspaceResultDto(workspace: workspace),
+      WorkspaceRegisterResultDto(
+        workspace: workspace,
+        worktrees: <WorktreeDto>[worktree],
+      ),
       (value) => value.toJson(),
-      WorkspaceResultDto.fromJson,
+      WorkspaceRegisterResultDto.fromJson,
+    );
+    _roundTrip(
+      const WorkspaceUnregisterResultDto(unregistered: true),
+      (value) => value.toJson(),
+      WorkspaceUnregisterResultDto.fromJson,
+    );
+    _roundTrip(
+      const DirectorySuggestResultDto(
+        suggestions: <DirectorySuggestionDto>[
+          DirectorySuggestionDto(path: '/workspace', name: 'workspace'),
+        ],
+      ),
+      (value) => value.toJson(),
+      DirectorySuggestResultDto.fromJson,
+    );
+    _roundTrip(
+      const GitBranchesListResultDto(
+        branches: <GitBranchDto>[
+          GitBranchDto(name: 'main', current: true, checkedOut: true),
+        ],
+      ),
+      (value) => value.toJson(),
+      GitBranchesListResultDto.fromJson,
+    );
+    _roundTrip(
+      WorktreeResultDto(worktree: worktree),
+      (value) => value.toJson(),
+      WorktreeResultDto.fromJson,
+    );
+    _roundTrip(
+      const WorktreeArchivePreviewResultDto(
+        preview: WorktreeArchivePreviewDto(
+          worktreeId: 'worktree',
+          dirty: false,
+          unpushedCommitCount: 0,
+          runningSessionCount: 0,
+          removesDirectory: true,
+        ),
+      ),
+      (value) => value.toJson(),
+      WorktreeArchivePreviewResultDto.fromJson,
     );
     _roundTrip(
       AgentListResultDto(agents: <AgentDto>[agent]),
@@ -491,6 +663,9 @@ void main() {
       ...PermissionMode.values,
       ...ApprovalStatus.values,
       ...ToolRisk.values,
+      ...WorkspaceKind.values,
+      ...WorktreeKind.values,
+      ...WorktreeCreateMode.values,
       ...ProviderApiFormat.values,
       ...ProviderAuthKind.values,
       ...ProviderAuthFlow.values,

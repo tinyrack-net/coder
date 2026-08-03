@@ -14,11 +14,21 @@ void main() {
     id: 'workspace',
     name: 'Workspace',
     rootPath: '/workspace',
+    kind: WorkspaceKind.directory,
+    createdAt: now,
+  );
+  final worktree = WorktreeDto(
+    id: 'worktree',
+    workspaceId: workspace.id,
+    name: workspace.name,
+    path: workspace.rootPath,
+    kind: WorktreeKind.directory,
+    isCoderOwned: false,
     createdAt: now,
   );
   final agent = AgentDto(
     id: 'agent',
-    workspaceId: workspace.id,
+    worktreeId: worktree.id,
     title: 'Agent',
     providerConnectionId: 'provider',
     model: 'model',
@@ -91,6 +101,7 @@ void main() {
             peer,
             requests,
             workspace: workspace,
+            worktree: worktree,
             agent: agent,
             definition: definition,
             connection: connection,
@@ -102,9 +113,10 @@ void main() {
       );
       final states = <ClientConnectionState>[];
       final clientFuture = CoderClient.connect(
-        endpoint: HostEndpoint.parse(
-          '127.0.0.1:7337',
-          token: 'secret-token',
+        endpoint: HostEndpoint.parse('127.0.0.1:7337'),
+        credentials: const DaemonCredentials(
+          bearerToken: 'secret-token',
+          adminToken: 'admin-token',
         ),
         clientId: 'client',
         clientKind: 'test',
@@ -120,24 +132,58 @@ void main() {
       expect(connector.lastUri, Uri.parse('ws://127.0.0.1:7337/ws'));
       expect(
         connector.lastHeaders,
-        const <String, String>{'Authorization': 'Bearer secret-token'},
+        const <String, String>{
+          'Authorization': 'Bearer secret-token',
+          'X-Tinyrack-Coder-Admin': 'admin-token',
+        },
       );
-      expect(await client.listWorkspaces(), <WorkspaceDto>[workspace]);
+      expect(
+        await client.getWorkspaceCatalog(),
+        WorkspaceCatalogDto(
+          workspaces: <WorkspaceDto>[workspace],
+          worktrees: <WorktreeDto>[worktree],
+        ),
+      );
       expect(
         await client.registerWorkspace(
-          id: workspace.id,
+          workspaceId: workspace.id,
+          checkoutId: worktree.id,
           rootPath: workspace.rootPath,
           name: workspace.name,
         ),
-        workspace,
+        WorkspaceRegisterResultDto(
+          workspace: workspace,
+          worktrees: <WorktreeDto>[worktree],
+        ),
       );
-      expect(await client.listAgents(workspaceId: workspace.id), <AgentDto>[
+      expect(
+        await client.refreshWorkspace(workspace.id),
+        isA<WorkspaceCatalogDto>(),
+      );
+      await client.unregisterWorkspace(workspace.id);
+      expect(await client.suggestDirectories('work'), isNotEmpty);
+      expect(await client.listGitBranches(workspace.id), isNotEmpty);
+      expect(
+        await client.createWorktree(
+          id: worktree.id,
+          workspaceId: workspace.id,
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'topic',
+        ),
+        worktree,
+      );
+      expect(
+        await client.previewWorktreeArchive(worktree.id),
+        isA<WorktreeArchivePreviewDto>(),
+      );
+      expect(await client.archiveWorktree(worktree.id), worktree);
+      expect(await client.listAgents(worktreeId: worktree.id), <AgentDto>[
         agent,
       ]);
       expect(
         await client.createAgent(
           id: agent.id,
-          workspaceId: workspace.id,
+          worktreeId: worktree.id,
           title: agent.title,
           providerConnectionId: agent.providerConnectionId,
           model: agent.model,
@@ -246,8 +292,15 @@ void main() {
       expect(
         connector.requests.map((request) => request.method),
         containsAll(<String>[
-          RpcMethod.workspaceList,
+          RpcMethod.workspaceCatalog,
           RpcMethod.workspaceRegister,
+          RpcMethod.workspaceRefresh,
+          RpcMethod.workspaceUnregister,
+          RpcMethod.directorySuggest,
+          RpcMethod.gitBranchesList,
+          RpcMethod.worktreeCreate,
+          RpcMethod.worktreeArchivePreview,
+          RpcMethod.worktreeArchive,
           RpcMethod.agentList,
           RpcMethod.agentCreate,
           RpcMethod.agentConfigurationUpdate,
@@ -280,7 +333,7 @@ void main() {
     final connector = _TestConnector(
       onConfigure: (peer, requests) {
         _registerHello(peer, requests);
-        peer.registerMethod(RpcMethod.workspaceList, (_) {
+        peer.registerMethod(RpcMethod.workspaceCatalog, (_) {
           throw json_rpc.RpcException(
             -32000,
             'Workspace unavailable',
@@ -293,7 +346,8 @@ void main() {
       },
     );
     final client = await CoderClient.connect(
-      endpoint: HostEndpoint.parse('ws://localhost/ws', token: 'token'),
+      endpoint: HostEndpoint.parse('ws://localhost/ws'),
+      credentials: const DaemonCredentials(bearerToken: 'token'),
       clientId: 'client',
       clientKind: 'test',
       connector: connector,
@@ -301,7 +355,7 @@ void main() {
     addTearDown(client.close);
 
     await expectLater(
-      client.listWorkspaces(),
+      client.getWorkspaceCatalog(),
       throwsA(
         isA<CoderClientException>()
             .having((error) => error.code, 'code', 'workspace_unavailable')
@@ -320,20 +374,21 @@ void main() {
       onConfigure: (peer, requests) {
         _registerHello(peer, requests);
         peer.registerMethod(
-          RpcMethod.workspaceList,
+          RpcMethod.workspaceCatalog,
           (_) => Completer<Map<String, dynamic>>().future,
         );
       },
     );
     final client = await CoderClient.connect(
-      endpoint: HostEndpoint.parse('ws://localhost/ws', token: 'token'),
+      endpoint: HostEndpoint.parse('ws://localhost/ws'),
+      credentials: const DaemonCredentials(bearerToken: 'token'),
       clientId: 'client',
       clientKind: 'test',
       connector: connector,
       requestTimeout: const Duration(milliseconds: 10),
     );
     await expectLater(
-      client.listWorkspaces(),
+      client.getWorkspaceCatalog(),
       throwsA(isA<TimeoutException>()),
     );
     await client.close();
@@ -363,7 +418,8 @@ void main() {
         },
       );
       final client = await CoderClient.connect(
-        endpoint: HostEndpoint.parse('ws://localhost/ws', token: 'token'),
+        endpoint: HostEndpoint.parse('ws://localhost/ws'),
+        credentials: const DaemonCredentials(bearerToken: 'token'),
         clientId: 'client',
         clientKind: 'test',
         connector: connector,
@@ -474,6 +530,7 @@ void _registerFixtureMethods(
   json_rpc.Peer peer,
   List<_Request> requests, {
   required WorkspaceDto workspace,
+  required WorktreeDto worktree,
   required AgentDto agent,
   required ProviderDefinitionDto definition,
   required ProviderConnectionDto connection,
@@ -489,13 +546,46 @@ void _registerFixtureMethods(
     status: ProviderAuthAttemptStatus.awaitingUser,
     userCode: 'CODE-1234',
   );
+  final workspaceCatalog = WorkspaceCatalogDto(
+    workspaces: <WorkspaceDto>[workspace],
+    worktrees: <WorktreeDto>[worktree],
+  );
+  const archivePreview = WorktreeArchivePreviewDto(
+    worktreeId: 'worktree',
+    dirty: false,
+    unpushedCommitCount: 0,
+    runningSessionCount: 0,
+    removesDirectory: false,
+  );
   final responses = <String, Map<String, dynamic>>{
-    RpcMethod.workspaceList: WorkspaceListResultDto(
-      workspaces: <WorkspaceDto>[workspace],
+    RpcMethod.workspaceCatalog: WorkspaceCatalogResultDto(
+      catalog: workspaceCatalog,
     ).toJson(),
-    RpcMethod.workspaceRegister: WorkspaceResultDto(
+    RpcMethod.workspaceRegister: WorkspaceRegisterResultDto(
       workspace: workspace,
+      worktrees: <WorktreeDto>[worktree],
     ).toJson(),
+    RpcMethod.workspaceRefresh: WorkspaceCatalogResultDto(
+      catalog: workspaceCatalog,
+    ).toJson(),
+    RpcMethod.workspaceUnregister: const WorkspaceUnregisterResultDto(
+      unregistered: true,
+    ).toJson(),
+    RpcMethod.directorySuggest: const DirectorySuggestResultDto(
+      suggestions: <DirectorySuggestionDto>[
+        DirectorySuggestionDto(path: '/workspace', name: 'Workspace'),
+      ],
+    ).toJson(),
+    RpcMethod.gitBranchesList: const GitBranchesListResultDto(
+      branches: <GitBranchDto>[
+        GitBranchDto(name: 'main', current: true, checkedOut: true),
+      ],
+    ).toJson(),
+    RpcMethod.worktreeCreate: WorktreeResultDto(worktree: worktree).toJson(),
+    RpcMethod.worktreeArchivePreview: const WorktreeArchivePreviewResultDto(
+      preview: archivePreview,
+    ).toJson(),
+    RpcMethod.worktreeArchive: WorktreeResultDto(worktree: worktree).toJson(),
     RpcMethod.agentList: AgentListResultDto(agents: <AgentDto>[agent]).toJson(),
     RpcMethod.agentCreate: AgentResultDto(agent: agent).toJson(),
     RpcMethod.agentConfigurationUpdate: AgentResultDto(agent: agent).toJson(),

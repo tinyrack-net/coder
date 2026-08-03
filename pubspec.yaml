@@ -47,7 +47,7 @@ melos:
     test:golden:
       run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test test/golden --tags=golden --test-randomize-ordering-seed=random
     test:coverage:
-      run: dart run melos exec --no-flutter --dir-exists=test -c 1 -- dart test --coverage-path=coverage/lcov.info --coverage-package="\$MELOS_PACKAGE_NAME" --branch-coverage --test-randomize-ordering-seed=random && dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test --coverage --branch-coverage --test-randomize-ordering-seed=random && dart run tool/verify_coverage.dart
+      run: dart run melos exec --no-flutter --dir-exists=test -c 1 -- dart test --coverage-path=coverage/lcov.info --coverage-package="\$MELOS_PACKAGE_NAME" --branch-coverage --test-randomize-ordering-seed=random && dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test --coverage --branch-coverage --exclude-tags=golden --test-randomize-ordering-seed=random && dart run tool/verify_coverage.dart
     test:e2e:linux:
       run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test integration_test/debug_e2e_test.dart -d linux
     verify:fast:

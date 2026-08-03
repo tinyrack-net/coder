@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show HttpConnectionInfo;
 
 import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
+import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
-import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -25,9 +24,9 @@ class DaemonRpcServer {
     required this.providers,
     required this.providerAuth,
     required this.clock,
-    required this.workspaceCanonicalizer,
     required this.serverInfo,
     required this.token,
+    required this.adminToken,
     required Stream<WireEnvelope> events,
   }) {
     _eventSubscription = events.listen(_broadcast);
@@ -42,7 +41,7 @@ class DaemonRpcServer {
   }
 
   /// The workspaces public API member.
-  final WorkspaceRepository workspaces;
+  final WorkspaceService workspaces;
 
   /// The agentRepository public API member.
   final AgentRepository agentRepository;
@@ -62,14 +61,14 @@ class DaemonRpcServer {
   /// The clock public API member.
   final Clock clock;
 
-  /// The workspaceCanonicalizer public API member.
-  final WorkspaceCanonicalizer workspaceCanonicalizer;
-
   /// The serverInfo public API member.
   final ServerInfoDto serverInfo;
 
   /// The token public API member.
   final String token;
+
+  /// Secret required for local provider-administration capabilities.
+  final String adminToken;
   final Set<_ClientSession> _sessions = <_ClientSession>{};
   late final StreamSubscription<WireEnvelope> _eventSubscription;
   late final StreamSubscription<ProviderAuthAttemptDto> _authSubscription;
@@ -90,10 +89,10 @@ class DaemonRpcServer {
     if (request.headers['authorization'] != 'Bearer $token') {
       return Response.unauthorized('A valid bearer token is required.');
     }
-    final connectionInfo = request.context['shelf.io.connection_info'];
-    final localAdmin =
-        connectionInfo is HttpConnectionInfo &&
-        connectionInfo.remoteAddress.isLoopback;
+    final localAdmin = _constantTimeEquals(
+      request.headers['x-tinyrack-coder-admin'],
+      adminToken,
+    );
     return webSocketHandler(
       (channel, protocol) =>
           _openSession(channel, protocol, localAdmin: localAdmin),
@@ -114,7 +113,6 @@ class DaemonRpcServer {
       providers: providers,
       providerAuth: providerAuth,
       clock: clock,
-      workspaceCanonicalizer: workspaceCanonicalizer,
       serverInfo: serverInfo,
       localAdmin: localAdmin,
       onClosed: () {},
@@ -148,6 +146,22 @@ class DaemonRpcServer {
   }
 }
 
+bool _constantTimeEquals(String? candidate, String expected) {
+  if (candidate == null) return false;
+  final candidateBytes = utf8.encode(candidate);
+  final expectedBytes = utf8.encode(expected);
+  var difference = candidateBytes.length ^ expectedBytes.length;
+  final length = candidateBytes.length > expectedBytes.length
+      ? candidateBytes.length
+      : expectedBytes.length;
+  for (var index = 0; index < length; index += 1) {
+    final left = index < candidateBytes.length ? candidateBytes[index] : 0;
+    final right = index < expectedBytes.length ? expectedBytes[index] : 0;
+    difference |= left ^ right;
+  }
+  return difference == 0;
+}
+
 class _ClientSession {
   _ClientSession({
     required this.channel,
@@ -158,21 +172,19 @@ class _ClientSession {
     required this.providers,
     required this.providerAuth,
     required this.clock,
-    required this.workspaceCanonicalizer,
     required this.serverInfo,
     required this.localAdmin,
     required this.onClosed,
   });
 
   final WebSocketChannel channel;
-  final WorkspaceRepository workspaces;
+  final WorkspaceService workspaces;
   final AgentRepository agentRepository;
   final TimelineRepository timeline;
   final AgentService agents;
   final ProviderService providers;
   final ProviderAuthCoordinator providerAuth;
   final Clock clock;
-  final WorkspaceCanonicalizer workspaceCanonicalizer;
   final ServerInfoDto serverInfo;
   final bool localAdmin;
   void Function() onClosed;
@@ -184,8 +196,15 @@ class _ClientSession {
     _peer = json_rpc.Peer(channel.cast<String>());
     _peer.registerMethod(RpcMethod.hello, _hello);
     for (final method in <String>[
-      RpcMethod.workspaceList,
+      RpcMethod.workspaceCatalog,
       RpcMethod.workspaceRegister,
+      RpcMethod.workspaceRefresh,
+      RpcMethod.workspaceUnregister,
+      RpcMethod.directorySuggest,
+      RpcMethod.gitBranchesList,
+      RpcMethod.worktreeCreate,
+      RpcMethod.worktreeArchivePreview,
+      RpcMethod.worktreeArchive,
       RpcMethod.agentList,
       RpcMethod.agentCreate,
       RpcMethod.agentConfigurationUpdate,
@@ -284,30 +303,59 @@ class _ClientSession {
     Map<String, dynamic> payload,
   ) async {
     switch (method) {
-      case RpcMethod.workspaceList:
-        final items = await workspaces.list();
-        return WorkspaceListResultDto(workspaces: items).toJson();
+      case RpcMethod.workspaceCatalog:
+        return WorkspaceCatalogResultDto(
+          catalog: await workspaces.catalog(),
+        ).toJson();
       case RpcMethod.workspaceRegister:
         final request = WorkspaceRegisterParamsDto.fromJson(payload);
-        final rootPath = request.rootPath;
-        final canonical = workspaceCanonicalizer.canonicalizeExistingDirectory(
-          rootPath,
-        );
-        final workspace = await workspaces.register(
-          WorkspaceDto(
-            id: request.id,
-            name: request.name.trim().isNotEmpty
-                ? request.name.trim()
-                : p.basename(canonical),
-            rootPath: canonical,
-            createdAt: clock.nowUtc(),
+        return (await workspaces.register(request)).toJson();
+      case RpcMethod.workspaceRefresh:
+        final request = WorkspaceIdParamsDto.fromJson(payload);
+        return WorkspaceCatalogResultDto(
+          catalog: await workspaces.refresh(request.workspaceId),
+        ).toJson();
+      case RpcMethod.workspaceUnregister:
+        final request = WorkspaceIdParamsDto.fromJson(payload);
+        await workspaces.unregister(request.workspaceId);
+        return const WorkspaceUnregisterResultDto(
+          unregistered: true,
+        ).toJson();
+      case RpcMethod.directorySuggest:
+        final request = DirectorySuggestParamsDto.fromJson(payload);
+        return DirectorySuggestResultDto(
+          suggestions: await workspaces.suggestDirectories(
+            request.query,
+            request.limit,
           ),
-        );
-        return WorkspaceResultDto(workspace: workspace).toJson();
+        ).toJson();
+      case RpcMethod.gitBranchesList:
+        final request = GitBranchesListParamsDto.fromJson(payload);
+        return GitBranchesListResultDto(
+          branches: await workspaces.listBranches(request.workspaceId),
+        ).toJson();
+      case RpcMethod.worktreeCreate:
+        final request = WorktreeCreateParamsDto.fromJson(payload);
+        return WorktreeResultDto(
+          worktree: await workspaces.createWorktree(request),
+        ).toJson();
+      case RpcMethod.worktreeArchivePreview:
+        final request = WorktreeIdParamsDto.fromJson(payload);
+        return WorktreeArchivePreviewResultDto(
+          preview: await workspaces.previewArchive(request.worktreeId),
+        ).toJson();
+      case RpcMethod.worktreeArchive:
+        final request = WorktreeArchiveParamsDto.fromJson(payload);
+        return WorktreeResultDto(
+          worktree: await workspaces.archive(
+            request.worktreeId,
+            force: request.force,
+          ),
+        ).toJson();
       case RpcMethod.agentList:
         final request = AgentListParamsDto.fromJson(payload);
         final items = await agentRepository.list(
-          workspaceId: request.workspaceId,
+          worktreeId: request.worktreeId,
         );
         return AgentListResultDto(agents: items).toJson();
       case RpcMethod.agentCreate:
@@ -332,7 +380,7 @@ class _ClientSession {
         final agent = await agentRepository.create(
           AgentDto(
             id: request.id,
-            workspaceId: request.workspaceId,
+            worktreeId: request.worktreeId,
             title: request.title,
             providerConnectionId: providerConnectionId,
             model: model,

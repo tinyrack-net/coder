@@ -49,9 +49,10 @@ void main() {
       });
 
       final client = await CoderClient.connect(
-        endpoint: HostEndpoint(
-          websocketUri: handle.boundEndpoint,
-          token: 'test-token-0123456789abcdef0123456789',
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: DaemonCredentials(
+          bearerToken: 'test-token-0123456789abcdef0123456789',
+          adminToken: handle.adminToken,
         ),
         clientId: 'integration-test',
         clientKind: 'test',
@@ -129,16 +130,21 @@ void main() {
         isNot(contains('temporary')),
       );
       final registered = await client.registerWorkspace(
-        id: 'workspace-1',
+        workspaceId: 'workspace-1',
+        checkoutId: 'checkout-1',
         rootPath: workspace.path,
         name: 'Workspace',
       );
-      expect(registered.rootPath, workspace.resolveSymbolicLinksSync());
-      expect(await client.listWorkspaces(), hasLength(1));
+      expect(
+        registered.workspace.rootPath,
+        workspace.resolveSymbolicLinksSync(),
+      );
+      expect((await client.getWorkspaceCatalog()).workspaces, hasLength(1));
+      final checkout = registered.worktrees.single;
 
       final agent = await client.createAgent(
         id: 'agent-1',
-        workspaceId: registered.id,
+        worktreeId: checkout.id,
         title: 'Session',
         providerConnectionId: 'local-test',
         model: 'test-model',
@@ -152,7 +158,7 @@ void main() {
         reasoningEffort: 'high',
       );
       expect(configuredAgent.reasoningEffort, 'high');
-      expect(await client.listAgents(workspaceId: registered.id), hasLength(1));
+      expect(await client.listAgents(worktreeId: checkout.id), hasLength(1));
       expect(await client.subscribeTimeline(agent.id), isEmpty);
 
       final approvalFuture = client.events
@@ -215,65 +221,59 @@ void main() {
         ),
       );
       expect(
-        (await client.listAgents(workspaceId: registered.id)).single.status,
+        (await client.listAgents(worktreeId: checkout.id)).single.status,
         AgentStatus.idle,
       );
     },
   );
 
-  test('non-loopback clients cannot mutate provider settings', () async {
-    final interfaces = await NetworkInterface.list(
-      type: InternetAddressType.IPv4,
-    );
-    final address = interfaces
-        .expand((item) => item.addresses)
-        .where((item) => !item.isLoopback)
-        .firstOrNull;
-    if (address == null) return;
-    final home = await Directory.systemTemp.createTemp('coder-remote-home-');
-    final handle = await DaemonApplication.start(
-      DaemonConfig(
-        homeDirectory: home.path,
-        host: '0.0.0.0',
-        port: 0,
-        bearerToken: 'remote-token-0123456789abcdef0123456789',
-        useEnvironmentCredentials: false,
-      ),
-      provider: _PatchProvider(),
-    );
-    addTearDown(() async {
-      await handle.stop();
-      await home.delete(recursive: true);
-    });
-    final client = await CoderClient.connect(
-      endpoint: HostEndpoint(
-        websocketUri: handle.boundEndpoint.replace(host: address.address),
-        token: 'remote-token-0123456789abcdef0123456789',
-      ),
-      clientId: 'remote-test',
-      clientKind: 'mobile',
-    );
-    addTearDown(client.close);
-    expect(client.serverInfo.features['providerAdmin'], isFalse);
-    expect(
-      client.createCustomProvider(
-        'denied',
-        const CustomProviderConfigDto(
-          name: 'Denied',
-          baseUrl: 'http://127.0.0.1:9999/v1',
-          apiFormat: ProviderApiFormat.chatCompletions,
-          authenticationRequired: false,
+  test(
+    'bearer-only loopback clients cannot mutate provider settings',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-remote-home-');
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'remote-token-0123456789abcdef0123456789',
+          useEnvironmentCredentials: false,
         ),
-      ),
-      throwsA(
-        isA<CoderClientException>().having(
-          (error) => error.code,
-          'code',
-          'local_admin_required',
+        provider: _PatchProvider(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'remote-token-0123456789abcdef0123456789',
         ),
-      ),
-    );
-  });
+        clientId: 'remote-test',
+        clientKind: 'mobile',
+      );
+      addTearDown(client.close);
+      expect(client.serverInfo.features['providerAdmin'], isFalse);
+      expect(
+        client.createCustomProvider(
+          'denied',
+          const CustomProviderConfigDto(
+            name: 'Denied',
+            baseUrl: 'http://127.0.0.1:9999/v1',
+            apiFormat: ProviderApiFormat.chatCompletions,
+            authenticationRequired: false,
+          ),
+        ),
+        throwsA(
+          isA<CoderClientException>().having(
+            (error) => error.code,
+            'code',
+            'local_admin_required',
+          ),
+        ),
+      );
+    },
+  );
 
   test('secrets are not persisted in daemon files', () async {
     final home = await Directory.systemTemp.createTemp('coder-secret-home-');
@@ -302,19 +302,14 @@ void main() {
     }
     expect(persisted.toString(), isNot(contains(token)));
     expect(persisted.toString(), isNot(contains(apiKey)));
-    expect(
-      await File('${config.path}/auth.json').readAsString(),
-      contains(token),
-    );
-    expect(
-      await File('${config.path}/credentials.json').readAsString(),
-      contains(apiKey),
-    );
+    final credentials = await File(
+      '${config.path}/credentials.json',
+    ).readAsString();
+    expect(credentials, contains(token));
+    expect(credentials, contains(apiKey));
+    expect(credentials, contains(handle.adminToken));
+    expect(File('${config.path}/auth.json').existsSync(), isFalse);
     if (!Platform.isWindows) {
-      expect(
-        File('${config.path}/auth.json').statSync().mode & 0x1ff,
-        0x180,
-      );
       expect(
         File('${config.path}/credentials.json').statSync().mode & 0x1ff,
         0x180,

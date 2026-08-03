@@ -1,7 +1,8 @@
-import 'package:coder_app/src/bootstrap.dart';
+import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
-import 'package:coder_app/src/ports.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/settings_page.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -319,7 +320,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          bootstrapProvider.overrideWithValue(const _FailingBootstrap()),
+          appServicesProvider.overrideWithValue(
+            const AppServices(
+              settings: _FailingStore(),
+              profiles: _FailingStore(),
+              credentials: _FailingStore(),
+              clients: _FailingStore(),
+              clientKind: 'test',
+            ),
+          ),
         ],
         child: const MaterialApp(home: SettingsPage(hostId: 'server')),
       ),
@@ -380,11 +389,8 @@ Future<void> _pumpSettings(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        bootstrapProvider.overrideWithValue(
-          FakeAppBootstrap(
-            api: api,
-            autoConnectEnabled: autoConnectEnabled,
-          ),
+        appServicesProvider.overrideWithValue(
+          fakeAppServices(api, connected: autoConnectEnabled),
         ),
         appIdGeneratorProvider.overrideWithValue(const _Ids()),
         externalUrlOpenerProvider.overrideWithValue(
@@ -414,20 +420,45 @@ final class _Ids implements AppIdGenerator {
   String generate() => 'new-provider';
 }
 
-final class _FailingBootstrap implements AppBootstrap {
-  const _FailingBootstrap();
+final class _FailingStore
+    implements
+        AppSettingsRepository,
+        RemoteHostRepository,
+        RemoteHostCredentialStore,
+        HostClientFactory {
+  const _FailingStore();
 
   @override
-  bool get canRegisterLocalWorkspace => false;
+  Future<AppSettings> loadSettings() =>
+      Future<AppSettings>.error(StateError('connection failed'));
 
   @override
-  Future<BootstrapConnection?> autoConnect() =>
-      Future<BootstrapConnection?>.error(StateError('connection failed'));
+  Future<List<RemoteDaemonProfile>> listProfiles() async =>
+      const <RemoteDaemonProfile>[];
 
   @override
-  Future<void> close() async {}
+  Future<void> saveSettings(AppSettings settings) async {}
 
   @override
-  Future<BootstrapConnection> connectRemote(HostEndpoint endpoint) =>
-      Future<BootstrapConnection>.error(StateError('connection failed'));
+  Future<void> upsertProfile(RemoteDaemonProfile profile) async {}
+
+  @override
+  Future<void> deleteProfile(String profileId) async {}
+
+  @override
+  Future<String?> readBearerToken(String profileId) async => null;
+
+  @override
+  Future<void> writeBearerToken(String profileId, String token) async {}
+
+  @override
+  Future<void> deleteBearerToken(String profileId) async {}
+
+  @override
+  Future<CoderApi> connect({
+    required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
+    required String clientId,
+    required String clientKind,
+  }) => Future<CoderApi>.error(StateError('connection failed'));
 }

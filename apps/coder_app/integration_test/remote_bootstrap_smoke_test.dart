@@ -1,6 +1,8 @@
 import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/remote_bootstrap.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_client/coder_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -8,11 +10,40 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('mobile bootstrap remains remote-only', (tester) async {
-    FlutterSecureStorage.setMockInitialValues(<String, String>{});
-    await tester.pumpWidget(CoderApp(bootstrap: RemoteBootstrap()));
+    final store = MemoryAppStore(
+      settings: const AppSettings(embeddedDaemonEnabled: false),
+    );
+    await tester.pumpWidget(
+      CoderApp(
+        services: AppServices(
+          settings: store,
+          profiles: store,
+          credentials: store,
+          clients: const _UnusedClients(),
+          clientKind: 'mobile-integration-test',
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('모바일은 원격 daemon에만 연결합니다.'), findsOneWidget);
-    expect(find.text('Daemon WebSocket 주소'), findsOneWidget);
+    expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
+    await tester.tap(find.byTooltip('설정'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daemon'));
+    await tester.pumpAndSettle();
+    expect(find.text('내장 daemon'), findsNothing);
+    expect(find.text('원격 daemon 추가'), findsOneWidget);
   });
+}
+
+final class _UnusedClients implements HostClientFactory {
+  const _UnusedClients();
+
+  @override
+  Future<CoderApi> connect({
+    required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
+    required String clientId,
+    required String clientKind,
+  }) => throw StateError('No host should connect in a remote-only smoke test.');
 }

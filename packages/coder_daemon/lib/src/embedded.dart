@@ -5,12 +5,25 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/application.dart';
 import 'package:coder_daemon/src/config.dart';
 
+/// Typed failure reported when an embedded daemon cannot complete startup.
+final class EmbeddedDaemonStartupException implements Exception {
+  /// Creates an embedded startup failure with a safe diagnostic message.
+  const EmbeddedDaemonStartupException(this.message);
+
+  /// Startup diagnostic without credential values.
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// EmbeddedDaemonHandle defines a public contract.
 class EmbeddedDaemonHandle implements DaemonHandle {
   EmbeddedDaemonHandle._({
     required this.boundEndpoint,
     required this.serverId,
     required this.bearerToken,
+    required this.adminToken,
     required this._isolate,
     required this._commands,
   });
@@ -30,17 +43,20 @@ class EmbeddedDaemonHandle implements DaemonHandle {
     receive.close();
     if (message is! Map) {
       isolate.kill(priority: Isolate.immediate);
-      throw StateError('Embedded daemon returned an invalid ready message.');
+      throw const EmbeddedDaemonStartupException(
+        'Embedded daemon returned an invalid ready message.',
+      );
     }
     final values = Map<Object?, Object?>.from(message);
     if (values['error'] case final String error) {
       isolate.kill(priority: Isolate.immediate);
-      throw StateError(error);
+      throw EmbeddedDaemonStartupException(error);
     }
     return EmbeddedDaemonHandle._(
       boundEndpoint: Uri.parse(values['endpoint']! as String),
       serverId: values['serverId']! as String,
       bearerToken: values['token']! as String,
+      adminToken: values['adminToken']! as String,
       isolate: isolate,
       commands: values['commands']! as SendPort,
     );
@@ -52,6 +68,8 @@ class EmbeddedDaemonHandle implements DaemonHandle {
   final String serverId;
   @override
   final String bearerToken;
+  @override
+  final String adminToken;
   final Isolate _isolate;
   final SendPort _commands;
   bool _stopped = false;
@@ -84,6 +102,7 @@ Future<void> _embeddedDaemonMain(List<Object?> message) async {
       'endpoint': handle.boundEndpoint.toString(),
       'serverId': handle.serverId,
       'token': handle.bearerToken,
+      'adminToken': handle.adminToken,
       'commands': commands.sendPort,
     });
     await for (final command in commands) {

@@ -29,6 +29,7 @@ class CoderClientException implements Exception {
 class CoderClient implements CoderApi {
   CoderClient._({
     required this._endpoint,
+    required this._credentials,
     required this._clientId,
     required this._clientKind,
     required this._connector,
@@ -39,6 +40,7 @@ class CoderClient implements CoderApi {
   /// The connect public API member.
   static Future<CoderClient> connect({
     required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
     required String clientId,
     required String clientKind,
     WebSocketConnector connector = const IoWebSocketConnector(),
@@ -47,6 +49,7 @@ class CoderClient implements CoderApi {
   }) async {
     final client = CoderClient._(
       endpoint: endpoint,
+      credentials: credentials,
       clientId: clientId,
       clientKind: clientKind,
       connector: connector,
@@ -60,6 +63,7 @@ class CoderClient implements CoderApi {
   }
 
   final HostEndpoint _endpoint;
+  final DaemonCredentials _credentials;
   final String _clientId;
   final String _clientKind;
   final WebSocketConnector _connector;
@@ -96,7 +100,10 @@ class CoderClient implements CoderApi {
     try {
       final channel = await _connector.connect(
         _endpoint.websocketUri,
-        headers: <String, String>{'Authorization': 'Bearer ${_endpoint.token}'},
+        headers: <String, String>{
+          'Authorization': 'Bearer ${_credentials.bearerToken}',
+          'X-Tinyrack-Coder-Admin': ?_credentials.adminToken,
+        },
       );
       final peer = json_rpc.Peer(channel.cast<String>());
       _peer = peer;
@@ -221,36 +228,120 @@ class CoderClient implements CoderApi {
   }
 
   @override
-  Future<List<WorkspaceDto>> listWorkspaces() async {
+  Future<WorkspaceCatalogDto> getWorkspaceCatalog() async {
     final response = await _request(
-      RpcMethod.workspaceList,
+      RpcMethod.workspaceCatalog,
       const <String, dynamic>{},
     );
-    return WorkspaceListResultDto.fromJson(response).workspaces;
+    return WorkspaceCatalogResultDto.fromJson(response).catalog;
   }
 
   @override
-  Future<WorkspaceDto> registerWorkspace({
-    required String id,
+  Future<WorkspaceRegisterResultDto> registerWorkspace({
+    required String workspaceId,
+    required String checkoutId,
     required String rootPath,
     required String name,
   }) async {
     final response = await _request(
       RpcMethod.workspaceRegister,
       WorkspaceRegisterParamsDto(
-        id: id,
+        workspaceId: workspaceId,
+        checkoutId: checkoutId,
         rootPath: rootPath,
         name: name,
       ).toJson(),
     );
-    return WorkspaceResultDto.fromJson(response).workspace;
+    return WorkspaceRegisterResultDto.fromJson(response);
   }
 
   @override
-  Future<List<AgentDto>> listAgents({String? workspaceId}) async {
+  Future<WorkspaceCatalogDto> refreshWorkspace(String workspaceId) async {
+    final response = await _request(
+      RpcMethod.workspaceRefresh,
+      WorkspaceIdParamsDto(workspaceId: workspaceId).toJson(),
+    );
+    return WorkspaceCatalogResultDto.fromJson(response).catalog;
+  }
+
+  @override
+  Future<void> unregisterWorkspace(String workspaceId) async {
+    await _request(
+      RpcMethod.workspaceUnregister,
+      WorkspaceIdParamsDto(workspaceId: workspaceId).toJson(),
+    );
+  }
+
+  @override
+  Future<List<DirectorySuggestionDto>> suggestDirectories(
+    String query, {
+    int limit = 30,
+  }) async {
+    final response = await _request(
+      RpcMethod.directorySuggest,
+      DirectorySuggestParamsDto(query: query, limit: limit).toJson(),
+    );
+    return DirectorySuggestResultDto.fromJson(response).suggestions;
+  }
+
+  @override
+  Future<List<GitBranchDto>> listGitBranches(String workspaceId) async {
+    final response = await _request(
+      RpcMethod.gitBranchesList,
+      GitBranchesListParamsDto(workspaceId: workspaceId).toJson(),
+    );
+    return GitBranchesListResultDto.fromJson(response).branches;
+  }
+
+  @override
+  Future<WorktreeDto> createWorktree({
+    required String id,
+    required String workspaceId,
+    required WorktreeCreateMode mode,
+    required String branchName,
+    String? baseBranch,
+  }) async {
+    final response = await _request(
+      RpcMethod.worktreeCreate,
+      WorktreeCreateParamsDto(
+        id: id,
+        workspaceId: workspaceId,
+        mode: mode,
+        branchName: branchName,
+        baseBranch: baseBranch,
+      ).toJson(),
+    );
+    return WorktreeResultDto.fromJson(response).worktree;
+  }
+
+  @override
+  Future<WorktreeArchivePreviewDto> previewWorktreeArchive(
+    String worktreeId,
+  ) async {
+    final response = await _request(
+      RpcMethod.worktreeArchivePreview,
+      WorktreeIdParamsDto(worktreeId: worktreeId).toJson(),
+    );
+    return WorktreeArchivePreviewResultDto.fromJson(response).preview;
+  }
+
+  @override
+  Future<WorktreeDto> archiveWorktree(
+    String worktreeId, {
+    bool force = false,
+  }) async {
+    final response = await _request(
+      RpcMethod.worktreeArchive,
+      WorktreeArchiveParamsDto(worktreeId: worktreeId, force: force).toJson(),
+    );
+    return WorktreeResultDto.fromJson(response).worktree;
+  }
+
+  @override
+  Future<List<AgentDto>> listAgents({String? worktreeId}) async {
     final response = await _request(
       RpcMethod.agentList,
-      AgentListParamsDto(workspaceId: workspaceId).toJson(),
+      AgentListParamsDto(worktreeId: worktreeId).toJson(),
     );
     return AgentListResultDto.fromJson(response).agents;
   }
@@ -258,7 +349,7 @@ class CoderClient implements CoderApi {
   @override
   Future<AgentDto> createAgent({
     required String id,
-    required String workspaceId,
+    required String worktreeId,
     required String title,
     required String providerConnectionId,
     required String model,
@@ -269,7 +360,7 @@ class CoderClient implements CoderApi {
       RpcMethod.agentCreate,
       AgentCreateParamsDto(
         id: id,
-        workspaceId: workspaceId,
+        worktreeId: worktreeId,
         title: title,
         providerConnectionId: providerConnectionId,
         model: model,

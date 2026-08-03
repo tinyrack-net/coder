@@ -84,6 +84,39 @@ enum ToolRisk {
   command,
 }
 
+/// Storage kind of a registered workspace repository.
+enum WorkspaceKind {
+  /// A Git repository whose checkouts and worktrees can be discovered.
+  git,
+
+  /// A regular directory represented by one directory checkout.
+  directory,
+}
+
+/// Filesystem placement backing an agent session.
+enum WorktreeKind {
+  /// The workspace's original checkout.
+  checkout,
+
+  /// A Git worktree created and owned by Tinyrack Coder.
+  managed,
+
+  /// A Git worktree discovered on disk but not owned by Tinyrack Coder.
+  external,
+
+  /// The sole checkout for a non-Git directory workspace.
+  directory,
+}
+
+/// Supported sources for creating a managed Git worktree.
+enum WorktreeCreateMode {
+  /// Creates a new branch from a base branch.
+  newBranch,
+
+  /// Checks out an existing local branch.
+  existingBranch,
+}
+
 /// API formats supported by custom OpenAI-compatible connections.
 enum ProviderApiFormat {
   /// Uses the OpenAI Responses API.
@@ -254,6 +287,7 @@ abstract class WorkspaceDto with _$WorkspaceDto {
     required String id,
     required String name,
     required String rootPath,
+    required WorkspaceKind kind,
     required DateTime createdAt,
   }) = _WorkspaceDto;
 
@@ -263,12 +297,94 @@ abstract class WorkspaceDto with _$WorkspaceDto {
 }
 
 @freezed
+/// A checkout or Git worktree belonging to a registered workspace.
+abstract class WorktreeDto with _$WorktreeDto {
+  /// Creates a worktree descriptor.
+  const factory WorktreeDto({
+    required String id,
+    required String workspaceId,
+    required String name,
+    required String path,
+    required WorktreeKind kind,
+    required bool isCoderOwned,
+    required DateTime createdAt,
+    String? branch,
+    String? head,
+    DateTime? archivedAt,
+  }) = _WorktreeDto;
+
+  /// Decodes a worktree descriptor.
+  factory WorktreeDto.fromJson(Map<String, dynamic> json) =>
+      _$WorktreeDtoFromJson(json);
+}
+
+@freezed
+/// Atomic workspace and worktree catalog owned by one daemon.
+abstract class WorkspaceCatalogDto with _$WorkspaceCatalogDto {
+  /// Creates a workspace catalog.
+  const factory WorkspaceCatalogDto({
+    required List<WorkspaceDto> workspaces,
+    required List<WorktreeDto> worktrees,
+  }) = _WorkspaceCatalogDto;
+
+  /// Decodes a workspace catalog.
+  factory WorkspaceCatalogDto.fromJson(Map<String, dynamic> json) =>
+      _$WorkspaceCatalogDtoFromJson(json);
+}
+
+@freezed
+/// Risk information that must be shown before archiving a worktree.
+abstract class WorktreeArchivePreviewDto with _$WorktreeArchivePreviewDto {
+  /// Creates an archive preview.
+  const factory WorktreeArchivePreviewDto({
+    required String worktreeId,
+    required bool dirty,
+    required int unpushedCommitCount,
+    required int runningSessionCount,
+    required bool removesDirectory,
+  }) = _WorktreeArchivePreviewDto;
+
+  /// Decodes an archive preview.
+  factory WorktreeArchivePreviewDto.fromJson(Map<String, dynamic> json) =>
+      _$WorktreeArchivePreviewDtoFromJson(json);
+}
+
+@freezed
+/// One daemon-side directory search result.
+abstract class DirectorySuggestionDto with _$DirectorySuggestionDto {
+  /// Creates a directory suggestion.
+  const factory DirectorySuggestionDto({
+    required String path,
+    required String name,
+  }) = _DirectorySuggestionDto;
+
+  /// Decodes a directory suggestion.
+  factory DirectorySuggestionDto.fromJson(Map<String, dynamic> json) =>
+      _$DirectorySuggestionDtoFromJson(json);
+}
+
+@freezed
+/// One local branch available to a workspace.
+abstract class GitBranchDto with _$GitBranchDto {
+  /// Creates a Git branch descriptor.
+  const factory GitBranchDto({
+    required String name,
+    required bool current,
+    required bool checkedOut,
+  }) = _GitBranchDto;
+
+  /// Decodes a Git branch descriptor.
+  factory GitBranchDto.fromJson(Map<String, dynamic> json) =>
+      _$GitBranchDtoFromJson(json);
+}
+
+@freezed
 /// AgentDto defines a public contract.
 abstract class AgentDto with _$AgentDto {
   /// The AgentDto public API member.
   const factory AgentDto({
     required String id,
-    required String workspaceId,
+    required String worktreeId,
     required String title,
     required String providerConnectionId,
     required String model,

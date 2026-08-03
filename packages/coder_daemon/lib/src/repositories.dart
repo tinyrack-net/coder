@@ -18,17 +18,44 @@ abstract interface class WorkspaceRepository {
   /// The getById public API member.
   Future<WorkspaceDto?> getById(String id);
 
+  /// Finds a workspace by its canonical repository root.
+  Future<WorkspaceDto?> getByRootPath(String rootPath);
+
   /// The register public API member.
   Future<WorkspaceDto> register(WorkspaceDto workspace);
+
+  /// Removes a workspace registration and its archived worktrees.
+  Future<void> unregister(String id);
+}
+
+/// Persistence port for concrete checkouts.
+abstract interface class WorktreeRepository {
+  /// Lists active worktrees, optionally for one workspace.
+  Future<List<WorktreeDto>> list({String? workspaceId});
+
+  /// Returns one worktree, including archived records.
+  Future<WorktreeDto?> getById(String id);
+
+  /// Finds an active worktree by canonical checkout path.
+  Future<WorktreeDto?> getByPath(String path);
+
+  /// Creates or updates a worktree registration.
+  Future<WorktreeDto> upsert(WorktreeDto worktree);
+
+  /// Marks a worktree as archived without deleting session history.
+  Future<void> archive(String id, DateTime archivedAt);
 }
 
 /// Public API exposed by this library.
 abstract interface class AgentRepository {
   /// The list public API member.
-  Future<List<AgentDto>> list({String? workspaceId});
+  Future<List<AgentDto>> list({String? worktreeId});
 
   /// The getById public API member.
   Future<AgentDto?> getById(String id);
+
+  /// Counts sessions with a turn currently running or awaiting approval.
+  Future<int> countActive(String worktreeId);
 
   /// The create public API member.
   Future<AgentDto> create(AgentDto agent);
@@ -141,8 +168,14 @@ abstract interface class CredentialRepository {
   /// The bearerToken public API member.
   String? get bearerToken;
 
-  /// The setBearerToken public API member.
-  Future<void> setBearerToken(String token);
+  /// Secret authorizing daemon-local provider administration.
+  String? get adminToken;
+
+  /// Atomically persists daemon access and local-administration tokens.
+  Future<void> setDaemonTokens({
+    required String bearerToken,
+    required String adminToken,
+  });
 
   /// Returns the secret credential for one provider connection.
   ProviderCredential? credential(String connectionId);

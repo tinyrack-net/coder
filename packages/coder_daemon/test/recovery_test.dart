@@ -17,13 +17,25 @@ void main() {
           id: 'workspace',
           name: 'Workspace',
           rootPath: home.path,
+          kind: WorkspaceKind.directory,
+          createdAt: now,
+        ),
+      );
+      await database.worktreeDao.upsert(
+        WorktreeDto(
+          id: 'worktree',
+          workspaceId: 'workspace',
+          name: 'Workspace',
+          path: home.path,
+          kind: WorktreeKind.directory,
+          isCoderOwned: false,
           createdAt: now,
         ),
       );
       await database.agentDao.create(
         AgentDto(
           id: 'agent',
-          workspaceId: 'workspace',
+          worktreeId: 'worktree',
           title: 'Agent',
           providerConnectionId: 'openai',
           model: 'gpt-5.6-sol',

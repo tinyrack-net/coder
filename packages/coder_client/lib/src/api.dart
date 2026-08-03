@@ -67,23 +67,54 @@ abstract interface class CoderApi {
   /// The serverInfo public API member.
   ServerInfoDto get serverInfo;
 
-  /// The listWorkspaces public API member.
-  Future<List<WorkspaceDto>> listWorkspaces();
+  /// Returns the daemon's repositories and active checkouts atomically.
+  Future<WorkspaceCatalogDto> getWorkspaceCatalog();
 
   /// The registerWorkspace public API member.
-  Future<WorkspaceDto> registerWorkspace({
-    required String id,
+  Future<WorkspaceRegisterResultDto> registerWorkspace({
+    required String workspaceId,
+    required String checkoutId,
     required String rootPath,
     required String name,
   });
 
+  /// Refreshes Git metadata and checkout registrations.
+  Future<WorkspaceCatalogDto> refreshWorkspace(String workspaceId);
+
+  /// Removes one repository registration.
+  Future<void> unregisterWorkspace(String workspaceId);
+
+  /// Searches directories on the daemon machine.
+  Future<List<DirectorySuggestionDto>> suggestDirectories(
+    String query, {
+    int limit = 30,
+  });
+
+  /// Lists local branches in one Git repository.
+  Future<List<GitBranchDto>> listGitBranches(String workspaceId);
+
+  /// Creates a managed Git worktree.
+  Future<WorktreeDto> createWorktree({
+    required String id,
+    required String workspaceId,
+    required WorktreeCreateMode mode,
+    required String branchName,
+    String? baseBranch,
+  });
+
+  /// Previews archive safety conditions.
+  Future<WorktreeArchivePreviewDto> previewWorktreeArchive(String worktreeId);
+
+  /// Archives a worktree registration and optionally its managed checkout.
+  Future<WorktreeDto> archiveWorktree(String worktreeId, {bool force = false});
+
   /// The listAgents public API member.
-  Future<List<AgentDto>> listAgents({String? workspaceId});
+  Future<List<AgentDto>> listAgents({String? worktreeId});
 
   /// The createAgent public API member.
   Future<AgentDto> createAgent({
     required String id,
-    required String workspaceId,
+    required String worktreeId,
     required String title,
     required String providerConnectionId,
     required String model,

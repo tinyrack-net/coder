@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   test(
-    'stores typed provider credentials separately from daemon auth',
+    'stores provider and daemon credentials atomically in one protected file',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'coder-credential-test-',
@@ -28,7 +28,10 @@ void main() {
           accountId: 'account-id',
         ),
       );
-      await store.setBearerToken('daemon-secret');
+      await store.setDaemonTokens(
+        bearerToken: 'daemon-secret',
+        adminToken: 'admin-secret',
+      );
 
       final reloaded = CredentialStore(directory.path);
       await reloaded.load();
@@ -60,22 +63,20 @@ void main() {
             ),
       );
       expect(reloaded.bearerToken, 'daemon-secret');
+      expect(reloaded.adminToken, 'admin-secret');
 
       final credentialsJson = await File(
         '${directory.path}/credentials.json',
       ).readAsString();
-      final authJson = await File('${directory.path}/auth.json').readAsString();
-      expect(credentialsJson, isNot(contains('daemon-secret')));
-      expect(authJson, isNot(contains('api-secret')));
-      expect(authJson, isNot(contains('access-secret')));
+      expect(credentialsJson, contains('daemon-secret'));
+      expect(credentialsJson, contains('admin-secret'));
+      expect(credentialsJson, contains('api-secret'));
+      expect(credentialsJson, contains('access-secret'));
+      expect(File('${directory.path}/auth.json').existsSync(), isFalse);
 
       if (!Platform.isWindows) {
         expect(
           File('${directory.path}/credentials.json').statSync().mode & 0x1ff,
-          0x180,
-        );
-        expect(
-          File('${directory.path}/auth.json').statSync().mode & 0x1ff,
           0x180,
         );
       }

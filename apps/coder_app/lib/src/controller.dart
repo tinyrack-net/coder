@@ -1,7 +1,9 @@
 import 'dart:async';
 
-import 'package:coder_app/src/bootstrap.dart';
-import 'package:coder_app/src/ports.dart';
+import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/host_registry.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +11,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'controller.g.dart';
 
-/// The bootstrapProvider public API member.
-final bootstrapProvider = Provider<AppBootstrap>(
-  (ref) => throw StateError('AppBootstrap must be overridden.'),
+/// Platform composition supplied by desktop or mobile entrypoints.
+final appServicesProvider = Provider<AppServices>(
+  (ref) => throw StateError('AppServices must be overridden.'),
 );
 
 /// The appClockProvider public API member.
@@ -22,135 +24,174 @@ final appIdGeneratorProvider = Provider<AppIdGenerator>(
   (ref) => const UuidAppIdGenerator(),
 );
 
-/// ConnectionSnapshot defines a public contract.
-final class ConnectionSnapshot {
-  /// Creates a [ConnectionSnapshot].
-  const ConnectionSnapshot({
-    required this.api,
-    required this.endpoint,
-    required this.connectionState,
-  });
-
-  /// The api public API member.
-  final CoderApi api;
-
-  /// The endpoint public API member.
-  final HostEndpoint endpoint;
-
-  /// The connectionState public API member.
-  final ClientConnectionState connectionState;
-
-  /// The serverInfo public API member.
-  ServerInfoDto get serverInfo => api.serverInfo;
-
-  /// The connected public API member.
-  bool get connected => connectionState == ClientConnectionState.connected;
-
-  /// The connecting public API member.
-  bool get connecting =>
-      connectionState == ClientConnectionState.connecting ||
-      connectionState == ClientConnectionState.reconnecting;
-
-  /// The label public API member.
-  String get label => endpoint.websocketUri.authority;
-
-  /// The copyWith public API member.
-  ConnectionSnapshot copyWith({ClientConnectionState? connectionState}) =>
-      ConnectionSnapshot(
-        api: api,
-        endpoint: endpoint,
-        connectionState: connectionState ?? this.connectionState,
-      );
+Future<CoderApi> _requireHostApi(Ref ref, String hostId) async {
+  final runtime = (await ref.read(
+    hostRegistryControllerProvider.future,
+  )).runtimes[hostId];
+  final api = runtime?.api;
+  if (api == null || runtime?.connected != true) {
+    throw StateError('Online daemon connection required.');
+  }
+  return api;
 }
 
 @Riverpod(keepAlive: true)
-/// ConnectionController defines a public contract.
-class ConnectionController extends _$ConnectionController {
-  StreamSubscription<ClientConnectionState>? _states;
-  CoderApi? _api;
-  late AppBootstrap _bootstrap;
-
-  /// The canRegisterLocalWorkspace public API member.
-  bool get canRegisterLocalWorkspace => _bootstrap.canRegisterLocalWorkspace;
+/// Riverpod bridge exposing the independently testable [HostRegistry].
+class HostRegistryController extends _$HostRegistryController {
+  StreamSubscription<HostRegistryState>? _changes;
+  late HostRegistry _registry;
 
   @override
-  Future<ConnectionSnapshot?> build() async {
-    _bootstrap = ref.watch(bootstrapProvider);
+  Future<HostRegistryState> build() async {
+    final services = ref.watch(appServicesProvider);
+    _registry = HostRegistry(
+      store: services.settings,
+      profiles: services.profiles,
+      credentials: services.credentials,
+      clientFactory: services.clients,
+      embeddedLauncher: services.embeddedLauncher,
+      ids: ref.watch(appIdGeneratorProvider),
+      clock: ref.watch(appClockProvider),
+      delay: services.delay,
+      clientKind: services.clientKind,
+    );
     ref.onDispose(() => unawaited(_dispose()));
-    final connection = await _bootstrap.autoConnect();
-    return connection == null ? null : _attach(connection);
-  }
-
-  /// The connect public API member.
-  Future<void> connect(String address, String token) async {
-    state = const AsyncLoading<ConnectionSnapshot?>();
-    try {
-      final endpoint = HostEndpoint.parse(address.trim(), token: token.trim());
-      final connection = await _bootstrap.connectRemote(endpoint);
-      state = AsyncData<ConnectionSnapshot?>(await _attach(connection));
-    } on Exception catch (error, stackTrace) {
-      state = AsyncError<ConnectionSnapshot?>(error, stackTrace);
-    }
-  }
-
-  Future<ConnectionSnapshot> _attach(BootstrapConnection connection) async {
-    await _states?.cancel();
-    if (!identical(_api, connection.client)) await _api?.close();
-    _api = connection.client;
-    _states = connection.client.states.listen((connectionState) {
-      final current = state.asData?.value;
-      if (current != null) {
-        state = AsyncData<ConnectionSnapshot?>(
-          current.copyWith(connectionState: connectionState),
-        );
-      }
+    final initial = await _registry.load();
+    _changes = _registry.changes.listen((next) {
+      state = AsyncData<HostRegistryState>(next);
     });
-    return ConnectionSnapshot(
-      api: connection.client,
-      endpoint: connection.endpoint,
-      connectionState: ClientConnectionState.connected,
+    return initial;
+  }
+
+  /// Adds a remote daemon without requiring it to be online.
+  Future<RemoteDaemonProfile> addRemote({
+    required String label,
+    required String address,
+    required String bearerToken,
+    required bool autoConnect,
+  }) => _registry.addRemote(
+    label: label,
+    address: address,
+    bearerToken: bearerToken,
+    autoConnect: autoConnect,
+  );
+
+  /// Updates one remote profile.
+  Future<void> updateRemote({
+    required String profileId,
+    required String label,
+    required String address,
+    required bool autoConnect,
+    String? replacementBearerToken,
+  }) => _registry.updateRemote(
+    profileId: profileId,
+    label: label,
+    address: address,
+    autoConnect: autoConnect,
+    replacementBearerToken: replacementBearerToken,
+  );
+
+  /// Removes one remote host and its secret.
+  Future<void> removeRemote(String profileId) =>
+      _registry.removeRemote(profileId);
+
+  /// Connects one host immediately.
+  Future<void> reconnect(String hostId) => _registry.reconnect(hostId);
+
+  /// Enables or disables startup connection for one remote host.
+  Future<void> setRemoteAutoConnect(
+    String hostId, {
+    required bool enabled,
+  }) => _registry.setAutoConnect(hostId, enabled: enabled);
+
+  /// Selects one host without requiring an online connection.
+  Future<void> selectHost(String hostId) => _registry.selectHost(hostId);
+
+  /// Enables or disables the app-owned desktop daemon.
+  Future<void> setEmbeddedDaemonEnabled({required bool enabled}) =>
+      _registry.setEmbeddedDaemonEnabled(enabled: enabled);
+
+  /// Persists a checkout selection and its visible session tabs.
+  Future<void> saveWorkspaceUi({
+    required WorkspaceSelection selection,
+    required SessionTabPreference tabs,
+  }) => _registry.saveWorkspaceUi(selection: selection, tabs: tabs);
+
+  Future<void> _dispose() async {
+    await _changes?.cancel();
+    await _registry.close();
+  }
+}
+
+/// Catalogs from every host, kept separate by app-local host identity.
+final class UnifiedWorkspaceCatalogState {
+  /// Creates a unified catalog snapshot.
+  const UnifiedWorkspaceCatalogState({
+    required this.hosts,
+    required this.catalogs,
+  });
+
+  /// Every host runtime, including offline hosts.
+  final Map<String, HostRuntimeSnapshot> hosts;
+
+  /// Online daemon catalogs keyed by host profile ID.
+  final Map<String, WorkspaceCatalogDto> catalogs;
+}
+
+@Riverpod(keepAlive: true)
+/// Loads every online daemon catalog without merging daemon-local IDs.
+class WorkspaceCatalogController extends _$WorkspaceCatalogController {
+  @override
+  Future<UnifiedWorkspaceCatalogState> build() async {
+    final registry = await ref.watch(hostRegistryControllerProvider.future);
+    final entries = await Future.wait(
+      registry.runtimes.values.where((item) => item.connected).map((
+        runtime,
+      ) async {
+        final catalog = await runtime.api!.getWorkspaceCatalog();
+        return MapEntry<String, WorkspaceCatalogDto>(runtime.id, catalog);
+      }),
+    );
+    return UnifiedWorkspaceCatalogState(
+      hosts: registry.runtimes,
+      catalogs: Map<String, WorkspaceCatalogDto>.unmodifiable(
+        Map<String, WorkspaceCatalogDto>.fromEntries(entries),
+      ),
     );
   }
 
-  Future<void> _dispose() async {
-    await _states?.cancel();
-    await _api?.close();
-    await _bootstrap.close();
-  }
-}
-
-@Riverpod(keepAlive: true)
-/// WorkspacesController defines a public contract.
-class WorkspacesController extends _$WorkspacesController {
-  @override
-  Future<List<WorkspaceDto>> build() async {
-    final connection = await ref.watch(connectionControllerProvider.future);
-    return connection == null
-        ? const <WorkspaceDto>[]
-        : connection.api.listWorkspaces();
+  /// Registers a folder on the selected daemon and refreshes its catalog.
+  Future<WorkspaceRegisterResultDto> register(
+    String hostId,
+    String rootPath,
+  ) async {
+    final api = await _requireHostApi(ref, hostId);
+    final result = await api.registerWorkspace(
+      workspaceId: ref.read(appIdGeneratorProvider).generate(),
+      checkoutId: ref.read(appIdGeneratorProvider).generate(),
+      rootPath: rootPath,
+      name: rootPath.split(RegExp(r'[/\\]')).last,
+    );
+    await refreshHost(hostId);
+    return result;
   }
 
-  /// The register public API member.
-  Future<WorkspaceDto> register(String rootPath) async {
-    final connection = await ref.read(connectionControllerProvider.future);
-    if (connection == null) throw StateError('Daemon connection required.');
-    final previous = state.asData?.value ?? const <WorkspaceDto>[];
-    state = const AsyncLoading<List<WorkspaceDto>>();
-    try {
-      final workspace = await connection.api.registerWorkspace(
-        id: ref.read(appIdGeneratorProvider).generate(),
-        rootPath: rootPath,
-        name: rootPath.split(RegExp(r'[/\\]')).last,
-      );
-      state = AsyncData<List<WorkspaceDto>>(<WorkspaceDto>[
-        ...previous,
-        workspace,
-      ]);
-      return workspace;
-    } catch (error, stackTrace) {
-      state = AsyncError<List<WorkspaceDto>>(error, stackTrace);
-      rethrow;
-    }
+  /// Refreshes one daemon catalog without affecting other hosts.
+  Future<void> refreshHost(String hostId) async {
+    final api = await _requireHostApi(ref, hostId);
+    final catalog = await api.getWorkspaceCatalog();
+    final current = state.requireValue;
+    state = AsyncData<UnifiedWorkspaceCatalogState>(
+      UnifiedWorkspaceCatalogState(
+        hosts: current.hosts,
+        catalogs: Map<String, WorkspaceCatalogDto>.unmodifiable(
+          <String, WorkspaceCatalogDto>{
+            ...current.catalogs,
+            hostId: catalog,
+          },
+        ),
+      ),
+    );
   }
 }
 
@@ -158,18 +199,21 @@ class WorkspacesController extends _$WorkspacesController {
 /// AgentsController defines a public contract.
 class AgentsController extends _$AgentsController {
   StreamSubscription<ClientEvent>? _events;
-  late String? _workspaceId;
+  late String? _worktreeId;
 
   @override
-  Future<List<AgentDto>> build(String? workspaceId) async {
-    _workspaceId = workspaceId;
-    final connection = await ref.watch(connectionControllerProvider.future);
-    if (connection == null || workspaceId == null) {
+  Future<List<AgentDto>> build(String hostId, String? worktreeId) async {
+    _worktreeId = worktreeId;
+    final runtime = (await ref.watch(
+      hostRegistryControllerProvider.future,
+    )).runtimes[hostId];
+    if (runtime?.connected != true || worktreeId == null) {
       return const <AgentDto>[];
     }
-    _events = connection.api.events.listen(_handleEvent);
+    final api = runtime!.api!;
+    _events = api.events.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
-    return connection.api.listAgents(workspaceId: workspaceId);
+    return api.listAgents(worktreeId: worktreeId);
   }
 
   /// The create public API member.
@@ -180,17 +224,17 @@ class AgentsController extends _$AgentsController {
     required String reasoningEffort,
     required PermissionMode permissionMode,
   }) async {
-    final workspaceId = _workspaceId;
-    final connection = await ref.read(connectionControllerProvider.future);
-    if (connection == null || workspaceId == null) {
-      throw StateError('Workspace selection and daemon connection required.');
+    final worktreeId = _worktreeId;
+    if (worktreeId == null) {
+      throw StateError('Worktree selection and daemon connection required.');
     }
+    final api = await _requireHostApi(ref, hostId);
     final previous = state.asData?.value ?? const <AgentDto>[];
     state = const AsyncLoading<List<AgentDto>>();
     try {
-      final agent = await connection.api.createAgent(
+      final agent = await api.createAgent(
         id: ref.read(appIdGeneratorProvider).generate(),
-        workspaceId: workspaceId,
+        worktreeId: worktreeId,
         title: title,
         providerConnectionId: providerConnectionId,
         model: model,
@@ -212,9 +256,8 @@ class AgentsController extends _$AgentsController {
     required String model,
     required String reasoningEffort,
   }) async {
-    final connection = await ref.read(connectionControllerProvider.future);
-    if (connection == null) throw StateError('Daemon connection required.');
-    final updated = await connection.api.updateAgentConfiguration(
+    final api = await _requireHostApi(ref, hostId);
+    final updated = await api.updateAgentConfiguration(
       agentId: agentId,
       providerConnectionId: providerConnectionId,
       model: model,
@@ -225,9 +268,10 @@ class AgentsController extends _$AgentsController {
   }
 
   void _handleEvent(ClientEvent event) {
+    if (!ref.mounted) return;
     if (event case AgentUpdatedClientEvent(
       :final agent,
-    ) when agent.workspaceId == _workspaceId) {
+    ) when agent.worktreeId == _worktreeId) {
       _replace(agent);
     }
   }
@@ -239,6 +283,119 @@ class AgentsController extends _$AgentsController {
       for (final agent in current)
         if (agent.id == updated.id) updated else agent,
     ]);
+  }
+}
+
+/// Visible and selected session tabs for one worktree.
+final class SessionTabsState {
+  /// Creates immutable tab state.
+  const SessionTabsState({
+    required this.sessions,
+    required this.openAgentIds,
+    this.selectedAgentId,
+  });
+
+  /// All daemon sessions available to the overflow picker.
+  final List<AgentDto> sessions;
+
+  /// Session IDs visible in the tab strip.
+  final List<String> openAgentIds;
+
+  /// Currently active tab.
+  final String? selectedAgentId;
+}
+
+@riverpod
+/// Owns local tab visibility independently for each host worktree.
+class SessionTabsController extends _$SessionTabsController {
+  late WorkspaceSelection _selection;
+
+  @override
+  Future<SessionTabsState> build(WorkspaceSelection selection) async {
+    _selection = selection;
+    final sessions = await ref.watch(
+      agentsControllerProvider(selection.hostId, selection.worktreeId).future,
+    );
+    final settings = (await ref.watch(
+      hostRegistryControllerProvider.future,
+    )).settings;
+    final saved = settings.sessionTabs[selection.storageKey];
+    final existingIds = sessions.map((item) => item.id).toSet();
+    final open =
+        saved?.openAgentIds
+            .where(existingIds.contains)
+            .toList(growable: false) ??
+        <String>[if (sessions.isNotEmpty) sessions.first.id];
+    final selected = open.contains(saved?.selectedAgentId)
+        ? saved?.selectedAgentId
+        : open.firstOrNull;
+    return SessionTabsState(
+      sessions: sessions,
+      openAgentIds: open,
+      selectedAgentId: selected,
+    );
+  }
+
+  /// Opens and selects a session from the overflow picker.
+  Future<void> open(String agentId) async {
+    final current = state.requireValue;
+    final open = <String>[
+      ...current.openAgentIds.where((id) => id != agentId),
+      agentId,
+    ];
+    await _set(current, open, agentId);
+  }
+
+  /// Selects an already-open session.
+  Future<void> select(String agentId) =>
+      _set(state.requireValue, state.requireValue.openAgentIds, agentId);
+
+  /// Hides a tab without deleting its daemon session or history.
+  Future<void> close(String agentId) async {
+    final current = state.requireValue;
+    final open = current.openAgentIds
+        .where((id) => id != agentId)
+        .toList(growable: false);
+    final selected = current.selectedAgentId == agentId
+        ? open.lastOrNull
+        : current.selectedAgentId;
+    await _set(current, open, selected);
+  }
+
+  /// Adds a newly-created daemon session to the tab strip.
+  Future<void> add(AgentDto agent) async {
+    final current = state.requireValue;
+    await _set(
+      SessionTabsState(
+        sessions: <AgentDto>[agent, ...current.sessions],
+        openAgentIds: current.openAgentIds,
+        selectedAgentId: current.selectedAgentId,
+      ),
+      <String>[...current.openAgentIds, agent.id],
+      agent.id,
+    );
+  }
+
+  Future<void> _set(
+    SessionTabsState current,
+    List<String> open,
+    String? selected,
+  ) async {
+    final next = SessionTabsState(
+      sessions: current.sessions,
+      openAgentIds: List<String>.unmodifiable(open),
+      selectedAgentId: selected,
+    );
+    state = AsyncData<SessionTabsState>(next);
+    await ref
+        .read(hostRegistryControllerProvider.notifier)
+        .saveWorkspaceUi(
+          selection: _selection,
+          tabs: SessionTabPreference(
+            openAgentIds: next.openAgentIds,
+            selectedAgentId: next.selectedAgentId,
+          ),
+        );
   }
 }
 
@@ -273,14 +430,17 @@ class ConversationController extends _$ConversationController {
   late String? _agentId;
 
   @override
-  Future<ConversationState> build(String? agentId) async {
+  Future<ConversationState> build(String hostId, String? agentId) async {
     _agentId = agentId;
-    final connection = await ref.watch(connectionControllerProvider.future);
-    if (connection == null || agentId == null) {
+    final runtime = (await ref.watch(
+      hostRegistryControllerProvider.future,
+    )).runtimes[hostId];
+    if (runtime?.connected != true || agentId == null) {
       return const ConversationState();
     }
-    final timeline = await connection.api.subscribeTimeline(agentId);
-    _events = connection.api.events.listen(_handleEvent);
+    final api = runtime!.api!;
+    final timeline = await api.subscribeTimeline(agentId);
+    _events = api.events.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
     return ConversationState(
       timeline: timeline,
@@ -291,9 +451,9 @@ class ConversationController extends _$ConversationController {
   /// The startTurn public API member.
   Future<void> startTurn(String prompt) async {
     final agentId = _agentId;
-    final connection = await ref.read(connectionControllerProvider.future);
-    if (connection == null || agentId == null || prompt.trim().isEmpty) return;
-    await connection.api.startTurn(
+    if (agentId == null || prompt.trim().isEmpty) return;
+    final api = await _requireHostApi(ref, hostId);
+    await api.startTurn(
       agentId: agentId,
       turnId: ref.read(appIdGeneratorProvider).generate(),
       prompt: prompt.trim(),
@@ -303,9 +463,9 @@ class ConversationController extends _$ConversationController {
   /// The cancelTurn public API member.
   Future<void> cancelTurn() async {
     final agentId = _agentId;
-    final connection = await ref.read(connectionControllerProvider.future);
-    if (connection != null && agentId != null) {
-      await connection.api.cancelTurn(agentId);
+    if (agentId != null) {
+      final api = await _requireHostApi(ref, hostId);
+      await api.cancelTurn(agentId);
     }
   }
 
@@ -314,9 +474,8 @@ class ConversationController extends _$ConversationController {
     String approvalId, {
     required bool approved,
   }) async {
-    final connection = await ref.read(connectionControllerProvider.future);
-    if (connection == null) throw StateError('Daemon connection required.');
-    await connection.api.resolveApproval(
+    final api = await _requireHostApi(ref, hostId);
+    await api.resolveApproval(
       approvalId: approvalId,
       approved: approved,
     );
@@ -332,6 +491,7 @@ class ConversationController extends _$ConversationController {
   }
 
   void _handleEvent(ClientEvent clientEvent) {
+    if (!ref.mounted) return;
     final current = state.asData?.value;
     if (current == null) return;
     switch (clientEvent) {
@@ -438,31 +598,37 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// The canManage public API member.
   bool get canManage =>
       ref
-          .read(connectionControllerProvider)
+          .read(hostRegistryControllerProvider)
           .asData
           ?.value
+          .runtimes[hostId]
           ?.serverInfo
-          .features['providerAdmin'] ==
+          ?.features['providerAdmin'] ==
       true;
 
   @override
-  Future<ProviderSettingsState?> build() async {
-    final connection = await ref.watch(connectionControllerProvider.future);
-    if (connection == null) return null;
-    _events = connection.api.events.listen(_handleEvent);
+  Future<ProviderSettingsState?> build(String hostId) async {
+    final runtime = (await ref.watch(
+      hostRegistryControllerProvider.future,
+    )).runtimes[hostId];
+    if (runtime?.connected != true) return null;
+    final api = runtime!.api!;
+    _events = api.events.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
     return ProviderSettingsState(
-      catalog: await connection.api.listProviderCatalog(),
-      connections: await connection.api.listProviderConnections(),
+      catalog: await api.listProviderCatalog(),
+      connections: await api.listProviderConnections(),
     );
   }
 
   /// The loadModels public API member.
   Future<void> loadModels(String connectionId) async {
-    final connection = await ref.read(connectionControllerProvider.future);
+    final runtime = (await ref.read(
+      hostRegistryControllerProvider.future,
+    )).runtimes[hostId];
     final current = state.asData?.value;
-    if (connection == null || current == null) return;
-    final models = await connection.api.listProviderModels(connectionId);
+    if (runtime?.connected != true || current == null) return;
+    final models = await runtime!.api!.listProviderModels(connectionId);
     state = AsyncData<ProviderSettingsState?>(
       current.copyWith(
         models: <String, List<ProviderModelDto>>{
@@ -479,13 +645,13 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String apiKey, {
     bool makeDefault = false,
   }) async {
-    final connection = await _requireConnection();
-    final result = await connection.api.connectProviderApiKey(
+    final api = await _requireConnection();
+    final result = await api.connectProviderApiKey(
       definitionId,
       apiKey,
       makeDefault: makeDefault,
     );
-    await _reload(connection);
+    await _reload(api);
     return result;
   }
 
@@ -494,12 +660,12 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String definitionId, {
     bool makeDefault = false,
   }) async {
-    final connection = await _requireConnection();
-    final result = await connection.api.connectProviderNone(
+    final api = await _requireConnection();
+    final result = await api.connectProviderNone(
       definitionId,
       makeDefault: makeDefault,
     );
-    await _reload(connection);
+    await _reload(api);
     return result;
   }
 
@@ -509,8 +675,8 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String methodId, {
     bool makeDefault = false,
   }) async {
-    final connection = await _requireConnection();
-    final attempt = await connection.api.startProviderAuth(
+    final api = await _requireConnection();
+    final attempt = await api.startProviderAuth(
       definitionId,
       methodId,
       makeDefault: makeDefault,
@@ -531,22 +697,22 @@ class ProviderSettingsController extends _$ProviderSettingsController {
 
   /// Cancels an interactive authorization attempt.
   Future<void> cancelAuth(String attemptId) async {
-    final connection = await _requireConnection();
-    await connection.api.cancelProviderAuth(attemptId);
+    final api = await _requireConnection();
+    await api.cancelProviderAuth(attemptId);
   }
 
   /// Disconnects a provider connection while retaining history.
   Future<void> disconnect(String connectionId) async {
-    final connection = await _requireConnection();
-    await connection.api.disconnectProvider(connectionId);
-    await _reload(connection);
+    final api = await _requireConnection();
+    await api.disconnectProvider(connectionId);
+    await _reload(api);
   }
 
   /// Selects a connection as the daemon default.
   Future<void> setDefault(String connectionId) async {
-    final connection = await _requireConnection();
-    await connection.api.setDefaultProvider(connectionId);
-    await _reload(connection);
+    final api = await _requireConnection();
+    await api.setDefaultProvider(connectionId);
+    await _reload(api);
   }
 
   /// Selects the connection's default model.
@@ -554,18 +720,18 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String connectionId,
     String modelId,
   ) async {
-    final connection = await _requireConnection();
-    await connection.api.setDefaultProviderModel(
+    final api = await _requireConnection();
+    await api.setDefaultProviderModel(
       connectionId,
       modelId,
     );
-    await _reload(connection);
+    await _reload(api);
   }
 
   /// Explicitly refreshes catalog metadata.
   Future<void> refreshCatalog() async {
-    final connection = await _requireConnection();
-    final catalog = await connection.api.refreshProviderCatalog();
+    final api = await _requireConnection();
+    final catalog = await api.refreshProviderCatalog();
     final current = state.asData?.value;
     if (current != null) {
       state = AsyncData<ProviderSettingsState?>(
@@ -581,14 +747,14 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String? apiKey,
     bool makeDefault = false,
   }) async {
-    final connection = await _requireConnection();
-    final result = await connection.api.createCustomProvider(
+    final api = await _requireConnection();
+    final result = await api.createCustomProvider(
       id,
       config,
       apiKey: apiKey,
       makeDefault: makeDefault,
     );
-    await _reload(connection);
+    await _reload(api);
     return result;
   }
 
@@ -598,35 +764,31 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     CustomProviderConfigDto config, {
     String? apiKey,
   }) async {
-    final connection = await _requireConnection();
-    final result = await connection.api.updateCustomProvider(
+    final api = await _requireConnection();
+    final result = await api.updateCustomProvider(
       connectionId,
       config,
       apiKey: apiKey,
     );
-    await _reload(connection);
+    await _reload(api);
     return result;
   }
 
   /// Deletes an advanced custom connection.
   Future<void> deleteCustom(String connectionId) async {
-    final connection = await _requireConnection();
-    await connection.api.deleteCustomProvider(connectionId);
-    await _reload(connection);
+    final api = await _requireConnection();
+    await api.deleteCustomProvider(connectionId);
+    await _reload(api);
   }
 
-  Future<ConnectionSnapshot> _requireConnection() async {
-    final connection = await ref.read(connectionControllerProvider.future);
-    if (connection == null) throw StateError('Daemon connection required.');
-    return connection;
-  }
+  Future<CoderApi> _requireConnection() => _requireHostApi(ref, hostId);
 
-  Future<void> _reload(ConnectionSnapshot connection) async {
+  Future<void> _reload(CoderApi api) async {
     final current = state.asData?.value;
     state = AsyncData<ProviderSettingsState?>(
       ProviderSettingsState(
-        catalog: await connection.api.listProviderCatalog(),
-        connections: await connection.api.listProviderConnections(),
+        catalog: await api.listProviderCatalog(),
+        connections: await api.listProviderConnections(),
         models: current?.models ?? const <String, List<ProviderModelDto>>{},
         authAttempts:
             current?.authAttempts ?? const <String, ProviderAuthAttemptDto>{},
@@ -635,6 +797,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   }
 
   void _handleEvent(ClientEvent event) {
+    if (!ref.mounted) return;
     if (event case ProviderAuthUpdatedClientEvent(:final attempt)) {
       final current = state.asData?.value;
       if (current == null) return;

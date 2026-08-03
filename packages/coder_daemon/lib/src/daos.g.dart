@@ -17,6 +17,7 @@ class SettingsDaoManager {
 
 mixin _$WorkspaceDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
   WorkspaceDaoManager get managers => WorkspaceDaoManager(this);
 }
 
@@ -25,10 +26,28 @@ class WorkspaceDaoManager {
   WorkspaceDaoManager(this._db);
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
+}
+
+mixin _$WorktreeDaoMixin on DatabaseAccessor<CoderDatabase> {
+  $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
+  WorktreeDaoManager get managers => WorktreeDaoManager(this);
+}
+
+class WorktreeDaoManager {
+  final _$WorktreeDaoMixin _db;
+  WorktreeDaoManager(this._db);
+  $$WorkspacesTableTableManager get workspaces =>
+      $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
 }
 
 mixin _$AgentDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $AgentsTable get agents => attachedDatabase.agents;
   $TurnsTable get turns => attachedDatabase.turns;
   AgentDaoManager get managers => AgentDaoManager(this);
@@ -39,6 +58,8 @@ class AgentDaoManager {
   AgentDaoManager(this._db);
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
   $$AgentsTableTableManager get agents =>
       $$AgentsTableTableManager(_db.attachedDatabase, _db.agents);
   $$TurnsTableTableManager get turns =>
@@ -47,6 +68,7 @@ class AgentDaoManager {
 
 mixin _$TimelineDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $AgentsTable get agents => attachedDatabase.agents;
   $TimelineEventsTable get timelineEvents => attachedDatabase.timelineEvents;
   $TurnsTable get turns => attachedDatabase.turns;
@@ -61,6 +83,8 @@ class TimelineDaoManager {
   TimelineDaoManager(this._db);
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
   $$AgentsTableTableManager get agents =>
       $$AgentsTableTableManager(_db.attachedDatabase, _db.agents);
   $$TimelineEventsTableTableManager get timelineEvents =>
@@ -87,6 +111,7 @@ mixin _$ProviderDaoMixin on DatabaseAccessor<CoderDatabase> {
       attachedDatabase.providerConnections;
   $ProviderModelsTable get providerModels => attachedDatabase.providerModels;
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $AgentsTable get agents => attachedDatabase.agents;
   ProviderDaoManager get managers => ProviderDaoManager(this);
 }
@@ -106,12 +131,15 @@ class ProviderDaoManager {
       );
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
   $$AgentsTableTableManager get agents =>
       $$AgentsTableTableManager(_db.attachedDatabase, _db.agents);
 }
 
 mixin _$RuntimeDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $AgentsTable get agents => attachedDatabase.agents;
   $TurnsTable get turns => attachedDatabase.turns;
   $ApprovalRequestsTable get approvalRequests =>
@@ -124,6 +152,8 @@ class RuntimeDaoManager {
   RuntimeDaoManager(this._db);
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
   $$AgentsTableTableManager get agents =>
       $$AgentsTableTableManager(_db.attachedDatabase, _db.agents);
   $$TurnsTableTableManager get turns =>

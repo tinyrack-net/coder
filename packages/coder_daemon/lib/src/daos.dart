@@ -27,7 +27,7 @@ class SettingsDao extends DatabaseAccessor<CoderDatabase>
   ).insertOnConflictUpdate(SettingsCompanion.insert(key: key, value: value));
 }
 
-@DriftAccessor(tables: <Type>[Workspaces])
+@DriftAccessor(tables: <Type>[Workspaces, Worktrees])
 /// WorkspaceDao defines a public contract.
 class WorkspaceDao extends DatabaseAccessor<CoderDatabase>
     with _$WorkspaceDaoMixin
@@ -54,6 +54,14 @@ class WorkspaceDao extends DatabaseAccessor<CoderDatabase>
   }
 
   @override
+  Future<WorkspaceDto?> getByRootPath(String rootPath) async {
+    final row = await (select(
+      workspaces,
+    )..where((table) => table.rootPath.equals(rootPath))).getSingleOrNull();
+    return row == null ? null : _toDto(row);
+  }
+
+  @override
   Future<WorkspaceDto> register(WorkspaceDto workspace) async {
     final existing = await getById(workspace.id);
     if (existing != null) return existing;
@@ -62,16 +70,103 @@ class WorkspaceDao extends DatabaseAccessor<CoderDatabase>
         id: workspace.id,
         name: workspace.name,
         rootPath: workspace.rootPath,
+        kind: workspace.kind.name,
         createdAt: workspace.createdAt,
       ),
     );
     return workspace;
   }
 
+  @override
+  Future<void> unregister(String id) => transaction(() async {
+    await (delete(
+      worktrees,
+    )..where((row) => row.workspaceId.equals(id))).go();
+    await (delete(workspaces)..where((row) => row.id.equals(id))).go();
+  });
+
   WorkspaceDto _toDto(Workspace row) => WorkspaceDto(
     id: row.id,
     name: row.name,
     rootPath: row.rootPath,
+    kind: WorkspaceKind.values.byName(row.kind),
+    createdAt: row.createdAt,
+  );
+}
+
+@DriftAccessor(tables: <Type>[Worktrees])
+/// Drift adapter for worktree persistence.
+class WorktreeDao extends DatabaseAccessor<CoderDatabase>
+    with _$WorktreeDaoMixin
+    implements WorktreeRepository {
+  /// Creates a [WorktreeDao].
+  WorktreeDao(super.attachedDatabase);
+
+  @override
+  Future<List<WorktreeDto>> list({String? workspaceId}) async {
+    final query = select(worktrees)..where((row) => row.archivedAt.isNull());
+    if (workspaceId != null) {
+      query.where((row) => row.workspaceId.equals(workspaceId));
+    }
+    query.orderBy(<OrderClauseGenerator<$WorktreesTable>>[
+      (row) => OrderingTerm.asc(row.name),
+    ]);
+    return (await query.get()).map(_toDto).toList(growable: false);
+  }
+
+  @override
+  Future<WorktreeDto?> getById(String id) async {
+    final row = await (select(
+      worktrees,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+    return row == null ? null : _toDto(row);
+  }
+
+  @override
+  Future<WorktreeDto?> getByPath(String path) async {
+    final row =
+        await (select(worktrees)..where(
+              (table) => table.path.equals(path) & table.archivedAt.isNull(),
+            ))
+            .getSingleOrNull();
+    return row == null ? null : _toDto(row);
+  }
+
+  @override
+  Future<WorktreeDto> upsert(WorktreeDto worktree) async {
+    await into(worktrees).insertOnConflictUpdate(
+      WorktreesCompanion.insert(
+        id: worktree.id,
+        workspaceId: worktree.workspaceId,
+        name: worktree.name,
+        path: worktree.path,
+        branch: Value<String?>(worktree.branch),
+        head: Value<String?>(worktree.head),
+        kind: worktree.kind.name,
+        isCoderOwned: worktree.isCoderOwned,
+        archivedAt: Value<DateTime?>(worktree.archivedAt),
+        createdAt: worktree.createdAt,
+      ),
+    );
+    return (await getById(worktree.id))!;
+  }
+
+  @override
+  Future<void> archive(String id, DateTime archivedAt) =>
+      (update(worktrees)..where((row) => row.id.equals(id))).write(
+        WorktreesCompanion(archivedAt: Value<DateTime?>(archivedAt)),
+      );
+
+  WorktreeDto _toDto(Worktree row) => WorktreeDto(
+    id: row.id,
+    workspaceId: row.workspaceId,
+    name: row.name,
+    path: row.path,
+    branch: row.branch,
+    head: row.head,
+    kind: WorktreeKind.values.byName(row.kind),
+    isCoderOwned: row.isCoderOwned,
+    archivedAt: row.archivedAt,
     createdAt: row.createdAt,
   );
 }
@@ -85,10 +180,10 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
   AgentDao(super.attachedDatabase);
 
   @override
-  Future<List<AgentDto>> list({String? workspaceId}) async {
+  Future<List<AgentDto>> list({String? worktreeId}) async {
     final query = select(agents);
-    if (workspaceId != null) {
-      query.where((row) => row.workspaceId.equals(workspaceId));
+    if (worktreeId != null) {
+      query.where((row) => row.worktreeId.equals(worktreeId));
     }
     query.orderBy(<OrderClauseGenerator<$AgentsTable>>[
       (row) => OrderingTerm.desc(row.updatedAt),
@@ -105,13 +200,29 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
   }
 
   @override
+  Future<int> countActive(String worktreeId) async {
+    final count = agents.id.count();
+    final query = selectOnly(agents)
+      ..addColumns(<Expression<Object>>[count])
+      ..where(
+        agents.worktreeId.equals(worktreeId) &
+            agents.status.isIn(<String>[
+              AgentStatus.running.name,
+              AgentStatus.waitingForApproval.name,
+              AgentStatus.initializing.name,
+            ]),
+      );
+    return (await query.getSingle()).read(count) ?? 0;
+  }
+
+  @override
   Future<AgentDto> create(AgentDto agent) async {
     final existing = await getById(agent.id);
     if (existing != null) return existing;
     await into(agents).insert(
       AgentsCompanion.insert(
         id: agent.id,
-        workspaceId: agent.workspaceId,
+        worktreeId: agent.worktreeId,
         title: agent.title,
         providerConnectionId: agent.providerConnectionId,
         model: agent.model,
@@ -213,7 +324,7 @@ class AgentDao extends DatabaseAccessor<CoderDatabase>
 
   AgentDto _toDto(Agent row) => AgentDto(
     id: row.id,
-    workspaceId: row.workspaceId,
+    worktreeId: row.worktreeId,
     title: row.title,
     providerConnectionId: row.providerConnectionId,
     model: row.model,

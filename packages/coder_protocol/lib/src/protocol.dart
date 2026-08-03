@@ -1,18 +1,39 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 3;
+const int coderProtocolVersion = 5;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
   /// The hello public API member.
   static const String hello = 'hello';
 
-  /// The workspaceList public API member.
-  static const String workspaceList = 'workspace.list';
+  /// Returns an atomic workspace and worktree catalog.
+  static const String workspaceCatalog = 'workspace.catalog';
 
   /// The workspaceRegister public API member.
   static const String workspaceRegister = 'workspace.register';
+
+  /// Refreshes Git checkout and worktree metadata.
+  static const String workspaceRefresh = 'workspace.refresh';
+
+  /// Removes a workspace registration without deleting its source checkout.
+  static const String workspaceUnregister = 'workspace.unregister';
+
+  /// Searches directories on the daemon host.
+  static const String directorySuggest = 'directory.suggest';
+
+  /// Lists local branches for a Git workspace.
+  static const String gitBranchesList = 'git.branches.list';
+
+  /// Creates a managed Git worktree.
+  static const String worktreeCreate = 'worktree.create';
+
+  /// Returns archive risks without mutating a worktree.
+  static const String worktreeArchivePreview = 'worktree.archive.preview';
+
+  /// Archives a worktree and removes it only when Coder owns it.
+  static const String worktreeArchive = 'worktree.archive';
 
   /// The agentList public API member.
   static const String agentList = 'agent.list';

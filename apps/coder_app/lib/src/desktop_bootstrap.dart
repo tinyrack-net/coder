@@ -1,132 +1,84 @@
-import 'package:coder_app/src/bootstrap.dart';
-import 'package:coder_app/src/ports.dart';
+import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/app_storage.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// A running embedded daemon exposed without leaking its concrete handle.
-abstract interface class EmbeddedDaemonSession {
-  /// The WebSocket endpoint bound by the daemon.
-  Uri get boundEndpoint;
+/// Starts one embedded daemon from a resolved configuration.
+typedef EmbeddedDaemonStarter =
+    Future<DaemonHandle> Function(DaemonConfig config);
 
-  /// The bearer token generated for this daemon.
-  String get bearerToken;
-
-  /// Stops the embedded daemon.
-  Future<void> stop();
-}
-
-/// Starts an embedded daemon session for the desktop bootstrap.
-abstract interface class EmbeddedDaemonLauncher {
-  /// Starts a daemon using the current process environment.
-  Future<EmbeddedDaemonSession> start();
-}
-
-/// Production launcher backed by [EmbeddedDaemonHandle].
-final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
-  /// Creates the production embedded daemon launcher.
-  const IsolateEmbeddedDaemonLauncher();
-
-  @override
-  Future<EmbeddedDaemonSession> start() async => _DaemonSession(
-    await EmbeddedDaemonHandle.start(DaemonConfig.fromEnvironment()),
+/// Creates production desktop services after local settings storage is ready.
+Future<AppServices> createDesktopServices({
+  EmbeddedDaemonLauncher embeddedLauncher =
+      const IsolateEmbeddedDaemonLauncher(),
+  HostClientFactory clients = const WebSocketHostClientFactory(),
+  FlutterSecureStorage secureStorage = const FlutterSecureStorage(),
+}) async {
+  final store = SharedPreferencesAppStore(
+    await SharedPreferences.getInstance(),
+  );
+  return AppServices(
+    settings: store,
+    profiles: store,
+    credentials: SecureRemoteHostCredentialStore(secureStorage),
+    clients: clients,
+    clientKind: 'desktop',
+    embeddedLauncher: embeddedLauncher,
   );
 }
 
-final class _DaemonSession implements EmbeddedDaemonSession {
-  const _DaemonSession(this._handle);
+/// Starts an embedded daemon isolate without connecting the GUI client.
+final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
+  /// Creates the production embedded daemon launcher.
+  const IsolateEmbeddedDaemonLauncher({
+    this.config,
+    this.startDaemon = _startEmbeddedDaemon,
+  });
 
-  final EmbeddedDaemonHandle _handle;
+  /// Explicit configuration used by deterministic integration tests.
+  final DaemonConfig? config;
+
+  /// Injected isolate starter used by deterministic tests.
+  final EmbeddedDaemonStarter startDaemon;
 
   @override
-  String get bearerToken => _handle.bearerToken;
+  Future<EmbeddedDaemonSession> start() async {
+    try {
+      return _EmbeddedSession(
+        await startDaemon(config ?? DaemonConfig.fromEnvironment()),
+      );
+    } on Exception catch (error) {
+      throw HostConnectionFailure.network('$error');
+    }
+  }
+}
+
+Future<DaemonHandle> _startEmbeddedDaemon(DaemonConfig config) =>
+    EmbeddedDaemonHandle.start(config);
+
+final class _EmbeddedSession implements EmbeddedDaemonSession {
+  const _EmbeddedSession(this._handle);
+
+  final DaemonHandle _handle;
 
   @override
-  Uri get boundEndpoint => _handle.boundEndpoint;
+  DaemonCredentials get credentials => DaemonCredentials(
+    bearerToken: _handle.bearerToken,
+    adminToken: _handle.adminToken,
+  );
+
+  @override
+  HostEndpoint get endpoint => HostEndpoint(
+    websocketUri: _handle.boundEndpoint,
+  );
+
+  @override
+  String get serverId => _handle.serverId;
 
   @override
   Future<void> stop() => _handle.stop();
-}
-
-/// DesktopBootstrap defines a public contract.
-class DesktopBootstrap implements AppBootstrap {
-  /// Creates a [DesktopBootstrap].
-  DesktopBootstrap({
-    FlutterSecureStorage? storage,
-    this._ids = const UuidAppIdGenerator(),
-    this._connector = const WebSocketAppClientConnector(),
-    this._launcher = const IsolateEmbeddedDaemonLauncher(),
-  }) : _storage = storage ?? const FlutterSecureStorage();
-
-  static const String _addressKey = 'tinyrack_coder.host_address';
-  static const String _tokenKey = 'tinyrack_coder.host_token';
-
-  final FlutterSecureStorage _storage;
-  final AppIdGenerator _ids;
-  final AppClientConnector _connector;
-  final EmbeddedDaemonLauncher _launcher;
-  EmbeddedDaemonSession? _embedded;
-
-  @override
-  bool get canRegisterLocalWorkspace => true;
-
-  @override
-  Future<BootstrapConnection?> autoConnect() async {
-    final savedAddress = await _storage.read(key: _addressKey);
-    final savedToken = await _storage.read(key: _tokenKey);
-    if (savedAddress != null && savedToken != null) {
-      try {
-        return await _connect(
-          HostEndpoint.parse(savedAddress, token: savedToken),
-          persist: false,
-        );
-      } on Exception {
-        // A previous embedded process is expected to be gone after an app
-        // restart.
-      }
-    }
-    _embedded = await _launcher.start();
-    final endpoint = HostEndpoint(
-      websocketUri: _embedded!.boundEndpoint,
-      token: _embedded!.bearerToken,
-    );
-    await _storage.write(
-      key: _addressKey,
-      value: endpoint.websocketUri.toString(),
-    );
-    await _storage.write(key: _tokenKey, value: endpoint.token);
-    return _connect(endpoint, persist: false);
-  }
-
-  @override
-  Future<BootstrapConnection> connectRemote(HostEndpoint endpoint) async {
-    await _embedded?.stop();
-    _embedded = null;
-    return _connect(endpoint, persist: true);
-  }
-
-  Future<BootstrapConnection> _connect(
-    HostEndpoint endpoint, {
-    required bool persist,
-  }) async {
-    final client = await _connector.connect(
-      endpoint: endpoint,
-      clientId: _ids.generate(),
-      clientKind: 'desktop',
-    );
-    if (persist) {
-      await _storage.write(
-        key: _addressKey,
-        value: endpoint.websocketUri.toString(),
-      );
-      await _storage.write(key: _tokenKey, value: endpoint.token);
-    }
-    return BootstrapConnection(client: client, endpoint: endpoint);
-  }
-
-  @override
-  Future<void> close() async {
-    await _embedded?.stop();
-    _embedded = null;
-  }
 }

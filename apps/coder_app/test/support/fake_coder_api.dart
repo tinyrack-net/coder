@@ -1,6 +1,8 @@
 import 'dart:async';
 
-import 'package:coder_app/src/bootstrap.dart';
+import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -12,13 +14,16 @@ final class FakeCoderApi implements CoderApi {
     ProviderCatalogDto? catalog,
     List<ProviderConnectionDto>? connections,
     List<WorkspaceDto>? workspaces,
+    List<WorktreeDto>? worktrees,
     List<AgentDto>? agents,
     Map<String, List<TimelineEventDto>>? timelines,
     Map<String, List<ProviderModelDto>>? models,
+    this.eventStream,
   }) : _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
        _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
        _workspaces = workspaces ?? <WorkspaceDto>[],
+       _worktrees = worktrees ?? <WorktreeDto>[],
        _agents = agents ?? <AgentDto>[],
        _timelines = <String, List<TimelineEventDto>>{
          for (final entry
@@ -108,14 +113,21 @@ final class FakeCoderApi implements CoderApi {
   ProviderCatalogDto _catalog;
   final List<ProviderConnectionDto> _connections;
   final List<WorkspaceDto> _workspaces;
+  final List<WorktreeDto> _worktrees;
   final List<AgentDto> _agents;
   final Map<String, List<TimelineEventDto>> _timelines;
   final Map<String, List<ProviderModelDto>> _models;
+
+  /// Optional event stream that can model transport lifecycle races.
+  final Stream<ClientEvent>? eventStream;
   final StreamController<ClientEvent> _events =
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
       StreamController<ClientConnectionState>.broadcast(sync: true);
   bool _closed = false;
+
+  /// Whether [close] released this fake client.
+  bool get isClosed => _closed;
 
   /// Turn prompts received by the fake.
   final List<String> startedPrompts = <String>[];
@@ -143,7 +155,7 @@ final class FakeCoderApi implements CoderApi {
   void emitState(ClientConnectionState state) => _states.add(state);
 
   @override
-  Stream<ClientEvent> get events => _events.stream;
+  Stream<ClientEvent> get events => eventStream ?? _events.stream;
 
   @override
   Stream<ClientConnectionState> get states => _states.stream;
@@ -152,34 +164,123 @@ final class FakeCoderApi implements CoderApi {
   ServerInfoDto get serverInfo => _serverInfo;
 
   @override
-  Future<List<WorkspaceDto>> listWorkspaces() async =>
-      List<WorkspaceDto>.unmodifiable(_workspaces);
+  Future<WorkspaceCatalogDto> getWorkspaceCatalog() async =>
+      WorkspaceCatalogDto(
+        workspaces: List<WorkspaceDto>.unmodifiable(_workspaces),
+        worktrees: List<WorktreeDto>.unmodifiable(_worktrees),
+      );
 
   @override
-  Future<WorkspaceDto> registerWorkspace({
-    required String id,
+  Future<WorkspaceRegisterResultDto> registerWorkspace({
+    required String workspaceId,
+    required String checkoutId,
     required String rootPath,
     required String name,
   }) async {
     final workspace = WorkspaceDto(
-      id: id,
+      id: workspaceId,
       name: name,
       rootPath: rootPath,
+      kind: WorkspaceKind.directory,
+      createdAt: _now,
+    );
+    final worktree = WorktreeDto(
+      id: checkoutId,
+      workspaceId: workspace.id,
+      name: name,
+      path: rootPath,
+      kind: WorktreeKind.directory,
+      isCoderOwned: false,
       createdAt: _now,
     );
     _workspaces.add(workspace);
-    return workspace;
+    _worktrees.add(worktree);
+    return WorkspaceRegisterResultDto(
+      workspace: workspace,
+      worktrees: <WorktreeDto>[worktree],
+    );
   }
 
   @override
-  Future<List<AgentDto>> listAgents({String? workspaceId}) async => _agents
-      .where((agent) => workspaceId == null || agent.workspaceId == workspaceId)
+  Future<WorkspaceCatalogDto> refreshWorkspace(String workspaceId) =>
+      getWorkspaceCatalog();
+
+  @override
+  Future<void> unregisterWorkspace(String workspaceId) async {
+    _workspaces.removeWhere((item) => item.id == workspaceId);
+    _worktrees.removeWhere((item) => item.workspaceId == workspaceId);
+  }
+
+  @override
+  Future<List<DirectorySuggestionDto>> suggestDirectories(
+    String query, {
+    int limit = 30,
+  }) async => <DirectorySuggestionDto>[
+    DirectorySuggestionDto(path: query, name: query.split('/').last),
+  ];
+
+  @override
+  Future<List<GitBranchDto>> listGitBranches(String workspaceId) async =>
+      const <GitBranchDto>[
+        GitBranchDto(name: 'main', current: true, checkedOut: true),
+      ];
+
+  @override
+  Future<WorktreeDto> createWorktree({
+    required String id,
+    required String workspaceId,
+    required WorktreeCreateMode mode,
+    required String branchName,
+    String? baseBranch,
+  }) async {
+    final worktree = WorktreeDto(
+      id: id,
+      workspaceId: workspaceId,
+      name: branchName,
+      path: '/worktrees/$branchName',
+      branch: branchName,
+      kind: WorktreeKind.managed,
+      isCoderOwned: true,
+      createdAt: _now,
+    );
+    _worktrees.add(worktree);
+    return worktree;
+  }
+
+  @override
+  Future<WorktreeArchivePreviewDto> previewWorktreeArchive(
+    String worktreeId,
+  ) async => WorktreeArchivePreviewDto(
+    worktreeId: worktreeId,
+    dirty: false,
+    unpushedCommitCount: 0,
+    runningSessionCount: 0,
+    removesDirectory: _worktrees
+        .where((item) => item.id == worktreeId)
+        .first
+        .isCoderOwned,
+  );
+
+  @override
+  Future<WorktreeDto> archiveWorktree(
+    String worktreeId, {
+    bool force = false,
+  }) async {
+    final index = _worktrees.indexWhere((item) => item.id == worktreeId);
+    final archived = _worktrees[index].copyWith(archivedAt: _now);
+    _worktrees.removeAt(index);
+    return archived;
+  }
+
+  @override
+  Future<List<AgentDto>> listAgents({String? worktreeId}) async => _agents
+      .where((agent) => worktreeId == null || agent.worktreeId == worktreeId)
       .toList(growable: false);
 
   @override
   Future<AgentDto> createAgent({
     required String id,
-    required String workspaceId,
+    required String worktreeId,
     required String title,
     required String providerConnectionId,
     required String model,
@@ -188,7 +289,7 @@ final class FakeCoderApi implements CoderApi {
   }) async {
     final agent = AgentDto(
       id: id,
-      workspaceId: workspaceId,
+      worktreeId: worktreeId,
       title: title,
       providerConnectionId: providerConnectionId,
       model: model,
@@ -498,48 +599,46 @@ final class FakeCoderApi implements CoderApi {
   }
 }
 
-/// An [AppBootstrap] that always returns an in-memory API connection.
-final class FakeAppBootstrap implements AppBootstrap {
-  /// Creates a [FakeAppBootstrap].
-  FakeAppBootstrap({
-    required this.api,
-    this.canRegisterLocalWorkspace = true,
-    this.autoConnectEnabled = true,
-    this.connectFailures = 0,
-  });
+/// Creates app services with one deterministic remote daemon profile.
+AppServices fakeAppServices(
+  FakeCoderApi api, {
+  bool connected = true,
+  String hostId = 'server',
+}) {
+  final now = DateTime.utc(2026, 8, 2);
+  final store = MemoryAppStore(
+    settings: const AppSettings(embeddedDaemonEnabled: false),
+    profiles: <RemoteDaemonProfile>[
+      RemoteDaemonProfile(
+        id: hostId,
+        label: 'Test daemon',
+        websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+        autoConnect: connected,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ],
+    tokens: <String, String>{hostId: 'test-token'},
+  );
+  return AppServices(
+    settings: store,
+    profiles: store,
+    credentials: store,
+    clients: _FakeHostClientFactory(api),
+    clientKind: 'test',
+  );
+}
 
-  /// The API returned by [autoConnect] and [connectRemote].
-  final FakeCoderApi api;
+final class _FakeHostClientFactory implements HostClientFactory {
+  const _FakeHostClientFactory(this.api);
 
-  @override
-  final bool canRegisterLocalWorkspace;
-
-  /// Whether [autoConnect] returns the fake API connection.
-  final bool autoConnectEnabled;
-
-  /// Number of explicit remote connections that fail before succeeding.
-  int connectFailures;
-
-  @override
-  Future<BootstrapConnection?> autoConnect() async => autoConnectEnabled
-      ? BootstrapConnection(
-          client: api,
-          endpoint: HostEndpoint.parse(
-            'ws://127.0.0.1:7337/ws',
-            token: 'test-token',
-          ),
-        )
-      : null;
-
-  @override
-  Future<BootstrapConnection> connectRemote(HostEndpoint endpoint) async {
-    if (connectFailures > 0) {
-      connectFailures -= 1;
-      throw const FormatException('Invalid test endpoint.');
-    }
-    return BootstrapConnection(client: api, endpoint: endpoint);
-  }
+  final CoderApi api;
 
   @override
-  Future<void> close() async {}
+  Future<CoderApi> connect({
+    required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
+    required String clientId,
+    required String clientKind,
+  }) async => api;
 }
