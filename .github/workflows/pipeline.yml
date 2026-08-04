@@ -115,8 +115,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Flutter publishes no Linux arm64 SDK, so that target is absent
-          # until it does.
+          # Flutter publishes an SDK only for x64 hosts, so neither an arm64
+          # Linux nor an arm64 Windows runner can build one. macOS is the sole
+          # platform with an arm64 SDK.
           - os: ubuntu-24.04
             target: linux-x64
             platform: linux
@@ -130,10 +131,6 @@ jobs:
             target: windows-x64
             platform: windows
             arch: x64
-          - os: windows-11-arm
-            target: windows-arm64
-            platform: windows
-            arch: arm64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
@@ -257,39 +254,10 @@ jobs:
             dist/*.msix
           if-no-files-found: error
 
-  bundle-msix:
-    name: Bundle MSIX
-    needs: build-and-package
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-2025
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: 3.12.2
-      - run: dart pub global activate shipworld ${{ env.SHIPWORLD_VERSION }}
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: coder-windows-*
-          path: dist
-          merge-multiple: true
-      - name: Bundle the Windows MSIX packages
-        shell: pwsh
-        run: dart pub global run shipworld:shipworld package windows bundle coder --package-dir dist
-          --output dist/Coder-windows.msixbundle
-          --working-directory dist/msix/bundle
-      - uses: actions/upload-artifact@v7
-        with:
-          name: coder-windows-msixbundle
-          path: dist/Coder-windows.msixbundle
-          if-no-files-found: error
-
   publish-release:
     name: Publish Release
     needs:
       - build-and-package
-      - bundle-msix
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -381,7 +349,7 @@ jobs:
           Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
           .\wingetcreate.exe update tinyrack.coder `
             --version $version `
-            --urls "$downloadUrl/Coder-setup-win-x64.exe|x64" "$downloadUrl/Coder-setup-win-arm64.exe|arm64" `
+            --urls "$downloadUrl/Coder-setup-win-x64.exe|x64" `
             --release-notes-url "$releaseNotesUrl" `
             --submit `
             --no-open

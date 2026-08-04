@@ -9,14 +9,16 @@ Coder ships as a desktop application. One tag drives every artifact through
 | --- | --- | --- |
 | Linux x64 | `.AppImage`, `.deb`, `.rpm`, `.tar.gz` | GitHub Releases |
 | macOS x64 and arm64 | signed, notarized `.zip` | GitHub Releases, `brew install --cask tinyrack-net/tap/coder` |
-| Windows x64 and arm64 | `Coder-setup-win-<arch>.exe`, `.msix`, `.zip` | GitHub Releases, `winget install tinyrack.coder` |
+| Windows x64 | `Coder-setup-win-x64.exe`, `.msix`, `.zip` | GitHub Releases, `winget install tinyrack.coder` |
 
-Flutter publishes no Linux arm64 SDK, so there is no Linux arm64 build. Windows
-arm64 is built natively on an arm64 runner, which is what makes Flutter emit an
-arm64 binary.
+Flutter publishes an SDK only for x64 hosts, so neither an arm64 Linux nor an
+arm64 Windows runner can install it. macOS is the one platform with an arm64
+SDK, which is why it is the only architecture pair here. Both arm64 desktop
+targets become possible the day Flutter ships those SDKs.
 
 WinGet consumes the Inno Setup `setup.exe`; the MSIX exists for the Microsoft
-Store path and is not yet submitted.
+Store path and is not yet submitted. There is no `.msixbundle` because there is
+only one Windows architecture to bundle.
 
 ## Cutting a release
 
