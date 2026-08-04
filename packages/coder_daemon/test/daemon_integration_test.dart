@@ -12,6 +12,14 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:web_socket_channel/io.dart';
 
+/// Budget for one broadcast event to arrive.
+///
+/// These drive a real daemon over a real WebSocket with SQLite behind an
+/// isolate, and a cold Windows runner is comfortably slower than the five
+/// seconds this used to allow. A generous budget costs wall-clock only when
+/// something is genuinely broken.
+const Duration _eventTimeout = Duration(seconds: 30);
+
 void main() {
   test(
     'standalone application serves authenticated workspace and agent RPCs',
@@ -195,7 +203,7 @@ void main() {
           .cast<SessionUpdatedClientEvent>()
           .map((event) => event.session)
           .firstWhere((session) => session.mode == SessionMode.normal)
-          .timeout(const Duration(seconds: 5));
+          .timeout(_eventTimeout);
       expect(
         (await client.updateSessionMode(agent.id, SessionMode.normal)).mode,
         SessionMode.normal,
@@ -219,13 +227,13 @@ void main() {
           .cast<ApprovalRequestedClientEvent>()
           .map((event) => event.approval)
           .first
-          .timeout(const Duration(seconds: 5));
+          .timeout(_eventTimeout);
       final completedFuture = client.events
           .where((event) => event is TimelineClientEvent)
           .cast<TimelineClientEvent>()
           .map((event) => event.event)
           .firstWhere((event) => event.type == 'turn.completed')
-          .timeout(const Duration(seconds: 5));
+          .timeout(_eventTimeout);
       await client.startTurn(
         sessionId: agent.id,
         turnId: 'turn-1',
@@ -248,7 +256,7 @@ void main() {
           .cast<SessionUpdatedClientEvent>()
           .map((event) => event.session)
           .firstWhere((session) => session.model == null)
-          .timeout(const Duration(seconds: 5));
+          .timeout(_eventTimeout);
       expect(
         (await client.updateSessionModel(
           agent.id,
@@ -397,7 +405,7 @@ void main() {
             (event) =>
                 event.sessionId == parent.id && event.type == 'turn.completed',
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(_eventTimeout);
       await client.subscribeTimeline(parent.id);
       await client.startTurn(
         sessionId: parent.id,
@@ -867,10 +875,11 @@ Future<void> _waitForAuthStatus(
   String attemptId,
   ProviderAuthAttemptStatus status,
 ) async {
-  for (var attempt = 0; attempt < 50; attempt += 1) {
+  // 50 attempts at 10ms allowed half a second for an entire OAuth round trip.
+  for (var attempt = 0; attempt < 100; attempt += 1) {
     final current = await client.providerAuthStatus(attemptId);
     if (current.status == status) return;
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
   }
   throw TestFailure('Timed out waiting for OAuth status ${status.name}.');
 }
