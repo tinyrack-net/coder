@@ -27,6 +27,20 @@ customField: preserved
 Review the requested code without modifying it.
 ''';
 
+  test('decodes a document whose path is not a usable file URI', () {
+    // Validation of an unsaved document passes a synthetic marker, and
+    // Windows rejects its angle brackets in a file URI. The marker only
+    // labels parse errors, so it must never fail the parse itself.
+    final parsed = const AgentMarkdownCodec().decode(
+      id: 'candidate',
+      sourcePath: '<validation>/candidate.md',
+      source: source,
+    );
+
+    expect(parsed.id, 'candidate');
+    expect(parsed.sourcePath, '<validation>/candidate.md');
+  });
+
   test('parses frontmatter and markdown body into a typed definition', () {
     final parsed = const AgentMarkdownCodec().decode(
       id: 'reviewer',

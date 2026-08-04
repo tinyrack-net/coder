@@ -40,9 +40,10 @@ class WorkspacePathGuard {
 
   /// The resolveExisting public API member.
   String resolveExisting(String candidate) {
-    final lexical = p.isAbsolute(candidate)
+    final path = _fileSystem.path;
+    final lexical = path.isAbsolute(candidate)
         ? candidate
-        : p.join(_workspaceRoot, candidate);
+        : path.join(_workspaceRoot, candidate);
     final resolved = _fileSystem.file(lexical).resolveSymbolicLinksSync();
     _assertInside(resolved);
     return resolved;
@@ -50,23 +51,29 @@ class WorkspacePathGuard {
 
   /// The resolveWritable public API member.
   String resolveWritable(String candidate) {
-    final lexical = p.normalize(
-      p.isAbsolute(candidate) ? candidate : p.join(_workspaceRoot, candidate),
+    final path = _fileSystem.path;
+    final lexical = path.normalize(
+      path.isAbsolute(candidate)
+          ? candidate
+          : path.join(_workspaceRoot, candidate),
     );
-    var ancestor = p.dirname(lexical);
-    final missingSegments = <String>[p.basename(lexical)];
+    var ancestor = path.dirname(lexical);
+    final missingSegments = <String>[path.basename(lexical)];
     while (!_fileSystem.directory(ancestor).existsSync()) {
-      final parent = p.dirname(ancestor);
+      final parent = path.dirname(ancestor);
       if (parent == ancestor) {
         throw FileSystemException('No existing writable ancestor.', lexical);
       }
-      missingSegments.insert(0, p.basename(ancestor));
+      missingSegments.insert(0, path.basename(ancestor));
       ancestor = parent;
     }
     final resolvedAncestor = _fileSystem
         .directory(ancestor)
         .resolveSymbolicLinksSync();
-    final resolved = p.joinAll(<String>[resolvedAncestor, ...missingSegments]);
+    final resolved = path.joinAll(<String>[
+      resolvedAncestor,
+      ...missingSegments,
+    ]);
     _assertInside(resolved);
     return resolved;
   }
@@ -76,7 +83,7 @@ class WorkspacePathGuard {
         ? _workspaceRoot.toLowerCase()
         : _workspaceRoot;
     final candidate = _platform.isWindows ? path.toLowerCase() : path;
-    if (candidate != root && !p.isWithin(root, candidate)) {
+    if (candidate != root && !_fileSystem.path.isWithin(root, candidate)) {
       throw FileSystemException('Path escapes the workspace.', path);
     }
   }

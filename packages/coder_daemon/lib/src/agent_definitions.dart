@@ -573,6 +573,15 @@ final class _AgentCatalogSnapshot {
   final Map<String, String> sources;
 }
 
+/// Labels YAML parse errors with the document they came from.
+///
+/// Validating an unsaved document passes a synthetic marker rather than a
+/// real path, and Windows rejects the characters such a marker contains in a
+/// file URI. The label is a diagnostic convenience, so anything that is not an
+/// absolute path simply goes unlabelled instead of failing the parse.
+Uri? _yamlSourceUrl(String sourcePath) =>
+    p.isAbsolute(sourcePath) ? Uri.file(sourcePath) : null;
+
 AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
   id: 'coder',
   name: 'Coder',
@@ -783,7 +792,7 @@ final class AgentMarkdownCodec {
     final document = _AgentMarkdownDocument.parse(source);
     final decoded = loadYaml(
       document.frontmatter,
-      sourceUrl: Uri.file(sourcePath),
+      sourceUrl: _yamlSourceUrl(sourcePath),
     );
     if (decoded is! YamlMap) {
       throw const FormatException('Agent frontmatter must be a YAML map.');

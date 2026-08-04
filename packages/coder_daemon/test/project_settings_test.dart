@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/project_settings.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -15,7 +16,7 @@ void main() {
 
   tearDown(() => root.delete(recursive: true));
 
-  File settingsFile() => File('${root.path}/coder.json');
+  File settingsFile() => File(p.join(root.path, projectSettingsFileName));
 
   test('reports the workspace-root settings path', () {
     expect(

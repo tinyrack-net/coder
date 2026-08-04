@@ -165,6 +165,36 @@ void main() {
     );
   });
 
+  test('workspace guard joins with the filesystem it was given', () {
+    // The guard used to join with the host separator while resolving against
+    // an injected filesystem, so a Windows host could not address a POSIX
+    // workspace. Driving a Windows-style filesystem from any host proves the
+    // separator now follows the filesystem rather than the runner.
+    final windowsFileSystem = MemoryFileSystem.test(
+      style: FileSystemStyle.windows,
+    );
+    windowsFileSystem
+        .directory(r'C:\workspace\nested')
+        .createSync(
+          recursive: true,
+        );
+    final guard = WorkspacePathGuard(
+      r'C:\workspace',
+      fileSystem: windowsFileSystem,
+      platform: FakePlatform(operatingSystem: Platform.windows),
+    );
+
+    expect(
+      guard.resolveWritable('nested/new.txt'),
+      r'C:\workspace\nested\new.txt',
+    );
+    expect(guard.resolveExisting('.'), r'C:\workspace');
+    expect(
+      () => guard.resolveWritable(r'..\escape.txt'),
+      throwsA(isA<FileSystemException>()),
+    );
+  });
+
   test(
     'patch tool updates, creates, deletes, and previews atomically',
     () async {

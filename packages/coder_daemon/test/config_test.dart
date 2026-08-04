@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coder_daemon/coder_daemon.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -55,8 +56,11 @@ void main() {
         linux: true,
       ),
     );
-    expect(defaults.configDirectory, '/xdg/config/tinyrack-coder');
-    expect(defaults.homeDirectory, '/xdg/state/tinyrack-coder');
+    // The daemon joins with the host separator, which is what a daemon
+    // running on that host should do, so the expectations join too rather
+    // than pinning a slash.
+    expect(defaults.configDirectory, p.join('/xdg/config', 'tinyrack-coder'));
+    expect(defaults.homeDirectory, p.join('/xdg/state', 'tinyrack-coder'));
     expect(defaults.host, '127.0.0.1');
     expect(defaults.port, 7337);
 
@@ -89,7 +93,7 @@ void main() {
     );
     expect(
       macOS.homeDirectory,
-      '/Users/test/Library/Application Support/Tinyrack Coder',
+      p.join('/Users/test', 'Library', 'Application Support', 'Tinyrack Coder'),
     );
     expect(macOS.configDirectory, macOS.homeDirectory);
 
@@ -111,8 +115,14 @@ void main() {
         values: <String, String>{'HOME': '/home/test'},
       ),
     );
-    expect(fallback.configDirectory, '/home/test/.config/tinyrack-coder');
-    expect(fallback.homeDirectory, '/home/test/.local/state/tinyrack-coder');
+    expect(
+      fallback.configDirectory,
+      p.join('/home/test', '.config', 'tinyrack-coder'),
+    );
+    expect(
+      fallback.homeDirectory,
+      p.join('/home/test', '.local', 'state', 'tinyrack-coder'),
+    );
   });
 
   test('invalid listen address is rejected and bearer tokens are 256-bit', () {

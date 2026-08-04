@@ -8,6 +8,7 @@ import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:web_socket_channel/io.dart';
 
@@ -650,7 +651,7 @@ void main() {
           teardown: <String>['printf ran > $teardownMarker'],
         ),
       );
-      expect(saved.sourcePath, '${repository.path}/coder.json');
+      expect(saved.sourcePath, p.join(repository.path, 'coder.json'));
       expect(File(saved.sourcePath).existsSync(), isTrue);
 
       final managed = await client.createWorktree(
