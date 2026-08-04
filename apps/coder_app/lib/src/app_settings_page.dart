@@ -186,7 +186,7 @@ class _RemoteHostCard extends ConsumerWidget {
               leading: Icon(_statusIcon(runtime?.status)),
               title: Text(profile.label),
               subtitle: Text(
-                '${profile.websocketUri}\n${_statusText(l10n, runtime)}',
+                '${profile.websocketUri}\n${hostStatusText(l10n, runtime)}',
               ),
               isThreeLine: true,
               trailing: IconButton(
@@ -444,19 +444,3 @@ IconData _statusIcon(HostRuntimeStatus? status) => switch (status) {
   HostRuntimeStatus.error => Icons.error_outline,
   HostRuntimeStatus.idle || null => Icons.pause_circle_outline,
 };
-
-String _statusText(AppLocalizations l10n, HostRuntimeSnapshot? runtime) {
-  if (runtime == null) return l10n.hostStatusPending;
-  return switch (runtime.status) {
-    HostRuntimeStatus.online => l10n.hostStatusOnline,
-    HostRuntimeStatus.connecting => l10n.hostStatusConnecting,
-    HostRuntimeStatus.reconnecting => l10n.hostStatusReconnecting,
-    HostRuntimeStatus.offline =>
-      hostErrorText(l10n, runtime) ?? l10n.hostStatusOffline,
-    HostRuntimeStatus.error =>
-      hostErrorText(l10n, runtime) ?? l10n.hostStatusError,
-    HostRuntimeStatus.conflict =>
-      hostErrorText(l10n, runtime) ?? l10n.hostStatusConflict,
-    HostRuntimeStatus.idle => l10n.hostStatusIdle,
-  };
-}

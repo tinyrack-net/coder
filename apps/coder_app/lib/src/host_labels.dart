@@ -27,6 +27,26 @@ String? hostErrorText(AppLocalizations l10n, HostRuntimeSnapshot host) {
   return reason == null ? host.error : hostFailureText(l10n, reason);
 }
 
+/// Returns the localized status text for one daemon.
+///
+/// A null runtime means the daemon has not reported yet, which reads as
+/// pending rather than as a failure.
+String hostStatusText(AppLocalizations l10n, HostRuntimeSnapshot? runtime) {
+  if (runtime == null) return l10n.hostStatusPending;
+  return switch (runtime.status) {
+    HostRuntimeStatus.online => l10n.hostStatusOnline,
+    HostRuntimeStatus.connecting => l10n.hostStatusConnecting,
+    HostRuntimeStatus.reconnecting => l10n.hostStatusReconnecting,
+    HostRuntimeStatus.offline =>
+      hostErrorText(l10n, runtime) ?? l10n.hostStatusOffline,
+    HostRuntimeStatus.error =>
+      hostErrorText(l10n, runtime) ?? l10n.hostStatusError,
+    HostRuntimeStatus.conflict =>
+      hostErrorText(l10n, runtime) ?? l10n.hostStatusConflict,
+    HostRuntimeStatus.idle => l10n.hostStatusIdle,
+  };
+}
+
 /// Returns the localized message for a connection failure.
 String hostConnectionFailureText(
   AppLocalizations l10n,
