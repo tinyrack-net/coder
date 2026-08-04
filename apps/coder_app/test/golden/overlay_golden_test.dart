@@ -115,24 +115,32 @@ class _OpenModelPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const picker = ModelPicker(
-      connectionId: 'openai',
-      currentModelId: 'gpt-5.6',
+      currentSelection: SessionModelSelectionDto(
+        providerConnectionId: 'openai',
+        modelId: 'gpt-5.6',
+      ),
       title: '모델 선택',
       inheritLabel: '프로젝트 설정 사용',
-      models: <ProviderModelDto>[
-        ProviderModelDto(
-          connectionId: 'openai',
-          id: 'gpt-5.6',
-          label: 'GPT-5.6',
-          source: ProviderModelSource.bundled,
-          capabilities: ModelCapabilitiesDto(),
+      options: <ModelPickerOption>[
+        ModelPickerOption(
+          providerName: 'OpenAI',
+          model: ProviderModelDto(
+            connectionId: 'openai',
+            id: 'gpt-5.6',
+            label: 'GPT-5.6',
+            source: ProviderModelSource.bundled,
+            capabilities: ModelCapabilitiesDto(),
+          ),
         ),
-        ProviderModelDto(
-          connectionId: 'openai',
-          id: 'gpt-5.6-mini',
-          label: 'GPT-5.6 mini',
-          source: ProviderModelSource.bundled,
-          capabilities: ModelCapabilitiesDto(),
+        ModelPickerOption(
+          providerName: 'DeepSeek',
+          model: ProviderModelDto(
+            connectionId: 'deepseek',
+            id: 'gpt-5.6-mini',
+            label: 'GPT-5.6 mini',
+            source: ProviderModelSource.bundled,
+            capabilities: ModelCapabilitiesDto(),
+          ),
         ),
       ],
     );

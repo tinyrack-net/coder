@@ -1148,12 +1148,6 @@ abstract class AppLocalizations {
   /// **'The agent cannot be changed after the session starts.'**
   String get composerAgentLocked;
 
-  /// Tooltip of the provider selector.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a provider'**
-  String get composerSelectProvider;
-
   /// Fallback label of the model selector.
   ///
   /// In en, this message translates to:
@@ -1187,8 +1181,8 @@ abstract class AppLocalizations {
   /// Explains why the composer is disabled.
   ///
   /// In en, this message translates to:
-  /// **'Select a provider and model first.'**
-  String get composerSelectProviderFirst;
+  /// **'Select a model first.'**
+  String get composerSelectModelFirst;
 
   /// Banner shown while the composer is in plan mode.
   ///

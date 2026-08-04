@@ -547,7 +547,7 @@ void main() {
               child: _composerState(
                 ThemeMode.light,
                 enabled: false,
-                hint: '사용할 Provider와 모델을 먼저 선택하세요.',
+                hint: '사용할 모델을 먼저 선택하세요.',
               ),
             ),
           ),

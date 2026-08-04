@@ -322,11 +322,7 @@ Future<GoRouter> _pump(WidgetTester tester, FakeCoderApi api) async {
 }
 
 Future<void> _selectModel(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('session-composer-provider')));
-  await tester.pumpAndSettle();
-  await tester.tap(
-    find.byKey(const ValueKey('session-composer-provider-openai')),
-  );
+  await tester.tap(find.byKey(const ValueKey('session-composer-model')));
   await tester.pumpAndSettle();
   await tester.tap(
     find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
