@@ -5,6 +5,7 @@ import 'package:coder_app/src/host_ports.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 import 'support/fake_desktop_ports.dart';
@@ -94,9 +95,14 @@ void main() {
       expect(find.text('Settings'), findsWidgets);
       expect(find.text('Quit'), findsWidgets);
 
-      await tester.tap(find.text('Settings').last);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(TRMenuItem),
+          matching: find.text('Settings'),
+        ),
+      );
       await tester.pumpAndSettle();
-      expect(find.text('Display language'), findsOneWidget);
+      expect(find.text('DISPLAY LANGUAGE'), findsOneWidget);
 
       await tester.tap(find.text('Help'));
       await tester.pumpAndSettle();

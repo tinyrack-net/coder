@@ -5,6 +5,9 @@ import 'dart:io';
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
@@ -17,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -175,7 +179,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('new-workspace-project-add')));
       await tester.pumpAndSettle();
       final remoteOption = find.descendant(
-        of: find.byType(SimpleDialog),
+        of: find.byType(DaemonPickerDialog),
         matching: find.text('Remote daemon'),
       );
       // The remote daemon is only offered once its connection is online.
@@ -188,7 +192,7 @@ void main() {
       );
       await tester.pump(directoryBrowserDebounce);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '이 폴더 선택'));
+      await tester.tap(find.widgetWithText(TRButton, '이 폴더 선택'));
       await tester.pumpAndSettle();
       await _pumpUntilGone(tester, find.text('Daemon의 폴더 선택'));
       final remoteWorkspaceName = remoteWorkspace.path
@@ -196,9 +200,11 @@ void main() {
           .last;
       await _pumpUntil(tester, find.text(remoteWorkspaceName));
 
-      await tester.tap(find.byTooltip('설정'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, 'Daemon'));
+      await tester.tap(find.text('Daemon').last);
       final exposureToggle = find.byKey(
         const ValueKey<String>('embedded-daemon-exposure'),
       );
@@ -211,7 +217,7 @@ void main() {
       );
       await _pumpUntilCondition(
         tester,
-        () => tester.widget<SwitchListTile>(exposureToggle).onChanged != null,
+        () => tester.widget<CoderSwitchRow>(exposureToggle).onChanged != null,
         'all-interface daemon to reconnect',
       );
       expect(
@@ -229,7 +235,7 @@ void main() {
       );
       await _pumpUntilCondition(
         tester,
-        () => tester.widget<SwitchListTile>(exposureToggle).onChanged != null,
+        () => tester.widget<CoderSwitchRow>(exposureToggle).onChanged != null,
         'loopback daemon to reconnect',
       );
       expect(
@@ -239,18 +245,18 @@ void main() {
       await tester.tap(find.text('Agent'));
       await _pumpUntil(tester, find.text('Agents'));
       await _selectDaemon(tester, 'Remote daemon');
-      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.tap(find.byKey(const ValueKey('agent-add-button')));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (파일명)'),
+        _trTextInput('ID (파일명)'),
         'remote-agent',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '이름').last,
+        _trTextInput('이름').last,
         'Remote Agent',
       );
       FocusManager.instance.primaryFocus?.unfocus();
-      final createRemoteAgent = find.widgetWithText(FilledButton, '생성');
+      final createRemoteAgent = find.widgetWithText(TRButton, '생성');
       await tester.ensureVisible(createRemoteAgent);
       await tester.pumpAndSettle();
       await tester.tap(createRemoteAgent);
@@ -261,24 +267,24 @@ void main() {
       );
       expect(remoteAgent.sourcePath, startsWith(remoteHome.path));
       await _selectDaemon(tester, '내장 daemon');
-      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.tap(find.byKey(const ValueKey('agent-add-button')));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (파일명)'),
+        _trTextInput('ID (파일명)'),
         'reviewer',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '이름').last,
+        _trTextInput('이름').last,
         'Reviewer',
       );
       await tester.tap(
-        find.widgetWithText(DropdownButtonFormField<AgentMode>, '유형'),
+        find.widgetWithText(TRSelectFormField<AgentMode>, '유형'),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('subagent').last);
       await tester.pumpAndSettle();
       FocusManager.instance.primaryFocus?.unfocus();
-      final createAgent = find.widgetWithText(FilledButton, '생성');
+      final createAgent = find.widgetWithText(TRButton, '생성');
       await tester.ensureVisible(createAgent);
       await tester.pumpAndSettle();
       await tester.tap(createAgent);
@@ -287,12 +293,9 @@ void main() {
       final reviewerFile = File(reviewer.sourcePath);
       expect(reviewerFile.existsSync(), isTrue);
 
-      final promptField = find.widgetWithText(
-        TextField,
-        'System prompt (Markdown)',
-      );
+      final promptField = _trTextInput('System prompt (Markdown)');
       await tester.enterText(promptField, 'Review the current change.');
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await _waitForAgentPrompt(
         setupClient,
         'reviewer',
@@ -316,24 +319,24 @@ void main() {
         'Review the current change after external reload.',
       );
 
-      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.tap(find.byKey(const ValueKey('agent-add-button')));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (파일명)'),
+        _trTextInput('ID (파일명)'),
         'temporary',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '이름').last,
+        _trTextInput('이름').last,
         'Temporary',
       );
       FocusManager.instance.primaryFocus?.unfocus();
-      final createTemporary = find.widgetWithText(FilledButton, '생성');
+      final createTemporary = find.widgetWithText(TRButton, '생성');
       await tester.ensureVisible(createTemporary);
       await tester.pumpAndSettle();
       await tester.tap(createTemporary);
       await _pumpUntilGone(tester, find.text('Agent 추가'));
       await _waitForAgentDefinition(setupClient, 'temporary');
-      await tester.tap(find.byTooltip('Archive'));
+      await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
       await tester.pumpAndSettle();
       expect(
         (await setupClient.listAgentDefinitions()).map((item) => item.id),
@@ -342,7 +345,7 @@ void main() {
 
       await tester.tap(find.text('Coder').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('기본값으로 초기화'));
+      await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
       await tester.pumpAndSettle();
       final editorList = find.byType(ListView).last;
       final editorScrollable = find
@@ -354,7 +357,7 @@ void main() {
         scrollable: editorScrollable,
       );
       await tester.tap(find.text('Reviewer').last);
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
         (await setupClient.getAgentDefinition('coder')).callableAgentIds,
@@ -364,23 +367,26 @@ void main() {
       await tester.tap(find.text('Agent'));
       await _pumpUntil(tester, find.text('Agents'));
       await tester.tap(find.text('스킬'));
-      await _pumpUntil(tester, find.byTooltip('스킬 추가'));
-      await tester.tap(find.byTooltip('스킬 추가'));
+      final skillAddButton = find.byKey(
+        const ValueKey<String>('skill-add-button'),
+      );
+      await _pumpUntil(tester, skillAddButton);
+      await tester.tap(skillAddButton);
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (디렉터리 이름)'),
+        _trTextInput('ID (디렉터리 이름)'),
         'e2e-skill',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '이름').last,
+        _trTextInput('이름').last,
         'e2e-skill',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '설명').last,
+        _trTextInput('설명').last,
         'Explains the end-to-end flow.',
       );
       FocusManager.instance.primaryFocus?.unfocus();
-      final createSkill = find.widgetWithText(FilledButton, '생성');
+      final createSkill = find.widgetWithText(TRButton, '생성');
       await tester.ensureVisible(createSkill);
       await tester.pumpAndSettle();
       await tester.tap(createSkill);
@@ -398,9 +404,10 @@ void main() {
       );
 
       // A toggleable built-in can be turned off, and the daemon remembers it.
-      final commitSwitch = find.descendant(
-        of: find.widgetWithText(ListTile, 'commit').first,
-        matching: find.byType(Switch),
+      await tester.tap(find.text('commit').first);
+      await tester.pumpAndSettle();
+      final commitSwitch = find.byKey(
+        const ValueKey<String>('skill-enabled-commit'),
       );
       await tester.ensureVisible(commitSwitch);
       await tester.pumpAndSettle();
@@ -413,9 +420,11 @@ void main() {
 
       await tester.tap(find.text('e2e-skill').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('스킬 삭제'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('skill-delete-button')),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await _pumpUntilCondition(
         tester,
         () async => (await setupClient.listSkills()).every(
@@ -453,9 +462,9 @@ void main() {
         ),
         'the MCP server to reach daemon configuration',
       );
-      expect(
+      await _pumpUntil(
+        tester,
         find.byKey(const ValueKey('mcp-server-tile-e2e')),
-        findsOneWidget,
       );
 
       await tester.tap(find.byKey(const ValueKey('mcp-server-tile-e2e')));
@@ -471,7 +480,7 @@ void main() {
         find.byKey(const ValueKey('mcp-server-tile-e2e')),
       );
 
-      await tester.tap(find.byIcon(Icons.arrow_back).first);
+      await tester.tap(find.byIcon(CoderIcons.back).first);
       await _pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('E2E Workspace').last);
@@ -482,14 +491,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
       await tester.pumpAndSettle();
-      await tester.tap(
-        find
-            .descendant(
-              of: find.byType(PopupMenuItem<String>),
-              matching: find.text('E2E Workspace'),
-            )
-            .first,
-      );
+      await tester.tap(find.textContaining('E2E Workspace ·').last);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('session-composer-provider')),
@@ -519,21 +521,24 @@ void main() {
       // The session route keeps the sidebar, so the new worktree is listed.
       await _pumpUntil(tester, find.text('feature-e2e'));
       await tester.pumpAndSettle();
-      final managedTile = find.ancestor(
+      final managedRow = find.ancestor(
         of: find.text('feature-e2e'),
-        matching: find.byType(ListTile),
+        matching: find.byType(CoderListRow),
       );
       final managedMenu = find.descendant(
-        of: managedTile.last,
-        matching: find.byTooltip('Worktree 메뉴'),
+        of: managedRow.last,
+        matching: find.byType(TRMenu),
       );
       await tester.ensureVisible(managedMenu);
       await tester.pumpAndSettle();
       await tester.tap(managedMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Archive'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+      final archiveConfirm = find.byKey(
+        const ValueKey<String>('worktree-archive-confirm'),
+      );
+      await _pumpUntil(tester, archiveConfirm);
+      await tester.tap(archiveConfirm);
       await _pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
       if (find.text('main').evaluate().isEmpty) {
@@ -562,10 +567,13 @@ void main() {
       await tester.enterText(find.byKey(composer), 'Delegate review');
       await tester.pump();
       expect(
-        tester.widget<TextField>(find.byKey(composer)).controller?.text,
+        tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
         isNotEmpty,
       );
-      expect(tester.widget<IconButton>(find.byKey(send)).onPressed, isNotNull);
+      expect(
+        tester.widget<TRIconButton>(find.byKey(send)).onPressed,
+        isNotNull,
+      );
       await tester.tap(find.byKey(send));
       await tester.pump();
       await _pumpUntilWithSessionDiagnostics(
@@ -573,16 +581,15 @@ void main() {
         find.text('Parent completed.', findRichText: true),
         setupClient,
       );
-      await tester.tap(find.byTooltip('모든 session').hitTestable());
+      await tester.tap(
+        find
+            .byKey(const ValueKey<String>('workspace-all-sessions-menu'))
+            .hitTestable(),
+      );
       await _pumpUntil(tester, find.text('Reviewer'));
       // The popup is still animating when its label first appears.
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.descendant(
-          of: find.byType(PopupMenuItem<String>),
-          matching: find.text('Reviewer'),
-        ),
-      );
+      await tester.tap(find.text('Reviewer').last);
       await _pumpUntil(tester, find.text('reviewer · delegated'));
       await tester.tap(find.text('Delegate review').first);
       await _pumpUntil(tester, find.text('coder · manual'));
@@ -590,10 +597,13 @@ void main() {
       await tester.enterText(find.byKey(composer), 'Create result.txt');
       await tester.pump();
       expect(
-        tester.widget<TextField>(find.byKey(composer)).controller?.text,
+        tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
         isNotEmpty,
       );
-      expect(tester.widget<IconButton>(find.byKey(send)).onPressed, isNotNull);
+      expect(
+        tester.widget<TRIconButton>(find.byKey(send)).onPressed,
+        isNotNull,
+      );
       await tester.tap(find.byKey(send));
       await tester.pump();
       await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
@@ -619,7 +629,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(composer), 'Plan the change');
       await tester.pump();
-      expect(tester.widget<IconButton>(find.byKey(send)).onPressed, isNotNull);
+      expect(
+        tester.widget<TRIconButton>(find.byKey(send)).onPressed,
+        isNotNull,
+      );
       await tester.tap(find.byKey(send));
       await _pumpUntil(tester, find.text('제안된 계획'), attempts: 600);
       await _pumpUntil(
@@ -628,7 +641,7 @@ void main() {
         attempts: 600,
       );
       expect(find.textContaining('proposed_plan'), findsNothing);
-      final implement = find.widgetWithText(FilledButton, '계획대로 실행');
+      final implement = find.widgetWithText(TRButton, '계획대로 실행');
       await tester.ensureVisible(implement);
       await tester.pumpAndSettle();
       await tester.tap(implement);
@@ -668,7 +681,9 @@ void main() {
       );
       await reconnected.close();
 
-      await tester.tap(find.byTooltip('설정'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await _pumpUntil(tester, find.text('Provider 추가'));
       await _selectDaemon(
         tester,
@@ -684,15 +699,15 @@ void main() {
       await tester.tap(addCustom);
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, '이름'),
+        _trTextInput('이름'),
         'E2E Provider',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, 'Base URL'),
+        _trTextInput('Base URL'),
         'http://127.0.0.1:${modelServer.port}/v1',
       );
       await tester.tap(find.text('API key 필요'));
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await _pumpUntil(tester, find.text('E2E Provider'));
       // The connection is stored before its model catalog is fetched.
       final providerConnection = await _waitForProviderModels(
@@ -721,11 +736,11 @@ void main() {
       );
       final providerCard = find.ancestor(
         of: find.text('E2E Provider'),
-        matching: find.byType(Card),
+        matching: find.byType(TRCard),
       );
       final providerMenu = find.descendant(
         of: providerCard.first,
-        matching: find.byType(PopupMenuButton<String>),
+        matching: find.byType(TRMenu),
       );
       await Scrollable.ensureVisible(
         tester.element(providerMenu),
@@ -736,7 +751,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('연결 해제'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '연결 해제'));
+      await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
       await tester.pumpAndSettle();
       // The daemon call outlives the frame, so poll instead of asserting once.
       await _pumpUntilCondition(
@@ -898,9 +913,8 @@ Future<void> _selectDaemon(
   String label, {
   bool settleAfterSelection = true,
 }) async {
-  final dropdown = find.widgetWithText(
-    DropdownButtonFormField<String>,
-    'Daemon',
+  final dropdown = find.byKey(
+    const ValueKey<String>('settings-daemon-select'),
   );
   await tester.tap(dropdown);
   await tester.pumpAndSettle();
@@ -920,11 +934,19 @@ Future<void> _pumpUntilTextFieldValue(
 }) async {
   for (var attempt = 0; attempt < attempts; attempt += 1) {
     await tester.pump(const Duration(milliseconds: 100));
-    final fields = tester.widgetList<TextField>(finder);
-    if (fields.any((field) => field.controller?.text == value)) return;
+    final fields = tester.widgetList<EditableText>(finder);
+    if (fields.any((field) => field.controller.text == value)) return;
   }
   throw TestFailure('Timed out waiting for text field value "$value".');
 }
+
+Finder _trTextInput(String label) => find.descendant(
+  of: find.byWidgetPredicate(
+    (widget) => widget is TRTextField && widget.label == label,
+    description: 'TRTextField labelled "$label"',
+  ),
+  matching: find.byType(EditableText),
+);
 
 Future<void> _initializeGitRepository(String path) async {
   await _runGit(path, <String>['init', '-b', 'main']);

@@ -1,8 +1,11 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_page_shell.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Languages the app offers, keyed by language tag, in menu order.
 ///
@@ -33,8 +36,8 @@ class GeneralSettingsPage extends ConsumerWidget {
       ],
     );
     if (embedded) return body;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.settingsCategoryGeneral)),
+    return CoderPageShell(
+      appBar: CoderPageHeader(title: Text(l10n.settingsCategoryGeneral)),
       body: body,
     );
   }
@@ -65,10 +68,11 @@ class _StartupCard extends ConsumerWidget {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 8),
-        Card(
+        TRCard(
+          padding: TRCardPadding.none,
           child: Column(
             children: <Widget>[
-              SwitchListTile(
+              CoderSwitchRow(
                 key: const ValueKey<String>('general-settings-start-at-boot'),
                 title: Text(l10n.generalStartupAtBootLabel),
                 subtitle: Text(l10n.generalStartupAtBootDescription),
@@ -83,8 +87,8 @@ class _StartupCard extends ConsumerWidget {
                         );
                       },
               ),
-              const Divider(height: 1),
-              SwitchListTile(
+              const TRSeparator(),
+              CoderSwitchRow(
                 key: const ValueKey<String>(
                   'general-settings-start-minimized',
                 ),
@@ -137,30 +141,31 @@ class _LanguageCard extends ConsumerWidget {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 8),
-        Card(
+        TRCard(
+          padding: TRCardPadding.none,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                DropdownButtonFormField<String?>(
+                TRSelectFormField<String?>(
                   key: const ValueKey<String>('general-settings-language'),
                   initialValue: settings?.localeTag,
-                  decoration: InputDecoration(
-                    labelText: l10n.generalLanguageLabel,
-                  ),
-                  items: <DropdownMenuItem<String?>>[
+                  label: l10n.generalLanguageLabel,
+                  uiSize: TRUiSize.sm,
+                  items: <TRSelectItem<String?>>[
                     // A null tag follows the system locale.
-                    DropdownMenuItem<String?>(
-                      child: Text(l10n.generalLanguageSystem),
+                    TRSelectItem<String?>(
+                      value: null,
+                      label: l10n.generalLanguageSystem,
                     ),
                     for (final entry in languageEndonyms.entries)
-                      DropdownMenuItem<String?>(
+                      TRSelectItem<String?>(
                         value: entry.key,
-                        child: Text(entry.value),
+                        label: entry.value,
                       ),
                   ],
-                  onChanged: settings == null
+                  onValueChange: settings == null
                       ? null
                       : (tag) => ref
                             .read(hostRegistryControllerProvider.notifier)

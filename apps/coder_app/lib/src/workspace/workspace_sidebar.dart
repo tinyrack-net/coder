@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -9,6 +11,7 @@ import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// One workspace row, resolved against the daemon that serves it.
 typedef _WorkspaceEntry = ({
@@ -103,14 +106,22 @@ class WorkspaceSidebar extends StatelessWidget {
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-          child: FilledButton.icon(
+          child: TRButton(
             key: const ValueKey('workspace-new-button'),
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
             onPressed: onNewWorkspace,
-            icon: const Icon(Icons.add, size: 18),
-            label: Text(l10n.workspaceNewWorkspace),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                const Icon(CoderIcons.add, size: 18),
+                const SizedBox(width: TRSpacing.extraSmall),
+                Text(l10n.workspaceNewWorkspace),
+              ],
+            ),
           ),
         ),
-        const Divider(height: 1),
+        const TRSeparator(),
         Expanded(child: _body(context, l10n, runtimes, connected, entries)),
       ],
     );
@@ -185,64 +196,86 @@ class _WorkspaceTreeNode extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    return ExpansionTile(
-      initiallyExpanded: expandedByDefault,
-      leading: Icon(
-        workspace.kind == WorkspaceKind.git
-            ? Icons.account_tree_outlined
-            : Icons.folder_outlined,
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: TRSpacing.extraSmall,
+        vertical: TRSpacing.extraSmall,
       ),
-      title: Text(workspace.name),
-      subtitle: Text(
-        '$hostLabel · ${workspace.rootPath}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      children: <Widget>[
-        for (final worktree in worktrees)
-          ListTile(
-            contentPadding: const EdgeInsets.only(left: 32, right: 12),
-            selected:
-                selected?.hostId == hostId &&
-                selected?.worktreeId == worktree.id,
-            leading: Icon(
-              worktree.kind == WorktreeKind.checkout
-                  ? Icons.home_work_outlined
-                  : Icons.call_split_outlined,
-              size: 20,
+      child: TRCollapsible(
+        defaultOpen: expandedByDefault,
+        trigger: Row(
+          children: <Widget>[
+            Icon(
+              workspace.kind == WorkspaceKind.git
+                  ? CoderIcons.worktree
+                  : CoderIcons.folder,
             ),
-            title: Text(worktree.branch ?? worktree.name),
-            subtitle: Text(
-              worktree.path,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: PopupMenuButton<String>(
-              tooltip: l10n.workspaceWorktreeMenu,
-              onSelected: (action) {
-                if (action == 'archive') {
-                  unawaited(_archiveWorktree(context, ref, worktree));
-                }
-              },
-              itemBuilder: (context) => <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                  value: 'archive',
-                  child: Text(l10n.workspaceArchive),
-                ),
-              ],
-            ),
-            onTap: () => onSelect(
-              WorkspaceSelection(
-                hostId: hostId,
-                workspaceId: workspace.id,
-                worktreeId: worktree.id,
+            const SizedBox(width: TRSpacing.small),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(workspace.name),
+                  Text(
+                    '$hostLabel · ${workspace.rootPath}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-      ],
+          ],
+        ),
+        content: Column(
+          children: <Widget>[
+            for (final worktree in worktrees)
+              CoderListRow(
+                contentPadding: const EdgeInsets.only(left: 32, right: 12),
+                selected:
+                    selected?.hostId == hostId &&
+                    selected?.worktreeId == worktree.id,
+                leading: Icon(
+                  worktree.kind == WorktreeKind.checkout
+                      ? CoderIcons.workspace
+                      : CoderIcons.branch,
+                  size: 20,
+                ),
+                title: Text(worktree.branch ?? worktree.name),
+                subtitle: Text(
+                  worktree.path,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: TRMenu(
+                  key: ValueKey<String>('worktree-menu-${worktree.id}'),
+                  trigger: Icon(
+                    CoderIcons.more,
+                    semanticLabel: l10n.workspaceWorktreeMenu,
+                  ),
+                  menuChildren: <Widget>[
+                    TRMenuItem(
+                      onPressed: () => unawaited(
+                        _archiveWorktree(context, ref, worktree),
+                      ),
+                      child: Text(l10n.workspaceArchive),
+                    ),
+                  ],
+                ),
+                onTap: () => onSelect(
+                  WorkspaceSelection(
+                    hostId: hostId,
+                    workspaceId: workspace.id,
+                    worktreeId: worktree.id,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -256,15 +289,17 @@ class _WorkspaceTreeNode extends ConsumerWidget {
     final preview = await api.previewWorktreeArchive(worktree.id);
     if (!context.mounted) return;
     if (preview.runningSessionCount > 0) {
-      await showDialog<void>(
+      await showTRDialog<void>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => TRAlertDialog(
           title: Text(l10n.workspaceArchiveBlockedTitle),
           content: Text(
             l10n.workspaceArchiveBlockedBody(preview.runningSessionCount),
           ),
-          actions: <Widget>[
-            TextButton(
+          actions: <TRButton>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context),
               child: Text(l10n.commonConfirm),
             ),
@@ -281,17 +316,22 @@ class _WorkspaceTreeNode extends ConsumerWidget {
     final removalWarning = preview.removesDirectory
         ? l10n.workspaceArchiveRemovesDirectory
         : l10n.workspaceArchiveKeepsDirectory;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showTRDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => TRAlertDialog(
         title: Text(l10n.workspaceArchiveTitle(worktree.name)),
         content: Text('$dirtyWarning$unpushedWarning$removalWarning'),
-        actions: <Widget>[
-          TextButton(
+        actions: <TRButton>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
-          FilledButton(
+          TRButton(
+            key: const ValueKey<String>('worktree-archive-confirm'),
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               risky ? l10n.workspaceArchiveRisky : l10n.workspaceArchive,
@@ -343,7 +383,9 @@ class _SidebarEmptyState extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             if (onSettings != null) ...<Widget>[
               const SizedBox(height: 12),
-              OutlinedButton(
+              TRButton(
+                appearance: TRAppearance.outline,
+                uiSize: TRUiSize.sm,
                 onPressed: onSettings,
                 child: Text(
                   AppLocalizations.of(context).workspaceOpenDaemonSettings,

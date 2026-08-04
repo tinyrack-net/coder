@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Keeps the desktop app resident in the tray around [child].
 ///
@@ -99,10 +100,24 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
       final navigatorContext =
           widget.router.routerDelegate.navigatorKey.currentContext;
       if (navigatorContext == null) return;
-      showAboutDialog(
-        context: navigatorContext,
-        applicationName: 'Tinyrack Coder',
-        applicationVersion: packageVersion,
+      unawaited(
+        showTRDialog<void>(
+          context: navigatorContext,
+          useRootNavigator: false,
+          builder: (dialogContext) {
+            final l10n = AppLocalizations.of(dialogContext);
+            return TRDialog(
+              semanticLabel: l10n.desktopMenuAbout,
+              title: const Text('Tinyrack Coder'),
+              description: const Text(packageVersion),
+              actions: TRButton(
+                uiSize: TRUiSize.sm,
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(l10n.commonClose),
+              ),
+            );
+          },
+        ),
       );
     }
 

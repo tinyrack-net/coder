@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 
@@ -93,14 +94,14 @@ void main() {
       expect(find.text('/projects/workspace/coder.json'), findsOneWidget);
 
       await tester.enterText(
-        find.widgetWithText(TextField, 'Setup (worktree 생성 후)'),
+        _textInput('Setup (worktree 생성 후)'),
         'npm ci\n\nnpm run build',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, 'Teardown (worktree 제거 전)'),
+        _textInput('Teardown (worktree 제거 전)'),
         'docker compose down',
       );
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
       expect(
@@ -175,11 +176,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('/projects/workspace/coder.json'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Project 목록'));
+    await tester.tap(findAccessibleAction('Project 목록'));
     await tester.pumpAndSettle();
     expect(find.text('/projects/workspace/coder.json'), findsNothing);
   });
 }
+
+Finder _textInput(String label) => find.descendant(
+  of: find.byWidgetPredicate(
+    (widget) => widget is TRTextField && widget.label == label,
+  ),
+  matching: find.byType(EditableText),
+);
 
 Future<GoRouter> _pumpRoute(
   WidgetTester tester,
@@ -193,6 +201,8 @@ Future<GoRouter> _pumpRoute(
         appServicesProvider.overrideWithValue(fakeAppServices(api)),
       ],
       child: MaterialApp.router(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,

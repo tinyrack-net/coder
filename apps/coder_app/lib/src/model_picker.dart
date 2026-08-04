@@ -1,6 +1,9 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Sentinel returned by [showModelPicker] when the inherit option is chosen.
 const String inheritModelSentinel = '__inherit__';
@@ -25,22 +28,20 @@ Future<String?> showModelPicker(
     inheritLabel: inheritLabel,
   );
   if (MediaQuery.sizeOf(context).width < 760) {
-    return showModalBottomSheet<String>(
+    return showTRDrawer<String>(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.8,
-          child: picker,
-        ),
+      builder: (context) => TRDrawer(
+        semanticLabel: title,
+        snapPoints: const <double>[0.8, 1],
+        content: picker,
       ),
     );
   }
-  return showDialog<String>(
+  return showTRDialog<String>(
     context: context,
-    builder: (context) => Dialog(
-      child: ConstrainedBox(
+    builder: (context) => TRDialog(
+      semanticLabel: title,
+      content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
         child: picker,
       ),
@@ -113,30 +114,30 @@ class _ModelPickerState extends State<ModelPicker> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              IconButton(
-                tooltip: l10n.commonClose,
+              TRIconButton(
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
+                label: l10n.commonClose,
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
+                icon: const Icon(CoderIcons.close),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          TextField(
+          TRTextField(
+            uiSize: TRUiSize.sm,
             key: const ValueKey('model-search-field'),
             autofocus: true,
-            decoration: InputDecoration(
-              labelText: l10n.modelPickerSearch,
-              prefixIcon: const Icon(Icons.search),
-            ),
+            label: l10n.modelPickerSearch,
             onChanged: (value) => setState(() => _query = value),
           ),
           const SizedBox(height: 12),
           if (inheritLabel != null && query.isEmpty)
-            ListTile(
+            CoderListRow(
               key: const ValueKey('model-option-inherit'),
               title: Text(inheritLabel),
               trailing: widget.currentModelId == null
-                  ? const Icon(Icons.check)
+                  ? const Icon(CoderIcons.check)
                   : null,
               onTap: () => Navigator.pop(context, inheritModelSentinel),
             ),
@@ -147,7 +148,7 @@ class _ModelPickerState extends State<ModelPicker> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final model = filtered[index];
-                      return ListTile(
+                      return CoderListRow(
                         key: ValueKey(
                           'model-option-${widget.connectionId}-${model.id}',
                         ),
@@ -164,7 +165,7 @@ class _ModelPickerState extends State<ModelPicker> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                         trailing: model.id == widget.currentModelId
-                            ? const Icon(Icons.check)
+                            ? const Icon(CoderIcons.check)
                             : null,
                         onTap: () => Navigator.pop(context, model.id),
                       );

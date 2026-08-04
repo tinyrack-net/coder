@@ -608,6 +608,7 @@
     "description": "Empty state of the connected provider list."
   },
   "providerSettingsEditAdvanced": "Edit advanced settings",
+  "providerSettingsActions": "Connection actions",
   "@providerSettingsEditAdvanced": {
     "description": "Menu entry that opens the custom provider form."
   },
@@ -771,6 +772,10 @@
   "composerInputHint": "Type a coding request…",
   "@composerInputHint": {
     "description": "Hint of the composer text field."
+  },
+  "composerSendLabel": "Send message",
+  "@composerSendLabel": {
+    "description": "Accessible label for the composer send button."
   },
   "chatEmptyTitle": "Type a coding request.",
   "@chatEmptyTitle": {

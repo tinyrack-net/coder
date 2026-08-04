@@ -464,6 +464,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsEditAdvanced => '고급 설정 편집';
 
   @override
+  String get providerSettingsActions => '연결 작업';
+
+  @override
   String get providerSettingsAdd => 'Provider 추가';
 
   @override
@@ -582,6 +585,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerInputHint => '코딩 요청을 입력하세요…';
+
+  @override
+  String get composerSendLabel => '메시지 보내기';
 
   @override
   String get chatEmptyTitle => '코딩 요청을 입력하세요.';

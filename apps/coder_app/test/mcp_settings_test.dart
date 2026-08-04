@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 import 'support/localization.dart';
@@ -63,6 +64,8 @@ void main() {
           appServicesProvider.overrideWithValue(fakeAppServices(api)),
         ],
         child: MaterialApp.router(
+          theme: testLightTheme,
+          darkTheme: testDarkTheme,
           locale: testLocale,
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
@@ -245,7 +248,7 @@ void main() {
       find.byKey(const ValueKey<String>('mcp-server-delete')),
       findsNothing,
     );
-    final command = tester.widget<TextField>(
+    final command = tester.widget<TRTextField>(
       find.byKey(const ValueKey<String>('mcp-field-command')),
     );
     expect(command.enabled, isFalse);

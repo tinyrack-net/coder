@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
+import 'support/localization.dart';
 
 void main() {
   testWidgets('restores the last selected host even while it is offline', (
@@ -77,7 +80,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
-      await tester.tap(find.byTooltip('설정'));
+      await tester.tap(findAccessibleAction('설정'));
       await tester.pumpAndSettle();
       expect(find.text('설정'), findsOneWidget);
       expect(find.text('내장 daemon'), findsNothing);
@@ -107,9 +110,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('설정'));
+      await tester.tap(findAccessibleAction('설정'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '원격 daemon 추가'));
+      await tester.tap(find.widgetWithText(TRButton, '원격 daemon 추가'));
       await tester.pumpAndSettle();
 
       await tester.enterText(_field('이름'), 'Production');
@@ -120,29 +123,29 @@ void main() {
       await tester.enterText(_field('Bearer token'), 'secret-token');
       await tester.pump();
       expect(
-        tester.widget<TextField>(_field('WebSocket 주소')).controller?.text,
+        tester.widget<EditableText>(_field('WebSocket 주소')).controller.text,
         'ws://daemon.example/ws',
       );
       expect(find.textContaining('암호화되지 않습니다'), findsNothing);
-      await tester.tap(find.byType(Switch));
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.byType(TRSwitch));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
       expect(store.profiles.single.label, 'Production');
       expect(store.profiles.single.autoConnect, isFalse);
       expect(store.tokens[store.profiles.single.id], 'secret-token');
-      await tester.tap(find.byTooltip('연결 편집'));
+      await tester.tap(findAccessibleAction('연결 편집'));
       await tester.pumpAndSettle();
       await tester.enterText(_field('이름'), 'Renamed');
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(store.profiles.single.label, 'Renamed');
 
-      await tester.tap(find.byTooltip('연결 편집'));
+      await tester.tap(findAccessibleAction('연결 편집'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, '삭제'));
+      await tester.tap(find.widgetWithText(TRButton, '삭제').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.tap(find.widgetWithText(TRButton, '삭제').last);
       await tester.pumpAndSettle();
       expect(store.profiles, isEmpty);
       expect(store.tokens, isEmpty);
@@ -169,19 +172,22 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('설정'));
+      await tester.tap(findAccessibleAction('설정'));
       await tester.pumpAndSettle();
 
       expect(find.text('내장 daemon'), findsOneWidget);
       expect(find.text('네트워크 접근 허용'), findsOneWidget);
-      final embeddedToggle = find.widgetWithText(SwitchListTile, '내장 daemon');
+      final embeddedToggle = find.widgetWithText(
+        CoderSwitchRow,
+        '내장 daemon',
+      );
       final exposureToggle = find.widgetWithText(
-        SwitchListTile,
+        CoderSwitchRow,
         '네트워크 접근 허용',
       );
-      final toggle = tester.widget<SwitchListTile>(embeddedToggle);
+      final toggle = tester.widget<CoderSwitchRow>(embeddedToggle);
       expect(toggle.value, isTrue);
-      expect(tester.widget<SwitchListTile>(exposureToggle).value, isFalse);
+      expect(tester.widget<CoderSwitchRow>(exposureToggle).value, isFalse);
 
       await tester.tap(exposureToggle);
       await tester.pumpAndSettle();
@@ -268,7 +274,7 @@ void main() {
     onlineApi.emitState(ClientConnectionState.reconnecting);
     await tester.pump();
     // Runtime status lives in daemon settings; the sidebar shows workspaces.
-    await tester.tap(find.byTooltip('설정'));
+    await tester.tap(findAccessibleAction('설정'));
     await tester.pumpAndSettle();
     expect(
       find.textContaining('같은 daemon이 이미 등록되어 있습니다.'),
@@ -333,6 +339,9 @@ final class _ProfileClients implements HostClientFactory {
   }) => connections[endpoint.websocketUri.host]!();
 }
 
-Finder _field(String label) => find.byWidgetPredicate(
-  (widget) => widget is TextField && widget.decoration?.labelText == label,
+Finder _field(String label) => find.descendant(
+  of: find.byWidgetPredicate(
+    (widget) => widget is TRTextField && widget.label == label,
+  ),
+  matching: find.byType(EditableText),
 );

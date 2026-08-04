@@ -2,6 +2,7 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
+import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -37,7 +38,7 @@ class ChatPlanCard extends ConsumerWidget {
               Row(
                 children: <Widget>[
                   Icon(
-                    Icons.assignment_outlined,
+                    CoderIcons.plan,
                     size: 16,
                     color: theme.colorScheme.primary,
                   ),

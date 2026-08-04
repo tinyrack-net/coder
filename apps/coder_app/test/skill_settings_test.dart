@@ -1,10 +1,12 @@
 import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 import 'support/localization.dart';
@@ -46,15 +48,15 @@ void main() {
 
       // The mandatory built-in cannot be turned off.
       final mandatory = find.descendant(
-        of: find.widgetWithText(ListTile, 'coding-conventions').first,
-        matching: find.byType(Switch),
+        of: find.widgetWithText(CoderListRow, 'coding-conventions'),
+        matching: find.byType(TRSwitch),
       );
       final toggleable = find.descendant(
-        of: find.widgetWithText(ListTile, 'commit').first,
-        matching: find.byType(Switch),
+        of: find.widgetWithText(CoderListRow, 'commit'),
+        matching: find.byType(TRSwitch),
       );
-      expect(tester.widget<Switch>(mandatory).onChanged, isNull);
-      expect(tester.widget<Switch>(toggleable).onChanged, isNotNull);
+      expect(tester.widget<TRSwitch>(mandatory).onCheckedChange, isNull);
+      expect(tester.widget<TRSwitch>(toggleable).onCheckedChange, isNotNull);
 
       await tester.tap(toggleable);
       await tester.pumpAndSettle();
@@ -77,7 +79,7 @@ void main() {
 
       // The first entry sorts to coding-conventions, the mandatory built-in.
       expect(find.text('내장 스킬은 앱에 포함되어 있어 편집할 수 없습니다.'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, '저장'), findsNothing);
+      expect(find.widgetWithText(TRButton, '저장'), findsNothing);
 
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
@@ -85,10 +87,10 @@ void main() {
       expect(find.text('scripts/split.sh'), findsOneWidget);
 
       await tester.enterText(
-        find.widgetWithText(TextField, '지시문 (Markdown)'),
+        _textInput('지시문 (Markdown)'),
         'Stage each purpose on its own.',
       );
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
         (await api.getSkill('commit')).body,
@@ -113,14 +115,14 @@ void main() {
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, '지시문 (Markdown)'),
+        _textInput('지시문 (Markdown)'),
         'Forced body.',
       );
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
       expect(find.text('스킬을 저장하지 못했습니다'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, '덮어쓰기'));
+      await tester.tap(find.widgetWithText(TRButton, '덮어쓰기'));
       await tester.pumpAndSettle();
       expect((await api.getSkill('commit')).body, 'Forced body.');
     },
@@ -141,7 +143,12 @@ void main() {
 
       expect(find.text('migrate'), findsNothing);
 
-      await tester.tap(find.byType(DropdownButtonFormField<String?>));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(TRSelectFormField<String?>),
+          matching: find.byType(TextButton),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Coder').last);
       await tester.pumpAndSettle();
@@ -149,23 +156,23 @@ void main() {
       expect(find.text('migrate'), findsWidgets);
       expect(find.text('프로젝트'), findsWidgets);
 
-      await tester.tap(find.byTooltip('스킬 추가'));
+      await tester.tap(findAccessibleAction('스킬 추가'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (디렉터리 이름)'),
+        _textInput('ID (디렉터리 이름)'),
         'release-notes',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '이름').last,
+        _textInput('이름').last,
         'release-notes',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '설명').last,
+        _textInput('설명').last,
         'Writes release notes.',
       );
       tester.testTextInput.hide();
       await tester.pumpAndSettle();
-      final create = find.widgetWithText(FilledButton, '생성');
+      final create = find.widgetWithText(TRButton, '생성');
       await tester.ensureVisible(create);
       await tester.tap(create);
       await tester.pumpAndSettle();
@@ -190,17 +197,17 @@ void main() {
 
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('스킬 삭제'));
+      await tester.tap(findAccessibleAction('스킬 삭제'));
       await tester.pumpAndSettle();
       expect(find.text('commit 을(를) 삭제할까요?'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(TextButton, '취소'));
+      await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
       expect(await api.listSkills(), hasLength(2));
 
-      await tester.tap(find.byTooltip('스킬 삭제'));
+      await tester.tap(findAccessibleAction('스킬 삭제'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await tester.pumpAndSettle();
       expect(await api.listSkills(), hasLength(1));
     },
@@ -221,7 +228,7 @@ void main() {
 
       expect(find.textContaining('daemon offline'), findsOneWidget);
       api.skillListError = null;
-      await tester.tap(find.widgetWithText(FilledButton, '다시 시도'));
+      await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
       await tester.pumpAndSettle();
       expect(find.text('commit'), findsWidgets);
     },
@@ -237,18 +244,25 @@ void main() {
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
-      expect(find.byTooltip('스킬 목록'), findsNothing);
+      expect(findAccessibleAction('스킬 목록'), findsNothing);
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
-      expect(find.byTooltip('스킬 목록'), findsOneWidget);
+      expect(findAccessibleAction('스킬 목록'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('스킬 목록'));
+      await tester.tap(findAccessibleAction('스킬 목록'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('스킬 추가'), findsOneWidget);
+      expect(findAccessibleAction('스킬 추가'), findsOneWidget);
     },
     tags: const <String>['feature_test__skill_management__widget'],
   );
 }
+
+Finder _textInput(String label) => find.descendant(
+  of: find.byWidgetPredicate(
+    (widget) => widget is TRTextField && widget.label == label,
+  ),
+  matching: find.byType(EditableText),
+);
 
 Future<GoRouter> _pumpSkills(WidgetTester tester, FakeCoderApi api) async {
   final router = GoRouter(
@@ -261,6 +275,8 @@ Future<GoRouter> _pumpSkills(WidgetTester tester, FakeCoderApi api) async {
         appServicesProvider.overrideWithValue(fakeAppServices(api)),
       ],
       child: MaterialApp.router(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,

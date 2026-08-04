@@ -4,17 +4,20 @@ import 'package:coder_app/src/chat/chat_diff_view.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_tool_presentation.dart';
+import 'package:coder_app/src/coder_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Maps a tool glyph to its Material icon.
+/// Maps a tool glyph to its semantic Lucide icon.
 IconData chatToolIcon(ChatToolGlyph glyph) => switch (glyph) {
-  ChatToolGlyph.read => Icons.description_outlined,
-  ChatToolGlyph.list => Icons.folder_open,
-  ChatToolGlyph.search => Icons.search,
-  ChatToolGlyph.edit => Icons.edit_outlined,
-  ChatToolGlyph.run => Icons.terminal,
-  ChatToolGlyph.delegate => Icons.hub_outlined,
-  ChatToolGlyph.generic => Icons.build_outlined,
+  ChatToolGlyph.read => CoderIcons.document,
+  ChatToolGlyph.list => CoderIcons.folderOpen,
+  ChatToolGlyph.search => CoderIcons.search,
+  ChatToolGlyph.edit => CoderIcons.edit,
+  ChatToolGlyph.run => CoderIcons.terminal,
+  ChatToolGlyph.delegate => CoderIcons.network,
+  ChatToolGlyph.generic => CoderIcons.tool,
 };
 
 /// One tool call rendered as a collapsed CLI-style line.
@@ -62,75 +65,96 @@ class ChatToolCard extends StatelessWidget {
       button: true,
       expanded: expanded,
       label: presentation.title,
-      child: InkWell(
-        onTap: hasBody ? onToggle : null,
-        borderRadius: BorderRadius.circular(6),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Icon(
-                    chatToolIcon(presentation.glyph),
-                    size: 16,
-                    color: statusColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      presentation.title,
-                      style: chatMonospaceStyle(
-                        context,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+      child: FocusableActionDetector(
+        enabled: hasBody && onToggle != null,
+        mouseCursor: hasBody && onToggle != null
+            ? SystemMouseCursors.click
+            : MouseCursor.defer,
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              if (hasBody) onToggle?.call();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: hasBody ? onToggle : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      chatToolIcon(presentation.glyph),
+                      size: 16,
+                      color: statusColor,
                     ),
-                  ),
-                  if (presentation.resultLine != null) ...<Widget>[
                     const SizedBox(width: 8),
-                    if (activity.status == ChatToolStatus.running)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 6),
-                        child: SizedBox.square(
-                          dimension: 12,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
                     Flexible(
                       child: Text(
-                        presentation.resultLine!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: presentation.isFailure
-                              ? theme.colorScheme.error
-                              : theme.colorScheme.onSurfaceVariant,
+                        presentation.title,
+                        style: chatMonospaceStyle(
+                          context,
+                          color: theme.colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (presentation.resultLine != null) ...<Widget>[
+                      const SizedBox(width: 8),
+                      if (activity.status == ChatToolStatus.running)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: SizedBox.square(
+                            dimension: 12,
+                            child: TRSpinner(
+                              label: AppLocalizations.of(context).commonRunning,
+                              uiSize: TRUiSize.sm,
+                            ),
+                          ),
+                        ),
+                      Flexible(
+                        child: Text(
+                          presentation.resultLine!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: presentation.isFailure
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                    if (hasBody)
+                      Icon(
+                        expanded ? CoderIcons.collapse : CoderIcons.expand,
+                        size: 16,
+                        color: theme.colorScheme.outline,
+                      ),
                   ],
-                  if (hasBody)
-                    Icon(
-                      expanded ? Icons.expand_less : Icons.expand_more,
-                      size: 16,
-                      color: theme.colorScheme.outline,
-                    ),
-                ],
-              ),
-              if (expanded) ...<Widget>[
-                const SizedBox(height: 8),
-                _ChatToolBodyView(body: presentation.argumentBody),
-                if (presentation.argumentBody is! ChatToolEmptyBody &&
-                    presentation.body is! ChatToolEmptyBody)
+                ),
+                if (expanded) ...<Widget>[
                   const SizedBox(height: 8),
-                _ChatToolBodyView(body: presentation.body),
+                  _ChatToolBodyView(body: presentation.argumentBody),
+                  if (presentation.argumentBody is! ChatToolEmptyBody &&
+                      presentation.body is! ChatToolEmptyBody)
+                    const SizedBox(height: 8),
+                  _ChatToolBodyView(body: presentation.body),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

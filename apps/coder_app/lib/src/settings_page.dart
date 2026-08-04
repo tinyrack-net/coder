@@ -1,12 +1,17 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
+import 'package:coder_app/src/coder_page_shell.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Provider connection settings for one daemon host.
 class SettingsPage extends ConsumerStatefulWidget {
@@ -36,27 +41,32 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final l10n = AppLocalizations.of(context);
     final asyncState = ref.watch(_provider);
     final body = asyncState.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (state) => state == null
           ? Center(child: Text(l10n.providerSettingsRequiresDaemon))
           : _body(state),
     );
     if (widget.embedded) return body;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
+    return CoderPageShell(
+      appBar: CoderPageHeader(
+        leading: TRIconButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
+          label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: context.pop,
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(CoderIcons.back),
         ),
         title: Text(l10n.providerSettingsTitle),
         actions: <Widget>[
-          IconButton(
-            tooltip: l10n.providerSettingsRefreshCatalog,
+          TRIconButton(
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
+            label: l10n.providerSettingsRefreshCatalog,
             onPressed: asyncState.asData?.value == null
                 ? null
                 : () => ref.read(_provider.notifier).refreshCatalog(),
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(CoderIcons.refresh),
           ),
         ],
       ),
@@ -93,7 +103,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           child: CustomScrollView(
             slivers: <Widget>[
               SliverToBoxAdapter(child: connected),
-              const SliverToBoxAdapter(child: Divider(height: 1)),
+              const SliverToBoxAdapter(child: TRSeparator()),
               SliverToBoxAdapter(child: catalog),
             ],
           ),
@@ -124,52 +134,38 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _showOpenAIAuth(ProviderDefinitionDto definition) async {
-    final methodId = await showModalBottomSheet<String>(
+    final methodId = await showTRDrawer<String>(
       context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Text(
-                AppLocalizations.of(context).providerSettingsOpenAiTitle,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                AppLocalizations.of(context).providerSettingsOpenAiSubtitle,
-              ),
-              const SizedBox(height: 16),
-              for (final method in definition.authMethods)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    key: ValueKey('openai-auth-${method.id}'),
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(color: Theme.of(context).dividerColor),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    leading: Icon(
-                      method.kind == ProviderAuthKind.oauth
-                          ? Icons.account_circle_outlined
-                          : Icons.key_outlined,
-                    ),
-                    title: Text(method.label),
-                    subtitle: method.experimental
-                        ? Text(
-                            AppLocalizations.of(
-                              context,
-                            ).providerSettingsExperimental,
-                          )
-                        : const Text('OpenAI Platform'),
-                    onTap: () => Navigator.pop(context, method.id),
-                  ),
+      builder: (context) => TRDrawer(
+        title: Text(
+          AppLocalizations.of(context).providerSettingsOpenAiTitle,
+        ),
+        description: Text(
+          AppLocalizations.of(context).providerSettingsOpenAiSubtitle,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (final method in definition.authMethods)
+              CoderListRow(
+                key: ValueKey('openai-auth-${method.id}'),
+                leading: Icon(
+                  method.kind == ProviderAuthKind.oauth
+                      ? CoderIcons.user
+                      : CoderIcons.key,
                 ),
-            ],
-          ),
+                title: Text(method.label),
+                subtitle: method.experimental
+                    ? Text(
+                        AppLocalizations.of(
+                          context,
+                        ).providerSettingsExperimental,
+                      )
+                    : const Text('OpenAI Platform'),
+                onTap: () => Navigator.pop(context, method.id),
+              ),
+          ],
         ),
       ),
     );
@@ -190,7 +186,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _showApiKey(ProviderDefinitionDto definition) async {
-    final apiKey = await showDialog<String>(
+    final apiKey = await showTRDialog<String>(
       context: context,
       builder: (context) => _ApiKeyDialog(providerName: definition.name),
     );
@@ -199,7 +195,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _addCustom() async {
-    final draft = await showDialog<_CustomDraft>(
+    final draft = await showTRDialog<_CustomDraft>(
       context: context,
       builder: (context) => const _CustomProviderDialog(),
     );
@@ -214,7 +210,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     await ref.read(_provider.notifier).loadModels(connection.id);
     final models = ref.read(_provider).value?.models[connection.id];
     if (!mounted || models == null || models.isNotEmpty) return;
-    final manualModels = await showDialog<List<String>>(
+    final manualModels = await showTRDialog<List<String>>(
       context: context,
       builder: (context) => const _ManualModelsDialog(),
     );
@@ -228,7 +224,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _editCustom(ProviderConnectionDto connection) async {
-    final draft = await showDialog<_CustomDraft>(
+    final draft = await showTRDialog<_CustomDraft>(
       context: context,
       builder: (context) =>
           _CustomProviderDialog(initial: connection.customConfig),
@@ -241,19 +237,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _disconnect(ProviderConnectionDto connection) async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showTRDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => TRAlertDialog(
         title: Text(l10n.providerSettingsDisconnectTitle),
         content: Text(
           l10n.providerSettingsDisconnectBody(connection.displayName),
         ),
-        actions: <Widget>[
-          TextButton(
+        actions: <TRButton>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
-          FilledButton(
+          TRButton(
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.providerSettingsDisconnect),
           ),
@@ -291,7 +291,8 @@ class _ConnectedProviders extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (connections.isEmpty)
-            Card(
+            TRCard(
+              padding: TRCardPadding.none,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(l10n.providerSettingsNoConnections),
@@ -323,7 +324,8 @@ class _ProviderConnectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Card(
+    return TRCard(
+      padding: TRCardPadding.none,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -339,23 +341,19 @@ class _ProviderConnectionCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'edit':
-                        onEditCustom(connection);
-                      case 'disconnect':
-                        onDisconnect(connection);
-                    }
-                  },
-                  itemBuilder: (context) => <PopupMenuEntry<String>>[
+                TRMenu(
+                  trigger: Icon(
+                    CoderIcons.more,
+                    semanticLabel: l10n.providerSettingsActions,
+                  ),
+                  menuChildren: <Widget>[
                     if (connection.definitionId == 'custom')
-                      PopupMenuItem(
-                        value: 'edit',
+                      TRMenuItem(
+                        onPressed: () => onEditCustom(connection),
                         child: Text(l10n.providerSettingsEditAdvanced),
                       ),
-                    PopupMenuItem(
-                      value: 'disconnect',
+                    TRMenuItem(
+                      onPressed: () => onDisconnect(connection),
                       child: Text(l10n.providerSettingsDisconnect),
                     ),
                   ],
@@ -404,30 +402,33 @@ class _ProviderCatalog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (definitions.isEmpty)
-            Card(
+            TRCard(
+              padding: TRCardPadding.none,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(l10n.providerSettingsNoPresets),
               ),
             ),
           for (final definition in definitions)
-            Card(
-              child: ListTile(
+            TRCard(
+              padding: TRCardPadding.none,
+              child: CoderListRow(
                 key: ValueKey('provider-add-${definition.id}'),
-                leading: const Icon(Icons.hub_outlined),
+                leading: const Icon(CoderIcons.network),
                 title: Text(definition.name),
                 subtitle: Text(definition.description),
-                trailing: const Icon(Icons.add_circle_outline),
+                trailing: const Icon(CoderIcons.addCircle),
                 onTap: () => onAdd(definition),
               ),
             ),
-          Card(
-            child: ListTile(
+          TRCard(
+            padding: TRCardPadding.none,
+            child: CoderListRow(
               key: const ValueKey('provider-add-custom'),
-              leading: const Icon(Icons.tune),
+              leading: const Icon(CoderIcons.tune),
               title: const Text('Custom OpenAI Compatible'),
               subtitle: Text(l10n.providerSettingsCustomSubtitle),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(CoderIcons.chevronRight),
               onTap: onAddCustom,
             ),
           ),
@@ -444,10 +445,13 @@ class _AuthAttemptBar extends StatelessWidget {
   final VoidCallback onCancel;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Theme.of(context).colorScheme.secondaryContainer,
-    child: ListTile(
-      leading: const CircularProgressIndicator(),
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: context.tinyrackTheme.surfaceSelected,
+      borderRadius: const BorderRadius.all(TRRadii.medium),
+    ),
+    child: CoderListRow(
+      leading: const TRSpinner(uiSize: TRUiSize.sm),
       title: Text(AppLocalizations.of(context).providerSettingsOAuthPending),
       subtitle: SelectableText(
         <String?>[
@@ -455,7 +459,9 @@ class _AuthAttemptBar extends StatelessWidget {
           attempt.userCode,
         ].whereType<String>().join(' · '),
       ),
-      trailing: TextButton(
+      trailing: TRButton(
+        appearance: TRAppearance.ghost,
+        uiSize: TRUiSize.sm,
         onPressed: onCancel,
         child: Text(AppLocalizations.of(context).commonCancel),
       ),
@@ -484,21 +490,26 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AlertDialog(
+    return TRAlertDialog(
       title: Text(l10n.providerSettingsConnectTitle(widget.providerName)),
-      content: TextField(
+      content: TRTextField(
+        uiSize: TRUiSize.sm,
         key: const ValueKey('provider-api-key'),
         controller: _controller,
         obscureText: true,
         autofocus: true,
-        decoration: const InputDecoration(labelText: 'API key'),
+        label: 'API key',
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
-        FilledButton(
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
           onPressed: () {
             final value = _controller.text.trim();
             if (value.isNotEmpty) Navigator.pop(context, value);
@@ -562,7 +573,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AlertDialog(
+    return TRAlertDialog(
       title: Text(l10n.providerSettingsCustomTitle),
       content: SizedBox(
         width: 520,
@@ -570,34 +581,35 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 controller: _name,
-                decoration: InputDecoration(labelText: l10n.commonName),
+                label: l10n.commonName,
               ),
               const SizedBox(height: 12),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 controller: _baseUrl,
-                decoration: const InputDecoration(labelText: 'Base URL'),
+                label: 'Base URL',
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<ProviderApiFormat>(
+              TRSelectFormField<ProviderApiFormat>(
                 initialValue: _apiFormat,
-                decoration: InputDecoration(
-                  labelText: l10n.providerSettingsApiFormat,
-                ),
+                label: l10n.providerSettingsApiFormat,
+                uiSize: TRUiSize.sm,
                 items: ProviderApiFormat.values
                     .map(
-                      (format) => DropdownMenuItem(
+                      (format) => TRSelectItem<ProviderApiFormat>(
                         value: format,
-                        child: Text(format.name),
+                        label: format.name,
                       ),
                     )
                     .toList(growable: false),
-                onChanged: (value) {
+                onValueChange: (value) {
                   if (value != null) setState(() => _apiFormat = value);
                 },
               ),
-              SwitchListTile(
+              CoderSwitchRow(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.providerSettingsRequiresApiKey),
                 value: _authenticationRequired,
@@ -605,30 +617,37 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                     setState(() => _authenticationRequired = value),
               ),
               if (_authenticationRequired)
-                TextField(
+                TRTextField(
+                  uiSize: TRUiSize.sm,
                   controller: _apiKey,
                   obscureText: true,
-                  decoration: _TextInputDecorationM3.apiKey,
+                  label: 'API key',
                 ),
               const SizedBox(height: 12),
               if (widget.initial?.manualModelIds.isNotEmpty ?? false)
-                TextField(
+                TRTextField(
+                  uiSize: TRUiSize.sm,
                   controller: _models,
-                  decoration: InputDecoration(
-                    labelText: l10n.providerSettingsManualModels,
-                    hintText: 'model-a, model-b',
-                  ),
+                  label: l10n.providerSettingsManualModels,
+                  placeholder: 'model-a, model-b',
                 ),
             ],
           ),
         ),
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: Text(l10n.commonSave)),
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
+          onPressed: _submit,
+          child: Text(l10n.commonSave),
+        ),
       ],
     );
   }
@@ -681,7 +700,7 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AlertDialog(
+    return TRAlertDialog(
       title: Text(l10n.providerSettingsModelLookupFailedTitle),
       content: SizedBox(
         width: 480,
@@ -691,22 +710,25 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
           children: <Widget>[
             Text(l10n.providerSettingsModelLookupFailedBody),
             const SizedBox(height: 12),
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               controller: _models,
-              decoration: InputDecoration(
-                labelText: l10n.providerSettingsManualModels,
-                hintText: 'model-a, model-b',
-              ),
+              label: l10n.providerSettingsManualModels,
+              placeholder: 'model-a, model-b',
             ),
           ],
         ),
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.providerSettingsLater),
         ),
-        FilledButton(
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
           onPressed: () {
             final models = _models.text
                 .split(',')
@@ -721,10 +743,6 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
       ],
     );
   }
-}
-
-abstract final class _TextInputDecorationM3 {
-  static const InputDecoration apiKey = InputDecoration(labelText: 'API key');
 }
 
 String _statusLabel(AppLocalizations l10n, ProviderConnectionStatus status) =>

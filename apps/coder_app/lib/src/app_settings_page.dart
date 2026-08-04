@@ -1,10 +1,15 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
+import 'package:coder_app/src/coder_page_shell.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Daemon-independent app settings and remote host management.
 class AppSettingsPage extends ConsumerWidget {
@@ -22,7 +27,7 @@ class AppSettingsPage extends ConsumerWidget {
         .read(appServicesProvider)
         .supportsEmbeddedDaemon;
     final body = state.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (registry) => _settingsBody(
         context,
@@ -32,11 +37,14 @@ class AppSettingsPage extends ConsumerWidget {
       ),
     );
     if (embedded) return body;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
+    return CoderPageShell(
+      appBar: CoderPageHeader(
+        leading: TRIconButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
+          label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => context.go('/'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(CoderIcons.back),
         ),
         title: Text(l10n.appSettingsTitle),
       ),
@@ -60,10 +68,11 @@ class AppSettingsPage extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
-          Card(
+          TRCard(
+            padding: TRCardPadding.none,
             child: Column(
               children: <Widget>[
-                SwitchListTile(
+                CoderSwitchRow(
                   title: Text(l10n.embeddedDaemonName),
                   subtitle: Text(l10n.appSettingsEmbeddedSubtitle),
                   value: registry.settings.embeddedDaemonEnabled,
@@ -74,8 +83,8 @@ class AppSettingsPage extends ConsumerWidget {
                     enabled: enabled,
                   ),
                 ),
-                const Divider(height: 1),
-                SwitchListTile(
+                const TRSeparator(),
+                CoderSwitchRow(
                   key: const ValueKey<String>('embedded-daemon-exposure'),
                   title: Text(l10n.appSettingsExposure),
                   subtitle: Text(l10n.appSettingsExposureSubtitle),
@@ -107,16 +116,25 @@ class AppSettingsPage extends ConsumerWidget {
               l10n.appSettingsRemoteSection,
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            FilledButton.icon(
+            TRButton(
+              intent: TRIntent.primary,
+              uiSize: TRUiSize.sm,
               onPressed: () => context.go('/settings/daemons/new'),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.appSettingsAddRemote),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Icon(CoderIcons.add),
+                  const SizedBox(width: TRSpacing.extraSmall),
+                  Text(l10n.appSettingsAddRemote),
+                ],
+              ),
             ),
           ],
         ),
         const SizedBox(height: 8),
         if (registry.profiles.isEmpty)
-          Card(
+          TRCard(
+            padding: TRCardPadding.none,
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(l10n.appSettingsNoRemotes),
@@ -143,17 +161,21 @@ class AppSettingsPage extends ConsumerWidget {
   }) async {
     final l10n = AppLocalizations.of(context);
     if (currentlyEnabled && !enabled) {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showTRDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => TRAlertDialog(
           title: Text(l10n.appSettingsStopEmbeddedTitle),
           content: Text(l10n.appSettingsStopEmbeddedBody),
-          actions: <Widget>[
-            TextButton(
+          actions: <TRButton>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, false),
               child: Text(l10n.commonCancel),
             ),
-            FilledButton(
+            TRButton(
+              intent: TRIntent.primary,
+              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, true),
               child: Text(l10n.commonStop),
             ),
@@ -177,25 +199,28 @@ class _RemoteHostCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    return Card(
+    return TRCard(
+      padding: TRCardPadding.none,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: <Widget>[
-            ListTile(
+            CoderListRow(
               leading: Icon(_statusIcon(runtime?.status)),
               title: Text(profile.label),
               subtitle: Text(
                 '${profile.websocketUri}\n${hostStatusText(l10n, runtime)}',
               ),
               isThreeLine: true,
-              trailing: IconButton(
-                tooltip: l10n.appSettingsEditConnection,
+              trailing: TRIconButton(
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
+                label: l10n.appSettingsEditConnection,
                 onPressed: () => context.go('/settings/daemons/${profile.id}'),
-                icon: const Icon(Icons.edit_outlined),
+                icon: const Icon(CoderIcons.edit),
               ),
             ),
-            SwitchListTile(
+            CoderSwitchRow(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               title: Text(l10n.appSettingsAutoConnect),
               value: profile.autoConnect,
@@ -208,20 +233,36 @@ class _RemoteHostCard extends ConsumerWidget {
               spacing: 8,
               runSpacing: 4,
               children: <Widget>[
-                TextButton.icon(
+                TRButton(
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
                   onPressed: () => ref
                       .read(hostRegistryControllerProvider.notifier)
                       .reconnect(profile.id),
-                  icon: const Icon(Icons.refresh),
-                  label: Text(l10n.appSettingsReconnect),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const Icon(CoderIcons.refresh),
+                      const SizedBox(width: TRSpacing.extraSmall),
+                      Text(l10n.appSettingsReconnect),
+                    ],
+                  ),
                 ),
                 if (runtime?.connected == true)
-                  TextButton.icon(
+                  TRButton(
+                    appearance: TRAppearance.ghost,
+                    uiSize: TRUiSize.sm,
                     onPressed: () => context.go(
                       '/settings/providers?hostId=${profile.id}',
                     ),
-                    icon: const Icon(Icons.hub_outlined),
-                    label: Text(l10n.appSettingsProviderSettings),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const Icon(CoderIcons.network),
+                        const SizedBox(width: TRSpacing.extraSmall),
+                        Text(l10n.appSettingsProviderSettings),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -287,11 +328,14 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
         _autoConnect = existing.autoConnect;
       }
     }
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
+    return CoderPageShell(
+      appBar: CoderPageHeader(
+        leading: TRIconButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
+          label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => context.go('/settings/daemons'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(CoderIcons.back),
         ),
         title: Text(
           existing == null
@@ -305,37 +349,34 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: <Widget>[
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('remote-host-label'),
                 controller: _label,
-                decoration: InputDecoration(
-                  labelText: l10n.commonName,
-                  hintText: 'Production daemon',
-                ),
+                label: l10n.commonName,
+                placeholder: 'Production daemon',
               ),
               const SizedBox(height: 12),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('remote-host-address'),
                 controller: _address,
                 keyboardType: TextInputType.url,
-                decoration: InputDecoration(
-                  labelText: l10n.appSettingsAddress,
-                  hintText: 'wss://coder.example.com/ws',
-                ),
+                label: l10n.appSettingsAddress,
+                placeholder: 'wss://coder.example.com/ws',
               ),
               const SizedBox(height: 12),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('remote-host-token'),
                 controller: _token,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: existing == null
-                      ? 'Bearer token'
-                      : l10n.appSettingsNewToken,
-                ),
+                label: existing == null
+                    ? 'Bearer token'
+                    : l10n.appSettingsNewToken,
               ),
               const SizedBox(height: 8),
-              SwitchListTile(
+              CoderSwitchRow(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.appSettingsAutoConnect),
                 value: _autoConnect,
@@ -351,12 +392,16 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
                   if (existing != null)
-                    TextButton(
+                    TRButton(
+                      appearance: TRAppearance.ghost,
+                      uiSize: TRUiSize.sm,
                       onPressed: _saving ? null : () => _delete(existing),
                       child: Text(l10n.commonDelete),
                     ),
                   const SizedBox(width: 8),
-                  FilledButton(
+                  TRButton(
+                    intent: TRIntent.primary,
+                    uiSize: TRUiSize.sm,
                     onPressed: _saving ? null : () => _save(existing),
                     child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
                   ),
@@ -411,17 +456,21 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
 
   Future<void> _delete(RemoteDaemonProfile profile) async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showTRDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => TRAlertDialog(
         title: Text(l10n.appSettingsDeleteTitle(profile.label)),
         content: Text(l10n.appSettingsDeleteBody),
-        actions: <Widget>[
-          TextButton(
+        actions: <TRButton>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
-          FilledButton(
+          TRButton(
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.commonDelete),
           ),
@@ -437,10 +486,11 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
 }
 
 IconData _statusIcon(HostRuntimeStatus? status) => switch (status) {
-  HostRuntimeStatus.online => Icons.check_circle_outline,
-  HostRuntimeStatus.connecting || HostRuntimeStatus.reconnecting => Icons.sync,
-  HostRuntimeStatus.offline => Icons.cloud_off_outlined,
-  HostRuntimeStatus.conflict => Icons.call_split,
-  HostRuntimeStatus.error => Icons.error_outline,
-  HostRuntimeStatus.idle || null => Icons.pause_circle_outline,
+  HostRuntimeStatus.online => CoderIcons.success,
+  HostRuntimeStatus.connecting ||
+  HostRuntimeStatus.reconnecting => CoderIcons.sync,
+  HostRuntimeStatus.offline => CoderIcons.offline,
+  HostRuntimeStatus.conflict => CoderIcons.branch,
+  HostRuntimeStatus.error => CoderIcons.error,
+  HostRuntimeStatus.idle || null => CoderIcons.paused,
 };

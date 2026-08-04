@@ -8,6 +8,9 @@ import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
+import 'package:coder_app/src/coder_page_shell.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/desktop_shell_scope.dart';
@@ -27,6 +30,7 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 part 'app.g.dart';
 
@@ -117,13 +121,15 @@ class _CoderAppView extends ConsumerWidget {
       routerConfig: router,
       // The shell sits below Localizations and the router so tray labels
       // follow the selected language and a tray row can navigate.
-      builder: !resident
-          ? null
-          : (context, child) => DesktopShellScope(
-              router: router,
-              startHidden: startHidden,
-              child: child ?? const SizedBox.shrink(),
-            ),
+      builder: (context, child) => TRTooltipProvider(
+        child: !resident
+            ? child ?? const SizedBox.shrink()
+            : DesktopShellScope(
+                router: router,
+                startHidden: startHidden,
+                child: child ?? const SizedBox.shrink(),
+              ),
+      ),
     );
   }
 }
@@ -132,16 +138,9 @@ class _CoderAppView extends ConsumerWidget {
 const double wideLayoutBreakpoint = 760;
 
 /// Builds the shared Material theme for one brightness.
-ThemeData coderTheme(Brightness brightness) => ThemeData(
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: brightness == Brightness.light
-        ? const Color(0xff625bff)
-        : const Color(0xff948dff),
-    brightness: brightness,
-  ),
-  useMaterial3: true,
-  cardTheme: const CardThemeData(margin: EdgeInsets.zero),
-);
+ThemeData coderTheme(Brightness brightness) => brightness == Brightness.light
+    ? TinyrackTheme.light()
+    : TinyrackTheme.dark();
 
 @TypedGoRoute<WorkspaceHomeRoute>(path: '/')
 /// Unified workspace home shown before daemon connections complete.
@@ -452,11 +451,14 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       ),
       SettingsCategory.daemon => const AppSettingsPage(embedded: true),
     };
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
+    return CoderPageShell(
+      appBar: CoderPageHeader(
+        leading: TRIconButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
+          label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => const WorkspaceHomeRoute().go(context),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(CoderIcons.back),
         ),
         title: Text(AppLocalizations.of(context).settingsTitle),
       ),
@@ -490,45 +492,45 @@ class _SettingsSidebar extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: <Widget>[
-        ListTile(
+        CoderListRow(
           selected: selected == SettingsCategory.general,
-          leading: const Icon(Icons.tune),
+          leading: const Icon(CoderIcons.tune),
           title: Text(l10n.settingsCategoryGeneral),
           onTap: () => const GeneralSettingsRoute().go(context),
         ),
-        ListTile(
+        CoderListRow(
           selected: selected == SettingsCategory.project,
-          leading: const Icon(Icons.folder_copy_outlined),
+          leading: const Icon(CoderIcons.projects),
           title: Text(l10n.settingsCategoryProjects),
           onTap: () => const ProjectSettingsRoute().go(context),
         ),
-        ListTile(
+        CoderListRow(
           selected: selected == SettingsCategory.agent,
-          leading: const Icon(Icons.smart_toy_outlined),
+          leading: const Icon(CoderIcons.agent),
           title: Text(l10n.settingsCategoryAgent),
           onTap: () => const AgentSettingsRoute().go(context),
         ),
-        ListTile(
+        CoderListRow(
           selected: selected == SettingsCategory.mcp,
-          leading: const Icon(Icons.extension_outlined),
+          leading: const Icon(CoderIcons.extension),
           title: Text(l10n.settingsCategoryMcp),
           onTap: () => const McpSettingsRoute().go(context),
         ),
-        ListTile(
+        CoderListRow(
           selected: selected == SettingsCategory.skill,
-          leading: const Icon(Icons.auto_awesome_outlined),
+          leading: const Icon(CoderIcons.sparkle),
           title: Text(l10n.settingsCategorySkill),
           onTap: () => const SkillSettingsRoute().go(context),
         ),
-        ListTile(
+        CoderListRow(
           selected: selected == SettingsCategory.provider,
-          leading: const Icon(Icons.hub_outlined),
+          leading: const Icon(CoderIcons.network),
           title: Text(l10n.settingsCategoryProvider),
           onTap: () => const ProviderSettingsRoute().go(context),
         ),
-        ListTile(
+        CoderListRow(
           selected: selected == SettingsCategory.daemon,
-          leading: const Icon(Icons.dns_outlined),
+          leading: const Icon(CoderIcons.daemon),
           title: Text(l10n.settingsCategoryDaemon),
           onTap: () => const DaemonSettingsRoute().go(context),
         ),
@@ -561,18 +563,20 @@ class _HostScopedDetail extends StatelessWidget {
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-          child: DropdownButtonFormField<String>(
+          child: TRSelectFormField<String>(
+            key: const ValueKey<String>('settings-daemon-select'),
             initialValue: hostId,
-            decoration: const InputDecoration(labelText: 'Daemon'),
+            label: 'Daemon',
+            uiSize: TRUiSize.sm,
             items: hosts
                 .map(
-                  (host) => DropdownMenuItem<String>(
+                  (host) => TRSelectItem<String>(
                     value: host.id,
-                    child: Text(hostLabel(AppLocalizations.of(context), host)),
+                    label: hostLabel(AppLocalizations.of(context), host),
                   ),
                 )
                 .toList(growable: false),
-            onChanged: onChanged,
+            onValueChange: onChanged,
           ),
         ),
         Expanded(child: builder(hostId!)),
@@ -614,23 +618,28 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     final catalog = ref.watch(workspaceCatalogControllerProvider);
     final collapsed = registry.value?.settings.sidebarCollapsed ?? false;
     _restoreSelection(registry.value, catalog.value);
-    return Scaffold(
-      appBar: AppBar(
+    return CoderPageShell(
+      appBar: CoderPageHeader(
         // The toggle keeps one position in both states: the very top left.
         leading: MediaQuery.sizeOf(context).width < wideLayoutBreakpoint
             ? null
-            : IconButton(
+            : TRIconButton(
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
                 key: const ValueKey('workspace-sidebar-toggle'),
-                tooltip: collapsed
+                label: collapsed
                     ? AppLocalizations.of(context).workspaceSidebarExpand
                     : AppLocalizations.of(context).workspaceSidebarCollapse,
                 onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
-                icon: Icon(collapsed ? Icons.menu : Icons.menu_open),
+                icon: Icon(collapsed ? CoderIcons.menu : CoderIcons.menuOpen),
               ),
         title: Text(AppLocalizations.of(context).workspacesTitle),
         actions: <Widget>[
-          IconButton(
-            tooltip: AppLocalizations.of(context).settingsTitle,
+          TRIconButton(
+            key: const ValueKey('workspace-settings-button'),
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
+            label: AppLocalizations.of(context).settingsTitle,
             onPressed: () {
               final hostId = widget.selection?.hostId;
               if (hostId == null) {
@@ -639,7 +648,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                 ProviderSettingsRoute(hostId: hostId).go(context);
               }
             },
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(CoderIcons.settings),
           ),
         ],
       ),
@@ -763,13 +772,16 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           child: Row(
             children: <Widget>[
               if (widget.showBack)
-                IconButton(
+                TRIconButton(
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: MaterialLocalizations.of(context).backButtonTooltip,
                   onPressed: () => const WorkspaceHomeRoute().go(context),
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(CoderIcons.back),
                 ),
               Expanded(
                 child: state == null
-                    ? const LinearProgressIndicator()
+                    ? const TRProgress(uiSize: TRUiSize.sm)
                     : ListView(
                         scrollDirection: Axis.horizontal,
                         children: <Widget>[
@@ -785,20 +797,26 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                         ],
                       ),
               ),
-              IconButton(
-                tooltip: AppLocalizations.of(context).workspaceNewSession,
+              TRIconButton(
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
+                label: AppLocalizations.of(context).workspaceNewSession,
                 onPressed: state == null ? null : _startDraft,
-                icon: const Icon(Icons.add),
+                icon: const Icon(CoderIcons.add),
               ),
               if (state != null)
-                PopupMenuButton<String>(
-                  tooltip: AppLocalizations.of(context).workspaceAllSessions,
-                  icon: const Icon(Icons.more_horiz),
-                  onSelected: _open,
-                  itemBuilder: (context) => <PopupMenuEntry<String>>[
+                TRMenu(
+                  key: const ValueKey('workspace-all-sessions-menu'),
+                  trigger: Icon(
+                    CoderIcons.more,
+                    semanticLabel: AppLocalizations.of(
+                      context,
+                    ).workspaceAllSessions,
+                  ),
+                  menuChildren: <Widget>[
                     for (final agent in state.sessions)
-                      PopupMenuItem<String>(
-                        value: agent.id,
+                      TRMenuItem(
+                        onPressed: () => _open(agent.id),
                         child: Text(agent.title),
                       ),
                   ],
@@ -806,7 +824,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
             ],
           ),
         ),
-        const Divider(height: 1),
+        const TRSeparator(),
         Expanded(
           child: state?.selectedAgentId == null
               ? DraftSessionPane(
@@ -878,25 +896,20 @@ class _SessionTab extends StatelessWidget {
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: selected
-        ? Theme.of(context).colorScheme.secondaryContainer
-        : Colors.transparent,
-    child: InkWell(
+  Widget build(BuildContext context) => SizedBox(
+    width: 180,
+    child: CoderListRow(
+      dense: true,
+      selected: selected,
       onTap: onSelect,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 14),
-        child: Row(
-          children: <Widget>[
-            Text(agent.title),
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              tooltip: AppLocalizations.of(context).workspaceCloseTab,
-              onPressed: onClose,
-              icon: const Icon(Icons.close, size: 16),
-            ),
-          ],
-        ),
+      title: Text(agent.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: TRIconButton(
+        key: ValueKey('session-tab-close-${agent.id}'),
+        appearance: TRAppearance.ghost,
+        uiSize: TRUiSize.sm,
+        label: AppLocalizations.of(context).workspaceCloseTab,
+        onPressed: onClose,
+        icon: const Icon(CoderIcons.close, size: 16),
       ),
     ),
   );
@@ -972,14 +985,16 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     return LayoutBuilder(
       builder: (context, constraints) => Column(
         children: <Widget>[
-          ListTile(
+          CoderListRow(
             title: Text(current.title),
             subtitle: Text(
               '${current.agentDefinitionId} · ${current.origin.name}',
             ),
             trailing: busy
-                ? IconButton(
-                    tooltip: AppLocalizations.of(context).commonStop,
+                ? TRIconButton(
+                    appearance: TRAppearance.ghost,
+                    uiSize: TRUiSize.sm,
+                    label: AppLocalizations.of(context).commonStop,
                     onPressed: () => ref
                         .read(
                           conversationControllerProvider(
@@ -988,7 +1003,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           ).notifier,
                         )
                         .cancelTurn(),
-                    icon: const Icon(Icons.stop_circle_outlined),
+                    icon: const Icon(CoderIcons.stop),
                   )
                 : null,
           ),
