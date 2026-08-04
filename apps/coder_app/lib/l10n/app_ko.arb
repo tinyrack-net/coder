@@ -40,6 +40,16 @@
   "trayHideWindow": "창 숨기기",
   "trayOpenSettings": "설정",
   "trayQuit": "종료",
+
+  "desktopMenuFile": "파일",
+  "desktopMenuView": "보기",
+  "desktopMenuHelp": "도움말",
+  "desktopMenuAbout": "Tinyrack Coder 정보",
+  "desktopWindowMinimize": "최소화",
+  "desktopWindowMaximize": "최대화",
+  "desktopWindowRestore": "복원",
+  "desktopWindowClose": "트레이로 닫기",
+
   "workspacesTitle": "Workspaces",
   "workspaceSidebarExpand": "사이드바 열기",
   "workspaceSidebarCollapse": "사이드바 접기",

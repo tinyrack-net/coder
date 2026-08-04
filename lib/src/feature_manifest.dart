@@ -6,11 +6,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'daemon.management',
     description: 'Starts, connects, edits, and removes daemon hosts.',
     apiMethods: <String>['close'],
-    routes: <String>[
-      'DaemonSettingsRoute',
-      'NewHostRoute',
-      'EditHostRoute',
-    ],
+    routes: <String>['DaemonSettingsRoute', 'NewHostRoute', 'EditHostRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -102,6 +98,18 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.platformSmoke,
+    },
+  ),
+  FeatureContract(
+    id: 'desktop.window.chrome',
+    description:
+        'Replaces Windows and Linux native title bars with localized menus, '
+        'window controls, and a draggable application frame.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
       FeatureVerificationLayer.platformSmoke,
     },
   ),

@@ -133,6 +133,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trayQuit => 'Quit';
 
   @override
+  String get desktopMenuFile => 'File';
+
+  @override
+  String get desktopMenuView => 'View';
+
+  @override
+  String get desktopMenuHelp => 'Help';
+
+  @override
+  String get desktopMenuAbout => 'About Tinyrack Coder';
+
+  @override
+  String get desktopWindowMinimize => 'Minimize';
+
+  @override
+  String get desktopWindowMaximize => 'Maximize';
+
+  @override
+  String get desktopWindowRestore => 'Restore';
+
+  @override
+  String get desktopWindowClose => 'Close to tray';
+
+  @override
   String get workspacesTitle => 'Workspaces';
 
   @override

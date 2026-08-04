@@ -338,6 +338,54 @@ abstract class AppLocalizations {
   /// **'Quit'**
   String get trayQuit;
 
+  /// File menu in the custom desktop title bar.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get desktopMenuFile;
+
+  /// View menu in the custom desktop title bar.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get desktopMenuView;
+
+  /// Help menu in the custom desktop title bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get desktopMenuHelp;
+
+  /// Opens application name and version information.
+  ///
+  /// In en, this message translates to:
+  /// **'About Tinyrack Coder'**
+  String get desktopMenuAbout;
+
+  /// Tooltip for the custom window minimize button.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize'**
+  String get desktopWindowMinimize;
+
+  /// Tooltip for the custom window maximize button.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximize'**
+  String get desktopWindowMaximize;
+
+  /// Tooltip for restoring a maximized window.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get desktopWindowRestore;
+
+  /// Tooltip for hiding the resident app window to the tray.
+  ///
+  /// In en, this message translates to:
+  /// **'Close to tray'**
+  String get desktopWindowClose;
+
   /// Title of the workspace shell.
   ///
   /// In en, this message translates to:

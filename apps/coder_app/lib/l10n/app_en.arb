@@ -160,6 +160,40 @@
   "@trayQuit": {
     "description": "Tray menu row that stops the embedded daemon and exits the app."
   },
+
+  "desktopMenuFile": "File",
+  "@desktopMenuFile": {
+    "description": "File menu in the custom desktop title bar."
+  },
+  "desktopMenuView": "View",
+  "@desktopMenuView": {
+    "description": "View menu in the custom desktop title bar."
+  },
+  "desktopMenuHelp": "Help",
+  "@desktopMenuHelp": {
+    "description": "Help menu in the custom desktop title bar."
+  },
+  "desktopMenuAbout": "About Tinyrack Coder",
+  "@desktopMenuAbout": {
+    "description": "Opens application name and version information."
+  },
+  "desktopWindowMinimize": "Minimize",
+  "@desktopWindowMinimize": {
+    "description": "Tooltip for the custom window minimize button."
+  },
+  "desktopWindowMaximize": "Maximize",
+  "@desktopWindowMaximize": {
+    "description": "Tooltip for the custom window maximize button."
+  },
+  "desktopWindowRestore": "Restore",
+  "@desktopWindowRestore": {
+    "description": "Tooltip for restoring a maximized window."
+  },
+  "desktopWindowClose": "Close to tray",
+  "@desktopWindowClose": {
+    "description": "Tooltip for hiding the resident app window to the tray."
+  },
+
   "workspacesTitle": "Workspaces",
   "@workspacesTitle": {
     "description": "Title of the workspace shell."

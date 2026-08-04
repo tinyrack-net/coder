@@ -10,6 +10,12 @@ import 'package:window_manager/window_manager.dart';
 
 /// Controls the single desktop window from outside the widget tree.
 abstract interface class DesktopWindow {
+  /// Whether this platform replaces the native title bar with Flutter chrome.
+  bool get supportsCustomTitleBar;
+
+  /// Current maximize state, including changes initiated by the OS.
+  ValueListenable<bool> get maximized;
+
   /// Prepares the native window and decides whether it becomes visible.
   Future<void> prepare({required bool startHidden});
 
@@ -21,6 +27,15 @@ abstract interface class DesktopWindow {
 
   /// Whether the window is currently on screen.
   Future<bool> isVisible();
+
+  /// Starts a native window move from the custom drag region.
+  Future<void> startDragging();
+
+  /// Minimizes the window to the platform task switcher.
+  Future<void> minimize();
+
+  /// Switches between maximized and restored bounds.
+  Future<void> toggleMaximized();
 
   /// Routes the user's close gesture to [onClose] instead of quitting.
   Future<void> interceptClose(void Function() onClose);
@@ -86,19 +101,41 @@ String trayIconAssetPath({required TargetPlatform platform}) =>
 final class PluginDesktopWindow implements DesktopWindow {
   /// Creates the production window adapter.
   PluginDesktopWindow({
+    TargetPlatform? platform,
     this.initialize = _ensureInitialized,
+    this.configureCustomTitleBar = _configureCustomTitleBar,
     this.readyToShow = _waitUntilReadyToShow,
     this.showWindow = _showWindow,
     this.hideWindow = _hideWindow,
     this.windowIsVisible = _windowIsVisible,
+    this.startWindowDrag = _startWindowDrag,
+    this.minimizeWindow = _minimizeWindow,
+    this.maximizeWindow = _maximizeWindow,
+    this.unmaximizeWindow = _unmaximizeWindow,
+    this.windowIsMaximized = _windowIsMaximized,
     this.preventClose = _setPreventClose,
     this.addWindowListener = _addWindowListener,
     this.removeWindowListener = _removeWindowListener,
     this.destroyWindow = _destroyWindow,
-  });
+  }) : platform = platform ?? defaultTargetPlatform;
+
+  /// Platform used to select native or custom window chrome.
+  final TargetPlatform platform;
+
+  @override
+  bool get supportsCustomTitleBar =>
+      platform == TargetPlatform.windows || platform == TargetPlatform.linux;
+
+  final ValueNotifier<bool> _maximized = ValueNotifier<bool>(false);
+
+  @override
+  ValueListenable<bool> get maximized => _maximized;
 
   /// Injected `windowManager.ensureInitialized`.
   final Future<void> Function() initialize;
+
+  /// Injected native title-bar configuration.
+  final Future<void> Function({required bool enabled}) configureCustomTitleBar;
 
   /// Injected `windowManager.waitUntilReadyToShow`.
   final Future<void> Function(Future<void> Function()) readyToShow;
@@ -111,6 +148,21 @@ final class PluginDesktopWindow implements DesktopWindow {
 
   /// Injected visibility query.
   final Future<bool> Function() windowIsVisible;
+
+  /// Injected native move operation.
+  final Future<void> Function() startWindowDrag;
+
+  /// Injected native minimize operation.
+  final Future<void> Function() minimizeWindow;
+
+  /// Injected native maximize operation.
+  final Future<void> Function() maximizeWindow;
+
+  /// Injected native restore-from-maximized operation.
+  final Future<void> Function() unmaximizeWindow;
+
+  /// Injected maximize-state query.
+  final Future<bool> Function() windowIsMaximized;
 
   /// Injected close-prevention toggle.
   final Future<void> Function({required bool prevent}) preventClose;
@@ -129,6 +181,11 @@ final class PluginDesktopWindow implements DesktopWindow {
   @override
   Future<void> prepare({required bool startHidden}) async {
     await initialize();
+    if (supportsCustomTitleBar) {
+      // Configure while the native window is still hidden so its system title
+      // bar cannot flash before Flutter paints the first frame.
+      await configureCustomTitleBar(enabled: true);
+    }
     await readyToShow(() async {
       if (startHidden) return;
       await showWindow();
@@ -145,9 +202,22 @@ final class PluginDesktopWindow implements DesktopWindow {
   Future<bool> isVisible() => windowIsVisible();
 
   @override
+  Future<void> startDragging() => startWindowDrag();
+
+  @override
+  Future<void> minimize() => minimizeWindow();
+
+  @override
+  Future<void> toggleMaximized() async {
+    final next = !await windowIsMaximized();
+    await (next ? maximizeWindow() : unmaximizeWindow());
+    _setMaximized(next);
+  }
+
+  @override
   Future<void> interceptClose(void Function() onClose) async {
     await releaseClose();
-    final relay = _WindowCloseRelay(onClose);
+    final relay = _WindowCloseRelay(onClose, _setMaximized);
     _relay = relay;
     addWindowListener(relay);
     await preventClose(prevent: true);
@@ -164,15 +234,26 @@ final class PluginDesktopWindow implements DesktopWindow {
 
   @override
   Future<void> destroy() => destroyWindow();
+
+  void _setMaximized(bool value) {
+    if (_maximized.value != value) _maximized.value = value;
+  }
 }
 
 final class _WindowCloseRelay with WindowListener {
-  _WindowCloseRelay(this.onClose);
+  _WindowCloseRelay(this.onClose, this.onMaximizedChanged);
 
   final void Function() onClose;
+  final ValueChanged<bool> onMaximizedChanged;
 
   @override
   void onWindowClose() => onClose();
+
+  @override
+  void onWindowMaximize() => onMaximizedChanged(true);
+
+  @override
+  void onWindowUnmaximize() => onMaximizedChanged(false);
 }
 
 /// Production tray adapter backed by `tray_manager`.
@@ -254,11 +335,7 @@ Menu _nativeMenu(TrayMenuModel menu) => Menu(
       if (entry.isSeparator)
         MenuItem.separator()
       else
-        MenuItem(
-          key: entry.key,
-          label: entry.label,
-          disabled: !entry.enabled,
-        ),
+        MenuItem(key: entry.key, label: entry.label, disabled: !entry.enabled),
   ],
 );
 
@@ -324,6 +401,12 @@ final class LaunchAtStartupRegistration implements AutostartRegistration {
 
 Future<void> _ensureInitialized() => windowManager.ensureInitialized();
 
+Future<void> _configureCustomTitleBar({required bool enabled}) =>
+    windowManager.setTitleBarStyle(
+      enabled ? TitleBarStyle.hidden : TitleBarStyle.normal,
+      windowButtonVisibility: !enabled,
+    );
+
 Future<void> _waitUntilReadyToShow(Future<void> Function() onReady) =>
     windowManager.waitUntilReadyToShow(null, onReady);
 
@@ -335,6 +418,16 @@ Future<void> _showWindow() async {
 Future<void> _hideWindow() => windowManager.hide();
 
 Future<bool> _windowIsVisible() => windowManager.isVisible();
+
+Future<void> _startWindowDrag() => windowManager.startDragging();
+
+Future<void> _minimizeWindow() => windowManager.minimize();
+
+Future<void> _maximizeWindow() => windowManager.maximize();
+
+Future<void> _unmaximizeWindow() => windowManager.unmaximize();
+
+Future<bool> _windowIsMaximized() => windowManager.isMaximized();
 
 Future<void> _setPreventClose({required bool prevent}) =>
     windowManager.setPreventClose(prevent);
@@ -362,14 +455,12 @@ void _removeTrayListener(TrayListener listener) =>
 
 Future<void> _destroyTray() => trayManager.destroy();
 
-void _configureStartup({
-  required String appPath,
-  required List<String> args,
-}) => launchAtStartup.setup(
-  appName: LaunchAtStartupRegistration.appName,
-  appPath: appPath,
-  args: args,
-);
+void _configureStartup({required String appPath, required List<String> args}) =>
+    launchAtStartup.setup(
+      appName: LaunchAtStartupRegistration.appName,
+      appPath: appPath,
+      args: args,
+    );
 
 Future<void> _enableStartup() async {
   await launchAtStartup.enable();

@@ -2,11 +2,20 @@ import 'dart:async';
 
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/tray_menu_model.dart';
+import 'package:flutter/foundation.dart';
 
 /// Records window control without opening a native window.
 final class FakeDesktopWindow implements DesktopWindow {
   /// Creates a fake window that starts visible.
-  FakeDesktopWindow({this.visible = true});
+  FakeDesktopWindow({this.visible = true, this.supportsCustomTitleBar = false});
+
+  @override
+  final bool supportsCustomTitleBar;
+
+  final ValueNotifier<bool> _maximized = ValueNotifier<bool>(false);
+
+  @override
+  ValueListenable<bool> get maximized => _maximized;
 
   /// Whether the window is currently on screen.
   bool visible;
@@ -21,6 +30,9 @@ final class FakeDesktopWindow implements DesktopWindow {
   int shows = 0;
   int hides = 0;
   int destroys = 0;
+  int drags = 0;
+  int minimizes = 0;
+  int maximizeToggles = 0;
 
   /// Order in which teardown steps ran, used by the quit test.
   final List<String> calls = <String>[];
@@ -52,6 +64,25 @@ final class FakeDesktopWindow implements DesktopWindow {
 
   @override
   Future<bool> isVisible() async => visible;
+
+  @override
+  Future<void> startDragging() async {
+    drags += 1;
+    calls.add('drag');
+  }
+
+  @override
+  Future<void> minimize() async {
+    minimizes += 1;
+    calls.add('minimize');
+  }
+
+  @override
+  Future<void> toggleMaximized() async {
+    maximizeToggles += 1;
+    _maximized.value = !_maximized.value;
+    calls.add(_maximized.value ? 'maximize' : 'unmaximize');
+  }
 
   @override
   Future<void> interceptClose(void Function() onClose) async {

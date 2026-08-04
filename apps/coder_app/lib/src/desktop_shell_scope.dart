@@ -4,10 +4,13 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/desktop_shell.dart';
+import 'package:coder_app/src/desktop_title_bar.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/tray_menu.dart';
 import 'package:coder_app/src/tray_menu_model.dart';
+import 'package:coder_app/src/version.g.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -79,7 +82,75 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
       _installed = menu;
       WidgetsBinding.instance.addPostFrameCallback((_) => _publish(menu));
     }
-    return widget.child;
+    final window = _window;
+    if (window == null || !window.supportsCustomTitleBar) return widget.child;
+    final collapsed = registry?.settings.sidebarCollapsed ?? false;
+    void newWorkspace() => widget.router.go(
+      const WorkspaceHomeRoute(compose: true).location,
+    );
+    void openSettings() =>
+        widget.router.go(const GeneralSettingsRoute().location);
+    void toggleSidebar() => unawaited(
+      ref
+          .read(hostRegistryControllerProvider.notifier)
+          .setSidebarCollapsed(collapsed: !collapsed),
+    );
+    void showAbout() {
+      final navigatorContext =
+          widget.router.routerDelegate.navigatorKey.currentContext;
+      if (navigatorContext == null) return;
+      showAboutDialog(
+        context: navigatorContext,
+        applicationName: 'Tinyrack Coder',
+        applicationVersion: packageVersion,
+      );
+    }
+
+    // MaterialApp's builder sits above the router's Navigator, so its Overlay
+    // is a descendant rather than an ancestor. Own one here for menus,
+    // tooltips, and the about dialog rendered by the application frame.
+    return Overlay(
+      initialEntries: <OverlayEntry>[
+        OverlayEntry(
+          builder: (context) => CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(
+                LogicalKeyboardKey.keyN,
+                control: true,
+              ): newWorkspace,
+              const SingleActivator(
+                LogicalKeyboardKey.comma,
+                control: true,
+              ): openSettings,
+              const SingleActivator(
+                LogicalKeyboardKey.keyB,
+                control: true,
+              ): toggleSidebar,
+              const SingleActivator(
+                LogicalKeyboardKey.keyQ,
+                control: true,
+              ): () =>
+                  unawaited(_quit()),
+            },
+            child: Column(
+              children: <Widget>[
+                DesktopTitleBar(
+                  window: window,
+                  sidebarCollapsed: collapsed,
+                  onNewWorkspace: newWorkspace,
+                  onOpenSettings: openSettings,
+                  onToggleSidebar: toggleSidebar,
+                  onShowAbout: showAbout,
+                  onClose: () => unawaited(_hide()),
+                  onQuit: () => unawaited(_quit()),
+                ),
+                Expanded(child: widget.child),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   /// Applies [menu] to the native tray, one call at a time.

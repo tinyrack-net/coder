@@ -7,6 +7,7 @@ import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/desktop_title_bar.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
@@ -16,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../support/fake_coder_api.dart';
+import '../support/fake_desktop_ports.dart';
 
 import '../support/localization.dart';
 
@@ -739,7 +741,24 @@ Widget _shell(ThemeMode mode, {bool collapsed = false}) {
         fakeAppServices(api, store: store),
       ),
     ],
-    child: _material(mode, const WorkspacePage(compose: true)),
+    child: _material(
+      mode,
+      Column(
+        children: <Widget>[
+          DesktopTitleBar(
+            window: FakeDesktopWindow(supportsCustomTitleBar: true),
+            sidebarCollapsed: collapsed,
+            onNewWorkspace: () {},
+            onOpenSettings: () {},
+            onToggleSidebar: () {},
+            onShowAbout: () {},
+            onClose: () {},
+            onQuit: () {},
+          ),
+          const Expanded(child: WorkspacePage(compose: true)),
+        ],
+      ),
+    ),
   );
 }
 
