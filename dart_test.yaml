@@ -60,6 +60,14 @@ tags:
   feature_test__agent_delegation__verticalSlice:
   feature_test__agent_delegation__widget:
   feature_test__agent_delegation__e2e:
+  feature_test__skill_management__unit:
+  feature_test__skill_management__contract:
+  feature_test__skill_management__verticalSlice:
+  feature_test__skill_management__widget:
+  feature_test__skill_management__e2e:
+  feature_test__skill_invocation__unit:
+  feature_test__skill_invocation__verticalSlice:
+  feature_test__skill_invocation__widget:
   feature_test__provider_catalog__unit:
   feature_test__provider_catalog__contract:
   feature_test__provider_catalog__verticalSlice:
@@ -84,6 +92,7 @@ tags:
   route_test__session_route__widget:
   route_test__provider_settings_route__widget:
   route_test__agent_settings_route__widget:
+  route_test__skill_settings_route__widget:
   route_test__daemon_settings_route__widget:
   route_test__new_host_route__widget:
   route_test__edit_host_route__widget:

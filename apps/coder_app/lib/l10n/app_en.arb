@@ -160,6 +160,38 @@
   "@trayQuit": {
     "description": "Tray menu row that stops the embedded daemon and exits the app."
   },
+  "desktopMenuFile": "File",
+  "@desktopMenuFile": {
+    "description": "File menu in the custom desktop title bar."
+  },
+  "desktopMenuView": "View",
+  "@desktopMenuView": {
+    "description": "View menu in the custom desktop title bar."
+  },
+  "desktopMenuHelp": "Help",
+  "@desktopMenuHelp": {
+    "description": "Help menu in the custom desktop title bar."
+  },
+  "desktopMenuAbout": "About Tinyrack Coder",
+  "@desktopMenuAbout": {
+    "description": "Opens application name and version information."
+  },
+  "desktopWindowMinimize": "Minimize",
+  "@desktopWindowMinimize": {
+    "description": "Tooltip for the custom window minimize button."
+  },
+  "desktopWindowMaximize": "Maximize",
+  "@desktopWindowMaximize": {
+    "description": "Tooltip for the custom window maximize button."
+  },
+  "desktopWindowRestore": "Restore",
+  "@desktopWindowRestore": {
+    "description": "Tooltip for restoring a maximized window."
+  },
+  "desktopWindowClose": "Close to tray",
+  "@desktopWindowClose": {
+    "description": "Tooltip for hiding the resident app window to the tray."
+  },
   "workspacesTitle": "Workspaces",
   "@workspacesTitle": {
     "description": "Title of the workspace shell."
@@ -489,10 +521,6 @@
   "agentSettingsBuiltinTools": "Built-in tools",
   "@agentSettingsBuiltinTools": {
     "description": "Heading of the tool permission list."
-  },
-  "agentSettingsToolAlwaysOn": "Always available",
-  "@agentSettingsToolAlwaysOn": {
-    "description": "Subtitle marking a tool every agent gets."
   },
   "agentSettingsSubagents": "Callable subagents",
   "@agentSettingsSubagents": {
@@ -981,6 +1009,152 @@
   "@hookFailureNoOutput": {
     "description": "Stands in for a hook that produced no output."
   },
+  "settingsCategorySkill": "Skill",
+  "@settingsCategorySkill": {
+    "description": "Sidebar label for the skill settings category."
+  },
+  "skillSettingsHeading": "Skills",
+  "@skillSettingsHeading": {
+    "description": "Heading above the skill list."
+  },
+  "skillSettingsCount": "{count} skills",
+  "@skillSettingsCount": {
+    "description": "Number of skills visible in the current scope.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillSettingsSelectSkill": "Select a skill.",
+  "@skillSettingsSelectSkill": {
+    "description": "Placeholder shown before a skill is selected."
+  },
+  "skillSettingsList": "Skill list",
+  "@skillSettingsList": {
+    "description": "Tooltip for returning to the skill list on narrow layouts."
+  },
+  "skillSettingsAdd": "Add skill",
+  "@skillSettingsAdd": {
+    "description": "Tooltip for the add-skill button."
+  },
+  "skillSettingsAddTitle": "Add skill",
+  "@skillSettingsAddTitle": {
+    "description": "Title of the add-skill dialog."
+  },
+  "skillSettingsIdLabel": "ID (directory name)",
+  "@skillSettingsIdLabel": {
+    "description": "Label for the skill ID field, which names the directory."
+  },
+  "skillSettingsIdInvalid": "Only lowercase letters, digits, -, and _ are allowed.",
+  "@skillSettingsIdInvalid": {
+    "description": "Validation error for a malformed skill ID."
+  },
+  "skillSettingsIdTaken": "That skill ID already exists.",
+  "@skillSettingsIdTaken": {
+    "description": "Validation error for a skill ID already in use."
+  },
+  "skillSettingsNameRequired": "Enter a name.",
+  "@skillSettingsNameRequired": {
+    "description": "Validation error for an empty skill name."
+  },
+  "skillSettingsCopyPath": "Copy file location",
+  "@skillSettingsCopyPath": {
+    "description": "Tooltip for copying the skill file path."
+  },
+  "skillSettingsDelete": "Delete skill",
+  "@skillSettingsDelete": {
+    "description": "Tooltip for deleting a skill."
+  },
+  "skillSettingsDeleteTitle": "Delete {name}?",
+  "@skillSettingsDeleteTitle": {
+    "description": "Title of the delete confirmation dialog.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "skillSettingsDeleteMessage": "The skill directory moves to .archive next to it.",
+  "@skillSettingsDeleteMessage": {
+    "description": "Explains that deleting archives the directory."
+  },
+  "skillSettingsEnabled": "Enabled",
+  "@skillSettingsEnabled": {
+    "description": "Label for the per-skill enable switch."
+  },
+  "skillSettingsMandatory": "This built-in skill is always enabled.",
+  "@skillSettingsMandatory": {
+    "description": "Tooltip explaining why a built-in skill cannot be turned off."
+  },
+  "skillSettingsReadOnly": "Built-in skills ship with the app and cannot be edited.",
+  "@skillSettingsReadOnly": {
+    "description": "Explains that built-in skills are read-only."
+  },
+  "skillSettingsInstructions": "Instructions (Markdown)",
+  "@skillSettingsInstructions": {
+    "description": "Label for the skill body editor."
+  },
+  "skillSettingsResources": "Bundled files",
+  "@skillSettingsResources": {
+    "description": "Heading above the bundled file list."
+  },
+  "skillSettingsNoResources": "No files are bundled with this skill.",
+  "@skillSettingsNoResources": {
+    "description": "Shown when a skill bundles no extra files."
+  },
+  "skillSettingsSaveFailedTitle": "Could not save the skill",
+  "@skillSettingsSaveFailedTitle": {
+    "description": "Title of the save-conflict dialog."
+  },
+  "skillSettingsReload": "Reload",
+  "@skillSettingsReload": {
+    "description": "Discards the edit and reloads the file."
+  },
+  "skillSettingsOverwrite": "Overwrite",
+  "@skillSettingsOverwrite": {
+    "description": "Saves over the external change."
+  },
+  "skillSettingsShadowed": "Another source overrides this skill.",
+  "@skillSettingsShadowed": {
+    "description": "Explains that a higher-precedence source wins."
+  },
+  "skillSettingsStale": "This file no longer parses; the last good version is shown.",
+  "@skillSettingsStale": {
+    "description": "Explains that the file failed to parse."
+  },
+  "skillSettingsSource": "Source",
+  "@skillSettingsSource": {
+    "description": "Label for the source a skill was loaded from."
+  },
+  "skillSettingsSourceBuiltIn": "Built-in",
+  "@skillSettingsSourceBuiltIn": {
+    "description": "Source badge for skills shipped with the app."
+  },
+  "skillSettingsSourceUserHome": "Global",
+  "@skillSettingsSourceUserHome": {
+    "description": "Source badge for skills in the shared user home tree."
+  },
+  "skillSettingsSourceConfig": "Settings",
+  "@skillSettingsSourceConfig": {
+    "description": "Source badge for skills in the daemon configuration directory."
+  },
+  "skillSettingsSourceProject": "Project",
+  "@skillSettingsSourceProject": {
+    "description": "Source badge for skills committed to a project."
+  },
+  "skillSettingsProject": "Project",
+  "@skillSettingsProject": {
+    "description": "Label for the project selector on the skill page."
+  },
+  "skillSettingsProjectNone": "Global skills only",
+  "@skillSettingsProjectNone": {
+    "description": "Project selector entry that shows only global skills."
+  },
+  "skillSettingsProjectHint": "Pick a project to see and edit the skills committed to it.",
+  "@skillSettingsProjectHint": {
+    "description": "Explains what picking a project adds to the list."
+  },
   "settingsCategoryMcp": "MCP",
   "@settingsCategoryMcp": {
     "description": "Sidebar label for the MCP server settings category."
@@ -1152,5 +1326,9 @@
   "mcpSettingsSecretValue": "Value",
   "@mcpSettingsSecretValue": {
     "description": "Label of the secret value field."
+  },
+  "agentSettingsToolAlwaysOn": "Always available",
+  "@agentSettingsToolAlwaysOn": {
+    "description": "Subtitle marking a tool every agent gets."
   }
 }

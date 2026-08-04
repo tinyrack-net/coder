@@ -764,6 +764,154 @@ void main() {
   );
 
   test(
+    'skills merge across sources, drive a turn, and stay editable over RPC',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-skill-home-');
+      final agentsHome = await Directory.systemTemp.createTemp(
+        'coder-skill-agents-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-skill-workspace-',
+      );
+      const bearerToken = 'skill-token-0123456789abcdef0123456789';
+      addTearDown(() async {
+        await home.delete(recursive: true);
+        await agentsHome.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+
+      // A global skill in the shared `~/.agents` tree, shadowed by a project
+      // skill with the same ID.
+      await _writeSkill(
+        p.join(agentsHome.path, '.agents', 'skills', 'shared'),
+        description: 'From the user home.',
+        body: 'Global instructions.',
+      );
+      await _writeSkill(
+        p.join(workspace.path, '.agents', 'skills', 'shared'),
+        description: 'From the project.',
+        body: 'Project instructions.',
+      );
+
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          userHomeDirectory: agentsHome.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: _SkillProvider(),
+      );
+      addTearDown(handle.stop);
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'skill-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      expect(client.serverInfo.features['skills'], isTrue);
+
+      final global = await client.listSkills();
+      expect(
+        global.map((skill) => skill.id),
+        containsAll(<String>['coding-conventions', 'commit', 'shared']),
+      );
+      expect(
+        global.singleWhere((skill) => skill.id == 'shared').description,
+        'From the user home.',
+      );
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final scoped = await client.listSkills(workspaceId: 'workspace');
+      final projectSkill = scoped.singleWhere(
+        (skill) => skill.id == 'shared' && !skill.isShadowed,
+      );
+      expect(projectSkill.source, SkillSource.project);
+      expect(projectSkill.description, 'From the project.');
+      expect(
+        scoped
+            .where((skill) => skill.id == 'shared' && skill.isShadowed)
+            .single
+            .source,
+        SkillSource.userHome,
+      );
+
+      // Creating, editing, and deleting reach the daemon's own directory.
+      final created = await client.createSkill(
+        id: 'release',
+        source: SkillSource.config,
+        name: 'release',
+        description: 'Ships a release.',
+        body: 'Tag, build, publish.',
+      );
+      expect(
+        File(p.join(home.path, 'skills', 'release', 'SKILL.md')).existsSync(),
+        isTrue,
+      );
+      final updated = await client.updateSkill(
+        created.copyWith(description: 'Ships a signed release.'),
+        expectedContentHash: created.contentHash,
+      );
+      expect(updated.description, 'Ships a signed release.');
+      await client.deleteSkill('release');
+      expect(
+        (await client.listSkills()).map((skill) => skill.id),
+        isNot(contains('release')),
+      );
+
+      // The disabled skill must disappear from the catalog handed to a turn.
+      await client.setSkillEnabled('commit', enabled: false);
+      expect((await client.getSkill('commit')).isEnabled, isFalse);
+
+      final session = await client.createSession(
+        id: 'skill-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Skills',
+        agentDefinitionId: 'coder',
+      );
+      final completed = client.events
+          .where((event) => event is TimelineClientEvent)
+          .cast<TimelineClientEvent>()
+          .map((event) => event.event)
+          .firstWhere(
+            (event) =>
+                event.sessionId == session.id && event.type == 'turn.completed',
+          )
+          .timeout(_eventTimeout);
+      await client.subscribeTimeline(session.id);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'skill-turn',
+        prompt: 'Use the shared skill.',
+      );
+      await completed;
+
+      final timeline = await client.subscribeTimeline(session.id);
+      final loaded = timeline
+          .where((event) => event.type == 'tool.completed')
+          .single;
+      expect(loaded.data['name'], 'skill');
+      expect(loaded.data['isError'], isFalse);
+      // The worktree is the checkout itself, so the project skill wins.
+      final output = loaded.data['output']! as String;
+      expect(output, contains('Project instructions.'));
+      expect(output, isNot(contains('Global instructions.')));
+    },
+    tags: const <String>[
+      'feature_test__skill_management__verticalSlice',
+      'feature_test__skill_invocation__verticalSlice',
+    ],
+  );
+
+  test(
     'agent create survives watcher reload and daemon restart',
     () async {
       final home = await Directory.systemTemp.createTemp(
@@ -1455,6 +1603,67 @@ final class _DelegatingProvider implements ModelProvider {
     yield ModelTextDelta(text);
     yield ModelResponseCompleted(
       assistant: AssistantConversationItem(text: text),
+    );
+  }
+}
+
+Future<void> _writeSkill(
+  String directory, {
+  required String description,
+  required String body,
+}) async {
+  await Directory(directory).create(recursive: true);
+  await File(p.join(directory, 'SKILL.md')).writeAsString(
+    '---\n'
+    'name: ${p.basename(directory)}\n'
+    'description: $description\n'
+    '---\n\n'
+    '$body\n',
+  );
+}
+
+/// Loads one skill through the `skill` tool, then finishes the turn.
+final class _SkillProvider implements ModelProvider {
+  @override
+  String get id => 'skill-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    cancellation.throwIfCancelled();
+    final hasToolResult = request.history.any(
+      (item) => item is ToolResultConversationItem,
+    );
+    if (!hasToolResult) {
+      // The catalog is advertised in the instructions, and a disabled skill
+      // must not appear there.
+      expect(request.instructions, contains('- shared: From the project.'));
+      expect(request.instructions, isNot(contains('- commit:')));
+      const arguments = <String, dynamic>{'name': 'shared', 'resource': null};
+      yield const ModelFunctionCall(
+        callId: 'skill-call',
+        name: 'skill',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'skill-call',
+              name: 'skill',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    yield const ModelTextDelta('Loaded the skill.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Loaded the skill.'),
     );
   }
 }

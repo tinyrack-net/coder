@@ -110,6 +110,7 @@ class CoderClient implements CoderApi {
         RpcNotification.timelineEvent,
         RpcNotification.sessionUpdated,
         RpcNotification.agentDefinitionsChanged,
+        RpcNotification.skillsChanged,
         RpcNotification.approvalRequested,
         RpcNotification.providerAuthUpdated,
         RpcNotification.mcpServersChanged,
@@ -175,6 +176,8 @@ class CoderClient implements CoderApi {
           _events.add(const AgentDefinitionsChangedClientEvent());
         case RpcNotification.mcpServersChanged:
           _events.add(const McpServersChangedClientEvent());
+        case RpcNotification.skillsChanged:
+          _events.add(const SkillsChangedClientEvent());
         case RpcNotification.approvalRequested:
           _events.add(
             ApprovalRequestedClientEvent(
@@ -566,6 +569,89 @@ class CoderClient implements CoderApi {
       RpcMethod.mcpSecretSet,
       McpSecretParamsDto(key: key, value: value).toJson(),
     );
+  }
+
+  @override
+  Future<List<SkillDto>> listSkills({String? workspaceId}) async {
+    final response = await _request(
+      RpcMethod.skillList,
+      SkillScopeParamsDto(workspaceId: workspaceId).toJson(),
+    );
+    return SkillListResultDto.fromJson(response).skills;
+  }
+
+  @override
+  Future<SkillDto> getSkill(String id, {String? workspaceId}) async {
+    final response = await _request(
+      RpcMethod.skillGet,
+      SkillIdParamsDto(id: id, workspaceId: workspaceId).toJson(),
+    );
+    return SkillResultDto.fromJson(response).skill;
+  }
+
+  @override
+  Future<SkillDto> createSkill({
+    required String id,
+    required SkillSource source,
+    required String name,
+    required String description,
+    required String body,
+    String? workspaceId,
+  }) async {
+    final response = await _request(
+      RpcMethod.skillCreate,
+      SkillCreateParamsDto(
+        id: id,
+        source: source,
+        name: name,
+        description: description,
+        body: body,
+        workspaceId: workspaceId,
+      ).toJson(),
+    );
+    return SkillResultDto.fromJson(response).skill;
+  }
+
+  @override
+  Future<SkillDto> updateSkill(
+    SkillDto skill, {
+    required String expectedContentHash,
+    bool force = false,
+    String? workspaceId,
+  }) async {
+    final response = await _request(
+      RpcMethod.skillUpdate,
+      SkillUpdateParamsDto(
+        skill: skill,
+        expectedContentHash: expectedContentHash,
+        force: force,
+        workspaceId: workspaceId,
+      ).toJson(),
+    );
+    return SkillResultDto.fromJson(response).skill;
+  }
+
+  @override
+  Future<void> deleteSkill(String id, {String? workspaceId}) => _request(
+    RpcMethod.skillDelete,
+    SkillIdParamsDto(id: id, workspaceId: workspaceId).toJson(),
+  );
+
+  @override
+  Future<SkillDto> setSkillEnabled(
+    String id, {
+    required bool enabled,
+    String? workspaceId,
+  }) async {
+    final response = await _request(
+      RpcMethod.skillSetEnabled,
+      SkillSetEnabledParamsDto(
+        id: id,
+        enabled: enabled,
+        workspaceId: workspaceId,
+      ).toJson(),
+    );
+    return SkillResultDto.fromJson(response).skill;
   }
 
   @override

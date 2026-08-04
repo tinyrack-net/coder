@@ -8,6 +8,7 @@ import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
+import 'package:coder_daemon/src/skills.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
@@ -26,6 +27,7 @@ class DaemonRpcServer {
     required this.agentDefinitions,
     required this.mcp,
     required this.worktrees,
+    required this.skills,
     required this.providers,
     required this.providerAuth,
     required this.clock,
@@ -58,6 +60,14 @@ class DaemonRpcServer {
         ),
       ),
     );
+    _skillSubscription = skills.changes.listen(
+      (_) => _broadcast(
+        const WireEnvelope(
+          type: RpcNotification.skillsChanged,
+          payload: <String, dynamic>{},
+        ),
+      ),
+    );
   }
 
   /// The workspaces public API member.
@@ -81,6 +91,9 @@ class DaemonRpcServer {
   /// Markdown-backed agent definition application service.
   final AgentDefinitionService agentDefinitions;
 
+  /// The skills public API member.
+  final SkillService skills;
+
   /// The providers public API member.
   final ProviderService providers;
 
@@ -101,6 +114,7 @@ class DaemonRpcServer {
   late final StreamSubscription<ProviderAuthAttemptDto> _authSubscription;
   late final StreamSubscription<void> _agentDefinitionSubscription;
   late final StreamSubscription<void> _mcpSubscription;
+  late final StreamSubscription<void> _skillSubscription;
 
   /// The call public API member.
   FutureOr<Response> call(Request request) {
@@ -135,6 +149,7 @@ class DaemonRpcServer {
       agentDefinitions: agentDefinitions,
       mcp: mcp,
       worktrees: worktrees,
+      skills: skills,
       providers: providers,
       providerAuth: providerAuth,
       clock: clock,
@@ -165,6 +180,7 @@ class DaemonRpcServer {
     await _authSubscription.cancel();
     await _agentDefinitionSubscription.cancel();
     await _mcpSubscription.cancel();
+    await _skillSubscription.cancel();
     await providerAuth.close();
     for (final session in List<_ClientSession>.of(_sessions)) {
       await session.close();
@@ -198,6 +214,7 @@ class _ClientSession {
     required this.agentDefinitions,
     required this.mcp,
     required this.worktrees,
+    required this.skills,
     required this.providers,
     required this.providerAuth,
     required this.clock,
@@ -213,6 +230,7 @@ class _ClientSession {
   final AgentDefinitionService agentDefinitions;
   final McpService mcp;
   final WorktreeRepository worktrees;
+  final SkillService skills;
   final ProviderService providers;
   final ProviderAuthCoordinator providerAuth;
   final Clock clock;
@@ -251,6 +269,12 @@ class _ClientSession {
       RpcMethod.mcpServerRemove,
       RpcMethod.mcpServerTest,
       RpcMethod.mcpSecretSet,
+      RpcMethod.skillList,
+      RpcMethod.skillGet,
+      RpcMethod.skillCreate,
+      RpcMethod.skillUpdate,
+      RpcMethod.skillDelete,
+      RpcMethod.skillSetEnabled,
       RpcMethod.sessionList,
       RpcMethod.sessionCreate,
       RpcMethod.sessionModelSet,
@@ -333,6 +357,15 @@ class _ClientSession {
         error.message,
         data: <String, dynamic>{'code': error.code},
       );
+    } on SkillFileConflict catch (error) {
+      throw json_rpc.RpcException(
+        1002,
+        'Skill file changed outside Coder.',
+        data: <String, dynamic>{
+          'code': 'skill_file_conflict',
+          'currentContentHash': error.currentContentHash,
+        },
+      );
     } on AgentFileConflict catch (error) {
       throw json_rpc.RpcException(
         1002,
@@ -356,6 +389,15 @@ class _ClientSession {
     if (worktreeId == null) return null;
     final worktree = await worktrees.getById(worktreeId);
     return worktree?.path;
+  }
+
+  /// Resolves a workspace ID into the project scope skills merge over.
+  Future<SkillScope> _skillScope(String? workspaceId) async {
+    if (workspaceId == null) return SkillScope.global;
+    return SkillScope(
+      workspaceId: workspaceId,
+      projectRoot: await workspaces.workspaceRoot(workspaceId),
+    );
   }
 
   Future<Map<String, dynamic>> _dispatch(
@@ -496,6 +538,59 @@ class _ClientSession {
         final request = McpSecretParamsDto.fromJson(payload);
         await mcp.setSecret(request.key, request.value);
         return const <String, dynamic>{};
+      case RpcMethod.skillList:
+        final request = SkillScopeParamsDto.fromJson(payload);
+        return SkillListResultDto(
+          skills: await skills.list(
+            scope: await _skillScope(request.workspaceId),
+          ),
+        ).toJson();
+      case RpcMethod.skillGet:
+        final request = SkillIdParamsDto.fromJson(payload);
+        return SkillResultDto(
+          skill: await skills.get(
+            request.id,
+            scope: await _skillScope(request.workspaceId),
+          ),
+        ).toJson();
+      case RpcMethod.skillCreate:
+        final request = SkillCreateParamsDto.fromJson(payload);
+        return SkillResultDto(
+          skill: await skills.create(
+            id: request.id,
+            source: request.source,
+            name: request.name,
+            description: request.description,
+            body: request.body,
+            scope: await _skillScope(request.workspaceId),
+          ),
+        ).toJson();
+      case RpcMethod.skillUpdate:
+        final request = SkillUpdateParamsDto.fromJson(payload);
+        return SkillResultDto(
+          skill: await skills.update(
+            request.skill,
+            expectedContentHash: request.expectedContentHash,
+            force: request.force,
+            scope: await _skillScope(request.workspaceId),
+          ),
+        ).toJson();
+      case RpcMethod.skillDelete:
+        final request = SkillIdParamsDto.fromJson(payload);
+        await skills.delete(
+          request.id,
+          scope: await _skillScope(request.workspaceId),
+        );
+        return const <String, dynamic>{};
+      case RpcMethod.skillSetEnabled:
+        final request = SkillSetEnabledParamsDto.fromJson(payload);
+        return SkillResultDto(
+          skill: await skills.setEnabled(
+            request.id,
+            enabled: request.enabled,
+            scope: await _skillScope(request.workspaceId),
+          ),
+        ).toJson();
       case RpcMethod.sessionList:
         final request = SessionListParamsDto.fromJson(payload);
         final items = await sessionRepository.list(

@@ -50,6 +50,12 @@ final class McpServersChangedClientEvent extends ClientEvent {
   const McpServersChangedClientEvent();
 }
 
+/// Signals that the daemon's skill catalog changed.
+final class SkillsChangedClientEvent extends ClientEvent {
+  /// Creates a catalog invalidation event.
+  const SkillsChangedClientEvent();
+}
+
 /// ApprovalRequestedClientEvent defines a public contract.
 final class ApprovalRequestedClientEvent extends ClientEvent {
   /// Creates a [ApprovalRequestedClientEvent].
@@ -213,6 +219,40 @@ abstract interface class CoderApi {
 
   /// Stores one secret an MCP configuration may reference.
   Future<void> setMcpSecret(String key, String value);
+
+  /// Lists skills from the global sources plus one optional workspace.
+  Future<List<SkillDto>> listSkills({String? workspaceId});
+
+  /// Returns one skill visible in the requested scope.
+  Future<SkillDto> getSkill(String id, {String? workspaceId});
+
+  /// Creates one skill in a writable source.
+  Future<SkillDto> createSkill({
+    required String id,
+    required SkillSource source,
+    required String name,
+    required String description,
+    required String body,
+    String? workspaceId,
+  });
+
+  /// Updates one skill using optimistic concurrency.
+  Future<SkillDto> updateSkill(
+    SkillDto skill, {
+    required String expectedContentHash,
+    bool force = false,
+    String? workspaceId,
+  });
+
+  /// Archives one skill.
+  Future<void> deleteSkill(String id, {String? workspaceId});
+
+  /// Turns one skill on or off.
+  Future<SkillDto> setSkillEnabled(
+    String id, {
+    required bool enabled,
+    String? workspaceId,
+  });
 
   /// The listProviderCatalog public API member.
   Future<ProviderCatalogDto> listProviderCatalog();

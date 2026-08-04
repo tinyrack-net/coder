@@ -20,6 +20,7 @@ import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/server.dart';
+import 'package:coder_daemon/src/skills.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:crypto/crypto.dart';
@@ -173,6 +174,27 @@ abstract final class DaemonApplication {
         ]),
       );
       await agentDefinitions.initialize();
+      final userHome = config.userHomeDirectory;
+      final skills = SkillService(
+        store: FileSkillStore(
+          roots: <SkillFiles>[
+            // A daemon without a resolved user home stays away from any
+            // `~/.agents` tree instead of guessing one.
+            if (userHome != null)
+              NativeSkillFiles(
+                p.join(userHome, '.agents', 'skills'),
+                source: SkillSource.userHome,
+              ),
+            NativeSkillFiles(
+              p.join(config.configDirectory, 'skills'),
+              source: SkillSource.config,
+              createIfMissing: true,
+            ),
+          ],
+          settings: database.settingsDao,
+        ),
+      );
+      await skills.initialize();
       final service = SessionService(
         sessions: database.sessionDao,
         definitions: agentDefinitions,
@@ -196,6 +218,7 @@ abstract final class DaemonApplication {
               )
               .whereType<AgentTool>();
         },
+        skills: skills,
       );
       final workspaceService = WorkspaceService(
         database.workspaceDao,
@@ -220,6 +243,7 @@ abstract final class DaemonApplication {
           'agentDefinitions': true,
           'subagents': true,
           'mcp': true,
+          'skills': true,
         },
       );
       final rpc = DaemonRpcServer(
@@ -230,6 +254,7 @@ abstract final class DaemonApplication {
         agentDefinitions: agentDefinitions,
         mcp: mcp,
         worktrees: database.worktreeDao,
+        skills: skills,
         providers: providers,
         providerAuth: providerAuth,
         clock: clock,
@@ -260,6 +285,7 @@ abstract final class DaemonApplication {
         events: events,
         agentDefinitions: agentDefinitions,
         mcp: mcp,
+        skills: skills,
         lock: lock,
       );
     } catch (_) {
@@ -282,6 +308,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._events,
     required this._agentDefinitions,
     required this._mcp,
+    required this._skills,
     required this._lock,
   }) : _serverId = serverIdValue;
 
@@ -294,6 +321,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final StreamController<WireEnvelope> _events;
   final AgentDefinitionService _agentDefinitions;
   final McpService _mcp;
+  final SkillService _skills;
   final RandomAccessFile _lock;
   bool _stopped = false;
 
@@ -314,6 +342,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _rpc.close();
     await _mcp.close();
     await _agentDefinitions.close();
+    await _skills.close();
     await _events.close();
     await _database.close();
     await _lock.unlock();

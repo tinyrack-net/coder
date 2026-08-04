@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:coder_workspace/src/architecture_verifier.dart';
 import 'package:coder_workspace/src/coverage_verifier.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -96,4 +99,33 @@ void main() {
     expect(result, contains('line=89.0%'));
     expect(result, contains('branch=70.0%'));
   });
+
+  test(
+    'coverage workspace selects explicit scopes and rejects unknown ones',
+    () {
+      final root = Directory.systemTemp.createTempSync('coverage-workspace-');
+      addTearDown(() => root.deleteSync(recursive: true));
+      for (final path in <String>[
+        'packages/alpha',
+        'packages/beta',
+        'apps/ui',
+      ]) {
+        Directory(p.join(root.path, path)).createSync(recursive: true);
+      }
+      final workspace = CoverageWorkspace(root.path);
+
+      expect(
+        workspace
+            .packageDirectories(scopes: const <String>{'beta', 'ui'})
+            .map(
+              p.basename,
+            ),
+        <String>['ui', 'beta'],
+      );
+      expect(
+        () => workspace.packageDirectories(scopes: const <String>{'missing'}),
+        throwsA(isA<UnknownCoverageScopeException>()),
+      );
+    },
+  );
 }

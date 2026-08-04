@@ -15,6 +15,7 @@ List<RouteBase> get $appRoutes => [
   $projectSettingsRoute,
   $agentSettingsRoute,
   $mcpSettingsRoute,
+  $skillSettingsRoute,
   $daemonSettingsRoute,
   $newHostRoute,
   $editHostRoute,
@@ -290,6 +291,44 @@ mixin $McpSettingsRoute on GoRouteData {
   String get location => GoRouteData.$location(
     '/settings/mcp',
     queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $skillSettingsRoute => GoRouteData.$route(
+  path: '/settings/skills',
+  hasOverriddenOnExit: false,
+  factory: $SkillSettingsRoute._fromState,
+);
+
+mixin $SkillSettingsRoute on GoRouteData {
+  static SkillSettingsRoute _fromState(GoRouterState state) =>
+      SkillSettingsRoute(
+        hostId: state.uri.queryParameters['host-id'],
+        workspaceId: state.uri.queryParameters['workspace-id'],
+      );
+
+  SkillSettingsRoute get _self => this as SkillSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/skills',
+    queryParams: {
+      if (_self.hostId != null) 'host-id': _self.hostId,
+      if (_self.workspaceId != null) 'workspace-id': _self.workspaceId,
+    },
   );
 
   @override

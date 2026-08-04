@@ -6,11 +6,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'daemon.management',
     description: 'Starts, connects, edits, and removes daemon hosts.',
     apiMethods: <String>['close'],
-    routes: <String>[
-      'DaemonSettingsRoute',
-      'NewHostRoute',
-      'EditHostRoute',
-    ],
+    routes: <String>['DaemonSettingsRoute', 'NewHostRoute', 'EditHostRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -102,6 +98,18 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.platformSmoke,
+    },
+  ),
+  FeatureContract(
+    id: 'desktop.window.chrome',
+    description:
+        'Replaces Windows and Linux native title bars with localized menus, '
+        'window controls, and a draggable application frame.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
       FeatureVerificationLayer.platformSmoke,
     },
   ),
@@ -239,6 +247,39 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.verticalSlice,
+    },
+  ),
+  FeatureContract(
+    id: 'skill.management',
+    description:
+        'Lists, creates, edits, toggles, and deletes skills from built-in, '
+        'user-home, config, and project sources.',
+    apiMethods: <String>[
+      'listSkills',
+      'getSkill',
+      'createSkill',
+      'updateSkill',
+      'deleteSkill',
+      'setSkillEnabled',
+    ],
+    routes: <String>['SkillSettingsRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+  ),
+  FeatureContract(
+    id: 'skill.invocation',
+    description:
+        'Injects the enabled skill catalog into a turn and loads skill '
+        'instructions through the skill tool.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
     },
   ),
   FeatureContract(

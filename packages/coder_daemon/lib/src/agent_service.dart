@@ -6,6 +6,7 @@ import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
+import 'package:coder_daemon/src/skills.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Signature used by DaemonEventSink.
@@ -29,6 +30,7 @@ class SessionService {
     required this._clock,
     required this._ids,
     required this._toolsFactory,
+    required this._skills,
   });
 
   final SessionRepository _sessions;
@@ -41,6 +43,7 @@ class SessionService {
   final Clock _clock;
   final IdGenerator _ids;
   final AgentToolsFactory _toolsFactory;
+  final SkillService _skills;
   final Map<String, CancellationToken> _activeTurns =
       <String, CancellationToken>{};
   final Map<String, Completer<ApprovalDecision>> _pendingApprovals =
@@ -93,8 +96,13 @@ class SessionService {
     _emitSession(await _sessions.getById(sessionId));
 
     final permissionMode = await _effectivePermission(session, definition);
+    // Skills resolve against the worktree, so a branch carries the project
+    // skills that were committed to it.
+    final skills = await _skills.viewFor(worktree.path);
+    final skillSummaries = skills.summaries();
     final tools = <AgentTool>[
       ..._toolsFactory(definition.toolIds, worktree.path),
+      if (skillSummaries.isNotEmpty) SkillTool(skills),
       if (definition.mode == AgentMode.primary &&
           definition.callableAgentIds.isNotEmpty)
         _DelegateAgentTool(
@@ -163,6 +171,7 @@ class SessionService {
           customSystemPrompt: definition.promptEnabled
               ? definition.systemPrompt
               : null,
+          skills: skillSummaries,
         ),
         cancellation,
       ),

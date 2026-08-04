@@ -1,5 +1,6 @@
 export 'src/agent_definitions.dart';
 export 'src/application.dart';
+export 'src/built_in_skills.dart';
 export 'src/config.dart';
 export 'src/embedded.dart';
 export 'src/git_workspace.dart';
@@ -7,4 +8,5 @@ export 'src/ports.dart';
 export 'src/project_settings.dart';
 export 'src/provider_adapters.dart';
 export 'src/repositories.dart';
+export 'src/skills.dart';
 export 'src/workspace_service.dart';

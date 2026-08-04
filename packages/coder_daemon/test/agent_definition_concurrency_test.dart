@@ -49,17 +49,16 @@ void main() {
     await store.initialize();
     final initialScans = files.activeScanCount;
 
+    // Waiting for the reload the debounce timer schedules keeps the assertion
+    // deterministic; a fixed delay races the timer whenever the machine is
+    // busy. The three emits share one microtask, so no timer can fire between
+    // them and they must coalesce into exactly one scan.
+    final reloaded = store.changes.first;
     files
       ..emitChange()
       ..emitChange()
       ..emitChange();
-    // Wait for the debounced reload rather than for a fixed span: a loaded
-    // machine can take far longer than the debounce itself to run the timer.
-    final deadline = DateTime.now().add(const Duration(seconds: 5));
-    while (files.activeScanCount == initialScans &&
-        DateTime.now().isBefore(deadline)) {
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
+    await reloaded;
     await store.close();
 
     expect(files.activeScanCount, initialScans + 1);

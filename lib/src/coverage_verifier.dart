@@ -194,6 +194,54 @@ final class CoverageVerifier {
   String _percent(double value) => '${(value * 100).toStringAsFixed(1)}%';
 }
 
+/// Discovers package and application directories for coverage verification.
+final class CoverageWorkspace {
+  /// Creates a workspace rooted at [workspaceRoot].
+  const CoverageWorkspace(this.workspaceRoot);
+
+  /// Pub workspace root.
+  final String workspaceRoot;
+
+  /// Returns all packages, or only the requested package [scopes].
+  List<String> packageDirectories({Set<String> scopes = const <String>{}}) {
+    final directories = <String>[
+      ..._childDirectories('apps'),
+      ..._childDirectories('packages'),
+    ]..sort();
+    if (scopes.isEmpty) return directories;
+    final available = <String>{
+      for (final path in directories) p.basename(path),
+    };
+    final unknown = scopes.difference(available).toList()..sort();
+    if (unknown.isNotEmpty) {
+      throw UnknownCoverageScopeException(unknown);
+    }
+    return directories
+        .where((path) => scopes.contains(p.basename(path)))
+        .toList(growable: false);
+  }
+
+  Iterable<String> _childDirectories(String name) {
+    final directory = Directory(p.join(workspaceRoot, name));
+    if (!directory.existsSync()) return const <String>[];
+    return directory.listSync().whereType<Directory>().map(
+      (entry) => entry.path,
+    );
+  }
+}
+
+/// Indicates that coverage verification requested unknown workspace packages.
+final class UnknownCoverageScopeException implements Exception {
+  /// Creates an exception for sorted [scopes].
+  const UnknownCoverageScopeException(this.scopes);
+
+  /// Unknown package names.
+  final List<String> scopes;
+
+  @override
+  String toString() => 'Unknown coverage package scope: ${scopes.join(', ')}';
+}
+
 final class _CoverageRecord {
   const _CoverageRecord({
     required this.linesFound,

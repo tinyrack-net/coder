@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 12;
+const int coderProtocolVersion = 13;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -83,6 +83,24 @@ abstract final class RpcMethod {
   /// Stores one secret an MCP configuration may reference.
   static const String mcpSecretSet = 'mcp.servers.secret.set';
 
+  /// Lists skills visible in one scope.
+  static const String skillList = 'skill.list';
+
+  /// Returns one skill.
+  static const String skillGet = 'skill.get';
+
+  /// Creates one skill in a writable source.
+  static const String skillCreate = 'skill.create';
+
+  /// Updates one skill with optimistic concurrency.
+  static const String skillUpdate = 'skill.update';
+
+  /// Archives one skill.
+  static const String skillDelete = 'skill.delete';
+
+  /// Turns one skill on or off.
+  static const String skillSetEnabled = 'skill.setEnabled';
+
   /// Lists persisted sessions.
   static const String sessionList = 'session.list';
 
@@ -163,6 +181,9 @@ abstract final class RpcNotification {
 
   /// Reports a Markdown agent catalog change.
   static const String agentDefinitionsChanged = 'agentDefinitions.changed';
+
+  /// Reports a skill catalog change.
+  static const String skillsChanged = 'skills.changed';
 
   /// The approvalRequested public API member.
   static const String approvalRequested = 'approval.requested';

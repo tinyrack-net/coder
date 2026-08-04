@@ -4380,6 +4380,1372 @@ as String,
 
 
 /// @nodoc
+mixin _$SkillScopeParamsDto {
+
+ String? get workspaceId;
+/// Create a copy of SkillScopeParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SkillScopeParamsDtoCopyWith<SkillScopeParamsDto> get copyWith => _$SkillScopeParamsDtoCopyWithImpl<SkillScopeParamsDto>(this as SkillScopeParamsDto, _$identity);
+
+  /// Serializes this SkillScopeParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkillScopeParamsDto&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,workspaceId);
+
+@override
+String toString() {
+  return 'SkillScopeParamsDto(workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SkillScopeParamsDtoCopyWith<$Res>  {
+  factory $SkillScopeParamsDtoCopyWith(SkillScopeParamsDto value, $Res Function(SkillScopeParamsDto) _then) = _$SkillScopeParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SkillScopeParamsDtoCopyWithImpl<$Res>
+    implements $SkillScopeParamsDtoCopyWith<$Res> {
+  _$SkillScopeParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SkillScopeParamsDto _self;
+  final $Res Function(SkillScopeParamsDto) _then;
+
+/// Create a copy of SkillScopeParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? workspaceId = freezed,}) {
+  return _then(_self.copyWith(
+workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SkillScopeParamsDto].
+extension SkillScopeParamsDtoPatterns on SkillScopeParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SkillScopeParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SkillScopeParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SkillScopeParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SkillScopeParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SkillScopeParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SkillScopeParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? workspaceId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SkillScopeParamsDto() when $default != null:
+return $default(_that.workspaceId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? workspaceId)  $default,) {final _that = this;
+switch (_that) {
+case _SkillScopeParamsDto():
+return $default(_that.workspaceId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? workspaceId)?  $default,) {final _that = this;
+switch (_that) {
+case _SkillScopeParamsDto() when $default != null:
+return $default(_that.workspaceId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SkillScopeParamsDto implements SkillScopeParamsDto {
+  const _SkillScopeParamsDto({this.workspaceId});
+  factory _SkillScopeParamsDto.fromJson(Map<String, dynamic> json) => _$SkillScopeParamsDtoFromJson(json);
+
+@override final  String? workspaceId;
+
+/// Create a copy of SkillScopeParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SkillScopeParamsDtoCopyWith<_SkillScopeParamsDto> get copyWith => __$SkillScopeParamsDtoCopyWithImpl<_SkillScopeParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SkillScopeParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkillScopeParamsDto&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,workspaceId);
+
+@override
+String toString() {
+  return 'SkillScopeParamsDto(workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SkillScopeParamsDtoCopyWith<$Res> implements $SkillScopeParamsDtoCopyWith<$Res> {
+  factory _$SkillScopeParamsDtoCopyWith(_SkillScopeParamsDto value, $Res Function(_SkillScopeParamsDto) _then) = __$SkillScopeParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class __$SkillScopeParamsDtoCopyWithImpl<$Res>
+    implements _$SkillScopeParamsDtoCopyWith<$Res> {
+  __$SkillScopeParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SkillScopeParamsDto _self;
+  final $Res Function(_SkillScopeParamsDto) _then;
+
+/// Create a copy of SkillScopeParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? workspaceId = freezed,}) {
+  return _then(_SkillScopeParamsDto(
+workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SkillIdParamsDto {
+
+ String get id; String? get workspaceId;
+/// Create a copy of SkillIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SkillIdParamsDtoCopyWith<SkillIdParamsDto> get copyWith => _$SkillIdParamsDtoCopyWithImpl<SkillIdParamsDto>(this as SkillIdParamsDto, _$identity);
+
+  /// Serializes this SkillIdParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkillIdParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,workspaceId);
+
+@override
+String toString() {
+  return 'SkillIdParamsDto(id: $id, workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SkillIdParamsDtoCopyWith<$Res>  {
+  factory $SkillIdParamsDtoCopyWith(SkillIdParamsDto value, $Res Function(SkillIdParamsDto) _then) = _$SkillIdParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SkillIdParamsDtoCopyWithImpl<$Res>
+    implements $SkillIdParamsDtoCopyWith<$Res> {
+  _$SkillIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SkillIdParamsDto _self;
+  final $Res Function(SkillIdParamsDto) _then;
+
+/// Create a copy of SkillIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SkillIdParamsDto].
+extension SkillIdParamsDtoPatterns on SkillIdParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SkillIdParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SkillIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SkillIdParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SkillIdParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SkillIdParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SkillIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? workspaceId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SkillIdParamsDto() when $default != null:
+return $default(_that.id,_that.workspaceId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? workspaceId)  $default,) {final _that = this;
+switch (_that) {
+case _SkillIdParamsDto():
+return $default(_that.id,_that.workspaceId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? workspaceId)?  $default,) {final _that = this;
+switch (_that) {
+case _SkillIdParamsDto() when $default != null:
+return $default(_that.id,_that.workspaceId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SkillIdParamsDto implements SkillIdParamsDto {
+  const _SkillIdParamsDto({required this.id, this.workspaceId});
+  factory _SkillIdParamsDto.fromJson(Map<String, dynamic> json) => _$SkillIdParamsDtoFromJson(json);
+
+@override final  String id;
+@override final  String? workspaceId;
+
+/// Create a copy of SkillIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SkillIdParamsDtoCopyWith<_SkillIdParamsDto> get copyWith => __$SkillIdParamsDtoCopyWithImpl<_SkillIdParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SkillIdParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkillIdParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,workspaceId);
+
+@override
+String toString() {
+  return 'SkillIdParamsDto(id: $id, workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SkillIdParamsDtoCopyWith<$Res> implements $SkillIdParamsDtoCopyWith<$Res> {
+  factory _$SkillIdParamsDtoCopyWith(_SkillIdParamsDto value, $Res Function(_SkillIdParamsDto) _then) = __$SkillIdParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class __$SkillIdParamsDtoCopyWithImpl<$Res>
+    implements _$SkillIdParamsDtoCopyWith<$Res> {
+  __$SkillIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SkillIdParamsDto _self;
+  final $Res Function(_SkillIdParamsDto) _then;
+
+/// Create a copy of SkillIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = freezed,}) {
+  return _then(_SkillIdParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SkillCreateParamsDto {
+
+ String get id; SkillSource get source; String get name; String get description; String get body; String? get workspaceId;
+/// Create a copy of SkillCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SkillCreateParamsDtoCopyWith<SkillCreateParamsDto> get copyWith => _$SkillCreateParamsDtoCopyWithImpl<SkillCreateParamsDto>(this as SkillCreateParamsDto, _$identity);
+
+  /// Serializes this SkillCreateParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkillCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.source, source) || other.source == source)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.body, body) || other.body == body)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,source,name,description,body,workspaceId);
+
+@override
+String toString() {
+  return 'SkillCreateParamsDto(id: $id, source: $source, name: $name, description: $description, body: $body, workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SkillCreateParamsDtoCopyWith<$Res>  {
+  factory $SkillCreateParamsDtoCopyWith(SkillCreateParamsDto value, $Res Function(SkillCreateParamsDto) _then) = _$SkillCreateParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, SkillSource source, String name, String description, String body, String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SkillCreateParamsDtoCopyWithImpl<$Res>
+    implements $SkillCreateParamsDtoCopyWith<$Res> {
+  _$SkillCreateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SkillCreateParamsDto _self;
+  final $Res Function(SkillCreateParamsDto) _then;
+
+/// Create a copy of SkillCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? source = null,Object? name = null,Object? description = null,Object? body = null,Object? workspaceId = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as SkillSource,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
+as String,workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SkillCreateParamsDto].
+extension SkillCreateParamsDtoPatterns on SkillCreateParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SkillCreateParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SkillCreateParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SkillCreateParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SkillCreateParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SkillCreateParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SkillCreateParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  SkillSource source,  String name,  String description,  String body,  String? workspaceId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SkillCreateParamsDto() when $default != null:
+return $default(_that.id,_that.source,_that.name,_that.description,_that.body,_that.workspaceId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  SkillSource source,  String name,  String description,  String body,  String? workspaceId)  $default,) {final _that = this;
+switch (_that) {
+case _SkillCreateParamsDto():
+return $default(_that.id,_that.source,_that.name,_that.description,_that.body,_that.workspaceId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  SkillSource source,  String name,  String description,  String body,  String? workspaceId)?  $default,) {final _that = this;
+switch (_that) {
+case _SkillCreateParamsDto() when $default != null:
+return $default(_that.id,_that.source,_that.name,_that.description,_that.body,_that.workspaceId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SkillCreateParamsDto implements SkillCreateParamsDto {
+  const _SkillCreateParamsDto({required this.id, required this.source, required this.name, required this.description, required this.body, this.workspaceId});
+  factory _SkillCreateParamsDto.fromJson(Map<String, dynamic> json) => _$SkillCreateParamsDtoFromJson(json);
+
+@override final  String id;
+@override final  SkillSource source;
+@override final  String name;
+@override final  String description;
+@override final  String body;
+@override final  String? workspaceId;
+
+/// Create a copy of SkillCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SkillCreateParamsDtoCopyWith<_SkillCreateParamsDto> get copyWith => __$SkillCreateParamsDtoCopyWithImpl<_SkillCreateParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SkillCreateParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkillCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.source, source) || other.source == source)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.body, body) || other.body == body)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,source,name,description,body,workspaceId);
+
+@override
+String toString() {
+  return 'SkillCreateParamsDto(id: $id, source: $source, name: $name, description: $description, body: $body, workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SkillCreateParamsDtoCopyWith<$Res> implements $SkillCreateParamsDtoCopyWith<$Res> {
+  factory _$SkillCreateParamsDtoCopyWith(_SkillCreateParamsDto value, $Res Function(_SkillCreateParamsDto) _then) = __$SkillCreateParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, SkillSource source, String name, String description, String body, String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class __$SkillCreateParamsDtoCopyWithImpl<$Res>
+    implements _$SkillCreateParamsDtoCopyWith<$Res> {
+  __$SkillCreateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SkillCreateParamsDto _self;
+  final $Res Function(_SkillCreateParamsDto) _then;
+
+/// Create a copy of SkillCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? source = null,Object? name = null,Object? description = null,Object? body = null,Object? workspaceId = freezed,}) {
+  return _then(_SkillCreateParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as SkillSource,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
+as String,workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SkillUpdateParamsDto {
+
+ SkillDto get skill; String get expectedContentHash; String? get workspaceId; bool get force;
+/// Create a copy of SkillUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SkillUpdateParamsDtoCopyWith<SkillUpdateParamsDto> get copyWith => _$SkillUpdateParamsDtoCopyWithImpl<SkillUpdateParamsDto>(this as SkillUpdateParamsDto, _$identity);
+
+  /// Serializes this SkillUpdateParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkillUpdateParamsDto&&(identical(other.skill, skill) || other.skill == skill)&&(identical(other.expectedContentHash, expectedContentHash) || other.expectedContentHash == expectedContentHash)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.force, force) || other.force == force));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,skill,expectedContentHash,workspaceId,force);
+
+@override
+String toString() {
+  return 'SkillUpdateParamsDto(skill: $skill, expectedContentHash: $expectedContentHash, workspaceId: $workspaceId, force: $force)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SkillUpdateParamsDtoCopyWith<$Res>  {
+  factory $SkillUpdateParamsDtoCopyWith(SkillUpdateParamsDto value, $Res Function(SkillUpdateParamsDto) _then) = _$SkillUpdateParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ SkillDto skill, String expectedContentHash, String? workspaceId, bool force
+});
+
+
+$SkillDtoCopyWith<$Res> get skill;
+
+}
+/// @nodoc
+class _$SkillUpdateParamsDtoCopyWithImpl<$Res>
+    implements $SkillUpdateParamsDtoCopyWith<$Res> {
+  _$SkillUpdateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SkillUpdateParamsDto _self;
+  final $Res Function(SkillUpdateParamsDto) _then;
+
+/// Create a copy of SkillUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? skill = null,Object? expectedContentHash = null,Object? workspaceId = freezed,Object? force = null,}) {
+  return _then(_self.copyWith(
+skill: null == skill ? _self.skill : skill // ignore: cast_nullable_to_non_nullable
+as SkillDto,expectedContentHash: null == expectedContentHash ? _self.expectedContentHash : expectedContentHash // ignore: cast_nullable_to_non_nullable
+as String,workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,force: null == force ? _self.force : force // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+/// Create a copy of SkillUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SkillDtoCopyWith<$Res> get skill {
+  
+  return $SkillDtoCopyWith<$Res>(_self.skill, (value) {
+    return _then(_self.copyWith(skill: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [SkillUpdateParamsDto].
+extension SkillUpdateParamsDtoPatterns on SkillUpdateParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SkillUpdateParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SkillUpdateParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SkillUpdateParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SkillUpdateParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SkillUpdateParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SkillUpdateParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SkillDto skill,  String expectedContentHash,  String? workspaceId,  bool force)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SkillUpdateParamsDto() when $default != null:
+return $default(_that.skill,_that.expectedContentHash,_that.workspaceId,_that.force);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SkillDto skill,  String expectedContentHash,  String? workspaceId,  bool force)  $default,) {final _that = this;
+switch (_that) {
+case _SkillUpdateParamsDto():
+return $default(_that.skill,_that.expectedContentHash,_that.workspaceId,_that.force);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SkillDto skill,  String expectedContentHash,  String? workspaceId,  bool force)?  $default,) {final _that = this;
+switch (_that) {
+case _SkillUpdateParamsDto() when $default != null:
+return $default(_that.skill,_that.expectedContentHash,_that.workspaceId,_that.force);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SkillUpdateParamsDto implements SkillUpdateParamsDto {
+  const _SkillUpdateParamsDto({required this.skill, required this.expectedContentHash, this.workspaceId, this.force = false});
+  factory _SkillUpdateParamsDto.fromJson(Map<String, dynamic> json) => _$SkillUpdateParamsDtoFromJson(json);
+
+@override final  SkillDto skill;
+@override final  String expectedContentHash;
+@override final  String? workspaceId;
+@override@JsonKey() final  bool force;
+
+/// Create a copy of SkillUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SkillUpdateParamsDtoCopyWith<_SkillUpdateParamsDto> get copyWith => __$SkillUpdateParamsDtoCopyWithImpl<_SkillUpdateParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SkillUpdateParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkillUpdateParamsDto&&(identical(other.skill, skill) || other.skill == skill)&&(identical(other.expectedContentHash, expectedContentHash) || other.expectedContentHash == expectedContentHash)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.force, force) || other.force == force));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,skill,expectedContentHash,workspaceId,force);
+
+@override
+String toString() {
+  return 'SkillUpdateParamsDto(skill: $skill, expectedContentHash: $expectedContentHash, workspaceId: $workspaceId, force: $force)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SkillUpdateParamsDtoCopyWith<$Res> implements $SkillUpdateParamsDtoCopyWith<$Res> {
+  factory _$SkillUpdateParamsDtoCopyWith(_SkillUpdateParamsDto value, $Res Function(_SkillUpdateParamsDto) _then) = __$SkillUpdateParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ SkillDto skill, String expectedContentHash, String? workspaceId, bool force
+});
+
+
+@override $SkillDtoCopyWith<$Res> get skill;
+
+}
+/// @nodoc
+class __$SkillUpdateParamsDtoCopyWithImpl<$Res>
+    implements _$SkillUpdateParamsDtoCopyWith<$Res> {
+  __$SkillUpdateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SkillUpdateParamsDto _self;
+  final $Res Function(_SkillUpdateParamsDto) _then;
+
+/// Create a copy of SkillUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? skill = null,Object? expectedContentHash = null,Object? workspaceId = freezed,Object? force = null,}) {
+  return _then(_SkillUpdateParamsDto(
+skill: null == skill ? _self.skill : skill // ignore: cast_nullable_to_non_nullable
+as SkillDto,expectedContentHash: null == expectedContentHash ? _self.expectedContentHash : expectedContentHash // ignore: cast_nullable_to_non_nullable
+as String,workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,force: null == force ? _self.force : force // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+/// Create a copy of SkillUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SkillDtoCopyWith<$Res> get skill {
+  
+  return $SkillDtoCopyWith<$Res>(_self.skill, (value) {
+    return _then(_self.copyWith(skill: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$SkillSetEnabledParamsDto {
+
+ String get id; bool get enabled; String? get workspaceId;
+/// Create a copy of SkillSetEnabledParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SkillSetEnabledParamsDtoCopyWith<SkillSetEnabledParamsDto> get copyWith => _$SkillSetEnabledParamsDtoCopyWithImpl<SkillSetEnabledParamsDto>(this as SkillSetEnabledParamsDto, _$identity);
+
+  /// Serializes this SkillSetEnabledParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkillSetEnabledParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,enabled,workspaceId);
+
+@override
+String toString() {
+  return 'SkillSetEnabledParamsDto(id: $id, enabled: $enabled, workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SkillSetEnabledParamsDtoCopyWith<$Res>  {
+  factory $SkillSetEnabledParamsDtoCopyWith(SkillSetEnabledParamsDto value, $Res Function(SkillSetEnabledParamsDto) _then) = _$SkillSetEnabledParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, bool enabled, String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SkillSetEnabledParamsDtoCopyWithImpl<$Res>
+    implements $SkillSetEnabledParamsDtoCopyWith<$Res> {
+  _$SkillSetEnabledParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SkillSetEnabledParamsDto _self;
+  final $Res Function(SkillSetEnabledParamsDto) _then;
+
+/// Create a copy of SkillSetEnabledParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? enabled = null,Object? workspaceId = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
+as bool,workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SkillSetEnabledParamsDto].
+extension SkillSetEnabledParamsDtoPatterns on SkillSetEnabledParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SkillSetEnabledParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SkillSetEnabledParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SkillSetEnabledParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SkillSetEnabledParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SkillSetEnabledParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SkillSetEnabledParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  bool enabled,  String? workspaceId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SkillSetEnabledParamsDto() when $default != null:
+return $default(_that.id,_that.enabled,_that.workspaceId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  bool enabled,  String? workspaceId)  $default,) {final _that = this;
+switch (_that) {
+case _SkillSetEnabledParamsDto():
+return $default(_that.id,_that.enabled,_that.workspaceId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  bool enabled,  String? workspaceId)?  $default,) {final _that = this;
+switch (_that) {
+case _SkillSetEnabledParamsDto() when $default != null:
+return $default(_that.id,_that.enabled,_that.workspaceId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SkillSetEnabledParamsDto implements SkillSetEnabledParamsDto {
+  const _SkillSetEnabledParamsDto({required this.id, required this.enabled, this.workspaceId});
+  factory _SkillSetEnabledParamsDto.fromJson(Map<String, dynamic> json) => _$SkillSetEnabledParamsDtoFromJson(json);
+
+@override final  String id;
+@override final  bool enabled;
+@override final  String? workspaceId;
+
+/// Create a copy of SkillSetEnabledParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SkillSetEnabledParamsDtoCopyWith<_SkillSetEnabledParamsDto> get copyWith => __$SkillSetEnabledParamsDtoCopyWithImpl<_SkillSetEnabledParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SkillSetEnabledParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkillSetEnabledParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,enabled,workspaceId);
+
+@override
+String toString() {
+  return 'SkillSetEnabledParamsDto(id: $id, enabled: $enabled, workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SkillSetEnabledParamsDtoCopyWith<$Res> implements $SkillSetEnabledParamsDtoCopyWith<$Res> {
+  factory _$SkillSetEnabledParamsDtoCopyWith(_SkillSetEnabledParamsDto value, $Res Function(_SkillSetEnabledParamsDto) _then) = __$SkillSetEnabledParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, bool enabled, String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class __$SkillSetEnabledParamsDtoCopyWithImpl<$Res>
+    implements _$SkillSetEnabledParamsDtoCopyWith<$Res> {
+  __$SkillSetEnabledParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SkillSetEnabledParamsDto _self;
+  final $Res Function(_SkillSetEnabledParamsDto) _then;
+
+/// Create a copy of SkillSetEnabledParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? enabled = null,Object? workspaceId = freezed,}) {
+  return _then(_SkillSetEnabledParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
+as bool,workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$ProviderConnectApiKeyParamsDto {
 
  String get definitionId; String get apiKey; bool get makeDefault;
@@ -14171,6 +15537,556 @@ as List<AgentToolDefinitionDto>,
 }
 
 
+}
+
+
+/// @nodoc
+mixin _$SkillListResultDto {
+
+ List<SkillDto> get skills;
+/// Create a copy of SkillListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SkillListResultDtoCopyWith<SkillListResultDto> get copyWith => _$SkillListResultDtoCopyWithImpl<SkillListResultDto>(this as SkillListResultDto, _$identity);
+
+  /// Serializes this SkillListResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkillListResultDto&&const DeepCollectionEquality().equals(other.skills, skills));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(skills));
+
+@override
+String toString() {
+  return 'SkillListResultDto(skills: $skills)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SkillListResultDtoCopyWith<$Res>  {
+  factory $SkillListResultDtoCopyWith(SkillListResultDto value, $Res Function(SkillListResultDto) _then) = _$SkillListResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<SkillDto> skills
+});
+
+
+
+
+}
+/// @nodoc
+class _$SkillListResultDtoCopyWithImpl<$Res>
+    implements $SkillListResultDtoCopyWith<$Res> {
+  _$SkillListResultDtoCopyWithImpl(this._self, this._then);
+
+  final SkillListResultDto _self;
+  final $Res Function(SkillListResultDto) _then;
+
+/// Create a copy of SkillListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? skills = null,}) {
+  return _then(_self.copyWith(
+skills: null == skills ? _self.skills : skills // ignore: cast_nullable_to_non_nullable
+as List<SkillDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SkillListResultDto].
+extension SkillListResultDtoPatterns on SkillListResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SkillListResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SkillListResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SkillListResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SkillListResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SkillListResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SkillListResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<SkillDto> skills)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SkillListResultDto() when $default != null:
+return $default(_that.skills);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<SkillDto> skills)  $default,) {final _that = this;
+switch (_that) {
+case _SkillListResultDto():
+return $default(_that.skills);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<SkillDto> skills)?  $default,) {final _that = this;
+switch (_that) {
+case _SkillListResultDto() when $default != null:
+return $default(_that.skills);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SkillListResultDto implements SkillListResultDto {
+  const _SkillListResultDto({required final  List<SkillDto> skills}): _skills = skills;
+  factory _SkillListResultDto.fromJson(Map<String, dynamic> json) => _$SkillListResultDtoFromJson(json);
+
+ final  List<SkillDto> _skills;
+@override List<SkillDto> get skills {
+  if (_skills is EqualUnmodifiableListView) return _skills;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_skills);
+}
+
+
+/// Create a copy of SkillListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SkillListResultDtoCopyWith<_SkillListResultDto> get copyWith => __$SkillListResultDtoCopyWithImpl<_SkillListResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SkillListResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkillListResultDto&&const DeepCollectionEquality().equals(other._skills, _skills));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_skills));
+
+@override
+String toString() {
+  return 'SkillListResultDto(skills: $skills)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SkillListResultDtoCopyWith<$Res> implements $SkillListResultDtoCopyWith<$Res> {
+  factory _$SkillListResultDtoCopyWith(_SkillListResultDto value, $Res Function(_SkillListResultDto) _then) = __$SkillListResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<SkillDto> skills
+});
+
+
+
+
+}
+/// @nodoc
+class __$SkillListResultDtoCopyWithImpl<$Res>
+    implements _$SkillListResultDtoCopyWith<$Res> {
+  __$SkillListResultDtoCopyWithImpl(this._self, this._then);
+
+  final _SkillListResultDto _self;
+  final $Res Function(_SkillListResultDto) _then;
+
+/// Create a copy of SkillListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? skills = null,}) {
+  return _then(_SkillListResultDto(
+skills: null == skills ? _self._skills : skills // ignore: cast_nullable_to_non_nullable
+as List<SkillDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SkillResultDto {
+
+ SkillDto get skill;
+/// Create a copy of SkillResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SkillResultDtoCopyWith<SkillResultDto> get copyWith => _$SkillResultDtoCopyWithImpl<SkillResultDto>(this as SkillResultDto, _$identity);
+
+  /// Serializes this SkillResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkillResultDto&&(identical(other.skill, skill) || other.skill == skill));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,skill);
+
+@override
+String toString() {
+  return 'SkillResultDto(skill: $skill)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SkillResultDtoCopyWith<$Res>  {
+  factory $SkillResultDtoCopyWith(SkillResultDto value, $Res Function(SkillResultDto) _then) = _$SkillResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ SkillDto skill
+});
+
+
+$SkillDtoCopyWith<$Res> get skill;
+
+}
+/// @nodoc
+class _$SkillResultDtoCopyWithImpl<$Res>
+    implements $SkillResultDtoCopyWith<$Res> {
+  _$SkillResultDtoCopyWithImpl(this._self, this._then);
+
+  final SkillResultDto _self;
+  final $Res Function(SkillResultDto) _then;
+
+/// Create a copy of SkillResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? skill = null,}) {
+  return _then(_self.copyWith(
+skill: null == skill ? _self.skill : skill // ignore: cast_nullable_to_non_nullable
+as SkillDto,
+  ));
+}
+/// Create a copy of SkillResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SkillDtoCopyWith<$Res> get skill {
+  
+  return $SkillDtoCopyWith<$Res>(_self.skill, (value) {
+    return _then(_self.copyWith(skill: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [SkillResultDto].
+extension SkillResultDtoPatterns on SkillResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SkillResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SkillResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SkillResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SkillResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SkillResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SkillResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SkillDto skill)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SkillResultDto() when $default != null:
+return $default(_that.skill);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SkillDto skill)  $default,) {final _that = this;
+switch (_that) {
+case _SkillResultDto():
+return $default(_that.skill);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SkillDto skill)?  $default,) {final _that = this;
+switch (_that) {
+case _SkillResultDto() when $default != null:
+return $default(_that.skill);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SkillResultDto implements SkillResultDto {
+  const _SkillResultDto({required this.skill});
+  factory _SkillResultDto.fromJson(Map<String, dynamic> json) => _$SkillResultDtoFromJson(json);
+
+@override final  SkillDto skill;
+
+/// Create a copy of SkillResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SkillResultDtoCopyWith<_SkillResultDto> get copyWith => __$SkillResultDtoCopyWithImpl<_SkillResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SkillResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkillResultDto&&(identical(other.skill, skill) || other.skill == skill));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,skill);
+
+@override
+String toString() {
+  return 'SkillResultDto(skill: $skill)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SkillResultDtoCopyWith<$Res> implements $SkillResultDtoCopyWith<$Res> {
+  factory _$SkillResultDtoCopyWith(_SkillResultDto value, $Res Function(_SkillResultDto) _then) = __$SkillResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ SkillDto skill
+});
+
+
+@override $SkillDtoCopyWith<$Res> get skill;
+
+}
+/// @nodoc
+class __$SkillResultDtoCopyWithImpl<$Res>
+    implements _$SkillResultDtoCopyWith<$Res> {
+  __$SkillResultDtoCopyWithImpl(this._self, this._then);
+
+  final _SkillResultDto _self;
+  final $Res Function(_SkillResultDto) _then;
+
+/// Create a copy of SkillResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? skill = null,}) {
+  return _then(_SkillResultDto(
+skill: null == skill ? _self.skill : skill // ignore: cast_nullable_to_non_nullable
+as SkillDto,
+  ));
+}
+
+/// Create a copy of SkillResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SkillDtoCopyWith<$Res> get skill {
+  
+  return $SkillDtoCopyWith<$Res>(_self.skill, (value) {
+    return _then(_self.copyWith(skill: value));
+  });
+}
 }
 
 

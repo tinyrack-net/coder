@@ -368,6 +368,10 @@ final class WorkspaceService {
     return result;
   }
 
+  /// Returns the checkout root of one registered workspace.
+  Future<String> workspaceRoot(String workspaceId) async =>
+      (await _requireWorkspace(workspaceId)).rootPath;
+
   Future<WorkspaceDto> _requireWorkspace(String id) async =>
       await _workspaces.getById(id) ??
       (throw StateError('Workspace not found: $id'));
