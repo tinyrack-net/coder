@@ -445,6 +445,18 @@ void main() {
             .first,
       );
       await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-provider')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-provider-openai')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+      );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
         'Feature e2e',
@@ -488,6 +500,18 @@ void main() {
       await _pumpUntil(tester, find.byKey(composer));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('session-composer-model')), findsOne);
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-provider')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-provider-openai')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+      );
+      await tester.pumpAndSettle();
 
       await tester.enterText(find.byKey(composer), 'Delegate review');
       await tester.pump();
@@ -624,13 +648,17 @@ void main() {
       await tester.tap(find.text('API key 필요'));
       await tester.tap(find.widgetWithText(FilledButton, '저장'));
       await _pumpUntil(tester, find.text('E2E Provider'));
-      // The connection is stored before its model catalog is fetched, so the
-      // default model appears a moment after the name does.
-      final providerConnection = await _waitForProviderDefaultModel(
+      // The connection is stored before its model catalog is fetched.
+      final providerConnection = await _waitForProviderModels(
         remoteClient,
         'E2E Provider',
       );
-      expect(providerConnection.defaultModelId, 'e2e-model');
+      expect(
+        (await remoteClient.listProviderModels(
+          providerConnection.id,
+        )).map((model) => model.id),
+        containsAll(<String>['e2e-model', selectedModelId]),
+      );
       final connectedSection = find.byKey(
         const ValueKey('provider-settings-connected'),
       );
@@ -644,33 +672,6 @@ void main() {
       expect(
         tester.getBottomRight(connectedSection).dy,
         lessThanOrEqualTo(tester.getTopLeft(addSection).dy),
-      );
-      final modelSelector = find.byKey(
-        ValueKey('model-selector-${providerConnection.id}'),
-      );
-      await _pumpUntil(tester, modelSelector);
-      await tester.ensureVisible(modelSelector);
-      await tester.pumpAndSettle();
-      await tester.tap(modelSelector);
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const ValueKey('model-search-field')),
-        'extremely-long',
-      );
-      await tester.pump();
-      await tester.tap(
-        find.byKey(
-          ValueKey(
-            'model-option-${providerConnection.id}-$selectedModelId',
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        (await remoteClient.listProviderConnections())
-            .singleWhere((item) => item.id == providerConnection.id)
-            .defaultModelId,
-        selectedModelId,
       );
       final providerCard = find.ancestor(
         of: find.text('E2E Provider'),
@@ -795,7 +796,7 @@ Future<void> _waitForWindowVisibility(
   }
 }
 
-Future<ProviderConnectionDto> _waitForProviderDefaultModel(
+Future<ProviderConnectionDto> _waitForProviderModels(
   CoderApi api,
   String displayName, {
   int attempts = 50,
@@ -804,11 +805,14 @@ Future<ProviderConnectionDto> _waitForProviderDefaultModel(
     final connection = (await api.listProviderConnections())
         .where((item) => item.displayName == displayName)
         .singleOrNull;
-    if (connection?.defaultModelId != null) return connection!;
+    if (connection != null &&
+        (await api.listProviderModels(connection.id)).isNotEmpty) {
+      return connection;
+    }
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
   throw TestFailure(
-    'Timed out waiting for $displayName to resolve a default model.',
+    'Timed out waiting for $displayName to discover models.',
   );
 }
 

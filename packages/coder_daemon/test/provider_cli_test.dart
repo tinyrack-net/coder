@@ -17,7 +17,7 @@ void main() {
 
     expect(exitCode, 0);
     expect(output.toString(), contains('OpenAI'));
-    expect(output.toString(), contains('gpt-5.6-sol'));
+    expect(output.toString(), contains('connected'));
     expect(output.toString(), isNot(contains('https://')));
   });
 
@@ -174,7 +174,6 @@ void main() {
           'openai',
           '--method',
           'chatgpt-browser',
-          '--default',
         ],
         backend: backend,
         output: output,
@@ -183,7 +182,6 @@ void main() {
       1,
     );
     expect(output.toString(), contains('authorization rejected'));
-    expect(backend.lastMakeDefault, isTrue);
   });
 }
 
@@ -197,7 +195,6 @@ final class _Backend implements ProviderCliBackend {
   int refreshes = 0;
   int statusCalls = 0;
   bool emptyConnections = false;
-  bool? lastMakeDefault;
   ProviderAuthAttemptStatus authResult = ProviderAuthAttemptStatus.succeeded;
   String? authError;
 
@@ -209,8 +206,6 @@ final class _Backend implements ProviderCliBackend {
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.apiKey,
         credentialOrigin: ProviderCredentialOrigin.stored,
-        isDefault: id == 'openai',
-        defaultModelId: id == 'openai' ? 'gpt-5.6-sol' : null,
         createdAt: now,
         updatedAt: now,
       );
@@ -218,18 +213,14 @@ final class _Backend implements ProviderCliBackend {
   @override
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey, {
-    required bool makeDefault,
-  }) async {
+    String apiKey,
+  ) async {
     apiKeys[definitionId] = apiKey;
     return connection(definitionId, definitionId);
   }
 
   @override
-  Future<ProviderConnectionDto> connectNone(
-    String definitionId, {
-    required bool makeDefault,
-  }) async {
+  Future<ProviderConnectionDto> connectNone(String definitionId) async {
     noneConnections.add(definitionId);
     return connection(definitionId, definitionId);
   }
@@ -287,10 +278,8 @@ final class _Backend implements ProviderCliBackend {
   @override
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
-    String methodId, {
-    required bool makeDefault,
-  }) async {
-    lastMakeDefault = makeDefault;
+    String methodId,
+  ) async {
     return ProviderAuthAttemptDto(
       id: 'attempt',
       definitionId: definitionId,

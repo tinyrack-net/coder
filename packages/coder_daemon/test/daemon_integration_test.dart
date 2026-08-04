@@ -92,7 +92,6 @@ void main() {
           authenticationRequired: false,
           manualModelIds: const <String>['test-model'],
         ),
-        makeDefault: true,
       );
       expect(custom.status, ProviderConnectionStatus.connected);
       expect(custom.authKind, ProviderAuthKind.none);
@@ -117,15 +116,6 @@ void main() {
         ),
       );
       expect(updatedCustom.displayName, 'Updated local test');
-      await client.setDefaultProviderModel('local-test', 'discovered-model');
-      expect(
-        (await client.listProviderConnections())
-            .singleWhere((connection) => connection.id == 'local-test')
-            .defaultModelId,
-        'discovered-model',
-      );
-      await client.setDefaultProviderModel('local-test', 'test-model');
-      await client.setDefaultProvider('local-test');
       final temporary = await client.createCustomProvider(
         'temporary',
         CustomProviderConfigDto(
@@ -155,6 +145,15 @@ void main() {
       expect((await client.getWorkspaceCatalog()).workspaces, hasLength(1));
       final checkout = registered.worktrees.single;
 
+      await expectLater(
+        client.createSession(
+          id: 'model-required',
+          worktreeId: checkout.id,
+          title: 'Model required',
+          agentDefinitionId: 'coder',
+        ),
+        throwsA(isA<CoderClientException>()),
+      );
       await expectLater(
         client.createSession(
           id: 'agent-rejected',
@@ -251,12 +250,6 @@ void main() {
       );
       expect(afterTurn.reasoningEffort, 'medium');
 
-      final clearedFuture = client.events
-          .where((event) => event is SessionUpdatedClientEvent)
-          .cast<SessionUpdatedClientEvent>()
-          .map((event) => event.session)
-          .firstWhere((session) => session.model == null)
-          .timeout(_eventTimeout);
       expect(
         (await client.updateSessionModel(
           agent.id,
@@ -270,11 +263,13 @@ void main() {
           modelId: 'test-model',
         ),
       );
-      expect((await client.updateSessionModel(agent.id, null)).model, isNull);
-      expect((await clearedFuture).id, agent.id);
+      await expectLater(
+        client.updateSessionModel(agent.id, null),
+        throwsA(isA<CoderClientException>()),
+      );
       expect(
         (await client.listSessions(worktreeId: checkout.id)).single.model,
-        isNull,
+        agent.model,
       );
       await expectLater(
         client.updateSessionModel(
@@ -396,6 +391,10 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Parent',
         agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
       );
       final completed = client.events
           .where((event) => event is TimelineClientEvent)
@@ -422,6 +421,7 @@ void main() {
       );
       expect(child.parentSessionId, parent.id);
       expect(child.agentDefinitionId, reviewer.id);
+      expect(child.model, parent.model);
       final childTimeline = await client.subscribeTimeline(child.id);
       expect(childTimeline.map((event) => event.type), contains('tool.denied'));
       expect(
@@ -548,6 +548,10 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Skills',
         agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
       );
       final completed = client.events
           .where((event) => event is TimelineClientEvent)

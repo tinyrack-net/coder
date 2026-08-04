@@ -506,7 +506,7 @@ void main() {
         provider.future,
       );
       expect(initial!.catalog.definitions.first.id, 'openai');
-      expect(initial.connections.single.isDefault, isTrue);
+      expect(initial.connections.single.id, 'openai');
 
       await notifier.loadModels('openai');
       expect(
@@ -516,12 +516,9 @@ void main() {
       final connected = await notifier.connectApiKey(
         'deepseek',
         'secret',
-        makeDefault: true,
       );
       expect(connected.definitionId, 'deepseek');
       expect(api.credentials['deepseek'], 'secret');
-      await notifier.setDefaultModel('openai', 'gpt-5.6-sol');
-      await notifier.setDefault('openai');
       final attempt = await notifier.startAuth(
         'openai',
         'chatgpt-browser',

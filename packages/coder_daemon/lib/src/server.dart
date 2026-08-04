@@ -256,8 +256,6 @@ class _ClientSession {
       RpcMethod.providerAuthStatus,
       RpcMethod.providerAuthCancel,
       RpcMethod.providerDisconnect,
-      RpcMethod.providerDefaultSet,
-      RpcMethod.providerDefaultModelSet,
       RpcMethod.providerCatalogRefresh,
       RpcMethod.providerModelsList,
       RpcMethod.providerCustomCreate,
@@ -541,6 +539,12 @@ class _ClientSession {
         final requestedModel = request.model;
         // An explicit override replaces the definition model, so an agent
         // whose own model cannot resolve must not block creation.
+        if (requestedModel == null &&
+            definition.model.source == AgentModelSource.session) {
+          throw const FormatException(
+            'This agent requires an explicit session model.',
+          );
+        }
         if (requestedModel == null) {
           await providers.resolveAgentModel(definition.model);
         } else {
@@ -584,22 +588,17 @@ class _ClientSession {
         final connection = await providers.connectApiKey(
           request.definitionId,
           request.apiKey,
-          makeDefault: request.makeDefault,
         );
         return ProviderConnectionResultDto(connection: connection).toJson();
       case RpcMethod.providerConnectNone:
         final request = ProviderConnectNoneParamsDto.fromJson(payload);
-        final connection = await providers.connectNone(
-          request.definitionId,
-          makeDefault: request.makeDefault,
-        );
+        final connection = await providers.connectNone(request.definitionId);
         return ProviderConnectionResultDto(connection: connection).toJson();
       case RpcMethod.providerAuthStart:
         final request = ProviderAuthStartParamsDto.fromJson(payload);
         final attempt = await providerAuth.start(
           definitionId: request.definitionId,
           methodId: request.methodId,
-          makeDefault: request.makeDefault,
         );
         return ProviderAuthAttemptResultDto(attempt: attempt).toJson();
       case RpcMethod.providerAuthStatus:
@@ -614,14 +613,6 @@ class _ClientSession {
         final request = ProviderConnectionIdParamsDto.fromJson(payload);
         await providers.disconnect(request.connectionId);
         return const <String, dynamic>{};
-      case RpcMethod.providerDefaultSet:
-        final request = ProviderDefaultSetParamsDto.fromJson(payload);
-        await providers.setDefault(request.connectionId);
-        return const <String, dynamic>{};
-      case RpcMethod.providerDefaultModelSet:
-        final request = ProviderDefaultModelSetParamsDto.fromJson(payload);
-        await providers.setDefaultModel(request.connectionId, request.modelId);
-        return const <String, dynamic>{};
       case RpcMethod.providerCatalogRefresh:
         final catalog = await providers.refreshCatalog();
         return ProviderCatalogResultDto(catalog: catalog).toJson();
@@ -635,7 +626,6 @@ class _ClientSession {
           request.id,
           request.config,
           apiKey: request.apiKey,
-          makeDefault: request.makeDefault,
         );
         return ProviderConnectionResultDto(connection: connection).toJson();
       case RpcMethod.providerCustomUpdate:

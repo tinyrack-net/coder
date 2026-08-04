@@ -591,7 +591,7 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
   systemPrompt:
       'You are a coding agent. Read relevant code before editing and validate '
       'your work.',
-  model: const AgentModelSelectionDto(source: AgentModelSource.daemonDefault),
+  model: const AgentModelSelectionDto(source: AgentModelSource.session),
   reasoningEffort: 'medium',
   permissionMode: PermissionMode.ask,
   toolIds: const <String>[
@@ -798,7 +798,7 @@ final class AgentMarkdownCodec {
       throw const FormatException('Agent frontmatter must be a YAML map.');
     }
     final frontmatter = _stringMap(decoded);
-    if (_requiredInt(frontmatter, 'version') != 1) {
+    if (_requiredInt(frontmatter, 'version') != 2) {
       throw const FormatException('Unsupported agent Markdown version.');
     }
     final mode = _enumValue(
@@ -861,7 +861,7 @@ final class AgentMarkdownCodec {
   }) {
     final document = _AgentMarkdownDocument.parse(originalSource);
     final editor = YamlEditor(document.frontmatter)
-      ..update(<Object>['version'], 1)
+      ..update(<Object>['version'], 2)
       ..update(<Object>['name'], definition.name)
       ..update(<Object>['description'], definition.description)
       ..update(<Object>['mode'], definition.mode.name)
@@ -878,7 +878,7 @@ final class AgentMarkdownCodec {
   String encodeNew(AgentDefinitionDto definition) {
     final editor = YamlEditor('')
       ..update(<Object>[], <String, Object?>{
-        'version': 1,
+        'version': 2,
         'name': definition.name,
         'description': definition.description,
         'mode': definition.mode.name,

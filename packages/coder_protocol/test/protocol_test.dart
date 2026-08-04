@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v12 exposes skills, agent definitions, and sessions', () {
-    expect(coderProtocolVersion, 12);
+  test('protocol v13 exposes skills, agent definitions, and sessions', () {
+    expect(coderProtocolVersion, 13);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -152,7 +152,7 @@ void main() {
       mode: AgentMode.subagent,
       promptEnabled: true,
       systemPrompt: 'Review the requested code.',
-      model: AgentModelSelectionDto(source: AgentModelSource.daemonDefault),
+      model: AgentModelSelectionDto(source: AgentModelSource.session),
       reasoningEffort: 'medium',
       permissionMode: PermissionMode.readOnly,
       toolIds: <String>['read_file', 'search_text'],
@@ -403,11 +403,13 @@ void main() {
     status: ProviderConnectionStatus.connected,
     authKind: ProviderAuthKind.apiKey,
     credentialOrigin: ProviderCredentialOrigin.stored,
-    isDefault: true,
-    defaultModelId: 'model',
     createdAt: now,
     updatedAt: now,
   );
+  test('provider connections expose no implicit default state', () {
+    expect(connection.toJson(), isNot(contains('isDefault')));
+    expect(connection.toJson(), isNot(contains('defaultModelId')));
+  });
   final model = ProviderModelDto(
     connectionId: connection.id,
     id: 'model',
@@ -548,7 +550,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 12);
+    expect(coderProtocolVersion, 13);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -719,7 +721,7 @@ void main() {
           promptEnabled: true,
           systemPrompt: 'Review code.',
           model: AgentModelSelectionDto(
-            source: AgentModelSource.daemonDefault,
+            source: AgentModelSource.session,
           ),
           reasoningEffort: 'medium',
           permissionMode: PermissionMode.readOnly,
@@ -737,16 +739,12 @@ void main() {
       const ProviderConnectApiKeyParamsDto(
         definitionId: 'provider',
         apiKey: 'secret',
-        makeDefault: true,
       ),
       (value) => value.toJson(),
       ProviderConnectApiKeyParamsDto.fromJson,
     );
     _roundTrip(
-      const ProviderConnectNoneParamsDto(
-        definitionId: 'ollama',
-        makeDefault: false,
-      ),
+      const ProviderConnectNoneParamsDto(definitionId: 'ollama'),
       (value) => value.toJson(),
       ProviderConnectNoneParamsDto.fromJson,
     );
@@ -767,7 +765,6 @@ void main() {
       const ProviderAuthStartParamsDto(
         definitionId: 'openai',
         methodId: 'chatgpt-device',
-        makeDefault: false,
       ),
       (value) => value.toJson(),
       ProviderAuthStartParamsDto.fromJson,
@@ -778,24 +775,10 @@ void main() {
       ProviderAuthAttemptParamsDto.fromJson,
     );
     _roundTrip(
-      const ProviderDefaultSetParamsDto(connectionId: 'provider'),
-      (value) => value.toJson(),
-      ProviderDefaultSetParamsDto.fromJson,
-    );
-    _roundTrip(
-      const ProviderDefaultModelSetParamsDto(
-        connectionId: 'provider',
-        modelId: 'model',
-      ),
-      (value) => value.toJson(),
-      ProviderDefaultModelSetParamsDto.fromJson,
-    );
-    _roundTrip(
       const ProviderCustomCreateParamsDto(
         id: 'custom-id',
         config: customConfig,
         apiKey: 'secret',
-        makeDefault: false,
       ),
       (value) => value.toJson(),
       ProviderCustomCreateParamsDto.fromJson,

@@ -196,19 +196,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       ],
     );
     if (chosen == null || !context.mounted) return;
-    final connection = connections.singleWhere((item) => item.id == chosen);
-    final defaultModelId = connection.defaultModelId;
-    if (defaultModelId != null) {
-      widget.onModelChanged(
-        SessionModelSelectionDto(
-          providerConnectionId: chosen,
-          modelId: defaultModelId,
-        ),
-      );
-      return;
-    }
-    // Without a default model the provider alone cannot run a turn, so the
-    // user has to pick one right away.
     await _chooseModel(context, chosen);
   }
 
@@ -226,7 +213,9 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           ? widget.selection?.modelId
           : null,
       title: l10n.composerSelectModel,
-      inheritLabel: l10n.composerInheritModel,
+      inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed
+          ? l10n.composerInheritModel
+          : null,
     );
     if (chosen == null) return;
     widget.onModelChanged(
@@ -238,6 +227,10 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
             ),
     );
   }
+
+  AgentDefinitionDto? get _selectedAgent => widget.definitions
+      .where((definition) => definition.id == widget.agentDefinitionId)
+      .firstOrNull;
 }
 
 /// Compact selector chip shared by the composers.
@@ -328,7 +321,7 @@ class DraftSessionPane extends ConsumerWidget {
         providers?.connections ?? const <ProviderConnectionDto>[];
     final effective =
         draft.model ??
-        (agent == null ? null : defaultSelectionFor(agent, connections));
+        (agent == null ? null : agentSelectionFor(agent, connections));
     final notifier = ref.read(
       sessionComposerDraftControllerProvider(
         selection.hostId,

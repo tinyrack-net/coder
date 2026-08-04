@@ -38,8 +38,8 @@ enum AgentMode {
 
 /// Determines how an agent definition resolves its provider and model.
 enum AgentModelSource {
-  /// Resolves the daemon's current default connection and model for each turn.
-  daemonDefault,
+  /// Requires each manually created session to select a provider and model.
+  session,
 
   /// Uses one explicit provider connection and model.
   fixed,
@@ -761,10 +761,8 @@ abstract class ProviderConnectionDto with _$ProviderConnectionDto {
     required ProviderConnectionStatus status,
     required ProviderAuthKind authKind,
     required ProviderCredentialOrigin credentialOrigin,
-    required bool isDefault,
     required DateTime createdAt,
     required DateTime updatedAt,
-    String? defaultModelId,
     String? error,
     CustomProviderConfigDto? customConfig,
   }) = _ProviderConnectionDto;

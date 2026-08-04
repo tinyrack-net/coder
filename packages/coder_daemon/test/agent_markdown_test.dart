@@ -8,13 +8,13 @@ void main() {
   const source = '''
 ---
 # User comment must survive GUI edits.
-version: 1
+version: 2
 name: Reviewer
 description: Reviews code
 mode: subagent
 promptEnabled: true
 model:
-  source: daemonDefault
+  source: session
 reasoningEffort: medium
 permissionMode: readOnly
 tools:
@@ -50,7 +50,7 @@ Review the requested code without modifying it.
 
     expect(parsed.id, 'reviewer');
     expect(parsed.mode, AgentMode.subagent);
-    expect(parsed.model.source, AgentModelSource.daemonDefault);
+    expect(parsed.model.source, AgentModelSource.session);
     expect(parsed.toolIds, <String>['read_file', 'future_tool']);
     expect(parsed.systemPrompt, contains('Review the requested code'));
     expect(parsed.contentHash, isNotEmpty);
@@ -96,7 +96,7 @@ Review the requested code without modifying it.
       () => const AgentMarkdownCodec().decode(
         id: 'broken',
         sourcePath: '/config/agents/broken.md',
-        source: source.replaceFirst('daemonDefault', 'fixed'),
+        source: source.replaceFirst('session', 'fixed'),
       ),
       throwsA(isA<FormatException>()),
     );
@@ -127,20 +127,20 @@ Review the requested code without modifying it.
       'name: no-frontmatter',
       '---\nname: unclosed',
       '---\n- not\n- a-map\n---\n',
-      source.replaceFirst('version: 1', 'version: 2'),
+      source.replaceFirst('version: 2', 'version: 1'),
       source.replaceFirst('mode: subagent', 'mode: unknown'),
       source
           .replaceFirst('mode: subagent', 'mode: subagent')
           .replaceFirst('callableAgents: []', 'callableAgents: [coder]'),
       source.replaceFirst(
-        'model:\n  source: daemonDefault',
+        'model:\n  source: session',
         'model: invalid',
       ),
       source.replaceFirst('name: Reviewer', 'name: ""'),
       source.replaceFirst('name: Reviewer\n', ''),
       source.replaceFirst('promptEnabled: true', 'promptEnabled: yes'),
       source.replaceFirst('tools:\n  - read_file\n  - future_tool', 'tools: 4'),
-      source.replaceFirst('version: 1', 'version: one'),
+      source.replaceFirst('version: 2', 'version: one'),
       source.replaceFirst('reasoningEffort: medium', 'reasoningEffort: []'),
       source.replaceFirst('permissionMode: readOnly', 'permissionMode: root'),
       source.replaceFirst('name: Reviewer', '1: invalid-key'),

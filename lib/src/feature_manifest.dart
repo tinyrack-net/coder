@@ -281,13 +281,11 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'provider.connection.management',
-    description: 'Connects presets and manages defaults and disconnection.',
+    description: 'Connects and disconnects provider presets.',
     apiMethods: <String>[
       'connectProviderApiKey',
       'connectProviderNone',
       'disconnectProvider',
-      'setDefaultProvider',
-      'setDefaultProviderModel',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 12;
+const int coderProtocolVersion = 13;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -118,12 +118,6 @@ abstract final class RpcMethod {
 
   /// Disconnects a configured provider connection.
   static const String providerDisconnect = 'provider.disconnect';
-
-  /// Selects the daemon-wide default provider connection.
-  static const String providerDefaultSet = 'provider.default.set';
-
-  /// Selects a connection's default model.
-  static const String providerDefaultModelSet = 'provider.defaultModel.set';
 
   /// Explicitly refreshes model metadata from the catalog source.
   static const String providerCatalogRefresh = 'provider.catalog.refresh';

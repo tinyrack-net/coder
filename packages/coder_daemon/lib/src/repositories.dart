@@ -130,9 +130,6 @@ abstract interface class ProviderRepository {
   /// Deletes one configured provider connection.
   Future<void> deleteConnection(String id);
 
-  /// Selects exactly one configured connection as the default.
-  Future<void> setDefault(String id);
-
   /// The listModels public API member.
   Future<List<ProviderModelDto>> listModels(String connectionId);
 

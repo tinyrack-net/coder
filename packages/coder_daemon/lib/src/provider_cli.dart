@@ -15,22 +15,17 @@ abstract interface class ProviderCliBackend {
   /// Connects a hosted provider with an API key.
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey, {
-    required bool makeDefault,
-  });
+    String apiKey,
+  );
 
   /// Connects a local provider without authentication.
-  Future<ProviderConnectionDto> connectNone(
-    String definitionId, {
-    required bool makeDefault,
-  });
+  Future<ProviderConnectionDto> connectNone(String definitionId);
 
   /// Starts an interactive OAuth authorization flow.
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
-    String methodId, {
-    required bool makeDefault,
-  });
+    String methodId,
+  );
 
   /// Returns the latest OAuth attempt state.
   Future<ProviderAuthAttemptDto> authStatus(String attemptId);
@@ -59,30 +54,18 @@ final class CoderApiProviderCliBackend implements ProviderCliBackend {
   @override
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey, {
-    required bool makeDefault,
-  }) => _api.connectProviderApiKey(
-    definitionId,
-    apiKey,
-    makeDefault: makeDefault,
-  );
+    String apiKey,
+  ) => _api.connectProviderApiKey(definitionId, apiKey);
 
   @override
-  Future<ProviderConnectionDto> connectNone(
-    String definitionId, {
-    required bool makeDefault,
-  }) => _api.connectProviderNone(definitionId, makeDefault: makeDefault);
+  Future<ProviderConnectionDto> connectNone(String definitionId) =>
+      _api.connectProviderNone(definitionId);
 
   @override
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
-    String methodId, {
-    required bool makeDefault,
-  }) => _api.startProviderAuth(
-    definitionId,
-    methodId,
-    makeDefault: makeDefault,
-  );
+    String methodId,
+  ) => _api.startProviderAuth(definitionId, methodId);
 
   @override
   Future<ProviderAuthAttemptDto> authStatus(String attemptId) =>
@@ -122,11 +105,8 @@ Future<int> runProviderCommand(
         final name =
             definitions[connection.definitionId]?.name ??
             connection.displayName;
-        final defaultSuffix = connection.isDefault ? ' (default)' : '';
-        final model = connection.defaultModelId ?? 'model not selected';
         output.writeln(
-          '${connection.id}\t$name\t${connection.status.name}\t$model'
-          '$defaultSuffix',
+          '${connection.id}\t$name\t${connection.status.name}',
         );
       }
       return 0;
@@ -165,8 +145,7 @@ Future<int> _connect(
 }) async {
   final parser = ArgParser()
     ..addOption('method')
-    ..addOption('api-key', hide: true)
-    ..addFlag('default', negatable: false);
+    ..addOption('api-key', hide: true);
   final options = parser.parse(arguments);
   if (options.rest.length != 1) {
     throw const FormatException('provider connect requires a provider ID.');
@@ -179,20 +158,15 @@ Future<int> _connect(
   );
   final requestedMethod = options.option('method');
   final method = requestedMethod ?? (definition.local ? 'none' : 'api-key');
-  final makeDefault = options.flag('default');
   switch (method) {
     case 'api-key':
       final inlineKey = options.option('api-key');
       final key = inlineKey ?? await (readSecret?.call() ?? _missingSecret());
-      await backend.connectApiKey(
-        definitionId,
-        key,
-        makeDefault: makeDefault,
-      );
+      await backend.connectApiKey(definitionId, key);
       output.writeln('Connected ${definition.name}.');
       return 0;
     case 'none':
-      await backend.connectNone(definitionId, makeDefault: makeDefault);
+      await backend.connectNone(definitionId);
       output.writeln('Connected ${definition.name}.');
       return 0;
     case 'chatgpt-browser':
@@ -200,7 +174,6 @@ Future<int> _connect(
       final attempt = await backend.startAuth(
         definitionId,
         method,
-        makeDefault: makeDefault,
       );
       output.writeln('Open ${attempt.authorizationUrl}');
       if (attempt.userCode case final code?) output.writeln('Code: $code');

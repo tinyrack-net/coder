@@ -59,7 +59,7 @@ void main() {
     expect(connection.id, 'deepseek');
     expect(connection.credentialOrigin, ProviderCredentialOrigin.environment);
     expect(connection.status, ProviderConnectionStatus.connected);
-    expect(connection.defaultModelId, 'deepseek-v4-pro');
+    expect(await fixture.service.listModels(connection.id), isNotEmpty);
     expect(fixture.credentials.values, isEmpty);
     expect(fixture.discovery.lastSecret, 'env-secret');
   });
@@ -76,8 +76,11 @@ void main() {
       expect(connection.id, 'openai');
       expect(connection.status, ProviderConnectionStatus.connected);
       expect(connection.credentialOrigin, ProviderCredentialOrigin.none);
-      expect(connection.defaultModelId, 'gpt-5.6-sol');
-      expect(await fixture.service.resolve('openai'), same(fixed));
+      expect(await fixture.service.listModels(connection.id), isNotEmpty);
+      expect(
+        await fixture.service.resolve('openai', modelId: 'gpt-5.6-sol'),
+        same(fixed),
+      );
       expect(fixture.discovery.lastSecret, isNull);
     },
   );
@@ -91,12 +94,10 @@ void main() {
       final hosted = await fixture.service.connectApiKey(
         'deepseek',
         'stored-secret',
-        makeDefault: true,
       );
       expect(hosted.status, ProviderConnectionStatus.connected);
       expect(hosted.authKind, ProviderAuthKind.apiKey);
       expect(hosted.credentialOrigin, ProviderCredentialOrigin.stored);
-      expect(hosted.isDefault, isTrue);
       expect(fixture.credentials.values['deepseek'], isA<ApiKeyCredential>());
       expect(
         (fixture.credentials.values['deepseek']! as ApiKeyCredential).key,
@@ -109,18 +110,7 @@ void main() {
       expect(local.credentialOrigin, ProviderCredentialOrigin.none);
       expect(local.status, ProviderConnectionStatus.connected);
 
-      await fixture.service.setDefault('ollama');
-      expect(
-        (await fixture.service.connections())
-            .singleWhere((connection) => connection.id == 'ollama')
-            .isDefault,
-        isTrue,
-      );
-      await fixture.service.setDefaultModel('ollama', 'qwen-local');
-      expect(
-        (await fixture.service.get('ollama')).defaultModelId,
-        'qwen-local',
-      );
+      expect(await fixture.service.listModels('ollama'), isNotEmpty);
 
       await fixture.service.disconnect('deepseek');
       expect(
@@ -145,7 +135,7 @@ void main() {
       'secret',
     );
     expect(degradedConnection.status, ProviderConnectionStatus.degraded);
-    expect(degradedConnection.defaultModelId, 'deepseek-v4-pro');
+    expect(await degraded.service.listModels('deepseek'), isNotEmpty);
 
     final invalid = _ServiceFixture(now);
     invalid.discovery.failure = const ProviderDiscoveryFailure(
@@ -159,7 +149,7 @@ void main() {
     expect(invalidConnection.status, ProviderConnectionStatus.error);
     expect(invalidConnection.error, 'unauthorized');
     await expectLater(
-      invalid.service.resolve('deepseek'),
+      invalid.service.resolve('deepseek', modelId: 'deepseek-v4-pro'),
       throwsA(isA<ProviderConnectionFailure>()),
     );
   });
@@ -253,7 +243,6 @@ void main() {
       await fixture.service.connectOAuth(
         'openai',
         expired,
-        makeDefault: true,
       );
 
       await fixture.service.resolve('openai', modelId: 'gpt-5.6-sol');
@@ -280,11 +269,10 @@ void main() {
           refreshToken: 'invalid',
           expiresAt: now,
         ),
-        makeDefault: true,
       );
 
       await expectLater(
-        fixture.service.resolve('openai'),
+        fixture.service.resolve('openai', modelId: 'gpt-5.6-sol'),
         throwsA(
           isA<ProviderConnectionFailure>().having(
             (error) => error.code,
@@ -331,7 +319,6 @@ void main() {
           refreshToken: 'refresh',
           expiresAt: now.add(const Duration(hours: 1)),
         ),
-        makeDefault: false,
       ),
       throwsA(isA<StateError>()),
     );
@@ -355,7 +342,6 @@ void main() {
       expect(created.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
       expect(created.customConfig!.manualModelIds, <String>['manual']);
       expect(created.authKind, ProviderAuthKind.none);
-      expect(created.defaultModelId, 'manual');
       expect(await fixture.service.listModels('lab'), hasLength(2));
 
       await expectLater(
@@ -406,13 +392,13 @@ void main() {
     tags: const <String>['feature_test__provider_custom__unit'],
   );
 
-  test('default and model validation reject unusable selections', () async {
+  test('model validation rejects unusable selections', () async {
     final fixture = _ServiceFixture(now);
     fixture.discovery.ids = <String>['unknown-capabilities'];
     await fixture.service.connectApiKey('deepseek', 'secret');
 
     await expectLater(
-      fixture.service.setDefaultModel('deepseek', 'missing'),
+      fixture.service.validateAgentModel('deepseek', 'missing'),
       throwsA(isA<StateError>()),
     );
     await expectLater(
@@ -420,10 +406,6 @@ void main() {
       throwsA(isA<StateError>()),
     );
     await fixture.service.disconnect('deepseek');
-    await expectLater(
-      fixture.service.setDefault('deepseek'),
-      throwsA(isA<StateError>()),
-    );
     await expectLater(
       fixture.service.validateAgentModel('deepseek', 'deepseek-v4-pro'),
       throwsA(isA<ProviderConnectionFailure>()),
@@ -468,7 +450,7 @@ void main() {
       );
       missing.credentials.values.remove('deepseek');
       await expectLater(
-        missing.service.resolve(connection.id),
+        missing.service.resolve(connection.id, modelId: 'deepseek-v4-pro'),
         throwsA(isA<ProviderConnectionFailure>()),
       );
 
@@ -485,10 +467,9 @@ void main() {
           refreshToken: 'refresh',
           expiresAt: now,
         ),
-        makeDefault: false,
       );
       await expectLater(
-        transient.service.resolve('openai'),
+        transient.service.resolve('openai', modelId: 'gpt-5.6-sol'),
         throwsA(
           isA<ProviderConnectionFailure>().having(
             (error) => error.code,
@@ -610,15 +591,6 @@ final class _ProviderRepository implements ProviderRepository {
     models.removeWhere((_, model) => model.connectionId == connectionId);
     for (final model in replacement) {
       models[_modelKey(connectionId, model.id)] = model;
-    }
-  }
-
-  @override
-  Future<void> setDefault(String id) async {
-    for (final entry in connections.entries.toList()) {
-      connections[entry.key] = entry.value.copyWith(
-        isDefault: entry.key == id,
-      );
     }
   }
 

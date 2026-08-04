@@ -120,8 +120,6 @@ final class ProviderService implements ProviderOAuthConnector {
       status: ProviderConnectionStatus.connected,
       authKind: ProviderAuthKind.none,
       credentialOrigin: ProviderCredentialOrigin.none,
-      isDefault: true,
-      defaultModelId: preset.definition.recommendedModelIds.firstOrNull,
       createdAt: now,
       updatedAt: now,
     );
@@ -130,7 +128,6 @@ final class ProviderService implements ProviderOAuthConnector {
       connection.id,
       _seedModels(connection).values,
     );
-    await _repository.setDefault(connection.id);
   }
 
   /// Returns the safe public provider catalog.
@@ -181,27 +178,11 @@ final class ProviderService implements ProviderOAuthConnector {
     final String connectionId;
     final String modelId;
     switch (selection.source) {
-      case AgentModelSource.daemonDefault:
-        final connections = await _repository.listConnections();
-        final defaults = connections.where(
-          (connection) => connection.isDefault,
+      case AgentModelSource.session:
+        throw const ProviderConnectionFailure(
+          'model_required',
+          'This agent requires an explicit session model.',
         );
-        if (defaults.isEmpty) {
-          throw const ProviderConnectionFailure(
-            'provider_not_connected',
-            'No default provider connection is configured.',
-          );
-        }
-        final connection = defaults.first;
-        final defaultModel = connection.defaultModelId;
-        if (defaultModel == null) {
-          throw ProviderConnectionFailure(
-            'provider_not_connected',
-            'Default provider has no model: ${connection.id}',
-          );
-        }
-        connectionId = connection.id;
-        modelId = defaultModel;
       case AgentModelSource.fixed:
         final fixedConnection = selection.providerConnectionId;
         final fixedModel = selection.modelId;
@@ -244,9 +225,8 @@ final class ProviderService implements ProviderOAuthConnector {
   /// Connects a hosted built-in provider with one API key.
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey, {
-    bool makeDefault = false,
-  }) async {
+    String apiKey,
+  ) async {
     if (apiKey.trim().isEmpty) {
       throw const FormatException('API key must not be empty.');
     }
@@ -263,15 +243,11 @@ final class ProviderService implements ProviderOAuthConnector {
       ProviderAuthKind.apiKey,
       ProviderCredentialOrigin.stored,
       credential,
-      makeDefault: makeDefault,
     );
   }
 
   /// Connects a local built-in provider without authentication.
-  Future<ProviderConnectionDto> connectNone(
-    String definitionId, {
-    bool makeDefault = false,
-  }) async {
+  Future<ProviderConnectionDto> connectNone(String definitionId) async {
     final preset = _catalog.require(definitionId);
     if (!_supportsFlow(preset, ProviderAuthFlow.none)) {
       throw StateError('$definitionId requires authentication.');
@@ -282,16 +258,14 @@ final class ProviderService implements ProviderOAuthConnector {
       ProviderAuthKind.none,
       ProviderCredentialOrigin.none,
       null,
-      makeDefault: makeDefault,
     );
   }
 
   @override
   Future<void> connectOAuth(
     String definitionId,
-    OAuthCredential credential, {
-    required bool makeDefault,
-  }) async {
+    OAuthCredential credential,
+  ) async {
     final preset = _catalog.require(definitionId);
     if (!_supportsFlow(preset, ProviderAuthFlow.oauthBrowser) &&
         !_supportsFlow(preset, ProviderAuthFlow.oauthDevice)) {
@@ -303,7 +277,6 @@ final class ProviderService implements ProviderOAuthConnector {
       ProviderAuthKind.oauth,
       ProviderCredentialOrigin.oauth,
       credential,
-      makeDefault: makeDefault,
     );
   }
 
@@ -312,7 +285,6 @@ final class ProviderService implements ProviderOAuthConnector {
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
-    bool makeDefault = false,
   }) async {
     if (id.trim().isEmpty) {
       throw const FormatException('Custom provider ID must not be empty.');
@@ -337,7 +309,6 @@ final class ProviderService implements ProviderOAuthConnector {
       credentialOrigin: credential == null
           ? ProviderCredentialOrigin.none
           : ProviderCredentialOrigin.stored,
-      isDefault: await _shouldBecomeDefault(makeDefault),
       createdAt: now,
       updatedAt: now,
       customConfig: normalized,
@@ -389,7 +360,6 @@ final class ProviderService implements ProviderOAuthConnector {
       connection.copyWith(
         status: ProviderConnectionStatus.disconnected,
         credentialOrigin: ProviderCredentialOrigin.none,
-        isDefault: false,
         updatedAt: _clock.nowUtc(),
         error: null,
       ),
@@ -406,35 +376,15 @@ final class ProviderService implements ProviderOAuthConnector {
     await _repository.deleteConnection(id);
   }
 
-  /// Selects the daemon-wide default provider connection.
-  Future<void> setDefault(String id) async {
-    final connection = await get(id);
-    if (!_canRun(connection.status)) {
-      throw StateError('Provider is not connected: $id');
-    }
-    await _repository.setDefault(id);
-  }
-
-  /// Selects a default model already known to a provider connection.
-  Future<void> setDefaultModel(String id, String modelId) async {
-    final connection = await get(id);
-    if (await _repository.getModel(id, modelId) == null) {
-      throw StateError('Unknown provider model: $modelId');
-    }
-    await _repository.upsertConnection(
-      connection.copyWith(
-        defaultModelId: modelId,
-        updatedAt: _clock.nowUtc(),
-      ),
-    );
-  }
-
   /// Returns cached and discovered models for a connection.
   Future<List<ProviderModelDto>> listModels(String connectionId) =>
       _repository.listModels(connectionId);
 
   /// Creates an executable provider without exposing secrets or endpoints.
-  Future<ModelProvider> resolve(String connectionId, {String? modelId}) async {
+  Future<ModelProvider> resolve(
+    String connectionId, {
+    required String modelId,
+  }) async {
     if (_fixedProvider != null) return _fixedProvider;
     final connection = await get(connectionId);
     if (!_canRun(connection.status)) {
@@ -456,10 +406,7 @@ final class ProviderService implements ProviderOAuthConnector {
         )) {
       credential = await _refreshOAuth(connection, oauthCredential);
     }
-    final effectiveModel = modelId ?? connection.defaultModelId;
-    final model = effectiveModel == null
-        ? null
-        : await _repository.getModel(connectionId, effectiveModel);
+    final model = await _repository.getModel(connectionId, modelId);
     return _providerFactory.create(
       config: _runtimeConfig(connection),
       credential: credential,
@@ -525,9 +472,8 @@ final class ProviderService implements ProviderOAuthConnector {
     ProviderRuntimePreset preset,
     ProviderAuthKind authKind,
     ProviderCredentialOrigin origin,
-    ProviderCredential? credential, {
-    bool makeDefault = false,
-  }) async {
+    ProviderCredential? credential,
+  ) async {
     final existing = await _repository.getConnection(preset.definition.id);
     final now = _clock.nowUtc();
     final connection = ProviderConnectionDto(
@@ -537,14 +483,9 @@ final class ProviderService implements ProviderOAuthConnector {
       status: ProviderConnectionStatus.connecting,
       authKind: authKind,
       credentialOrigin: origin,
-      isDefault: existing?.isDefault ?? await _shouldBecomeDefault(makeDefault),
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
-      defaultModelId: existing?.defaultModelId,
     );
-    if (makeDefault) {
-      await _repository.setDefault(connection.id);
-    }
     return _discoverAndSave(connection, credential);
   }
 
@@ -590,12 +531,10 @@ final class ProviderService implements ProviderOAuthConnector {
     await _repository.replaceModels(connection.id, models.values);
     final saved = connection.copyWith(
       status: status,
-      defaultModelId: _selectDefaultModel(connection, models.keys),
       updatedAt: _clock.nowUtc(),
       error: error,
     );
     await _repository.upsertConnection(saved);
-    if (saved.isDefault) await _repository.setDefault(saved.id);
     return (await _repository.getConnection(saved.id)) ?? saved;
   }
 
@@ -644,24 +583,6 @@ final class ProviderService implements ProviderOAuthConnector {
           .firstOrNull ??
       const ModelCapabilitiesDto();
 
-  String? _selectDefaultModel(
-    ProviderConnectionDto connection,
-    Iterable<String> modelIds,
-  ) {
-    final available = modelIds.toSet();
-    if (available.contains(connection.defaultModelId)) {
-      return connection.defaultModelId;
-    }
-    final recommended = _catalog
-        .find(connection.definitionId)
-        ?.definition
-        .recommendedModelIds;
-    for (final id in recommended ?? const <String>[]) {
-      if (available.contains(id)) return id;
-    }
-    return available.firstOrNull;
-  }
-
   ProviderRuntimeConfig _runtimeConfig(ProviderConnectionDto connection) {
     final custom = connection.customConfig;
     if (custom != null) {
@@ -709,12 +630,6 @@ final class ProviderService implements ProviderOAuthConnector {
       if (value != null && value.isNotEmpty) return ApiKeyCredential(value);
     }
     return null;
-  }
-
-  Future<bool> _shouldBecomeDefault(bool requested) async {
-    if (requested) return true;
-    final existing = await _repository.listConnections();
-    return existing.every((connection) => !connection.isDefault);
   }
 
   static bool _supportsFlow(

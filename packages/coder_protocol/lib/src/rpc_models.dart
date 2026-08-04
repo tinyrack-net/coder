@@ -318,7 +318,6 @@ abstract class ProviderConnectApiKeyParamsDto
   const factory ProviderConnectApiKeyParamsDto({
     required String definitionId,
     required String apiKey,
-    required bool makeDefault,
   }) = _ProviderConnectApiKeyParamsDto;
 
   /// Decodes API-key connection parameters.
@@ -333,7 +332,6 @@ abstract class ProviderConnectNoneParamsDto
   /// Creates no-auth connection parameters.
   const factory ProviderConnectNoneParamsDto({
     required String definitionId,
-    required bool makeDefault,
   }) = _ProviderConnectNoneParamsDto;
 
   /// Decodes no-auth connection parameters.
@@ -375,7 +373,6 @@ abstract class ProviderAuthStartParamsDto with _$ProviderAuthStartParamsDto {
   const factory ProviderAuthStartParamsDto({
     required String definitionId,
     required String methodId,
-    required bool makeDefault,
   }) = _ProviderAuthStartParamsDto;
 
   /// Decodes OAuth start parameters.
@@ -397,34 +394,6 @@ abstract class ProviderAuthAttemptParamsDto
 }
 
 @freezed
-/// Parameters for selecting the daemon-wide default provider connection.
-abstract class ProviderDefaultSetParamsDto with _$ProviderDefaultSetParamsDto {
-  /// Creates default provider parameters.
-  const factory ProviderDefaultSetParamsDto({required String connectionId}) =
-      _ProviderDefaultSetParamsDto;
-
-  /// Decodes default provider parameters.
-  factory ProviderDefaultSetParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$ProviderDefaultSetParamsDtoFromJson(json);
-}
-
-@freezed
-/// Parameters for selecting a connection's default model.
-abstract class ProviderDefaultModelSetParamsDto
-    with _$ProviderDefaultModelSetParamsDto {
-  /// Creates default model parameters.
-  const factory ProviderDefaultModelSetParamsDto({
-    required String connectionId,
-    required String modelId,
-  }) = _ProviderDefaultModelSetParamsDto;
-
-  /// Decodes default model parameters.
-  factory ProviderDefaultModelSetParamsDto.fromJson(
-    Map<String, dynamic> json,
-  ) => _$ProviderDefaultModelSetParamsDtoFromJson(json);
-}
-
-@freezed
 /// Parameters for creating an advanced custom provider connection.
 abstract class ProviderCustomCreateParamsDto
     with _$ProviderCustomCreateParamsDto {
@@ -432,7 +401,6 @@ abstract class ProviderCustomCreateParamsDto
   const factory ProviderCustomCreateParamsDto({
     required String id,
     required CustomProviderConfigDto config,
-    required bool makeDefault,
     String? apiKey,
   }) = _ProviderCustomCreateParamsDto;
 

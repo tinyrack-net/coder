@@ -27,7 +27,6 @@ void main() {
       final attempt = await coordinator.start(
         definitionId: 'openai',
         methodId: 'chatgpt-device',
-        makeDefault: true,
       );
 
       expect(attempt.id, 'auth-attempt');
@@ -48,7 +47,6 @@ void main() {
         ProviderAuthAttemptStatus.succeeded,
       );
       expect(connector.connectionId, 'openai');
-      expect(connector.makeDefault, isTrue);
       expect(connector.credential, isA<OAuthCredential>());
       expect(events.last.status, ProviderAuthAttemptStatus.succeeded);
     },
@@ -292,16 +290,13 @@ final class _Session implements ProviderOAuthSession {
 final class _OAuthConnector implements ProviderOAuthConnector {
   String? connectionId;
   OAuthCredential? credential;
-  bool? makeDefault;
 
   @override
   Future<void> connectOAuth(
     String definitionId,
-    OAuthCredential credential, {
-    required bool makeDefault,
-  }) async {
+    OAuthCredential credential,
+  ) async {
     connectionId = definitionId;
     this.credential = credential;
-    this.makeDefault = makeDefault;
   }
 }

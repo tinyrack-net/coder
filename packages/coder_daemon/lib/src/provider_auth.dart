@@ -63,9 +63,8 @@ abstract interface class ProviderOAuthConnector {
   /// Stores and activates one OAuth-backed provider connection.
   Future<void> connectOAuth(
     String definitionId,
-    OAuthCredential credential, {
-    required bool makeDefault,
-  });
+    OAuthCredential credential,
+  );
 }
 
 /// Coordinates transient OAuth state without persisting authorization attempts.
@@ -101,7 +100,6 @@ final class ProviderAuthCoordinator {
   Future<ProviderAuthAttemptDto> start({
     required String definitionId,
     required String methodId,
-    bool makeDefault = false,
   }) async {
     if (definitionId != 'openai') {
       throw StateError('OAuth is only available for the OpenAI definition.');
@@ -125,7 +123,6 @@ final class ProviderAuthCoordinator {
     final pending = _PendingAuth(
       attempt: attempt,
       session: session,
-      makeDefault: makeDefault,
     );
     _attempts[attempt.id] = pending;
     _events.add(attempt);
@@ -167,7 +164,6 @@ final class ProviderAuthCoordinator {
       await _connector.connectOAuth(
         pending.attempt.definitionId,
         credential,
-        makeDefault: pending.makeDefault,
       );
       pending.attempt = pending.attempt.copyWith(
         status: ProviderAuthAttemptStatus.succeeded,
@@ -243,10 +239,8 @@ final class _PendingAuth {
   _PendingAuth({
     required this.attempt,
     required this.session,
-    required this.makeDefault,
   });
 
   ProviderAuthAttemptDto attempt;
   final ProviderOAuthSession session;
-  final bool makeDefault;
 }

@@ -271,7 +271,10 @@ void main() {
       // loaded state instead of flashing an empty-state error.
       await tester.pump();
       expect(find.text('먼저 프로젝트를 추가하세요.'), findsNothing);
-      expect(find.text('사용할 Provider와 모델을 먼저 선택하세요.'), findsNothing);
+      expect(
+        find.text('사용할 Provider와 모델을 먼저 선택하세요.'),
+        findsOneWidget,
+      );
       expect(find.text('사용 가능한 primary Agent가 없습니다.'), findsNothing);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-new-button')), findsNothing);
@@ -325,7 +328,7 @@ void main() {
         promptEnabled: true,
         systemPrompt: 'Plan first.',
         model: AgentModelSelectionDto(
-          source: AgentModelSource.daemonDefault,
+          source: AgentModelSource.session,
         ),
         reasoningEffort: 'medium',
         permissionMode: PermissionMode.readOnly,
@@ -353,8 +356,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('session-composer-agent')), findsOne);
       expect(find.text('Planner'), findsOneWidget);
-      expect(find.text('OpenAI'), findsOneWidget);
-      expect(find.text('GPT-5.6 Sol'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('session-composer-provider')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-provider-openai')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+      );
+      await tester.pumpAndSettle();
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -366,7 +377,13 @@ void main() {
       final created = api.createdSessions.single;
       expect(created.agentDefinitionId, 'planner');
       expect(created.title, 'Run the tests');
-      expect(created.model, isNull);
+      expect(
+        created.model,
+        const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
       expect(api.startedPrompts, <String>['Run the tests']);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
@@ -390,6 +407,28 @@ void main() {
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
+        agentDefinitions: const <AgentDefinitionDto>[
+          AgentDefinitionDto(
+            id: 'coder',
+            name: 'Coder',
+            description: 'Coding agent',
+            mode: AgentMode.primary,
+            promptEnabled: true,
+            systemPrompt: 'Code carefully.',
+            model: AgentModelSelectionDto(
+              source: AgentModelSource.fixed,
+              providerConnectionId: 'openai',
+              modelId: 'gpt-5.6-sol',
+            ),
+            reasoningEffort: 'medium',
+            permissionMode: PermissionMode.ask,
+            toolIds: <String>['read_file'],
+            callableAgentIds: <String>[],
+            contentHash: 'coder-hash',
+            sourcePath: '/config/agents/coder.md',
+            isBuiltIn: true,
+          ),
+        ],
         models: <String, List<ProviderModelDto>>{
           'openai': <ProviderModelDto>[
             const ProviderModelDto(
@@ -423,8 +462,6 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey('session-composer-provider-openai')),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-fast')),
@@ -478,6 +515,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('실행'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('session-composer-provider')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-provider-openai')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
       await tester.pumpAndSettle();
       expect(find.text('Plan'), findsOneWidget);
@@ -798,7 +845,7 @@ void main() {
         promptEnabled: true,
         systemPrompt: 'Code carefully.',
         model: AgentModelSelectionDto(
-          source: AgentModelSource.daemonDefault,
+          source: AgentModelSource.session,
         ),
         reasoningEffort: 'medium',
         permissionMode: PermissionMode.ask,
@@ -822,7 +869,7 @@ void main() {
         promptEnabled: true,
         systemPrompt: 'Review.',
         model: AgentModelSelectionDto(
-          source: AgentModelSource.daemonDefault,
+          source: AgentModelSource.session,
         ),
         reasoningEffort: 'medium',
         permissionMode: PermissionMode.readOnly,

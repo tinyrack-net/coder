@@ -947,29 +947,21 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Connects a hosted built-in provider with an API key.
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey, {
-    bool makeDefault = false,
-  }) async {
+    String apiKey,
+  ) async {
     final api = await _requireConnection();
     final result = await api.connectProviderApiKey(
       definitionId,
       apiKey,
-      makeDefault: makeDefault,
     );
     await _reload(api);
     return result;
   }
 
   /// Connects a local built-in provider without authentication.
-  Future<ProviderConnectionDto> connectNone(
-    String definitionId, {
-    bool makeDefault = false,
-  }) async {
+  Future<ProviderConnectionDto> connectNone(String definitionId) async {
     final api = await _requireConnection();
-    final result = await api.connectProviderNone(
-      definitionId,
-      makeDefault: makeDefault,
-    );
+    final result = await api.connectProviderNone(definitionId);
     await _reload(api);
     return result;
   }
@@ -977,14 +969,12 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Starts ChatGPT browser or device-code authorization.
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
-    String methodId, {
-    bool makeDefault = false,
-  }) async {
+    String methodId,
+  ) async {
     final api = await _requireConnection();
     final attempt = await api.startProviderAuth(
       definitionId,
       methodId,
-      makeDefault: makeDefault,
     );
     final current = state.asData?.value;
     if (current != null) {
@@ -1013,26 +1003,6 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     await _reload(api);
   }
 
-  /// Selects a connection as the daemon default.
-  Future<void> setDefault(String connectionId) async {
-    final api = await _requireConnection();
-    await api.setDefaultProvider(connectionId);
-    await _reload(api);
-  }
-
-  /// Selects the connection's default model.
-  Future<void> setDefaultModel(
-    String connectionId,
-    String modelId,
-  ) async {
-    final api = await _requireConnection();
-    await api.setDefaultProviderModel(
-      connectionId,
-      modelId,
-    );
-    await _reload(api);
-  }
-
   /// Explicitly refreshes catalog metadata.
   Future<void> refreshCatalog() async {
     final api = await _requireConnection();
@@ -1050,14 +1020,12 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
-    bool makeDefault = false,
   }) async {
     final api = await _requireConnection();
     final result = await api.createCustomProvider(
       id,
       config,
       apiKey: apiKey,
-      makeDefault: makeDefault,
     );
     await _reload(api);
     return result;
