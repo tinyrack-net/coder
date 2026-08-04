@@ -44,10 +44,29 @@ no changelog file.
 
 ## Required secrets
 
-`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_DEVELOPER_ID`,
-`APPLE_NOTARY_KEY_ID`, `APPLE_NOTARY_ISSUER_ID`, `APPLE_NOTARY_KEY_P8_BASE64`,
-`HOMEBREW_TAP_TOKEN`, and `WINGET_TOKEN`. The `MSIX_*` repository variables
-name the MSIX identity.
+All are repository secrets on `tinyrack-net/coder`.
+
+| Secret | Used by | Same value as other repositories |
+| --- | --- | --- |
+| `APPLE_CERTIFICATE` | macOS signing | yes |
+| `APPLE_CERTIFICATE_PASSWORD` | macOS signing | yes |
+| `APPLE_DEVELOPER_ID` | macOS signing | yes |
+| `APPLE_NOTARY_KEY_ID` | notarization | yes |
+| `APPLE_NOTARY_ISSUER_ID` | notarization | yes |
+| `APPLE_NOTARY_KEY_P8_BASE64` | notarization | yes |
+| `HOMEBREW_TAP_TOKEN` | pushing the Cask to the tap | yes |
+| `WINGET_TOKEN` | the winget-pkgs pull request | yes |
+| `MSIX_IDENTITY_NAME` | MSIX identity | no, `tinyrack.coder` |
+| `MSIX_PUBLISHER` | MSIX identity | yes, matches the signing certificate |
+| `MSIX_PUBLISHER_DISPLAY_NAME` | MSIX identity | yes |
+
+The eight shared values are identical across `dotweave`, `proxer`, and this
+repository, so promoting them to organisation secrets removes the copying
+entirely. Only the `MSIX_IDENTITY_NAME` differs per product.
+
+Signing is skipped rather than failed when the Apple secrets are absent: the
+app is ad-hoc signed and left un-notarized, which is what non-tag builds do
+anyway. The MSIX step only runs on tags.
 
 The `setup.exe` is currently unsigned, so Windows SmartScreen warns on first
 run until a code-signing certificate is bought. An unsigned MSIX cannot be

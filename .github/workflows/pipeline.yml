@@ -224,10 +224,12 @@ jobs:
         if: matrix.platform == 'windows' && startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         env:
-          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME || 'tinyrack.coder' }}
-          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER || 'CN=tinyrack' }}
-          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME ||
-            'tinyrack' }}
+          # Stored as secrets to match the other Tinyrack repositories. The
+          # publisher has to match the signing certificate subject, so there is
+          # no useful default to fall back to.
+          MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
+          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
         run: dart pub global run shipworld:shipworld package windows msix coder
           --input apps/coder_app/build/windows/${{ matrix.arch }}/runner/Release
           --launcher coder.exe --arch ${{ matrix.arch }}
