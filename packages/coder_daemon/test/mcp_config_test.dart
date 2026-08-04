@@ -118,8 +118,10 @@ void main() {
     final contents = await File(userPath()).readAsString();
     expect(contents, contains('\n  "version": 1'));
     if (!Platform.isWindows) {
-      final mode = await Process.run('stat', <String>['-c', '%a', userPath()]);
-      expect((mode.stdout as String).trim(), '600');
+      // Read the mode through dart:io rather than stat, whose flags differ
+      // between GNU and BSD userlands.
+      final mode = File(userPath()).statSync().mode & 0x1FF;
+      expect(mode.toRadixString(8), '600');
       expect(File('${userPath()}.tmp').existsSync(), isFalse);
     }
   });

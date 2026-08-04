@@ -652,7 +652,13 @@ void main() {
         worktreeId: worktreeId,
       );
       expect(ready.scope, McpConfigScope.project);
-      expect(ready.sourcePath, p.join(workspace.path, '.mcp.json'));
+      // The daemon canonicalizes checkout paths, and macOS resolves the
+      // temporary directory through /private, so compare against what the
+      // registration actually recorded.
+      expect(
+        ready.sourcePath,
+        p.join(registered.worktrees.single.path, '.mcp.json'),
+      );
       expect(ready.shadowed, isFalse);
 
       expect(
