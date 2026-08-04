@@ -133,6 +133,10 @@ jobs:
             arch: x64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    # Declared at job level so the MSIX step can test it in its own `if`; a
+    # step cannot read the env it declares itself.
+    env:
+      MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
@@ -226,13 +230,15 @@ jobs:
             "/DOutputDir=$PWD\dist" `
             apps\coder_app\windows\installer\coder.iss
       - name: Build the Windows MSIX
+        # Skipped until the identity secrets exist. winget takes the Inno
+        # Setup installer, so a release without an MSIX is complete; the MSIX
+        # is only needed for the Microsoft Store, which is not submitted yet.
         if: matrix.platform == 'windows' && startsWith(github.ref, 'refs/tags/v')
+          && env.MSIX_IDENTITY_NAME != ''
         shell: pwsh
         env:
-          # Stored as secrets to match the other Tinyrack repositories. The
-          # publisher has to match the signing certificate subject, so there is
-          # no useful default to fall back to.
-          MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
+          # The publisher has to match the signing certificate subject, so
+          # there is no useful default to fall back to.
           MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
         run: dart pub global run shipworld:shipworld package windows msix coder

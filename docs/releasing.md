@@ -20,6 +20,10 @@ WinGet consumes the Inno Setup `setup.exe`; the MSIX exists for the Microsoft
 Store path and is not yet submitted. There is no `.msixbundle` because there is
 only one Windows architecture to bundle.
 
+The MSIX step is skipped unless `MSIX_IDENTITY_NAME` is set, so a release
+without those three secrets still produces everything winget and the GitHub
+Release need. Setting them turns the step back on with no workflow change.
+
 ## Cutting a release
 
 Versions come from `apps/coder_app/pubspec.yaml` and are mirrored into
@@ -56,9 +60,9 @@ All are repository secrets on `tinyrack-net/coder`.
 | `APPLE_NOTARY_KEY_P8_BASE64` | notarization | yes |
 | `HOMEBREW_TAP_TOKEN` | pushing the Cask to the tap | yes |
 | `WINGET_TOKEN` | the winget-pkgs pull request | yes |
-| `MSIX_IDENTITY_NAME` | MSIX identity | no, `tinyrack.coder` |
-| `MSIX_PUBLISHER` | MSIX identity | yes, matches the signing certificate |
-| `MSIX_PUBLISHER_DISPLAY_NAME` | MSIX identity | yes |
+| `MSIX_IDENTITY_NAME` | MSIX identity, optional | no, `tinyrack.coder` |
+| `MSIX_PUBLISHER` | MSIX identity, optional | yes, matches the signing certificate |
+| `MSIX_PUBLISHER_DISPLAY_NAME` | MSIX identity, optional | yes |
 
 The eight shared values are identical across `dotweave`, `proxer`, and this
 repository, so promoting them to organisation secrets removes the copying
