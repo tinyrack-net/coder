@@ -5,7 +5,6 @@ import 'package:coder_daemon/src/project_settings.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -71,7 +70,10 @@ branch refs/heads/feature/settings
       );
       expect(managed.worktree.kind, WorktreeKind.managed);
       expect(managed.worktree.isCoderOwned, isTrue);
-      expect(managed.worktree.path, contains(p.join('state', 'worktrees')));
+      // The configured root is preserved verbatim and the branch names the
+      // leaf; only the separator between them follows the host.
+      expect(managed.worktree.path, startsWith('/state/worktrees'));
+      expect(managed.worktree.path, endsWith('feature-user-settings'));
       expect(managed.hookRuns, isEmpty);
       expect(git.created.single.branchName, 'feature-user-settings');
     },

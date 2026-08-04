@@ -643,12 +643,24 @@ void main() {
         (await client.getProjectSettings('git-workspace')).settings,
         const ProjectSettingsDto(),
       );
-      final teardownMarker = '${repository.path}/teardown-ran';
+      final teardownMarker = p.join(repository.path, 'teardown-ran');
+      // Hooks run in the platform shell, so the fixture has to speak the one
+      // it will actually get.
       final saved = await client.saveProjectSettings(
         'git-workspace',
         ProjectSettingsDto(
-          setup: <String>[r'printf "%s" "$CODER_BRANCH" > setup-ran'],
-          teardown: <String>['printf ran > $teardownMarker'],
+          setup: <String>[
+            if (Platform.isWindows)
+              '<nul set /p=%CODER_BRANCH%> setup-ran'
+            else
+              r'printf "%s" "$CODER_BRANCH" > setup-ran',
+          ],
+          teardown: <String>[
+            if (Platform.isWindows)
+              '<nul set /p=ran> $teardownMarker'
+            else
+              'printf ran > $teardownMarker',
+          ],
         ),
       );
       expect(saved.sourcePath, p.join(repository.path, 'coder.json'));
@@ -665,7 +677,7 @@ void main() {
       expect(managed.hookRuns.single.exitCode, 0);
       expect(managed.hookRuns.single.phase, WorktreeHookPhase.setup);
       expect(
-        await File('${managed.worktree.path}/setup-ran').readAsString(),
+        await File(p.join(managed.worktree.path, 'setup-ran')).readAsString(),
         'feature-vertical-slice',
       );
       expect(
