@@ -377,6 +377,35 @@ void main() {
 
   unawaited(
     goldenTest(
+      'MCP settings shows user and project servers with their status',
+      fileName: 'mcp_settings',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'desktop light',
+            child: SizedBox(
+              width: 1100,
+              height: 760,
+              child: _mcpSettings(ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'mobile dark',
+            child: SizedBox(
+              width: 390,
+              height: 760,
+              child: _mcpSettings(ThemeMode.dark),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'daemon settings render embedded exposure and remote-only states',
       fileName: 'daemon_hosts',
       constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
@@ -624,6 +653,66 @@ Widget _agentSettings(ThemeMode mode) {
       mode,
       const UnifiedSettingsPage(
         category: SettingsCategory.agent,
+        hostId: 'server',
+      ),
+    ),
+  );
+}
+
+Widget _mcpSettings(ThemeMode mode) {
+  const stdio = McpServerConfigDto(
+    id: 'github',
+    transport: McpTransportKind.stdio,
+    command: 'npx',
+    args: <String>['-y', 'server-github'],
+  );
+  const remote = McpServerConfigDto(
+    id: 'linear',
+    transport: McpTransportKind.http,
+    url: 'https://mcp.linear.test/mcp',
+  );
+  const project = McpServerConfigDto(
+    id: 'repo',
+    transport: McpTransportKind.stdio,
+    command: './tools/mcp',
+  );
+  final api = FakeCoderApi()
+    ..mcpServers['github'] = const McpServerStateDto(
+      config: stdio,
+      status: McpServerStatus.ready,
+      scope: McpConfigScope.user,
+      sourcePath: '/config/mcp.json',
+      serverName: 'github',
+      tools: <McpToolSummaryDto>[
+        McpToolSummaryDto(
+          toolId: 'mcp__github__create_issue',
+          name: 'create_issue',
+          description: 'Opens an issue.',
+        ),
+      ],
+    )
+    ..mcpServers['linear'] = const McpServerStateDto(
+      config: remote,
+      status: McpServerStatus.failed,
+      scope: McpConfigScope.user,
+      sourcePath: '/config/mcp.json',
+      error: 'the server did not answer within 15s',
+    )
+    ..mcpServers['repo'] = const McpServerStateDto(
+      config: project,
+      status: McpServerStatus.ready,
+      scope: McpConfigScope.project,
+      sourcePath: '/repos/coder/.mcp.json',
+      serverName: 'repo',
+    );
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(api)),
+    ],
+    child: _material(
+      mode,
+      const UnifiedSettingsPage(
+        category: SettingsCategory.mcp,
         hostId: 'server',
       ),
     ),

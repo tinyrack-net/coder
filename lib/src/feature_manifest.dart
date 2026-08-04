@@ -222,9 +222,12 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       'testMcpServer',
       'setMcpSecret',
     ],
+    routes: <String>['McpSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
     },
   ),
   FeatureContract(
@@ -234,6 +237,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'degrades safely when a server is offline.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
     },
   ),
   FeatureContract(

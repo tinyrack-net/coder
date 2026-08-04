@@ -460,6 +460,119 @@ void main() {
     expect(RpcNotification.timelineEvent, 'timeline.event');
   });
 
+  test('MCP contracts round-trip and expose their defaults', () {
+    const stdio = McpServerConfigDto(
+      id: 'github',
+      transport: McpTransportKind.stdio,
+      command: 'npx',
+      args: <String>['-y', 'server-github'],
+      env: <String, String>{'TOKEN': r'${secret:github.token}'},
+      cwd: '/repo',
+    );
+    const remote = McpServerConfigDto(
+      id: 'linear',
+      transport: McpTransportKind.http,
+      enabled: false,
+      url: 'https://mcp.linear.test/mcp',
+      headers: <String, String>{'authorization': r'${env:LINEAR}'},
+    );
+    // Everything optional defaults to the empty, enabled, unshadowed case.
+    const bare = McpServerConfigDto(
+      id: 'bare',
+      transport: McpTransportKind.stdio,
+    );
+    expect(bare.enabled, isTrue);
+    expect(bare.args, isEmpty);
+    expect(bare.env, isEmpty);
+    expect(bare.headers, isEmpty);
+    expect(bare.command, isNull);
+    expect(bare.url, isNull);
+    expect(bare.cwd, isNull);
+
+    const summary = McpToolSummaryDto(
+      toolId: 'mcp__github__create_issue',
+      name: 'create_issue',
+      title: 'Create issue',
+      description: 'Opens an issue.',
+    );
+    final state = McpServerStateDto(
+      config: stdio,
+      status: McpServerStatus.ready,
+      scope: McpConfigScope.user,
+      sourcePath: '/config/mcp.json',
+      protocolVersion: '2025-06-18',
+      serverName: 'github',
+      serverVersion: '1.0.0',
+      tools: const <McpToolSummaryDto>[summary],
+      diagnostics: const <String>['started'],
+      lastConnectedAt: now,
+    );
+    const failed = McpServerStateDto(
+      config: remote,
+      status: McpServerStatus.failed,
+      scope: McpConfigScope.project,
+      sourcePath: '/repo/.mcp.json',
+      shadowed: true,
+      error: 'the server did not answer',
+      attempt: 3,
+    );
+    expect(state.shadowed, isFalse);
+    expect(state.attempt, 0);
+    expect(failed.tools, isEmpty);
+    expect(failed.diagnostics, isEmpty);
+    expect(failed.nextRetryAt, isNull);
+
+    for (final config in <McpServerConfigDto>[stdio, remote, bare]) {
+      _roundTrip(
+        config,
+        (value) => value.toJson(),
+        McpServerConfigDto.fromJson,
+      );
+    }
+    _roundTrip(summary, (value) => value.toJson(), McpToolSummaryDto.fromJson);
+    for (final entry in <McpServerStateDto>[state, failed]) {
+      _roundTrip(entry, (value) => value.toJson(), McpServerStateDto.fromJson);
+    }
+
+    _roundTrip(
+      const McpServersParamsDto(worktreeId: 'worktree'),
+      (value) => value.toJson(),
+      McpServersParamsDto.fromJson,
+    );
+    _roundTrip(
+      McpServersResultDto(servers: <McpServerStateDto>[state, failed]),
+      (value) => value.toJson(),
+      McpServersResultDto.fromJson,
+    );
+    _roundTrip(
+      const McpServerParamsDto(server: stdio),
+      (value) => value.toJson(),
+      McpServerParamsDto.fromJson,
+    );
+    _roundTrip(
+      const McpServerIdParamsDto(id: 'github'),
+      (value) => value.toJson(),
+      McpServerIdParamsDto.fromJson,
+    );
+    _roundTrip(
+      McpServerStateResultDto(state: state),
+      (value) => value.toJson(),
+      McpServerStateResultDto.fromJson,
+    );
+    _roundTrip(
+      const McpSecretParamsDto(key: 'github.token', value: 'secret'),
+      (value) => value.toJson(),
+      McpSecretParamsDto.fromJson,
+    );
+    _roundTrip(
+      const AgentToolCatalogParamsDto(worktreeId: 'worktree'),
+      (value) => value.toJson(),
+      AgentToolCatalogParamsDto.fromJson,
+    );
+    expect(const AgentToolCatalogParamsDto().worktreeId, isNull);
+    expect(const McpServersParamsDto().worktreeId, isNull);
+  });
+
   test('all domain DTOs round-trip with additive fields', () {
     _roundTrip(workspace, (value) => value.toJson(), WorkspaceDto.fromJson);
     _roundTrip(agent, (value) => value.toJson(), SessionDto.fromJson);
@@ -909,6 +1022,9 @@ void main() {
       ...PermissionMode.values,
       ...ApprovalStatus.values,
       ...ToolRisk.values,
+      ...McpConfigScope.values,
+      ...McpTransportKind.values,
+      ...McpServerStatus.values,
       ...WorkspaceKind.values,
       ...WorktreeKind.values,
       ...WorktreeCreateMode.values,

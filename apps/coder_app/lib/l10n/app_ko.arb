@@ -1,6 +1,5 @@
 {
   "@@locale": "ko",
-
   "commonCancel": "취소",
   "commonSave": "저장",
   "commonSaving": "저장 중…",
@@ -19,7 +18,6 @@
   "commonDone": "완료",
   "commonDetails": "자세히",
   "commonSaved": "저장했습니다.",
-
   "settingsTitle": "설정",
   "settingsCategoryGeneral": "General",
   "settingsCategoryProjects": "Projects",
@@ -27,25 +25,21 @@
   "settingsCategoryProvider": "Provider",
   "settingsCategoryDaemon": "Daemon",
   "settingsRequiresOnlineDaemon": "온라인 daemon 연결이 필요합니다.",
-
   "generalLanguageSection": "언어",
   "generalLanguageLabel": "표시 언어",
   "generalLanguageDescription": "앱 전체에 적용되며 즉시 반영됩니다.",
   "generalLanguageSystem": "시스템 설정 따름",
-
   "generalStartupSection": "시작",
   "generalStartupAtBootLabel": "로그인 시 시작",
   "generalStartupAtBootDescription": "로그인하면 운영체제가 Tinyrack Coder를 실행해 내장 daemon이 계속 동작합니다.",
   "generalStartupMinimizedLabel": "최소화된 상태로 시작",
   "generalStartupMinimizedDescription": "로그인 시 실행되면 창을 열지 않고 바로 트레이로 들어갑니다.",
   "generalStartupCloseNotice": "창을 닫아도 Tinyrack Coder는 트레이에서 계속 실행됩니다.",
-
   "trayTooltip": "Tinyrack Coder",
   "trayShowWindow": "창 열기",
   "trayHideWindow": "창 숨기기",
   "trayOpenSettings": "설정",
   "trayQuit": "종료",
-
   "workspacesTitle": "Workspaces",
   "workspaceSidebarExpand": "사이드바 열기",
   "workspaceSidebarCollapse": "사이드바 접기",
@@ -67,7 +61,6 @@
   "workspaceNoConnectedDaemons": "연결된 daemon이 없습니다.",
   "workspaceNoWorkspaces": "아직 workspace가 없습니다.",
   "workspaceOpenDaemonSettings": "Daemon 설정",
-
   "hostStatusOnline": "온라인",
   "hostStatusConnecting": "연결 중",
   "hostStatusReconnecting": "재연결 중",
@@ -76,13 +69,11 @@
   "hostStatusConflict": "중복 daemon",
   "hostStatusIdle": "자동 연결 꺼짐",
   "hostStatusPending": "대기 중",
-
   "embeddedDaemonName": "내장 daemon",
   "hostErrorMissingToken": "Bearer token을 입력하세요.",
   "hostErrorNoToken": "Bearer token이 없습니다.",
   "hostErrorDuplicate": "같은 daemon이 이미 등록되어 있습니다.",
   "hostErrorUnauthorized": "Daemon이 bearer token을 거부했습니다.",
-
   "appSettingsTitle": "앱 설정",
   "appSettingsLocalSection": "로컬 실행",
   "appSettingsEmbeddedSubtitle": "앱과 함께 시작하고 앱 종료 시 중지합니다. 시작 실패는 앱 사용을 막지 않습니다.",
@@ -103,7 +94,6 @@
   "appSettingsNewToken": "새 Bearer token (변경할 때만 입력)",
   "appSettingsDeleteTitle": "{label}을 삭제할까요?",
   "appSettingsDeleteBody": "연결과 저장된 bearer token도 이 기기에서 제거됩니다.",
-
   "projectSettingsHeading": "Projects",
   "projectSettingsNoProjects": "등록된 project가 없습니다.",
   "projectSettingsSelectProject": "Project를 선택하세요.",
@@ -113,7 +103,6 @@
   "projectSettingsHookHelp": "한 줄에 명령 하나를 적으면 daemon 호스트의 shell에서 순서대로 실행됩니다. CODER_WORKTREE_PATH, CODER_PROJECT_PATH, CODER_BRANCH 환경변수를 사용할 수 있습니다.",
   "projectSettingsSetup": "Setup (worktree 생성 후)",
   "projectSettingsTeardown": "Teardown (worktree 제거 전)",
-
   "agentSettingsHeading": "Agents",
   "agentSettingsSelectAgent": "Agent를 선택하세요.",
   "agentSettingsCount": "{count} definitions",
@@ -136,7 +125,6 @@
   "agentSettingsIdTaken": "이미 존재하는 Agent ID입니다.",
   "agentSettingsIdLabel": "ID (파일명)",
   "agentSettingsNameRequired": "이름을 입력하세요.",
-
   "providerSettingsTitle": "Provider 설정",
   "providerSettingsRequiresDaemon": "Daemon 연결이 필요합니다.",
   "providerSettingsRefreshCatalog": "Catalog 갱신",
@@ -177,11 +165,9 @@
   "providerStatusDisconnected": "연결 해제됨",
   "providerAuthStored": "저장된 credential",
   "providerAuthNone": "인증 없음",
-
   "modelPickerTitle": "기본 모델 선택",
   "modelPickerSearch": "모델 검색",
   "modelPickerNoResults": "검색 결과가 없습니다.",
-
   "composerPlan": "Plan",
   "composerRun": "실행",
   "composerPlanTooltip": "계획만 세웁니다. Shift+Tab으로 전환",
@@ -197,7 +183,6 @@
   "composerSelectProviderFirst": "사용할 Provider와 모델을 먼저 선택하세요.",
   "composerPlanBanner": "Plan 모드 · 계획만 세우고 실행하지 않습니다",
   "composerInputHint": "코딩 요청을 입력하세요…",
-
   "chatEmptyTitle": "코딩 요청을 입력하세요.",
   "chatEmptyExample": "예) 테스트를 실행하고 실패 원인을 고쳐줘",
   "chatNoticeCancelled": "중지됨",
@@ -211,7 +196,6 @@
   "chatPlanKeepPlanning": "계속 계획",
   "chatPlanRunInNewSession": "새 세션에서 실행",
   "chatPlanRun": "계획대로 실행",
-
   "toolRejected": "거부됨",
   "toolFailed": "실패",
   "toolEmptyFile": "빈 파일",
@@ -223,14 +207,50 @@
   "toolEditFiles": "Edit({count}개 파일)",
   "toolPatchSummary": "+{added} -{removed} · {files}개 파일",
   "toolCommandResult": "종료 코드 {exitCode} · {lines}줄",
-
   "directoryBrowserTitle": "Daemon의 폴더 선택",
   "directoryBrowserPath": "Daemon 경로",
   "directoryBrowserEmpty": "하위 폴더가 없습니다.",
   "directoryBrowserSelect": "이 폴더 선택",
   "directoryBrowserHostTitle": "폴더를 추가할 daemon",
-
   "hookFailureMessage": "{phase} 실패 (exit {exitCode}): {command}",
   "hookFailureTitle": "{phase} hook 실패",
-  "hookFailureNoOutput": "(출력 없음)"
+  "hookFailureNoOutput": "(출력 없음)",
+  "settingsCategoryMcp": "MCP",
+  "mcpSettingsHeading": "MCP 서버",
+  "mcpSettingsAdd": "MCP 서버 추가",
+  "mcpSettingsEmpty": "설정된 MCP 서버가 없습니다.",
+  "mcpSettingsSelectServer": "편집할 서버를 선택하세요.",
+  "mcpSettingsScopeUser": "내 설정",
+  "mcpSettingsScopeProject": "이 프로젝트",
+  "mcpSettingsProjectReadOnly": "이 저장소가 정의한 서버라 Coder가 수정하지 않습니다.",
+  "mcpSettingsShadowed": "같은 이름의 내 서버에 가려짐",
+  "mcpSettingsSource": "{path}에 정의됨",
+  "mcpSettingsServerId": "ID",
+  "mcpSettingsServerIdInvalid": "소문자, 숫자, - 및 _만 사용하세요.",
+  "mcpSettingsTransport": "연결 방식",
+  "mcpSettingsTransportStdio": "명령",
+  "mcpSettingsTransportHttp": "HTTP",
+  "mcpSettingsCommand": "명령",
+  "mcpSettingsArgs": "인자 (한 줄에 하나)",
+  "mcpSettingsWorkingDirectory": "작업 디렉터리 (선택)",
+  "mcpSettingsUrl": "URL",
+  "mcpSettingsEnvironment": "환경 변수 (KEY=value, 한 줄에 하나)",
+  "mcpSettingsHeaders": "헤더 (Name: value, 한 줄에 하나)",
+  "mcpSettingsEnabled": "사용",
+  "mcpSettingsSecretHint": "비밀값을 직접 입력하지 마세요. 저장된 비밀값이나 환경 변수를 참조하세요:",
+  "mcpSettingsTest": "연결 테스트",
+  "mcpSettingsTestSucceeded": "연결됨. 도구 {count}개를 찾았습니다.",
+  "mcpSettingsTestFailed": "연결할 수 없습니다: {error}",
+  "mcpSettingsDelete": "서버 삭제",
+  "mcpSettingsDeleteConfirm": "{name}을(를) 삭제할까요? 이 도구를 쓰던 에이전트는 사용할 수 없게 됩니다.",
+  "mcpSettingsStatusDisabled": "사용 안 함",
+  "mcpSettingsStatusConnecting": "연결 중",
+  "mcpSettingsStatusReady": "준비됨",
+  "mcpSettingsStatusFailed": "실패",
+  "mcpSettingsDiscoveredTools": "도구",
+  "mcpSettingsNoTools": "이 서버는 도구를 제공하지 않습니다.",
+  "mcpSettingsDiagnostics": "서버 출력",
+  "mcpSettingsSecretSet": "비밀값 저장",
+  "mcpSettingsSecretKey": "참조 이름",
+  "mcpSettingsSecretValue": "값"
 }

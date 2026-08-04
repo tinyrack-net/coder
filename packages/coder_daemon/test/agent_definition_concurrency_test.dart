@@ -53,7 +53,13 @@ void main() {
       ..emitChange()
       ..emitChange()
       ..emitChange();
-    await Future<void>.delayed(const Duration(milliseconds: 5));
+    // Wait for the debounced reload rather than for a fixed span: a loaded
+    // machine can take far longer than the debounce itself to run the timer.
+    final deadline = DateTime.now().add(const Duration(seconds: 5));
+    while (files.activeScanCount == initialScans &&
+        DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
     await store.close();
 
     expect(files.activeScanCount, initialScans + 1);
