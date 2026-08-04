@@ -74,6 +74,18 @@ void main() {
     expect(gate, contains('all(.[]; .result == "success")'));
     expect(_job(workflow, 'publish-release'), contains('- quality-gate'));
   });
+
+  test('only Android mobile builds use the enhanced Gradle cache', () {
+    final mobileBuild = _job(workflow, 'mobile-debug-build');
+    final androidBuild = _matrixEntry(mobileBuild, 'ubuntu-24.04');
+    final iosBuild = _matrixEntry(mobileBuild, 'macos-26');
+
+    expect(androidBuild, contains('gradle_cache: true'));
+    expect(iosBuild, contains('gradle_cache: false'));
+    expect(mobileBuild, contains('if: matrix.gradle_cache'));
+    expect(mobileBuild, contains('uses: gradle/actions/setup-gradle@v6'));
+    expect(mobileBuild, contains('cache-provider: enhanced'));
+  });
 }
 
 String _job(String workflow, String name) {
@@ -86,4 +98,11 @@ String _job(String workflow, String name) {
       ? workflow.length
       : start + name.length + 3 + next.start;
   return workflow.substring(start, end);
+}
+
+String _matrixEntry(String job, String os) {
+  final start = job.indexOf('          - os: $os\n');
+  if (start < 0) throw StateError('Missing matrix entry for $os');
+  final next = job.indexOf('          - os:', start + 1);
+  return job.substring(start, next < 0 ? job.length : next);
 }
