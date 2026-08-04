@@ -236,6 +236,85 @@ Map<String, dynamic> _$AgentDefinitionValidateParamsDtoToJson(
   _AgentDefinitionValidateParamsDto instance,
 ) => <String, dynamic>{'id': instance.id, 'markdown': instance.markdown};
 
+_SkillScopeParamsDto _$SkillScopeParamsDtoFromJson(Map<String, dynamic> json) =>
+    _SkillScopeParamsDto(workspaceId: json['workspaceId'] as String?);
+
+Map<String, dynamic> _$SkillScopeParamsDtoToJson(
+  _SkillScopeParamsDto instance,
+) => <String, dynamic>{'workspaceId': instance.workspaceId};
+
+_SkillIdParamsDto _$SkillIdParamsDtoFromJson(Map<String, dynamic> json) =>
+    _SkillIdParamsDto(
+      id: json['id'] as String,
+      workspaceId: json['workspaceId'] as String?,
+    );
+
+Map<String, dynamic> _$SkillIdParamsDtoToJson(_SkillIdParamsDto instance) =>
+    <String, dynamic>{'id': instance.id, 'workspaceId': instance.workspaceId};
+
+_SkillCreateParamsDto _$SkillCreateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SkillCreateParamsDto(
+  id: json['id'] as String,
+  source: $enumDecode(_$SkillSourceEnumMap, json['source']),
+  name: json['name'] as String,
+  description: json['description'] as String,
+  body: json['body'] as String,
+  workspaceId: json['workspaceId'] as String?,
+);
+
+Map<String, dynamic> _$SkillCreateParamsDtoToJson(
+  _SkillCreateParamsDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'source': _$SkillSourceEnumMap[instance.source]!,
+  'name': instance.name,
+  'description': instance.description,
+  'body': instance.body,
+  'workspaceId': instance.workspaceId,
+};
+
+const _$SkillSourceEnumMap = {
+  SkillSource.builtIn: 'builtIn',
+  SkillSource.userHome: 'userHome',
+  SkillSource.config: 'config',
+  SkillSource.project: 'project',
+};
+
+_SkillUpdateParamsDto _$SkillUpdateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SkillUpdateParamsDto(
+  skill: SkillDto.fromJson(json['skill'] as Map<String, dynamic>),
+  expectedContentHash: json['expectedContentHash'] as String,
+  workspaceId: json['workspaceId'] as String?,
+  force: json['force'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$SkillUpdateParamsDtoToJson(
+  _SkillUpdateParamsDto instance,
+) => <String, dynamic>{
+  'skill': instance.skill,
+  'expectedContentHash': instance.expectedContentHash,
+  'workspaceId': instance.workspaceId,
+  'force': instance.force,
+};
+
+_SkillSetEnabledParamsDto _$SkillSetEnabledParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SkillSetEnabledParamsDto(
+  id: json['id'] as String,
+  enabled: json['enabled'] as bool,
+  workspaceId: json['workspaceId'] as String?,
+);
+
+Map<String, dynamic> _$SkillSetEnabledParamsDtoToJson(
+  _SkillSetEnabledParamsDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'enabled': instance.enabled,
+  'workspaceId': instance.workspaceId,
+};
+
 _ProviderConnectApiKeyParamsDto _$ProviderConnectApiKeyParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _ProviderConnectApiKeyParamsDto(
@@ -607,6 +686,24 @@ _AgentToolCatalogResultDto _$AgentToolCatalogResultDtoFromJson(
 Map<String, dynamic> _$AgentToolCatalogResultDtoToJson(
   _AgentToolCatalogResultDto instance,
 ) => <String, dynamic>{'tools': instance.tools};
+
+_SkillListResultDto _$SkillListResultDtoFromJson(Map<String, dynamic> json) =>
+    _SkillListResultDto(
+      skills: (json['skills'] as List<dynamic>)
+          .map((e) => SkillDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$SkillListResultDtoToJson(_SkillListResultDto instance) =>
+    <String, dynamic>{'skills': instance.skills};
+
+_SkillResultDto _$SkillResultDtoFromJson(Map<String, dynamic> json) =>
+    _SkillResultDto(
+      skill: SkillDto.fromJson(json['skill'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$SkillResultDtoToJson(_SkillResultDto instance) =>
+    <String, dynamic>{'skill': instance.skill};
 
 _ProviderCatalogResultDto _$ProviderCatalogResultDtoFromJson(
   Map<String, dynamic> json,

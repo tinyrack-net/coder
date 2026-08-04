@@ -377,6 +377,35 @@ void main() {
 
   unawaited(
     goldenTest(
+      'skill settings adapts to desktop and mobile widths',
+      fileName: 'skill_settings',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'desktop light',
+            child: SizedBox(
+              width: 1100,
+              height: 760,
+              child: _skillSettings(ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'mobile dark',
+            child: SizedBox(
+              width: 390,
+              height: 760,
+              child: _skillSettings(ThemeMode.dark),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'daemon settings render embedded exposure and remote-only states',
       fileName: 'daemon_hosts',
       constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
@@ -624,6 +653,22 @@ Widget _agentSettings(ThemeMode mode) {
       mode,
       const UnifiedSettingsPage(
         category: SettingsCategory.agent,
+        hostId: 'server',
+      ),
+    ),
+  );
+}
+
+Widget _skillSettings(ThemeMode mode) {
+  final api = FakeCoderApi();
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(api)),
+    ],
+    child: _material(
+      mode,
+      const UnifiedSettingsPage(
+        category: SettingsCategory.skill,
         hostId: 'server',
       ),
     ),

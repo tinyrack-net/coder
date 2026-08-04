@@ -529,6 +529,75 @@ abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
       _$AgentToolDefinitionDtoFromJson(json);
 }
 
+/// Where one skill was loaded from, ordered by ascending precedence.
+enum SkillSource {
+  /// Ships inside the daemon and cannot be edited.
+  builtIn,
+
+  /// Lives in the shared `~/.agents/skills` tree.
+  userHome,
+
+  /// Lives in the daemon configuration directory.
+  config,
+
+  /// Lives in `<workspace root>/.agents/skills`.
+  project,
+}
+
+@freezed
+/// A source diagnostic produced while loading a skill.
+abstract class SkillDiagnosticDto with _$SkillDiagnosticDto {
+  /// Creates a skill diagnostic.
+  const factory SkillDiagnosticDto({
+    required String code,
+    required String message,
+  }) = _SkillDiagnosticDto;
+
+  /// Decodes a skill diagnostic.
+  factory SkillDiagnosticDto.fromJson(Map<String, dynamic> json) =>
+      _$SkillDiagnosticDtoFromJson(json);
+}
+
+@freezed
+/// One file bundled next to a skill document.
+abstract class SkillResourceDto with _$SkillResourceDto {
+  /// Creates a skill resource.
+  const factory SkillResourceDto({
+    required String path,
+    required int sizeBytes,
+  }) = _SkillResourceDto;
+
+  /// Decodes a skill resource.
+  factory SkillResourceDto.fromJson(Map<String, dynamic> json) =>
+      _$SkillResourceDtoFromJson(json);
+}
+
+@freezed
+/// One Markdown-backed skill offered to agents through the `skill` tool.
+abstract class SkillDto with _$SkillDto {
+  /// Creates a skill.
+  const factory SkillDto({
+    required String id,
+    required String name,
+    required String description,
+    required SkillSource source,
+    required String sourcePath,
+    required String contentHash,
+    required String body,
+    @Default(<SkillResourceDto>[]) List<SkillResourceDto> resources,
+    @Default(true) bool isEnabled,
+    @Default(false) bool isMandatory,
+    @Default(false) bool isEditable,
+    @Default(false) bool isShadowed,
+    @Default(false) bool isStale,
+    @Default(<SkillDiagnosticDto>[]) List<SkillDiagnosticDto> diagnostics,
+  }) = _SkillDto;
+
+  /// Decodes a skill.
+  factory SkillDto.fromJson(Map<String, dynamic> json) =>
+      _$SkillDtoFromJson(json);
+}
+
 /// How a session collaborates: planning first, or working directly.
 enum SessionMode {
   /// Explores and proposes a plan instead of doing the work.

@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v11 exposes agent definitions and sessions', () {
-    expect(coderProtocolVersion, 11);
+  test('protocol v12 exposes skills, agent definitions, and sessions', () {
+    expect(coderProtocolVersion, 12);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -21,6 +21,13 @@ void main() {
     expect(RpcMethod.agentDefinitionList, 'agentDefinition.list');
     expect(RpcMethod.agentDefinitionUpdate, 'agentDefinition.update');
     expect(RpcMethod.agentToolCatalog, 'agentTool.catalog');
+    expect(RpcMethod.skillList, 'skill.list');
+    expect(RpcMethod.skillGet, 'skill.get');
+    expect(RpcMethod.skillCreate, 'skill.create');
+    expect(RpcMethod.skillUpdate, 'skill.update');
+    expect(RpcMethod.skillDelete, 'skill.delete');
+    expect(RpcMethod.skillSetEnabled, 'skill.setEnabled');
+    expect(RpcNotification.skillsChanged, 'skills.changed');
     expect(RpcMethod.sessionList, 'session.list');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -171,6 +178,98 @@ void main() {
     );
     _roundTrip(session, (value) => value.toJson(), SessionDto.fromJson);
   });
+
+  test(
+    'skill contracts round-trip and default to an enabled read-only skill',
+    () {
+      const skill = SkillDto(
+        id: 'commit',
+        name: 'commit',
+        description: 'Writes atomic commits.',
+        source: SkillSource.config,
+        sourcePath: '/config/skills/commit/SKILL.md',
+        contentHash: 'hash',
+        body: 'Stage related changes together.',
+        resources: <SkillResourceDto>[
+          SkillResourceDto(path: 'scripts/split.sh', sizeBytes: 42),
+        ],
+        isEditable: true,
+      );
+
+      expect(skill.isEnabled, isTrue);
+      expect(skill.isMandatory, isFalse);
+      expect(skill.isShadowed, isFalse);
+      expect(skill.isStale, isFalse);
+      expect(skill.diagnostics, isEmpty);
+
+      _roundTrip(skill, (value) => value.toJson(), SkillDto.fromJson);
+      _roundTrip(
+        const SkillDiagnosticDto(
+          code: 'shadowed_builtin',
+          message: 'A mandatory built-in skill owns this id.',
+        ),
+        (value) => value.toJson(),
+        SkillDiagnosticDto.fromJson,
+      );
+      _roundTrip(
+        const SkillScopeParamsDto(workspaceId: 'workspace'),
+        (value) => value.toJson(),
+        SkillScopeParamsDto.fromJson,
+      );
+      _roundTrip(
+        const SkillIdParamsDto(id: 'commit', workspaceId: 'workspace'),
+        (value) => value.toJson(),
+        SkillIdParamsDto.fromJson,
+      );
+      _roundTrip(
+        const SkillCreateParamsDto(
+          id: 'commit',
+          source: SkillSource.project,
+          name: 'commit',
+          description: 'Writes atomic commits.',
+          body: 'Stage related changes together.',
+          workspaceId: 'workspace',
+        ),
+        (value) => value.toJson(),
+        SkillCreateParamsDto.fromJson,
+      );
+      _roundTrip(
+        const SkillUpdateParamsDto(
+          skill: skill,
+          expectedContentHash: 'hash',
+          workspaceId: 'workspace',
+          force: true,
+        ),
+        (value) => value.toJson(),
+        SkillUpdateParamsDto.fromJson,
+      );
+      _roundTrip(
+        const SkillSetEnabledParamsDto(id: 'commit', enabled: false),
+        (value) => value.toJson(),
+        SkillSetEnabledParamsDto.fromJson,
+      );
+      _roundTrip(
+        const SkillListResultDto(skills: <SkillDto>[skill]),
+        (value) => value.toJson(),
+        SkillListResultDto.fromJson,
+      );
+      _roundTrip(
+        const SkillResultDto(skill: skill),
+        (value) => value.toJson(),
+        SkillResultDto.fromJson,
+      );
+
+      expect(const SkillScopeParamsDto().workspaceId, isNull);
+      expect(
+        const SkillUpdateParamsDto(
+          skill: skill,
+          expectedContentHash: 'hash',
+        ).force,
+        isFalse,
+      );
+    },
+    tags: const <String>['feature_test__skill_management__contract'],
+  );
 
   test('workspace and worktree contracts round-trip', () {
     final workspace = WorkspaceDto(
@@ -449,7 +548,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 11);
+    expect(coderProtocolVersion, 12);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -909,6 +1008,7 @@ void main() {
       ...PermissionMode.values,
       ...ApprovalStatus.values,
       ...ToolRisk.values,
+      ...SkillSource.values,
       ...WorkspaceKind.values,
       ...WorktreeKind.values,
       ...WorktreeCreateMode.values,

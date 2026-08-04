@@ -19,6 +19,7 @@ import 'package:coder_app/src/project_settings_page.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/settings_page.dart';
+import 'package:coder_app/src/skill_settings_page.dart';
 import 'package:coder_app/src/workspace/new_workspace_pane.dart';
 import 'package:coder_app/src/workspace/workspace_sidebar.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -275,6 +276,27 @@ class AgentSettingsRoute extends GoRouteData with $AgentSettingsRoute {
       UnifiedSettingsPage(category: SettingsCategory.agent, hostId: hostId);
 }
 
+@TypedGoRoute<SkillSettingsRoute>(path: '/settings/skills')
+/// Unified settings route with Skill selected.
+class SkillSettingsRoute extends GoRouteData with $SkillSettingsRoute {
+  /// Creates the skill settings route.
+  const SkillSettingsRoute({this.hostId, this.workspaceId});
+
+  /// Preferred daemon in the skill selector.
+  final String? hostId;
+
+  /// Project whose skills layer on top of the global sources.
+  final String? workspaceId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UnifiedSettingsPage(
+        category: SettingsCategory.skill,
+        hostId: hostId,
+        workspaceId: workspaceId,
+      );
+}
+
 @TypedGoRoute<DaemonSettingsRoute>(path: '/settings/daemons')
 /// Unified settings route with Daemon selected.
 class DaemonSettingsRoute extends GoRouteData with $DaemonSettingsRoute {
@@ -322,6 +344,9 @@ enum SettingsCategory {
   /// Markdown-backed agent definitions owned by one daemon.
   agent,
 
+  /// Skills merged from built-in, user, config, and project sources.
+  skill,
+
   /// API provider connections owned by one daemon.
   provider,
 
@@ -335,6 +360,7 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
   const UnifiedSettingsPage({
     required this.category,
     this.hostId,
+    this.workspaceId,
     super.key,
   });
 
@@ -343,6 +369,9 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 
   /// Preferred provider daemon.
   final String? hostId;
+
+  /// Project selected on the skill page.
+  final String? workspaceId;
 
   @override
   ConsumerState<UnifiedSettingsPage> createState() =>
@@ -377,6 +406,19 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         hostId: _hostId,
         onChanged: selectHost,
         builder: (hostId) => AgentSettingsPage(hostId: hostId),
+      ),
+      SettingsCategory.skill => _HostScopedDetail(
+        hosts: online,
+        hostId: _hostId,
+        onChanged: selectHost,
+        builder: (hostId) => SkillSettingsPage(
+          hostId: hostId,
+          workspaceId: widget.workspaceId,
+          onWorkspaceChanged: (value) => SkillSettingsRoute(
+            hostId: hostId,
+            workspaceId: value,
+          ).go(context),
+        ),
       ),
       SettingsCategory.provider => _HostScopedDetail(
         hosts: online,
@@ -441,6 +483,12 @@ class _SettingsSidebar extends StatelessWidget {
           leading: const Icon(Icons.smart_toy_outlined),
           title: Text(l10n.settingsCategoryAgent),
           onTap: () => const AgentSettingsRoute().go(context),
+        ),
+        ListTile(
+          selected: selected == SettingsCategory.skill,
+          leading: const Icon(Icons.auto_awesome_outlined),
+          title: Text(l10n.settingsCategorySkill),
+          onTap: () => const SkillSettingsRoute().go(context),
         ),
         ListTile(
           selected: selected == SettingsCategory.provider,

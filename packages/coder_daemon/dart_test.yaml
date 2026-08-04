@@ -13,6 +13,10 @@ tags:
   feature_test__turn_execution__verticalSlice:
   feature_test__agent_definition_management__unit:
   feature_test__agent_definition_management__verticalSlice:
+  feature_test__skill_management__unit:
+  feature_test__skill_management__verticalSlice:
+  feature_test__skill_invocation__unit:
+  feature_test__skill_invocation__verticalSlice:
   feature_test__agent_delegation__unit:
   feature_test__agent_delegation__verticalSlice:
   feature_test__provider_catalog__unit:

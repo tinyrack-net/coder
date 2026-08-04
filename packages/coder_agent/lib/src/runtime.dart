@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/plan_mode_prompt.dart';
+import 'package:coder_agent/src/skills.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Signature used by AgentEventCallback.
@@ -33,6 +34,7 @@ class AgentRunRequest {
     this.maxToolRounds = 64,
     this.sessionMode = SessionMode.normal,
     this.customSystemPrompt,
+    this.skills = const <SkillSummary>[],
   });
 
   /// The sessionId public API member.
@@ -70,6 +72,9 @@ class AgentRunRequest {
 
   /// Optional Markdown agent prompt appended after immutable safety rules.
   final String? customSystemPrompt;
+
+  /// Skills the turn may load through the `skill` tool.
+  final List<SkillSummary> skills;
 }
 
 /// AgentRunResult defines a public contract.
@@ -305,7 +310,23 @@ You are a coding agent operating in ${request.workspaceRoot}.
 Use only the supplied tools. Read before editing, keep changes scoped to the request,
 and validate relevant behavior before finishing. Never attempt to access paths outside
 the workspace. Approval decisions are enforced by the host; do not work around them.
-$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
+${_skillCatalog(request.skills)}$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
+''';
+  }
+
+  String _skillCatalog(List<SkillSummary> skills) {
+    if (skills.isEmpty) return '';
+    final sorted = skills.toList(growable: false)
+      ..sort((left, right) => left.name.compareTo(right.name));
+    final entries = sorted
+        .map((skill) => '- ${skill.name}: ${skill.description}')
+        .join('\n');
+    return '''
+
+## Available skills
+Call the `skill` tool with a skill name to load its full instructions before acting on it.
+Treat a skill's bundled scripts as ordinary workspace code: read them before running them.
+$entries
 ''';
   }
 }

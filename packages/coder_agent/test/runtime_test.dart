@@ -176,6 +176,69 @@ void main() {
     );
   });
 
+  test(
+    'the skill catalog is injected in name order before the agent prompt',
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
+      await _RunnerHarness(provider).runner.startTurn(
+        _request(
+          customSystemPrompt: 'Review every security boundary.',
+          skills: const <SkillSummary>[
+            SkillSummary(name: 'commit', description: 'Writes commits.'),
+            SkillSummary(name: 'dataviz', description: 'Draws charts.'),
+          ],
+        ),
+        CancellationToken(),
+      );
+
+      final instructions = provider.requests.single.instructions;
+      expect(instructions, contains('## Available skills'));
+      expect(instructions, contains('- commit: Writes commits.'));
+      expect(instructions, contains('- dataviz: Draws charts.'));
+      expect(
+        instructions.indexOf('- commit:'),
+        lessThan(instructions.indexOf('- dataviz:')),
+      );
+      expect(
+        instructions.indexOf('## Available skills'),
+        lessThan(instructions.indexOf('Review every security boundary.')),
+      );
+
+      final unsorted = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
+      await _RunnerHarness(unsorted).runner.startTurn(
+        _request(
+          skills: const <SkillSummary>[
+            SkillSummary(name: 'dataviz', description: 'Draws charts.'),
+            SkillSummary(name: 'commit', description: 'Writes commits.'),
+          ],
+        ),
+        CancellationToken(),
+      );
+      final sorted = unsorted.requests.single.instructions;
+      expect(
+        sorted.indexOf('- commit:'),
+        lessThan(sorted.indexOf('- dataviz:')),
+      );
+    },
+    tags: const <String>['feature_test__skill_invocation__unit'],
+  );
+
+  test(
+    'a turn without skills carries no catalog block',
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
+      await _RunnerHarness(provider).runner.startTurn(
+        _request(),
+        CancellationToken(),
+      );
+      expect(
+        provider.requests.single.instructions,
+        isNot(contains('Available skills')),
+      );
+    },
+    tags: const <String>['feature_test__skill_invocation__unit'],
+  );
+
   test('read-only and denied approvals produce error tool results', () async {
     for (final scenario
         in <
@@ -361,6 +424,7 @@ AgentRunRequest _request({
   int maxToolRounds = 64,
   SessionMode sessionMode = SessionMode.normal,
   String? customSystemPrompt,
+  List<SkillSummary> skills = const <SkillSummary>[],
 }) => AgentRunRequest(
   sessionId: 'agent-1',
   turnId: 'turn-1',
@@ -373,6 +437,7 @@ AgentRunRequest _request({
   maxToolRounds: maxToolRounds,
   sessionMode: sessionMode,
   customSystemPrompt: customSystemPrompt,
+  skills: skills,
 );
 
 List<ModelEvent> _toolResponse(String name) => <ModelEvent>[

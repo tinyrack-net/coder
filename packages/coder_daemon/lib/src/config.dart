@@ -44,6 +44,7 @@ class DaemonConfig {
   const DaemonConfig({
     required this.homeDirectory,
     String? configDirectory,
+    this.userHomeDirectory,
     this.host = '127.0.0.1',
     this.port = 7337,
     this.apiKey,
@@ -57,6 +58,7 @@ class DaemonConfig {
       DaemonConfig(
         homeDirectory: value['homeDirectory']! as String,
         configDirectory: value['configDirectory'] as String?,
+        userHomeDirectory: value['userHomeDirectory'] as String?,
         host: value['host']! as String,
         port: value['port']! as int,
         apiKey: value['apiKey'] as String?,
@@ -83,6 +85,7 @@ class DaemonConfig {
     return DaemonConfig(
       homeDirectory: home,
       configDirectory: configHome,
+      userHomeDirectory: values['TINYRACK_CODER_AGENTS_HOME'] ?? directories.$3,
       host: listen.substring(0, separator),
       port: int.parse(listen.substring(separator + 1)),
       apiKey: apiKey,
@@ -95,6 +98,12 @@ class DaemonConfig {
 
   /// The configDirectory public API member.
   final String configDirectory;
+
+  /// Real user home used to locate the shared `~/.agents` tree.
+  ///
+  /// Null keeps the daemon away from any user home, which is what tests and
+  /// CI runs need.
+  final String? userHomeDirectory;
 
   /// The host public API member.
   final String host;
@@ -118,6 +127,7 @@ class DaemonConfig {
   DaemonConfig copyWith({
     String? homeDirectory,
     String? configDirectory,
+    String? userHomeDirectory,
     String? host,
     int? port,
     String? apiKey,
@@ -126,6 +136,7 @@ class DaemonConfig {
   }) => DaemonConfig(
     homeDirectory: homeDirectory ?? this.homeDirectory,
     configDirectory: configDirectory ?? this.configDirectory,
+    userHomeDirectory: userHomeDirectory ?? this.userHomeDirectory,
     host: host ?? this.host,
     port: port ?? this.port,
     apiKey: apiKey ?? this.apiKey,
@@ -139,6 +150,7 @@ class DaemonConfig {
   Map<String, Object?> toIsolateMessage() => <String, Object?>{
     'homeDirectory': homeDirectory,
     'configDirectory': configDirectory,
+    'userHomeDirectory': userHomeDirectory,
     'host': host,
     'port': port,
     'apiKey': apiKey,
@@ -148,7 +160,7 @@ class DaemonConfig {
   };
 }
 
-(String, String) _defaultDirectories(
+(String, String, String) _defaultDirectories(
   Map<String, String> environment,
   DaemonEnvironment platform,
 ) {
@@ -159,7 +171,11 @@ class DaemonConfig {
         environment['XDG_CONFIG_HOME'] ?? p.join(userHome, '.config');
     final state =
         environment['XDG_STATE_HOME'] ?? p.join(userHome, '.local', 'state');
-    return (p.join(config, 'tinyrack-coder'), p.join(state, 'tinyrack-coder'));
+    return (
+      p.join(config, 'tinyrack-coder'),
+      p.join(state, 'tinyrack-coder'),
+      userHome,
+    );
   }
   if (platform.isMacOS) {
     final support = p.join(
@@ -168,16 +184,21 @@ class DaemonConfig {
       'Application Support',
       'Tinyrack Coder',
     );
-    return (support, support);
+    return (support, support, userHome);
   }
   if (platform.isWindows) {
     final config = environment['APPDATA'] ?? userHome;
     final state = environment['LOCALAPPDATA'] ?? config;
-    return (p.join(config, 'Tinyrack Coder'), p.join(state, 'Tinyrack Coder'));
+    return (
+      p.join(config, 'Tinyrack Coder'),
+      p.join(state, 'Tinyrack Coder'),
+      userHome,
+    );
   }
   return (
     p.join(userHome, '.config', 'tinyrack-coder'),
     p.join(userHome, '.local', 'state', 'tinyrack-coder'),
+    userHome,
   );
 }
 

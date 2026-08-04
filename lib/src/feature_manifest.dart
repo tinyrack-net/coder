@@ -210,6 +210,39 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'skill.management',
+    description:
+        'Lists, creates, edits, toggles, and deletes skills from built-in, '
+        'user-home, config, and project sources.',
+    apiMethods: <String>[
+      'listSkills',
+      'getSkill',
+      'createSkill',
+      'updateSkill',
+      'deleteSkill',
+      'setSkillEnabled',
+    ],
+    routes: <String>['SkillSettingsRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+  ),
+  FeatureContract(
+    id: 'skill.invocation',
+    description:
+        'Injects the enabled skill catalog into a turn and loads skill '
+        'instructions through the skill tool.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'agent.delegation',
     description:
         'Delegates to an allowlisted subagent and exposes its session.',

@@ -17,12 +17,16 @@ final class FakeCoderApi implements CoderApi {
     List<WorktreeDto>? worktrees,
     List<SessionDto>? agents,
     List<AgentDefinitionDto>? agentDefinitions,
+    List<SkillDto>? skills,
+    List<SkillDto>? projectSkills,
     Map<String, List<TimelineEventDto>>? timelines,
     Map<String, List<ProviderModelDto>>? models,
     this.eventStream,
     this.agentListError,
+    this.skillListError,
     this.failNextAgentCreate = false,
     this.failNextAgentUpdate = false,
+    this.failNextSkillUpdate = false,
     this.defaultModelSetGate,
     this.defaultModelSetError,
     this.modelListGate,
@@ -40,6 +44,10 @@ final class FakeCoderApi implements CoderApi {
        _agentDefinitions = List<AgentDefinitionDto>.of(
          agentDefinitions ?? <AgentDefinitionDto>[_coder],
        ),
+       _skills = List<SkillDto>.of(
+         skills ?? <SkillDto>[_builtInSkill, _configSkill],
+       ),
+       _projectSkills = List<SkillDto>.of(projectSkills ?? <SkillDto>[]),
        _timelines = <String, List<TimelineEventDto>>{
          for (final entry
              in (timelines ?? <String, List<TimelineEventDto>>{}).entries)
@@ -142,6 +150,31 @@ final class FakeCoderApi implements CoderApi {
     isBuiltIn: true,
   );
 
+  static const SkillDto _builtInSkill = SkillDto(
+    id: 'coding-conventions',
+    name: 'coding-conventions',
+    description: 'Match the surrounding code.',
+    source: SkillSource.builtIn,
+    sourcePath: '',
+    contentHash: 'coding-conventions-hash',
+    body: 'Read neighbouring code first.',
+    isMandatory: true,
+  );
+
+  static const SkillDto _configSkill = SkillDto(
+    id: 'commit',
+    name: 'commit',
+    description: 'Writes atomic commits.',
+    source: SkillSource.config,
+    sourcePath: '/config/skills/commit/SKILL.md',
+    contentHash: 'commit-hash',
+    body: 'Stage related changes together.',
+    isEditable: true,
+    resources: <SkillResourceDto>[
+      SkillResourceDto(path: 'scripts/split.sh', sizeBytes: 11),
+    ],
+  );
+
   final ServerInfoDto _serverInfo;
   ProviderCatalogDto _catalog;
   final List<ProviderConnectionDto> _connections;
@@ -149,6 +182,8 @@ final class FakeCoderApi implements CoderApi {
   final List<WorktreeDto> _worktrees;
   final List<SessionDto> _agents;
   final List<AgentDefinitionDto> _agentDefinitions;
+  final List<SkillDto> _skills;
+  final List<SkillDto> _projectSkills;
   final Map<String, List<TimelineEventDto>> _timelines;
   final Map<String, List<ProviderModelDto>> _models;
 
@@ -158,8 +193,14 @@ final class FakeCoderApi implements CoderApi {
   /// Optional failure returned while loading Markdown agent definitions.
   final Exception? agentListError;
 
+  /// Optional failure returned while loading the skill catalog.
+  Exception? skillListError;
+
   /// Whether the next guarded Markdown save should simulate a file race.
   bool failNextAgentUpdate;
+
+  /// Whether the next guarded skill save should simulate a file race.
+  bool failNextSkillUpdate;
 
   /// Whether the next Markdown create should simulate a daemon failure.
   bool failNextAgentCreate;
@@ -606,6 +647,96 @@ final class FakeCoderApi implements CoderApi {
           risk: ToolRisk.read,
         ),
       ];
+
+  List<SkillDto> _skillsFor(String? workspaceId) =>
+      workspaceId == null ? _skills : <SkillDto>[..._skills, ..._projectSkills];
+
+  List<SkillDto> _skillStoreFor(SkillSource source) =>
+      source == SkillSource.project ? _projectSkills : _skills;
+
+  @override
+  Future<List<SkillDto>> listSkills({String? workspaceId}) async {
+    final error = skillListError;
+    if (error != null) throw error;
+    return List<SkillDto>.unmodifiable(_skillsFor(workspaceId));
+  }
+
+  @override
+  Future<SkillDto> getSkill(String id, {String? workspaceId}) async =>
+      _skillsFor(workspaceId).singleWhere((skill) => skill.id == id);
+
+  @override
+  Future<SkillDto> createSkill({
+    required String id,
+    required SkillSource source,
+    required String name,
+    required String description,
+    required String body,
+    String? workspaceId,
+  }) async {
+    if (_skillsFor(workspaceId).any((skill) => skill.id == id)) {
+      throw StateError('Skill already exists: $id');
+    }
+    final created = SkillDto(
+      id: id,
+      name: name,
+      description: description,
+      source: source,
+      sourcePath: '/config/skills/$id/SKILL.md',
+      contentHash: '$id-hash',
+      body: body,
+      isEditable: true,
+    );
+    _skillStoreFor(source).add(created);
+    return created;
+  }
+
+  @override
+  Future<SkillDto> updateSkill(
+    SkillDto skill, {
+    required String expectedContentHash,
+    bool force = false,
+    String? workspaceId,
+  }) async {
+    if (failNextSkillUpdate && !force) {
+      failNextSkillUpdate = false;
+      throw Exception('skill_file_conflict');
+    }
+    final store = _skillStoreFor(skill.source);
+    final index = store.indexWhere((item) => item.id == skill.id);
+    if (index < 0) throw StateError('Skill not found: ${skill.id}');
+    if (!force && store[index].contentHash != expectedContentHash) {
+      throw StateError('skill_file_conflict');
+    }
+    final updated = skill.copyWith(contentHash: '${skill.id}-updated-hash');
+    store[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<void> deleteSkill(String id, {String? workspaceId}) async {
+    _skills.removeWhere((skill) => skill.id == id && skill.isEditable);
+    _projectSkills.removeWhere((skill) => skill.id == id);
+  }
+
+  @override
+  Future<SkillDto> setSkillEnabled(
+    String id, {
+    required bool enabled,
+    String? workspaceId,
+  }) async {
+    for (final store in <List<SkillDto>>[_skills, _projectSkills]) {
+      final index = store.indexWhere((skill) => skill.id == id);
+      if (index < 0) continue;
+      if (store[index].isMandatory) {
+        throw StateError('Skill is always enabled: $id');
+      }
+      final updated = store[index].copyWith(isEnabled: enabled);
+      store[index] = updated;
+      return updated;
+    }
+    throw StateError('Skill not found: $id');
+  }
 
   @override
   Future<ProviderCatalogDto> listProviderCatalog() async => _catalog;
