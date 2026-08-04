@@ -112,7 +112,6 @@ final class PluginDesktopWindow implements DesktopWindow {
     this.minimizeWindow = _minimizeWindow,
     this.maximizeWindow = _maximizeWindow,
     this.unmaximizeWindow = _unmaximizeWindow,
-    this.windowIsMaximized = _windowIsMaximized,
     this.preventClose = _setPreventClose,
     this.addWindowListener = _addWindowListener,
     this.removeWindowListener = _removeWindowListener,
@@ -161,9 +160,6 @@ final class PluginDesktopWindow implements DesktopWindow {
   /// Injected native restore-from-maximized operation.
   final Future<void> Function() unmaximizeWindow;
 
-  /// Injected maximize-state query.
-  final Future<bool> Function() windowIsMaximized;
-
   /// Injected close-prevention toggle.
   final Future<void> Function({required bool prevent}) preventClose;
 
@@ -209,7 +205,10 @@ final class PluginDesktopWindow implements DesktopWindow {
 
   @override
   Future<void> toggleMaximized() async {
-    final next = !await windowIsMaximized();
+    // The plugin's native query can lag behind a just-completed maximize call.
+    // The notifier is updated optimistically here and by native window events,
+    // so it remains authoritative even for back-to-back button presses.
+    final next = !_maximized.value;
     await (next ? maximizeWindow() : unmaximizeWindow());
     _setMaximized(next);
   }
@@ -426,8 +425,6 @@ Future<void> _minimizeWindow() => windowManager.minimize();
 Future<void> _maximizeWindow() => windowManager.maximize();
 
 Future<void> _unmaximizeWindow() => windowManager.unmaximize();
-
-Future<bool> _windowIsMaximized() => windowManager.isMaximized();
 
 Future<void> _setPreventClose({required bool prevent}) =>
     windowManager.setPreventClose(prevent);

@@ -770,9 +770,9 @@ void main() {
       // Hiding must leave the process alive, which is the whole point of
       // closing to the tray.
       await window.hide();
-      expect(await window.isVisible(), isFalse);
+      await _waitForWindowVisibility(window, visible: false);
       await window.show();
-      expect(await window.isVisible(), isTrue);
+      await _waitForWindowVisibility(window, visible: true);
       expect(closes, 0);
     },
     tags: const <String>[
@@ -780,6 +780,19 @@ void main() {
       'feature_test__desktop_window_chrome__platformSmoke',
     ],
   );
+}
+
+Future<void> _waitForWindowVisibility(
+  DesktopWindow window, {
+  required bool visible,
+}) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 5));
+  while (await window.isVisible() != visible) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('window visibility did not become $visible');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
 }
 
 Future<ProviderConnectionDto> _waitForProviderDefaultModel(

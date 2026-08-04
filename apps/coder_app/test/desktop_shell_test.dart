@@ -48,7 +48,6 @@ void main() {
         var minimizes = 0;
         var maximizes = 0;
         var unmaximizes = 0;
-        var nativeMaximized = false;
         final listeners = <WindowListener>[];
         final window = PluginDesktopWindow(
           platform: TargetPlatform.windows,
@@ -56,7 +55,6 @@ void main() {
           minimizeWindow: () async => minimizes += 1,
           maximizeWindow: () async => maximizes += 1,
           unmaximizeWindow: () async => unmaximizes += 1,
-          windowIsMaximized: () async => nativeMaximized,
           preventClose: ({required prevent}) async {},
           addWindowListener: listeners.add,
           removeWindowListener: listeners.remove,
@@ -65,10 +63,10 @@ void main() {
         await window.interceptClose(() {});
         await window.startDragging();
         await window.minimize();
+        // Native maximize events may arrive after a second caption click.
         await window.toggleMaximized();
         expect(window.maximized.value, isTrue);
 
-        nativeMaximized = true;
         await window.toggleMaximized();
         expect(window.maximized.value, isFalse);
         expect((drags, minimizes, maximizes, unmaximizes), (1, 1, 1, 1));
