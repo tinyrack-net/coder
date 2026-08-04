@@ -9,6 +9,9 @@ import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
 import 'package:coder_daemon/src/database.dart';
 import 'package:coder_daemon/src/git_workspace.dart';
+import 'package:coder_daemon/src/mcp_config.dart';
+import 'package:coder_daemon/src/mcp_service.dart';
+import 'package:coder_daemon/src/mcp_transports.dart';
 import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/project_settings.dart';
@@ -149,9 +152,25 @@ abstract final class DaemonApplication {
             )
             .toList(growable: false),
       );
+      final mcp = McpService(
+        store: FileMcpConfigStore(config.configDirectory),
+        credentials: credentials,
+        transports: IoMcpTransportFactory(clientVersion: config.version),
+        clock: clock,
+        environment: config.useEnvironmentCredentials
+            ? Platform.environment
+            : const <String, String>{},
+        clientVersion: config.version,
+      );
+      // Reads mcp.json only; every handshake runs in the background so one
+      // unstartable server cannot hold up daemon boot.
+      await mcp.initialize();
       final agentDefinitions = AgentDefinitionService(
         store: FileAgentDefinitionStore(config.configDirectory),
-        tools: builtInCatalog,
+        tools: CompositeAgentToolCatalog(<AgentToolCatalog>[
+          builtInCatalog,
+          mcp,
+        ]),
       );
       await agentDefinitions.initialize();
       final service = SessionService(
@@ -164,9 +183,12 @@ abstract final class DaemonApplication {
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: clock,
         ids: ids,
-        toolsFactory: (ids, workspaceRoot) => resolveAgentToolIds(
-          ids,
-        ).map((id) => toolById[id]).whereType<AgentTool>(),
+        toolsFactory: (ids, workspaceRoot) => resolveAgentToolIds(ids)
+            .map(
+              (id) =>
+                  toolById[id] ?? mcp.tool(id, workspaceRoot: workspaceRoot),
+            )
+            .whereType<AgentTool>(),
       );
       final workspaceService = WorkspaceService(
         database.workspaceDao,
@@ -190,6 +212,7 @@ abstract final class DaemonApplication {
           'providerCatalog': true,
           'agentDefinitions': true,
           'subagents': true,
+          'mcp': true,
         },
       );
       final rpc = DaemonRpcServer(
@@ -227,6 +250,7 @@ abstract final class DaemonApplication {
         database: database,
         events: events,
         agentDefinitions: agentDefinitions,
+        mcp: mcp,
         lock: lock,
       );
     } catch (_) {
@@ -248,6 +272,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._database,
     required this._events,
     required this._agentDefinitions,
+    required this._mcp,
     required this._lock,
   }) : _serverId = serverIdValue;
 
@@ -259,6 +284,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final CoderDatabase _database;
   final StreamController<WireEnvelope> _events;
   final AgentDefinitionService _agentDefinitions;
+  final McpService _mcp;
   final RandomAccessFile _lock;
   bool _stopped = false;
 
@@ -277,6 +303,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     _stopped = true;
     await _http.close(force: true);
     await _rpc.close();
+    await _mcp.close();
     await _agentDefinitions.close();
     await _events.close();
     await _database.close();

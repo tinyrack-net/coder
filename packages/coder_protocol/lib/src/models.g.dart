@@ -342,6 +342,83 @@ const _$McpTransportKindEnumMap = {
   McpTransportKind.http: 'http',
 };
 
+_McpToolSummaryDto _$McpToolSummaryDtoFromJson(Map<String, dynamic> json) =>
+    _McpToolSummaryDto(
+      toolId: json['toolId'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      title: json['title'] as String?,
+    );
+
+Map<String, dynamic> _$McpToolSummaryDtoToJson(_McpToolSummaryDto instance) =>
+    <String, dynamic>{
+      'toolId': instance.toolId,
+      'name': instance.name,
+      'description': instance.description,
+      'title': instance.title,
+    };
+
+_McpServerStateDto _$McpServerStateDtoFromJson(
+  Map<String, dynamic> json,
+) => _McpServerStateDto(
+  config: McpServerConfigDto.fromJson(json['config'] as Map<String, dynamic>),
+  status: $enumDecode(_$McpServerStatusEnumMap, json['status']),
+  scope: $enumDecode(_$McpConfigScopeEnumMap, json['scope']),
+  sourcePath: json['sourcePath'] as String,
+  shadowed: json['shadowed'] as bool? ?? false,
+  protocolVersion: json['protocolVersion'] as String?,
+  serverName: json['serverName'] as String?,
+  serverVersion: json['serverVersion'] as String?,
+  tools:
+      (json['tools'] as List<dynamic>?)
+          ?.map((e) => McpToolSummaryDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <McpToolSummaryDto>[],
+  error: json['error'] as String?,
+  diagnostics:
+      (json['diagnostics'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  lastConnectedAt: json['lastConnectedAt'] == null
+      ? null
+      : DateTime.parse(json['lastConnectedAt'] as String),
+  nextRetryAt: json['nextRetryAt'] == null
+      ? null
+      : DateTime.parse(json['nextRetryAt'] as String),
+  attempt: (json['attempt'] as num?)?.toInt() ?? 0,
+);
+
+Map<String, dynamic> _$McpServerStateDtoToJson(_McpServerStateDto instance) =>
+    <String, dynamic>{
+      'config': instance.config,
+      'status': _$McpServerStatusEnumMap[instance.status]!,
+      'scope': _$McpConfigScopeEnumMap[instance.scope]!,
+      'sourcePath': instance.sourcePath,
+      'shadowed': instance.shadowed,
+      'protocolVersion': instance.protocolVersion,
+      'serverName': instance.serverName,
+      'serverVersion': instance.serverVersion,
+      'tools': instance.tools,
+      'error': instance.error,
+      'diagnostics': instance.diagnostics,
+      'lastConnectedAt': instance.lastConnectedAt?.toIso8601String(),
+      'nextRetryAt': instance.nextRetryAt?.toIso8601String(),
+      'attempt': instance.attempt,
+    };
+
+const _$McpServerStatusEnumMap = {
+  McpServerStatus.disabled: 'disabled',
+  McpServerStatus.connecting: 'connecting',
+  McpServerStatus.ready: 'ready',
+  McpServerStatus.failed: 'failed',
+};
+
+const _$McpConfigScopeEnumMap = {
+  McpConfigScope.user: 'user',
+  McpConfigScope.project: 'project',
+};
+
 _SessionModelSelectionDto _$SessionModelSelectionDtoFromJson(
   Map<String, dynamic> json,
 ) => _SessionModelSelectionDto(

@@ -572,6 +572,63 @@ abstract class McpServerConfigDto with _$McpServerConfigDto {
       _$McpServerConfigDtoFromJson(json);
 }
 
+/// Where one MCP server stands in its connection lifecycle.
+enum McpServerStatus {
+  /// Configured but switched off, so nothing is launched.
+  disabled,
+
+  /// Starting up or retrying after a failure.
+  connecting,
+
+  /// Handshake complete; its tools are published.
+  ready,
+
+  /// Could not connect; the daemon is backing off before retrying.
+  failed,
+}
+
+/// One tool published by a connected MCP server.
+@freezed
+abstract class McpToolSummaryDto with _$McpToolSummaryDto {
+  /// Creates an MCP tool summary.
+  const factory McpToolSummaryDto({
+    required String toolId,
+    required String name,
+    required String description,
+    String? title,
+  }) = _McpToolSummaryDto;
+
+  /// Decodes an MCP tool summary.
+  factory McpToolSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$McpToolSummaryDtoFromJson(json);
+}
+
+/// One configured MCP server and its live connection state.
+@freezed
+abstract class McpServerStateDto with _$McpServerStateDto {
+  /// Creates an MCP server state.
+  const factory McpServerStateDto({
+    required McpServerConfigDto config,
+    required McpServerStatus status,
+    required McpConfigScope scope,
+    required String sourcePath,
+    @Default(false) bool shadowed,
+    String? protocolVersion,
+    String? serverName,
+    String? serverVersion,
+    @Default(<McpToolSummaryDto>[]) List<McpToolSummaryDto> tools,
+    String? error,
+    @Default(<String>[]) List<String> diagnostics,
+    DateTime? lastConnectedAt,
+    DateTime? nextRetryAt,
+    @Default(0) int attempt,
+  }) = _McpServerStateDto;
+
+  /// Decodes an MCP server state.
+  factory McpServerStateDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServerStateDtoFromJson(json);
+}
+
 /// How a session collaborates: planning first, or working directly.
 enum SessionMode {
   /// Explores and proposes a plan instead of doing the work.

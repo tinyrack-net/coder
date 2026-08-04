@@ -12,6 +12,7 @@ dependencies:
   async: ^2.13.0
   coder_agent: ^0.1.0
   coder_client: ^0.1.0
+  coder_mcp: ^0.1.0
   coder_protocol: ^0.1.0
   coder_provider_openai: ^0.1.0
   crypto: ^3.0.6

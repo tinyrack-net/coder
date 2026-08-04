@@ -3696,6 +3696,610 @@ as Map<String, String>,
 
 
 /// @nodoc
+mixin _$McpToolSummaryDto {
+
+ String get toolId; String get name; String get description; String? get title;
+/// Create a copy of McpToolSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpToolSummaryDtoCopyWith<McpToolSummaryDto> get copyWith => _$McpToolSummaryDtoCopyWithImpl<McpToolSummaryDto>(this as McpToolSummaryDto, _$identity);
+
+  /// Serializes this McpToolSummaryDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpToolSummaryDto&&(identical(other.toolId, toolId) || other.toolId == toolId)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.title, title) || other.title == title));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,toolId,name,description,title);
+
+@override
+String toString() {
+  return 'McpToolSummaryDto(toolId: $toolId, name: $name, description: $description, title: $title)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpToolSummaryDtoCopyWith<$Res>  {
+  factory $McpToolSummaryDtoCopyWith(McpToolSummaryDto value, $Res Function(McpToolSummaryDto) _then) = _$McpToolSummaryDtoCopyWithImpl;
+@useResult
+$Res call({
+ String toolId, String name, String description, String? title
+});
+
+
+
+
+}
+/// @nodoc
+class _$McpToolSummaryDtoCopyWithImpl<$Res>
+    implements $McpToolSummaryDtoCopyWith<$Res> {
+  _$McpToolSummaryDtoCopyWithImpl(this._self, this._then);
+
+  final McpToolSummaryDto _self;
+  final $Res Function(McpToolSummaryDto) _then;
+
+/// Create a copy of McpToolSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? toolId = null,Object? name = null,Object? description = null,Object? title = freezed,}) {
+  return _then(_self.copyWith(
+toolId: null == toolId ? _self.toolId : toolId // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [McpToolSummaryDto].
+extension McpToolSummaryDtoPatterns on McpToolSummaryDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpToolSummaryDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpToolSummaryDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpToolSummaryDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpToolSummaryDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpToolSummaryDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpToolSummaryDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String toolId,  String name,  String description,  String? title)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpToolSummaryDto() when $default != null:
+return $default(_that.toolId,_that.name,_that.description,_that.title);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String toolId,  String name,  String description,  String? title)  $default,) {final _that = this;
+switch (_that) {
+case _McpToolSummaryDto():
+return $default(_that.toolId,_that.name,_that.description,_that.title);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String toolId,  String name,  String description,  String? title)?  $default,) {final _that = this;
+switch (_that) {
+case _McpToolSummaryDto() when $default != null:
+return $default(_that.toolId,_that.name,_that.description,_that.title);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpToolSummaryDto implements McpToolSummaryDto {
+  const _McpToolSummaryDto({required this.toolId, required this.name, required this.description, this.title});
+  factory _McpToolSummaryDto.fromJson(Map<String, dynamic> json) => _$McpToolSummaryDtoFromJson(json);
+
+@override final  String toolId;
+@override final  String name;
+@override final  String description;
+@override final  String? title;
+
+/// Create a copy of McpToolSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpToolSummaryDtoCopyWith<_McpToolSummaryDto> get copyWith => __$McpToolSummaryDtoCopyWithImpl<_McpToolSummaryDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpToolSummaryDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpToolSummaryDto&&(identical(other.toolId, toolId) || other.toolId == toolId)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.title, title) || other.title == title));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,toolId,name,description,title);
+
+@override
+String toString() {
+  return 'McpToolSummaryDto(toolId: $toolId, name: $name, description: $description, title: $title)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpToolSummaryDtoCopyWith<$Res> implements $McpToolSummaryDtoCopyWith<$Res> {
+  factory _$McpToolSummaryDtoCopyWith(_McpToolSummaryDto value, $Res Function(_McpToolSummaryDto) _then) = __$McpToolSummaryDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String toolId, String name, String description, String? title
+});
+
+
+
+
+}
+/// @nodoc
+class __$McpToolSummaryDtoCopyWithImpl<$Res>
+    implements _$McpToolSummaryDtoCopyWith<$Res> {
+  __$McpToolSummaryDtoCopyWithImpl(this._self, this._then);
+
+  final _McpToolSummaryDto _self;
+  final $Res Function(_McpToolSummaryDto) _then;
+
+/// Create a copy of McpToolSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? toolId = null,Object? name = null,Object? description = null,Object? title = freezed,}) {
+  return _then(_McpToolSummaryDto(
+toolId: null == toolId ? _self.toolId : toolId // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$McpServerStateDto {
+
+ McpServerConfigDto get config; McpServerStatus get status; McpConfigScope get scope; String get sourcePath; bool get shadowed; String? get protocolVersion; String? get serverName; String? get serverVersion; List<McpToolSummaryDto> get tools; String? get error; List<String> get diagnostics; DateTime? get lastConnectedAt; DateTime? get nextRetryAt; int get attempt;
+/// Create a copy of McpServerStateDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpServerStateDtoCopyWith<McpServerStateDto> get copyWith => _$McpServerStateDtoCopyWithImpl<McpServerStateDto>(this as McpServerStateDto, _$identity);
+
+  /// Serializes this McpServerStateDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServerStateDto&&(identical(other.config, config) || other.config == config)&&(identical(other.status, status) || other.status == status)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.shadowed, shadowed) || other.shadowed == shadowed)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&(identical(other.serverName, serverName) || other.serverName == serverName)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&const DeepCollectionEquality().equals(other.tools, tools)&&(identical(other.error, error) || other.error == error)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics)&&(identical(other.lastConnectedAt, lastConnectedAt) || other.lastConnectedAt == lastConnectedAt)&&(identical(other.nextRetryAt, nextRetryAt) || other.nextRetryAt == nextRetryAt)&&(identical(other.attempt, attempt) || other.attempt == attempt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,config,status,scope,sourcePath,shadowed,protocolVersion,serverName,serverVersion,const DeepCollectionEquality().hash(tools),error,const DeepCollectionEquality().hash(diagnostics),lastConnectedAt,nextRetryAt,attempt);
+
+@override
+String toString() {
+  return 'McpServerStateDto(config: $config, status: $status, scope: $scope, sourcePath: $sourcePath, shadowed: $shadowed, protocolVersion: $protocolVersion, serverName: $serverName, serverVersion: $serverVersion, tools: $tools, error: $error, diagnostics: $diagnostics, lastConnectedAt: $lastConnectedAt, nextRetryAt: $nextRetryAt, attempt: $attempt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpServerStateDtoCopyWith<$Res>  {
+  factory $McpServerStateDtoCopyWith(McpServerStateDto value, $Res Function(McpServerStateDto) _then) = _$McpServerStateDtoCopyWithImpl;
+@useResult
+$Res call({
+ McpServerConfigDto config, McpServerStatus status, McpConfigScope scope, String sourcePath, bool shadowed, String? protocolVersion, String? serverName, String? serverVersion, List<McpToolSummaryDto> tools, String? error, List<String> diagnostics, DateTime? lastConnectedAt, DateTime? nextRetryAt, int attempt
+});
+
+
+$McpServerConfigDtoCopyWith<$Res> get config;
+
+}
+/// @nodoc
+class _$McpServerStateDtoCopyWithImpl<$Res>
+    implements $McpServerStateDtoCopyWith<$Res> {
+  _$McpServerStateDtoCopyWithImpl(this._self, this._then);
+
+  final McpServerStateDto _self;
+  final $Res Function(McpServerStateDto) _then;
+
+/// Create a copy of McpServerStateDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? config = null,Object? status = null,Object? scope = null,Object? sourcePath = null,Object? shadowed = null,Object? protocolVersion = freezed,Object? serverName = freezed,Object? serverVersion = freezed,Object? tools = null,Object? error = freezed,Object? diagnostics = null,Object? lastConnectedAt = freezed,Object? nextRetryAt = freezed,Object? attempt = null,}) {
+  return _then(_self.copyWith(
+config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
+as McpServerConfigDto,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as McpServerStatus,scope: null == scope ? _self.scope : scope // ignore: cast_nullable_to_non_nullable
+as McpConfigScope,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
+as String,shadowed: null == shadowed ? _self.shadowed : shadowed // ignore: cast_nullable_to_non_nullable
+as bool,protocolVersion: freezed == protocolVersion ? _self.protocolVersion : protocolVersion // ignore: cast_nullable_to_non_nullable
+as String?,serverName: freezed == serverName ? _self.serverName : serverName // ignore: cast_nullable_to_non_nullable
+as String?,serverVersion: freezed == serverVersion ? _self.serverVersion : serverVersion // ignore: cast_nullable_to_non_nullable
+as String?,tools: null == tools ? _self.tools : tools // ignore: cast_nullable_to_non_nullable
+as List<McpToolSummaryDto>,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as String?,diagnostics: null == diagnostics ? _self.diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
+as List<String>,lastConnectedAt: freezed == lastConnectedAt ? _self.lastConnectedAt : lastConnectedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,nextRetryAt: freezed == nextRetryAt ? _self.nextRetryAt : nextRetryAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,attempt: null == attempt ? _self.attempt : attempt // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+/// Create a copy of McpServerStateDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$McpServerConfigDtoCopyWith<$Res> get config {
+  
+  return $McpServerConfigDtoCopyWith<$Res>(_self.config, (value) {
+    return _then(_self.copyWith(config: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [McpServerStateDto].
+extension McpServerStateDtoPatterns on McpServerStateDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpServerStateDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpServerStateDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpServerStateDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerStateDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpServerStateDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerStateDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpServerStateDto() when $default != null:
+return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)  $default,) {final _that = this;
+switch (_that) {
+case _McpServerStateDto():
+return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)?  $default,) {final _that = this;
+switch (_that) {
+case _McpServerStateDto() when $default != null:
+return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpServerStateDto implements McpServerStateDto {
+  const _McpServerStateDto({required this.config, required this.status, required this.scope, required this.sourcePath, this.shadowed = false, this.protocolVersion, this.serverName, this.serverVersion, final  List<McpToolSummaryDto> tools = const <McpToolSummaryDto>[], this.error, final  List<String> diagnostics = const <String>[], this.lastConnectedAt, this.nextRetryAt, this.attempt = 0}): _tools = tools,_diagnostics = diagnostics;
+  factory _McpServerStateDto.fromJson(Map<String, dynamic> json) => _$McpServerStateDtoFromJson(json);
+
+@override final  McpServerConfigDto config;
+@override final  McpServerStatus status;
+@override final  McpConfigScope scope;
+@override final  String sourcePath;
+@override@JsonKey() final  bool shadowed;
+@override final  String? protocolVersion;
+@override final  String? serverName;
+@override final  String? serverVersion;
+ final  List<McpToolSummaryDto> _tools;
+@override@JsonKey() List<McpToolSummaryDto> get tools {
+  if (_tools is EqualUnmodifiableListView) return _tools;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_tools);
+}
+
+@override final  String? error;
+ final  List<String> _diagnostics;
+@override@JsonKey() List<String> get diagnostics {
+  if (_diagnostics is EqualUnmodifiableListView) return _diagnostics;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_diagnostics);
+}
+
+@override final  DateTime? lastConnectedAt;
+@override final  DateTime? nextRetryAt;
+@override@JsonKey() final  int attempt;
+
+/// Create a copy of McpServerStateDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpServerStateDtoCopyWith<_McpServerStateDto> get copyWith => __$McpServerStateDtoCopyWithImpl<_McpServerStateDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpServerStateDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServerStateDto&&(identical(other.config, config) || other.config == config)&&(identical(other.status, status) || other.status == status)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.shadowed, shadowed) || other.shadowed == shadowed)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&(identical(other.serverName, serverName) || other.serverName == serverName)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&const DeepCollectionEquality().equals(other._tools, _tools)&&(identical(other.error, error) || other.error == error)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics)&&(identical(other.lastConnectedAt, lastConnectedAt) || other.lastConnectedAt == lastConnectedAt)&&(identical(other.nextRetryAt, nextRetryAt) || other.nextRetryAt == nextRetryAt)&&(identical(other.attempt, attempt) || other.attempt == attempt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,config,status,scope,sourcePath,shadowed,protocolVersion,serverName,serverVersion,const DeepCollectionEquality().hash(_tools),error,const DeepCollectionEquality().hash(_diagnostics),lastConnectedAt,nextRetryAt,attempt);
+
+@override
+String toString() {
+  return 'McpServerStateDto(config: $config, status: $status, scope: $scope, sourcePath: $sourcePath, shadowed: $shadowed, protocolVersion: $protocolVersion, serverName: $serverName, serverVersion: $serverVersion, tools: $tools, error: $error, diagnostics: $diagnostics, lastConnectedAt: $lastConnectedAt, nextRetryAt: $nextRetryAt, attempt: $attempt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpServerStateDtoCopyWith<$Res> implements $McpServerStateDtoCopyWith<$Res> {
+  factory _$McpServerStateDtoCopyWith(_McpServerStateDto value, $Res Function(_McpServerStateDto) _then) = __$McpServerStateDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ McpServerConfigDto config, McpServerStatus status, McpConfigScope scope, String sourcePath, bool shadowed, String? protocolVersion, String? serverName, String? serverVersion, List<McpToolSummaryDto> tools, String? error, List<String> diagnostics, DateTime? lastConnectedAt, DateTime? nextRetryAt, int attempt
+});
+
+
+@override $McpServerConfigDtoCopyWith<$Res> get config;
+
+}
+/// @nodoc
+class __$McpServerStateDtoCopyWithImpl<$Res>
+    implements _$McpServerStateDtoCopyWith<$Res> {
+  __$McpServerStateDtoCopyWithImpl(this._self, this._then);
+
+  final _McpServerStateDto _self;
+  final $Res Function(_McpServerStateDto) _then;
+
+/// Create a copy of McpServerStateDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? config = null,Object? status = null,Object? scope = null,Object? sourcePath = null,Object? shadowed = null,Object? protocolVersion = freezed,Object? serverName = freezed,Object? serverVersion = freezed,Object? tools = null,Object? error = freezed,Object? diagnostics = null,Object? lastConnectedAt = freezed,Object? nextRetryAt = freezed,Object? attempt = null,}) {
+  return _then(_McpServerStateDto(
+config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
+as McpServerConfigDto,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as McpServerStatus,scope: null == scope ? _self.scope : scope // ignore: cast_nullable_to_non_nullable
+as McpConfigScope,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
+as String,shadowed: null == shadowed ? _self.shadowed : shadowed // ignore: cast_nullable_to_non_nullable
+as bool,protocolVersion: freezed == protocolVersion ? _self.protocolVersion : protocolVersion // ignore: cast_nullable_to_non_nullable
+as String?,serverName: freezed == serverName ? _self.serverName : serverName // ignore: cast_nullable_to_non_nullable
+as String?,serverVersion: freezed == serverVersion ? _self.serverVersion : serverVersion // ignore: cast_nullable_to_non_nullable
+as String?,tools: null == tools ? _self._tools : tools // ignore: cast_nullable_to_non_nullable
+as List<McpToolSummaryDto>,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as String?,diagnostics: null == diagnostics ? _self._diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
+as List<String>,lastConnectedAt: freezed == lastConnectedAt ? _self.lastConnectedAt : lastConnectedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,nextRetryAt: freezed == nextRetryAt ? _self.nextRetryAt : nextRetryAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,attempt: null == attempt ? _self.attempt : attempt // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+/// Create a copy of McpServerStateDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$McpServerConfigDtoCopyWith<$Res> get config {
+  
+  return $McpServerConfigDtoCopyWith<$Res>(_self.config, (value) {
+    return _then(_self.copyWith(config: value));
+  });
+}
+}
+
+
+/// @nodoc
 mixin _$SessionModelSelectionDto {
 
  String get providerConnectionId; String get modelId;
