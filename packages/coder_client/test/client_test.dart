@@ -60,6 +60,26 @@ void main() {
     description: 'Read a file.',
     risk: ToolRisk.read,
   );
+  const mcpServer = McpServerStateDto(
+    config: McpServerConfigDto(
+      id: 'github',
+      transport: McpTransportKind.stdio,
+      command: 'npx',
+      args: <String>['-y', 'server-github'],
+    ),
+    status: McpServerStatus.ready,
+    scope: McpConfigScope.user,
+    sourcePath: '/config/mcp.json',
+    serverName: 'github',
+    protocolVersion: '2025-06-18',
+    tools: <McpToolSummaryDto>[
+      McpToolSummaryDto(
+        toolId: 'mcp__github__create_issue',
+        name: 'create_issue',
+        description: 'Opens an issue.',
+      ),
+    ],
+  );
   const definition = ProviderDefinitionDto(
     id: 'provider',
     name: 'Provider',
@@ -128,6 +148,7 @@ void main() {
             agent: agent,
             agentDefinition: agentDefinition,
             agentTool: agentTool,
+            mcpServer: mcpServer,
             definition: definition,
             connection: connection,
             model: model,
@@ -282,6 +303,20 @@ void main() {
       expect(await client.listAgentTools(), <AgentToolDefinitionDto>[
         agentTool,
       ]);
+      expect(
+        await client.listAgentTools(worktreeId: 'worktree-1'),
+        <AgentToolDefinitionDto>[agentTool],
+      );
+      expect(await client.listMcpServers(), <McpServerStateDto>[mcpServer]);
+      expect(
+        await client.listMcpServers(worktreeId: 'worktree-1'),
+        <McpServerStateDto>[mcpServer],
+      );
+      expect(await client.addMcpServer(mcpServer.config), mcpServer);
+      expect(await client.updateMcpServer(mcpServer.config), mcpServer);
+      await client.removeMcpServer('github');
+      expect(await client.testMcpServer(mcpServer.config), mcpServer);
+      await client.setMcpSecret('github.token', 'secret');
       final catalog = await client.listProviderCatalog();
       expect(catalog.definitions, <ProviderDefinitionDto>[definition]);
       expect(await client.listProviderConnections(), <ProviderConnectionDto>[
@@ -410,6 +445,12 @@ void main() {
           RpcMethod.agentDefinitionReset,
           RpcMethod.agentDefinitionValidate,
           RpcMethod.agentToolCatalog,
+          RpcMethod.mcpServerList,
+          RpcMethod.mcpServerAdd,
+          RpcMethod.mcpServerUpdate,
+          RpcMethod.mcpServerRemove,
+          RpcMethod.mcpServerTest,
+          RpcMethod.mcpSecretSet,
           RpcMethod.providerCatalog,
           RpcMethod.providerConnectionsList,
           RpcMethod.providerConnectApiKey,
@@ -443,6 +484,7 @@ void main() {
       'feature_test__session_lifecycle__contract',
       'feature_test__turn_execution__contract',
       'feature_test__agent_definition_management__contract',
+      'feature_test__mcp_server_management__contract',
       'feature_test__provider_catalog__contract',
       'feature_test__provider_connection_management__contract',
       'feature_test__provider_oauth__contract',
@@ -680,6 +722,7 @@ void _registerFixtureMethods(
   required SessionDto agent,
   required AgentDefinitionDto agentDefinition,
   required AgentToolDefinitionDto agentTool,
+  required McpServerStateDto mcpServer,
   required ProviderDefinitionDto definition,
   required ProviderConnectionDto connection,
   required ProviderModelDto model,
@@ -781,6 +824,16 @@ void _registerFixtureMethods(
     RpcMethod.agentToolCatalog: AgentToolCatalogResultDto(
       tools: <AgentToolDefinitionDto>[agentTool],
     ).toJson(),
+    RpcMethod.mcpServerList: McpServersResultDto(
+      servers: <McpServerStateDto>[mcpServer],
+    ).toJson(),
+    RpcMethod.mcpServerAdd: McpServerStateResultDto(state: mcpServer).toJson(),
+    RpcMethod.mcpServerUpdate: McpServerStateResultDto(
+      state: mcpServer,
+    ).toJson(),
+    RpcMethod.mcpServerRemove: const <String, dynamic>{},
+    RpcMethod.mcpServerTest: McpServerStateResultDto(state: mcpServer).toJson(),
+    RpcMethod.mcpSecretSet: const <String, dynamic>{},
     RpcMethod.providerCatalog: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
         definitions: <ProviderDefinitionDto>[definition],

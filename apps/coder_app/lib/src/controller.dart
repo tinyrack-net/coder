@@ -754,6 +754,7 @@ class ConversationController extends _$ConversationController {
       case SessionUpdatedClientEvent():
       case ProviderAuthUpdatedClientEvent():
       case AgentDefinitionsChangedClientEvent():
+      case McpServersChangedClientEvent():
         break;
     }
   }

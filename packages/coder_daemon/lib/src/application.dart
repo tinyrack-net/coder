@@ -228,6 +228,8 @@ abstract final class DaemonApplication {
         timeline: database.timelineDao,
         agents: service,
         agentDefinitions: agentDefinitions,
+        mcp: mcp,
+        worktrees: database.worktreeDao,
         providers: providers,
         providerAuth: providerAuth,
         clock: clock,

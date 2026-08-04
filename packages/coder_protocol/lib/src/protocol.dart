@@ -65,6 +65,24 @@ abstract final class RpcMethod {
   /// Returns tools available to agent definitions.
   static const String agentToolCatalog = 'agentTool.catalog';
 
+  /// Lists configured MCP servers and their live connection state.
+  static const String mcpServerList = 'mcp.servers.list';
+
+  /// Adds one user-scoped MCP server.
+  static const String mcpServerAdd = 'mcp.servers.add';
+
+  /// Replaces one user-scoped MCP server.
+  static const String mcpServerUpdate = 'mcp.servers.update';
+
+  /// Removes one user-scoped MCP server.
+  static const String mcpServerRemove = 'mcp.servers.remove';
+
+  /// Connects one unsaved MCP server configuration to check it works.
+  static const String mcpServerTest = 'mcp.servers.test';
+
+  /// Stores one secret an MCP configuration may reference.
+  static const String mcpSecretSet = 'mcp.servers.secret.set';
+
   /// Lists persisted sessions.
   static const String sessionList = 'session.list';
 
@@ -151,6 +169,9 @@ abstract final class RpcNotification {
 
   /// Reports OAuth authorization attempt state changes.
   static const String providerAuthUpdated = 'provider.auth.updated';
+
+  /// Reports an MCP server connection or configuration change.
+  static const String mcpServersChanged = 'mcp.servers.changed';
 }
 
 /// ProtocolException defines a public contract.

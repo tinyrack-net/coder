@@ -112,6 +112,7 @@ class CoderClient implements CoderApi {
         RpcNotification.agentDefinitionsChanged,
         RpcNotification.approvalRequested,
         RpcNotification.providerAuthUpdated,
+        RpcNotification.mcpServersChanged,
       ]) {
         peer.registerMethod(type, (json_rpc.Parameters parameters) {
           _handleNotification(
@@ -172,6 +173,8 @@ class CoderClient implements CoderApi {
           );
         case RpcNotification.agentDefinitionsChanged:
           _events.add(const AgentDefinitionsChangedClientEvent());
+        case RpcNotification.mcpServersChanged:
+          _events.add(const McpServersChangedClientEvent());
         case RpcNotification.approvalRequested:
           _events.add(
             ApprovalRequestedClientEvent(
@@ -503,12 +506,66 @@ class CoderClient implements CoderApi {
   }
 
   @override
-  Future<List<AgentToolDefinitionDto>> listAgentTools() async {
+  Future<List<AgentToolDefinitionDto>> listAgentTools({
+    String? worktreeId,
+  }) async {
     final response = await _request(
       RpcMethod.agentToolCatalog,
-      const <String, dynamic>{},
+      AgentToolCatalogParamsDto(worktreeId: worktreeId).toJson(),
     );
     return AgentToolCatalogResultDto.fromJson(response).tools;
+  }
+
+  @override
+  Future<List<McpServerStateDto>> listMcpServers({String? worktreeId}) async {
+    final response = await _request(
+      RpcMethod.mcpServerList,
+      McpServersParamsDto(worktreeId: worktreeId).toJson(),
+    );
+    return McpServersResultDto.fromJson(response).servers;
+  }
+
+  @override
+  Future<McpServerStateDto> addMcpServer(McpServerConfigDto server) async {
+    final response = await _request(
+      RpcMethod.mcpServerAdd,
+      McpServerParamsDto(server: server).toJson(),
+    );
+    return McpServerStateResultDto.fromJson(response).state;
+  }
+
+  @override
+  Future<McpServerStateDto> updateMcpServer(McpServerConfigDto server) async {
+    final response = await _request(
+      RpcMethod.mcpServerUpdate,
+      McpServerParamsDto(server: server).toJson(),
+    );
+    return McpServerStateResultDto.fromJson(response).state;
+  }
+
+  @override
+  Future<void> removeMcpServer(String id) async {
+    await _request(
+      RpcMethod.mcpServerRemove,
+      McpServerIdParamsDto(id: id).toJson(),
+    );
+  }
+
+  @override
+  Future<McpServerStateDto> testMcpServer(McpServerConfigDto server) async {
+    final response = await _request(
+      RpcMethod.mcpServerTest,
+      McpServerParamsDto(server: server).toJson(),
+    );
+    return McpServerStateResultDto.fromJson(response).state;
+  }
+
+  @override
+  Future<void> setMcpSecret(String key, String value) async {
+    await _request(
+      RpcMethod.mcpSecretSet,
+      McpSecretParamsDto(key: key, value: value).toJson(),
+    );
   }
 
   @override

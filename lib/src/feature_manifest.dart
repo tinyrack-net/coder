@@ -214,8 +214,17 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Adds, edits, tests, and removes external MCP servers and shows '
         'their connection status and discovered tools.',
+    apiMethods: <String>[
+      'listMcpServers',
+      'addMcpServer',
+      'updateMcpServer',
+      'removeMcpServer',
+      'testMcpServer',
+      'setMcpSecret',
+    ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
     },
   ),
   FeatureContract(

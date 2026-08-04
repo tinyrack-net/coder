@@ -165,6 +165,68 @@ final class McpService implements AgentToolCatalog {
     );
   }
 
+  /// Adds one user-scoped server and returns its state.
+  Future<McpServerStateDto> addUserServer(McpServerConfigDto server) async {
+    if (_user.containsKey(server.id)) {
+      throw FormatException('mcp_server_exists: "${server.id}".');
+    }
+    await saveUserServers(<McpServerConfigDto>[
+      for (final connection in _user.values) connection.config,
+      server,
+    ]);
+    return _user[server.id]!.state;
+  }
+
+  /// Replaces one user-scoped server and returns its state.
+  Future<McpServerStateDto> updateUserServer(McpServerConfigDto server) async {
+    if (!_user.containsKey(server.id)) {
+      throw FormatException('mcp_server_not_found: "${server.id}".');
+    }
+    await saveUserServers(<McpServerConfigDto>[
+      for (final connection in _user.values)
+        if (connection.config.id == server.id) server else connection.config,
+    ]);
+    return _user[server.id]!.state;
+  }
+
+  /// Removes one user-scoped server.
+  Future<void> removeUserServer(String id) async {
+    if (!_user.containsKey(id)) {
+      throw FormatException('mcp_server_not_found: "$id".');
+    }
+    await saveUserServers(<McpServerConfigDto>[
+      for (final connection in _user.values)
+        if (connection.config.id != id) connection.config,
+    ]);
+  }
+
+  /// Connects [server] once to report what it publishes, saving nothing.
+  Future<McpServerStateDto> testServer(
+    McpServerConfigDto server, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    final probe = _Connection(
+      config: server,
+      sourcePath: _store.sourcePath(McpConfigScope.user),
+      scope: McpConfigScope.user,
+      service: this,
+    );
+    try {
+      await probe.connectOnce().timeout(timeout);
+    } on TimeoutException {
+      probe
+        ..status = McpServerStatus.failed
+        ..error = 'the server did not answer within ${timeout.inSeconds}s';
+    }
+    final state = probe.state;
+    await probe.dispose();
+    return state;
+  }
+
+  /// Stores one secret an MCP configuration may reference.
+  Future<void> setSecret(String key, String value) =>
+      _credentials.setMcpSecret(key, value);
+
   /// Restarts one server immediately, resetting its backoff.
   void retry(String id) {
     final connection = _user[id];
@@ -442,7 +504,16 @@ final class _Connection {
     service._announce();
   }
 
-  Future<void> _connect() async {
+  /// Runs one connection attempt without scheduling a retry.
+  ///
+  /// Used by the unsaved-configuration probe, which reports the outcome once
+  /// rather than living long enough to reconnect.
+  Future<void> connectOnce() async {
+    status = McpServerStatus.connecting;
+    await _connect(retryOnFailure: false);
+  }
+
+  Future<void> _connect({bool retryOnFailure = true}) async {
     if (disposed) return;
     try {
       final transport = service._transports.create(service._specFor(config));
@@ -471,7 +542,7 @@ final class _Connection {
       _record('$failure');
       status = McpServerStatus.failed;
       await _releaseClient();
-      _scheduleRetry();
+      if (retryOnFailure) _scheduleRetry();
     }
     service._announce();
   }

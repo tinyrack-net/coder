@@ -12020,6 +12020,1892 @@ $AgentDefinitionDtoCopyWith<$Res> get definition {
 
 
 /// @nodoc
+mixin _$AgentToolCatalogParamsDto {
+
+ String? get worktreeId;
+/// Create a copy of AgentToolCatalogParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentToolCatalogParamsDtoCopyWith<AgentToolCatalogParamsDto> get copyWith => _$AgentToolCatalogParamsDtoCopyWithImpl<AgentToolCatalogParamsDto>(this as AgentToolCatalogParamsDto, _$identity);
+
+  /// Serializes this AgentToolCatalogParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentToolCatalogParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId);
+
+@override
+String toString() {
+  return 'AgentToolCatalogParamsDto(worktreeId: $worktreeId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentToolCatalogParamsDtoCopyWith<$Res>  {
+  factory $AgentToolCatalogParamsDtoCopyWith(AgentToolCatalogParamsDto value, $Res Function(AgentToolCatalogParamsDto) _then) = _$AgentToolCatalogParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String? worktreeId
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentToolCatalogParamsDtoCopyWithImpl<$Res>
+    implements $AgentToolCatalogParamsDtoCopyWith<$Res> {
+  _$AgentToolCatalogParamsDtoCopyWithImpl(this._self, this._then);
+
+  final AgentToolCatalogParamsDto _self;
+  final $Res Function(AgentToolCatalogParamsDto) _then;
+
+/// Create a copy of AgentToolCatalogParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? worktreeId = freezed,}) {
+  return _then(_self.copyWith(
+worktreeId: freezed == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentToolCatalogParamsDto].
+extension AgentToolCatalogParamsDtoPatterns on AgentToolCatalogParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentToolCatalogParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentToolCatalogParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentToolCatalogParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentToolCatalogParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentToolCatalogParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentToolCatalogParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? worktreeId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentToolCatalogParamsDto() when $default != null:
+return $default(_that.worktreeId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? worktreeId)  $default,) {final _that = this;
+switch (_that) {
+case _AgentToolCatalogParamsDto():
+return $default(_that.worktreeId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? worktreeId)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentToolCatalogParamsDto() when $default != null:
+return $default(_that.worktreeId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentToolCatalogParamsDto implements AgentToolCatalogParamsDto {
+  const _AgentToolCatalogParamsDto({this.worktreeId});
+  factory _AgentToolCatalogParamsDto.fromJson(Map<String, dynamic> json) => _$AgentToolCatalogParamsDtoFromJson(json);
+
+@override final  String? worktreeId;
+
+/// Create a copy of AgentToolCatalogParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentToolCatalogParamsDtoCopyWith<_AgentToolCatalogParamsDto> get copyWith => __$AgentToolCatalogParamsDtoCopyWithImpl<_AgentToolCatalogParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentToolCatalogParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentToolCatalogParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId);
+
+@override
+String toString() {
+  return 'AgentToolCatalogParamsDto(worktreeId: $worktreeId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentToolCatalogParamsDtoCopyWith<$Res> implements $AgentToolCatalogParamsDtoCopyWith<$Res> {
+  factory _$AgentToolCatalogParamsDtoCopyWith(_AgentToolCatalogParamsDto value, $Res Function(_AgentToolCatalogParamsDto) _then) = __$AgentToolCatalogParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String? worktreeId
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentToolCatalogParamsDtoCopyWithImpl<$Res>
+    implements _$AgentToolCatalogParamsDtoCopyWith<$Res> {
+  __$AgentToolCatalogParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentToolCatalogParamsDto _self;
+  final $Res Function(_AgentToolCatalogParamsDto) _then;
+
+/// Create a copy of AgentToolCatalogParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? worktreeId = freezed,}) {
+  return _then(_AgentToolCatalogParamsDto(
+worktreeId: freezed == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$McpServersParamsDto {
+
+ String? get worktreeId;
+/// Create a copy of McpServersParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpServersParamsDtoCopyWith<McpServersParamsDto> get copyWith => _$McpServersParamsDtoCopyWithImpl<McpServersParamsDto>(this as McpServersParamsDto, _$identity);
+
+  /// Serializes this McpServersParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServersParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId);
+
+@override
+String toString() {
+  return 'McpServersParamsDto(worktreeId: $worktreeId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpServersParamsDtoCopyWith<$Res>  {
+  factory $McpServersParamsDtoCopyWith(McpServersParamsDto value, $Res Function(McpServersParamsDto) _then) = _$McpServersParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String? worktreeId
+});
+
+
+
+
+}
+/// @nodoc
+class _$McpServersParamsDtoCopyWithImpl<$Res>
+    implements $McpServersParamsDtoCopyWith<$Res> {
+  _$McpServersParamsDtoCopyWithImpl(this._self, this._then);
+
+  final McpServersParamsDto _self;
+  final $Res Function(McpServersParamsDto) _then;
+
+/// Create a copy of McpServersParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? worktreeId = freezed,}) {
+  return _then(_self.copyWith(
+worktreeId: freezed == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [McpServersParamsDto].
+extension McpServersParamsDtoPatterns on McpServersParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpServersParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpServersParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpServersParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpServersParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpServersParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpServersParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? worktreeId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpServersParamsDto() when $default != null:
+return $default(_that.worktreeId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? worktreeId)  $default,) {final _that = this;
+switch (_that) {
+case _McpServersParamsDto():
+return $default(_that.worktreeId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? worktreeId)?  $default,) {final _that = this;
+switch (_that) {
+case _McpServersParamsDto() when $default != null:
+return $default(_that.worktreeId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpServersParamsDto implements McpServersParamsDto {
+  const _McpServersParamsDto({this.worktreeId});
+  factory _McpServersParamsDto.fromJson(Map<String, dynamic> json) => _$McpServersParamsDtoFromJson(json);
+
+@override final  String? worktreeId;
+
+/// Create a copy of McpServersParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpServersParamsDtoCopyWith<_McpServersParamsDto> get copyWith => __$McpServersParamsDtoCopyWithImpl<_McpServersParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpServersParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServersParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId);
+
+@override
+String toString() {
+  return 'McpServersParamsDto(worktreeId: $worktreeId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpServersParamsDtoCopyWith<$Res> implements $McpServersParamsDtoCopyWith<$Res> {
+  factory _$McpServersParamsDtoCopyWith(_McpServersParamsDto value, $Res Function(_McpServersParamsDto) _then) = __$McpServersParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String? worktreeId
+});
+
+
+
+
+}
+/// @nodoc
+class __$McpServersParamsDtoCopyWithImpl<$Res>
+    implements _$McpServersParamsDtoCopyWith<$Res> {
+  __$McpServersParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _McpServersParamsDto _self;
+  final $Res Function(_McpServersParamsDto) _then;
+
+/// Create a copy of McpServersParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? worktreeId = freezed,}) {
+  return _then(_McpServersParamsDto(
+worktreeId: freezed == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$McpServersResultDto {
+
+ List<McpServerStateDto> get servers;
+/// Create a copy of McpServersResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpServersResultDtoCopyWith<McpServersResultDto> get copyWith => _$McpServersResultDtoCopyWithImpl<McpServersResultDto>(this as McpServersResultDto, _$identity);
+
+  /// Serializes this McpServersResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServersResultDto&&const DeepCollectionEquality().equals(other.servers, servers));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(servers));
+
+@override
+String toString() {
+  return 'McpServersResultDto(servers: $servers)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpServersResultDtoCopyWith<$Res>  {
+  factory $McpServersResultDtoCopyWith(McpServersResultDto value, $Res Function(McpServersResultDto) _then) = _$McpServersResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<McpServerStateDto> servers
+});
+
+
+
+
+}
+/// @nodoc
+class _$McpServersResultDtoCopyWithImpl<$Res>
+    implements $McpServersResultDtoCopyWith<$Res> {
+  _$McpServersResultDtoCopyWithImpl(this._self, this._then);
+
+  final McpServersResultDto _self;
+  final $Res Function(McpServersResultDto) _then;
+
+/// Create a copy of McpServersResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? servers = null,}) {
+  return _then(_self.copyWith(
+servers: null == servers ? _self.servers : servers // ignore: cast_nullable_to_non_nullable
+as List<McpServerStateDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [McpServersResultDto].
+extension McpServersResultDtoPatterns on McpServersResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpServersResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpServersResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpServersResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpServersResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpServersResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpServersResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<McpServerStateDto> servers)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpServersResultDto() when $default != null:
+return $default(_that.servers);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<McpServerStateDto> servers)  $default,) {final _that = this;
+switch (_that) {
+case _McpServersResultDto():
+return $default(_that.servers);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<McpServerStateDto> servers)?  $default,) {final _that = this;
+switch (_that) {
+case _McpServersResultDto() when $default != null:
+return $default(_that.servers);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpServersResultDto implements McpServersResultDto {
+  const _McpServersResultDto({required final  List<McpServerStateDto> servers}): _servers = servers;
+  factory _McpServersResultDto.fromJson(Map<String, dynamic> json) => _$McpServersResultDtoFromJson(json);
+
+ final  List<McpServerStateDto> _servers;
+@override List<McpServerStateDto> get servers {
+  if (_servers is EqualUnmodifiableListView) return _servers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_servers);
+}
+
+
+/// Create a copy of McpServersResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpServersResultDtoCopyWith<_McpServersResultDto> get copyWith => __$McpServersResultDtoCopyWithImpl<_McpServersResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpServersResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServersResultDto&&const DeepCollectionEquality().equals(other._servers, _servers));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_servers));
+
+@override
+String toString() {
+  return 'McpServersResultDto(servers: $servers)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpServersResultDtoCopyWith<$Res> implements $McpServersResultDtoCopyWith<$Res> {
+  factory _$McpServersResultDtoCopyWith(_McpServersResultDto value, $Res Function(_McpServersResultDto) _then) = __$McpServersResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<McpServerStateDto> servers
+});
+
+
+
+
+}
+/// @nodoc
+class __$McpServersResultDtoCopyWithImpl<$Res>
+    implements _$McpServersResultDtoCopyWith<$Res> {
+  __$McpServersResultDtoCopyWithImpl(this._self, this._then);
+
+  final _McpServersResultDto _self;
+  final $Res Function(_McpServersResultDto) _then;
+
+/// Create a copy of McpServersResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? servers = null,}) {
+  return _then(_McpServersResultDto(
+servers: null == servers ? _self._servers : servers // ignore: cast_nullable_to_non_nullable
+as List<McpServerStateDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$McpServerParamsDto {
+
+ McpServerConfigDto get server;
+/// Create a copy of McpServerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpServerParamsDtoCopyWith<McpServerParamsDto> get copyWith => _$McpServerParamsDtoCopyWithImpl<McpServerParamsDto>(this as McpServerParamsDto, _$identity);
+
+  /// Serializes this McpServerParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServerParamsDto&&(identical(other.server, server) || other.server == server));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,server);
+
+@override
+String toString() {
+  return 'McpServerParamsDto(server: $server)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpServerParamsDtoCopyWith<$Res>  {
+  factory $McpServerParamsDtoCopyWith(McpServerParamsDto value, $Res Function(McpServerParamsDto) _then) = _$McpServerParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ McpServerConfigDto server
+});
+
+
+$McpServerConfigDtoCopyWith<$Res> get server;
+
+}
+/// @nodoc
+class _$McpServerParamsDtoCopyWithImpl<$Res>
+    implements $McpServerParamsDtoCopyWith<$Res> {
+  _$McpServerParamsDtoCopyWithImpl(this._self, this._then);
+
+  final McpServerParamsDto _self;
+  final $Res Function(McpServerParamsDto) _then;
+
+/// Create a copy of McpServerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? server = null,}) {
+  return _then(_self.copyWith(
+server: null == server ? _self.server : server // ignore: cast_nullable_to_non_nullable
+as McpServerConfigDto,
+  ));
+}
+/// Create a copy of McpServerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$McpServerConfigDtoCopyWith<$Res> get server {
+  
+  return $McpServerConfigDtoCopyWith<$Res>(_self.server, (value) {
+    return _then(_self.copyWith(server: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [McpServerParamsDto].
+extension McpServerParamsDtoPatterns on McpServerParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpServerParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpServerParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpServerParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpServerParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( McpServerConfigDto server)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpServerParamsDto() when $default != null:
+return $default(_that.server);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( McpServerConfigDto server)  $default,) {final _that = this;
+switch (_that) {
+case _McpServerParamsDto():
+return $default(_that.server);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( McpServerConfigDto server)?  $default,) {final _that = this;
+switch (_that) {
+case _McpServerParamsDto() when $default != null:
+return $default(_that.server);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpServerParamsDto implements McpServerParamsDto {
+  const _McpServerParamsDto({required this.server});
+  factory _McpServerParamsDto.fromJson(Map<String, dynamic> json) => _$McpServerParamsDtoFromJson(json);
+
+@override final  McpServerConfigDto server;
+
+/// Create a copy of McpServerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpServerParamsDtoCopyWith<_McpServerParamsDto> get copyWith => __$McpServerParamsDtoCopyWithImpl<_McpServerParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpServerParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServerParamsDto&&(identical(other.server, server) || other.server == server));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,server);
+
+@override
+String toString() {
+  return 'McpServerParamsDto(server: $server)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpServerParamsDtoCopyWith<$Res> implements $McpServerParamsDtoCopyWith<$Res> {
+  factory _$McpServerParamsDtoCopyWith(_McpServerParamsDto value, $Res Function(_McpServerParamsDto) _then) = __$McpServerParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ McpServerConfigDto server
+});
+
+
+@override $McpServerConfigDtoCopyWith<$Res> get server;
+
+}
+/// @nodoc
+class __$McpServerParamsDtoCopyWithImpl<$Res>
+    implements _$McpServerParamsDtoCopyWith<$Res> {
+  __$McpServerParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _McpServerParamsDto _self;
+  final $Res Function(_McpServerParamsDto) _then;
+
+/// Create a copy of McpServerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? server = null,}) {
+  return _then(_McpServerParamsDto(
+server: null == server ? _self.server : server // ignore: cast_nullable_to_non_nullable
+as McpServerConfigDto,
+  ));
+}
+
+/// Create a copy of McpServerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$McpServerConfigDtoCopyWith<$Res> get server {
+  
+  return $McpServerConfigDtoCopyWith<$Res>(_self.server, (value) {
+    return _then(_self.copyWith(server: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$McpServerIdParamsDto {
+
+ String get id;
+/// Create a copy of McpServerIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpServerIdParamsDtoCopyWith<McpServerIdParamsDto> get copyWith => _$McpServerIdParamsDtoCopyWithImpl<McpServerIdParamsDto>(this as McpServerIdParamsDto, _$identity);
+
+  /// Serializes this McpServerIdParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServerIdParamsDto&&(identical(other.id, id) || other.id == id));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'McpServerIdParamsDto(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpServerIdParamsDtoCopyWith<$Res>  {
+  factory $McpServerIdParamsDtoCopyWith(McpServerIdParamsDto value, $Res Function(McpServerIdParamsDto) _then) = _$McpServerIdParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id
+});
+
+
+
+
+}
+/// @nodoc
+class _$McpServerIdParamsDtoCopyWithImpl<$Res>
+    implements $McpServerIdParamsDtoCopyWith<$Res> {
+  _$McpServerIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final McpServerIdParamsDto _self;
+  final $Res Function(McpServerIdParamsDto) _then;
+
+/// Create a copy of McpServerIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [McpServerIdParamsDto].
+extension McpServerIdParamsDtoPatterns on McpServerIdParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpServerIdParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpServerIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpServerIdParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerIdParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpServerIdParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpServerIdParamsDto() when $default != null:
+return $default(_that.id);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id)  $default,) {final _that = this;
+switch (_that) {
+case _McpServerIdParamsDto():
+return $default(_that.id);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id)?  $default,) {final _that = this;
+switch (_that) {
+case _McpServerIdParamsDto() when $default != null:
+return $default(_that.id);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpServerIdParamsDto implements McpServerIdParamsDto {
+  const _McpServerIdParamsDto({required this.id});
+  factory _McpServerIdParamsDto.fromJson(Map<String, dynamic> json) => _$McpServerIdParamsDtoFromJson(json);
+
+@override final  String id;
+
+/// Create a copy of McpServerIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpServerIdParamsDtoCopyWith<_McpServerIdParamsDto> get copyWith => __$McpServerIdParamsDtoCopyWithImpl<_McpServerIdParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpServerIdParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServerIdParamsDto&&(identical(other.id, id) || other.id == id));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'McpServerIdParamsDto(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpServerIdParamsDtoCopyWith<$Res> implements $McpServerIdParamsDtoCopyWith<$Res> {
+  factory _$McpServerIdParamsDtoCopyWith(_McpServerIdParamsDto value, $Res Function(_McpServerIdParamsDto) _then) = __$McpServerIdParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id
+});
+
+
+
+
+}
+/// @nodoc
+class __$McpServerIdParamsDtoCopyWithImpl<$Res>
+    implements _$McpServerIdParamsDtoCopyWith<$Res> {
+  __$McpServerIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _McpServerIdParamsDto _self;
+  final $Res Function(_McpServerIdParamsDto) _then;
+
+/// Create a copy of McpServerIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(_McpServerIdParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$McpServerStateResultDto {
+
+ McpServerStateDto get state;
+/// Create a copy of McpServerStateResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpServerStateResultDtoCopyWith<McpServerStateResultDto> get copyWith => _$McpServerStateResultDtoCopyWithImpl<McpServerStateResultDto>(this as McpServerStateResultDto, _$identity);
+
+  /// Serializes this McpServerStateResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServerStateResultDto&&(identical(other.state, state) || other.state == state));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,state);
+
+@override
+String toString() {
+  return 'McpServerStateResultDto(state: $state)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpServerStateResultDtoCopyWith<$Res>  {
+  factory $McpServerStateResultDtoCopyWith(McpServerStateResultDto value, $Res Function(McpServerStateResultDto) _then) = _$McpServerStateResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ McpServerStateDto state
+});
+
+
+$McpServerStateDtoCopyWith<$Res> get state;
+
+}
+/// @nodoc
+class _$McpServerStateResultDtoCopyWithImpl<$Res>
+    implements $McpServerStateResultDtoCopyWith<$Res> {
+  _$McpServerStateResultDtoCopyWithImpl(this._self, this._then);
+
+  final McpServerStateResultDto _self;
+  final $Res Function(McpServerStateResultDto) _then;
+
+/// Create a copy of McpServerStateResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? state = null,}) {
+  return _then(_self.copyWith(
+state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
+as McpServerStateDto,
+  ));
+}
+/// Create a copy of McpServerStateResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$McpServerStateDtoCopyWith<$Res> get state {
+  
+  return $McpServerStateDtoCopyWith<$Res>(_self.state, (value) {
+    return _then(_self.copyWith(state: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [McpServerStateResultDto].
+extension McpServerStateResultDtoPatterns on McpServerStateResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpServerStateResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpServerStateResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpServerStateResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerStateResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpServerStateResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerStateResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( McpServerStateDto state)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpServerStateResultDto() when $default != null:
+return $default(_that.state);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( McpServerStateDto state)  $default,) {final _that = this;
+switch (_that) {
+case _McpServerStateResultDto():
+return $default(_that.state);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( McpServerStateDto state)?  $default,) {final _that = this;
+switch (_that) {
+case _McpServerStateResultDto() when $default != null:
+return $default(_that.state);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpServerStateResultDto implements McpServerStateResultDto {
+  const _McpServerStateResultDto({required this.state});
+  factory _McpServerStateResultDto.fromJson(Map<String, dynamic> json) => _$McpServerStateResultDtoFromJson(json);
+
+@override final  McpServerStateDto state;
+
+/// Create a copy of McpServerStateResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpServerStateResultDtoCopyWith<_McpServerStateResultDto> get copyWith => __$McpServerStateResultDtoCopyWithImpl<_McpServerStateResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpServerStateResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServerStateResultDto&&(identical(other.state, state) || other.state == state));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,state);
+
+@override
+String toString() {
+  return 'McpServerStateResultDto(state: $state)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpServerStateResultDtoCopyWith<$Res> implements $McpServerStateResultDtoCopyWith<$Res> {
+  factory _$McpServerStateResultDtoCopyWith(_McpServerStateResultDto value, $Res Function(_McpServerStateResultDto) _then) = __$McpServerStateResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ McpServerStateDto state
+});
+
+
+@override $McpServerStateDtoCopyWith<$Res> get state;
+
+}
+/// @nodoc
+class __$McpServerStateResultDtoCopyWithImpl<$Res>
+    implements _$McpServerStateResultDtoCopyWith<$Res> {
+  __$McpServerStateResultDtoCopyWithImpl(this._self, this._then);
+
+  final _McpServerStateResultDto _self;
+  final $Res Function(_McpServerStateResultDto) _then;
+
+/// Create a copy of McpServerStateResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? state = null,}) {
+  return _then(_McpServerStateResultDto(
+state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
+as McpServerStateDto,
+  ));
+}
+
+/// Create a copy of McpServerStateResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$McpServerStateDtoCopyWith<$Res> get state {
+  
+  return $McpServerStateDtoCopyWith<$Res>(_self.state, (value) {
+    return _then(_self.copyWith(state: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$McpSecretParamsDto {
+
+ String get key; String get value;
+/// Create a copy of McpSecretParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpSecretParamsDtoCopyWith<McpSecretParamsDto> get copyWith => _$McpSecretParamsDtoCopyWithImpl<McpSecretParamsDto>(this as McpSecretParamsDto, _$identity);
+
+  /// Serializes this McpSecretParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpSecretParamsDto&&(identical(other.key, key) || other.key == key)&&(identical(other.value, value) || other.value == value));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,key,value);
+
+@override
+String toString() {
+  return 'McpSecretParamsDto(key: $key, value: $value)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpSecretParamsDtoCopyWith<$Res>  {
+  factory $McpSecretParamsDtoCopyWith(McpSecretParamsDto value, $Res Function(McpSecretParamsDto) _then) = _$McpSecretParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String key, String value
+});
+
+
+
+
+}
+/// @nodoc
+class _$McpSecretParamsDtoCopyWithImpl<$Res>
+    implements $McpSecretParamsDtoCopyWith<$Res> {
+  _$McpSecretParamsDtoCopyWithImpl(this._self, this._then);
+
+  final McpSecretParamsDto _self;
+  final $Res Function(McpSecretParamsDto) _then;
+
+/// Create a copy of McpSecretParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? value = null,}) {
+  return _then(_self.copyWith(
+key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
+as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [McpSecretParamsDto].
+extension McpSecretParamsDtoPatterns on McpSecretParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpSecretParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpSecretParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpSecretParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpSecretParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpSecretParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpSecretParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String key,  String value)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpSecretParamsDto() when $default != null:
+return $default(_that.key,_that.value);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String key,  String value)  $default,) {final _that = this;
+switch (_that) {
+case _McpSecretParamsDto():
+return $default(_that.key,_that.value);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String key,  String value)?  $default,) {final _that = this;
+switch (_that) {
+case _McpSecretParamsDto() when $default != null:
+return $default(_that.key,_that.value);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpSecretParamsDto implements McpSecretParamsDto {
+  const _McpSecretParamsDto({required this.key, required this.value});
+  factory _McpSecretParamsDto.fromJson(Map<String, dynamic> json) => _$McpSecretParamsDtoFromJson(json);
+
+@override final  String key;
+@override final  String value;
+
+/// Create a copy of McpSecretParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpSecretParamsDtoCopyWith<_McpSecretParamsDto> get copyWith => __$McpSecretParamsDtoCopyWithImpl<_McpSecretParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpSecretParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpSecretParamsDto&&(identical(other.key, key) || other.key == key)&&(identical(other.value, value) || other.value == value));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,key,value);
+
+@override
+String toString() {
+  return 'McpSecretParamsDto(key: $key, value: $value)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpSecretParamsDtoCopyWith<$Res> implements $McpSecretParamsDtoCopyWith<$Res> {
+  factory _$McpSecretParamsDtoCopyWith(_McpSecretParamsDto value, $Res Function(_McpSecretParamsDto) _then) = __$McpSecretParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String key, String value
+});
+
+
+
+
+}
+/// @nodoc
+class __$McpSecretParamsDtoCopyWithImpl<$Res>
+    implements _$McpSecretParamsDtoCopyWith<$Res> {
+  __$McpSecretParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _McpSecretParamsDto _self;
+  final $Res Function(_McpSecretParamsDto) _then;
+
+/// Create a copy of McpSecretParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? key = null,Object? value = null,}) {
+  return _then(_McpSecretParamsDto(
+key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
+as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$AgentToolCatalogResultDto {
 
  List<AgentToolDefinitionDto> get tools;
