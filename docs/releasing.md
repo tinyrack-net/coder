@@ -32,7 +32,7 @@ Versions come from `apps/coder_app/pubspec.yaml` and are mirrored into
 those two by hand.
 
 ```sh
-dart pub global activate shipworld 0.2.2
+dart pub global activate shipworld 0.2.3
 
 # Writes the version files and commits; open the result as a pull request.
 shipworld release prepare coder=minor    # or =patch / =major
