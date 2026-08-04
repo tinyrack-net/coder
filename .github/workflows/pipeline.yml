@@ -187,8 +187,10 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
+            gradle_cache: true
             command: flutter build apk --debug -t lib/main_mobile.dart
           - os: macos-26
+            gradle_cache: false
             command: >-
               flutter build ios --debug --simulator --no-codesign
               -t lib/main_mobile.dart
@@ -200,6 +202,11 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+      - name: Set up Gradle cache
+        if: matrix.gradle_cache
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: enhanced
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
         working-directory: apps/coder_app
