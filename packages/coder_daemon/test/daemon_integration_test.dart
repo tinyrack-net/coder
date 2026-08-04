@@ -236,6 +236,7 @@ void main() {
       expect(approval.preview, contains('result.txt'));
       await client.resolveApproval(approvalId: approval.id, approved: true);
       await completedFuture;
+      await _waitForIdleSession(client, checkout.id, agent.id);
       final afterTurn = await client.updateAgentDefinition(
         configuredDefinition.copyWith(reasoningEffort: 'medium'),
         expectedContentHash: configuredDefinition.contentHash,
@@ -651,13 +652,13 @@ void main() {
         ProjectSettingsDto(
           setup: <String>[
             if (Platform.isWindows)
-              '<nul set /p=%CODER_BRANCH%> setup-ran'
+              'echo %CODER_BRANCH% > setup-ran'
             else
               r'printf "%s" "$CODER_BRANCH" > setup-ran',
           ],
           teardown: <String>[
             if (Platform.isWindows)
-              '<nul set /p=ran> $teardownMarker'
+              'echo ran > $teardownMarker'
             else
               'printf ran > $teardownMarker',
           ],
@@ -677,7 +678,10 @@ void main() {
       expect(managed.hookRuns.single.exitCode, 0);
       expect(managed.hookRuns.single.phase, WorktreeHookPhase.setup);
       expect(
-        await File(p.join(managed.worktree.path, 'setup-ran')).readAsString(),
+        // cmd's echo appends a line break, so compare the written value.
+        (await File(
+          p.join(managed.worktree.path, 'setup-ran'),
+        ).readAsString()).trim(),
         'feature-vertical-slice',
       );
       expect(
@@ -824,6 +828,27 @@ void main() {
     await handle.stop();
     await home.delete(recursive: true);
   });
+}
+
+/// Waits until a session reports idle.
+///
+/// The `turn.completed` timeline event is broadcast before the session row
+/// leaves the running state, so a mutation issued immediately after it can
+/// still be rejected.
+Future<void> _waitForIdleSession(
+  CoderApi client,
+  String worktreeId,
+  String sessionId, {
+  int attempts = 50,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    final session = (await client.listSessions(
+      worktreeId: worktreeId,
+    )).singleWhere((item) => item.id == sessionId);
+    if (session.status != SessionStatus.running) return;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw StateError('Timed out waiting for $sessionId to leave running.');
 }
 
 Future<void> _runGit(String workingDirectory, List<String> arguments) async {
