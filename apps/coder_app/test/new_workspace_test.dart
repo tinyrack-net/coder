@@ -98,6 +98,7 @@ void main() {
       expect(find.text('New workspace'), findsWidgets);
       expect(find.text('Coder'), findsWidgets);
       expect(find.byKey(const ValueKey('new-workspace-worktree')), findsOne);
+      await _selectModel(tester);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -141,6 +142,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('main'), findsWidgets);
+      await _selectModel(tester);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -170,6 +172,7 @@ void main() {
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
+      await _selectModel(tester);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -220,6 +223,7 @@ void main() {
         find.byKey(const ValueKey('new-workspace-branch-feature')),
       );
       await tester.pumpAndSettle();
+      await _selectModel(tester);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -312,4 +316,17 @@ Future<GoRouter> _pump(WidgetTester tester, FakeCoderApi api) async {
   );
   await tester.pumpAndSettle();
   return router;
+}
+
+Future<void> _selectModel(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('session-composer-provider')));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(const ValueKey('session-composer-provider-openai')),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+  );
+  await tester.pumpAndSettle();
 }

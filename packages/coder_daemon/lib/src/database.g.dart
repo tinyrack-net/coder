@@ -3994,32 +3994,6 @@ class $ProviderConnectionsTable extends ProviderConnections
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _isDefaultMeta = const VerificationMeta(
-    'isDefault',
-  );
-  @override
-  late final GeneratedColumn<bool> isDefault = GeneratedColumn<bool>(
-    'is_default',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_default" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _defaultModelIdMeta = const VerificationMeta(
-    'defaultModelId',
-  );
-  @override
-  late final GeneratedColumn<String> defaultModelId = GeneratedColumn<String>(
-    'default_model_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _errorMeta = const VerificationMeta('error');
   @override
   late final GeneratedColumn<String> error = GeneratedColumn<String>(
@@ -4070,8 +4044,6 @@ class $ProviderConnectionsTable extends ProviderConnections
     status,
     authKind,
     credentialOrigin,
-    isDefault,
-    defaultModelId,
     error,
     customConfigJson,
     createdAt,
@@ -4143,21 +4115,6 @@ class $ProviderConnectionsTable extends ProviderConnections
     } else if (isInserting) {
       context.missing(_credentialOriginMeta);
     }
-    if (data.containsKey('is_default')) {
-      context.handle(
-        _isDefaultMeta,
-        isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta),
-      );
-    }
-    if (data.containsKey('default_model_id')) {
-      context.handle(
-        _defaultModelIdMeta,
-        defaultModelId.isAcceptableOrUnknown(
-          data['default_model_id']!,
-          _defaultModelIdMeta,
-        ),
-      );
-    }
     if (data.containsKey('error')) {
       context.handle(
         _errorMeta,
@@ -4222,14 +4179,6 @@ class $ProviderConnectionsTable extends ProviderConnections
         DriftSqlType.string,
         data['${effectivePrefix}credential_origin'],
       )!,
-      isDefault: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_default'],
-      )!,
-      defaultModelId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}default_model_id'],
-      ),
       error: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}error'],
@@ -4275,12 +4224,6 @@ class ProviderConnection extends DataClass
   /// Non-secret credential origin.
   final String credentialOrigin;
 
-  /// Whether this is the daemon-wide default connection.
-  final bool isDefault;
-
-  /// The defaultModelId public API member.
-  final String? defaultModelId;
-
   /// Last user-safe connection error.
   final String? error;
 
@@ -4299,8 +4242,6 @@ class ProviderConnection extends DataClass
     required this.status,
     required this.authKind,
     required this.credentialOrigin,
-    required this.isDefault,
-    this.defaultModelId,
     this.error,
     this.customConfigJson,
     required this.createdAt,
@@ -4315,10 +4256,6 @@ class ProviderConnection extends DataClass
     map['status'] = Variable<String>(status);
     map['auth_kind'] = Variable<String>(authKind);
     map['credential_origin'] = Variable<String>(credentialOrigin);
-    map['is_default'] = Variable<bool>(isDefault);
-    if (!nullToAbsent || defaultModelId != null) {
-      map['default_model_id'] = Variable<String>(defaultModelId);
-    }
     if (!nullToAbsent || error != null) {
       map['error'] = Variable<String>(error);
     }
@@ -4338,10 +4275,6 @@ class ProviderConnection extends DataClass
       status: Value(status),
       authKind: Value(authKind),
       credentialOrigin: Value(credentialOrigin),
-      isDefault: Value(isDefault),
-      defaultModelId: defaultModelId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(defaultModelId),
       error: error == null && nullToAbsent
           ? const Value.absent()
           : Value(error),
@@ -4365,8 +4298,6 @@ class ProviderConnection extends DataClass
       status: serializer.fromJson<String>(json['status']),
       authKind: serializer.fromJson<String>(json['authKind']),
       credentialOrigin: serializer.fromJson<String>(json['credentialOrigin']),
-      isDefault: serializer.fromJson<bool>(json['isDefault']),
-      defaultModelId: serializer.fromJson<String?>(json['defaultModelId']),
       error: serializer.fromJson<String?>(json['error']),
       customConfigJson: serializer.fromJson<String?>(json['customConfigJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -4383,8 +4314,6 @@ class ProviderConnection extends DataClass
       'status': serializer.toJson<String>(status),
       'authKind': serializer.toJson<String>(authKind),
       'credentialOrigin': serializer.toJson<String>(credentialOrigin),
-      'isDefault': serializer.toJson<bool>(isDefault),
-      'defaultModelId': serializer.toJson<String?>(defaultModelId),
       'error': serializer.toJson<String?>(error),
       'customConfigJson': serializer.toJson<String?>(customConfigJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -4399,8 +4328,6 @@ class ProviderConnection extends DataClass
     String? status,
     String? authKind,
     String? credentialOrigin,
-    bool? isDefault,
-    Value<String?> defaultModelId = const Value.absent(),
     Value<String?> error = const Value.absent(),
     Value<String?> customConfigJson = const Value.absent(),
     DateTime? createdAt,
@@ -4412,10 +4339,6 @@ class ProviderConnection extends DataClass
     status: status ?? this.status,
     authKind: authKind ?? this.authKind,
     credentialOrigin: credentialOrigin ?? this.credentialOrigin,
-    isDefault: isDefault ?? this.isDefault,
-    defaultModelId: defaultModelId.present
-        ? defaultModelId.value
-        : this.defaultModelId,
     error: error.present ? error.value : this.error,
     customConfigJson: customConfigJson.present
         ? customConfigJson.value
@@ -4437,10 +4360,6 @@ class ProviderConnection extends DataClass
       credentialOrigin: data.credentialOrigin.present
           ? data.credentialOrigin.value
           : this.credentialOrigin,
-      isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
-      defaultModelId: data.defaultModelId.present
-          ? data.defaultModelId.value
-          : this.defaultModelId,
       error: data.error.present ? data.error.value : this.error,
       customConfigJson: data.customConfigJson.present
           ? data.customConfigJson.value
@@ -4459,8 +4378,6 @@ class ProviderConnection extends DataClass
           ..write('status: $status, ')
           ..write('authKind: $authKind, ')
           ..write('credentialOrigin: $credentialOrigin, ')
-          ..write('isDefault: $isDefault, ')
-          ..write('defaultModelId: $defaultModelId, ')
           ..write('error: $error, ')
           ..write('customConfigJson: $customConfigJson, ')
           ..write('createdAt: $createdAt, ')
@@ -4477,8 +4394,6 @@ class ProviderConnection extends DataClass
     status,
     authKind,
     credentialOrigin,
-    isDefault,
-    defaultModelId,
     error,
     customConfigJson,
     createdAt,
@@ -4494,8 +4409,6 @@ class ProviderConnection extends DataClass
           other.status == this.status &&
           other.authKind == this.authKind &&
           other.credentialOrigin == this.credentialOrigin &&
-          other.isDefault == this.isDefault &&
-          other.defaultModelId == this.defaultModelId &&
           other.error == this.error &&
           other.customConfigJson == this.customConfigJson &&
           other.createdAt == this.createdAt &&
@@ -4509,8 +4422,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
   final Value<String> status;
   final Value<String> authKind;
   final Value<String> credentialOrigin;
-  final Value<bool> isDefault;
-  final Value<String?> defaultModelId;
   final Value<String?> error;
   final Value<String?> customConfigJson;
   final Value<DateTime> createdAt;
@@ -4523,8 +4434,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     this.status = const Value.absent(),
     this.authKind = const Value.absent(),
     this.credentialOrigin = const Value.absent(),
-    this.isDefault = const Value.absent(),
-    this.defaultModelId = const Value.absent(),
     this.error = const Value.absent(),
     this.customConfigJson = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -4538,8 +4447,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     required String status,
     required String authKind,
     required String credentialOrigin,
-    this.isDefault = const Value.absent(),
-    this.defaultModelId = const Value.absent(),
     this.error = const Value.absent(),
     this.customConfigJson = const Value.absent(),
     required DateTime createdAt,
@@ -4560,8 +4467,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     Expression<String>? status,
     Expression<String>? authKind,
     Expression<String>? credentialOrigin,
-    Expression<bool>? isDefault,
-    Expression<String>? defaultModelId,
     Expression<String>? error,
     Expression<String>? customConfigJson,
     Expression<DateTime>? createdAt,
@@ -4575,8 +4480,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
       if (status != null) 'status': status,
       if (authKind != null) 'auth_kind': authKind,
       if (credentialOrigin != null) 'credential_origin': credentialOrigin,
-      if (isDefault != null) 'is_default': isDefault,
-      if (defaultModelId != null) 'default_model_id': defaultModelId,
       if (error != null) 'error': error,
       if (customConfigJson != null) 'custom_config_json': customConfigJson,
       if (createdAt != null) 'created_at': createdAt,
@@ -4592,8 +4495,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     Value<String>? status,
     Value<String>? authKind,
     Value<String>? credentialOrigin,
-    Value<bool>? isDefault,
-    Value<String?>? defaultModelId,
     Value<String?>? error,
     Value<String?>? customConfigJson,
     Value<DateTime>? createdAt,
@@ -4607,8 +4508,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
       status: status ?? this.status,
       authKind: authKind ?? this.authKind,
       credentialOrigin: credentialOrigin ?? this.credentialOrigin,
-      isDefault: isDefault ?? this.isDefault,
-      defaultModelId: defaultModelId ?? this.defaultModelId,
       error: error ?? this.error,
       customConfigJson: customConfigJson ?? this.customConfigJson,
       createdAt: createdAt ?? this.createdAt,
@@ -4638,12 +4537,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     if (credentialOrigin.present) {
       map['credential_origin'] = Variable<String>(credentialOrigin.value);
     }
-    if (isDefault.present) {
-      map['is_default'] = Variable<bool>(isDefault.value);
-    }
-    if (defaultModelId.present) {
-      map['default_model_id'] = Variable<String>(defaultModelId.value);
-    }
     if (error.present) {
       map['error'] = Variable<String>(error.value);
     }
@@ -4671,8 +4564,6 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
           ..write('status: $status, ')
           ..write('authKind: $authKind, ')
           ..write('credentialOrigin: $credentialOrigin, ')
-          ..write('isDefault: $isDefault, ')
-          ..write('defaultModelId: $defaultModelId, ')
           ..write('error: $error, ')
           ..write('customConfigJson: $customConfigJson, ')
           ..write('createdAt: $createdAt, ')
@@ -8921,8 +8812,6 @@ typedef $$ProviderConnectionsTableCreateCompanionBuilder =
       required String status,
       required String authKind,
       required String credentialOrigin,
-      Value<bool> isDefault,
-      Value<String?> defaultModelId,
       Value<String?> error,
       Value<String?> customConfigJson,
       required DateTime createdAt,
@@ -8937,8 +8826,6 @@ typedef $$ProviderConnectionsTableUpdateCompanionBuilder =
       Value<String> status,
       Value<String> authKind,
       Value<String> credentialOrigin,
-      Value<bool> isDefault,
-      Value<String?> defaultModelId,
       Value<String?> error,
       Value<String?> customConfigJson,
       Value<DateTime> createdAt,
@@ -9014,16 +8901,6 @@ class $$ProviderConnectionsTableFilterComposer
 
   ColumnFilters<String> get credentialOrigin => $composableBuilder(
     column: $table.credentialOrigin,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isDefault => $composableBuilder(
-    column: $table.isDefault,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get defaultModelId => $composableBuilder(
-    column: $table.defaultModelId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9112,16 +8989,6 @@ class $$ProviderConnectionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isDefault => $composableBuilder(
-    column: $table.isDefault,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get defaultModelId => $composableBuilder(
-    column: $table.defaultModelId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get error => $composableBuilder(
     column: $table.error,
     builder: (column) => ColumnOrderings(column),
@@ -9173,14 +9040,6 @@ class $$ProviderConnectionsTableAnnotationComposer
 
   GeneratedColumn<String> get credentialOrigin => $composableBuilder(
     column: $table.credentialOrigin,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get isDefault =>
-      $composableBuilder(column: $table.isDefault, builder: (column) => column);
-
-  GeneratedColumn<String> get defaultModelId => $composableBuilder(
-    column: $table.defaultModelId,
     builder: (column) => column,
   );
 
@@ -9266,8 +9125,6 @@ class $$ProviderConnectionsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String> authKind = const Value.absent(),
                 Value<String> credentialOrigin = const Value.absent(),
-                Value<bool> isDefault = const Value.absent(),
-                Value<String?> defaultModelId = const Value.absent(),
                 Value<String?> error = const Value.absent(),
                 Value<String?> customConfigJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -9280,8 +9137,6 @@ class $$ProviderConnectionsTableTableManager
                 status: status,
                 authKind: authKind,
                 credentialOrigin: credentialOrigin,
-                isDefault: isDefault,
-                defaultModelId: defaultModelId,
                 error: error,
                 customConfigJson: customConfigJson,
                 createdAt: createdAt,
@@ -9296,8 +9151,6 @@ class $$ProviderConnectionsTableTableManager
                 required String status,
                 required String authKind,
                 required String credentialOrigin,
-                Value<bool> isDefault = const Value.absent(),
-                Value<String?> defaultModelId = const Value.absent(),
                 Value<String?> error = const Value.absent(),
                 Value<String?> customConfigJson = const Value.absent(),
                 required DateTime createdAt,
@@ -9310,8 +9163,6 @@ class $$ProviderConnectionsTableTableManager
                 status: status,
                 authKind: authKind,
                 credentialOrigin: credentialOrigin,
-                isDefault: isDefault,
-                defaultModelId: defaultModelId,
                 error: error,
                 customConfigJson: customConfigJson,
                 createdAt: createdAt,

@@ -234,6 +234,10 @@ class SessionService {
     if (_activeTurns.containsKey(sessionId)) {
       throw StateError('Cannot change the model while a turn is running.');
     }
+    final definition = await _definitions.resolve(session.agentDefinitionId);
+    if (model == null && definition.model.source == AgentModelSource.session) {
+      throw StateError('This agent requires an explicit session model.');
+    }
     if (model != null) {
       await _providers.validateAgentModel(
         model.providerConnectionId,
@@ -335,6 +339,9 @@ class SessionService {
       throw StateError('Callable subagent is unavailable: $agentDefinitionId');
     }
     final now = _clock.nowUtc();
+    final childModel = childDefinition.model.source == AgentModelSource.session
+        ? _effectiveSessionModel(parentSession, parentDefinition)
+        : null;
     final child = await _sessions.create(
       SessionDto(
         id: _ids.generate(),
@@ -346,6 +353,7 @@ class SessionService {
         // A planning parent must not delegate work that mutates the workspace.
         mode: parentSession.mode,
         status: SessionStatus.idle,
+        model: childModel,
         createdAt: now,
         updatedAt: now,
       ),
@@ -392,6 +400,25 @@ class SessionService {
         _emitSession(await _sessions.getById(parentSession.id));
       }
     }
+  }
+
+  SessionModelSelectionDto _effectiveSessionModel(
+    SessionDto session,
+    AgentDefinitionDto definition,
+  ) {
+    final selected = session.model;
+    if (selected != null) return selected;
+    final providerConnectionId = definition.model.providerConnectionId;
+    final modelId = definition.model.modelId;
+    if (definition.model.source != AgentModelSource.fixed ||
+        providerConnectionId == null ||
+        modelId == null) {
+      throw StateError('Parent session has no executable model.');
+    }
+    return SessionModelSelectionDto(
+      providerConnectionId: providerConnectionId,
+      modelId: modelId,
+    );
   }
 
   void _completeTurn(String turnId, AgentRunResult result) {

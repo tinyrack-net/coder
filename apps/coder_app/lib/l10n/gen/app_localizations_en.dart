@@ -393,7 +393,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSettingsCustomPrompt => 'Use a custom system prompt';
 
   @override
-  String get agentSettingsDaemonDefaultModel => 'Daemon default provider/model';
+  String get agentSettingsSessionModel => 'Choose for each session';
 
   @override
   String get agentSettingsPinnedModel => 'Pinned provider/model';
@@ -466,28 +466,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsNoConnections => 'No providers are connected.';
 
   @override
-  String get providerSettingsDefaultChip => 'Default';
-
-  @override
-  String get providerSettingsMakeDefault => 'Make default provider';
-
-  @override
   String get providerSettingsEditAdvanced => 'Edit advanced settings';
-
-  @override
-  String get providerSettingsModelsLoading => 'Loading models…';
-
-  @override
-  String get providerSettingsNoModels => 'No models are available.';
-
-  @override
-  String get providerSettingsSelectModel => 'Select a model';
-
-  @override
-  String get providerSettingsDefaultModel => 'Default model';
-
-  @override
-  String get providerSettingsModelMissing => 'Not in the catalog';
 
   @override
   String get providerSettingsAdd => 'Add provider';
@@ -557,7 +536,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerAuthNone => 'No credential';
 
   @override
-  String get modelPickerTitle => 'Select the default model';
+  String get modelPickerTitle => 'Select a model';
 
   @override
   String get modelPickerSearch => 'Search models';

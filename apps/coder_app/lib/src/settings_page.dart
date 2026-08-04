@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
-import 'package:coder_app/src/model_picker.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,16 +28,8 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  final Set<String> _loadingModels = <String>{};
-
   ProviderSettingsControllerProvider get _provider =>
       providerSettingsControllerProvider(widget.hostId);
-
-  @override
-  void didUpdateWidget(SettingsPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.hostId != widget.hostId) _loadingModels.clear();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,29 +65,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _body(ProviderSettingsState state) {
-    final provider = _provider;
     final activeConnections = state.connections
         .where(
           (connection) =>
               connection.status != ProviderConnectionStatus.disconnected,
         )
         .toList(growable: false);
-    for (final connection in activeConnections) {
-      if (!_loadingModels.add(connection.id)) continue;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        unawaited(
-          ref.read(provider.notifier).loadModels(connection.id),
-        );
-      });
-    }
     final connected = _ConnectedProviders(
       connections: activeConnections,
-      models: state.models,
       onDisconnect: _disconnect,
-      onSetDefault: (id) => ref.read(_provider.notifier).setDefault(id),
-      onSetDefaultModel: (id, model) =>
-          ref.read(_provider.notifier).setDefaultModel(id, model),
       onEditCustom: _editCustom,
     );
     final catalog = _ProviderCatalog(
@@ -234,7 +211,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           draft.config,
           apiKey: draft.apiKey,
         );
-    if (!mounted || connection.defaultModelId != null) return;
+    await ref.read(_provider.notifier).loadModels(connection.id);
+    final models = ref.read(_provider).value?.models[connection.id];
+    if (!mounted || models == null || models.isNotEmpty) return;
     final manualModels = await showDialog<List<String>>(
       context: context,
       builder: (context) => const _ManualModelsDialog(),
@@ -289,18 +268,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 class _ConnectedProviders extends StatelessWidget {
   const _ConnectedProviders({
     required this.connections,
-    required this.models,
     required this.onDisconnect,
-    required this.onSetDefault,
-    required this.onSetDefaultModel,
     required this.onEditCustom,
   });
 
   final List<ProviderConnectionDto> connections;
-  final Map<String, List<ProviderModelDto>> models;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
-  final ValueChanged<String> onSetDefault;
-  final Future<void> Function(String, String) onSetDefaultModel;
   final ValueChanged<ProviderConnectionDto> onEditCustom;
 
   @override
@@ -327,11 +300,7 @@ class _ConnectedProviders extends StatelessWidget {
           for (final connection in connections)
             _ProviderConnectionCard(
               connection: connection,
-              models: models[connection.id],
               onDisconnect: onDisconnect,
-              onSetDefault: onSetDefault,
-              onSetDefaultModel: (modelId) =>
-                  onSetDefaultModel(connection.id, modelId),
               onEditCustom: onEditCustom,
             ),
         ],
@@ -343,18 +312,12 @@ class _ConnectedProviders extends StatelessWidget {
 class _ProviderConnectionCard extends StatelessWidget {
   const _ProviderConnectionCard({
     required this.connection,
-    required this.models,
     required this.onDisconnect,
-    required this.onSetDefault,
-    required this.onSetDefaultModel,
     required this.onEditCustom,
   });
 
   final ProviderConnectionDto connection;
-  final List<ProviderModelDto>? models;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
-  final ValueChanged<String> onSetDefault;
-  final Future<void> Function(String) onSetDefaultModel;
   final ValueChanged<ProviderConnectionDto> onEditCustom;
 
   @override
@@ -376,13 +339,9 @@ class _ProviderConnectionCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                if (connection.isDefault)
-                  Chip(label: Text(l10n.providerSettingsDefaultChip)),
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     switch (value) {
-                      case 'default':
-                        onSetDefault(connection.id);
                       case 'edit':
                         onEditCustom(connection);
                       case 'disconnect':
@@ -390,11 +349,6 @@ class _ProviderConnectionCard extends StatelessWidget {
                     }
                   },
                   itemBuilder: (context) => <PopupMenuEntry<String>>[
-                    if (!connection.isDefault)
-                      PopupMenuItem(
-                        value: 'default',
-                        child: Text(l10n.providerSettingsMakeDefault),
-                      ),
                     if (connection.definitionId == 'custom')
                       PopupMenuItem(
                         value: 'edit',
@@ -417,148 +371,10 @@ class _ProviderConnectionCard extends StatelessWidget {
                 connection.error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
-            const SizedBox(height: 12),
-            _ProviderModelSelector(
-              connection: connection,
-              models: models,
-              onSelected: onSetDefaultModel,
-            ),
           ],
         ),
       ),
     );
-  }
-}
-
-class _ProviderModelSelector extends StatefulWidget {
-  const _ProviderModelSelector({
-    required this.connection,
-    required this.models,
-    required this.onSelected,
-  });
-
-  final ProviderConnectionDto connection;
-  final List<ProviderModelDto>? models;
-  final Future<void> Function(String) onSelected;
-
-  @override
-  State<_ProviderModelSelector> createState() => _ProviderModelSelectorState();
-}
-
-class _ProviderModelSelectorState extends State<_ProviderModelSelector> {
-  bool _saving = false;
-  String? _error;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final models = widget.models;
-    final currentId = widget.connection.defaultModelId;
-    final selected = models
-        ?.where((model) => model.id == currentId)
-        .firstOrNull;
-    final missing = currentId != null && models != null && selected == null;
-    final enabled = models != null && models.isNotEmpty && !_saving;
-    final String primaryText;
-    if (models == null) {
-      primaryText = l10n.providerSettingsModelsLoading;
-    } else if (models.isEmpty) {
-      primaryText = l10n.providerSettingsNoModels;
-    } else if (selected != null) {
-      primaryText = selected.label;
-    } else if (currentId != null) {
-      primaryText = currentId;
-    } else {
-      primaryText = l10n.providerSettingsSelectModel;
-    }
-    return InkWell(
-      key: ValueKey('model-selector-${widget.connection.id}'),
-      borderRadius: BorderRadius.circular(4),
-      onTap: enabled ? _chooseModel : null,
-      child: InputDecorator(
-        isEmpty: currentId == null,
-        decoration: InputDecoration(
-          labelText: l10n.providerSettingsDefaultModel,
-          enabled: enabled,
-          errorText: _error,
-        ),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    primaryText,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (selected != null && selected.id != selected.label)
-                    Text(
-                      selected.id,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  if (missing)
-                    Text(
-                      l10n.providerSettingsModelMissing,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (_saving)
-              SizedBox.square(
-                key: ValueKey(
-                  'model-selector-saving-${widget.connection.id}',
-                ),
-                dimension: 20,
-                child: const CircularProgressIndicator(strokeWidth: 2),
-              )
-            else if (models == null)
-              const SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              const Icon(Icons.search),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _chooseModel() async {
-    final models = widget.models;
-    if (models == null || models.isEmpty || _saving) return;
-    final selected = await showModelPicker(
-      context,
-      connectionId: widget.connection.id,
-      models: models,
-      currentModelId: widget.connection.defaultModelId,
-    );
-    if (!mounted ||
-        selected == null ||
-        selected == widget.connection.defaultModelId) {
-      return;
-    }
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-    try {
-      await widget.onSelected(selected);
-    } on Exception catch (error) {
-      if (!mounted) return;
-      setState(() => _error = error.toString());
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
   }
 }
 

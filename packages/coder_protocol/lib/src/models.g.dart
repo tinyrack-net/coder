@@ -186,7 +186,7 @@ Map<String, dynamic> _$AgentModelSelectionDtoToJson(
 };
 
 const _$AgentModelSourceEnumMap = {
-  AgentModelSource.daemonDefault: 'daemonDefault',
+  AgentModelSource.session: 'session',
   AgentModelSource.fixed: 'fixed',
 };
 
@@ -625,10 +625,8 @@ _ProviderConnectionDto _$ProviderConnectionDtoFromJson(
     _$ProviderCredentialOriginEnumMap,
     json['credentialOrigin'],
   ),
-  isDefault: json['isDefault'] as bool,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
-  defaultModelId: json['defaultModelId'] as String?,
   error: json['error'] as String?,
   customConfig: json['customConfig'] == null
       ? null
@@ -647,10 +645,8 @@ Map<String, dynamic> _$ProviderConnectionDtoToJson(
   'authKind': _$ProviderAuthKindEnumMap[instance.authKind]!,
   'credentialOrigin':
       _$ProviderCredentialOriginEnumMap[instance.credentialOrigin]!,
-  'isDefault': instance.isDefault,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
-  'defaultModelId': instance.defaultModelId,
   'error': instance.error,
   'customConfig': instance.customConfig,
 };

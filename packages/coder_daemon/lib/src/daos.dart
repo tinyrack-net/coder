@@ -540,8 +540,6 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
         status: connection.status.name,
         authKind: connection.authKind.name,
         credentialOrigin: connection.credentialOrigin.name,
-        isDefault: Value<bool>(connection.isDefault),
-        defaultModelId: Value<String?>(connection.defaultModelId),
         error: Value<String?>(connection.error),
         customConfigJson: Value<String?>(
           connection.customConfig == null
@@ -566,20 +564,6 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
       )..where((row) => row.id.equals(id))).go();
     });
   }
-
-  @override
-  Future<void> setDefault(String id) => transaction(() async {
-    await update(providerConnections).write(
-      const ProviderConnectionsCompanion(isDefault: Value<bool>(false)),
-    );
-    await (update(
-      providerConnections,
-    )..where((row) => row.id.equals(id))).write(
-      const ProviderConnectionsCompanion(
-        isDefault: Value<bool>(true),
-      ),
-    );
-  });
 
   @override
   Future<List<ProviderModelDto>> listModels(String connectionId) async =>
@@ -665,8 +649,6 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
         credentialOrigin: ProviderCredentialOrigin.values.byName(
           row.credentialOrigin,
         ),
-        isDefault: row.isDefault,
-        defaultModelId: row.defaultModelId,
         error: row.error,
         customConfig: row.customConfigJson == null
             ? null

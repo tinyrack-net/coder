@@ -14,7 +14,7 @@ void main() {
     bool isArchived = false,
     bool isStale = false,
     AgentModelSelectionDto model = const AgentModelSelectionDto(
-      source: AgentModelSource.daemonDefault,
+      source: AgentModelSource.session,
     ),
   }) => AgentDefinitionDto(
     id: id,
@@ -37,8 +37,6 @@ void main() {
   ProviderConnectionDto connection({
     String id = 'openai',
     ProviderConnectionStatus status = ProviderConnectionStatus.connected,
-    bool isDefault = true,
-    String? defaultModelId = 'gpt-5.6-sol',
   }) => ProviderConnectionDto(
     id: id,
     definitionId: id,
@@ -46,8 +44,6 @@ void main() {
     status: status,
     authKind: ProviderAuthKind.apiKey,
     credentialOrigin: ProviderCredentialOrigin.stored,
-    isDefault: isDefault,
-    defaultModelId: defaultModelId,
     createdAt: now,
     updatedAt: now,
   );
@@ -103,22 +99,19 @@ void main() {
   );
 
   test(
-    'default selections resolve daemon defaults and fixed agent models',
+    'agent selections require a session choice or resolve a fixed model',
     () {
       final connections = <ProviderConnectionDto>[
         connection(),
-        connection(id: 'deepseek', isDefault: false, defaultModelId: null),
+        connection(id: 'deepseek'),
       ];
 
       expect(
-        defaultSelectionFor(definition(), connections),
-        const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
-        ),
+        agentSelectionFor(definition(), connections),
+        isNull,
       );
       expect(
-        defaultSelectionFor(
+        agentSelectionFor(
           definition(
             model: const AgentModelSelectionDto(
               source: AgentModelSource.fixed,
@@ -134,7 +127,7 @@ void main() {
         ),
       );
       expect(
-        defaultSelectionFor(
+        agentSelectionFor(
           definition(
             model: const AgentModelSelectionDto(
               source: AgentModelSource.fixed,
@@ -147,7 +140,7 @@ void main() {
         isNull,
       );
       expect(
-        defaultSelectionFor(
+        agentSelectionFor(
           definition(
             model: const AgentModelSelectionDto(
               source: AgentModelSource.fixed,
@@ -159,9 +152,7 @@ void main() {
         isNull,
       );
       expect(
-        defaultSelectionFor(definition(), <ProviderConnectionDto>[
-          connection(defaultModelId: null),
-        ]),
+        agentSelectionFor(definition(), <ProviderConnectionDto>[connection()]),
         isNull,
       );
     },

@@ -5748,7 +5748,7 @@ as String?,
 /// @nodoc
 mixin _$ProviderConnectApiKeyParamsDto {
 
- String get definitionId; String get apiKey; bool get makeDefault;
+ String get definitionId; String get apiKey;
 /// Create a copy of ProviderConnectApiKeyParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -5761,16 +5761,16 @@ $ProviderConnectApiKeyParamsDtoCopyWith<ProviderConnectApiKeyParamsDto> get copy
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderConnectApiKeyParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey)&&(identical(other.makeDefault, makeDefault) || other.makeDefault == makeDefault));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderConnectApiKeyParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,definitionId,apiKey,makeDefault);
+int get hashCode => Object.hash(runtimeType,definitionId,apiKey);
 
 @override
 String toString() {
-  return 'ProviderConnectApiKeyParamsDto(definitionId: $definitionId, apiKey: $apiKey, makeDefault: $makeDefault)';
+  return 'ProviderConnectApiKeyParamsDto(definitionId: $definitionId, apiKey: $apiKey)';
 }
 
 
@@ -5781,7 +5781,7 @@ abstract mixin class $ProviderConnectApiKeyParamsDtoCopyWith<$Res>  {
   factory $ProviderConnectApiKeyParamsDtoCopyWith(ProviderConnectApiKeyParamsDto value, $Res Function(ProviderConnectApiKeyParamsDto) _then) = _$ProviderConnectApiKeyParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String definitionId, String apiKey, bool makeDefault
+ String definitionId, String apiKey
 });
 
 
@@ -5798,12 +5798,11 @@ class _$ProviderConnectApiKeyParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderConnectApiKeyParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? definitionId = null,Object? apiKey = null,Object? makeDefault = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? definitionId = null,Object? apiKey = null,}) {
   return _then(_self.copyWith(
 definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
 as String,apiKey: null == apiKey ? _self.apiKey : apiKey // ignore: cast_nullable_to_non_nullable
-as String,makeDefault: null == makeDefault ? _self.makeDefault : makeDefault // ignore: cast_nullable_to_non_nullable
-as bool,
+as String,
   ));
 }
 
@@ -5888,10 +5887,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String definitionId,  String apiKey,  bool makeDefault)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String definitionId,  String apiKey)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderConnectApiKeyParamsDto() when $default != null:
-return $default(_that.definitionId,_that.apiKey,_that.makeDefault);case _:
+return $default(_that.definitionId,_that.apiKey);case _:
   return orElse();
 
 }
@@ -5909,10 +5908,10 @@ return $default(_that.definitionId,_that.apiKey,_that.makeDefault);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String definitionId,  String apiKey,  bool makeDefault)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String definitionId,  String apiKey)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderConnectApiKeyParamsDto():
-return $default(_that.definitionId,_that.apiKey,_that.makeDefault);case _:
+return $default(_that.definitionId,_that.apiKey);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -5929,10 +5928,10 @@ return $default(_that.definitionId,_that.apiKey,_that.makeDefault);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String definitionId,  String apiKey,  bool makeDefault)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String definitionId,  String apiKey)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderConnectApiKeyParamsDto() when $default != null:
-return $default(_that.definitionId,_that.apiKey,_that.makeDefault);case _:
+return $default(_that.definitionId,_that.apiKey);case _:
   return null;
 
 }
@@ -5944,12 +5943,11 @@ return $default(_that.definitionId,_that.apiKey,_that.makeDefault);case _:
 @JsonSerializable()
 
 class _ProviderConnectApiKeyParamsDto implements ProviderConnectApiKeyParamsDto {
-  const _ProviderConnectApiKeyParamsDto({required this.definitionId, required this.apiKey, required this.makeDefault});
+  const _ProviderConnectApiKeyParamsDto({required this.definitionId, required this.apiKey});
   factory _ProviderConnectApiKeyParamsDto.fromJson(Map<String, dynamic> json) => _$ProviderConnectApiKeyParamsDtoFromJson(json);
 
 @override final  String definitionId;
 @override final  String apiKey;
-@override final  bool makeDefault;
 
 /// Create a copy of ProviderConnectApiKeyParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -5964,16 +5962,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderConnectApiKeyParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey)&&(identical(other.makeDefault, makeDefault) || other.makeDefault == makeDefault));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderConnectApiKeyParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,definitionId,apiKey,makeDefault);
+int get hashCode => Object.hash(runtimeType,definitionId,apiKey);
 
 @override
 String toString() {
-  return 'ProviderConnectApiKeyParamsDto(definitionId: $definitionId, apiKey: $apiKey, makeDefault: $makeDefault)';
+  return 'ProviderConnectApiKeyParamsDto(definitionId: $definitionId, apiKey: $apiKey)';
 }
 
 
@@ -5984,7 +5982,7 @@ abstract mixin class _$ProviderConnectApiKeyParamsDtoCopyWith<$Res> implements $
   factory _$ProviderConnectApiKeyParamsDtoCopyWith(_ProviderConnectApiKeyParamsDto value, $Res Function(_ProviderConnectApiKeyParamsDto) _then) = __$ProviderConnectApiKeyParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String definitionId, String apiKey, bool makeDefault
+ String definitionId, String apiKey
 });
 
 
@@ -6001,12 +5999,11 @@ class __$ProviderConnectApiKeyParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderConnectApiKeyParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? definitionId = null,Object? apiKey = null,Object? makeDefault = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? definitionId = null,Object? apiKey = null,}) {
   return _then(_ProviderConnectApiKeyParamsDto(
 definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
 as String,apiKey: null == apiKey ? _self.apiKey : apiKey // ignore: cast_nullable_to_non_nullable
-as String,makeDefault: null == makeDefault ? _self.makeDefault : makeDefault // ignore: cast_nullable_to_non_nullable
-as bool,
+as String,
   ));
 }
 
@@ -6017,7 +6014,7 @@ as bool,
 /// @nodoc
 mixin _$ProviderConnectNoneParamsDto {
 
- String get definitionId; bool get makeDefault;
+ String get definitionId;
 /// Create a copy of ProviderConnectNoneParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -6030,16 +6027,16 @@ $ProviderConnectNoneParamsDtoCopyWith<ProviderConnectNoneParamsDto> get copyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderConnectNoneParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.makeDefault, makeDefault) || other.makeDefault == makeDefault));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderConnectNoneParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,definitionId,makeDefault);
+int get hashCode => Object.hash(runtimeType,definitionId);
 
 @override
 String toString() {
-  return 'ProviderConnectNoneParamsDto(definitionId: $definitionId, makeDefault: $makeDefault)';
+  return 'ProviderConnectNoneParamsDto(definitionId: $definitionId)';
 }
 
 
@@ -6050,7 +6047,7 @@ abstract mixin class $ProviderConnectNoneParamsDtoCopyWith<$Res>  {
   factory $ProviderConnectNoneParamsDtoCopyWith(ProviderConnectNoneParamsDto value, $Res Function(ProviderConnectNoneParamsDto) _then) = _$ProviderConnectNoneParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String definitionId, bool makeDefault
+ String definitionId
 });
 
 
@@ -6067,11 +6064,10 @@ class _$ProviderConnectNoneParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderConnectNoneParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? definitionId = null,Object? makeDefault = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? definitionId = null,}) {
   return _then(_self.copyWith(
 definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
-as String,makeDefault: null == makeDefault ? _self.makeDefault : makeDefault // ignore: cast_nullable_to_non_nullable
-as bool,
+as String,
   ));
 }
 
@@ -6156,10 +6152,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String definitionId,  bool makeDefault)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String definitionId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderConnectNoneParamsDto() when $default != null:
-return $default(_that.definitionId,_that.makeDefault);case _:
+return $default(_that.definitionId);case _:
   return orElse();
 
 }
@@ -6177,10 +6173,10 @@ return $default(_that.definitionId,_that.makeDefault);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String definitionId,  bool makeDefault)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String definitionId)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderConnectNoneParamsDto():
-return $default(_that.definitionId,_that.makeDefault);case _:
+return $default(_that.definitionId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -6197,10 +6193,10 @@ return $default(_that.definitionId,_that.makeDefault);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String definitionId,  bool makeDefault)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String definitionId)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderConnectNoneParamsDto() when $default != null:
-return $default(_that.definitionId,_that.makeDefault);case _:
+return $default(_that.definitionId);case _:
   return null;
 
 }
@@ -6212,11 +6208,10 @@ return $default(_that.definitionId,_that.makeDefault);case _:
 @JsonSerializable()
 
 class _ProviderConnectNoneParamsDto implements ProviderConnectNoneParamsDto {
-  const _ProviderConnectNoneParamsDto({required this.definitionId, required this.makeDefault});
+  const _ProviderConnectNoneParamsDto({required this.definitionId});
   factory _ProviderConnectNoneParamsDto.fromJson(Map<String, dynamic> json) => _$ProviderConnectNoneParamsDtoFromJson(json);
 
 @override final  String definitionId;
-@override final  bool makeDefault;
 
 /// Create a copy of ProviderConnectNoneParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -6231,16 +6226,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderConnectNoneParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.makeDefault, makeDefault) || other.makeDefault == makeDefault));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderConnectNoneParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,definitionId,makeDefault);
+int get hashCode => Object.hash(runtimeType,definitionId);
 
 @override
 String toString() {
-  return 'ProviderConnectNoneParamsDto(definitionId: $definitionId, makeDefault: $makeDefault)';
+  return 'ProviderConnectNoneParamsDto(definitionId: $definitionId)';
 }
 
 
@@ -6251,7 +6246,7 @@ abstract mixin class _$ProviderConnectNoneParamsDtoCopyWith<$Res> implements $Pr
   factory _$ProviderConnectNoneParamsDtoCopyWith(_ProviderConnectNoneParamsDto value, $Res Function(_ProviderConnectNoneParamsDto) _then) = __$ProviderConnectNoneParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String definitionId, bool makeDefault
+ String definitionId
 });
 
 
@@ -6268,11 +6263,10 @@ class __$ProviderConnectNoneParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderConnectNoneParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? definitionId = null,Object? makeDefault = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? definitionId = null,}) {
   return _then(_ProviderConnectNoneParamsDto(
 definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
-as String,makeDefault: null == makeDefault ? _self.makeDefault : makeDefault // ignore: cast_nullable_to_non_nullable
-as bool,
+as String,
   ));
 }
 
@@ -6812,7 +6806,7 @@ as String,
 /// @nodoc
 mixin _$ProviderAuthStartParamsDto {
 
- String get definitionId; String get methodId; bool get makeDefault;
+ String get definitionId; String get methodId;
 /// Create a copy of ProviderAuthStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -6825,16 +6819,16 @@ $ProviderAuthStartParamsDtoCopyWith<ProviderAuthStartParamsDto> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderAuthStartParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.methodId, methodId) || other.methodId == methodId)&&(identical(other.makeDefault, makeDefault) || other.makeDefault == makeDefault));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderAuthStartParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.methodId, methodId) || other.methodId == methodId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,definitionId,methodId,makeDefault);
+int get hashCode => Object.hash(runtimeType,definitionId,methodId);
 
 @override
 String toString() {
-  return 'ProviderAuthStartParamsDto(definitionId: $definitionId, methodId: $methodId, makeDefault: $makeDefault)';
+  return 'ProviderAuthStartParamsDto(definitionId: $definitionId, methodId: $methodId)';
 }
 
 
@@ -6845,7 +6839,7 @@ abstract mixin class $ProviderAuthStartParamsDtoCopyWith<$Res>  {
   factory $ProviderAuthStartParamsDtoCopyWith(ProviderAuthStartParamsDto value, $Res Function(ProviderAuthStartParamsDto) _then) = _$ProviderAuthStartParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String definitionId, String methodId, bool makeDefault
+ String definitionId, String methodId
 });
 
 
@@ -6862,12 +6856,11 @@ class _$ProviderAuthStartParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderAuthStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? definitionId = null,Object? methodId = null,Object? makeDefault = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? definitionId = null,Object? methodId = null,}) {
   return _then(_self.copyWith(
 definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
 as String,methodId: null == methodId ? _self.methodId : methodId // ignore: cast_nullable_to_non_nullable
-as String,makeDefault: null == makeDefault ? _self.makeDefault : makeDefault // ignore: cast_nullable_to_non_nullable
-as bool,
+as String,
   ));
 }
 
@@ -6952,10 +6945,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String definitionId,  String methodId,  bool makeDefault)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String definitionId,  String methodId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderAuthStartParamsDto() when $default != null:
-return $default(_that.definitionId,_that.methodId,_that.makeDefault);case _:
+return $default(_that.definitionId,_that.methodId);case _:
   return orElse();
 
 }
@@ -6973,10 +6966,10 @@ return $default(_that.definitionId,_that.methodId,_that.makeDefault);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String definitionId,  String methodId,  bool makeDefault)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String definitionId,  String methodId)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderAuthStartParamsDto():
-return $default(_that.definitionId,_that.methodId,_that.makeDefault);case _:
+return $default(_that.definitionId,_that.methodId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -6993,10 +6986,10 @@ return $default(_that.definitionId,_that.methodId,_that.makeDefault);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String definitionId,  String methodId,  bool makeDefault)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String definitionId,  String methodId)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderAuthStartParamsDto() when $default != null:
-return $default(_that.definitionId,_that.methodId,_that.makeDefault);case _:
+return $default(_that.definitionId,_that.methodId);case _:
   return null;
 
 }
@@ -7008,12 +7001,11 @@ return $default(_that.definitionId,_that.methodId,_that.makeDefault);case _:
 @JsonSerializable()
 
 class _ProviderAuthStartParamsDto implements ProviderAuthStartParamsDto {
-  const _ProviderAuthStartParamsDto({required this.definitionId, required this.methodId, required this.makeDefault});
+  const _ProviderAuthStartParamsDto({required this.definitionId, required this.methodId});
   factory _ProviderAuthStartParamsDto.fromJson(Map<String, dynamic> json) => _$ProviderAuthStartParamsDtoFromJson(json);
 
 @override final  String definitionId;
 @override final  String methodId;
-@override final  bool makeDefault;
 
 /// Create a copy of ProviderAuthStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -7028,16 +7020,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderAuthStartParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.methodId, methodId) || other.methodId == methodId)&&(identical(other.makeDefault, makeDefault) || other.makeDefault == makeDefault));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderAuthStartParamsDto&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.methodId, methodId) || other.methodId == methodId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,definitionId,methodId,makeDefault);
+int get hashCode => Object.hash(runtimeType,definitionId,methodId);
 
 @override
 String toString() {
-  return 'ProviderAuthStartParamsDto(definitionId: $definitionId, methodId: $methodId, makeDefault: $makeDefault)';
+  return 'ProviderAuthStartParamsDto(definitionId: $definitionId, methodId: $methodId)';
 }
 
 
@@ -7048,7 +7040,7 @@ abstract mixin class _$ProviderAuthStartParamsDtoCopyWith<$Res> implements $Prov
   factory _$ProviderAuthStartParamsDtoCopyWith(_ProviderAuthStartParamsDto value, $Res Function(_ProviderAuthStartParamsDto) _then) = __$ProviderAuthStartParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String definitionId, String methodId, bool makeDefault
+ String definitionId, String methodId
 });
 
 
@@ -7065,12 +7057,11 @@ class __$ProviderAuthStartParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderAuthStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? definitionId = null,Object? methodId = null,Object? makeDefault = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? definitionId = null,Object? methodId = null,}) {
   return _then(_ProviderAuthStartParamsDto(
 definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
 as String,methodId: null == methodId ? _self.methodId : methodId // ignore: cast_nullable_to_non_nullable
-as String,makeDefault: null == makeDefault ? _self.makeDefault : makeDefault // ignore: cast_nullable_to_non_nullable
-as bool,
+as String,
   ));
 }
 
@@ -7342,538 +7333,9 @@ as String,
 
 
 /// @nodoc
-mixin _$ProviderDefaultSetParamsDto {
-
- String get connectionId;
-/// Create a copy of ProviderDefaultSetParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$ProviderDefaultSetParamsDtoCopyWith<ProviderDefaultSetParamsDto> get copyWith => _$ProviderDefaultSetParamsDtoCopyWithImpl<ProviderDefaultSetParamsDto>(this as ProviderDefaultSetParamsDto, _$identity);
-
-  /// Serializes this ProviderDefaultSetParamsDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderDefaultSetParamsDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,connectionId);
-
-@override
-String toString() {
-  return 'ProviderDefaultSetParamsDto(connectionId: $connectionId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $ProviderDefaultSetParamsDtoCopyWith<$Res>  {
-  factory $ProviderDefaultSetParamsDtoCopyWith(ProviderDefaultSetParamsDto value, $Res Function(ProviderDefaultSetParamsDto) _then) = _$ProviderDefaultSetParamsDtoCopyWithImpl;
-@useResult
-$Res call({
- String connectionId
-});
-
-
-
-
-}
-/// @nodoc
-class _$ProviderDefaultSetParamsDtoCopyWithImpl<$Res>
-    implements $ProviderDefaultSetParamsDtoCopyWith<$Res> {
-  _$ProviderDefaultSetParamsDtoCopyWithImpl(this._self, this._then);
-
-  final ProviderDefaultSetParamsDto _self;
-  final $Res Function(ProviderDefaultSetParamsDto) _then;
-
-/// Create a copy of ProviderDefaultSetParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? connectionId = null,}) {
-  return _then(_self.copyWith(
-connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [ProviderDefaultSetParamsDto].
-extension ProviderDefaultSetParamsDtoPatterns on ProviderDefaultSetParamsDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProviderDefaultSetParamsDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _ProviderDefaultSetParamsDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProviderDefaultSetParamsDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _ProviderDefaultSetParamsDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProviderDefaultSetParamsDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _ProviderDefaultSetParamsDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String connectionId)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _ProviderDefaultSetParamsDto() when $default != null:
-return $default(_that.connectionId);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String connectionId)  $default,) {final _that = this;
-switch (_that) {
-case _ProviderDefaultSetParamsDto():
-return $default(_that.connectionId);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String connectionId)?  $default,) {final _that = this;
-switch (_that) {
-case _ProviderDefaultSetParamsDto() when $default != null:
-return $default(_that.connectionId);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _ProviderDefaultSetParamsDto implements ProviderDefaultSetParamsDto {
-  const _ProviderDefaultSetParamsDto({required this.connectionId});
-  factory _ProviderDefaultSetParamsDto.fromJson(Map<String, dynamic> json) => _$ProviderDefaultSetParamsDtoFromJson(json);
-
-@override final  String connectionId;
-
-/// Create a copy of ProviderDefaultSetParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$ProviderDefaultSetParamsDtoCopyWith<_ProviderDefaultSetParamsDto> get copyWith => __$ProviderDefaultSetParamsDtoCopyWithImpl<_ProviderDefaultSetParamsDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$ProviderDefaultSetParamsDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderDefaultSetParamsDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,connectionId);
-
-@override
-String toString() {
-  return 'ProviderDefaultSetParamsDto(connectionId: $connectionId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$ProviderDefaultSetParamsDtoCopyWith<$Res> implements $ProviderDefaultSetParamsDtoCopyWith<$Res> {
-  factory _$ProviderDefaultSetParamsDtoCopyWith(_ProviderDefaultSetParamsDto value, $Res Function(_ProviderDefaultSetParamsDto) _then) = __$ProviderDefaultSetParamsDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String connectionId
-});
-
-
-
-
-}
-/// @nodoc
-class __$ProviderDefaultSetParamsDtoCopyWithImpl<$Res>
-    implements _$ProviderDefaultSetParamsDtoCopyWith<$Res> {
-  __$ProviderDefaultSetParamsDtoCopyWithImpl(this._self, this._then);
-
-  final _ProviderDefaultSetParamsDto _self;
-  final $Res Function(_ProviderDefaultSetParamsDto) _then;
-
-/// Create a copy of ProviderDefaultSetParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? connectionId = null,}) {
-  return _then(_ProviderDefaultSetParamsDto(
-connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-
-}
-
-
-/// @nodoc
-mixin _$ProviderDefaultModelSetParamsDto {
-
- String get connectionId; String get modelId;
-/// Create a copy of ProviderDefaultModelSetParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$ProviderDefaultModelSetParamsDtoCopyWith<ProviderDefaultModelSetParamsDto> get copyWith => _$ProviderDefaultModelSetParamsDtoCopyWithImpl<ProviderDefaultModelSetParamsDto>(this as ProviderDefaultModelSetParamsDto, _$identity);
-
-  /// Serializes this ProviderDefaultModelSetParamsDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderDefaultModelSetParamsDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.modelId, modelId) || other.modelId == modelId));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,connectionId,modelId);
-
-@override
-String toString() {
-  return 'ProviderDefaultModelSetParamsDto(connectionId: $connectionId, modelId: $modelId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $ProviderDefaultModelSetParamsDtoCopyWith<$Res>  {
-  factory $ProviderDefaultModelSetParamsDtoCopyWith(ProviderDefaultModelSetParamsDto value, $Res Function(ProviderDefaultModelSetParamsDto) _then) = _$ProviderDefaultModelSetParamsDtoCopyWithImpl;
-@useResult
-$Res call({
- String connectionId, String modelId
-});
-
-
-
-
-}
-/// @nodoc
-class _$ProviderDefaultModelSetParamsDtoCopyWithImpl<$Res>
-    implements $ProviderDefaultModelSetParamsDtoCopyWith<$Res> {
-  _$ProviderDefaultModelSetParamsDtoCopyWithImpl(this._self, this._then);
-
-  final ProviderDefaultModelSetParamsDto _self;
-  final $Res Function(ProviderDefaultModelSetParamsDto) _then;
-
-/// Create a copy of ProviderDefaultModelSetParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? connectionId = null,Object? modelId = null,}) {
-  return _then(_self.copyWith(
-connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
-as String,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [ProviderDefaultModelSetParamsDto].
-extension ProviderDefaultModelSetParamsDtoPatterns on ProviderDefaultModelSetParamsDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProviderDefaultModelSetParamsDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _ProviderDefaultModelSetParamsDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProviderDefaultModelSetParamsDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _ProviderDefaultModelSetParamsDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProviderDefaultModelSetParamsDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _ProviderDefaultModelSetParamsDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String connectionId,  String modelId)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _ProviderDefaultModelSetParamsDto() when $default != null:
-return $default(_that.connectionId,_that.modelId);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String connectionId,  String modelId)  $default,) {final _that = this;
-switch (_that) {
-case _ProviderDefaultModelSetParamsDto():
-return $default(_that.connectionId,_that.modelId);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String connectionId,  String modelId)?  $default,) {final _that = this;
-switch (_that) {
-case _ProviderDefaultModelSetParamsDto() when $default != null:
-return $default(_that.connectionId,_that.modelId);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _ProviderDefaultModelSetParamsDto implements ProviderDefaultModelSetParamsDto {
-  const _ProviderDefaultModelSetParamsDto({required this.connectionId, required this.modelId});
-  factory _ProviderDefaultModelSetParamsDto.fromJson(Map<String, dynamic> json) => _$ProviderDefaultModelSetParamsDtoFromJson(json);
-
-@override final  String connectionId;
-@override final  String modelId;
-
-/// Create a copy of ProviderDefaultModelSetParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$ProviderDefaultModelSetParamsDtoCopyWith<_ProviderDefaultModelSetParamsDto> get copyWith => __$ProviderDefaultModelSetParamsDtoCopyWithImpl<_ProviderDefaultModelSetParamsDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$ProviderDefaultModelSetParamsDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderDefaultModelSetParamsDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.modelId, modelId) || other.modelId == modelId));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,connectionId,modelId);
-
-@override
-String toString() {
-  return 'ProviderDefaultModelSetParamsDto(connectionId: $connectionId, modelId: $modelId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$ProviderDefaultModelSetParamsDtoCopyWith<$Res> implements $ProviderDefaultModelSetParamsDtoCopyWith<$Res> {
-  factory _$ProviderDefaultModelSetParamsDtoCopyWith(_ProviderDefaultModelSetParamsDto value, $Res Function(_ProviderDefaultModelSetParamsDto) _then) = __$ProviderDefaultModelSetParamsDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String connectionId, String modelId
-});
-
-
-
-
-}
-/// @nodoc
-class __$ProviderDefaultModelSetParamsDtoCopyWithImpl<$Res>
-    implements _$ProviderDefaultModelSetParamsDtoCopyWith<$Res> {
-  __$ProviderDefaultModelSetParamsDtoCopyWithImpl(this._self, this._then);
-
-  final _ProviderDefaultModelSetParamsDto _self;
-  final $Res Function(_ProviderDefaultModelSetParamsDto) _then;
-
-/// Create a copy of ProviderDefaultModelSetParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? connectionId = null,Object? modelId = null,}) {
-  return _then(_ProviderDefaultModelSetParamsDto(
-connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
-as String,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-
-}
-
-
-/// @nodoc
 mixin _$ProviderCustomCreateParamsDto {
 
- String get id; CustomProviderConfigDto get config; bool get makeDefault; String? get apiKey;
+ String get id; CustomProviderConfigDto get config; String? get apiKey;
 /// Create a copy of ProviderCustomCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -7886,16 +7348,16 @@ $ProviderCustomCreateParamsDtoCopyWith<ProviderCustomCreateParamsDto> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderCustomCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.config, config) || other.config == config)&&(identical(other.makeDefault, makeDefault) || other.makeDefault == makeDefault)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderCustomCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.config, config) || other.config == config)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,config,makeDefault,apiKey);
+int get hashCode => Object.hash(runtimeType,id,config,apiKey);
 
 @override
 String toString() {
-  return 'ProviderCustomCreateParamsDto(id: $id, config: $config, makeDefault: $makeDefault, apiKey: $apiKey)';
+  return 'ProviderCustomCreateParamsDto(id: $id, config: $config, apiKey: $apiKey)';
 }
 
 
@@ -7906,7 +7368,7 @@ abstract mixin class $ProviderCustomCreateParamsDtoCopyWith<$Res>  {
   factory $ProviderCustomCreateParamsDtoCopyWith(ProviderCustomCreateParamsDto value, $Res Function(ProviderCustomCreateParamsDto) _then) = _$ProviderCustomCreateParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, CustomProviderConfigDto config, bool makeDefault, String? apiKey
+ String id, CustomProviderConfigDto config, String? apiKey
 });
 
 
@@ -7923,12 +7385,11 @@ class _$ProviderCustomCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderCustomCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? config = null,Object? makeDefault = null,Object? apiKey = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? config = null,Object? apiKey = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
-as CustomProviderConfigDto,makeDefault: null == makeDefault ? _self.makeDefault : makeDefault // ignore: cast_nullable_to_non_nullable
-as bool,apiKey: freezed == apiKey ? _self.apiKey : apiKey // ignore: cast_nullable_to_non_nullable
+as CustomProviderConfigDto,apiKey: freezed == apiKey ? _self.apiKey : apiKey // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -8023,10 +7484,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  CustomProviderConfigDto config,  bool makeDefault,  String? apiKey)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  CustomProviderConfigDto config,  String? apiKey)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderCustomCreateParamsDto() when $default != null:
-return $default(_that.id,_that.config,_that.makeDefault,_that.apiKey);case _:
+return $default(_that.id,_that.config,_that.apiKey);case _:
   return orElse();
 
 }
@@ -8044,10 +7505,10 @@ return $default(_that.id,_that.config,_that.makeDefault,_that.apiKey);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  CustomProviderConfigDto config,  bool makeDefault,  String? apiKey)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  CustomProviderConfigDto config,  String? apiKey)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderCustomCreateParamsDto():
-return $default(_that.id,_that.config,_that.makeDefault,_that.apiKey);case _:
+return $default(_that.id,_that.config,_that.apiKey);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -8064,10 +7525,10 @@ return $default(_that.id,_that.config,_that.makeDefault,_that.apiKey);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  CustomProviderConfigDto config,  bool makeDefault,  String? apiKey)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  CustomProviderConfigDto config,  String? apiKey)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderCustomCreateParamsDto() when $default != null:
-return $default(_that.id,_that.config,_that.makeDefault,_that.apiKey);case _:
+return $default(_that.id,_that.config,_that.apiKey);case _:
   return null;
 
 }
@@ -8079,12 +7540,11 @@ return $default(_that.id,_that.config,_that.makeDefault,_that.apiKey);case _:
 @JsonSerializable()
 
 class _ProviderCustomCreateParamsDto implements ProviderCustomCreateParamsDto {
-  const _ProviderCustomCreateParamsDto({required this.id, required this.config, required this.makeDefault, this.apiKey});
+  const _ProviderCustomCreateParamsDto({required this.id, required this.config, this.apiKey});
   factory _ProviderCustomCreateParamsDto.fromJson(Map<String, dynamic> json) => _$ProviderCustomCreateParamsDtoFromJson(json);
 
 @override final  String id;
 @override final  CustomProviderConfigDto config;
-@override final  bool makeDefault;
 @override final  String? apiKey;
 
 /// Create a copy of ProviderCustomCreateParamsDto
@@ -8100,16 +7560,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderCustomCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.config, config) || other.config == config)&&(identical(other.makeDefault, makeDefault) || other.makeDefault == makeDefault)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderCustomCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.config, config) || other.config == config)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,config,makeDefault,apiKey);
+int get hashCode => Object.hash(runtimeType,id,config,apiKey);
 
 @override
 String toString() {
-  return 'ProviderCustomCreateParamsDto(id: $id, config: $config, makeDefault: $makeDefault, apiKey: $apiKey)';
+  return 'ProviderCustomCreateParamsDto(id: $id, config: $config, apiKey: $apiKey)';
 }
 
 
@@ -8120,7 +7580,7 @@ abstract mixin class _$ProviderCustomCreateParamsDtoCopyWith<$Res> implements $P
   factory _$ProviderCustomCreateParamsDtoCopyWith(_ProviderCustomCreateParamsDto value, $Res Function(_ProviderCustomCreateParamsDto) _then) = __$ProviderCustomCreateParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, CustomProviderConfigDto config, bool makeDefault, String? apiKey
+ String id, CustomProviderConfigDto config, String? apiKey
 });
 
 
@@ -8137,12 +7597,11 @@ class __$ProviderCustomCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderCustomCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? config = null,Object? makeDefault = null,Object? apiKey = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? config = null,Object? apiKey = freezed,}) {
   return _then(_ProviderCustomCreateParamsDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
-as CustomProviderConfigDto,makeDefault: null == makeDefault ? _self.makeDefault : makeDefault // ignore: cast_nullable_to_non_nullable
-as bool,apiKey: freezed == apiKey ? _self.apiKey : apiKey // ignore: cast_nullable_to_non_nullable
+as CustomProviderConfigDto,apiKey: freezed == apiKey ? _self.apiKey : apiKey // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
