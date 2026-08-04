@@ -1,4 +1,5 @@
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -9,9 +10,9 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
-
 import 'support/localization.dart';
 
 void main() {
@@ -67,7 +68,7 @@ void main() {
       expect(_field('Base URL'), findsNothing);
       expect(find.text('API 형식'), findsNothing);
       await tester.enterText(_field('API key'), 'deepseek-secret');
-      await tester.tap(find.widgetWithText(FilledButton, '연결'));
+      await tester.tap(find.widgetWithText(TRButton, '연결'));
       await tester.pumpAndSettle();
 
       expect(api.credentials['deepseek'], 'deepseek-secret');
@@ -103,7 +104,7 @@ void main() {
       expect(find.textContaining('auth.example'), findsOneWidget);
       expect(opener.opened.single.host, 'auth.example');
 
-      await tester.tap(find.widgetWithText(TextButton, '취소'));
+      await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pump();
       expect(api.cancelledAuthAttempts, <String>['attempt']);
     },
@@ -133,7 +134,7 @@ void main() {
       await tester.tap(find.text('API key'));
       await tester.pumpAndSettle();
       await tester.enterText(_field('API key'), 'openai-secret');
-      await tester.tap(find.widgetWithText(FilledButton, '연결'));
+      await tester.tap(find.widgetWithText(TRButton, '연결'));
       await tester.pumpAndSettle();
       expect(api.credentials['openai'], 'openai-secret');
 
@@ -144,7 +145,7 @@ void main() {
       );
       expect(ollama.credentialOrigin, ProviderCredentialOrigin.none);
 
-      await tester.tap(find.byTooltip('Catalog 갱신'));
+      await tester.tap(findAccessibleAction('Catalog 갱신'));
       await tester.pumpAndSettle();
       expect(
         (await api.listProviderCatalog()).source,
@@ -176,11 +177,11 @@ void main() {
       await tester.enterText(_field('이름'), 'Lab');
       await tester.enterText(_field('Base URL'), 'http://127.0.0.1:9000/v1');
       await tester.enterText(_field('API key'), 'secret');
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(find.text('Model 자동 조회 실패'), findsOneWidget);
       await tester.enterText(_field('수동 model ID'), 'lab-model');
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
       final custom = (await api.listProviderConnections()).singleWhere(
@@ -242,13 +243,13 @@ void main() {
 
     expect(find.text('제한된 연결 · Environment credential'), findsOneWidget);
     expect(find.text('model discovery unavailable'), findsOneWidget);
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(findAccessibleAction('연결 작업'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('고급 설정 편집'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.byType(TRSwitch));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.tap(find.widgetWithText(TRButton, '저장'));
     await tester.pumpAndSettle();
     expect(
       (await api.listProviderConnections())
@@ -258,22 +259,22 @@ void main() {
       isFalse,
     );
 
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(findAccessibleAction('연결 작업'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('연결 해제'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, '취소'));
+    await tester.tap(find.widgetWithText(TRButton, '취소'));
     await tester.pumpAndSettle();
     expect(
       (await api.listProviderConnections()).single.status,
       isNot(ProviderConnectionStatus.disconnected),
     );
 
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(findAccessibleAction('연결 작업'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('연결 해제'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, '연결 해제'));
+    await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
     await tester.pumpAndSettle();
     expect(find.text('연결된 Provider가 없습니다.'), findsOneWidget);
   });
@@ -339,7 +340,7 @@ void main() {
       expect(find.textContaining('조회만 할 수 있습니다'), findsNothing);
       expect(
         tester
-            .widget<ListTile>(
+            .widget<CoderListRow>(
               find.byKey(const ValueKey('provider-add-deepseek')),
             )
             .onTap,
@@ -372,11 +373,13 @@ void main() {
             ),
           ),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
+          theme: testLightTheme,
+          darkTheme: testDarkTheme,
           locale: testLocale,
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
-          home: SettingsPage(hostId: 'server'),
+          home: const SettingsPage(hostId: 'server'),
         ),
       ),
     );
@@ -423,8 +426,11 @@ const ProviderDefinitionDto _localDefinition = ProviderDefinitionDto(
   recommendedModelIds: <String>['qwen3-coder'],
 );
 
-Finder _field(String label) => find.byWidgetPredicate(
-  (widget) => widget is TextField && widget.decoration?.labelText == label,
+Finder _field(String label) => find.descendant(
+  of: find.byWidgetPredicate(
+    (widget) => widget is TRTextField && widget.label == label,
+  ),
+  matching: find.byType(EditableText),
 );
 
 Future<void> _pumpSettings(
@@ -445,11 +451,13 @@ Future<void> _pumpSettings(
           externalUrlOpener ?? _ExternalUrlOpener(),
         ),
       ],
-      child: const MaterialApp(
+      child: MaterialApp(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
-        home: SettingsPage(hostId: 'server'),
+        home: const SettingsPage(hostId: 'server'),
       ),
     ),
   );

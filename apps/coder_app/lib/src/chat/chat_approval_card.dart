@@ -9,6 +9,7 @@ import 'package:coder_app/src/controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Renders an actionable tool approval request.
 class ApprovalCard extends ConsumerWidget {
@@ -26,8 +27,9 @@ class ApprovalCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Card(
-        color: Theme.of(context).colorScheme.tertiaryContainer,
+      child: TRCard(
+        padding: TRCardPadding.none,
+        variant: TRCardVariant.elevated,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -43,12 +45,16 @@ class ApprovalCard extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
-                  TextButton(
+                  TRButton(
+                    appearance: TRAppearance.ghost,
+                    uiSize: TRUiSize.sm,
                     onPressed: () => _resolve(ref, approved: false),
                     child: Text(l10n.chatApprovalDeny),
                   ),
                   const SizedBox(width: 8),
-                  FilledButton(
+                  TRButton(
+                    intent: TRIntent.primary,
+                    uiSize: TRUiSize.sm,
                     onPressed: () => _resolve(ref, approved: true),
                     child: Text(l10n.chatApprovalAllow),
                   ),

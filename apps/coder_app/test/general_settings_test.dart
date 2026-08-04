@@ -1,5 +1,7 @@
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
@@ -19,7 +21,7 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -29,23 +31,19 @@ void main() {
       expect(find.text('설정'), findsOneWidget);
       expect(find.text('시스템 설정 따름'), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('general-settings-language')),
-      );
+      await tester.tap(_selectTrigger('general-settings-language'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('English').last);
       await tester.pumpAndSettle();
 
       expect(store.settings.localeTag, 'en');
       expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('Display language'), findsOneWidget);
+      expect(find.text('DISPLAY LANGUAGE'), findsOneWidget);
       expect(find.text('설정'), findsNothing);
 
       // Returning to the system default clears the stored tag rather than
       // storing the resolved locale, so the app follows the platform again.
-      await tester.tap(
-        find.byKey(const ValueKey<String>('general-settings-language')),
-      );
+      await tester.tap(_selectTrigger('general-settings-language'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('System default').last);
       await tester.pumpAndSettle();
@@ -68,7 +66,7 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
@@ -86,7 +84,7 @@ void main() {
       await tester.pumpWidget(_app(store, autostart: autostart));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -133,7 +131,7 @@ void main() {
       await tester.pumpWidget(_app(store, autostart: autostart));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -142,7 +140,7 @@ void main() {
       // chosen while there is no login launch to describe.
       expect(
         tester
-            .widget<SwitchListTile>(
+            .widget<CoderSwitchRow>(
               find.byKey(
                 const ValueKey<String>('general-settings-start-minimized'),
               ),
@@ -175,7 +173,7 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -189,6 +187,11 @@ void main() {
     tags: const <String>['feature_test__settings_startup__widget'],
   );
 }
+
+Finder _selectTrigger(String key) => find.descendant(
+  of: find.byKey(ValueKey<String>(key)),
+  matching: find.byType(TextButton),
+);
 
 Widget _app(MemoryAppStore store, {AutostartRegistration? autostart}) =>
     CoderApp(

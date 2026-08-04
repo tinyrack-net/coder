@@ -962,6 +962,12 @@ abstract class AppLocalizations {
   /// **'Edit advanced settings'**
   String get providerSettingsEditAdvanced;
 
+  /// No description provided for @providerSettingsActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection actions'**
+  String get providerSettingsActions;
+
   /// Heading of the provider catalog.
   ///
   /// In en, this message translates to:
@@ -1195,6 +1201,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type a coding request…'**
   String get composerInputHint;
+
+  /// Accessible label for the composer send button.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get composerSendLabel;
 
   /// Empty state of the chat timeline.
   ///

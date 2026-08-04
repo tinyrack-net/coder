@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
-import 'package:coder_app/src/composer_menu.dart';
+import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/model_picker.dart';
@@ -12,6 +12,7 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Agent, provider, and model selectors shown above the chat input.
 class SessionComposerBar extends ConsumerStatefulWidget {
@@ -104,7 +105,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         children: <Widget>[
           ComposerChip(
             valueKey: const ValueKey('session-composer-mode'),
-            icon: Icons.checklist_rtl,
+            icon: CoderIcons.checklist,
             label: planning ? l10n.composerPlan : l10n.composerRun,
             tooltip: planning
                 ? l10n.composerPlanTooltip
@@ -119,29 +120,49 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           const SizedBox(width: 8),
           ComposerChip(
             valueKey: const ValueKey('session-composer-agent'),
-            icon: Icons.smart_toy_outlined,
+            icon: CoderIcons.agent,
             label: agent?.name ?? 'Agent',
             tooltip: agentEnabled
                 ? l10n.composerSelectAgent
                 : l10n.composerAgentLocked,
-            onPressed: enabled && agentEnabled && definitions.isNotEmpty
-                ? _chooseAgent
+            menuChildren: enabled && agentEnabled && definitions.isNotEmpty
+                ? <Widget>[
+                    for (final definition in definitions)
+                      TRMenuItem(
+                        key: ValueKey(
+                          'session-composer-agent-${definition.id}',
+                        ),
+                        onPressed: () => widget.onAgentChanged(definition.id),
+                        child: Text(definition.name),
+                      ),
+                  ]
                 : null,
           ),
           const SizedBox(width: 8),
           ComposerChip(
             valueKey: const ValueKey('session-composer-provider'),
-            icon: Icons.cloud_outlined,
+            icon: CoderIcons.cloud,
             label: connection?.displayName ?? 'Provider',
             tooltip: l10n.composerSelectProvider,
-            onPressed: enabled && connections.isNotEmpty
-                ? (chipContext) => _chooseProvider(chipContext, connections)
+            menuChildren: enabled && connections.isNotEmpty
+                ? <Widget>[
+                    for (final connection in connections)
+                      TRMenuItem(
+                        key: ValueKey(
+                          'session-composer-provider-${connection.id}',
+                        ),
+                        onPressed: () => unawaited(
+                          _chooseModel(context, connection.id),
+                        ),
+                        child: Text(connection.displayName),
+                      ),
+                  ]
                 : null,
           ),
           const SizedBox(width: 8),
           ComposerChip(
             valueKey: const ValueKey('session-composer-model'),
-            icon: Icons.memory_outlined,
+            icon: CoderIcons.memory,
             label: modelLabel ?? selection?.modelId ?? l10n.composerModel,
             tooltip: l10n.composerSelectModel,
             onPressed: enabled && connection != null
@@ -163,40 +184,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     await ref
         .read(providerSettingsControllerProvider(widget.hostId).notifier)
         .loadModels(connectionId);
-  }
-
-  Future<void> _chooseAgent(BuildContext context) async {
-    final chosen = await showComposerMenu<String>(
-      context,
-      items: <PopupMenuEntry<String>>[
-        for (final definition in widget.definitions)
-          PopupMenuItem<String>(
-            key: ValueKey('session-composer-agent-${definition.id}'),
-            value: definition.id,
-            child: Text(definition.name),
-          ),
-      ],
-    );
-    if (chosen != null) widget.onAgentChanged(chosen);
-  }
-
-  Future<void> _chooseProvider(
-    BuildContext context,
-    List<ProviderConnectionDto> connections,
-  ) async {
-    final chosen = await showComposerMenu<String>(
-      context,
-      items: <PopupMenuEntry<String>>[
-        for (final connection in connections)
-          PopupMenuItem<String>(
-            key: ValueKey('session-composer-provider-${connection.id}'),
-            value: connection.id,
-            child: Text(connection.displayName),
-          ),
-      ],
-    );
-    if (chosen == null || !context.mounted) return;
-    await _chooseModel(context, chosen);
   }
 
   Future<void> _chooseModel(BuildContext context, String connectionId) async {
@@ -241,7 +228,8 @@ class ComposerChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.tooltip,
-    required this.onPressed,
+    this.menuChildren,
+    this.onPressed,
     this.selected = false,
     super.key,
   });
@@ -258,25 +246,48 @@ class ComposerChip extends StatelessWidget {
   /// Hover and long-press description.
   final String tooltip;
 
-  /// Tap handler receiving the chip's own context; null disables the chip.
+  /// Tap handler receiving the chip's own context.
   final void Function(BuildContext chipContext)? onPressed;
+
+  /// Anchored menu entries. When supplied, the chip is a [TRMenu] trigger.
+  final List<Widget>? menuChildren;
 
   /// Whether the chip renders as active.
   final bool selected;
 
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: tooltip,
-    child: ActionChip(
-      key: valueKey,
-      avatar: Icon(icon, size: 18),
-      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      backgroundColor: selected
-          ? Theme.of(context).colorScheme.primaryContainer
-          : null,
-      onPressed: onPressed == null ? null : () => onPressed!(context),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 18),
+        const SizedBox(width: TRSpacing.extraSmall),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+    final control = menuChildren == null
+        ? TRButton(
+            key: valueKey,
+            appearance: selected ? TRAppearance.solid : TRAppearance.outline,
+            intent: selected ? TRIntent.primary : TRIntent.neutral,
+            uiSize: TRUiSize.sm,
+            onPressed: onPressed == null ? null : () => onPressed!(context),
+            child: content,
+          )
+        : TRMenu(
+            key: valueKey,
+            enabled: menuChildren!.isNotEmpty,
+            trigger: content,
+            menuChildren: menuChildren!,
+          );
+    return TRTooltip(message: tooltip, child: control);
+  }
 }
 
 /// Composer shown when no session is selected; the first prompt creates one.
@@ -452,25 +463,26 @@ class _SessionComposerState extends State<SessionComposer> {
                 // Shift+Tab cycles the mode instead of moving focus.
                 child: Focus(
                   onKeyEvent: _handleKey,
-                  child: TextField(
+                  child: TRTextField(
+                    uiSize: TRUiSize.sm,
                     key: const ValueKey('session-composer-input'),
                     controller: _controller,
                     minLines: 1,
                     maxLines: 8,
                     enabled: widget.enabled,
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context).composerInputHint,
-                      border: const OutlineInputBorder(),
-                    ),
+                    placeholder: AppLocalizations.of(context).composerInputHint,
                     onSubmitted: widget.enabled ? (_) => _submit() : null,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton.filled(
+              TRIconButton(
                 key: const ValueKey('session-composer-send'),
+                intent: TRIntent.primary,
+                uiSize: TRUiSize.sm,
                 onPressed: widget.enabled ? _submit : null,
-                icon: const Icon(Icons.arrow_upward),
+                icon: const Icon(CoderIcons.send),
+                label: AppLocalizations.of(context).composerSendLabel,
               ),
             ],
           ),

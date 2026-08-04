@@ -11,6 +11,7 @@ import 'package:coder_app/src/desktop_title_bar.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -521,7 +522,102 @@ void main() {
       ),
     ),
   );
+
+  unawaited(
+    goldenTest(
+      'session composer exposes ready invalid and loading states',
+      fileName: 'composer_states',
+      constraints: const BoxConstraints.tightFor(width: 960, height: 780),
+      builder: () => GoldenTestGroup(
+        columns: 1,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'ready light',
+            child: SizedBox(
+              width: 900,
+              height: 200,
+              child: _composerState(ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'invalid light',
+            child: SizedBox(
+              width: 900,
+              height: 220,
+              child: _composerState(
+                ThemeMode.light,
+                enabled: false,
+                hint: '사용할 Provider와 모델을 먼저 선택하세요.',
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'loading dark',
+            child: SizedBox(
+              width: 900,
+              height: 200,
+              child: _composerState(ThemeMode.dark, enabled: false),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
+
+Widget _composerState(
+  ThemeMode mode, {
+  bool enabled = true,
+  String? hint,
+}) => ProviderScope(
+  overrides: [
+    appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+  ],
+  child: _material(
+    mode,
+    Align(
+      alignment: Alignment.bottomCenter,
+      child: SessionComposer(
+        enabled: enabled,
+        hint: hint,
+        onSubmit: (_) {},
+        bar: SessionComposerBar(
+          hostId: 'server',
+          definitions: const <AgentDefinitionDto>[
+            AgentDefinitionDto(
+              id: 'coder',
+              name: 'Coder',
+              description: 'General-purpose coding agent',
+              mode: AgentMode.primary,
+              promptEnabled: true,
+              systemPrompt: 'Code carefully.',
+              model: AgentModelSelectionDto(
+                source: AgentModelSource.session,
+              ),
+              reasoningEffort: 'medium',
+              permissionMode: PermissionMode.ask,
+              toolIds: <String>[],
+              callableAgentIds: <String>[],
+              contentHash: 'coder-hash',
+              sourcePath: '/config/agents/coder.md',
+              isBuiltIn: true,
+            ),
+          ],
+          agentDefinitionId: 'coder',
+          selection: const SessionModelSelectionDto(
+            providerConnectionId: 'openai',
+            modelId: 'gpt-5.6-sol',
+          ),
+          onAgentChanged: (_) {},
+          onModelChanged: (_) {},
+          mode: SessionMode.normal,
+          onModeChanged: (_) {},
+          enabled: enabled,
+        ),
+      ),
+    ),
+  ),
+);
 
 Widget _sessionComposer(ThemeMode mode) {
   final now = DateTime.utc(2026);
@@ -848,14 +944,12 @@ Widget _shell(ThemeMode mode, {bool collapsed = false}) {
 }
 
 Widget _material(ThemeMode mode, Widget child) => MaterialApp(
+  debugShowCheckedModeBanner: false,
   locale: testLocale,
   localizationsDelegates: testLocalizationsDelegates,
   supportedLocales: testSupportedLocales,
-  theme: ThemeData(colorSchemeSeed: const Color(0xff625bff)),
-  darkTheme: ThemeData(
-    brightness: Brightness.dark,
-    colorSchemeSeed: const Color(0xff948dff),
-  ),
+  theme: testLightTheme,
+  darkTheme: testDarkTheme,
   themeMode: mode,
   home: Scaffold(body: child),
 );

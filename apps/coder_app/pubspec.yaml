@@ -21,9 +21,11 @@ dependencies:
   go_router: ^17.3.0
   intl: any
   launch_at_startup: ^0.5.1
+  lucide_flutter: ^1.25.0
   meta: ^1.17.0
   riverpod_annotation: 4.0.3
   shared_preferences: ^2.5.4
+  tinyrack_ui: ^0.4.3
   tray_manager: ^0.5.3
   url_launcher: ^6.3.2
   uuid: ^4.6.0

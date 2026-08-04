@@ -1,9 +1,13 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Skill manager for one connected daemon, optionally scoped to a project.
 class SkillSettingsPage extends ConsumerStatefulWidget {
@@ -54,10 +58,10 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
           workspaceId: widget.workspaceId,
           onChanged: widget.onWorkspaceChanged,
         ),
-        const Divider(height: 1),
+        const TRSeparator(),
         Expanded(
           child: state.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
             error: (error, _) => _SkillSettingsError(
               error: error,
               onRetry: () => ref.invalidate(provider),
@@ -124,7 +128,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
   );
 
   Future<void> _create(List<SkillDto> skills) async {
-    final created = await showDialog<SkillDto>(
+    final created = await showTRDialog<SkillDto>(
       context: context,
       builder: (context) => _CreateSkillDialog(
         existingIds: skills.map((skill) => skill.id).toSet(),
@@ -175,23 +179,23 @@ class _ProjectSelector extends ConsumerWidget {
         .firstOrNull;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: DropdownButtonFormField<String?>(
+      child: TRSelectFormField<String?>(
         initialValue: selected?.id,
-        decoration: InputDecoration(
-          labelText: l10n.skillSettingsProject,
-          helperText: l10n.skillSettingsProjectHint,
-        ),
-        items: <DropdownMenuItem<String?>>[
-          DropdownMenuItem<String?>(
-            child: Text(l10n.skillSettingsProjectNone),
+        label: l10n.skillSettingsProject,
+        helperText: l10n.skillSettingsProjectHint,
+        uiSize: TRUiSize.sm,
+        items: <TRSelectItem<String?>>[
+          TRSelectItem<String?>(
+            value: null,
+            label: l10n.skillSettingsProjectNone,
           ),
           for (final workspace in workspaces)
-            DropdownMenuItem<String?>(
+            TRSelectItem<String?>(
               value: workspace.id,
-              child: Text(workspace.name),
+              label: workspace.name,
             ),
         ],
-        onChanged: onChanged,
+        onValueChange: onChanged,
       ),
     );
   }
@@ -219,36 +223,39 @@ class _SkillList extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        ListTile(
+        CoderListRow(
           title: Text(l10n.skillSettingsHeading),
           subtitle: Text(l10n.skillSettingsCount(skills.length)),
-          trailing: IconButton(
-            tooltip: l10n.skillSettingsAdd,
+          trailing: TRIconButton(
+            key: const ValueKey<String>('skill-add-button'),
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
+            label: l10n.skillSettingsAdd,
             onPressed: onCreate,
-            icon: const Icon(Icons.add),
+            icon: const Icon(CoderIcons.add),
           ),
         ),
-        const Divider(height: 1),
+        const TRSeparator(),
         Expanded(
           child: ListView(
             children: <Widget>[
               for (final skill in skills)
-                ListTile(
+                CoderListRow(
                   selected: skill.id == selectedId && !skill.isShadowed,
                   enabled: !skill.isShadowed,
                   title: Text(skill.name),
                   subtitle: Text(skillSourceLabel(l10n, skill.source)),
                   leading: skill.isShadowed || skill.isStale
-                      ? Tooltip(
+                      ? TRTooltip(
                           message: skill.isShadowed
                               ? l10n.skillSettingsShadowed
                               : l10n.skillSettingsStale,
-                          child: const Icon(Icons.warning_amber, size: 18),
+                          child: const Icon(CoderIcons.warning, size: 18),
                         )
                       : null,
-                  trailing: Switch(
-                    value: skill.isEnabled,
-                    onChanged: skill.isMandatory || skill.isShadowed
+                  trailing: TRSwitch(
+                    checked: skill.isEnabled,
+                    onCheckedChange: skill.isMandatory || skill.isShadowed
                         ? null
                         : (enabled) => ref
                               .read(
@@ -327,13 +334,15 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
     final editable = skill.isEditable && !_saving;
     return Column(
       children: <Widget>[
-        ListTile(
+        CoderListRow(
           leading: widget.onBack == null
               ? null
-              : IconButton(
-                  tooltip: l10n.skillSettingsList,
+              : TRIconButton(
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: l10n.skillSettingsList,
                   onPressed: widget.onBack,
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(CoderIcons.back),
                 ),
           title: Text(skill.name),
           subtitle: Text(
@@ -345,49 +354,59 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
               if (skill.sourcePath.isNotEmpty)
-                IconButton(
-                  tooltip: l10n.skillSettingsCopyPath,
+                TRIconButton(
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: l10n.skillSettingsCopyPath,
                   onPressed: () => Clipboard.setData(
                     ClipboardData(text: skill.sourcePath),
                   ),
-                  icon: const Icon(Icons.copy),
+                  icon: const Icon(CoderIcons.copy),
                 ),
               if (skill.isEditable)
-                IconButton(
-                  tooltip: l10n.skillSettingsDelete,
+                TRIconButton(
+                  key: const ValueKey<String>('skill-delete-button'),
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: l10n.skillSettingsDelete,
                   onPressed: editable ? _delete : null,
-                  icon: const Icon(Icons.delete_outline),
+                  icon: const Icon(CoderIcons.delete),
                 ),
               if (skill.isEditable)
-                FilledButton(
+                TRButton(
+                  intent: TRIntent.primary,
+                  uiSize: TRUiSize.sm,
                   onPressed: editable ? () => _save(force: false) : null,
                   child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
                 ),
             ],
           ),
         ),
-        const Divider(height: 1),
+        const TRSeparator(),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: <Widget>[
               if (!skill.isEditable)
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.lock_outline),
+                TRCard(
+                  padding: TRCardPadding.none,
+                  child: CoderListRow(
+                    leading: const Icon(CoderIcons.lock),
                     title: Text(l10n.skillSettingsReadOnly),
                   ),
                 ),
               for (final diagnostic in skill.diagnostics)
-                Card(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  child: ListTile(
-                    leading: const Icon(Icons.warning_amber),
+                TRCard(
+                  padding: TRCardPadding.none,
+                  variant: TRCardVariant.elevated,
+                  child: CoderListRow(
+                    leading: const Icon(CoderIcons.warning),
                     title: Text(diagnostic.code),
                     subtitle: Text(diagnostic.message),
                   ),
                 ),
-              SwitchListTile(
+              CoderSwitchRow(
+                key: ValueKey<String>('skill-enabled-${skill.id}'),
                 value: skill.isEnabled,
                 onChanged: skill.isMandatory
                     ? null
@@ -404,41 +423,36 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                     ? Text(l10n.skillSettingsMandatory)
                     : null,
               ),
-              TextFormField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 initialValue: skillSourceLabel(l10n, skill.source),
                 enabled: false,
-                decoration: InputDecoration(
-                  labelText: l10n.skillSettingsSource,
-                ),
+                label: l10n.skillSettingsSource,
               ),
               const SizedBox(height: 12),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 controller: _name,
                 enabled: editable,
-                decoration: InputDecoration(labelText: l10n.commonName),
+                label: l10n.commonName,
               ),
               const SizedBox(height: 12),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 controller: _description,
                 enabled: editable,
                 minLines: 2,
                 maxLines: 4,
-                decoration: InputDecoration(
-                  labelText: l10n.commonDescription,
-                  alignLabelWithHint: true,
-                ),
+                label: l10n.commonDescription,
               ),
               const SizedBox(height: 12),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 controller: _body,
                 enabled: editable,
                 minLines: 8,
                 maxLines: 18,
-                decoration: InputDecoration(
-                  labelText: l10n.skillSettingsInstructions,
-                  alignLabelWithHint: true,
-                  border: const OutlineInputBorder(),
-                ),
+                label: l10n.skillSettingsInstructions,
               ),
               const SizedBox(height: 20),
               Text(
@@ -446,11 +460,11 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               if (skill.resources.isEmpty)
-                ListTile(title: Text(l10n.skillSettingsNoResources)),
+                CoderListRow(title: Text(l10n.skillSettingsNoResources)),
               for (final resource in skill.resources)
-                ListTile(
+                CoderListRow(
                   dense: true,
-                  leading: const Icon(Icons.insert_drive_file_outlined),
+                  leading: const Icon(CoderIcons.file),
                   title: Text(resource.path),
                   trailing: Text('${resource.sizeBytes}'),
                 ),
@@ -483,17 +497,21 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
           );
     } on Exception catch (error) {
       if (!mounted) return;
-      final retry = await showDialog<bool>(
+      final retry = await showTRDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => TRAlertDialog(
           title: Text(l10n.skillSettingsSaveFailedTitle),
           content: Text('$error'),
-          actions: <Widget>[
-            TextButton(
+          actions: <TRButton>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, false),
               child: Text(l10n.skillSettingsReload),
             ),
-            FilledButton(
+            TRButton(
+              intent: TRIntent.primary,
+              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, true),
               child: Text(l10n.skillSettingsOverwrite),
             ),
@@ -508,17 +526,21 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
 
   Future<void> _delete() async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showTRDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => TRAlertDialog(
         title: Text(l10n.skillSettingsDeleteTitle(widget.skill.name)),
         content: Text(l10n.skillSettingsDeleteMessage),
-        actions: <Widget>[
-          TextButton(
+        actions: <TRButton>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
-          FilledButton(
+          TRButton(
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.commonDelete),
           ),
@@ -608,47 +630,50 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
       SkillSource.userHome,
       if (widget.allowProject) SkillSource.project,
     ];
-    return AlertDialog(
+    return TRAlertDialog(
       title: Text(l10n.skillSettingsAddTitle),
       content: SizedBox(
         width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               controller: _id,
               autofocus: true,
               enabled: !_saving,
               onChanged: (_) => setState(() => _error = null),
-              decoration: InputDecoration(
-                labelText: l10n.skillSettingsIdLabel,
-                hintText: 'release-notes',
-              ).copyWith(errorText: _idError(l10n)),
+              label: l10n.skillSettingsIdLabel,
+              placeholder: 'release-notes',
+              errorText: _idError(l10n),
             ),
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               controller: _name,
               enabled: !_saving,
               onChanged: (_) => setState(() => _error = null),
-              decoration: InputDecoration(labelText: l10n.commonName),
+              label: l10n.commonName,
             ),
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               controller: _description,
               enabled: !_saving,
               onChanged: (_) => setState(() => _error = null),
-              decoration: InputDecoration(labelText: l10n.commonDescription),
+              label: l10n.commonDescription,
             ),
-            DropdownButtonFormField<SkillSource>(
+            TRSelectFormField<SkillSource>(
               initialValue: _source,
-              decoration: InputDecoration(labelText: l10n.skillSettingsSource),
+              label: l10n.skillSettingsSource,
+              uiSize: TRUiSize.sm,
               items: sources
                   .map(
-                    (value) => DropdownMenuItem<SkillSource>(
+                    (value) => TRSelectItem<SkillSource>(
                       value: value,
-                      child: Text(skillSourceLabel(l10n, value)),
+                      label: skillSourceLabel(l10n, value),
                     ),
                   )
                   .toList(growable: false),
-              onChanged: _saving
+              onValueChange: _saving
                   ? null
                   : (value) => setState(() => _source = value!),
             ),
@@ -662,12 +687,16 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
           ],
         ),
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
-        FilledButton(
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
           onPressed: _valid && !_saving ? _submit : null,
           child: Text(_saving ? l10n.commonCreating : l10n.commonCreate),
         ),
@@ -714,7 +743,9 @@ class _SkillSettingsError extends StatelessWidget {
       children: <Widget>[
         Text('$error'),
         const SizedBox(height: 12),
-        FilledButton(
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
           onPressed: onRetry,
           child: Text(AppLocalizations.of(context).commonRetry),
         ),

@@ -1,8 +1,12 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// The literal reference syntax an MCP value may use.
 ///
@@ -38,8 +42,9 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     return ref
         .watch(provider)
         .when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator.adaptive()),
+          loading: () => const Center(
+            child: TRSpinner(uiSize: TRUiSize.sm, label: 'Loading MCP servers'),
+          ),
           error: (error, _) => Center(
             key: const ValueKey<String>('mcp-settings-error'),
             child: Text('$error'),
@@ -105,13 +110,21 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                   children: <Widget>[
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
+                      child: TRButton(
+                        appearance: TRAppearance.ghost,
+                        uiSize: TRUiSize.sm,
                         onPressed: () => setState(() {
                           _creating = false;
                           _selectedId = null;
                         }),
-                        icon: const Icon(Icons.arrow_back),
-                        label: Text(l10n.mcpSettingsHeading),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const Icon(CoderIcons.back),
+                            const SizedBox(width: TRSpacing.extraSmall),
+                            Text(l10n.mcpSettingsHeading),
+                          ],
+                        ),
                       ),
                     ),
                     Expanded(child: detail),
@@ -162,11 +175,13 @@ class _ServerList extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              IconButton(
+              TRIconButton(
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('mcp-server-add'),
-                tooltip: l10n.mcpSettingsAdd,
+                label: l10n.mcpSettingsAdd,
                 onPressed: onAdd,
-                icon: const Icon(Icons.add),
+                icon: const Icon(CoderIcons.add),
               ),
             ],
           ),
@@ -179,7 +194,7 @@ class _ServerList extends StatelessWidget {
                 label: l10n.mcpSettingsScopeUser,
               ),
               if (state.userServers.isEmpty)
-                ListTile(
+                CoderListRow(
                   key: const ValueKey<String>('mcp-server-list-empty'),
                   title: Text(l10n.mcpSettingsEmpty),
                 ),
@@ -235,7 +250,7 @@ class _ServerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return ListTile(
+    return CoderListRow(
       key: ValueKey<String>('mcp-server-tile-${server.config.id}'),
       selected: selected,
       onTap: onTap,
@@ -249,7 +264,7 @@ class _ServerTile extends StatelessWidget {
                   '${server.tools.length}',
       ),
       trailing: server.scope == McpConfigScope.project
-          ? const Icon(Icons.lock_outline, size: 18)
+          ? const Icon(CoderIcons.lock, size: 18)
           : null,
     );
   }
@@ -264,11 +279,10 @@ class _StatusDot extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     if (server.status == McpServerStatus.connecting) {
-      return SizedBox(
+      return TRSpinner(
         key: ValueKey<String>('mcp-server-status-${server.config.id}'),
-        width: 16,
-        height: 16,
-        child: const CircularProgressIndicator.adaptive(strokeWidth: 2),
+        uiSize: TRUiSize.sm,
+        label: 'Connecting MCP server',
       );
     }
     final color = switch (server.status) {
@@ -277,7 +291,7 @@ class _StatusDot extends StatelessWidget {
       McpServerStatus.disabled || McpServerStatus.connecting => scheme.outline,
     };
     return Icon(
-      Icons.circle,
+      CoderIcons.status,
       key: ValueKey<String>('mcp-server-status-${server.config.id}'),
       size: 12,
       color: color,
@@ -371,10 +385,11 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
       padding: const EdgeInsets.all(24),
       children: <Widget>[
         if (server != null && _readOnly)
-          Card(
+          TRCard(
+            padding: TRCardPadding.none,
             key: const ValueKey<String>('mcp-server-readonly'),
-            child: ListTile(
-              leading: const Icon(Icons.lock_outline),
+            child: CoderListRow(
+              leading: const Icon(CoderIcons.lock),
               title: Text(l10n.mcpSettingsProjectReadOnly),
               subtitle: Text(
                 l10n.mcpSettingsSource(server.sourcePath),
@@ -383,88 +398,97 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             ),
           ),
         if (server != null && server.shadowed)
-          Card(
+          TRCard(
+            padding: TRCardPadding.none,
             key: ValueKey<String>('mcp-server-shadowed-${server.config.id}'),
-            color: Theme.of(context).colorScheme.errorContainer,
-            child: ListTile(
-              leading: const Icon(Icons.warning_amber_outlined),
+            variant: TRCardVariant.elevated,
+            child: CoderListRow(
+              leading: const Icon(CoderIcons.warning),
               title: Text(l10n.mcpSettingsShadowed),
             ),
           ),
-        TextField(
+        TRTextField(
+          uiSize: TRUiSize.sm,
           key: const ValueKey<String>('mcp-field-id'),
           controller: _id,
           enabled: _isNew,
-          decoration: InputDecoration(labelText: l10n.mcpSettingsServerId),
+          label: l10n.mcpSettingsServerId,
         ),
         const SizedBox(height: 16),
-        SegmentedButton<McpTransportKind>(
+        TRToggleGroup(
           key: const ValueKey<String>('mcp-transport-selector'),
-          segments: <ButtonSegment<McpTransportKind>>[
-            ButtonSegment<McpTransportKind>(
-              value: McpTransportKind.stdio,
-              label: Text(l10n.mcpSettingsTransportStdio),
+          value: <String>[_transport.name],
+          disabled: _readOnly,
+          children: <TRToggle>[
+            TRToggle(
+              value: McpTransportKind.stdio.name,
+              uiSize: TRUiSize.sm,
+              child: Text(l10n.mcpSettingsTransportStdio),
             ),
-            ButtonSegment<McpTransportKind>(
-              value: McpTransportKind.http,
-              label: Text(l10n.mcpSettingsTransportHttp),
+            TRToggle(
+              value: McpTransportKind.http.name,
+              uiSize: TRUiSize.sm,
+              child: Text(l10n.mcpSettingsTransportHttp),
             ),
           ],
-          selected: <McpTransportKind>{_transport},
-          onSelectionChanged: _readOnly
-              ? null
-              : (value) => setState(() => _transport = value.first),
+          onValueChange: (value) => setState(
+            () => _transport = McpTransportKind.values.byName(value.first),
+          ),
         ),
         const SizedBox(height: 16),
         if (_transport == McpTransportKind.stdio) ...<Widget>[
-          TextField(
+          TRTextField(
+            uiSize: TRUiSize.sm,
             key: const ValueKey<String>('mcp-field-command'),
             controller: _command,
             enabled: !_readOnly,
-            decoration: InputDecoration(labelText: l10n.mcpSettingsCommand),
+            label: l10n.mcpSettingsCommand,
           ),
           const SizedBox(height: 16),
-          TextField(
+          TRTextField(
+            uiSize: TRUiSize.sm,
             key: const ValueKey<String>('mcp-field-args'),
             controller: _args,
             enabled: !_readOnly,
             minLines: 2,
             maxLines: 6,
-            decoration: InputDecoration(labelText: l10n.mcpSettingsArgs),
+            label: l10n.mcpSettingsArgs,
           ),
           const SizedBox(height: 16),
-          TextField(
+          TRTextField(
+            uiSize: TRUiSize.sm,
             key: const ValueKey<String>('mcp-field-cwd'),
             controller: _cwd,
             enabled: !_readOnly,
-            decoration: InputDecoration(
-              labelText: l10n.mcpSettingsWorkingDirectory,
-            ),
+            label: l10n.mcpSettingsWorkingDirectory,
           ),
           const SizedBox(height: 16),
-          TextField(
+          TRTextField(
+            uiSize: TRUiSize.sm,
             key: const ValueKey<String>('mcp-field-env'),
             controller: _env,
             enabled: !_readOnly,
             minLines: 2,
             maxLines: 6,
-            decoration: InputDecoration(labelText: l10n.mcpSettingsEnvironment),
+            label: l10n.mcpSettingsEnvironment,
           ),
         ] else ...<Widget>[
-          TextField(
+          TRTextField(
+            uiSize: TRUiSize.sm,
             key: const ValueKey<String>('mcp-field-url'),
             controller: _url,
             enabled: !_readOnly,
-            decoration: InputDecoration(labelText: l10n.mcpSettingsUrl),
+            label: l10n.mcpSettingsUrl,
           ),
           const SizedBox(height: 16),
-          TextField(
+          TRTextField(
+            uiSize: TRUiSize.sm,
             key: const ValueKey<String>('mcp-field-headers'),
             controller: _headers,
             enabled: !_readOnly,
             minLines: 2,
             maxLines: 6,
-            decoration: InputDecoration(labelText: l10n.mcpSettingsHeaders),
+            label: l10n.mcpSettingsHeaders,
           ),
         ],
         const SizedBox(height: 8),
@@ -479,7 +503,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
         ),
         const SizedBox(height: 16),
-        SwitchListTile(
+        CoderSwitchRow(
           key: const ValueKey<String>('mcp-field-enabled'),
           value: _enabled,
           onChanged: _readOnly
@@ -505,25 +529,33 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           runSpacing: 12,
           children: <Widget>[
             if (!_readOnly)
-              FilledButton(
+              TRButton(
+                intent: TRIntent.primary,
+                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('mcp-server-save'),
                 onPressed: _busy ? null : _save,
                 child: Text(MaterialLocalizations.of(context).saveButtonLabel),
               ),
             if (!_readOnly)
-              OutlinedButton(
+              TRButton(
+                appearance: TRAppearance.outline,
+                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('mcp-server-test'),
                 onPressed: _busy ? null : _test,
                 child: Text(l10n.mcpSettingsTest),
               ),
             if (!_readOnly)
-              TextButton(
+              TRButton(
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('mcp-secret-set'),
                 onPressed: _busy ? null : _promptForSecret,
                 child: Text(l10n.mcpSettingsSecretSet),
               ),
             if (!_readOnly && !_isNew)
-              TextButton(
+              TRButton(
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('mcp-server-delete'),
                 onPressed: _busy ? null : _delete,
                 child: Text(l10n.mcpSettingsDelete),
@@ -540,7 +572,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             Text(l10n.mcpSettingsNoTools)
           else
             for (final tool in server.tools)
-              ListTile(
+              CoderListRow(
                 key: ValueKey<String>('mcp-tool-tile-${tool.toolId}'),
                 dense: true,
                 title: Text(tool.toolId),
@@ -556,13 +588,15 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ],
           if (server.diagnostics.isNotEmpty) ...<Widget>[
             const SizedBox(height: 16),
-            ExpansionTile(
+            TRCollapsible(
               key: const ValueKey<String>('mcp-server-diagnostics'),
-              title: Text(l10n.mcpSettingsDiagnostics),
-              children: <Widget>[
-                for (final line in server.diagnostics)
-                  ListTile(dense: true, title: Text(line)),
-              ],
+              trigger: Text(l10n.mcpSettingsDiagnostics),
+              content: Column(
+                children: <Widget>[
+                  for (final line in server.diagnostics)
+                    CoderListRow(dense: true, title: Text(line)),
+                ],
+              ),
             ),
           ],
         ],
@@ -665,17 +699,22 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
   Future<void> _delete() async {
     final l10n = AppLocalizations.of(context);
     final id = widget.server!.config.id;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showTRDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => TRAlertDialog(
         key: const ValueKey<String>('mcp-delete-dialog'),
+        title: Text(l10n.mcpSettingsDelete),
         content: Text(l10n.mcpSettingsDeleteConfirm(id)),
-        actions: <Widget>[
-          TextButton(
+        actions: <TRButton>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
           ),
-          FilledButton(
+          TRButton(
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
             key: const ValueKey<String>('mcp-delete-confirm'),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(l10n.mcpSettingsDelete),
@@ -703,7 +742,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
   }
 
   Future<void> _promptForSecret() async {
-    final secret = await showDialog<({String key, String value})>(
+    final secret = await showTRDialog<({String key, String value})>(
       context: context,
       builder: (context) => const _SecretDialog(),
     );
@@ -745,7 +784,7 @@ class _SecretDialogState extends State<_SecretDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AlertDialog(
+    return TRAlertDialog(
       key: const ValueKey<String>('mcp-secret-dialog'),
       title: Text(l10n.mcpSettingsSecretSet),
       content: SizedBox(
@@ -753,28 +792,32 @@ class _SecretDialogState extends State<_SecretDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               key: const ValueKey<String>('mcp-secret-key'),
               controller: _key,
-              decoration: InputDecoration(labelText: l10n.mcpSettingsSecretKey),
+              label: l10n.mcpSettingsSecretKey,
             ),
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               key: const ValueKey<String>('mcp-secret-value'),
               controller: _value,
               obscureText: true,
-              decoration: InputDecoration(
-                labelText: l10n.mcpSettingsSecretValue,
-              ),
+              label: l10n.mcpSettingsSecretValue,
             ),
           ],
         ),
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
           onPressed: () => Navigator.of(context).pop(),
           child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
-        FilledButton(
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
           key: const ValueKey<String>('mcp-secret-save'),
           onPressed: () {
             final key = _key.text.trim();

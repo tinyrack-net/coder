@@ -2,10 +2,12 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
+import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// A user prompt rendered as a CLI-style `>` line.
 class ChatUserLine extends StatelessWidget {
@@ -64,7 +66,7 @@ class ChatAssistantMessageView extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Icon(
-              Icons.circle,
+              CoderIcons.status,
               size: 8,
               color: theme.colorScheme.primary,
             ),
@@ -203,7 +205,7 @@ class ChatEmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(
-            Icons.forum_outlined,
+            CoderIcons.chat,
             size: 40,
             color: theme.colorScheme.outline,
           ),
@@ -232,9 +234,12 @@ class ChatRunningIndicator extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 4),
     child: Row(
       children: <Widget>[
-        const SizedBox.square(
+        SizedBox.square(
           dimension: 12,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: TRSpinner(
+            label: AppLocalizations.of(context).commonRunning,
+            uiSize: TRUiSize.sm,
+          ),
         ),
         const SizedBox(width: 10),
         Text(

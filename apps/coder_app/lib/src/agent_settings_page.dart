@@ -1,9 +1,13 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Markdown-backed agent manager for one connected daemon.
 class AgentSettingsPage extends ConsumerStatefulWidget {
@@ -30,7 +34,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(agentDefinitionsControllerProvider(widget.hostId));
     return state.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
       error: (error, _) => _AgentSettingsError(
         error: error,
         onRetry: () => ref.invalidate(
@@ -97,7 +101,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   }
 
   Future<void> _create(AgentDefinitionsState state) async {
-    final created = await showDialog<AgentDefinitionDto>(
+    final created = await showTRDialog<AgentDefinitionDto>(
       context: context,
       builder: (context) => _CreateAgentDialog(
         existingIds: state.definitions
@@ -152,26 +156,29 @@ class _AgentDefinitionList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        ListTile(
+        CoderListRow(
           title: Text(l10n.agentSettingsHeading),
           subtitle: Text(l10n.agentSettingsCount(state.definitions.length)),
-          trailing: IconButton(
-            tooltip: l10n.agentSettingsAdd,
+          trailing: TRIconButton(
+            key: const ValueKey('agent-add-button'),
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
+            label: l10n.agentSettingsAdd,
             onPressed: onCreate,
-            icon: const Icon(Icons.add),
+            icon: const Icon(CoderIcons.add),
           ),
         ),
-        const Divider(height: 1),
+        const TRSeparator(),
         Expanded(
           child: ListView(
             children: <Widget>[
               for (final definition in state.definitions)
-                ListTile(
+                CoderListRow(
                   selected: definition.id == selectedId,
                   leading: Icon(
                     definition.mode == AgentMode.primary
-                        ? Icons.smart_toy_outlined
-                        : Icons.call_split,
+                        ? CoderIcons.agent
+                        : CoderIcons.branch,
                   ),
                   title: Text(definition.name),
                   subtitle: Text(
@@ -181,7 +188,7 @@ class _AgentDefinitionList extends StatelessWidget {
                   ),
                   trailing: definition.diagnostics.isEmpty
                       ? null
-                      : const Icon(Icons.warning_amber, size: 18),
+                      : const Icon(CoderIcons.warning, size: 18),
                   onTap: () => onSelected(definition.id),
                 ),
             ],
@@ -272,161 +279,177 @@ class _AgentEditorState extends State<_AgentEditor> {
     );
     return Column(
       children: <Widget>[
-        ListTile(
+        CoderListRow(
           leading: widget.onBack == null
               ? null
-              : IconButton(
-                  tooltip: l10n.agentSettingsList,
+              : TRIconButton(
+                  key: const ValueKey('agent-list-button'),
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: l10n.agentSettingsList,
                   onPressed: widget.onBack,
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(CoderIcons.back),
                 ),
           title: Text(definition.name),
           subtitle: Text(definition.sourcePath),
           trailing: Wrap(
             children: <Widget>[
-              IconButton(
-                tooltip: l10n.agentSettingsCopyPath,
+              TRIconButton(
+                key: const ValueKey('agent-copy-path-button'),
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
+                label: l10n.agentSettingsCopyPath,
                 onPressed: () => Clipboard.setData(
                   ClipboardData(text: definition.sourcePath),
                 ),
-                icon: const Icon(Icons.copy),
+                icon: const Icon(CoderIcons.copy),
               ),
               if (definition.isBuiltIn)
-                IconButton(
-                  tooltip: l10n.agentSettingsReset,
+                TRIconButton(
+                  key: const ValueKey('agent-reset-button'),
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: l10n.agentSettingsReset,
                   onPressed: editable ? _reset : null,
-                  icon: const Icon(Icons.restore),
+                  icon: const Icon(CoderIcons.restore),
                 )
               else
-                IconButton(
-                  tooltip: l10n.workspaceArchive,
+                TRIconButton(
+                  key: const ValueKey('agent-archive-button'),
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: l10n.workspaceArchive,
                   onPressed: editable ? _archive : null,
-                  icon: const Icon(Icons.archive_outlined),
+                  icon: const Icon(CoderIcons.archive),
                 ),
-              FilledButton(
+              TRButton(
+                intent: TRIntent.primary,
+                uiSize: TRUiSize.sm,
                 onPressed: editable ? () => _save(force: false) : null,
                 child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
               ),
             ],
           ),
         ),
-        const Divider(height: 1),
+        const TRSeparator(),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: <Widget>[
               if (definition.diagnostics.isNotEmpty)
                 ...definition.diagnostics.map(
-                  (diagnostic) => Card(
-                    color: Theme.of(context).colorScheme.errorContainer,
-                    child: ListTile(
-                      leading: const Icon(Icons.warning_amber),
+                  (diagnostic) => TRCard(
+                    padding: TRCardPadding.none,
+                    variant: TRCardVariant.elevated,
+                    child: CoderListRow(
+                      leading: const Icon(CoderIcons.warning),
                       title: Text(diagnostic.code),
                       subtitle: Text(diagnostic.message),
                     ),
                   ),
                 ),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 controller: _name,
                 enabled: editable,
-                decoration: InputDecoration(labelText: l10n.commonName),
+                label: l10n.commonName,
               ),
               const SizedBox(height: 12),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 controller: _description,
                 enabled: editable,
-                decoration: InputDecoration(labelText: l10n.commonDescription),
+                label: l10n.commonDescription,
               ),
               const SizedBox(height: 12),
-              TextFormField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 initialValue: definition.mode.name,
                 enabled: false,
-                decoration: InputDecoration(labelText: l10n.commonKind),
+                label: l10n.commonKind,
               ),
-              SwitchListTile(
+              CoderSwitchRow(
                 value: _promptEnabled,
                 onChanged: editable
                     ? (value) => setState(() => _promptEnabled = value)
                     : null,
                 title: Text(l10n.agentSettingsCustomPrompt),
               ),
-              TextField(
+              TRTextField(
+                uiSize: TRUiSize.sm,
                 controller: _prompt,
                 enabled: editable,
                 minLines: 8,
                 maxLines: 18,
-                decoration: const InputDecoration(
-                  labelText: 'System prompt (Markdown)',
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
-                ),
+                label: 'System prompt (Markdown)',
               ),
               const SizedBox(height: 20),
               Text('Model', style: Theme.of(context).textTheme.titleMedium),
-              RadioGroup<AgentModelSource>(
-                groupValue: _modelSource,
-                onChanged: (value) {
-                  if (editable && value != null) {
-                    setState(() => _modelSource = value);
-                  }
-                },
-                child: Column(
-                  children: <Widget>[
-                    RadioListTile<AgentModelSource>(
-                      value: AgentModelSource.session,
-                      title: Text(l10n.agentSettingsSessionModel),
-                    ),
-                    RadioListTile<AgentModelSource>(
-                      value: AgentModelSource.fixed,
-                      title: Text(l10n.agentSettingsPinnedModel),
-                    ),
-                  ],
+              TRRadioGroup(
+                value: _modelSource.name,
+                disabled: !editable,
+                onValueChange: (value) => setState(
+                  () => _modelSource = AgentModelSource.values.byName(value),
                 ),
+                children: [
+                  TRRadio(
+                    value: AgentModelSource.session.name,
+                    label: Text(l10n.agentSettingsSessionModel),
+                    uiSize: TRUiSize.sm,
+                  ),
+                  TRRadio(
+                    value: AgentModelSource.fixed.name,
+                    label: Text(l10n.agentSettingsPinnedModel),
+                    uiSize: TRUiSize.sm,
+                  ),
+                ],
               ),
               if (_modelSource == AgentModelSource.fixed) ...<Widget>[
-                TextField(
+                TRTextField(
+                  uiSize: TRUiSize.sm,
                   controller: _providerConnectionId,
                   enabled: editable,
-                  decoration: const InputDecoration(
-                    labelText: 'Provider connection ID',
-                  ),
+                  label: 'Provider connection ID',
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                TRTextField(
+                  uiSize: TRUiSize.sm,
                   controller: _modelId,
                   enabled: editable,
-                  decoration: const InputDecoration(labelText: 'Model ID'),
+                  label: 'Model ID',
                 ),
               ],
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
+              TRSelectFormField<String>(
                 initialValue: _reasoningEffort,
-                decoration: const InputDecoration(labelText: 'Reasoning'),
+                label: 'Reasoning',
+                uiSize: TRUiSize.sm,
                 items: const <String>['low', 'medium', 'high']
                     .map(
-                      (value) => DropdownMenuItem<String>(
+                      (value) => TRSelectItem<String>(
                         value: value,
-                        child: Text(value),
+                        label: value,
                       ),
                     )
                     .toList(growable: false),
-                onChanged: editable
+                onValueChange: editable
                     ? (value) => setState(() => _reasoningEffort = value!)
                     : null,
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<PermissionMode>(
+              TRSelectFormField<PermissionMode>(
                 initialValue: _permissionMode,
-                decoration: const InputDecoration(labelText: 'Permission'),
+                label: 'Permission',
+                uiSize: TRUiSize.sm,
                 items: PermissionMode.values
                     .map(
-                      (value) => DropdownMenuItem<PermissionMode>(
+                      (value) => TRSelectItem<PermissionMode>(
                         value: value,
-                        child: Text(value.name),
+                        label: value.name,
                       ),
                     )
                     .toList(growable: false),
-                onChanged: editable
+                onValueChange: editable
                     ? (value) => setState(() => _permissionMode = value!)
                     : null,
               ),
@@ -436,7 +459,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               for (final tool in _sortedTools)
-                CheckboxListTile(
+                CoderCheckboxRow(
                   key: ValueKey<String>('agent-tool-tile-${tool.id}'),
                   value: tool.alwaysOn || _tools.contains(tool.id),
                   // An always-on tool has no toggle to offer, so the tile is
@@ -450,7 +473,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                       : null,
                   secondary: tool.alwaysOn
                       ? Icon(
-                          Icons.lock_outline,
+                          CoderIcons.lock,
                           key: ValueKey<String>('agent-tool-lock-${tool.id}'),
                         )
                       : null,
@@ -469,9 +492,9 @@ class _AgentEditorState extends State<_AgentEditor> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 if (subagents.isEmpty)
-                  ListTile(title: Text(l10n.agentSettingsNoSubagents)),
+                  CoderListRow(title: Text(l10n.agentSettingsNoSubagents)),
                 for (final subagent in subagents)
-                  CheckboxListTile(
+                  CoderCheckboxRow(
                     value: _callableAgents.contains(subagent.id),
                     onChanged: editable
                         ? (enabled) => setState(() {
@@ -534,17 +557,21 @@ class _AgentEditorState extends State<_AgentEditor> {
           );
     } on Exception catch (error) {
       if (!mounted) return;
-      final retry = await showDialog<bool>(
+      final retry = await showTRDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => TRAlertDialog(
           title: Text(l10n.agentSettingsSaveFailedTitle),
           content: Text('$error'),
-          actions: <Widget>[
-            TextButton(
+          actions: <TRButton>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, false),
               child: Text(l10n.agentSettingsReload),
             ),
-            FilledButton(
+            TRButton(
+              intent: TRIntent.primary,
+              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, true),
               child: Text(l10n.agentSettingsOverwrite),
             ),
@@ -632,46 +659,46 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AlertDialog(
+    return TRAlertDialog(
       title: Text(l10n.agentSettingsAddTitle),
       content: SizedBox(
         width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               controller: _id,
               autofocus: true,
               enabled: !_saving,
               onChanged: (_) => setState(() => _error = null),
-              decoration: InputDecoration(
-                labelText: l10n.agentSettingsIdLabel,
-                hintText: 'reviewer',
-              ).copyWith(errorText: _idError(l10n)),
+              label: l10n.agentSettingsIdLabel,
+              placeholder: 'reviewer',
+              errorText: _idError(l10n),
             ),
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               controller: _name,
               enabled: !_saving,
               onChanged: (_) => setState(() => _error = null),
-              decoration: InputDecoration(
-                labelText: l10n.commonName,
-                errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
-                    ? null
-                    : l10n.agentSettingsNameRequired,
-              ),
+              label: l10n.commonName,
+              errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
+                  ? null
+                  : l10n.agentSettingsNameRequired,
             ),
-            DropdownButtonFormField<AgentMode>(
+            TRSelectFormField<AgentMode>(
               initialValue: _mode,
-              decoration: InputDecoration(labelText: l10n.commonKind),
+              label: l10n.commonKind,
+              uiSize: TRUiSize.sm,
               items: AgentMode.values
                   .map(
-                    (value) => DropdownMenuItem<AgentMode>(
+                    (value) => TRSelectItem<AgentMode>(
                       value: value,
-                      child: Text(value.name),
+                      label: value.name,
                     ),
                   )
                   .toList(growable: false),
-              onChanged: _saving
+              onValueChange: _saving
                   ? null
                   : (value) => setState(() => _mode = value!),
             ),
@@ -685,12 +712,16 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
           ],
         ),
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
-        FilledButton(
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
           onPressed: _valid && !_saving ? _submit : null,
           child: Text(_saving ? l10n.commonCreating : l10n.commonCreate),
         ),
@@ -736,7 +767,9 @@ class _AgentSettingsError extends StatelessWidget {
       children: <Widget>[
         Text('$error'),
         const SizedBox(height: 12),
-        FilledButton(
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
           onPressed: onRetry,
           child: Text(AppLocalizations.of(context).commonRetry),
         ),

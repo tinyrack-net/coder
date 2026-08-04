@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 
@@ -274,7 +275,7 @@ void main() {
       expect(find.text('먼저 프로젝트를 추가하세요.'), findsOneWidget);
       expect(
         tester
-            .widget<IconButton>(
+            .widget<TRIconButton>(
               find.byKey(const ValueKey('session-composer-send')),
             )
             .onPressed,
@@ -307,6 +308,8 @@ Future<GoRouter> _pump(WidgetTester tester, FakeCoderApi api) async {
     ProviderScope(
       overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
       child: MaterialApp.router(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,

@@ -2,6 +2,8 @@ import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -9,9 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
-
 import 'support/localization.dart';
 
 void main() {
@@ -76,14 +78,13 @@ void main() {
         find.text('Test daemon · ${workspace.rootPath}'),
         findsOneWidget,
       );
-      // The composer's agent chip is also labelled 'Coder', so the repository
-      // entry is matched through its tile.
-      expect(find.widgetWithText(ListTile, 'Coder'), findsOneWidget);
       expect(find.text('main'), findsOneWidget);
       expect(find.text('Agents'), findsNothing);
       expect(find.text('Session one'), findsWidgets);
 
-      await tester.tap(find.byTooltip('모든 session'));
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-all-sessions-menu')),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Session two'), findsOneWidget);
       await tester.tap(find.text('Session two'));
@@ -118,18 +119,25 @@ void main() {
       );
       addTearDown(router.dispose);
 
-      await tester.tap(find.byTooltip('탭 닫기'));
+      await tester.tap(
+        find.byKey(const ValueKey('session-tab-close-one')),
+      );
       await tester.pumpAndSettle();
       expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
       expect(await api.listSessions(worktreeId: checkout.id), <SessionDto>[
         first,
       ]);
 
-      await tester.tap(find.byTooltip('모든 session'));
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-all-sessions-menu')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Session one'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('탭 닫기'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('session-tab-close-one')),
+        findsOneWidget,
+      );
     },
     tags: const <String>['feature_test__session_tabs__widget'],
   );
@@ -177,16 +185,16 @@ void main() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      expect(find.byTooltip('새 worktree'), findsNothing);
+      expect(findAccessibleAction('새 worktree'), findsNothing);
       expect(find.text('feature/settings'), findsWidgets);
 
-      final menus = find.byTooltip('Worktree 메뉴');
+      final menus = findAccessibleAction('Worktree 메뉴');
       await tester.tap(menus.last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Archive'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Archive할까요?'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+      await tester.tap(find.widgetWithText(TRButton, 'Archive'));
       await tester.pumpAndSettle();
       expect(find.text('feature/settings'), findsNothing);
       expect(router.routeInformationProvider.value.uri.path, '/');
@@ -195,8 +203,6 @@ void main() {
         find.text('Teardown 실패 (exit 1): docker compose down'),
         findsOneWidget,
       );
-      await tester.tap(find.text('자세히'));
-      await tester.pumpAndSettle();
       expect(find.textContaining('no such service'), findsOneWidget);
     },
     tags: const <String>['feature_test__worktree_lifecycle__widget'],
@@ -237,7 +243,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('project'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '이 폴더 선택'));
+      await tester.tap(find.widgetWithText(TRButton, '이 폴더 선택'));
       await tester.pumpAndSettle();
 
       expect(api.registeredPaths, <String>['/srv/repositories/project']);
@@ -310,7 +316,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('workspace-new-button')), findsNothing);
     expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.tap(find.byIcon(CoderIcons.back));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('workspace-new-button')), findsOne);
   });
@@ -566,7 +572,7 @@ void main() {
       expect(find.textContaining('proposed_plan'), findsNothing);
       expect(find.text('이 계획대로 진행할까요?'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, '계획대로 실행'));
+      await tester.tap(find.widgetWithText(TRButton, '계획대로 실행'));
       await tester.pumpAndSettle();
       expect(api.updatedSessionModes.single.mode, SessionMode.normal);
       expect(api.startedPrompts.last, '계획을 실행해줘.');
@@ -622,7 +628,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Plan'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, '계속 계획'));
+      await tester.tap(find.widgetWithText(TRButton, '계속 계획'));
       await tester.pumpAndSettle();
       expect(find.text('이 계획대로 진행할까요?'), findsNothing);
       expect(api.startedPrompts, isEmpty);
@@ -651,6 +657,8 @@ void main() {
           ),
         ],
         child: MaterialApp.router(
+          theme: testLightTheme,
+          darkTheme: testDarkTheme,
           locale: testLocale,
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
@@ -660,7 +668,10 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Workspaces'), findsOneWidget);
-    expect(find.byTooltip('설정'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('workspace-settings-button')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('settings combines Projects, Agent, Provider, and Daemon', (
@@ -700,12 +711,9 @@ void main() {
 
       expect(find.text('Agents'), findsOneWidget);
       expect(find.text('Coder'), findsWidgets);
-      final prompt = find.widgetWithText(
-        TextField,
-        'System prompt (Markdown)',
-      );
+      final prompt = _textInput('System prompt (Markdown)');
       await tester.enterText(prompt, 'Always run focused tests.');
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
         (await api.getAgentDefinition('coder')).systemPrompt,
@@ -720,7 +728,7 @@ void main() {
 
       // An always-on tool is shown checked and locked, sorted above the
       // tools the user can actually turn off.
-      final alwaysOn = tester.widget<CheckboxListTile>(
+      final alwaysOn = tester.widget<CoderCheckboxRow>(
         find.byKey(const ValueKey<String>('agent-tool-tile-read_file')),
       );
       expect(alwaysOn.value, isTrue);
@@ -729,28 +737,33 @@ void main() {
         find.byKey(const ValueKey<String>('agent-tool-lock-read_file')),
         findsOneWidget,
       );
-      final toggleable = tester.widget<CheckboxListTile>(
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('agent-tool-tile-run_command')),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      final toggleable = tester.widget<CoderCheckboxRow>(
         find.byKey(const ValueKey<String>('agent-tool-tile-run_command')),
       );
       expect(toggleable.onChanged, isNotNull);
 
-      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.tap(find.byKey(const ValueKey('agent-add-button')));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (파일명)'),
+        _textInput('ID (파일명)'),
         'reviewer',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '이름').last,
+        _textInput('이름').last,
         'Reviewer',
       );
       await tester.tap(
-        find.widgetWithText(DropdownButtonFormField<AgentMode>, '유형'),
+        find.byType(TRSelectFormField<AgentMode>),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('subagent').last);
       tester.testTextInput.hide();
-      final createButton = find.widgetWithText(FilledButton, '생성');
+      final createButton = find.widgetWithText(TRButton, '생성');
       await tester.ensureVisible(createButton);
       await tester.pumpAndSettle();
       await tester.tap(createButton);
@@ -779,46 +792,46 @@ void main() {
       );
       addTearDown(router.dispose);
 
-      await tester.tap(find.byTooltip('Agent 추가'));
+      await tester.tap(find.byKey(const ValueKey('agent-add-button')));
       await tester.pumpAndSettle();
-      var create = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, '생성'),
+      var create = tester.widget<TRButton>(
+        find.widgetWithText(TRButton, '생성'),
       );
       expect(create.onPressed, isNull);
 
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (파일명)'),
+        _textInput('ID (파일명)'),
         'Invalid ID',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, '이름').last,
+        _textInput('이름').last,
         'Reviewer',
       );
       await tester.pumpAndSettle();
       expect(find.text('영문 소문자, 숫자, -, _만 사용할 수 있습니다.'), findsOneWidget);
 
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (파일명)'),
+        _textInput('ID (파일명)'),
         'coder',
       );
       await tester.pumpAndSettle();
       expect(find.text('이미 존재하는 Agent ID입니다.'), findsOneWidget);
 
       await tester.enterText(
-        find.widgetWithText(TextField, 'ID (파일명)'),
+        _textInput('ID (파일명)'),
         'reviewer',
       );
       await tester.pumpAndSettle();
-      create = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, '생성'),
+      create = tester.widget<TRButton>(
+        find.widgetWithText(TRButton, '생성'),
       );
       expect(create.onPressed, isNotNull);
-      await tester.tap(find.widgetWithText(FilledButton, '생성'));
+      await tester.tap(find.widgetWithText(TRButton, '생성'));
       await tester.pumpAndSettle();
       expect(find.textContaining('agent_create_failed'), findsOneWidget);
       expect(find.text('Agent 추가'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, '생성'));
+      await tester.tap(find.widgetWithText(TRButton, '생성'));
       await tester.pumpAndSettle();
       expect(find.text('Agent 추가'), findsNothing);
       expect(find.text('Reviewer'), findsWidgets);
@@ -839,11 +852,11 @@ void main() {
     addTearDown(router.dispose);
 
     expect(find.text('Agents'), findsOneWidget);
-    expect(find.text('System prompt (Markdown)'), findsNothing);
+    expect(_textField('System prompt (Markdown)'), findsNothing);
     await tester.tap(find.text('Coder').first);
     await tester.pumpAndSettle();
-    expect(find.text('System prompt (Markdown)'), findsOneWidget);
-    await tester.tap(find.byTooltip('Agent 목록'));
+    expect(_textField('System prompt (Markdown)'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('agent-list-button')));
     await tester.pumpAndSettle();
     expect(find.text('Agents'), findsOneWidget);
   });
@@ -906,7 +919,7 @@ void main() {
       addTearDown(router.dispose);
 
       expect(find.text('unavailable_tool'), findsOneWidget);
-      await tester.tap(find.byTooltip('파일 위치 복사'));
+      await tester.tap(find.byKey(const ValueKey('agent-copy-path-button')));
       await tester.tap(find.text('Custom system prompt 사용'));
       final editorList = find.byType(ListView).last;
       await tester.drag(editorList, const Offset(0, -500));
@@ -914,21 +927,21 @@ void main() {
       await tester.tap(find.text('고정 provider/model'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'Provider connection ID'),
+        _textInput('Provider connection ID'),
         'openai',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, 'Model ID'),
+        _textInput('Model ID'),
         'gpt-test',
       );
       await tester.drag(editorList, const Offset(0, -600));
       await tester.pumpAndSettle();
       await tester.tap(find.text('read_file').last);
       await tester.tap(find.text('Reviewer').last);
-      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(find.text('Agent 저장 실패'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Overwrite'));
+      await tester.tap(find.widgetWithText(TRButton, 'Overwrite'));
       await tester.pumpAndSettle();
 
       final updated = await api.getAgentDefinition('coder');
@@ -938,7 +951,7 @@ void main() {
       expect(updated.toolIds, isEmpty);
       expect(updated.callableAgentIds, <String>['reviewer']);
 
-      await tester.tap(find.byTooltip('기본값으로 초기화'));
+      await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
       await tester.pumpAndSettle();
       expect(
         (await api.getAgentDefinition('coder')).systemPrompt,
@@ -946,7 +959,7 @@ void main() {
       );
       await tester.tap(find.text('Reviewer').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Archive'));
+      await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
       await tester.pumpAndSettle();
       expect(
         (await api.listAgentDefinitions()).map((definition) => definition.id),
@@ -975,8 +988,8 @@ void main() {
     expect(find.textContaining('읽기만'), findsNothing);
     expect(
       tester
-          .widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.add),
+          .widget<TRIconButton>(
+            find.widgetWithIcon(TRIconButton, CoderIcons.add),
           )
           .onPressed,
       isNotNull,
@@ -992,7 +1005,7 @@ void main() {
     );
     addTearDown(errorRouter.dispose);
     expect(find.textContaining('definition load failed'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, '다시 시도'));
+    await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
     await tester.pumpAndSettle();
     expect(find.textContaining('definition load failed'), findsOneWidget);
   });
@@ -1028,6 +1041,8 @@ void main() {
             appServicesProvider.overrideWithValue(fakeAppServices(api)),
           ],
           child: MaterialApp(
+            theme: testLightTheme,
+            darkTheme: testDarkTheme,
             locale: testLocale,
             localizationsDelegates: testLocalizationsDelegates,
             supportedLocales: testSupportedLocales,
@@ -1064,9 +1079,9 @@ void main() {
       expect(find.text('>'), findsOneWidget);
       expect(find.text('Inspect this', findRichText: true), findsOneWidget);
       expect(find.text('승인 필요 · apply_patch'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, '거부'));
+      await tester.tap(find.widgetWithText(TRButton, '거부'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '승인'));
+      await tester.tap(find.widgetWithText(TRButton, '승인'));
       await tester.pumpAndSettle();
       expect(
         api.approvalDecisions,
@@ -1095,6 +1110,8 @@ Future<GoRouter> _pumpRoute(
         ),
       ],
       child: MaterialApp.router(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
@@ -1105,3 +1122,13 @@ Future<GoRouter> _pumpRoute(
   await tester.pumpAndSettle();
   return router;
 }
+
+Finder _textField(String label) => find.byWidgetPredicate(
+  (widget) => widget is TRTextField && widget.label == label,
+  description: 'TRTextField labelled "$label"',
+);
+
+Finder _textInput(String label) => find.descendant(
+  of: _textField(label),
+  matching: find.byType(EditableText),
+);

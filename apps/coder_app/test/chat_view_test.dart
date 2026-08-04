@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/localization.dart';
 
@@ -40,6 +41,8 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
@@ -124,7 +127,7 @@ void main() {
       expect(find.text(r'$ flutter test'), findsOneWidget);
       expect(find.textContaining('exitCode'), findsNothing);
 
-      await tester.tap(find.byTooltip('복사').last);
+      await tester.tap(findAccessibleAction('복사').last);
       await tester.pumpAndSettle();
       expect(clipboard, <String>['All tests passed!\ndone']);
 
@@ -194,7 +197,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('실행 중'), findsWidgets);
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
+      expect(find.byType(TRSpinner), findsWidgets);
       expect(find.text('>'), findsOneWidget);
 
       await pump(tester, const <TimelineEventDto>[]);

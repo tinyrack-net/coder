@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Returns the first hook that failed, or null when every hook succeeded.
 WorktreeHookRunDto? failedWorktreeHook(List<WorktreeHookRunDto> runs) {
@@ -27,21 +28,12 @@ void reportWorktreeHookFailure(
     WorktreeHookPhase.setup => 'Setup',
     WorktreeHookPhase.teardown => 'Teardown',
   };
-  // The archived worktree's own context is disposed with its list tile, so
-  // the detail dialog is pushed onto the navigator captured up front.
+  // The archived worktree's own context is disposed with its row, so the
+  // report is pushed onto the root navigator captured up front.
   final navigator = Navigator.of(context, rootNavigator: true);
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        l10n.hookFailureMessage(phase, failure.exitCode, failure.command),
-      ),
-      action: SnackBarAction(
-        label: l10n.commonDetails,
-        onPressed: () =>
-            unawaited(_showHookOutput(l10n, navigator, failure, phase)),
-      ),
-    ),
-  );
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(_showHookOutput(l10n, navigator, failure, phase));
+  });
 }
 
 Future<void> _showHookOutput(
@@ -54,24 +46,28 @@ Future<void> _showHookOutput(
     if (failure.stdout.trim().isNotEmpty) failure.stdout.trim(),
     if (failure.stderr.trim().isNotEmpty) failure.stderr.trim(),
   ].join('\n');
-  return navigator.push(
-    DialogRoute<void>(
-      context: navigator.context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.hookFailureTitle(phase)),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            '${failure.command}\n\nexit ${failure.exitCode}\n'
-            '${output.isEmpty ? l10n.hookFailureNoOutput : output}',
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.commonConfirm),
-          ),
-        ],
+  return showTRDialog<void>(
+    context: navigator.context,
+    barrierDismissible: false,
+    builder: (context) => TRAlertDialog(
+      title: Text(l10n.hookFailureTitle(phase)),
+      description: Text(
+        l10n.hookFailureMessage(phase, failure.exitCode, failure.command),
       ),
+      content: SingleChildScrollView(
+        child: SelectableText(
+          '${failure.command}\n\nexit ${failure.exitCode}\n'
+          '${output.isEmpty ? l10n.hookFailureNoOutput : output}',
+        ),
+      ),
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.commonConfirm),
+        ),
+      ],
     ),
   );
 }

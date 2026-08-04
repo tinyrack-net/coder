@@ -4,6 +4,7 @@ import 'package:coder_app/src/workspace/directory_browser.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 
@@ -21,6 +22,8 @@ void main() {
     String? chosen;
     await tester.pumpWidget(
       MaterialApp(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
@@ -66,7 +69,7 @@ void main() {
       await tester.tap(find.text('project'));
       await tester.pumpAndSettle();
       expect(find.text('하위 폴더가 없습니다.'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, '이 폴더 선택'));
+      await tester.tap(find.widgetWithText(TRButton, '이 폴더 선택'));
       await tester.pumpAndSettle();
       expect(find.text('Daemon의 폴더 선택'), findsNothing);
     },
@@ -107,6 +110,8 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
+          theme: testLightTheme,
+          darkTheme: testDarkTheme,
           locale: testLocale,
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,

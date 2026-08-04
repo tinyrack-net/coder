@@ -469,6 +469,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsEditAdvanced => 'Edit advanced settings';
 
   @override
+  String get providerSettingsActions => 'Connection actions';
+
+  @override
   String get providerSettingsAdd => 'Add provider';
 
   @override
@@ -592,6 +595,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerInputHint => 'Type a coding request…';
+
+  @override
+  String get composerSendLabel => 'Send message';
 
   @override
   String get chatEmptyTitle => 'Type a coding request.';

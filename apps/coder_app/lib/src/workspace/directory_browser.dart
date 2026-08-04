@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/remote_path.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Debounce applied to free-text path edits before querying the daemon.
 const Duration directoryBrowserDebounce = Duration(milliseconds: 200);
@@ -16,7 +19,7 @@ Future<String?> showDirectoryBrowser(
   BuildContext context, {
   required CoderApi api,
   required String initialPath,
-}) => showDialog<String>(
+}) => showTRDialog<String>(
   context: context,
   builder: (context) =>
       DirectoryBrowserDialog(api: api, initialPath: initialPath),
@@ -68,7 +71,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final parent = parentDirectoryPath(_path.text);
-    return AlertDialog(
+    return TRAlertDialog(
       title: Text(l10n.directoryBrowserTitle),
       content: SizedBox(
         width: 560,
@@ -76,18 +79,17 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            TextField(
+            TRTextField(
+              uiSize: TRUiSize.sm,
               key: const ValueKey('directory-browser-path'),
               controller: _path,
               autofocus: true,
-              decoration: InputDecoration(
-                labelText: l10n.directoryBrowserPath,
-                hintText: '/srv/repositories/project',
-              ),
+              label: l10n.directoryBrowserPath,
+              placeholder: '/srv/repositories/project',
               onChanged: _onPathTyped,
             ),
             const SizedBox(height: 8),
-            if (_loading) const LinearProgressIndicator(),
+            if (_loading) const TRProgress(uiSize: TRUiSize.sm),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -100,24 +102,24 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
               child: ListView(
                 children: <Widget>[
                   if (parent != null)
-                    ListTile(
+                    CoderListRow(
                       key: const ValueKey('directory-browser-parent'),
                       dense: true,
-                      leading: const Icon(Icons.drive_folder_upload_outlined),
+                      leading: const Icon(CoderIcons.uploadFolder),
                       title: const Text('..'),
                       onTap: () => unawaited(_open(parent)),
                     ),
                   for (final entry in _entries)
-                    ListTile(
+                    CoderListRow(
                       key: ValueKey('directory-browser-entry-${entry.path}'),
                       dense: true,
-                      leading: const Icon(Icons.folder_outlined),
+                      leading: const Icon(CoderIcons.folder),
                       title: Text(entry.name),
                       subtitle: Text(entry.path),
                       onTap: () => unawaited(_open(entry.path)),
                     ),
                   if (!_loading && _entries.isEmpty && _error == null)
-                    ListTile(
+                    CoderListRow(
                       dense: true,
                       title: Text(l10n.directoryBrowserEmpty),
                     ),
@@ -127,12 +129,16 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
           ],
         ),
       ),
-      actions: <Widget>[
-        TextButton(
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
-        FilledButton(
+        TRButton(
+          intent: TRIntent.primary,
+          uiSize: TRUiSize.sm,
           onPressed: () => Navigator.pop(context, _path.text.trim()),
           child: Text(l10n.directoryBrowserSelect),
         ),
@@ -185,22 +191,23 @@ class DaemonPickerDialog extends StatelessWidget {
   final List<HostRuntimeSnapshot> hosts;
 
   @override
-  Widget build(BuildContext context) => SimpleDialog(
+  Widget build(BuildContext context) => TRDialog(
     title: Text(AppLocalizations.of(context).directoryBrowserHostTitle),
-    children: <Widget>[
-      for (final host in hosts)
-        SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, host.id),
-          child: ListTile(
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        for (final host in hosts)
+          CoderListRow(
+            onTap: () => Navigator.pop(context, host.id),
             leading: Icon(
               host.kind == HostKind.embedded
-                  ? Icons.computer_outlined
-                  : Icons.cloud_outlined,
+                  ? CoderIcons.computer
+                  : CoderIcons.cloud,
             ),
             title: Text(hostLabel(AppLocalizations.of(context), host)),
           ),
-        ),
-    ],
+      ],
+    ),
   );
 }
 
@@ -211,7 +218,7 @@ Future<String?> pickDaemonHost(
 ) async {
   if (online.isEmpty) return null;
   if (online.length == 1) return online.single.id;
-  return showDialog<String>(
+  return showTRDialog<String>(
     context: context,
     builder: (context) => DaemonPickerDialog(hosts: online),
   );

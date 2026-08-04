@@ -4,6 +4,7 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Height of the compact Windows and Linux application frame.
 const double desktopTitleBarHeight = 40;
@@ -51,7 +52,7 @@ class DesktopTitleBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
-    return Material(
+    return ColoredBox(
       color: colors.surface,
       child: SizedBox(
         height: desktopTitleBarHeight,
@@ -81,7 +82,7 @@ class DesktopTitleBar extends StatelessWidget {
               _CaptionButton(
                 key: const ValueKey<String>('desktop-title-bar-minimize'),
                 tooltip: l10n.desktopWindowMinimize,
-                icon: Icons.remove,
+                action: TRWindowCaptionAction.minimize,
                 onPressed: () => unawaited(window.minimize()),
               ),
               ValueListenableBuilder<bool>(
@@ -95,17 +96,16 @@ class DesktopTitleBar extends StatelessWidget {
                   tooltip: maximized
                       ? l10n.desktopWindowRestore
                       : l10n.desktopWindowMaximize,
-                  icon: maximized
-                      ? Icons.filter_none_outlined
-                      : Icons.crop_square,
+                  action: maximized
+                      ? TRWindowCaptionAction.restore
+                      : TRWindowCaptionAction.maximize,
                   onPressed: () => unawaited(window.toggleMaximized()),
                 ),
               ),
               _CaptionButton(
                 key: const ValueKey<String>('desktop-title-bar-close'),
                 tooltip: l10n.desktopWindowClose,
-                icon: Icons.close,
-                close: true,
+                action: TRWindowCaptionAction.close,
                 onPressed: onClose,
               ),
             ],
@@ -136,16 +136,12 @@ class _ApplicationMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return MenuBar(
-      style: const MenuStyle(
-        backgroundColor: WidgetStatePropertyAll<Color>(Colors.transparent),
-        elevation: WidgetStatePropertyAll<double>(0),
-        padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(EdgeInsets.zero),
-      ),
-      children: <Widget>[
-        SubmenuButton(
+    return TRMenubar(
+      semanticLabel: l10n.desktopMenuFile,
+      menus: <TRMenubarMenu>[
+        TRMenubarMenu(
           menuChildren: <Widget>[
-            MenuItemButton(
+            TRMenuItem(
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyN,
                 control: true,
@@ -153,7 +149,7 @@ class _ApplicationMenu extends StatelessWidget {
               onPressed: onNewWorkspace,
               child: Text(l10n.workspaceNewWorkspace),
             ),
-            MenuItemButton(
+            TRMenuItem(
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.comma,
                 control: true,
@@ -161,8 +157,8 @@ class _ApplicationMenu extends StatelessWidget {
               onPressed: onOpenSettings,
               child: Text(l10n.settingsTitle),
             ),
-            const Divider(),
-            MenuItemButton(
+            const TRSeparator(),
+            TRMenuItem(
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyQ,
                 control: true,
@@ -171,19 +167,13 @@ class _ApplicationMenu extends StatelessWidget {
               child: Text(l10n.trayQuit),
             ),
           ],
-          child: Text(l10n.desktopMenuFile),
+          trigger: Text(l10n.desktopMenuFile),
         ),
-        SubmenuButton(
+        TRMenubarMenu(
           menuChildren: <Widget>[
-            MenuItemButton(
-              leadingIcon: Icon(
-                sidebarCollapsed ? Icons.check_box_outline_blank : Icons.check,
-              ),
-              shortcut: const SingleActivator(
-                LogicalKeyboardKey.keyB,
-                control: true,
-              ),
-              onPressed: onToggleSidebar,
+            TRMenuCheckboxItem(
+              value: !sidebarCollapsed,
+              onChanged: (_) => onToggleSidebar(),
               child: Text(
                 sidebarCollapsed
                     ? l10n.workspaceSidebarExpand
@@ -191,16 +181,16 @@ class _ApplicationMenu extends StatelessWidget {
               ),
             ),
           ],
-          child: Text(l10n.desktopMenuView),
+          trigger: Text(l10n.desktopMenuView),
         ),
-        SubmenuButton(
+        TRMenubarMenu(
           menuChildren: <Widget>[
-            MenuItemButton(
+            TRMenuItem(
               onPressed: onShowAbout,
               child: Text(l10n.desktopMenuAbout),
             ),
           ],
-          child: Text(l10n.desktopMenuHelp),
+          trigger: Text(l10n.desktopMenuHelp),
         ),
       ],
     );
@@ -210,53 +200,19 @@ class _ApplicationMenu extends StatelessWidget {
 class _CaptionButton extends StatelessWidget {
   const _CaptionButton({
     required this.tooltip,
-    required this.icon,
+    required this.action,
     required this.onPressed,
-    this.close = false,
     super.key,
   });
 
   final String tooltip;
-  final IconData icon;
+  final TRWindowCaptionAction action;
   final VoidCallback onPressed;
-  final bool close;
 
   @override
-  Widget build(BuildContext context) => IconButton(
-    tooltip: tooltip,
+  Widget build(BuildContext context) => TRWindowCaptionButton(
+    action: action,
+    label: tooltip,
     onPressed: onPressed,
-    style: ButtonStyle(
-      minimumSize: const WidgetStatePropertyAll<Size>(
-        Size(48, desktopTitleBarHeight),
-      ),
-      maximumSize: const WidgetStatePropertyAll<Size>(
-        Size(48, desktopTitleBarHeight),
-      ),
-      padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
-        EdgeInsets.zero,
-      ),
-      shape: const WidgetStatePropertyAll<OutlinedBorder>(
-        RoundedRectangleBorder(),
-      ),
-      foregroundColor: close
-          ? WidgetStateProperty.resolveWith<Color?>((states) {
-              if (states.contains(WidgetState.hovered) ||
-                  states.contains(WidgetState.pressed)) {
-                return Colors.white;
-              }
-              return null;
-            })
-          : null,
-      overlayColor: close
-          ? WidgetStateProperty.resolveWith<Color?>((states) {
-              if (states.contains(WidgetState.hovered) ||
-                  states.contains(WidgetState.pressed)) {
-                return const Color(0xffc42b1c);
-              }
-              return null;
-            })
-          : null,
-    ),
-    icon: Icon(icon, size: 17),
   );
 }

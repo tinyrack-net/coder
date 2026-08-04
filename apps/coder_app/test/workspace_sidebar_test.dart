@@ -6,6 +6,7 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 import 'support/localization.dart';
@@ -58,6 +59,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          theme: testLightTheme,
+          darkTheme: testDarkTheme,
           locale: testLocale,
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
@@ -123,7 +126,7 @@ void main() {
       final names = tester
           .widgetList<Text>(
             find.descendant(
-              of: find.byType(ExpansionTile),
+              of: find.byType(TRCollapsible),
               matching: find.byType(Text),
             ),
           )

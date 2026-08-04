@@ -1,7 +1,9 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
+import 'package:coder_app/src/coder_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Scrollable monospace block used for tool arguments and command output.
 ///
@@ -69,11 +71,12 @@ class ChatCodeBlock extends StatelessWidget {
               ),
             ),
             if (showCopy)
-              IconButton(
-                tooltip: AppLocalizations.of(context).commonCopy,
-                visualDensity: VisualDensity.compact,
+              TRIconButton(
+                appearance: TRAppearance.ghost,
+                uiSize: TRUiSize.sm,
+                label: AppLocalizations.of(context).commonCopy,
                 onPressed: () => Clipboard.setData(ClipboardData(text: text)),
-                icon: const Icon(Icons.copy_all_outlined, size: 16),
+                icon: const Icon(CoderIcons.copy, size: 16),
               ),
           ],
         ),

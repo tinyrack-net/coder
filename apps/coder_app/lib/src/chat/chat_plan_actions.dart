@@ -8,6 +8,7 @@ import 'package:coder_app/src/session_title.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 // The two prompts below are sent to the model, not shown to the user, so they
 // are deliberately left out of the localized strings.
@@ -56,9 +57,10 @@ class ChatPlanActions extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Card(
+      child: TRCard(
+        padding: TRCardPadding.none,
         key: const ValueKey('chat-plan-actions'),
-        color: Theme.of(context).colorScheme.secondaryContainer,
+        variant: TRCardVariant.elevated,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -74,15 +76,21 @@ class ChatPlanActions extends ConsumerWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: <Widget>[
-                  TextButton(
+                  TRButton(
+                    appearance: TRAppearance.ghost,
+                    uiSize: TRUiSize.sm,
                     onPressed: onDismiss,
                     child: Text(l10n.chatPlanKeepPlanning),
                   ),
-                  TextButton(
+                  TRButton(
+                    appearance: TRAppearance.ghost,
+                    uiSize: TRUiSize.sm,
                     onPressed: () => unawaited(_startFreshSession(ref)),
                     child: Text(l10n.chatPlanRunInNewSession),
                   ),
-                  FilledButton(
+                  TRButton(
+                    intent: TRIntent.primary,
+                    uiSize: TRUiSize.sm,
                     onPressed: () => unawaited(_implementHere(ref)),
                     child: Text(l10n.chatPlanRun),
                   ),

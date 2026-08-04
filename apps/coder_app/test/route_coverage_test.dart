@@ -207,6 +207,8 @@ Future<void> _verifyRoute(
           appServicesProvider.overrideWithValue(fakeAppServices(api)),
         ],
         child: MaterialApp.router(
+          theme: testLightTheme,
+          darkTheme: testDarkTheme,
           locale: testLocale,
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
