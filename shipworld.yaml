@@ -1,0 +1,76 @@
+schema: 1
+remote: origin
+batch-commit: "release: {targets}"
+
+targets:
+  coder:
+    # The build number is what Apple and Android increment per release, and
+    # `flutter-application` is the kind that bumps it.
+    kind: flutter-application
+    # Rooted at the repository so the daemon's version file stays in reach of
+    # the app's pubspec, which is the single source of truth.
+    root: .
+    version:
+      source: apps/coder_app/pubspec.yaml
+      synchronized:
+        - type: dart-constant
+          path: apps/coder_app/lib/src/version.g.dart
+        - type: dart-constant
+          path: packages/coder_daemon/lib/src/version.g.dart
+    tag: "v{version}"
+    commit: "release: v{version}"
+    branch: main
+    payload:
+      # The Linux launcher; macOS and Windows override it per platform because
+      # their bundles nest the executable differently.
+      kind: directory
+      launcher: coder
+    product:
+      name: coder
+      display-name: Coder
+      description: Local-first AI coding agent with an always-on daemon
+      executable: coder
+      homepage: https://github.com/tinyrack-net/coder
+      repository: tinyrack-net/coder
+    windows:
+      application-id: Coder
+      executable: coder.exe
+      background-color: "#625bff"
+      identity:
+        name-env: MSIX_IDENTITY_NAME
+        publisher-env: MSIX_PUBLISHER
+        publisher-display-name-env: MSIX_PUBLISHER_DISPLAY_NAME
+        display-name-env: MSIX_DISPLAY_NAME
+    macos:
+      entitlements: apps/coder_app/macos/Runner/Release.entitlements
+      bundle-name: Coder
+      bundle-id: net.tinyrack.coder
+      # SMAppService, used for the login item, needs macOS 13.
+      minimum-version: ventura
+    linux:
+      icon: apps/coder_app/assets/brand/coder.svg
+      categories:
+        - Development
+      terminal: false
+      maintainer: "Tinyrack <dev@tinyrack.net>"
+      license: Apache-2.0
+      vendor: Tinyrack
+      app-id: net.tinyrack.coder
+      icons:
+        - { size: 0, path: apps/coder_app/assets/brand/coder.svg }
+        - { size: 128, path: apps/coder_app/assets/brand/coder-128.png }
+        - { size: 256, path: apps/coder_app/assets/brand/coder-256.png }
+        - { size: 512, path: apps/coder_app/assets/brand/coder-512.png }
+      deb:
+        # GTK is the Flutter shell; the indicator library backs the tray icon.
+        # Ubuntu 24.04 renamed libgtk-3-0 during the time_t transition.
+        depends:
+          - libgtk-3-0t64
+          - libayatana-appindicator3-1
+        section: devel
+      rpm:
+        requires:
+          - gtk3
+          - libayatana-appindicator-gtk3
+        release: "1"
+        group: Development/Tools

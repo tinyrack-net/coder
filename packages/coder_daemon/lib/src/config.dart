@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:coder_daemon/src/version.g.dart';
 import 'package:path/path.dart' as p;
 
 /// Supplies process environment and operating-system information to config.
@@ -47,7 +48,7 @@ class DaemonConfig {
     this.port = 7337,
     this.apiKey,
     this.bearerToken,
-    this.version = '0.1.0',
+    this.version = packageVersion,
     this.useEnvironmentCredentials = true,
   }) : configDirectory = configDirectory ?? homeDirectory;
 

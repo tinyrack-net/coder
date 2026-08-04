@@ -10,3 +10,7 @@ coverage/
 **/.flutter-plugins-dependencies
 **/ios/Flutter/.last_build_id
 **/.swiftpm/
+
+# Release artifacts and packaging staging.
+dist/
+.shipworld/
