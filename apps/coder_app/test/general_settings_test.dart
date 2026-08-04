@@ -1,10 +1,13 @@
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/fake_desktop_ports.dart';
 
 void main() {
   testWidgets(
@@ -72,17 +75,132 @@ void main() {
     },
     tags: const <String>['feature_test__settings_language__widget'],
   );
+
+  testWidgets(
+    'the startup toggles persist and re-register the login item',
+    (tester) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      final autostart = FakeAutostartRegistration(enabled: true);
+      await tester.pumpWidget(_app(store, autostart: autostart));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+
+      expect(store.settings.startAtBoot, isTrue);
+      expect(store.settings.startMinimizedAtBoot, isTrue);
+
+      // Turning off "start minimized" keeps the login item but has to rewrite
+      // the arguments it records.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('general-settings-start-minimized')),
+      );
+      await tester.pumpAndSettle();
+      expect(store.settings.startMinimizedAtBoot, isFalse);
+      expect(
+        autostart.applications.last,
+        (enabled: true, minimized: false),
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('general-settings-start-at-boot')),
+      );
+      await tester.pumpAndSettle();
+      expect(store.settings.startAtBoot, isFalse);
+      expect(autostart.enabled, isFalse);
+      expect(
+        autostart.applications.last,
+        (enabled: false, minimized: false),
+      );
+    },
+    tags: const <String>['feature_test__settings_startup__widget'],
+  );
+
+  testWidgets(
+    'start minimized is disabled while the app does not start at login',
+    (tester) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(
+          embeddedDaemonEnabled: false,
+          startAtBoot: false,
+        ),
+      );
+      final autostart = FakeAutostartRegistration();
+      await tester.pumpWidget(_app(store, autostart: autostart));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+
+      // Starting minimized only describes a login launch, so it cannot be
+      // chosen while there is no login launch to describe.
+      expect(
+        tester
+            .widget<SwitchListTile>(
+              find.byKey(
+                const ValueKey<String>('general-settings-start-minimized'),
+              ),
+            )
+            .onChanged,
+        isNull,
+      );
+
+      // The stored choice is preserved rather than forced off, so turning
+      // start-at-login back on restores it.
+      expect(store.settings.startMinimizedAtBoot, isTrue);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('general-settings-start-at-boot')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        autostart.applications.single,
+        (enabled: true, minimized: true),
+      );
+    },
+    tags: const <String>['feature_test__settings_startup__widget'],
+  );
+
+  testWidgets(
+    'a build without login items hides the startup card entirely',
+    (tester) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      await tester.pumpWidget(_app(store));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('표시 언어'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('general-settings-start-at-boot')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__settings_startup__widget'],
+  );
 }
 
-Widget _app(MemoryAppStore store) => CoderApp(
-  services: AppServices(
-    settings: store,
-    profiles: store,
-    credentials: store,
-    clients: const _OfflineClients(),
-    clientKind: 'test',
-  ),
-);
+Widget _app(MemoryAppStore store, {AutostartRegistration? autostart}) =>
+    CoderApp(
+      services: AppServices(
+        settings: store,
+        profiles: store,
+        credentials: store,
+        clients: const _OfflineClients(),
+        clientKind: 'test',
+      ),
+      autostart: autostart,
+    );
 
 final class _OfflineClients implements HostClientFactory {
   const _OfflineClients();

@@ -155,6 +155,8 @@ final class _AppDocument {
           )
           .toList(growable: false),
       'sidebarCollapsed': settings.sidebarCollapsed,
+      'startAtBoot': settings.startAtBoot,
+      'startMinimizedAtBoot': settings.startMinimizedAtBoot,
     },
     'profiles': profiles.map(_profileToJson).toList(growable: false),
   };
@@ -170,8 +172,14 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
   final localeTag = json['localeTag'];
   final tabs = json['sessionTabs'];
   final collapsed = json['sidebarCollapsed'];
+  // Absent in documents written before the startup settings existed, which
+  // keep the enabled defaults rather than failing the whole document.
+  final startAtBoot = json['startAtBoot'];
+  final startMinimized = json['startMinimizedAtBoot'];
   if (embedded is! bool ||
       collapsed is! bool ||
+      (startAtBoot != null && startAtBoot is! bool) ||
+      (startMinimized != null && startMinimized is! bool) ||
       (exposure != null && exposure is! String) ||
       (lastHost != null && lastHost is! String) ||
       (lastWorktree != null && lastWorktree is! Map<String, dynamic>) ||
@@ -208,6 +216,8 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
     localeTag: localeTag as String?,
     sessionTabs: Map<String, SessionTabPreference>.unmodifiable(sessionTabs),
     sidebarCollapsed: collapsed,
+    startAtBoot: startAtBoot as bool? ?? true,
+    startMinimizedAtBoot: startMinimized as bool? ?? true,
   );
 }
 

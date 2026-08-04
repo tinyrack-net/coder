@@ -33,6 +33,19 @@
   "generalLanguageDescription": "앱 전체에 적용되며 즉시 반영됩니다.",
   "generalLanguageSystem": "시스템 설정 따름",
 
+  "generalStartupSection": "시작",
+  "generalStartupAtBootLabel": "로그인 시 시작",
+  "generalStartupAtBootDescription": "로그인하면 운영체제가 Tinyrack Coder를 실행해 내장 daemon이 계속 동작합니다.",
+  "generalStartupMinimizedLabel": "최소화된 상태로 시작",
+  "generalStartupMinimizedDescription": "로그인 시 실행되면 창을 열지 않고 바로 트레이로 들어갑니다.",
+  "generalStartupCloseNotice": "창을 닫아도 Tinyrack Coder는 트레이에서 계속 실행됩니다.",
+
+  "trayTooltip": "Tinyrack Coder",
+  "trayShowWindow": "창 열기",
+  "trayHideWindow": "창 숨기기",
+  "trayOpenSettings": "설정",
+  "trayQuit": "종료",
+
   "workspacesTitle": "Workspaces",
   "workspaceSidebarExpand": "사이드바 열기",
   "workspaceSidebarCollapse": "사이드바 접기",

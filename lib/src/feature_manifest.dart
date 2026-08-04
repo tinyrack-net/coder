@@ -85,6 +85,27 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'settings.startup',
+    description:
+        'Registers the app with the operating system login items and chooses '
+        'whether a login-time launch starts hidden in the tray.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'desktop.residency',
+    description:
+        'Keeps the desktop app and its embedded daemon resident in the tray '
+        'when the window is closed, and quits only from the tray menu.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.platformSmoke,
+    },
+  ),
+  FeatureContract(
     id: 'project.settings',
     description:
         'Edits per-project worktree lifecycle hooks stored in the repository '

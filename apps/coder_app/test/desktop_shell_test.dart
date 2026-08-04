@@ -1,0 +1,265 @@
+import 'package:coder_app/src/desktop_shell.dart';
+import 'package:coder_app/src/desktop_startup.dart';
+import 'package:coder_app/src/tray_menu_model.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:window_manager/window_manager.dart';
+
+void main() {
+  group('window adapter', () {
+    test(
+      'preparing a normal launch shows the window and a hidden one does not',
+      () async {
+        var initialized = 0;
+        var shown = 0;
+        final window = PluginDesktopWindow(
+          initialize: () async => initialized += 1,
+          readyToShow: (onReady) => onReady(),
+          showWindow: () async => shown += 1,
+        );
+
+        await window.prepare(startHidden: false);
+        expect(initialized, 1);
+        expect(shown, 1);
+
+        await window.prepare(startHidden: true);
+        expect(initialized, 2);
+        expect(shown, 1);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
+      'intercepting close routes the native gesture instead of quitting',
+      () async {
+        final prevented = <bool>[];
+        final listeners = <WindowListener>[];
+        var closes = 0;
+        final window = PluginDesktopWindow(
+          preventClose: ({required prevent}) async => prevented.add(prevent),
+          addWindowListener: listeners.add,
+          removeWindowListener: listeners.remove,
+        );
+
+        await window.interceptClose(() => closes += 1);
+        expect(prevented, <bool>[true]);
+        expect(listeners, hasLength(1));
+
+        // The relay is what turns a native close into an app callback.
+        listeners.single.onWindowClose();
+        expect(closes, 1);
+
+        // Intercepting twice must not leave a stale listener behind.
+        await window.interceptClose(() => closes += 1);
+        expect(listeners, hasLength(1));
+
+        await window.releaseClose();
+        expect(listeners, isEmpty);
+        expect(prevented, <bool>[true, false, true, false]);
+
+        // Releasing again is inert, so the quit path can be defensive.
+        await window.releaseClose();
+        expect(prevented, hasLength(4));
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
+      'show, hide, visibility, and destroy reach the plugin',
+      () async {
+        var shown = 0;
+        var hidden = 0;
+        var destroyed = 0;
+        final window = PluginDesktopWindow(
+          showWindow: () async => shown += 1,
+          hideWindow: () async => hidden += 1,
+          windowIsVisible: () async => true,
+          destroyWindow: () async => destroyed += 1,
+        );
+
+        await window.show();
+        await window.hide();
+        await window.destroy();
+        expect(await window.isVisible(), isTrue);
+        expect(<int>[shown, hidden, destroyed], <int>[1, 1, 1]);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+  });
+
+  group('tray adapter', () {
+    ({
+      PluginTrayIcon tray,
+      List<String> icons,
+      List<String> tooltips,
+      List<Menu> menus,
+      List<TrayListener> listeners,
+      List<bool> templates,
+    })
+    build({TargetPlatform platform = TargetPlatform.linux}) {
+      final icons = <String>[];
+      final templates = <bool>[];
+      final tooltips = <String>[];
+      final menus = <Menu>[];
+      final listeners = <TrayListener>[];
+      return (
+        tray: PluginTrayIcon(
+          platform: platform,
+          setIcon: (path, {required isTemplate}) async {
+            icons.add(path);
+            templates.add(isTemplate);
+          },
+          setToolTip: (value) async => tooltips.add(value),
+          setContextMenu: (value) async => menus.add(value),
+          addTrayListener: listeners.add,
+          removeTrayListener: listeners.remove,
+          destroyTray: () async {},
+        ),
+        icons: icons,
+        tooltips: tooltips,
+        menus: menus,
+        listeners: listeners,
+        templates: templates,
+      );
+    }
+
+    const model = TrayMenuModel(
+      tooltip: 'Coder',
+      entries: <TrayMenuEntry>[
+        TrayMenuEntry(
+          key: trayItemToggleWindow,
+          label: 'Show',
+          action: TrayMenuAction.toggleWindow,
+        ),
+        TrayMenuEntry.separator(),
+        TrayMenuEntry(key: trayItemDaemonStatus, label: 'Idle', enabled: false),
+      ],
+    );
+
+    test(
+      'installing sets the platform icon and routes clicks by row key',
+      () async {
+        final harness = build();
+        final selected = <String>[];
+
+        await harness.tray.install(
+          menu: model,
+          onSelected: selected.add,
+        );
+
+        expect(harness.icons, <String>['assets/tray/tray_icon.png']);
+        expect(harness.templates, <bool>[false]);
+        expect(harness.menus, hasLength(1));
+        expect(harness.listeners, hasLength(1));
+
+        harness.listeners.single.onTrayMenuItemClick(
+          MenuItem(key: trayItemToggleWindow, label: 'Show'),
+        );
+        expect(selected, <String>[trayItemToggleWindow]);
+
+        // A native row without a key cannot be mapped to an action.
+        harness.listeners.single.onTrayMenuItemClick(
+          MenuItem(label: 'Unkeyed'),
+        );
+        expect(selected, <String>[trayItemToggleWindow]);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
+      'the tooltip is skipped on Linux, where the plugin has no such call',
+      () async {
+        final linux = build();
+        await linux.tray.update(model);
+        expect(linux.tooltips, isEmpty);
+        expect(linux.menus, hasLength(1));
+
+        final windows = build(platform: TargetPlatform.windows);
+        await windows.tray.update(model);
+        expect(windows.tooltips, <String>['Coder']);
+
+        final macos = build(platform: TargetPlatform.macOS);
+        await macos.tray.install(menu: model, onSelected: (_) {});
+        expect(macos.icons, <String>['assets/tray/tray_icon_template.png']);
+        expect(macos.templates, <bool>[true]);
+        expect(
+          trayIconAssetPath(platform: TargetPlatform.windows),
+          'assets/tray/tray_icon.ico',
+        );
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
+      'destroying removes the listener and is inert without an install',
+      () async {
+        final harness = build();
+        await harness.tray.destroy();
+        expect(harness.listeners, isEmpty);
+
+        await harness.tray.install(menu: model, onSelected: (_) {});
+        expect(harness.listeners, hasLength(1));
+        await harness.tray.destroy();
+        expect(harness.listeners, isEmpty);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
+      'separators and disabled rows survive the native conversion',
+      () {
+        final items = buildNativeTrayMenu(model).items!;
+        expect(items, hasLength(3));
+        expect(items[0].key, trayItemToggleWindow);
+        expect(items[0].disabled, isFalse);
+        expect(items[1].type, 'separator');
+        expect(items[2].key, trayItemDaemonStatus);
+        expect(items[2].disabled, isTrue);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+  });
+
+  group('login item adapter', () {
+    test(
+      'the minimized flag is recorded as a launch argument, not a toggle',
+      () async {
+        final recorded = <List<String>>[];
+        final paths = <String>[];
+        var enables = 0;
+        var disables = 0;
+        final autostart = LaunchAtStartupRegistration(
+          configure: ({required appPath, required args}) {
+            paths.add(appPath);
+            recorded.add(args);
+          },
+          enableStartup: () async => enables += 1,
+          disableStartup: () async => disables += 1,
+          startupIsEnabled: () async => true,
+        );
+
+        await autostart.apply(enabled: true, minimized: true);
+        expect(recorded.single, <String>[startMinimizedFlag]);
+        expect(paths.single, isNotEmpty);
+        expect(enables, 1);
+        expect(disables, 0);
+
+        // Turning off "start minimized" while still registered must rewrite
+        // the arguments, not merely leave the old registration in place.
+        await autostart.apply(enabled: true, minimized: false);
+        expect(recorded.last, isEmpty);
+        expect(enables, 2);
+
+        await autostart.apply(enabled: false, minimized: false);
+        expect(disables, 1);
+        expect(enables, 2);
+
+        expect(await autostart.isEnabled(), isTrue);
+        // A space in the name would corrupt the unquoted Linux Exec= line.
+        expect(LaunchAtStartupRegistration.appName, isNot(contains(' ')));
+      },
+      tags: const <String>['feature_test__settings_startup__unit'],
+    );
+  });
+}

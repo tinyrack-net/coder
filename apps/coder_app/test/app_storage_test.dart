@@ -50,6 +50,8 @@ void main() {
           },
           sidebarCollapsed: true,
           localeTag: 'en',
+          startAtBoot: false,
+          startMinimizedAtBoot: false,
         ),
       );
       await store.upsertProfile(profile);
@@ -63,6 +65,8 @@ void main() {
       expect(restored.lastWorktree, selection);
       expect(restored.sidebarCollapsed, isTrue);
       expect(restored.localeTag, 'en');
+      expect(restored.startAtBoot, isFalse);
+      expect(restored.startMinimizedAtBoot, isFalse);
       expect(
         restored.sessionTabs[selection.storageKey]?.openAgentIds,
         <String>['agent-1', 'agent-2'],
@@ -135,7 +139,8 @@ void main() {
   });
 
   test(
-    'documents written before the language setting load as the system default',
+    'documents written before the language and startup settings load '
+    'with their defaults',
     () async {
       // The key is simply absent in v3 documents written by earlier builds,
       // which must keep loading rather than resetting every stored setting.
@@ -161,8 +166,15 @@ void main() {
       expect(restored.localeTag, isNull);
       expect(restored.lastActiveHostId, 'host-id');
       expect(restored.sidebarCollapsed, isTrue);
+      // Startup registration is opt-out, so an upgraded install keeps the
+      // same enabled defaults a fresh install gets.
+      expect(restored.startAtBoot, isTrue);
+      expect(restored.startMinimizedAtBoot, isTrue);
     },
-    tags: const <String>['feature_test__settings_language__unit'],
+    tags: const <String>[
+      'feature_test__settings_language__unit',
+      'feature_test__settings_startup__unit',
+    ],
   );
 
   test('rejects incompatible and malformed settings documents', () async {
@@ -196,6 +208,32 @@ void main() {
           'localeTag': 7,
           'sessionTabs': <Object>[],
           'sidebarCollapsed': false,
+        },
+        'profiles': <Object>[],
+      },
+      <String, Object?>{
+        'version': 3,
+        'settings': <String, Object?>{
+          'embeddedDaemonEnabled': true,
+          'embeddedDaemonExposure': 'loopback',
+          'lastActiveHostId': null,
+          'lastWorktree': null,
+          'sessionTabs': <Object>[],
+          'sidebarCollapsed': false,
+          'startAtBoot': 7,
+        },
+        'profiles': <Object>[],
+      },
+      <String, Object?>{
+        'version': 3,
+        'settings': <String, Object?>{
+          'embeddedDaemonEnabled': true,
+          'embeddedDaemonExposure': 'loopback',
+          'lastActiveHostId': null,
+          'lastWorktree': null,
+          'sessionTabs': <Object>[],
+          'sidebarCollapsed': false,
+          'startMinimizedAtBoot': 'yes',
         },
         'profiles': <Object>[],
       },

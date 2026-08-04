@@ -37,7 +37,7 @@ final class HostRegistryControllerProvider
 }
 
 String _$hostRegistryControllerHash() =>
-    r'2366234719c344f3bbb571dbe688a78191aaa5a4';
+    r'0d95e293343e3c1e3c1772680ba33bba2d0b1a85';
 
 /// Riverpod bridge exposing the independently testable [HostRegistry].
 

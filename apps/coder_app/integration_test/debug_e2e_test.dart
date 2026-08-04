@@ -5,8 +5,10 @@ import 'dart:io';
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/tray_menu_model.dart';
 import 'package:coder_app/src/workspace/directory_browser.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
@@ -647,6 +649,50 @@ void main() {
       'feature_test__provider_connection_management__e2e',
       'feature_test__provider_custom__e2e',
     ],
+  );
+
+  testWidgets(
+    'the real runner registers a tray icon and hides instead of quitting',
+    (tester) async {
+      // This runs against the real Linux runner, so it proves the tray and
+      // window plugins are linked and answer their channels. It deliberately
+      // asserts nothing about the icon being visible: a headless CI display
+      // has no StatusNotifier host to show it.
+      final window = PluginDesktopWindow();
+      final tray = PluginTrayIcon();
+      addTearDown(tray.destroy);
+      addTearDown(window.releaseClose);
+
+      await window.prepare(startHidden: false);
+      expect(await window.isVisible(), isTrue);
+
+      var closes = 0;
+      await window.interceptClose(() => closes += 1);
+
+      const menu = TrayMenuModel(
+        tooltip: 'Tinyrack Coder',
+        entries: <TrayMenuEntry>[
+          TrayMenuEntry(
+            key: trayItemToggleWindow,
+            label: 'Show window',
+            action: TrayMenuAction.toggleWindow,
+          ),
+          TrayMenuEntry.separator(),
+          TrayMenuEntry(key: trayItemQuit, label: 'Quit'),
+        ],
+      );
+      await tray.install(menu: menu, onSelected: (_) {});
+      await tray.update(menu);
+
+      // Hiding must leave the process alive, which is the whole point of
+      // closing to the tray.
+      await window.hide();
+      expect(await window.isVisible(), isFalse);
+      await window.show();
+      expect(await window.isVisible(), isTrue);
+      expect(closes, 0);
+    },
+    tags: const <String>['feature_test__desktop_residency__platformSmoke'],
   );
 }
 

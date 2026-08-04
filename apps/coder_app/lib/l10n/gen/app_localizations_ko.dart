@@ -96,6 +96,42 @@ class AppLocalizationsKo extends AppLocalizations {
   String get generalLanguageSystem => '시스템 설정 따름';
 
   @override
+  String get generalStartupSection => '시작';
+
+  @override
+  String get generalStartupAtBootLabel => '로그인 시 시작';
+
+  @override
+  String get generalStartupAtBootDescription =>
+      '로그인하면 운영체제가 Tinyrack Coder를 실행해 내장 daemon이 계속 동작합니다.';
+
+  @override
+  String get generalStartupMinimizedLabel => '최소화된 상태로 시작';
+
+  @override
+  String get generalStartupMinimizedDescription =>
+      '로그인 시 실행되면 창을 열지 않고 바로 트레이로 들어갑니다.';
+
+  @override
+  String get generalStartupCloseNotice =>
+      '창을 닫아도 Tinyrack Coder는 트레이에서 계속 실행됩니다.';
+
+  @override
+  String get trayTooltip => 'Tinyrack Coder';
+
+  @override
+  String get trayShowWindow => '창 열기';
+
+  @override
+  String get trayHideWindow => '창 숨기기';
+
+  @override
+  String get trayOpenSettings => '설정';
+
+  @override
+  String get trayQuit => '종료';
+
+  @override
   String get workspacesTitle => 'Workspaces';
 
   @override

@@ -272,6 +272,72 @@ abstract class AppLocalizations {
   /// **'System default'**
   String get generalLanguageSystem;
 
+  /// Heading of the startup card on the General settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Startup'**
+  String get generalStartupSection;
+
+  /// Switch label for launching the app when the user logs in.
+  ///
+  /// In en, this message translates to:
+  /// **'Start at login'**
+  String get generalStartupAtBootLabel;
+
+  /// Explains what the start-at-login switch registers with the operating system.
+  ///
+  /// In en, this message translates to:
+  /// **'The operating system launches Tinyrack Coder after you sign in, so the embedded daemon keeps running.'**
+  String get generalStartupAtBootDescription;
+
+  /// Switch label for starting hidden in the tray at login.
+  ///
+  /// In en, this message translates to:
+  /// **'Start minimized'**
+  String get generalStartupMinimizedLabel;
+
+  /// Explains that start-minimized applies only to login launches.
+  ///
+  /// In en, this message translates to:
+  /// **'A login-time launch goes straight to the tray without opening a window.'**
+  String get generalStartupMinimizedDescription;
+
+  /// Explains that the window close button no longer quits the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing the window keeps Tinyrack Coder running in the tray.'**
+  String get generalStartupCloseNotice;
+
+  /// Hover text of the tray icon.
+  ///
+  /// In en, this message translates to:
+  /// **'Tinyrack Coder'**
+  String get trayTooltip;
+
+  /// Tray menu row that reveals the hidden main window.
+  ///
+  /// In en, this message translates to:
+  /// **'Show window'**
+  String get trayShowWindow;
+
+  /// Tray menu row that hides the main window into the tray.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide window'**
+  String get trayHideWindow;
+
+  /// Tray menu row that opens the General settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get trayOpenSettings;
+
+  /// Tray menu row that stops the embedded daemon and exits the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get trayQuit;
+
   /// Title of the workspace shell.
   ///
   /// In en, this message translates to:

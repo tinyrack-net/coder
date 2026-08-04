@@ -62,6 +62,31 @@ combine a provider, repositories, tools, and transports.
   The single bearer token grants the complete daemon API; there are no roles or
   location-based permissions.
 
+## Desktop residency
+
+The desktop app owns the embedded daemon, so closing its window hides it to the
+platform tray instead of quitting; only the tray's Quit row stops the daemon and
+ends the process. `DesktopWindow`, `TrayIcon`, and `AutostartRegistration` are
+typed ports supplied by `main_desktop.dart`; mobile passes null and never builds
+the shell. Tray labels and the embedded-daemon status row are rebuilt from
+`AppLocalizations` and `HostRegistryState`, so they follow the selected
+language. Native tray calls are serialized because the icon must exist before a
+menu can be attached to it.
+
+General settings register the app as a login item. "Start minimized" is recorded
+as a `--start-minimized` argument on that registration, and the app starts
+hidden only when both the stored preference and that argument are present, so a
+launch the user started always shows a window.
+
+Because a second instance would bind a second daemon over the same data, the
+Linux runner is single-instance and later launches raise the running window.
+That also means `flutter run -d linux` exits immediately while another build of
+the app is running; stop it first.
+
+Linux requires `libayatana-appindicator3-dev` to build and a StatusNotifier host
+(on GNOME, the AppIndicator extension) to show the icon. macOS registers its
+login item through `SMAppService`, which sets the deployment target to 13.0.
+
 ## Network scope
 
 The default listener is loopback-only. Desktop Settings can restart the

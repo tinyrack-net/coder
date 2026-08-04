@@ -2,10 +2,14 @@ import 'package:coder_app/main.dart' as platform_entry;
 import 'package:coder_app/main_desktop.dart' as desktop_entry;
 import 'package:coder_app/main_mobile.dart' as mobile_entry;
 import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/desktop_startup.dart';
+import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fake_coder_api.dart';
+import 'support/fake_desktop_ports.dart';
 
 void main() {
   test('platform dispatcher selects exactly one entry point', () async {
@@ -43,12 +47,21 @@ void main() {
         ),
       ],
     );
+    final window = FakeDesktopWindow();
+    final tray = FakeTrayIcon();
     await desktop_entry.runDesktopApp(
       services: fakeAppServices(desktopApi),
+      window: window,
+      tray: tray,
+      autostart: FakeAutostartRegistration(),
     );
     await tester.pumpAndSettle();
     // The injected daemon names the workspace row it serves.
     expect(find.text('Test daemon · /repos/coder'), findsOneWidget);
+    // The desktop runner is resident: it owns a tray and swallows the close.
+    expect(window.preparedHidden, isFalse);
+    expect(window.preventingClose, isTrue);
+    expect(tray.installs, 1);
 
     final mobileApi = FakeCoderApi();
     await mobile_entry.runMobileApp(
@@ -57,4 +70,27 @@ void main() {
     await tester.pump();
     expect(find.byType(CoderApp), findsOneWidget);
   });
+
+  testWidgets(
+    'the login-item argument starts the desktop runner hidden',
+    (tester) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      final window = FakeDesktopWindow();
+      await desktop_entry.runDesktopApp(
+        services: fakeAppServices(FakeCoderApi(), store: store),
+        arguments: const <String>[startMinimizedFlag],
+        window: window,
+        tray: FakeTrayIcon(),
+        autostart: FakeAutostartRegistration(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(window.preparedHidden, isTrue);
+      expect(window.visible, isFalse);
+      expect(window.shows, 0);
+    },
+    tags: const <String>['feature_test__settings_startup__widget'],
+  );
 }

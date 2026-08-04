@@ -97,6 +97,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generalLanguageSystem => 'System default';
 
   @override
+  String get generalStartupSection => 'Startup';
+
+  @override
+  String get generalStartupAtBootLabel => 'Start at login';
+
+  @override
+  String get generalStartupAtBootDescription =>
+      'The operating system launches Tinyrack Coder after you sign in, so the embedded daemon keeps running.';
+
+  @override
+  String get generalStartupMinimizedLabel => 'Start minimized';
+
+  @override
+  String get generalStartupMinimizedDescription =>
+      'A login-time launch goes straight to the tray without opening a window.';
+
+  @override
+  String get generalStartupCloseNotice =>
+      'Closing the window keeps Tinyrack Coder running in the tray.';
+
+  @override
+  String get trayTooltip => 'Tinyrack Coder';
+
+  @override
+  String get trayShowWindow => 'Show window';
+
+  @override
+  String get trayHideWindow => 'Hide window';
+
+  @override
+  String get trayOpenSettings => 'Settings';
+
+  @override
+  String get trayQuit => 'Quit';
+
+  @override
   String get workspacesTitle => 'Workspaces';
 
   @override

@@ -750,6 +750,77 @@ void main() {
     await registry.setSidebarCollapsed(collapsed: false);
     expect(store.settings.sidebarCollapsed, isFalse);
   });
+
+  test(
+    'startup preferences are persisted through the settings store',
+    () async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'test',
+      );
+      addTearDown(registry.close);
+      await registry.load();
+
+      // Both default to enabled, so the meaningful transition is turning
+      // them off and back on again.
+      await registry.setStartAtBoot(enabled: false);
+      expect(store.settings.startAtBoot, isFalse);
+      expect(registry.value.settings.startAtBoot, isFalse);
+      expect(registry.value.settings.startMinimizedAtBoot, isTrue);
+
+      await registry.setStartMinimizedAtBoot(enabled: false);
+      expect(store.settings.startMinimizedAtBoot, isFalse);
+      expect(registry.value.settings.startMinimizedAtBoot, isFalse);
+
+      await registry.setStartAtBoot(enabled: true);
+      expect(store.settings.startAtBoot, isTrue);
+      expect(store.settings.startMinimizedAtBoot, isFalse);
+    },
+    tags: const <String>['feature_test__settings_startup__unit'],
+  );
+
+  test(
+    'shutdown stops every client and the app-owned daemon exactly once',
+    () async {
+      final store = MemoryAppStore();
+      final embeddedApi = FakeCoderApi(
+        serverInfo: _serverInfo('embedded-server'),
+      );
+      final launcher = _EmbeddedLauncher();
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
+          'embedded.test': Future<CoderApi>.value(embeddedApi),
+        }),
+        embeddedLauncher: launcher,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'desktop',
+      );
+
+      await registry.load();
+      await _flush();
+      expect(launcher.session.stops, 0);
+
+      await registry.shutdown();
+      expect(embeddedApi.isClosed, isTrue);
+      expect(launcher.session.stops, 1);
+
+      // The provider scope disposes the registry after the tray quit path
+      // already shut it down, so the second call must be inert.
+      await registry.shutdown();
+      expect(launcher.session.stops, 1);
+    },
+    tags: const <String>['feature_test__desktop_residency__unit'],
+  );
 }
 
 ServerInfoDto _serverInfo(String id) => ServerInfoDto(

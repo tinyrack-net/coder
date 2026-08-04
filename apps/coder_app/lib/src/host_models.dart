@@ -54,6 +54,8 @@ final class AppSettings {
     this.localeTag,
     this.sessionTabs = const <String, SessionTabPreference>{},
     this.sidebarCollapsed = false,
+    this.startAtBoot = true,
+    this.startMinimizedAtBoot = true,
   });
 
   /// Whether desktop should manage an app-owned daemon.
@@ -77,6 +79,15 @@ final class AppSettings {
   /// Whether the workspace sidebar is hidden on wide layouts.
   final bool sidebarCollapsed;
 
+  /// Whether the operating system launches the app when the user logs in.
+  final bool startAtBoot;
+
+  /// Whether a login-time launch starts hidden in the tray.
+  ///
+  /// A launch the user started themselves always shows a window, so this only
+  /// applies to the registered login item.
+  final bool startMinimizedAtBoot;
+
   /// Returns settings with selected fields replaced.
   AppSettings copyWith({
     bool? embeddedDaemonEnabled,
@@ -89,6 +100,8 @@ final class AppSettings {
     bool clearLocaleTag = false,
     Map<String, SessionTabPreference>? sessionTabs,
     bool? sidebarCollapsed,
+    bool? startAtBoot,
+    bool? startMinimizedAtBoot,
   }) => AppSettings(
     embeddedDaemonEnabled: embeddedDaemonEnabled ?? this.embeddedDaemonEnabled,
     embeddedDaemonExposure:
@@ -100,6 +113,8 @@ final class AppSettings {
     localeTag: clearLocaleTag ? null : localeTag ?? this.localeTag,
     sessionTabs: sessionTabs ?? this.sessionTabs,
     sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
+    startAtBoot: startAtBoot ?? this.startAtBoot,
+    startMinimizedAtBoot: startMinimizedAtBoot ?? this.startMinimizedAtBoot,
   );
 }
 

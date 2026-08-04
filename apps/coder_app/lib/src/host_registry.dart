@@ -319,6 +319,20 @@ final class HostRegistry {
     _emit(value.copyWith(settings: settings));
   }
 
+  /// Persists whether the operating system launches the app at login.
+  Future<void> setStartAtBoot({required bool enabled}) async {
+    final settings = value.settings.copyWith(startAtBoot: enabled);
+    await _settings.saveSettings(settings);
+    _emit(value.copyWith(settings: settings));
+  }
+
+  /// Persists whether a login-time launch starts hidden in the tray.
+  Future<void> setStartMinimizedAtBoot({required bool enabled}) async {
+    final settings = value.settings.copyWith(startMinimizedAtBoot: enabled);
+    await _settings.saveSettings(settings);
+    _emit(value.copyWith(settings: settings));
+  }
+
   /// Persists whether the workspace sidebar is hidden on wide layouts.
   Future<void> setSidebarCollapsed({required bool collapsed}) async {
     final settings = value.settings.copyWith(sidebarCollapsed: collapsed);
@@ -681,6 +695,12 @@ final class HostRegistry {
       throw StateError('HostRegistry.load must complete first.');
     }
   }
+
+  /// Stops every client and the app-owned daemon before the process exits.
+  ///
+  /// The tray quit path runs before the provider scope is disposed, so this
+  /// is the same idempotent teardown [close] performs, named for its caller.
+  Future<void> shutdown() => close();
 
   /// Closes every client and the app-owned daemon.
   Future<void> close() async {

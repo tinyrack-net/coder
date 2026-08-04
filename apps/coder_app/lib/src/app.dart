@@ -9,6 +9,8 @@ import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/desktop_shell.dart';
+import 'package:coder_app/src/desktop_shell_scope.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/general_settings_page.dart';
 import 'package:coder_app/src/host_labels.dart';
@@ -32,6 +34,10 @@ class CoderApp extends StatelessWidget {
   CoderApp({
     required this.services,
     this.externalUrlOpener = const PlatformExternalUrlOpener(),
+    this.desktopWindow,
+    this.trayIcon,
+    this.autostart,
+    this.startHidden = false,
     super.key,
   });
 
@@ -41,6 +47,18 @@ class CoderApp extends StatelessWidget {
   /// Opens interactive provider authorization pages.
   final ExternalUrlOpener externalUrlOpener;
 
+  /// Desktop window control, or null on platforms without a window to manage.
+  final DesktopWindow? desktopWindow;
+
+  /// Tray icon owner, or null on platforms without a tray.
+  final TrayIcon? trayIcon;
+
+  /// Login-item registration, or null where the app cannot register one.
+  final AutostartRegistration? autostart;
+
+  /// Whether this launch started without showing a window.
+  final bool startHidden;
+
   late final GoRouter _router = GoRouter(routes: $appRoutes);
 
   @override
@@ -48,16 +66,33 @@ class CoderApp extends StatelessWidget {
     overrides: [
       appServicesProvider.overrideWithValue(services),
       externalUrlOpenerProvider.overrideWithValue(externalUrlOpener),
+      desktopWindowProvider.overrideWithValue(desktopWindow),
+      trayIconProvider.overrideWithValue(trayIcon),
+      autostartProvider.overrideWithValue(autostart),
     ],
-    child: _CoderAppView(router: _router),
+    child: _CoderAppView(
+      router: _router,
+      resident: desktopWindow != null || trayIcon != null,
+      startHidden: startHidden,
+    ),
   );
 }
 
 /// Builds the app shell below [ProviderScope] so it can watch settings.
 class _CoderAppView extends ConsumerWidget {
-  const _CoderAppView({required this.router});
+  const _CoderAppView({
+    required this.router,
+    required this.resident,
+    required this.startHidden,
+  });
 
   final GoRouter router;
+
+  /// Whether this build owns a tray and can survive a closed window.
+  final bool resident;
+
+  /// Whether this launch started without showing a window.
+  final bool startHidden;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -78,6 +113,15 @@ class _CoderAppView extends ConsumerWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
+      // The shell sits below Localizations and the router so tray labels
+      // follow the selected language and a tray row can navigate.
+      builder: !resident
+          ? null
+          : (context, child) => DesktopShellScope(
+              router: router,
+              startHidden: startHidden,
+              child: child ?? const SizedBox.shrink(),
+            ),
     );
   }
 }

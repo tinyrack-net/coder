@@ -130,6 +130,17 @@ class HostRegistryController extends _$HostRegistryController {
   /// Persists the app UI language, where null follows the system locale.
   Future<void> setLocaleTag(String? tag) => _registry.setLocaleTag(tag);
 
+  /// Persists whether the operating system launches the app at login.
+  Future<void> setStartAtBoot({required bool enabled}) =>
+      _registry.setStartAtBoot(enabled: enabled);
+
+  /// Persists whether a login-time launch starts hidden in the tray.
+  Future<void> setStartMinimizedAtBoot({required bool enabled}) =>
+      _registry.setStartMinimizedAtBoot(enabled: enabled);
+
+  /// Stops every client and the app-owned daemon before the process exits.
+  Future<void> shutdown() => _registry.shutdown();
+
   /// Persists whether the workspace sidebar is hidden.
   Future<void> setSidebarCollapsed({required bool collapsed}) =>
       _registry.setSidebarCollapsed(collapsed: collapsed);
