@@ -560,9 +560,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerAgentLocked => '세션 생성 후에는 Agent를 바꿀 수 없습니다.';
 
   @override
-  String get composerSelectProvider => 'Provider 선택';
-
-  @override
   String get composerModel => '모델';
 
   @override
@@ -578,7 +575,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerNoPrimaryAgent => '사용 가능한 primary Agent가 없습니다.';
 
   @override
-  String get composerSelectProviderFirst => '사용할 Provider와 모델을 먼저 선택하세요.';
+  String get composerSelectModelFirst => '사용할 모델을 먼저 선택하세요.';
 
   @override
   String get composerPlanBanner => 'Plan 모드 · 계획만 세우고 실행하지 않습니다';

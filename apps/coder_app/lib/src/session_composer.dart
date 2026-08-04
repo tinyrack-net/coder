@@ -14,7 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Agent, provider, and model selectors shown above the chat input.
+/// Agent and model selectors shown above the chat input.
 class SessionComposerBar extends ConsumerStatefulWidget {
   /// Creates a [SessionComposerBar].
   const SessionComposerBar({
@@ -40,7 +40,7 @@ class SessionComposerBar extends ConsumerStatefulWidget {
   /// Agent definition currently in effect.
   final String? agentDefinitionId;
 
-  /// Provider and model currently in effect, if any resolve.
+  /// Provider-qualified model currently in effect, if any resolves.
   final SessionModelSelectionDto? selection;
 
   /// Called with the newly chosen agent definition id.
@@ -140,34 +140,11 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           ),
           const SizedBox(width: 8),
           ComposerChip(
-            valueKey: const ValueKey('session-composer-provider'),
-            icon: CoderIcons.cloud,
-            label: connection?.displayName ?? 'Provider',
-            tooltip: l10n.composerSelectProvider,
-            menuChildren: enabled && connections.isNotEmpty
-                ? <Widget>[
-                    for (final connection in connections)
-                      TRMenuItem(
-                        key: ValueKey(
-                          'session-composer-provider-${connection.id}',
-                        ),
-                        onPressed: () => unawaited(
-                          _chooseModel(context, connection.id),
-                        ),
-                        child: Text(connection.displayName),
-                      ),
-                  ]
-                : null,
-          ),
-          const SizedBox(width: 8),
-          ComposerChip(
             valueKey: const ValueKey('session-composer-model'),
             icon: CoderIcons.memory,
             label: modelLabel ?? selection?.modelId ?? l10n.composerModel,
             tooltip: l10n.composerSelectModel,
-            onPressed: enabled && connection != null
-                ? (chipContext) => _chooseModel(chipContext, connection.id)
-                : null,
+            onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
           ),
         ],
       ),
@@ -186,33 +163,46 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         .loadModels(connectionId);
   }
 
-  Future<void> _chooseModel(BuildContext context, String connectionId) async {
+  Future<void> _chooseModel(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    await _ensureModelsLoaded(connectionId);
+    final state = ref
+        .read(providerSettingsControllerProvider(widget.hostId))
+        .value;
+    final connections = usableConnections(
+      state?.connections ?? const <ProviderConnectionDto>[],
+    );
+    await Future.wait<void>(
+      connections.map((connection) => _ensureModelsLoaded(connection.id)),
+    );
     if (!context.mounted) return;
-    final models = _loadedModels(connectionId) ?? const <ProviderModelDto>[];
-    if (models.isEmpty) return;
+    final loaded = ref
+        .read(providerSettingsControllerProvider(widget.hostId))
+        .value;
+    final options = <ModelPickerOption>[
+      for (final connection in connections)
+        for (final model
+            in loaded?.models[connection.id] ?? const <ProviderModelDto>[])
+          ModelPickerOption(
+            providerName: connection.displayName,
+            model: model,
+          ),
+    ];
     final chosen = await showModelPicker(
       context,
-      connectionId: connectionId,
-      models: models,
-      currentModelId: connectionId == widget.selection?.providerConnectionId
-          ? widget.selection?.modelId
-          : null,
+      options: options,
+      currentSelection: widget.selection,
       title: l10n.composerSelectModel,
       inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed
           ? l10n.composerInheritModel
           : null,
     );
     if (chosen == null) return;
-    widget.onModelChanged(
-      chosen == inheritModelSentinel
-          ? null
-          : SessionModelSelectionDto(
-              providerConnectionId: connectionId,
-              modelId: chosen,
-            ),
-    );
+    switch (chosen) {
+      case SelectedModelPickerChoice(:final selection):
+        widget.onModelChanged(selection);
+      case InheritModelPickerChoice():
+        widget.onModelChanged(null);
+    }
   }
 
   AgentDefinitionDto? get _selectedAgent => widget.definitions
@@ -346,7 +336,7 @@ class DraftSessionPane extends ConsumerWidget {
           enabled: agent != null && effective != null,
           hint: agent == null
               ? l10n.composerNoPrimaryAgent
-              : (effective == null ? l10n.composerSelectProviderFirst : null),
+              : (effective == null ? l10n.composerSelectModelFirst : null),
           bar: SessionComposerBar(
             hostId: selection.hostId,
             definitions: definitions,
@@ -388,7 +378,7 @@ class DraftSessionPane extends ConsumerWidget {
   }
 }
 
-/// Chat input with the agent, provider, and model selectors above it.
+/// Chat input with the agent and model selectors above it.
 class SessionComposer extends StatefulWidget {
   /// Creates a [SessionComposer].
   const SessionComposer({

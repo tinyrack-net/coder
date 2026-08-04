@@ -493,13 +493,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('E2E Workspace ·').last);
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-provider')),
+      final worktreeModelSelector = find.byKey(
+        const ValueKey('session-composer-model'),
       );
+      await tester.ensureVisible(worktreeModelSelector);
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-provider-openai')),
-      );
+      await tester.tap(worktreeModelSelector);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
@@ -550,14 +549,13 @@ void main() {
       const send = ValueKey<String>('session-composer-send');
       await _pumpUntil(tester, find.byKey(composer));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('session-composer-model')), findsOne);
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-provider')),
+      final sessionModelSelector = find.byKey(
+        const ValueKey('session-composer-model'),
       );
+      expect(sessionModelSelector, findsOne);
+      await tester.ensureVisible(sessionModelSelector);
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-provider-openai')),
-      );
+      await tester.tap(sessionModelSelector);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),

@@ -737,10 +737,6 @@
   "@composerAgentLocked": {
     "description": "Tooltip explaining why the agent selector is disabled."
   },
-  "composerSelectProvider": "Select a provider",
-  "@composerSelectProvider": {
-    "description": "Tooltip of the provider selector."
-  },
   "composerModel": "Model",
   "@composerModel": {
     "description": "Fallback label of the model selector."
@@ -761,8 +757,8 @@
   "@composerNoPrimaryAgent": {
     "description": "Explains why the composer is disabled."
   },
-  "composerSelectProviderFirst": "Select a provider and model first.",
-  "@composerSelectProviderFirst": {
+  "composerSelectModelFirst": "Select a model first.",
+  "@composerSelectModelFirst": {
     "description": "Explains why the composer is disabled."
   },
   "composerPlanBanner": "Plan mode · drafts a plan without carrying it out",

@@ -1053,7 +1053,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                 SessionComposer(
                   enabled: !busy && effective != null,
                   hint: effective == null
-                      ? AppLocalizations.of(context).composerSelectProviderFirst
+                      ? AppLocalizations.of(context).composerSelectModelFirst
                       : null,
                   bar: SessionComposerBar(
                     hostId: widget.selection.hostId,

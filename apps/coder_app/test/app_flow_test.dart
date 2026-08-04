@@ -6,6 +6,7 @@ import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/model_picker.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +46,43 @@ void main() {
     status: SessionStatus.idle,
     createdAt: now,
     updatedAt: now,
+  );
+
+  testWidgets(
+    'model picker relies on the dialog for content margins',
+    (tester) async {
+      const hostKey = ValueKey('model-picker-host');
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          theme: testLightTheme,
+          home: const Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                key: hostKey,
+                width: 560,
+                height: 600,
+                child: ModelPicker(
+                  options: <ModelPickerOption>[],
+                  currentSelection: null,
+                  title: 'Model picker',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final host = find.byKey(hostKey);
+      final title = find.text('Model picker');
+      final search = find.byKey(const ValueKey('model-search-field'));
+      expect(tester.getTopLeft(title).dx, tester.getTopLeft(host).dx);
+      expect(tester.getSize(search).width, tester.getSize(host).width);
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
   );
 
   testWidgets(
@@ -277,10 +315,7 @@ void main() {
       // loaded state instead of flashing an empty-state error.
       await tester.pump();
       expect(find.text('먼저 프로젝트를 추가하세요.'), findsNothing);
-      expect(
-        find.text('사용할 Provider와 모델을 먼저 선택하세요.'),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('session-composer-model')), findsOne);
       expect(find.text('사용 가능한 primary Agent가 없습니다.'), findsNothing);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-new-button')), findsNothing);
@@ -347,6 +382,42 @@ void main() {
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agentDefinitions: const <AgentDefinitionDto>[planner],
+        connections: <ProviderConnectionDto>[
+          ProviderConnectionDto(
+            id: 'openai',
+            definitionId: 'openai',
+            displayName: 'OpenAI',
+            status: ProviderConnectionStatus.connected,
+            authKind: ProviderAuthKind.apiKey,
+            credentialOrigin: ProviderCredentialOrigin.stored,
+            createdAt: now,
+            updatedAt: now,
+          ),
+          ProviderConnectionDto(
+            id: 'deepseek',
+            definitionId: 'deepseek',
+            displayName: 'DeepSeek',
+            status: ProviderConnectionStatus.connected,
+            authKind: ProviderAuthKind.apiKey,
+            credentialOrigin: ProviderCredentialOrigin.stored,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        models: const <String, List<ProviderModelDto>>{
+          'deepseek': <ProviderModelDto>[
+            ProviderModelDto(
+              connectionId: 'deepseek',
+              id: 'gpt-5.6-sol',
+              label: 'Shared Model',
+              source: ProviderModelSource.bundled,
+              capabilities: ModelCapabilitiesDto(
+                streaming: CapabilitySupport.supported,
+                toolCalling: CapabilitySupport.supported,
+              ),
+            ),
+          ],
+        },
       );
       final router = await _pumpRoute(
         tester,
@@ -362,14 +433,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('session-composer-agent')), findsOne);
       expect(find.text('Planner'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('session-composer-provider')));
+      expect(
+        find.byKey(const ValueKey('session-composer-provider')),
+        findsNothing,
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-provider-openai')),
+      expect(find.textContaining('OpenAI · gpt-5.6-sol'), findsOneWidget);
+      expect(find.text('DeepSeek · gpt-5.6-sol'), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const ValueKey('model-search-field')),
+        'DeepSeek',
       );
       await tester.pumpAndSettle();
+      expect(find.textContaining('OpenAI · gpt-5.6-sol'), findsNothing);
+      expect(find.text('DeepSeek · gpt-5.6-sol'), findsOneWidget);
       await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+        find.byKey(const ValueKey('model-option-deepseek-gpt-5.6-sol')),
       );
       await tester.pumpAndSettle();
 
@@ -386,7 +466,7 @@ void main() {
       expect(
         created.model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
+          providerConnectionId: 'deepseek',
           modelId: 'gpt-5.6-sol',
         ),
       );
@@ -413,6 +493,28 @@ void main() {
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
+        connections: <ProviderConnectionDto>[
+          ProviderConnectionDto(
+            id: 'openai',
+            definitionId: 'openai',
+            displayName: 'OpenAI',
+            status: ProviderConnectionStatus.connected,
+            authKind: ProviderAuthKind.apiKey,
+            credentialOrigin: ProviderCredentialOrigin.stored,
+            createdAt: now,
+            updatedAt: now,
+          ),
+          ProviderConnectionDto(
+            id: 'deepseek',
+            definitionId: 'deepseek',
+            displayName: 'DeepSeek',
+            status: ProviderConnectionStatus.degraded,
+            authKind: ProviderAuthKind.apiKey,
+            credentialOrigin: ProviderCredentialOrigin.stored,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
         agentDefinitions: const <AgentDefinitionDto>[
           AgentDefinitionDto(
             id: 'coder',
@@ -449,6 +551,18 @@ void main() {
             ),
             fast,
           ],
+          'deepseek': <ProviderModelDto>[
+            const ProviderModelDto(
+              connectionId: 'deepseek',
+              id: 'deepseek-v4',
+              label: 'DeepSeek V4',
+              source: ProviderModelSource.bundled,
+              capabilities: ModelCapabilitiesDto(
+                streaming: CapabilitySupport.supported,
+                toolCalling: CapabilitySupport.supported,
+              ),
+            ),
+          ],
         },
       );
       final router = await _pumpRoute(
@@ -463,11 +577,7 @@ void main() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-provider')));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-provider-openai')),
-      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-fast')),
@@ -491,9 +601,23 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-deepseek-deepseek-v4')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        api.updatedSessionModels.single.model,
+        const SessionModelSelectionDto(
+          providerConnectionId: 'deepseek',
+          modelId: 'deepseek-v4',
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('model-option-inherit')));
       await tester.pumpAndSettle();
-      expect(api.updatedSessionModels.single.model, isNull);
+      expect(api.updatedSessionModels.last.model, isNull);
       expect((await api.listSessions()).single.model, isNull);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
@@ -521,11 +645,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('실행'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('session-composer-provider')));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-provider-openai')),
-      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),

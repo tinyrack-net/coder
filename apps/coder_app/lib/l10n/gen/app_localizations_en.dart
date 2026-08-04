@@ -568,9 +568,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The agent cannot be changed after the session starts.';
 
   @override
-  String get composerSelectProvider => 'Select a provider';
-
-  @override
   String get composerModel => 'Model';
 
   @override
@@ -586,8 +583,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerNoPrimaryAgent => 'No primary agent is available.';
 
   @override
-  String get composerSelectProviderFirst =>
-      'Select a provider and model first.';
+  String get composerSelectModelFirst => 'Select a model first.';
 
   @override
   String get composerPlanBanner =>
