@@ -478,10 +478,10 @@ void main() {
           id: 'fake',
           transport: McpTransportKind.stdio,
           command: Platform.resolvedExecutable,
-          args: <String>[
-            'run',
-            _fakeMcpServerPath(),
-          ],
+          // Run the script directly rather than through `dart run`: it
+          // imports nothing but dart:*, and the pub layer would otherwise
+          // contend with the suite for this package's .dart_tool.
+          args: <String>[_fakeMcpServerPath()],
           env: const <String, String>{
             'MCP_ECHO_PREFIX': r'${secret:fake.prefix}',
           },
@@ -607,10 +607,7 @@ void main() {
             'repo': <String, dynamic>{
               'transport': 'stdio',
               'command': Platform.resolvedExecutable,
-              'args': <String>[
-                'run',
-                _fakeMcpServerPath(),
-              ],
+              'args': <String>[_fakeMcpServerPath()],
             },
           },
         }),
@@ -1464,7 +1461,12 @@ Future<McpServerStateDto> _awaitReadyMcpServer(
       if (server.config.id != serverId) continue;
       if (server.status == McpServerStatus.ready) return server;
       if (server.status == McpServerStatus.failed) {
-        fail('MCP server "$serverId" failed: ${server.error}');
+        // The server's own output is what explains a platform-specific
+        // launch failure, so report it rather than just the summary.
+        fail(
+          'MCP server "$serverId" failed: ${server.error}\n'
+          'diagnostics: ${server.diagnostics.join('\n')}',
+        );
       }
     }
     await Future<void>.delayed(const Duration(milliseconds: 50));

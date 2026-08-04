@@ -202,7 +202,9 @@ void main() {
       final transport = StdioMcpTransport(
         McpStdioSpec(
           command: Platform.resolvedExecutable,
-          args: <String>['run', 'test/support/echo_mcp_server.dart'],
+          // Directly, not through `dart run`: the script imports nothing but
+          // dart:*, so it needs no package resolution.
+          args: <String>['test/support/echo_mcp_server.dart'],
         ),
       );
       final client = McpClient(transport: transport);

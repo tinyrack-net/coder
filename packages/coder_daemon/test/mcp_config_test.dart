@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -32,10 +33,10 @@ void main() {
   }
 
   test('the user and project scopes name their own files', () {
-    expect(userPath(), endsWith('/mcp.json'));
+    expect(p.basename(userPath()), 'mcp.json');
     expect(
       store.sourcePath(McpConfigScope.project, rootPath: '/repo'),
-      '/repo/.mcp.json',
+      p.join('/repo', '.mcp.json'),
     );
     expect(
       () => store.sourcePath(McpConfigScope.project),
