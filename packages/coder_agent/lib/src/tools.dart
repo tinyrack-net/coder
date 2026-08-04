@@ -11,7 +11,25 @@ import 'package:path/path.dart' as p;
 import 'package:platform/platform.dart';
 import 'package:process/process.dart';
 
-const int _maxToolOutputBytes = 1024 * 1024;
+/// Upper bound on the UTF-8 size of any tool result written to a turn.
+///
+/// Tool output is persisted verbatim into the conversation history and the
+/// timeline, so every tool — built-in or external — shares this single limit.
+const int maxToolOutputBytes = 1024 * 1024;
+
+/// Truncates [output] so its UTF-8 encoding fits within [maxToolOutputBytes].
+///
+/// Truncation happens on a code-unit boundary, so a multi-byte character is
+/// dropped whole rather than cut into an invalid sequence.
+String truncateToolOutput(String output) {
+  final bytes = utf8.encode(output);
+  if (bytes.length <= maxToolOutputBytes) return output;
+  var end = maxToolOutputBytes;
+  while (end > 0 && (bytes[end] & 0xC0) == 0x80) {
+    end--;
+  }
+  return utf8.decode(bytes.sublist(0, end));
+}
 
 Map<String, dynamic> _strictObject(
   Map<String, Map<String, dynamic>> properties,
@@ -485,7 +503,7 @@ class RunCommandTool extends AgentTool {
   }
 
   void _appendBounded(BytesBuilder builder, List<int> bytes) {
-    final remaining = _maxToolOutputBytes - builder.length;
+    final remaining = maxToolOutputBytes - builder.length;
     if (remaining <= 0) return;
     builder.add(
       bytes.length <= remaining ? bytes : bytes.sublist(0, remaining),

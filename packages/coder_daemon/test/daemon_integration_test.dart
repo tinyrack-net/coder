@@ -436,6 +436,357 @@ void main() {
   );
 
   test(
+    'MCP servers publish tools a real turn can call',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-mcp-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-mcp-workspace-',
+      );
+      const bearerToken = 'mcp-token-0123456789abcdef0123456789';
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: _EchoingMcpProvider(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'mcp-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      expect(client.serverInfo.features['mcp'], isTrue);
+      expect(await client.listMcpServers(), isEmpty);
+
+      final changed = client.events
+          .where((event) => event is McpServersChangedClientEvent)
+          .first
+          .timeout(_eventTimeout);
+      await client.setMcpSecret('fake.prefix', 'secret-');
+      final added = await client.addMcpServer(
+        McpServerConfigDto(
+          id: 'fake',
+          transport: McpTransportKind.stdio,
+          command: Platform.resolvedExecutable,
+          // Run the script directly rather than through `dart run`: it
+          // imports nothing but dart:*, and the pub layer would otherwise
+          // contend with the suite for this package's .dart_tool.
+          args: <String>[_fakeMcpServerPath()],
+          env: const <String, String>{
+            'MCP_ECHO_PREFIX': r'${secret:fake.prefix}',
+          },
+        ),
+      );
+      await changed;
+      expect(added.config.id, 'fake');
+
+      // The server connects in the background, so wait for it to come up.
+      final ready = await _awaitReadyMcpServer(client, 'fake');
+      expect(ready.serverName, 'fake');
+      expect(ready.protocolVersion, '2025-06-18');
+      expect(ready.tools.single.toolId, 'mcp__fake__echo');
+
+      final catalog = await client.listAgentTools();
+      final published = catalog.singleWhere(
+        (tool) => tool.id == 'mcp__fake__echo',
+      );
+      expect(published.risk, ToolRisk.dangerous);
+      // Read tools are supplied by the daemon, not opted into.
+      expect(
+        catalog.where((tool) => tool.alwaysOn).map((tool) => tool.id),
+        containsAll(<String>['list_directory', 'read_file', 'search_text']),
+      );
+
+      final coder = (await client.listAgentDefinitions()).single;
+      await client.updateAgentDefinition(
+        coder.copyWith(
+          permissionMode: PermissionMode.workspaceWrite,
+          toolIds: <String>[...coder.toolIds, 'mcp__fake__echo'],
+        ),
+        expectedContentHash: coder.contentHash,
+      );
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final session = await client.createSession(
+        id: 'mcp-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'MCP',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      // A dangerous tool always asks, even under workspaceWrite.
+      final approvalFuture = client.events
+          .where((event) => event is ApprovalRequestedClientEvent)
+          .cast<ApprovalRequestedClientEvent>()
+          .map((event) => event.approval)
+          .first
+          .timeout(_eventTimeout);
+      final completed = client.events
+          .where((event) => event is TimelineClientEvent)
+          .cast<TimelineClientEvent>()
+          .map((event) => event.event)
+          .firstWhere(
+            (event) =>
+                event.sessionId == session.id && event.type == 'turn.completed',
+          )
+          .timeout(_eventTimeout);
+      await client.subscribeTimeline(session.id);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'mcp-turn',
+        prompt: 'Echo something through MCP.',
+      );
+      final approval = await approvalFuture;
+      expect(approval.toolName, 'mcp__fake__echo');
+      expect(approval.risk, ToolRisk.dangerous);
+      expect(approval.preview, 'fake.echo');
+      await client.resolveApproval(approvalId: approval.id, approved: true);
+      await completed;
+      // turn.completed precedes the daemon's own final writes, so let the
+      // session settle before the teardown closes its database.
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+
+      final timeline = await client.subscribeTimeline(session.id);
+      final requested = timeline
+          .where((event) => event.type == 'tool.requested')
+          .single;
+      expect(requested.data['name'], 'mcp__fake__echo');
+      // Dangerous tools need approval, and workspaceWrite does not grant it.
+      expect(
+        timeline.map((event) => event.type),
+        contains('approval.resolved'),
+      );
+      final completedTool = timeline
+          .where((event) => event.type == 'tool.completed')
+          .single;
+      // The configured secret reached the child process.
+      expect(completedTool.data['output'], 'secret-through MCP');
+
+      await client.removeMcpServer('fake');
+      expect(
+        (await client.listAgentTools()).map((tool) => tool.id),
+        isNot(contains('mcp__fake__echo')),
+      );
+      expect(await client.listMcpServers(), isEmpty);
+    },
+    tags: const <String>[
+      'feature_test__mcp_server_management__verticalSlice',
+      'feature_test__mcp_tool_execution__verticalSlice',
+    ],
+  );
+
+  test(
+    'a project .mcp.json publishes tools only inside its own worktree',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'coder-mcp-project-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-mcp-project-',
+      );
+      const bearerToken = 'mcp-project-token-0123456789abcdef0123';
+      await File(p.join(workspace.path, '.mcp.json')).writeAsString(
+        jsonEncode(<String, dynamic>{
+          'version': 1,
+          'servers': <String, dynamic>{
+            'repo': <String, dynamic>{
+              'transport': 'stdio',
+              'command': Platform.resolvedExecutable,
+              'args': <String>[_fakeMcpServerPath()],
+            },
+          },
+        }),
+      );
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'mcp-project-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final worktreeId = registered.worktrees.single.id;
+
+      // Listing with the worktree in hand is what puts it into use.
+      await client.listMcpServers(worktreeId: worktreeId);
+      final ready = await _awaitReadyMcpServer(
+        client,
+        'repo',
+        worktreeId: worktreeId,
+      );
+      expect(ready.scope, McpConfigScope.project);
+      // The daemon canonicalizes checkout paths, and macOS resolves the
+      // temporary directory through /private, so compare against what the
+      // registration actually recorded.
+      expect(
+        ready.sourcePath,
+        p.join(registered.worktrees.single.path, '.mcp.json'),
+      );
+      expect(ready.shadowed, isFalse);
+
+      expect(
+        (await client.listAgentTools(
+          worktreeId: worktreeId,
+        )).map((tool) => tool.id),
+        contains('mcp__repo__echo'),
+      );
+      // The daemon-wide catalog never sees a repository's servers.
+      expect(
+        (await client.listAgentTools()).map((tool) => tool.id),
+        isNot(contains('mcp__repo__echo')),
+      );
+      expect(await client.listMcpServers(), isEmpty);
+    },
+    tags: const <String>[
+      'feature_test__mcp_server_management__verticalSlice',
+      'feature_test__mcp_tool_execution__verticalSlice',
+    ],
+  );
+
+  test(
+    'a server that cannot start leaves the daemon and its turns working',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'coder-mcp-broken-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-mcp-broken-workspace-',
+      );
+      const bearerToken = 'mcp-broken-token-0123456789abcdef01234';
+      await File(p.join(home.path, 'mcp.json')).writeAsString(
+        jsonEncode(<String, dynamic>{
+          'version': 1,
+          'servers': <String, dynamic>{
+            'broken': <String, dynamic>{
+              'transport': 'stdio',
+              'command': '/nonexistent/mcp-server',
+            },
+          },
+        }),
+      );
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: _PatchProvider(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'mcp-broken-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final coder = (await client.listAgentDefinitions()).single;
+      await client.updateAgentDefinition(
+        coder.copyWith(permissionMode: PermissionMode.workspaceWrite),
+        expectedContentHash: coder.contentHash,
+      );
+      final session = await client.createSession(
+        id: 'broken-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Broken',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      final completed = client.events
+          .where((event) => event is TimelineClientEvent)
+          .cast<TimelineClientEvent>()
+          .map((event) => event.event)
+          .firstWhere(
+            (event) =>
+                event.sessionId == session.id && event.type == 'turn.completed',
+          )
+          .timeout(_eventTimeout);
+      await client.subscribeTimeline(session.id);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'broken-turn',
+        prompt: 'Write a file.',
+      );
+      await completed;
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+
+      // The turn succeeded on built-in tools alone.
+      expect(
+        File(p.join(workspace.path, 'result.txt')).existsSync(),
+        isTrue,
+      );
+      final broken = (await client.listMcpServers()).single;
+      expect(broken.status, McpServerStatus.failed);
+      expect(broken.error, isNotNull);
+      expect(broken.tools, isEmpty);
+    },
+    tags: const <String>[
+      'feature_test__mcp_server_management__verticalSlice',
+      'feature_test__mcp_tool_execution__verticalSlice',
+    ],
+  );
+
+  test(
     'skills merge across sources, drive a turn, and stay editable over RPC',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-skill-home-');
@@ -1091,6 +1442,87 @@ final class _StaticDiscovery implements ProviderModelDiscovery {
     ProviderRuntimeConfig config,
     ProviderCredential? credential,
   ) async => modelIds;
+}
+
+/// Locates the fake stdio MCP server, whichever directory the suite runs from.
+///
+/// melos runs the vertical slice from the workspace root while a package-level
+/// `dart test` runs from the package, so neither path can be assumed.
+String _fakeMcpServerPath() {
+  const relative = <String>['test', 'support', 'fake_mcp_server_main.dart'];
+  for (final root in <String>[
+    Directory.current.path,
+    p.join(Directory.current.path, 'packages', 'coder_daemon'),
+  ]) {
+    final candidate = p.join(root, p.joinAll(relative));
+    if (File(candidate).existsSync()) return candidate;
+  }
+  fail('Could not locate fake_mcp_server_main.dart from ${Directory.current}.');
+}
+
+/// Polls until [serverId] reports itself ready, or the event budget expires.
+Future<McpServerStateDto> _awaitReadyMcpServer(
+  CoderApi client,
+  String serverId, {
+  String? worktreeId,
+}) async {
+  final deadline = DateTime.now().add(_eventTimeout);
+  while (DateTime.now().isBefore(deadline)) {
+    final servers = await client.listMcpServers(worktreeId: worktreeId);
+    for (final server in servers) {
+      if (server.config.id != serverId) continue;
+      if (server.status == McpServerStatus.ready) return server;
+      if (server.status == McpServerStatus.failed) {
+        // The server's own output is what explains a platform-specific
+        // launch failure, so report it rather than just the summary.
+        fail(
+          'MCP server "$serverId" failed: ${server.error}\n'
+          'diagnostics: ${server.diagnostics.join('\n')}',
+        );
+      }
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+  fail('MCP server "$serverId" never became ready.');
+}
+
+class _EchoingMcpProvider implements ModelProvider {
+  var _round = 0;
+
+  @override
+  String get id => 'fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    if (_round++ == 0) {
+      const arguments = <String, dynamic>{'value': 'through MCP'};
+      yield const ModelFunctionCall(
+        callId: 'echo-call',
+        name: 'mcp__fake__echo',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'echo-call',
+              name: 'mcp__fake__echo',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    yield const ModelTextDelta('Echoed.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Echoed.'),
+    );
+  }
 }
 
 class _PatchProvider implements ModelProvider {

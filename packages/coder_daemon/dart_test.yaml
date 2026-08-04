@@ -13,6 +13,10 @@ tags:
   feature_test__turn_execution__verticalSlice:
   feature_test__agent_definition_management__unit:
   feature_test__agent_definition_management__verticalSlice:
+  feature_test__mcp_server_management__unit:
+  feature_test__mcp_server_management__verticalSlice:
+  feature_test__mcp_tool_execution__unit:
+  feature_test__mcp_tool_execution__verticalSlice:
   feature_test__skill_management__unit:
   feature_test__skill_management__verticalSlice:
   feature_test__skill_invocation__unit:

@@ -47,6 +47,43 @@ void main() {
     expect(violations.single.rule, 'source_dependency_direction');
   });
 
+  test('the MCP package stays independent of the agent and daemon', () {
+    for (final forbidden in const <String>['coder_agent', 'coder_daemon']) {
+      final violations = verifier.verifySource(
+        package: 'coder_mcp',
+        path: 'packages/coder_mcp/lib/src/client.dart',
+        source: "import 'package:$forbidden/$forbidden.dart';",
+      );
+      expect(violations.single.rule, 'source_dependency_direction');
+    }
+    expect(
+      verifier.verifySource(
+        package: 'coder_daemon',
+        path: 'packages/coder_daemon/lib/src/mcp_service.dart',
+        source: "import 'package:coder_mcp/coder_mcp.dart';",
+      ),
+      isEmpty,
+    );
+  });
+
+  test('the MCP service is held to the application-layer rules', () {
+    final violations = verifier.verifySource(
+      package: 'coder_daemon',
+      path: 'packages/coder_daemon/lib/src/mcp_service.dart',
+      source:
+          "import 'dart:io';\n"
+          'final started = Process.start;\n'
+          'final now = DateTime.now();',
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      containsAll(<String>[
+        'application_infrastructure_import',
+        'application_concrete_dependency',
+      ]),
+    );
+  });
+
   test('coverage thresholds report both line and branch failures', () {
     const coverage = CoverageVerifier('/workspace');
     final result = coverage.validate(

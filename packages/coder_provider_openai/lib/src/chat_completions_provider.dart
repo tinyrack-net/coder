@@ -79,7 +79,7 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
               'name': tool.name,
               'description': tool.description,
               'parameters': tool.parameters,
-              if (_config.strictToolSchema) 'strict': true,
+              if (tool.strict && _config.strictToolSchema) 'strict': true,
             },
           },
         )

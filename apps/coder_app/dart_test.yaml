@@ -43,6 +43,10 @@ tags:
   feature_test__turn_execution__widget:
   feature_test__turn_execution__e2e:
   feature_test__agent_definition_management__widget:
+  feature_test__mcp_server_management__widget:
+  feature_test__mcp_server_management__e2e:
+  feature_test__mcp_tool_execution__widget:
+  route_test__mcp_settings_route__widget:
   feature_test__agent_definition_management__e2e:
   feature_test__agent_delegation__widget:
   feature_test__agent_delegation__e2e:

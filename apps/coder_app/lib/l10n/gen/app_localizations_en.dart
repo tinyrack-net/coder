@@ -824,4 +824,132 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get skillSettingsProjectHint =>
       'Pick a project to see and edit the skills committed to it.';
+
+  @override
+  String get settingsCategoryMcp => 'MCP';
+
+  @override
+  String get mcpSettingsHeading => 'MCP servers';
+
+  @override
+  String get mcpSettingsAdd => 'Add MCP server';
+
+  @override
+  String get mcpSettingsEmpty => 'No MCP servers are configured.';
+
+  @override
+  String get mcpSettingsSelectServer => 'Select a server to edit it.';
+
+  @override
+  String get mcpSettingsScopeUser => 'Yours';
+
+  @override
+  String get mcpSettingsScopeProject => 'This project';
+
+  @override
+  String get mcpSettingsProjectReadOnly =>
+      'Defined by this repository, so Coder does not edit it.';
+
+  @override
+  String get mcpSettingsShadowed => 'Hidden by your server of the same name';
+
+  @override
+  String mcpSettingsSource(String path) {
+    return 'Defined in $path';
+  }
+
+  @override
+  String get mcpSettingsServerId => 'ID';
+
+  @override
+  String get mcpSettingsServerIdInvalid =>
+      'Use lower-case letters, digits, - and _.';
+
+  @override
+  String get mcpSettingsTransport => 'Transport';
+
+  @override
+  String get mcpSettingsTransportStdio => 'Command';
+
+  @override
+  String get mcpSettingsTransportHttp => 'HTTP';
+
+  @override
+  String get mcpSettingsCommand => 'Command';
+
+  @override
+  String get mcpSettingsArgs => 'Arguments (one per line)';
+
+  @override
+  String get mcpSettingsWorkingDirectory => 'Working directory (optional)';
+
+  @override
+  String get mcpSettingsUrl => 'URL';
+
+  @override
+  String get mcpSettingsEnvironment => 'Environment (KEY=value, one per line)';
+
+  @override
+  String get mcpSettingsHeaders => 'Headers (Name: value, one per line)';
+
+  @override
+  String get mcpSettingsEnabled => 'Enabled';
+
+  @override
+  String get mcpSettingsSecretHint =>
+      'Never paste a secret here. Reference a stored secret or an environment variable instead:';
+
+  @override
+  String get mcpSettingsTest => 'Test connection';
+
+  @override
+  String mcpSettingsTestSucceeded(int count) {
+    return 'Connected and found $count tools.';
+  }
+
+  @override
+  String mcpSettingsTestFailed(String error) {
+    return 'Could not connect: $error';
+  }
+
+  @override
+  String get mcpSettingsDelete => 'Delete server';
+
+  @override
+  String mcpSettingsDeleteConfirm(String name) {
+    return 'Delete $name? Agents using its tools will lose them.';
+  }
+
+  @override
+  String get mcpSettingsStatusDisabled => 'Disabled';
+
+  @override
+  String get mcpSettingsStatusConnecting => 'Connecting';
+
+  @override
+  String get mcpSettingsStatusReady => 'Ready';
+
+  @override
+  String get mcpSettingsStatusFailed => 'Failed';
+
+  @override
+  String get mcpSettingsDiscoveredTools => 'Tools';
+
+  @override
+  String get mcpSettingsNoTools => 'This server publishes no tools.';
+
+  @override
+  String get mcpSettingsDiagnostics => 'Server output';
+
+  @override
+  String get mcpSettingsSecretSet => 'Store a secret';
+
+  @override
+  String get mcpSettingsSecretKey => 'Reference name';
+
+  @override
+  String get mcpSettingsSecretValue => 'Value';
+
+  @override
+  String get agentSettingsToolAlwaysOn => 'Always available';
 }

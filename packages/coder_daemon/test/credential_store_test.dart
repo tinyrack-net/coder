@@ -66,7 +66,7 @@ void main() {
         '${directory.path}/credentials.json',
       ).readAsString();
       expect(jsonDecode(credentialsJson), <String, dynamic>{
-        'version': 4,
+        'version': 5,
         'daemon': <String, dynamic>{'bearerToken': 'daemon-secret'},
         'providerCredentials': <String, dynamic>{
           'deepseek': <String, dynamic>{
@@ -122,6 +122,52 @@ void main() {
           contains('incompatible_credentials'),
         ),
       ),
+    );
+  });
+
+  test('MCP secrets live beside provider credentials', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'coder-credential-mcp-test-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final store = CredentialStore(directory.path);
+
+    await store.setMcpSecret('github.token', 'mcp-secret');
+    await store.setCredential('openai', const ApiKeyCredential('api-secret'));
+
+    final reloaded = CredentialStore(directory.path);
+    await reloaded.load();
+    expect(reloaded.mcpSecrets, <String, String>{
+      'github.token': 'mcp-secret',
+    });
+    expect(reloaded.credential('openai'), isA<ApiKeyCredential>());
+
+    await reloaded.setMcpSecret('github.token', 'rotated');
+    await reloaded.removeMcpSecret('absent');
+    expect(reloaded.mcpSecrets['github.token'], 'rotated');
+
+    await reloaded.removeMcpSecret('github.token');
+    final rereloaded = CredentialStore(directory.path);
+    await rereloaded.load();
+    expect(rereloaded.mcpSecrets, isEmpty);
+  });
+
+  test('a file carrying a malformed MCP secret is rejected', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'coder-credential-mcp-invalid-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    await File('${directory.path}/credentials.json').writeAsString(
+      jsonEncode(<String, dynamic>{
+        'version': 5,
+        'providerCredentials': <String, dynamic>{},
+        'mcpSecrets': <String, dynamic>{'github.token': 42},
+      }),
+    );
+
+    await expectLater(
+      CredentialStore(directory.path).load(),
+      throwsA(isA<FormatException>()),
     );
   });
 

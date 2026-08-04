@@ -12,6 +12,8 @@ coder_app -> coder_client -> coder_protocol
     +-- desktop only             |
          coder_daemon -> coder_agent -> coder_provider_openai
               |
+              +-- coder_mcp -> external MCP servers
+              |
               +-- Drift / SQLite
 ```
 
@@ -28,6 +30,11 @@ coder_app -> coder_client -> coder_protocol
   adapters plus OpenAI-compatible provider/model presets. Responses requests
   use `store: false`; encrypted reasoning items remain opaque daemon-owned
   conversation state.
+- `coder_mcp`: Model Context Protocol client, wire types, and the stdio and
+  Streamable HTTP transports. Depends on no other internal package: it knows
+  nothing about `AgentTool` or the daemon's DTOs, so the adapter that presents
+  an MCP tool as an `AgentTool` lives in `coder_daemon`. See
+  [`docs/mcp.md`](mcp.md).
 - `coder_daemon`: composition root, feature-scoped Drift DAOs, lifecycle
   recovery, bearer authentication, WebSocket RPC server, embedded isolate,
   and CLI.

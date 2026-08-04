@@ -13,6 +13,7 @@ class CredentialStore implements CredentialRepository {
   final String configDirectory;
   final Map<String, ProviderCredential> _providerCredentials =
       <String, ProviderCredential>{};
+  final Map<String, String> _mcpSecrets = <String, String>{};
   String? _bearerToken;
   bool _loaded = false;
 
@@ -26,7 +27,7 @@ class CredentialStore implements CredentialRepository {
     await _ensureDirectory();
     if (_credentialsFile.existsSync()) {
       final decoded = jsonDecode(await _credentialsFile.readAsString());
-      if (decoded is! Map<String, dynamic> || decoded['version'] != 4) {
+      if (decoded is! Map<String, dynamic> || decoded['version'] != 5) {
         throw FormatException(
           'incompatible_credentials: explicitly remove '
           '${_credentialsFile.path} to reset development credentials.',
@@ -39,6 +40,14 @@ class CredentialStore implements CredentialRepository {
             _providerCredentials[entry.key] = _credentialFromJson(value);
           }
         }
+      }
+      final secrets = decoded['mcpSecrets'];
+      if (secrets != null) {
+        if (secrets is! Map<String, dynamic> ||
+            secrets.values.any((value) => value is! String)) {
+          throw const FormatException('Invalid MCP secret data.');
+        }
+        _mcpSecrets.addAll(secrets.cast<String, String>());
       }
       final daemon = decoded['daemon'];
       if (daemon != null) {
@@ -82,9 +91,27 @@ class CredentialStore implements CredentialRepository {
     await _writeCredentials();
   }
 
+  @override
+  Map<String, String> get mcpSecrets =>
+      Map<String, String>.unmodifiable(_mcpSecrets);
+
+  @override
+  Future<void> setMcpSecret(String key, String value) async {
+    await load();
+    _mcpSecrets[key] = value;
+    await _writeCredentials();
+  }
+
+  @override
+  Future<void> removeMcpSecret(String key) async {
+    await load();
+    _mcpSecrets.remove(key);
+    await _writeCredentials();
+  }
+
   Future<void> _writeCredentials() =>
       _writeJson(_credentialsFile, <String, dynamic>{
-        'version': 4,
+        'version': 5,
         if (_bearerToken case final bearerToken?)
           'daemon': <String, dynamic>{
             'bearerToken': bearerToken,
@@ -93,6 +120,8 @@ class CredentialStore implements CredentialRepository {
           for (final entry in _providerCredentials.entries)
             entry.key: _credentialToJson(entry.value),
         },
+        if (_mcpSecrets.isNotEmpty)
+          'mcpSecrets': Map<String, String>.from(_mcpSecrets),
       });
 
   Future<void> _ensureDirectory() async {

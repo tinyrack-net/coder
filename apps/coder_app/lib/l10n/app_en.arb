@@ -160,7 +160,6 @@
   "@trayQuit": {
     "description": "Tray menu row that stops the embedded daemon and exits the app."
   },
-
   "desktopMenuFile": "File",
   "@desktopMenuFile": {
     "description": "File menu in the custom desktop title bar."
@@ -193,7 +192,6 @@
   "@desktopWindowClose": {
     "description": "Tooltip for hiding the resident app window to the tray."
   },
-
   "workspacesTitle": "Workspaces",
   "@workspacesTitle": {
     "description": "Title of the workspace shell."
@@ -1128,5 +1126,181 @@
   "skillSettingsProjectHint": "Pick a project to see and edit the skills committed to it.",
   "@skillSettingsProjectHint": {
     "description": "Explains what picking a project adds to the list."
+  },
+  "settingsCategoryMcp": "MCP",
+  "@settingsCategoryMcp": {
+    "description": "Sidebar label for the MCP server settings category."
+  },
+  "mcpSettingsHeading": "MCP servers",
+  "@mcpSettingsHeading": {
+    "description": "Heading of the MCP server list."
+  },
+  "mcpSettingsAdd": "Add MCP server",
+  "@mcpSettingsAdd": {
+    "description": "Tooltip of the add-server button."
+  },
+  "mcpSettingsEmpty": "No MCP servers are configured.",
+  "@mcpSettingsEmpty": {
+    "description": "Shown when no server exists."
+  },
+  "mcpSettingsSelectServer": "Select a server to edit it.",
+  "@mcpSettingsSelectServer": {
+    "description": "Placeholder in the detail pane."
+  },
+  "mcpSettingsScopeUser": "Yours",
+  "@mcpSettingsScopeUser": {
+    "description": "Heading above servers the user configured."
+  },
+  "mcpSettingsScopeProject": "This project",
+  "@mcpSettingsScopeProject": {
+    "description": "Heading above servers the repository declares."
+  },
+  "mcpSettingsProjectReadOnly": "Defined by this repository, so Coder does not edit it.",
+  "@mcpSettingsProjectReadOnly": {
+    "description": "Explains why a project server is read-only."
+  },
+  "mcpSettingsShadowed": "Hidden by your server of the same name",
+  "@mcpSettingsShadowed": {
+    "description": "Badge on a project server a user server overrides."
+  },
+  "mcpSettingsSource": "Defined in {path}",
+  "@mcpSettingsSource": {
+    "description": "Shows which file declares a server.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpSettingsServerId": "ID",
+  "@mcpSettingsServerId": {
+    "description": "Label of the server id field."
+  },
+  "mcpSettingsServerIdInvalid": "Use lower-case letters, digits, - and _.",
+  "@mcpSettingsServerIdInvalid": {
+    "description": "Rejects an unusable server id."
+  },
+  "mcpSettingsTransport": "Transport",
+  "@mcpSettingsTransport": {
+    "description": "Label of the transport selector."
+  },
+  "mcpSettingsTransportStdio": "Command",
+  "@mcpSettingsTransportStdio": {
+    "description": "Label of the stdio transport."
+  },
+  "mcpSettingsTransportHttp": "HTTP",
+  "@mcpSettingsTransportHttp": {
+    "description": "Label of the Streamable HTTP transport."
+  },
+  "mcpSettingsCommand": "Command",
+  "@mcpSettingsCommand": {
+    "description": "Label of the executable field."
+  },
+  "mcpSettingsArgs": "Arguments (one per line)",
+  "@mcpSettingsArgs": {
+    "description": "Label of the arguments field."
+  },
+  "mcpSettingsWorkingDirectory": "Working directory (optional)",
+  "@mcpSettingsWorkingDirectory": {
+    "description": "Label of the cwd field."
+  },
+  "mcpSettingsUrl": "URL",
+  "@mcpSettingsUrl": {
+    "description": "Label of the endpoint field."
+  },
+  "mcpSettingsEnvironment": "Environment (KEY=value, one per line)",
+  "@mcpSettingsEnvironment": {
+    "description": "Label of the env field."
+  },
+  "mcpSettingsHeaders": "Headers (Name: value, one per line)",
+  "@mcpSettingsHeaders": {
+    "description": "Label of the headers field."
+  },
+  "mcpSettingsEnabled": "Enabled",
+  "@mcpSettingsEnabled": {
+    "description": "Label of the enable switch."
+  },
+  "mcpSettingsSecretHint": "Never paste a secret here. Reference a stored secret or an environment variable instead:",
+  "@mcpSettingsSecretHint": {
+    "description": "Explains the secret reference syntax."
+  },
+  "mcpSettingsTest": "Test connection",
+  "@mcpSettingsTest": {
+    "description": "Label of the test button."
+  },
+  "mcpSettingsTestSucceeded": "Connected and found {count} tools.",
+  "@mcpSettingsTestSucceeded": {
+    "description": "Reports a successful test.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSettingsTestFailed": "Could not connect: {error}",
+  "@mcpSettingsTestFailed": {
+    "description": "Reports a failed test.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpSettingsDelete": "Delete server",
+  "@mcpSettingsDelete": {
+    "description": "Label of the delete action."
+  },
+  "mcpSettingsDeleteConfirm": "Delete {name}? Agents using its tools will lose them.",
+  "@mcpSettingsDeleteConfirm": {
+    "description": "Confirms deleting a server.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpSettingsStatusDisabled": "Disabled",
+  "@mcpSettingsStatusDisabled": {
+    "description": "Server status label."
+  },
+  "mcpSettingsStatusConnecting": "Connecting",
+  "@mcpSettingsStatusConnecting": {
+    "description": "Server status label."
+  },
+  "mcpSettingsStatusReady": "Ready",
+  "@mcpSettingsStatusReady": {
+    "description": "Server status label."
+  },
+  "mcpSettingsStatusFailed": "Failed",
+  "@mcpSettingsStatusFailed": {
+    "description": "Server status label."
+  },
+  "mcpSettingsDiscoveredTools": "Tools",
+  "@mcpSettingsDiscoveredTools": {
+    "description": "Heading of the discovered tool list."
+  },
+  "mcpSettingsNoTools": "This server publishes no tools.",
+  "@mcpSettingsNoTools": {
+    "description": "Shown when a ready server has no tools."
+  },
+  "mcpSettingsDiagnostics": "Server output",
+  "@mcpSettingsDiagnostics": {
+    "description": "Heading of the retained server diagnostics."
+  },
+  "mcpSettingsSecretSet": "Store a secret",
+  "@mcpSettingsSecretSet": {
+    "description": "Label of the secret dialog action."
+  },
+  "mcpSettingsSecretKey": "Reference name",
+  "@mcpSettingsSecretKey": {
+    "description": "Label of the secret key field."
+  },
+  "mcpSettingsSecretValue": "Value",
+  "@mcpSettingsSecretValue": {
+    "description": "Label of the secret value field."
+  },
+  "agentSettingsToolAlwaysOn": "Always available",
+  "@agentSettingsToolAlwaysOn": {
+    "description": "Subtitle marking a tool every agent gets."
   }
 }

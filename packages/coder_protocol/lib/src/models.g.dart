@@ -280,6 +280,7 @@ _AgentToolDefinitionDto _$AgentToolDefinitionDtoFromJson(
   description: json['description'] as String,
   risk: $enumDecode(_$ToolRiskEnumMap, json['risk']),
   available: json['available'] as bool? ?? true,
+  alwaysOn: json['alwaysOn'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$AgentToolDefinitionDtoToJson(
@@ -290,12 +291,132 @@ Map<String, dynamic> _$AgentToolDefinitionDtoToJson(
   'description': instance.description,
   'risk': _$ToolRiskEnumMap[instance.risk]!,
   'available': instance.available,
+  'alwaysOn': instance.alwaysOn,
 };
 
 const _$ToolRiskEnumMap = {
   ToolRisk.read: 'read',
   ToolRisk.write: 'write',
   ToolRisk.command: 'command',
+  ToolRisk.dangerous: 'dangerous',
+};
+
+_McpServerConfigDto _$McpServerConfigDtoFromJson(Map<String, dynamic> json) =>
+    _McpServerConfigDto(
+      id: json['id'] as String,
+      transport: $enumDecode(_$McpTransportKindEnumMap, json['transport']),
+      enabled: json['enabled'] as bool? ?? true,
+      command: json['command'] as String?,
+      args:
+          (json['args'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+          const <String>[],
+      env:
+          (json['env'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as String),
+          ) ??
+          const <String, String>{},
+      cwd: json['cwd'] as String?,
+      url: json['url'] as String?,
+      headers:
+          (json['headers'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as String),
+          ) ??
+          const <String, String>{},
+    );
+
+Map<String, dynamic> _$McpServerConfigDtoToJson(_McpServerConfigDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'transport': _$McpTransportKindEnumMap[instance.transport]!,
+      'enabled': instance.enabled,
+      'command': instance.command,
+      'args': instance.args,
+      'env': instance.env,
+      'cwd': instance.cwd,
+      'url': instance.url,
+      'headers': instance.headers,
+    };
+
+const _$McpTransportKindEnumMap = {
+  McpTransportKind.stdio: 'stdio',
+  McpTransportKind.http: 'http',
+};
+
+_McpToolSummaryDto _$McpToolSummaryDtoFromJson(Map<String, dynamic> json) =>
+    _McpToolSummaryDto(
+      toolId: json['toolId'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      title: json['title'] as String?,
+    );
+
+Map<String, dynamic> _$McpToolSummaryDtoToJson(_McpToolSummaryDto instance) =>
+    <String, dynamic>{
+      'toolId': instance.toolId,
+      'name': instance.name,
+      'description': instance.description,
+      'title': instance.title,
+    };
+
+_McpServerStateDto _$McpServerStateDtoFromJson(
+  Map<String, dynamic> json,
+) => _McpServerStateDto(
+  config: McpServerConfigDto.fromJson(json['config'] as Map<String, dynamic>),
+  status: $enumDecode(_$McpServerStatusEnumMap, json['status']),
+  scope: $enumDecode(_$McpConfigScopeEnumMap, json['scope']),
+  sourcePath: json['sourcePath'] as String,
+  shadowed: json['shadowed'] as bool? ?? false,
+  protocolVersion: json['protocolVersion'] as String?,
+  serverName: json['serverName'] as String?,
+  serverVersion: json['serverVersion'] as String?,
+  tools:
+      (json['tools'] as List<dynamic>?)
+          ?.map((e) => McpToolSummaryDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <McpToolSummaryDto>[],
+  error: json['error'] as String?,
+  diagnostics:
+      (json['diagnostics'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  lastConnectedAt: json['lastConnectedAt'] == null
+      ? null
+      : DateTime.parse(json['lastConnectedAt'] as String),
+  nextRetryAt: json['nextRetryAt'] == null
+      ? null
+      : DateTime.parse(json['nextRetryAt'] as String),
+  attempt: (json['attempt'] as num?)?.toInt() ?? 0,
+);
+
+Map<String, dynamic> _$McpServerStateDtoToJson(_McpServerStateDto instance) =>
+    <String, dynamic>{
+      'config': instance.config,
+      'status': _$McpServerStatusEnumMap[instance.status]!,
+      'scope': _$McpConfigScopeEnumMap[instance.scope]!,
+      'sourcePath': instance.sourcePath,
+      'shadowed': instance.shadowed,
+      'protocolVersion': instance.protocolVersion,
+      'serverName': instance.serverName,
+      'serverVersion': instance.serverVersion,
+      'tools': instance.tools,
+      'error': instance.error,
+      'diagnostics': instance.diagnostics,
+      'lastConnectedAt': instance.lastConnectedAt?.toIso8601String(),
+      'nextRetryAt': instance.nextRetryAt?.toIso8601String(),
+      'attempt': instance.attempt,
+    };
+
+const _$McpServerStatusEnumMap = {
+  McpServerStatus.disabled: 'disabled',
+  McpServerStatus.connecting: 'connecting',
+  McpServerStatus.ready: 'ready',
+  McpServerStatus.failed: 'failed',
+};
+
+const _$McpConfigScopeEnumMap = {
+  McpConfigScope.user: 'user',
+  McpConfigScope.project: 'project',
 };
 
 _SkillDiagnosticDto _$SkillDiagnosticDtoFromJson(Map<String, dynamic> json) =>

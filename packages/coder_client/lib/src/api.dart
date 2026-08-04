@@ -44,6 +44,12 @@ final class AgentDefinitionsChangedClientEvent extends ClientEvent {
   const AgentDefinitionsChangedClientEvent();
 }
 
+/// Signals that an MCP server's configuration or connection changed.
+final class McpServersChangedClientEvent extends ClientEvent {
+  /// Creates an MCP server invalidation event.
+  const McpServersChangedClientEvent();
+}
+
 /// Signals that the daemon's skill catalog changed.
 final class SkillsChangedClientEvent extends ClientEvent {
   /// Creates a catalog invalidation event.
@@ -190,8 +196,29 @@ abstract interface class CoderApi {
     String markdown,
   );
 
-  /// Lists built-in tools available to agent definitions.
-  Future<List<AgentToolDefinitionDto>> listAgentTools();
+  /// Lists tools available to agent definitions.
+  ///
+  /// A worktree adds the tools its own MCP servers publish, so a caller with
+  /// no worktree in hand sees only the daemon-wide set.
+  Future<List<AgentToolDefinitionDto>> listAgentTools({String? worktreeId});
+
+  /// Lists configured MCP servers and their live connection state.
+  Future<List<McpServerStateDto>> listMcpServers({String? worktreeId});
+
+  /// Adds one user-scoped MCP server.
+  Future<McpServerStateDto> addMcpServer(McpServerConfigDto server);
+
+  /// Replaces one user-scoped MCP server.
+  Future<McpServerStateDto> updateMcpServer(McpServerConfigDto server);
+
+  /// Removes one user-scoped MCP server.
+  Future<void> removeMcpServer(String id);
+
+  /// Connects an unsaved configuration to check it works.
+  Future<McpServerStateDto> testMcpServer(McpServerConfigDto server);
+
+  /// Stores one secret an MCP configuration may reference.
+  Future<void> setMcpSecret(String key, String value);
 
   /// Lists skills from the global sources plus one optional workspace.
   Future<List<SkillDto>> listSkills({String? workspaceId});

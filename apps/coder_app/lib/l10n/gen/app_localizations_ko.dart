@@ -808,4 +808,130 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get skillSettingsProjectHint => '프로젝트를 고르면 그 프로젝트에 커밋된 스킬이 함께 보입니다.';
+
+  @override
+  String get settingsCategoryMcp => 'MCP';
+
+  @override
+  String get mcpSettingsHeading => 'MCP 서버';
+
+  @override
+  String get mcpSettingsAdd => 'MCP 서버 추가';
+
+  @override
+  String get mcpSettingsEmpty => '설정된 MCP 서버가 없습니다.';
+
+  @override
+  String get mcpSettingsSelectServer => '편집할 서버를 선택하세요.';
+
+  @override
+  String get mcpSettingsScopeUser => '내 설정';
+
+  @override
+  String get mcpSettingsScopeProject => '이 프로젝트';
+
+  @override
+  String get mcpSettingsProjectReadOnly => '이 저장소가 정의한 서버라 Coder가 수정하지 않습니다.';
+
+  @override
+  String get mcpSettingsShadowed => '같은 이름의 내 서버에 가려짐';
+
+  @override
+  String mcpSettingsSource(String path) {
+    return '$path에 정의됨';
+  }
+
+  @override
+  String get mcpSettingsServerId => 'ID';
+
+  @override
+  String get mcpSettingsServerIdInvalid => '소문자, 숫자, - 및 _만 사용하세요.';
+
+  @override
+  String get mcpSettingsTransport => '연결 방식';
+
+  @override
+  String get mcpSettingsTransportStdio => '명령';
+
+  @override
+  String get mcpSettingsTransportHttp => 'HTTP';
+
+  @override
+  String get mcpSettingsCommand => '명령';
+
+  @override
+  String get mcpSettingsArgs => '인자 (한 줄에 하나)';
+
+  @override
+  String get mcpSettingsWorkingDirectory => '작업 디렉터리 (선택)';
+
+  @override
+  String get mcpSettingsUrl => 'URL';
+
+  @override
+  String get mcpSettingsEnvironment => '환경 변수 (KEY=value, 한 줄에 하나)';
+
+  @override
+  String get mcpSettingsHeaders => '헤더 (Name: value, 한 줄에 하나)';
+
+  @override
+  String get mcpSettingsEnabled => '사용';
+
+  @override
+  String get mcpSettingsSecretHint =>
+      '비밀값을 직접 입력하지 마세요. 저장된 비밀값이나 환경 변수를 참조하세요:';
+
+  @override
+  String get mcpSettingsTest => '연결 테스트';
+
+  @override
+  String mcpSettingsTestSucceeded(int count) {
+    return '연결됨. 도구 $count개를 찾았습니다.';
+  }
+
+  @override
+  String mcpSettingsTestFailed(String error) {
+    return '연결할 수 없습니다: $error';
+  }
+
+  @override
+  String get mcpSettingsDelete => '서버 삭제';
+
+  @override
+  String mcpSettingsDeleteConfirm(String name) {
+    return '$name을(를) 삭제할까요? 이 도구를 쓰던 에이전트는 사용할 수 없게 됩니다.';
+  }
+
+  @override
+  String get mcpSettingsStatusDisabled => '사용 안 함';
+
+  @override
+  String get mcpSettingsStatusConnecting => '연결 중';
+
+  @override
+  String get mcpSettingsStatusReady => '준비됨';
+
+  @override
+  String get mcpSettingsStatusFailed => '실패';
+
+  @override
+  String get mcpSettingsDiscoveredTools => '도구';
+
+  @override
+  String get mcpSettingsNoTools => '이 서버는 도구를 제공하지 않습니다.';
+
+  @override
+  String get mcpSettingsDiagnostics => '서버 출력';
+
+  @override
+  String get mcpSettingsSecretSet => '비밀값 저장';
+
+  @override
+  String get mcpSettingsSecretKey => '참조 이름';
+
+  @override
+  String get mcpSettingsSecretValue => '값';
+
+  @override
+  String get agentSettingsToolAlwaysOn => '항상 사용 가능';
 }

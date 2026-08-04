@@ -15,6 +15,7 @@ import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/general_settings_page.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/mcp_settings_page.dart';
 import 'package:coder_app/src/project_settings_page.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/session_model_options.dart';
@@ -276,6 +277,20 @@ class AgentSettingsRoute extends GoRouteData with $AgentSettingsRoute {
       UnifiedSettingsPage(category: SettingsCategory.agent, hostId: hostId);
 }
 
+@TypedGoRoute<McpSettingsRoute>(path: '/settings/mcp')
+/// Unified settings route with MCP selected.
+class McpSettingsRoute extends GoRouteData with $McpSettingsRoute {
+  /// Creates the MCP settings route.
+  const McpSettingsRoute({this.hostId});
+
+  /// Preferred daemon in the MCP selector.
+  final String? hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UnifiedSettingsPage(category: SettingsCategory.mcp, hostId: hostId);
+}
+
 @TypedGoRoute<SkillSettingsRoute>(path: '/settings/skills')
 /// Unified settings route with Skill selected.
 class SkillSettingsRoute extends GoRouteData with $SkillSettingsRoute {
@@ -344,6 +359,9 @@ enum SettingsCategory {
   /// Markdown-backed agent definitions owned by one daemon.
   agent,
 
+  /// External MCP servers owned by one daemon.
+  mcp,
+
   /// Skills merged from built-in, user, config, and project sources.
   skill,
 
@@ -406,6 +424,12 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         hostId: _hostId,
         onChanged: selectHost,
         builder: (hostId) => AgentSettingsPage(hostId: hostId),
+      ),
+      SettingsCategory.mcp => _HostScopedDetail(
+        hosts: online,
+        hostId: _hostId,
+        onChanged: selectHost,
+        builder: (hostId) => McpSettingsPage(hostId: hostId),
       ),
       SettingsCategory.skill => _HostScopedDetail(
         hosts: online,
@@ -483,6 +507,12 @@ class _SettingsSidebar extends StatelessWidget {
           leading: const Icon(Icons.smart_toy_outlined),
           title: Text(l10n.settingsCategoryAgent),
           onTap: () => const AgentSettingsRoute().go(context),
+        ),
+        ListTile(
+          selected: selected == SettingsCategory.mcp,
+          leading: const Icon(Icons.extension_outlined),
+          title: Text(l10n.settingsCategoryMcp),
+          onTap: () => const McpSettingsRoute().go(context),
         ),
         ListTile(
           selected: selected == SettingsCategory.skill,

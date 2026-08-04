@@ -349,6 +349,29 @@ void main() {
     },
   );
 
+  test('tool output truncation is bounded by one shared limit', () {
+    expect(maxToolOutputBytes, 1024 * 1024);
+    expect(truncateToolOutput('short'), 'short');
+    expect(truncateToolOutput(''), isEmpty);
+
+    final oversized = 'a' * (maxToolOutputBytes + 10);
+    expect(
+      utf8.encode(truncateToolOutput(oversized)).length,
+      lessThanOrEqualTo(maxToolOutputBytes),
+    );
+    expect(truncateToolOutput(oversized), startsWith('aaa'));
+
+    // A multi-byte character straddling the limit must not become a
+    // replacement character.
+    final multiByte = '가' * maxToolOutputBytes;
+    final truncated = truncateToolOutput(multiByte);
+    expect(
+      utf8.encode(truncated).length,
+      lessThanOrEqualTo(maxToolOutputBytes),
+    );
+    expect(truncated, isNot(contains('�')));
+  });
+
   test('command timeout and cancellation terminate the fake process', () async {
     final timeoutManager = _MockProcessManager();
     final timeoutProcess = _stubProcess(

@@ -9,6 +9,9 @@ import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
 import 'package:coder_daemon/src/database.dart';
 import 'package:coder_daemon/src/git_workspace.dart';
+import 'package:coder_daemon/src/mcp_config.dart';
+import 'package:coder_daemon/src/mcp_service.dart';
+import 'package:coder_daemon/src/mcp_transports.dart';
 import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/project_settings.dart';
@@ -137,16 +140,38 @@ abstract final class DaemonApplication {
       final toolById = <String, AgentTool>{
         for (final tool in builtInTools) tool.name: tool,
       };
+      final builtInCatalog = StaticAgentToolCatalog(
+        builtInTools
+            .map(
+              (tool) => AgentToolDefinitionDto(
+                id: tool.name,
+                name: tool.name,
+                description: tool.description,
+                risk: tool.risk,
+                alwaysOn: alwaysOnBuiltInToolIds.contains(tool.name),
+              ),
+            )
+            .toList(growable: false),
+      );
+      final mcp = McpService(
+        store: FileMcpConfigStore(config.configDirectory),
+        credentials: credentials,
+        transports: IoMcpTransportFactory(clientVersion: config.version),
+        clock: clock,
+        environment: config.useEnvironmentCredentials
+            ? Platform.environment
+            : const <String, String>{},
+        clientVersion: config.version,
+      );
+      // Reads mcp.json only; every handshake runs in the background so one
+      // unstartable server cannot hold up daemon boot.
+      await mcp.initialize();
       final agentDefinitions = AgentDefinitionService(
         store: FileAgentDefinitionStore(config.configDirectory),
-        tools: builtInTools.map(
-          (tool) => AgentToolDefinitionDto(
-            id: tool.name,
-            name: tool.name,
-            description: tool.description,
-            risk: tool.risk,
-          ),
-        ),
+        tools: CompositeAgentToolCatalog(<AgentToolCatalog>[
+          builtInCatalog,
+          mcp,
+        ]),
       );
       await agentDefinitions.initialize();
       final userHome = config.userHomeDirectory;
@@ -180,8 +205,19 @@ abstract final class DaemonApplication {
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: clock,
         ids: ids,
-        toolsFactory: (ids) =>
-            ids.map((id) => toolById[id]).whereType<AgentTool>(),
+        toolsFactory: (ids, workspaceRoot) {
+          // Starting a turn is what marks a worktree as in use: its project
+          // servers connect in the background and join from the next turn,
+          // and worktrees nothing has touched lately are released.
+          unawaited(mcp.ensureProject(workspaceRoot));
+          mcp.releaseIdleProjects();
+          return resolveAgentToolIds(ids)
+              .map(
+                (id) =>
+                    toolById[id] ?? mcp.tool(id, workspaceRoot: workspaceRoot),
+              )
+              .whereType<AgentTool>();
+        },
         skills: skills,
       );
       final workspaceService = WorkspaceService(
@@ -206,6 +242,7 @@ abstract final class DaemonApplication {
           'providerCatalog': true,
           'agentDefinitions': true,
           'subagents': true,
+          'mcp': true,
           'skills': true,
         },
       );
@@ -215,6 +252,8 @@ abstract final class DaemonApplication {
         timeline: database.timelineDao,
         agents: service,
         agentDefinitions: agentDefinitions,
+        mcp: mcp,
+        worktrees: database.worktreeDao,
         skills: skills,
         providers: providers,
         providerAuth: providerAuth,
@@ -245,6 +284,7 @@ abstract final class DaemonApplication {
         database: database,
         events: events,
         agentDefinitions: agentDefinitions,
+        mcp: mcp,
         skills: skills,
         lock: lock,
       );
@@ -267,6 +307,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._database,
     required this._events,
     required this._agentDefinitions,
+    required this._mcp,
     required this._skills,
     required this._lock,
   }) : _serverId = serverIdValue;
@@ -279,6 +320,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final CoderDatabase _database;
   final StreamController<WireEnvelope> _events;
   final AgentDefinitionService _agentDefinitions;
+  final McpService _mcp;
   final SkillService _skills;
   final RandomAccessFile _lock;
   bool _stopped = false;
@@ -298,6 +340,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     _stopped = true;
     await _http.close(force: true);
     await _rpc.close();
+    await _mcp.close();
     await _agentDefinitions.close();
     await _skills.close();
     await _events.close();

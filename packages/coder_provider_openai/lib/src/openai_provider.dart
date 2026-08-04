@@ -137,7 +137,7 @@ class OpenAIResponsesProvider implements ModelProvider {
             'name': tool.name,
             'description': tool.description,
             'parameters': tool.parameters,
-            'strict': _config.strictToolSchema,
+            'strict': tool.strict && _config.strictToolSchema,
           },
         )
         .toList(growable: false),
