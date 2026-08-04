@@ -84,6 +84,44 @@ void main() {
       ).evaluate(ToolRisk.command),
       ApprovalEvaluation.ask,
     );
+    expect(
+      const DefaultApprovalPolicy(
+        PermissionMode.workspaceWrite,
+      ).evaluate(ToolRisk.dangerous),
+      ApprovalEvaluation.ask,
+    );
+    expect(
+      const DefaultApprovalPolicy(
+        PermissionMode.ask,
+      ).evaluate(ToolRisk.dangerous),
+      ApprovalEvaluation.ask,
+    );
+    expect(
+      const DefaultApprovalPolicy(
+        PermissionMode.readOnly,
+      ).evaluate(ToolRisk.dangerous),
+      ApprovalEvaluation.deny,
+    );
+  });
+
+  test('the runner forwards each tool strict-schema opt-out', () async {
+    final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('done')]);
+    final harness = _RunnerHarness(
+      provider,
+      tools: <AgentTool>[_EchoTool(), _LooseTool()],
+    );
+
+    await harness.runner.startTurn(_request(), CancellationToken());
+
+    final tools = provider.requests.single.tools;
+    expect(
+      tools.firstWhere((tool) => tool.name == 'echo').strict,
+      isTrue,
+    );
+    expect(
+      tools.firstWhere((tool) => tool.name == 'loose').strict,
+      isFalse,
+    );
   });
 
   test('agent executes an approved tool loop and completes', () async {
@@ -308,6 +346,16 @@ void main() {
       description: 'Echo',
       parameters: <String, dynamic>{'type': 'object'},
     );
+    expect(definition.strict, isTrue);
+    expect(
+      const ModelToolDefinition(
+        name: 'external',
+        description: 'External',
+        parameters: <String, dynamic>{'type': 'object'},
+        strict: false,
+      ).strict,
+      isFalse,
+    );
     const request = ModelRequest(
       model: 'model',
       reasoningEffort: 'high',
@@ -343,6 +391,7 @@ void main() {
     expect(invocation.preview, 'preview');
     expect(result.output, 'done');
     expect(result.isError, isTrue);
+    expect(tool.strict, isTrue);
     expect(
       await tool.preview(
         const <String, dynamic>{},
@@ -474,6 +523,14 @@ class _EchoTool extends AgentTool {
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async => ToolResult(output: arguments['value'] as String);
+}
+
+final class _LooseTool extends _EchoTool {
+  @override
+  String get name => 'loose';
+
+  @override
+  bool get strict => false;
 }
 
 final class _FailingTool extends _EchoTool {

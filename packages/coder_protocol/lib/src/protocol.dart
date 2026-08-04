@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 11;
+const int coderProtocolVersion = 12;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {

@@ -47,6 +47,7 @@ class ModelToolDefinition {
     required this.name,
     required this.description,
     required this.parameters,
+    this.strict = true,
   });
 
   /// The name public API member.
@@ -57,6 +58,9 @@ class ModelToolDefinition {
 
   /// The parameters public API member.
   final Map<String, dynamic> parameters;
+
+  /// Whether [parameters] satisfies provider strict-schema requirements.
+  final bool strict;
 }
 
 /// ConversationToolCall defines a public contract.
@@ -416,6 +420,13 @@ abstract class AgentTool {
 
   /// The strictJsonSchema public API member.
   Map<String, dynamic> get strictJsonSchema;
+
+  /// Whether [strictJsonSchema] satisfies provider strict-schema requirements.
+  ///
+  /// Tools that pass through a schema authored elsewhere — an external MCP
+  /// server, for instance — cannot guarantee that every property is required
+  /// and that every object forbids additional properties, so they opt out.
+  bool get strict => true;
 
   /// The preview public API member.
   Future<String?> preview(

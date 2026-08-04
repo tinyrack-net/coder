@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v11 exposes agent definitions and sessions', () {
-    expect(coderProtocolVersion, 11);
+  test('protocol v12 exposes agent definitions and sessions', () {
+    expect(coderProtocolVersion, 12);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -449,7 +449,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 11);
+    expect(coderProtocolVersion, 12);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -926,6 +926,43 @@ void main() {
       ...DiagnosticStatus.values,
     ];
     expect(values.map((value) => value.name).toSet(), isNotEmpty);
+  });
+
+  test('tool risk covers the MCP-provided dangerous tier', () {
+    expect(ToolRisk.values, contains(ToolRisk.dangerous));
+    expect(ToolRisk.dangerous.name, 'dangerous');
+  });
+
+  test('agent tool definitions carry an always-on flag', () {
+    const toggleable = AgentToolDefinitionDto(
+      id: 'run_command',
+      name: 'run_command',
+      description: 'Starts a child process.',
+      risk: ToolRisk.command,
+    );
+    expect(toggleable.alwaysOn, isFalse);
+    _roundTrip(
+      const AgentToolDefinitionDto(
+        id: 'read_file',
+        name: 'read_file',
+        description: 'Reads a workspace file.',
+        risk: ToolRisk.read,
+        alwaysOn: true,
+      ),
+      (value) => value.toJson(),
+      AgentToolDefinitionDto.fromJson,
+    );
+    _roundTrip(
+      const AgentToolDefinitionDto(
+        id: 'mcp__github__create_issue',
+        name: 'mcp__github__create_issue',
+        description: 'Creates a GitHub issue.',
+        risk: ToolRisk.dangerous,
+        available: false,
+      ),
+      (value) => value.toJson(),
+      AgentToolDefinitionDto.fromJson,
+    );
   });
 }
 

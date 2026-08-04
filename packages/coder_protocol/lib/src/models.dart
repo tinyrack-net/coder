@@ -112,6 +112,9 @@ enum ToolRisk {
 
   /// Starts a child process.
   command,
+
+  /// Runs an external MCP tool whose effects the daemon cannot classify.
+  dangerous,
 }
 
 /// Storage kind of a registered workspace repository.
@@ -522,6 +525,7 @@ abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
     required String description,
     required ToolRisk risk,
     @Default(true) bool available,
+    @Default(false) bool alwaysOn,
   }) = _AgentToolDefinitionDto;
 
   /// Decodes an agent tool definition.

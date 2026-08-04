@@ -3115,7 +3115,7 @@ $AgentModelSelectionDtoCopyWith<$Res> get model {
 /// @nodoc
 mixin _$AgentToolDefinitionDto {
 
- String get id; String get name; String get description; ToolRisk get risk; bool get available;
+ String get id; String get name; String get description; ToolRisk get risk; bool get available; bool get alwaysOn;
 /// Create a copy of AgentToolDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3128,16 +3128,16 @@ $AgentToolDefinitionDtoCopyWith<AgentToolDefinitionDto> get copyWith => _$AgentT
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentToolDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.risk, risk) || other.risk == risk)&&(identical(other.available, available) || other.available == available));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentToolDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.risk, risk) || other.risk == risk)&&(identical(other.available, available) || other.available == available)&&(identical(other.alwaysOn, alwaysOn) || other.alwaysOn == alwaysOn));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,risk,available);
+int get hashCode => Object.hash(runtimeType,id,name,description,risk,available,alwaysOn);
 
 @override
 String toString() {
-  return 'AgentToolDefinitionDto(id: $id, name: $name, description: $description, risk: $risk, available: $available)';
+  return 'AgentToolDefinitionDto(id: $id, name: $name, description: $description, risk: $risk, available: $available, alwaysOn: $alwaysOn)';
 }
 
 
@@ -3148,7 +3148,7 @@ abstract mixin class $AgentToolDefinitionDtoCopyWith<$Res>  {
   factory $AgentToolDefinitionDtoCopyWith(AgentToolDefinitionDto value, $Res Function(AgentToolDefinitionDto) _then) = _$AgentToolDefinitionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description, ToolRisk risk, bool available
+ String id, String name, String description, ToolRisk risk, bool available, bool alwaysOn
 });
 
 
@@ -3165,13 +3165,14 @@ class _$AgentToolDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentToolDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? risk = null,Object? available = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? risk = null,Object? available = null,Object? alwaysOn = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,risk: null == risk ? _self.risk : risk // ignore: cast_nullable_to_non_nullable
 as ToolRisk,available: null == available ? _self.available : available // ignore: cast_nullable_to_non_nullable
+as bool,alwaysOn: null == alwaysOn ? _self.alwaysOn : alwaysOn // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -3257,10 +3258,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  ToolRisk risk,  bool available)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  ToolRisk risk,  bool available,  bool alwaysOn)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentToolDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.risk,_that.available);case _:
+return $default(_that.id,_that.name,_that.description,_that.risk,_that.available,_that.alwaysOn);case _:
   return orElse();
 
 }
@@ -3278,10 +3279,10 @@ return $default(_that.id,_that.name,_that.description,_that.risk,_that.available
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  ToolRisk risk,  bool available)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  ToolRisk risk,  bool available,  bool alwaysOn)  $default,) {final _that = this;
 switch (_that) {
 case _AgentToolDefinitionDto():
-return $default(_that.id,_that.name,_that.description,_that.risk,_that.available);case _:
+return $default(_that.id,_that.name,_that.description,_that.risk,_that.available,_that.alwaysOn);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3298,10 +3299,10 @@ return $default(_that.id,_that.name,_that.description,_that.risk,_that.available
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  ToolRisk risk,  bool available)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  ToolRisk risk,  bool available,  bool alwaysOn)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentToolDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.risk,_that.available);case _:
+return $default(_that.id,_that.name,_that.description,_that.risk,_that.available,_that.alwaysOn);case _:
   return null;
 
 }
@@ -3313,7 +3314,7 @@ return $default(_that.id,_that.name,_that.description,_that.risk,_that.available
 @JsonSerializable()
 
 class _AgentToolDefinitionDto implements AgentToolDefinitionDto {
-  const _AgentToolDefinitionDto({required this.id, required this.name, required this.description, required this.risk, this.available = true});
+  const _AgentToolDefinitionDto({required this.id, required this.name, required this.description, required this.risk, this.available = true, this.alwaysOn = false});
   factory _AgentToolDefinitionDto.fromJson(Map<String, dynamic> json) => _$AgentToolDefinitionDtoFromJson(json);
 
 @override final  String id;
@@ -3321,6 +3322,7 @@ class _AgentToolDefinitionDto implements AgentToolDefinitionDto {
 @override final  String description;
 @override final  ToolRisk risk;
 @override@JsonKey() final  bool available;
+@override@JsonKey() final  bool alwaysOn;
 
 /// Create a copy of AgentToolDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
@@ -3335,16 +3337,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentToolDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.risk, risk) || other.risk == risk)&&(identical(other.available, available) || other.available == available));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentToolDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.risk, risk) || other.risk == risk)&&(identical(other.available, available) || other.available == available)&&(identical(other.alwaysOn, alwaysOn) || other.alwaysOn == alwaysOn));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,risk,available);
+int get hashCode => Object.hash(runtimeType,id,name,description,risk,available,alwaysOn);
 
 @override
 String toString() {
-  return 'AgentToolDefinitionDto(id: $id, name: $name, description: $description, risk: $risk, available: $available)';
+  return 'AgentToolDefinitionDto(id: $id, name: $name, description: $description, risk: $risk, available: $available, alwaysOn: $alwaysOn)';
 }
 
 
@@ -3355,7 +3357,7 @@ abstract mixin class _$AgentToolDefinitionDtoCopyWith<$Res> implements $AgentToo
   factory _$AgentToolDefinitionDtoCopyWith(_AgentToolDefinitionDto value, $Res Function(_AgentToolDefinitionDto) _then) = __$AgentToolDefinitionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description, ToolRisk risk, bool available
+ String id, String name, String description, ToolRisk risk, bool available, bool alwaysOn
 });
 
 
@@ -3372,13 +3374,14 @@ class __$AgentToolDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentToolDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? risk = null,Object? available = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? risk = null,Object? available = null,Object? alwaysOn = null,}) {
   return _then(_AgentToolDefinitionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,risk: null == risk ? _self.risk : risk // ignore: cast_nullable_to_non_nullable
 as ToolRisk,available: null == available ? _self.available : available // ignore: cast_nullable_to_non_nullable
+as bool,alwaysOn: null == alwaysOn ? _self.alwaysOn : alwaysOn // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

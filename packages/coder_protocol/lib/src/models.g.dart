@@ -280,6 +280,7 @@ _AgentToolDefinitionDto _$AgentToolDefinitionDtoFromJson(
   description: json['description'] as String,
   risk: $enumDecode(_$ToolRiskEnumMap, json['risk']),
   available: json['available'] as bool? ?? true,
+  alwaysOn: json['alwaysOn'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$AgentToolDefinitionDtoToJson(
@@ -290,12 +291,14 @@ Map<String, dynamic> _$AgentToolDefinitionDtoToJson(
   'description': instance.description,
   'risk': _$ToolRiskEnumMap[instance.risk]!,
   'available': instance.available,
+  'alwaysOn': instance.alwaysOn,
 };
 
 const _$ToolRiskEnumMap = {
   ToolRisk.read: 'read',
   ToolRisk.write: 'write',
   ToolRisk.command: 'command',
+  ToolRisk.dangerous: 'dangerous',
 };
 
 _SessionModelSelectionDto _$SessionModelSelectionDtoFromJson(
