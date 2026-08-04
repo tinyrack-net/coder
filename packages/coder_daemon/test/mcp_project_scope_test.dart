@@ -71,6 +71,11 @@ void main() {
 
     expect(service.tools(), isEmpty);
     expect(service.tools(workspaceRoot: '/other'), isEmpty);
+    // A caller that has not named a worktree sees only user-scoped servers,
+    // never what some other repository happens to declare.
+    expect(service.states(), isEmpty);
+    expect(service.states(workspaceRoot: '/other'), isEmpty);
+    expect(service.states(workspaceRoot: '/repo'), hasLength(1));
     expect(service.tool('mcp__repo__echo'), isNull);
     expect(service.tool('mcp__repo__echo', workspaceRoot: '/other'), isNull);
     expect(
@@ -93,9 +98,11 @@ void main() {
     expect(transports.specs, hasLength(2));
     expect(service.tools(workspaceRoot: '/a'), hasLength(1));
     expect(service.tools(workspaceRoot: '/b'), hasLength(1));
+    expect(service.states(workspaceRoot: '/a'), hasLength(1));
+    expect(service.states(workspaceRoot: '/b'), hasLength(1));
     expect(
-      service.states().where((state) => state.scope == McpConfigScope.project),
-      hasLength(2),
+      service.states(workspaceRoot: '/a').single.sourcePath,
+      '/a/.mcp.json',
     );
   });
 
@@ -132,9 +139,9 @@ void main() {
     expect(transports.specs, hasLength(1));
     expect((transports.specs.single as McpStdioSpec).command, 'user-owned');
 
-    final shadowed = service.states().firstWhere(
-      (state) => state.scope == McpConfigScope.project,
-    );
+    final shadowed = service
+        .states(workspaceRoot: '/repo')
+        .firstWhere((state) => state.scope == McpConfigScope.project);
     expect(shadowed.shadowed, isTrue);
     expect(shadowed.status, McpServerStatus.disabled);
     expect(
@@ -213,10 +220,7 @@ void main() {
     await pumpEventQueue();
 
     expect(service.tools(workspaceRoot: '/repo'), isEmpty);
-    expect(
-      service.states().where((state) => state.scope == McpConfigScope.project),
-      isEmpty,
-    );
+    expect(service.states(workspaceRoot: '/repo'), isEmpty);
 
     // Using it again reconnects from scratch.
     await service.ensureProject('/repo');

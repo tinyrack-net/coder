@@ -75,14 +75,19 @@ final class McpService implements AgentToolCatalog {
             ...connection.toolDefinitions,
       ];
 
-  /// Every configured server and its live state, user scope first.
+  /// Every server visible to [workspaceRoot], user scope first.
+  ///
+  /// Without a worktree only the user's own servers are reported: a caller
+  /// that has not named a worktree has no business seeing what some other
+  /// repository declares.
   List<McpServerStateDto> states({String? workspaceRoot}) =>
       <McpServerStateDto>[
         for (final connection in _user.values) connection.state,
-        for (final entry in _projects.entries)
-          if (workspaceRoot == null || entry.key == workspaceRoot)
-            for (final connection in entry.value.connections.values)
-              connection.state,
+        if (workspaceRoot != null)
+          for (final connection
+              in _projects[workspaceRoot]?.connections.values ??
+                  const <String, _Connection>{}.values)
+            connection.state,
       ];
 
   /// Why the project configuration for [workspaceRoot] could not be read.
