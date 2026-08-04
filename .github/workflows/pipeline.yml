@@ -205,6 +205,11 @@ jobs:
           dart pub global run shipworld:shipworld package macos archive coder --input "$APP" \
             --output dist/Coder-${{ matrix.target }}.zip
           codesign --verify --deep --strict "$APP"
+      - name: Report the signing identities that were available
+        if: failure() && matrix.platform == 'macos'
+        # `no identity found` does not say what was found instead, and the
+        # identity name is printed in every signed binary, so it is safe to log.
+        run: security find-identity -v -p codesigning || true
 
       # --- Windows -------------------------------------------------------
       - name: Build the Windows installer
