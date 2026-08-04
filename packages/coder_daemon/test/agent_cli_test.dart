@@ -117,7 +117,7 @@ final class _AgentBackend implements AgentCliBackend {
     promptEnabled: true,
     systemPrompt: 'prompt',
     model: const AgentModelSelectionDto(
-      source: AgentModelSource.daemonDefault,
+      source: AgentModelSource.session,
     ),
     reasoningEffort: 'medium',
     permissionMode: PermissionMode.ask,

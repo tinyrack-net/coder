@@ -373,8 +373,8 @@ class _AgentEditorState extends State<_AgentEditor> {
                 child: Column(
                   children: <Widget>[
                     RadioListTile<AgentModelSource>(
-                      value: AgentModelSource.daemonDefault,
-                      title: Text(l10n.agentSettingsDaemonDefaultModel),
+                      value: AgentModelSource.session,
+                      title: Text(l10n.agentSettingsSessionModel),
                     ),
                     RadioListTile<AgentModelSource>(
                       value: AgentModelSource.fixed,

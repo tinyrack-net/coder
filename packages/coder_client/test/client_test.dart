@@ -54,7 +54,7 @@ void main() {
     promptEnabled: true,
     systemPrompt: 'Code carefully.',
     model: AgentModelSelectionDto(
-      source: AgentModelSource.daemonDefault,
+      source: AgentModelSource.session,
     ),
     reasoningEffort: 'medium',
     permissionMode: PermissionMode.ask,
@@ -110,8 +110,6 @@ void main() {
     status: ProviderConnectionStatus.connected,
     authKind: ProviderAuthKind.apiKey,
     credentialOrigin: ProviderCredentialOrigin.stored,
-    isDefault: true,
-    defaultModelId: 'retired/model-not-in-current-catalog',
     createdAt: now,
     updatedAt: now,
   );
@@ -363,11 +361,7 @@ void main() {
         connection,
       ]);
       expect(
-        await client.connectProviderApiKey(
-          definition.id,
-          'api-key',
-          makeDefault: true,
-        ),
+        await client.connectProviderApiKey(definition.id, 'api-key'),
         connection,
       );
       expect(await client.connectProviderNone('ollama'), connection);
@@ -378,8 +372,6 @@ void main() {
       expect(await client.providerAuthStatus(attempt.id), attempt);
       await client.cancelProviderAuth(attempt.id);
       await client.disconnectProvider(connection.id);
-      await client.setDefaultProvider(connection.id);
-      await client.setDefaultProviderModel(connection.id, model.id);
       expect(
         (await client.refreshProviderCatalog()).definitions,
         <ProviderDefinitionDto>[definition],
@@ -388,7 +380,6 @@ void main() {
         await client.listProviderModels(connection.id),
         <ProviderModelDto>[model],
       );
-      expect(connection.defaultModelId, isNot(model.id));
       const customConfig = CustomProviderConfigDto(
         name: 'Custom',
         baseUrl: 'http://localhost/v1',
@@ -510,8 +501,6 @@ void main() {
           RpcMethod.providerAuthStatus,
           RpcMethod.providerAuthCancel,
           RpcMethod.providerDisconnect,
-          RpcMethod.providerDefaultSet,
-          RpcMethod.providerDefaultModelSet,
           RpcMethod.providerCatalogRefresh,
           RpcMethod.providerModelsList,
           RpcMethod.providerCustomCreate,
@@ -919,8 +908,6 @@ void _registerFixtureMethods(
     ).toJson(),
     RpcMethod.providerAuthCancel: const <String, dynamic>{},
     RpcMethod.providerDisconnect: const <String, dynamic>{},
-    RpcMethod.providerDefaultSet: const <String, dynamic>{},
-    RpcMethod.providerDefaultModelSet: const <String, dynamic>{},
     RpcMethod.providerCatalogRefresh: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
         definitions: <ProviderDefinitionDto>[definition],

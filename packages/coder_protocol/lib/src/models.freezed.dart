@@ -7414,7 +7414,7 @@ as List<String>,
 /// @nodoc
 mixin _$ProviderConnectionDto {
 
- String get id; String get definitionId; String get displayName; ProviderConnectionStatus get status; ProviderAuthKind get authKind; ProviderCredentialOrigin get credentialOrigin; bool get isDefault; DateTime get createdAt; DateTime get updatedAt; String? get defaultModelId; String? get error; CustomProviderConfigDto? get customConfig;
+ String get id; String get definitionId; String get displayName; ProviderConnectionStatus get status; ProviderAuthKind get authKind; ProviderCredentialOrigin get credentialOrigin; DateTime get createdAt; DateTime get updatedAt; String? get error; CustomProviderConfigDto? get customConfig;
 /// Create a copy of ProviderConnectionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -7427,16 +7427,16 @@ $ProviderConnectionDtoCopyWith<ProviderConnectionDto> get copyWith => _$Provider
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderConnectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.status, status) || other.status == status)&&(identical(other.authKind, authKind) || other.authKind == authKind)&&(identical(other.credentialOrigin, credentialOrigin) || other.credentialOrigin == credentialOrigin)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.defaultModelId, defaultModelId) || other.defaultModelId == defaultModelId)&&(identical(other.error, error) || other.error == error)&&(identical(other.customConfig, customConfig) || other.customConfig == customConfig));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderConnectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.status, status) || other.status == status)&&(identical(other.authKind, authKind) || other.authKind == authKind)&&(identical(other.credentialOrigin, credentialOrigin) || other.credentialOrigin == credentialOrigin)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.error, error) || other.error == error)&&(identical(other.customConfig, customConfig) || other.customConfig == customConfig));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,definitionId,displayName,status,authKind,credentialOrigin,isDefault,createdAt,updatedAt,defaultModelId,error,customConfig);
+int get hashCode => Object.hash(runtimeType,id,definitionId,displayName,status,authKind,credentialOrigin,createdAt,updatedAt,error,customConfig);
 
 @override
 String toString() {
-  return 'ProviderConnectionDto(id: $id, definitionId: $definitionId, displayName: $displayName, status: $status, authKind: $authKind, credentialOrigin: $credentialOrigin, isDefault: $isDefault, createdAt: $createdAt, updatedAt: $updatedAt, defaultModelId: $defaultModelId, error: $error, customConfig: $customConfig)';
+  return 'ProviderConnectionDto(id: $id, definitionId: $definitionId, displayName: $displayName, status: $status, authKind: $authKind, credentialOrigin: $credentialOrigin, createdAt: $createdAt, updatedAt: $updatedAt, error: $error, customConfig: $customConfig)';
 }
 
 
@@ -7447,7 +7447,7 @@ abstract mixin class $ProviderConnectionDtoCopyWith<$Res>  {
   factory $ProviderConnectionDtoCopyWith(ProviderConnectionDto value, $Res Function(ProviderConnectionDto) _then) = _$ProviderConnectionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String definitionId, String displayName, ProviderConnectionStatus status, ProviderAuthKind authKind, ProviderCredentialOrigin credentialOrigin, bool isDefault, DateTime createdAt, DateTime updatedAt, String? defaultModelId, String? error, CustomProviderConfigDto? customConfig
+ String id, String definitionId, String displayName, ProviderConnectionStatus status, ProviderAuthKind authKind, ProviderCredentialOrigin credentialOrigin, DateTime createdAt, DateTime updatedAt, String? error, CustomProviderConfigDto? customConfig
 });
 
 
@@ -7464,7 +7464,7 @@ class _$ProviderConnectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderConnectionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? definitionId = null,Object? displayName = null,Object? status = null,Object? authKind = null,Object? credentialOrigin = null,Object? isDefault = null,Object? createdAt = null,Object? updatedAt = null,Object? defaultModelId = freezed,Object? error = freezed,Object? customConfig = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? definitionId = null,Object? displayName = null,Object? status = null,Object? authKind = null,Object? credentialOrigin = null,Object? createdAt = null,Object? updatedAt = null,Object? error = freezed,Object? customConfig = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
@@ -7472,11 +7472,9 @@ as String,displayName: null == displayName ? _self.displayName : displayName // 
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ProviderConnectionStatus,authKind: null == authKind ? _self.authKind : authKind // ignore: cast_nullable_to_non_nullable
 as ProviderAuthKind,credentialOrigin: null == credentialOrigin ? _self.credentialOrigin : credentialOrigin // ignore: cast_nullable_to_non_nullable
-as ProviderCredentialOrigin,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as ProviderCredentialOrigin,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,defaultModelId: freezed == defaultModelId ? _self.defaultModelId : defaultModelId // ignore: cast_nullable_to_non_nullable
-as String?,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as DateTime,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,customConfig: freezed == customConfig ? _self.customConfig : customConfig // ignore: cast_nullable_to_non_nullable
 as CustomProviderConfigDto?,
   ));
@@ -7575,10 +7573,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  bool isDefault,  DateTime createdAt,  DateTime updatedAt,  String? defaultModelId,  String? error,  CustomProviderConfigDto? customConfig)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String? error,  CustomProviderConfigDto? customConfig)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderConnectionDto() when $default != null:
-return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.isDefault,_that.createdAt,_that.updatedAt,_that.defaultModelId,_that.error,_that.customConfig);case _:
+return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.error,_that.customConfig);case _:
   return orElse();
 
 }
@@ -7596,10 +7594,10 @@ return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  bool isDefault,  DateTime createdAt,  DateTime updatedAt,  String? defaultModelId,  String? error,  CustomProviderConfigDto? customConfig)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String? error,  CustomProviderConfigDto? customConfig)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderConnectionDto():
-return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.isDefault,_that.createdAt,_that.updatedAt,_that.defaultModelId,_that.error,_that.customConfig);case _:
+return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.error,_that.customConfig);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7616,10 +7614,10 @@ return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  bool isDefault,  DateTime createdAt,  DateTime updatedAt,  String? defaultModelId,  String? error,  CustomProviderConfigDto? customConfig)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String? error,  CustomProviderConfigDto? customConfig)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderConnectionDto() when $default != null:
-return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.isDefault,_that.createdAt,_that.updatedAt,_that.defaultModelId,_that.error,_that.customConfig);case _:
+return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.error,_that.customConfig);case _:
   return null;
 
 }
@@ -7631,7 +7629,7 @@ return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that
 @JsonSerializable()
 
 class _ProviderConnectionDto implements ProviderConnectionDto {
-  const _ProviderConnectionDto({required this.id, required this.definitionId, required this.displayName, required this.status, required this.authKind, required this.credentialOrigin, required this.isDefault, required this.createdAt, required this.updatedAt, this.defaultModelId, this.error, this.customConfig});
+  const _ProviderConnectionDto({required this.id, required this.definitionId, required this.displayName, required this.status, required this.authKind, required this.credentialOrigin, required this.createdAt, required this.updatedAt, this.error, this.customConfig});
   factory _ProviderConnectionDto.fromJson(Map<String, dynamic> json) => _$ProviderConnectionDtoFromJson(json);
 
 @override final  String id;
@@ -7640,10 +7638,8 @@ class _ProviderConnectionDto implements ProviderConnectionDto {
 @override final  ProviderConnectionStatus status;
 @override final  ProviderAuthKind authKind;
 @override final  ProviderCredentialOrigin credentialOrigin;
-@override final  bool isDefault;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
-@override final  String? defaultModelId;
 @override final  String? error;
 @override final  CustomProviderConfigDto? customConfig;
 
@@ -7660,16 +7656,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderConnectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.status, status) || other.status == status)&&(identical(other.authKind, authKind) || other.authKind == authKind)&&(identical(other.credentialOrigin, credentialOrigin) || other.credentialOrigin == credentialOrigin)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.defaultModelId, defaultModelId) || other.defaultModelId == defaultModelId)&&(identical(other.error, error) || other.error == error)&&(identical(other.customConfig, customConfig) || other.customConfig == customConfig));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderConnectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.status, status) || other.status == status)&&(identical(other.authKind, authKind) || other.authKind == authKind)&&(identical(other.credentialOrigin, credentialOrigin) || other.credentialOrigin == credentialOrigin)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.error, error) || other.error == error)&&(identical(other.customConfig, customConfig) || other.customConfig == customConfig));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,definitionId,displayName,status,authKind,credentialOrigin,isDefault,createdAt,updatedAt,defaultModelId,error,customConfig);
+int get hashCode => Object.hash(runtimeType,id,definitionId,displayName,status,authKind,credentialOrigin,createdAt,updatedAt,error,customConfig);
 
 @override
 String toString() {
-  return 'ProviderConnectionDto(id: $id, definitionId: $definitionId, displayName: $displayName, status: $status, authKind: $authKind, credentialOrigin: $credentialOrigin, isDefault: $isDefault, createdAt: $createdAt, updatedAt: $updatedAt, defaultModelId: $defaultModelId, error: $error, customConfig: $customConfig)';
+  return 'ProviderConnectionDto(id: $id, definitionId: $definitionId, displayName: $displayName, status: $status, authKind: $authKind, credentialOrigin: $credentialOrigin, createdAt: $createdAt, updatedAt: $updatedAt, error: $error, customConfig: $customConfig)';
 }
 
 
@@ -7680,7 +7676,7 @@ abstract mixin class _$ProviderConnectionDtoCopyWith<$Res> implements $ProviderC
   factory _$ProviderConnectionDtoCopyWith(_ProviderConnectionDto value, $Res Function(_ProviderConnectionDto) _then) = __$ProviderConnectionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String definitionId, String displayName, ProviderConnectionStatus status, ProviderAuthKind authKind, ProviderCredentialOrigin credentialOrigin, bool isDefault, DateTime createdAt, DateTime updatedAt, String? defaultModelId, String? error, CustomProviderConfigDto? customConfig
+ String id, String definitionId, String displayName, ProviderConnectionStatus status, ProviderAuthKind authKind, ProviderCredentialOrigin credentialOrigin, DateTime createdAt, DateTime updatedAt, String? error, CustomProviderConfigDto? customConfig
 });
 
 
@@ -7697,7 +7693,7 @@ class __$ProviderConnectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderConnectionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? definitionId = null,Object? displayName = null,Object? status = null,Object? authKind = null,Object? credentialOrigin = null,Object? isDefault = null,Object? createdAt = null,Object? updatedAt = null,Object? defaultModelId = freezed,Object? error = freezed,Object? customConfig = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? definitionId = null,Object? displayName = null,Object? status = null,Object? authKind = null,Object? credentialOrigin = null,Object? createdAt = null,Object? updatedAt = null,Object? error = freezed,Object? customConfig = freezed,}) {
   return _then(_ProviderConnectionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
@@ -7705,11 +7701,9 @@ as String,displayName: null == displayName ? _self.displayName : displayName // 
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ProviderConnectionStatus,authKind: null == authKind ? _self.authKind : authKind // ignore: cast_nullable_to_non_nullable
 as ProviderAuthKind,credentialOrigin: null == credentialOrigin ? _self.credentialOrigin : credentialOrigin // ignore: cast_nullable_to_non_nullable
-as ProviderCredentialOrigin,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as ProviderCredentialOrigin,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,defaultModelId: freezed == defaultModelId ? _self.defaultModelId : defaultModelId // ignore: cast_nullable_to_non_nullable
-as String?,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as DateTime,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,customConfig: freezed == customConfig ? _self.customConfig : customConfig // ignore: cast_nullable_to_non_nullable
 as CustomProviderConfigDto?,
   ));

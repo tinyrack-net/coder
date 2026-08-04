@@ -263,22 +263,17 @@ abstract interface class CoderApi {
   /// Connects a built-in provider with an API key.
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey, {
-    bool makeDefault = false,
-  });
+    String apiKey,
+  );
 
   /// Connects a local built-in provider without authentication.
-  Future<ProviderConnectionDto> connectProviderNone(
-    String definitionId, {
-    bool makeDefault = false,
-  });
+  Future<ProviderConnectionDto> connectProviderNone(String definitionId);
 
   /// Starts an interactive provider authorization flow.
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
-    String methodId, {
-    bool makeDefault = false,
-  });
+    String methodId,
+  );
 
   /// Returns the latest state of an authorization attempt.
   Future<ProviderAuthAttemptDto> providerAuthStatus(String attemptId);
@@ -288,12 +283,6 @@ abstract interface class CoderApi {
 
   /// Disconnects a provider while preserving historical agent data.
   Future<void> disconnectProvider(String connectionId);
-
-  /// Selects the daemon-wide default provider connection.
-  Future<void> setDefaultProvider(String connectionId);
-
-  /// Selects a connection's default model.
-  Future<void> setDefaultProviderModel(String connectionId, String modelId);
 
   /// Explicitly refreshes public provider and model metadata.
   Future<ProviderCatalogDto> refreshProviderCatalog();
@@ -306,7 +295,6 @@ abstract interface class CoderApi {
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
-    bool makeDefault = false,
   });
 
   /// Updates an advanced custom provider connection.

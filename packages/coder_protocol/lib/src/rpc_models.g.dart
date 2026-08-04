@@ -320,7 +320,6 @@ _ProviderConnectApiKeyParamsDto _$ProviderConnectApiKeyParamsDtoFromJson(
 ) => _ProviderConnectApiKeyParamsDto(
   definitionId: json['definitionId'] as String,
   apiKey: json['apiKey'] as String,
-  makeDefault: json['makeDefault'] as bool,
 );
 
 Map<String, dynamic> _$ProviderConnectApiKeyParamsDtoToJson(
@@ -328,22 +327,16 @@ Map<String, dynamic> _$ProviderConnectApiKeyParamsDtoToJson(
 ) => <String, dynamic>{
   'definitionId': instance.definitionId,
   'apiKey': instance.apiKey,
-  'makeDefault': instance.makeDefault,
 };
 
 _ProviderConnectNoneParamsDto _$ProviderConnectNoneParamsDtoFromJson(
   Map<String, dynamic> json,
-) => _ProviderConnectNoneParamsDto(
-  definitionId: json['definitionId'] as String,
-  makeDefault: json['makeDefault'] as bool,
-);
+) =>
+    _ProviderConnectNoneParamsDto(definitionId: json['definitionId'] as String);
 
 Map<String, dynamic> _$ProviderConnectNoneParamsDtoToJson(
   _ProviderConnectNoneParamsDto instance,
-) => <String, dynamic>{
-  'definitionId': instance.definitionId,
-  'makeDefault': instance.makeDefault,
-};
+) => <String, dynamic>{'definitionId': instance.definitionId};
 
 _ProviderConnectionIdParamsDto _$ProviderConnectionIdParamsDtoFromJson(
   Map<String, dynamic> json,
@@ -374,7 +367,6 @@ _ProviderAuthStartParamsDto _$ProviderAuthStartParamsDtoFromJson(
 ) => _ProviderAuthStartParamsDto(
   definitionId: json['definitionId'] as String,
   methodId: json['methodId'] as String,
-  makeDefault: json['makeDefault'] as bool,
 );
 
 Map<String, dynamic> _$ProviderAuthStartParamsDtoToJson(
@@ -382,7 +374,6 @@ Map<String, dynamic> _$ProviderAuthStartParamsDtoToJson(
 ) => <String, dynamic>{
   'definitionId': instance.definitionId,
   'methodId': instance.methodId,
-  'makeDefault': instance.makeDefault,
 };
 
 _ProviderAuthAttemptParamsDto _$ProviderAuthAttemptParamsDtoFromJson(
@@ -393,28 +384,6 @@ Map<String, dynamic> _$ProviderAuthAttemptParamsDtoToJson(
   _ProviderAuthAttemptParamsDto instance,
 ) => <String, dynamic>{'attemptId': instance.attemptId};
 
-_ProviderDefaultSetParamsDto _$ProviderDefaultSetParamsDtoFromJson(
-  Map<String, dynamic> json,
-) => _ProviderDefaultSetParamsDto(connectionId: json['connectionId'] as String);
-
-Map<String, dynamic> _$ProviderDefaultSetParamsDtoToJson(
-  _ProviderDefaultSetParamsDto instance,
-) => <String, dynamic>{'connectionId': instance.connectionId};
-
-_ProviderDefaultModelSetParamsDto _$ProviderDefaultModelSetParamsDtoFromJson(
-  Map<String, dynamic> json,
-) => _ProviderDefaultModelSetParamsDto(
-  connectionId: json['connectionId'] as String,
-  modelId: json['modelId'] as String,
-);
-
-Map<String, dynamic> _$ProviderDefaultModelSetParamsDtoToJson(
-  _ProviderDefaultModelSetParamsDto instance,
-) => <String, dynamic>{
-  'connectionId': instance.connectionId,
-  'modelId': instance.modelId,
-};
-
 _ProviderCustomCreateParamsDto _$ProviderCustomCreateParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _ProviderCustomCreateParamsDto(
@@ -422,7 +391,6 @@ _ProviderCustomCreateParamsDto _$ProviderCustomCreateParamsDtoFromJson(
   config: CustomProviderConfigDto.fromJson(
     json['config'] as Map<String, dynamic>,
   ),
-  makeDefault: json['makeDefault'] as bool,
   apiKey: json['apiKey'] as String?,
 );
 
@@ -431,7 +399,6 @@ Map<String, dynamic> _$ProviderCustomCreateParamsDtoToJson(
 ) => <String, dynamic>{
   'id': instance.id,
   'config': instance.config,
-  'makeDefault': instance.makeDefault,
   'apiKey': instance.apiKey,
 };
 

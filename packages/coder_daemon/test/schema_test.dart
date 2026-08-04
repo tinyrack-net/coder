@@ -110,8 +110,6 @@ void main() {
       () => providers.status,
       () => providers.authKind,
       () => providers.credentialOrigin,
-      () => providers.isDefault,
-      () => providers.defaultModelId,
       () => providers.error,
       () => providers.customConfigJson,
       () => providers.createdAt,
@@ -139,7 +137,7 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 8);
+      expect(database.schemaVersion, 9);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

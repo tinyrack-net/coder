@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
@@ -43,143 +41,12 @@ void main() {
         find.byKey(const ValueKey('provider-add-deepseek')),
         findsOneWidget,
       );
+      expect(find.text('기본 Provider로 설정'), findsNothing);
+      expect(find.text('기본 모델'), findsNothing);
+      expect(find.byKey(const ValueKey('model-selector-openai')), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }
-
-  testWidgets('model selector searches long labels without overflow', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 760));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    const currentId =
-        'vendor/reasoning-model-with-an-extremely-long-identifier-current';
-    const nextId =
-        'vendor/reasoning-model-with-an-extremely-long-identifier-next';
-    final api = FakeCoderApi(
-      connections: <ProviderConnectionDto>[
-        _connection(defaultModelId: currentId),
-      ],
-      models: <String, List<ProviderModelDto>>{
-        'provider': <ProviderModelDto>[
-          _longModel(id: currentId, label: 'Current $currentId'),
-          _longModel(id: nextId, label: 'Next $nextId'),
-        ],
-      },
-    );
-    await _pumpSettings(tester, api);
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byKey(const ValueKey('model-selector-provider')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('model-search-field')), findsOneWidget);
-    await tester.enterText(
-      find.byKey(const ValueKey('model-search-field')),
-      'next',
-    );
-    await tester.pump();
-    expect(
-      find.byKey(const ValueKey('model-option-provider-$nextId')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('model-option-provider-$currentId')),
-      findsNothing,
-    );
-    await tester.tap(
-      find.byKey(const ValueKey('model-option-provider-$nextId')),
-    );
-    await tester.pumpAndSettle();
-    expect((await api.listProviderConnections()).single.defaultModelId, nextId);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets(
-    'model selector handles missing, empty, saving, and error states',
-    (
-      tester,
-    ) async {
-      const availableId = 'available-model';
-      final saveGate = Completer<void>();
-      final savingApi = FakeCoderApi(
-        connections: <ProviderConnectionDto>[
-          _connection(defaultModelId: 'removed-model'),
-        ],
-        models: <String, List<ProviderModelDto>>{
-          'provider': <ProviderModelDto>[
-            _longModel(id: availableId, label: 'Available model'),
-          ],
-        },
-        defaultModelSetGate: saveGate.future,
-      );
-      await _pumpSettings(tester, savingApi);
-      expect(find.text('카탈로그에 없음'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      await tester.tap(find.byKey(const ValueKey('model-selector-provider')));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('model-option-provider-available-model')),
-      );
-      await tester.pump();
-      expect(
-        find.byKey(const ValueKey('model-selector-saving-provider')),
-        findsOneWidget,
-      );
-      saveGate.complete();
-      await tester.pumpAndSettle();
-      expect(
-        (await savingApi.listProviderConnections()).single.defaultModelId,
-        availableId,
-      );
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
-      final errorApi = FakeCoderApi(
-        connections: <ProviderConnectionDto>[
-          _connection(defaultModelId: availableId),
-        ],
-        models: <String, List<ProviderModelDto>>{
-          'provider': <ProviderModelDto>[
-            _longModel(id: availableId, label: 'Available model'),
-            _longModel(id: 'other-model', label: 'Other model'),
-          ],
-        },
-        defaultModelSetError: Exception('model update failed'),
-      );
-      await _pumpSettings(tester, errorApi);
-      await tester.tap(find.byKey(const ValueKey('model-selector-provider')));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('model-option-provider-other-model')),
-      );
-      await tester.pumpAndSettle();
-      expect(find.textContaining('model update failed'), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
-      final loadingGate = Completer<void>();
-      final loadingApi = FakeCoderApi(
-        connections: <ProviderConnectionDto>[_connection()],
-        modelListGate: loadingGate.future,
-      );
-      await _pumpSettings(tester, loadingApi, settle: false);
-      expect(find.text('모델을 불러오는 중…'), findsOneWidget);
-      loadingGate.complete();
-      await tester.pumpAndSettle();
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
-      final emptyApi = FakeCoderApi(
-        connections: <ProviderConnectionDto>[_connection()],
-        models: const <String, List<ProviderModelDto>>{
-          'provider': <ProviderModelDto>[],
-        },
-      );
-      await _pumpSettings(tester, emptyApi);
-      expect(find.text('사용 가능한 모델이 없습니다.'), findsOneWidget);
-    },
-  );
 
   testWidgets(
     'preset providers hide technical settings and connect with key',
@@ -326,7 +193,7 @@ void main() {
     tags: const <String>['feature_test__provider_custom__widget'],
   );
 
-  testWidgets('connection cards manage defaults, custom edits, and removal', (
+  testWidgets('connection cards manage custom edits and removal', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1000));
@@ -339,8 +206,6 @@ void main() {
       status: ProviderConnectionStatus.degraded,
       authKind: ProviderAuthKind.apiKey,
       credentialOrigin: ProviderCredentialOrigin.environment,
-      isDefault: false,
-      defaultModelId: 'model-a',
       error: 'model discovery unavailable',
       customConfig: const CustomProviderConfigDto(
         name: 'Lab',
@@ -377,23 +242,6 @@ void main() {
 
     expect(find.text('제한된 연결 · Environment credential'), findsOneWidget);
     expect(find.text('model discovery unavailable'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('model-selector-custom-one')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey('model-option-custom-one-model-b')),
-    );
-    await tester.pumpAndSettle();
-    expect(
-      (await api.listProviderConnections()).single.defaultModelId,
-      'model-b',
-    );
-
-    await tester.tap(find.byType(PopupMenuButton<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('기본 Provider로 설정'));
-    await tester.pumpAndSettle();
-    expect((await api.listProviderConnections()).single.isDefault, isTrue);
-
     await tester.tap(find.byType(PopupMenuButton<String>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('고급 설정 편집'));
@@ -458,7 +306,6 @@ void main() {
             status: statuses[index],
             authKind: ProviderAuthKind.none,
             credentialOrigin: origins[index],
-            isDefault: index == 0,
             createdAt: now,
             updatedAt: now,
           ),
@@ -498,89 +345,11 @@ void main() {
             .onTap,
         isNotNull,
       );
-      expect(
-        tester
-            .widget<InkWell>(
-              find.byKey(const ValueKey('model-selector-openai')),
-            )
-            .onTap,
-        isNotNull,
-      );
+      expect(find.byKey(const ValueKey('model-selector-openai')), findsNothing);
       expect(find.byKey(const ValueKey('provider-add-custom')), findsOneWidget);
     },
     tags: const <String>['feature_test__daemon_authentication__widget'],
   );
-
-  testWidgets('switching daemons reloads models with the same connection ID', (
-    tester,
-  ) async {
-    final now = DateTime.utc(2026, 8, 3);
-    final first = FakeCoderApi(
-      serverInfo: _serverInfo('first'),
-      connections: <ProviderConnectionDto>[
-        _connection(defaultModelId: 'shared-model'),
-      ],
-      models: <String, List<ProviderModelDto>>{
-        'provider': <ProviderModelDto>[
-          _longModel(id: 'shared-model', label: 'First daemon model'),
-        ],
-      },
-    );
-    final second = FakeCoderApi(
-      serverInfo: _serverInfo('second'),
-      connections: <ProviderConnectionDto>[
-        _connection(defaultModelId: 'shared-model'),
-      ],
-      models: <String, List<ProviderModelDto>>{
-        'provider': <ProviderModelDto>[
-          _longModel(id: 'shared-model', label: 'Second daemon model'),
-        ],
-      },
-    );
-    final store = MemoryAppStore(
-      settings: const AppSettings(embeddedDaemonEnabled: false),
-      profiles: <RemoteDaemonProfile>[
-        _remoteProfile('first', now),
-        _remoteProfile('second', now),
-      ],
-      tokens: const <String, String>{'first': 'one', 'second': 'two'},
-    );
-    final harness = GlobalKey<_SettingsHostHarnessState>();
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          appServicesProvider.overrideWithValue(
-            AppServices(
-              settings: store,
-              profiles: store,
-              credentials: store,
-              clients: _MappedHostClients(<String, CoderApi>{
-                'first.test': first,
-                'second.test': second,
-              }),
-              clientKind: 'test',
-            ),
-          ),
-          externalUrlOpenerProvider.overrideWithValue(_ExternalUrlOpener()),
-        ],
-        child: MaterialApp(
-          locale: testLocale,
-          localizationsDelegates: testLocalizationsDelegates,
-          supportedLocales: testSupportedLocales,
-          home: _SettingsHostHarness(key: harness),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('First daemon model'), findsOneWidget);
-
-    harness.currentState!.select('second');
-    for (var attempt = 0; attempt < 10; attempt += 1) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-
-    expect(find.text('Second daemon model'), findsOneWidget);
-  });
 
   testWidgets('settings renders disconnected and bootstrap error states', (
     tester,
@@ -615,29 +384,6 @@ void main() {
     expect(find.textContaining('connection failed'), findsOneWidget);
   });
 }
-
-ProviderConnectionDto _connection({String? defaultModelId}) =>
-    ProviderConnectionDto(
-      id: 'provider',
-      definitionId: 'provider',
-      displayName: 'Provider',
-      status: ProviderConnectionStatus.connected,
-      authKind: ProviderAuthKind.apiKey,
-      credentialOrigin: ProviderCredentialOrigin.stored,
-      isDefault: true,
-      defaultModelId: defaultModelId,
-      createdAt: DateTime.utc(2026),
-      updatedAt: DateTime.utc(2026),
-    );
-
-ProviderModelDto _longModel({required String id, required String label}) =>
-    ProviderModelDto(
-      connectionId: 'provider',
-      id: id,
-      label: label,
-      source: ProviderModelSource.discovered,
-      capabilities: const ModelCapabilitiesDto(),
-    );
 
 const List<ProviderDefinitionDto> _catalogDefinitions = <ProviderDefinitionDto>[
   ProviderDefinitionDto(
@@ -732,53 +478,6 @@ final class _Ids implements AppIdGenerator {
   @override
   String generate() => 'new-provider';
 }
-
-final class _SettingsHostHarness extends StatefulWidget {
-  const _SettingsHostHarness({super.key});
-
-  @override
-  State<_SettingsHostHarness> createState() => _SettingsHostHarnessState();
-}
-
-final class _SettingsHostHarnessState extends State<_SettingsHostHarness> {
-  String _hostId = 'first';
-
-  void select(String hostId) => setState(() => _hostId = hostId);
-
-  @override
-  Widget build(BuildContext context) => SettingsPage(hostId: _hostId);
-}
-
-final class _MappedHostClients implements HostClientFactory {
-  const _MappedHostClients(this.apis);
-
-  final Map<String, CoderApi> apis;
-
-  @override
-  Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
-    required String clientId,
-    required String clientKind,
-  }) async => apis[endpoint.websocketUri.host]!;
-}
-
-RemoteDaemonProfile _remoteProfile(String id, DateTime now) =>
-    RemoteDaemonProfile(
-      id: id,
-      label: id,
-      websocketUri: Uri.parse('ws://$id.test/ws'),
-      autoConnect: true,
-      createdAt: now,
-      updatedAt: now,
-    );
-
-ServerInfoDto _serverInfo(String id) => ServerInfoDto(
-  serverId: id,
-  version: 'test',
-  protocolVersion: coderProtocolVersion,
-  features: const <String, bool>{},
-);
 
 final class _FailingStore
     implements

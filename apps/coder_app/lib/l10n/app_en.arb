@@ -510,9 +510,9 @@
   "@agentSettingsCustomPrompt": {
     "description": "Toggle that overrides the built-in system prompt."
   },
-  "agentSettingsDaemonDefaultModel": "Daemon default provider/model",
-  "@agentSettingsDaemonDefaultModel": {
-    "description": "Model mode that follows the daemon default."
+  "agentSettingsSessionModel": "Choose for each session",
+  "@agentSettingsSessionModel": {
+    "description": "Model mode that requires each session to select a provider and model."
   },
   "agentSettingsPinnedModel": "Pinned provider/model",
   "@agentSettingsPinnedModel": {
@@ -607,37 +607,9 @@
   "@providerSettingsNoConnections": {
     "description": "Empty state of the connected provider list."
   },
-  "providerSettingsDefaultChip": "Default",
-  "@providerSettingsDefaultChip": {
-    "description": "Chip marking the default provider connection."
-  },
-  "providerSettingsMakeDefault": "Make default provider",
-  "@providerSettingsMakeDefault": {
-    "description": "Menu entry that promotes a connection to default."
-  },
   "providerSettingsEditAdvanced": "Edit advanced settings",
   "@providerSettingsEditAdvanced": {
     "description": "Menu entry that opens the custom provider form."
-  },
-  "providerSettingsModelsLoading": "Loading models…",
-  "@providerSettingsModelsLoading": {
-    "description": "Model selector state while the catalog loads."
-  },
-  "providerSettingsNoModels": "No models are available.",
-  "@providerSettingsNoModels": {
-    "description": "Model selector state when the catalog is empty."
-  },
-  "providerSettingsSelectModel": "Select a model",
-  "@providerSettingsSelectModel": {
-    "description": "Model selector placeholder."
-  },
-  "providerSettingsDefaultModel": "Default model",
-  "@providerSettingsDefaultModel": {
-    "description": "Label of the default model selector."
-  },
-  "providerSettingsModelMissing": "Not in the catalog",
-  "@providerSettingsModelMissing": {
-    "description": "Marks a pinned model the catalog no longer lists."
   },
   "providerSettingsAdd": "Add provider",
   "@providerSettingsAdd": {
@@ -728,7 +700,7 @@
   "@providerAuthNone": {
     "description": "Origin of a provider credential."
   },
-  "modelPickerTitle": "Select the default model",
+  "modelPickerTitle": "Select a model",
   "@modelPickerTitle": {
     "description": "Title of the model picker sheet."
   },

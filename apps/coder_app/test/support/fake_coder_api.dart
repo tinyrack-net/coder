@@ -27,8 +27,6 @@ final class FakeCoderApi implements CoderApi {
     this.failNextAgentCreate = false,
     this.failNextAgentUpdate = false,
     this.failNextSkillUpdate = false,
-    this.defaultModelSetGate,
-    this.defaultModelSetError,
     this.modelListGate,
     this.suggestDirectoriesGate,
     this.createWorktreeError,
@@ -114,8 +112,6 @@ final class FakeCoderApi implements CoderApi {
     status: ProviderConnectionStatus.connected,
     authKind: ProviderAuthKind.apiKey,
     credentialOrigin: ProviderCredentialOrigin.stored,
-    isDefault: true,
-    defaultModelId: 'gpt-5.6-sol',
     createdAt: _now,
     updatedAt: _now,
   );
@@ -139,7 +135,7 @@ final class FakeCoderApi implements CoderApi {
     promptEnabled: true,
     systemPrompt: 'Code carefully.',
     model: AgentModelSelectionDto(
-      source: AgentModelSource.daemonDefault,
+      source: AgentModelSource.session,
     ),
     reasoningEffort: 'medium',
     permissionMode: PermissionMode.ask,
@@ -204,12 +200,6 @@ final class FakeCoderApi implements CoderApi {
 
   /// Whether the next Markdown create should simulate a daemon failure.
   bool failNextAgentCreate;
-
-  /// Optional gate used to observe the model-saving state.
-  final Future<void>? defaultModelSetGate;
-
-  /// Optional daemon error returned while selecting a default model.
-  final Exception? defaultModelSetError;
 
   /// Optional gate used to keep model discovery in its loading state.
   final Future<void>? modelListGate;
@@ -802,9 +792,8 @@ final class FakeCoderApi implements CoderApi {
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey, {
-    bool makeDefault = false,
-  }) async {
+    String apiKey,
+  ) async {
     credentials[definitionId] = apiKey;
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
@@ -817,20 +806,14 @@ final class FakeCoderApi implements CoderApi {
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.apiKey,
         credentialOrigin: ProviderCredentialOrigin.stored,
-        isDefault: makeDefault,
-        defaultModelId: definition.recommendedModelIds.firstOrNull,
         createdAt: _now,
         updatedAt: _now,
       ),
-      makeDefault: makeDefault,
     );
   }
 
   @override
-  Future<ProviderConnectionDto> connectProviderNone(
-    String definitionId, {
-    bool makeDefault = false,
-  }) async {
+  Future<ProviderConnectionDto> connectProviderNone(String definitionId) async {
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
@@ -842,21 +825,17 @@ final class FakeCoderApi implements CoderApi {
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.none,
         credentialOrigin: ProviderCredentialOrigin.none,
-        isDefault: makeDefault,
-        defaultModelId: definition.recommendedModelIds.firstOrNull,
         createdAt: _now,
         updatedAt: _now,
       ),
-      makeDefault: makeDefault,
     );
   }
 
   @override
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
-    String methodId, {
-    bool makeDefault = false,
-  }) async => ProviderAuthAttemptDto(
+    String methodId,
+  ) async => ProviderAuthAttemptDto(
     id: 'attempt',
     definitionId: definitionId,
     methodId: methodId,
@@ -887,33 +866,8 @@ final class FakeCoderApi implements CoderApi {
       current.copyWith(
         status: ProviderConnectionStatus.disconnected,
         credentialOrigin: ProviderCredentialOrigin.none,
-        isDefault: false,
       ),
     );
-  }
-
-  @override
-  Future<void> setDefaultProvider(String connectionId) async {
-    for (var index = 0; index < _connections.length; index += 1) {
-      _connections[index] = _connections[index].copyWith(
-        isDefault: _connections[index].id == connectionId,
-      );
-    }
-  }
-
-  @override
-  Future<void> setDefaultProviderModel(
-    String connectionId,
-    String modelId,
-  ) async {
-    final gate = defaultModelSetGate;
-    if (gate != null) await gate;
-    final error = defaultModelSetError;
-    if (error != null) throw error;
-    final connection = _connections.singleWhere(
-      (item) => item.id == connectionId,
-    );
-    _saveConnection(connection.copyWith(defaultModelId: modelId));
   }
 
   @override
@@ -936,7 +890,6 @@ final class FakeCoderApi implements CoderApi {
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
-    bool makeDefault = false,
   }) async {
     if (apiKey != null) credentials[id] = apiKey;
     for (final modelId in config.manualModelIds) {
@@ -968,13 +921,10 @@ final class FakeCoderApi implements CoderApi {
         credentialOrigin: apiKey == null
             ? ProviderCredentialOrigin.none
             : ProviderCredentialOrigin.stored,
-        isDefault: makeDefault,
-        defaultModelId: config.manualModelIds.firstOrNull,
         customConfig: config,
         createdAt: _now,
         updatedAt: _now,
       ),
-      makeDefault: makeDefault,
     );
   }
 
@@ -1011,7 +961,6 @@ final class FakeCoderApi implements CoderApi {
     return _saveConnection(
       current.copyWith(
         displayName: config.name,
-        defaultModelId: config.manualModelIds.firstOrNull,
         customConfig: config,
       ),
     );
@@ -1024,15 +973,7 @@ final class FakeCoderApi implements CoderApi {
     credentials.remove(connectionId);
   }
 
-  ProviderConnectionDto _saveConnection(
-    ProviderConnectionDto connection, {
-    bool makeDefault = false,
-  }) {
-    if (makeDefault) {
-      for (var index = 0; index < _connections.length; index += 1) {
-        _connections[index] = _connections[index].copyWith(isDefault: false);
-      }
-    }
+  ProviderConnectionDto _saveConnection(ProviderConnectionDto connection) {
     _connections
       ..removeWhere((item) => item.id == connection.id)
       ..add(connection);

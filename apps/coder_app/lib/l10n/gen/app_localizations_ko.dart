@@ -389,7 +389,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsCustomPrompt => 'Custom system prompt 사용';
 
   @override
-  String get agentSettingsDaemonDefaultModel => 'Daemon 기본 provider/model';
+  String get agentSettingsSessionModel => '세션마다 선택';
 
   @override
   String get agentSettingsPinnedModel => '고정 provider/model';
@@ -461,28 +461,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsNoConnections => '연결된 Provider가 없습니다.';
 
   @override
-  String get providerSettingsDefaultChip => '기본';
-
-  @override
-  String get providerSettingsMakeDefault => '기본 Provider로 설정';
-
-  @override
   String get providerSettingsEditAdvanced => '고급 설정 편집';
-
-  @override
-  String get providerSettingsModelsLoading => '모델을 불러오는 중…';
-
-  @override
-  String get providerSettingsNoModels => '사용 가능한 모델이 없습니다.';
-
-  @override
-  String get providerSettingsSelectModel => '모델 선택';
-
-  @override
-  String get providerSettingsDefaultModel => '기본 모델';
-
-  @override
-  String get providerSettingsModelMissing => '카탈로그에 없음';
 
   @override
   String get providerSettingsAdd => 'Provider 추가';
@@ -551,7 +530,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerAuthNone => '인증 없음';
 
   @override
-  String get modelPickerTitle => '기본 모델 선택';
+  String get modelPickerTitle => '모델 선택';
 
   @override
   String get modelPickerSearch => '모델 검색';

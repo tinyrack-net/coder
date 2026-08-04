@@ -675,31 +675,23 @@ class CoderClient implements CoderApi {
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey, {
-    bool makeDefault = false,
-  }) async {
+    String apiKey,
+  ) async {
     final response = await _request(
       RpcMethod.providerConnectApiKey,
       ProviderConnectApiKeyParamsDto(
         definitionId: definitionId,
         apiKey: apiKey,
-        makeDefault: makeDefault,
       ).toJson(),
     );
     return ProviderConnectionResultDto.fromJson(response).connection;
   }
 
   @override
-  Future<ProviderConnectionDto> connectProviderNone(
-    String definitionId, {
-    bool makeDefault = false,
-  }) async {
+  Future<ProviderConnectionDto> connectProviderNone(String definitionId) async {
     final response = await _request(
       RpcMethod.providerConnectNone,
-      ProviderConnectNoneParamsDto(
-        definitionId: definitionId,
-        makeDefault: makeDefault,
-      ).toJson(),
+      ProviderConnectNoneParamsDto(definitionId: definitionId).toJson(),
     );
     return ProviderConnectionResultDto.fromJson(response).connection;
   }
@@ -707,15 +699,13 @@ class CoderClient implements CoderApi {
   @override
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
-    String methodId, {
-    bool makeDefault = false,
-  }) async {
+    String methodId,
+  ) async {
     final response = await _request(
       RpcMethod.providerAuthStart,
       ProviderAuthStartParamsDto(
         definitionId: definitionId,
         methodId: methodId,
-        makeDefault: makeDefault,
       ).toJson(),
     );
     return ProviderAuthAttemptResultDto.fromJson(response).attempt;
@@ -747,28 +737,6 @@ class CoderClient implements CoderApi {
   }
 
   @override
-  Future<void> setDefaultProvider(String connectionId) async {
-    await _request(
-      RpcMethod.providerDefaultSet,
-      ProviderDefaultSetParamsDto(connectionId: connectionId).toJson(),
-    );
-  }
-
-  @override
-  Future<void> setDefaultProviderModel(
-    String connectionId,
-    String modelId,
-  ) async {
-    await _request(
-      RpcMethod.providerDefaultModelSet,
-      ProviderDefaultModelSetParamsDto(
-        connectionId: connectionId,
-        modelId: modelId,
-      ).toJson(),
-    );
-  }
-
-  @override
   Future<ProviderCatalogDto> refreshProviderCatalog() async {
     final response = await _request(
       RpcMethod.providerCatalogRefresh,
@@ -793,14 +761,12 @@ class CoderClient implements CoderApi {
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
-    bool makeDefault = false,
   }) async {
     final response = await _request(
       RpcMethod.providerCustomCreate,
       ProviderCustomCreateParamsDto(
         id: id,
         config: config,
-        makeDefault: makeDefault,
         apiKey: apiKey,
       ).toJson(),
     );

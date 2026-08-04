@@ -30,22 +30,13 @@ List<ProviderConnectionDto> usableConnections(
 ///
 /// Returns null when the definition's selection cannot be satisfied, which the
 /// composer surfaces as "pick a model before sending".
-SessionModelSelectionDto? defaultSelectionFor(
+SessionModelSelectionDto? agentSelectionFor(
   AgentDefinitionDto definition,
   List<ProviderConnectionDto> connections,
 ) {
   final usable = usableConnections(connections);
   switch (definition.model.source) {
-    case AgentModelSource.daemonDefault:
-      for (final connection in usable) {
-        final modelId = connection.defaultModelId;
-        if (connection.isDefault && modelId != null) {
-          return SessionModelSelectionDto(
-            providerConnectionId: connection.id,
-            modelId: modelId,
-          );
-        }
-      }
+    case AgentModelSource.session:
       return null;
     case AgentModelSource.fixed:
       final connectionId = definition.model.providerConnectionId;

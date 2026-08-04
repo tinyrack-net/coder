@@ -818,11 +818,11 @@ abstract class AppLocalizations {
   /// **'Use a custom system prompt'**
   String get agentSettingsCustomPrompt;
 
-  /// Model mode that follows the daemon default.
+  /// Model mode that requires each session to select a provider and model.
   ///
   /// In en, this message translates to:
-  /// **'Daemon default provider/model'**
-  String get agentSettingsDaemonDefaultModel;
+  /// **'Choose for each session'**
+  String get agentSettingsSessionModel;
 
   /// Model mode that pins one provider and model.
   ///
@@ -956,53 +956,11 @@ abstract class AppLocalizations {
   /// **'No providers are connected.'**
   String get providerSettingsNoConnections;
 
-  /// Chip marking the default provider connection.
-  ///
-  /// In en, this message translates to:
-  /// **'Default'**
-  String get providerSettingsDefaultChip;
-
-  /// Menu entry that promotes a connection to default.
-  ///
-  /// In en, this message translates to:
-  /// **'Make default provider'**
-  String get providerSettingsMakeDefault;
-
   /// Menu entry that opens the custom provider form.
   ///
   /// In en, this message translates to:
   /// **'Edit advanced settings'**
   String get providerSettingsEditAdvanced;
-
-  /// Model selector state while the catalog loads.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading models…'**
-  String get providerSettingsModelsLoading;
-
-  /// Model selector state when the catalog is empty.
-  ///
-  /// In en, this message translates to:
-  /// **'No models are available.'**
-  String get providerSettingsNoModels;
-
-  /// Model selector placeholder.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a model'**
-  String get providerSettingsSelectModel;
-
-  /// Label of the default model selector.
-  ///
-  /// In en, this message translates to:
-  /// **'Default model'**
-  String get providerSettingsDefaultModel;
-
-  /// Marks a pinned model the catalog no longer lists.
-  ///
-  /// In en, this message translates to:
-  /// **'Not in the catalog'**
-  String get providerSettingsModelMissing;
 
   /// Heading of the provider catalog.
   ///
@@ -1133,7 +1091,7 @@ abstract class AppLocalizations {
   /// Title of the model picker sheet.
   ///
   /// In en, this message translates to:
-  /// **'Select the default model'**
+  /// **'Select a model'**
   String get modelPickerTitle;
 
   /// Search field label of the model picker.

@@ -959,7 +959,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         current.model ??
         (definition == null
             ? null
-            : defaultSelectionFor(definition, connections));
+            : agentSelectionFor(definition, connections));
     // Only the newest finished plan can still be acted on.
     final lastPlan = items.whereType<ChatPlanProposal>().lastOrNull;
     final pendingPlan =

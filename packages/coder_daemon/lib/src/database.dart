@@ -250,12 +250,6 @@ class ProviderConnections extends Table {
   /// Non-secret credential origin.
   TextColumn get credentialOrigin => text()();
 
-  /// Whether this is the daemon-wide default connection.
-  BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
-
-  /// The defaultModelId public API member.
-  TextColumn get defaultModelId => text().nullable()();
-
   /// Last user-safe connection error.
   TextColumn get error => text().nullable()();
 
@@ -350,7 +344,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
