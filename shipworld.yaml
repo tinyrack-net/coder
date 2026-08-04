@@ -53,7 +53,7 @@ targets:
         - Development
       terminal: false
       maintainer: "Tinyrack <dev@tinyrack.net>"
-      license: Apache-2.0
+      license: MIT
       vendor: Tinyrack
       app-id: net.tinyrack.coder
       icons:
