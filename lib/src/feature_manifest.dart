@@ -218,6 +218,38 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'mcp.server.management',
+    description:
+        'Adds, edits, tests, and removes external MCP servers and shows '
+        'their connection status and discovered tools.',
+    apiMethods: <String>[
+      'listMcpServers',
+      'addMcpServer',
+      'updateMcpServer',
+      'removeMcpServer',
+      'testMcpServer',
+      'setMcpSecret',
+    ],
+    routes: <String>['McpSettingsRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+  ),
+  FeatureContract(
+    id: 'mcp.tool.execution',
+    description:
+        'Executes namespaced MCP tools inside a turn with approval, and '
+        'degrades safely when a server is offline.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+    },
+  ),
+  FeatureContract(
     id: 'skill.management',
     description:
         'Lists, creates, edits, toggles, and deletes skills from built-in, '

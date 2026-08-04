@@ -718,6 +718,22 @@ void main() {
       );
       expect(find.text('내장 도구'), findsOneWidget);
 
+      // An always-on tool is shown checked and locked, sorted above the
+      // tools the user can actually turn off.
+      final alwaysOn = tester.widget<CheckboxListTile>(
+        find.byKey(const ValueKey<String>('agent-tool-tile-read_file')),
+      );
+      expect(alwaysOn.value, isTrue);
+      expect(alwaysOn.onChanged, isNull);
+      expect(
+        find.byKey(const ValueKey<String>('agent-tool-lock-read_file')),
+        findsOneWidget,
+      );
+      final toggleable = tester.widget<CheckboxListTile>(
+        find.byKey(const ValueKey<String>('agent-tool-tile-run_command')),
+      );
+      expect(toggleable.onChanged, isNotNull);
+
       await tester.tap(find.byTooltip('Agent 추가'));
       await tester.pumpAndSettle();
       await tester.enterText(

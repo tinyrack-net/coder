@@ -241,7 +241,11 @@ class _AgentEditorState extends State<_AgentEditor> {
     _modelSource = definition.model.source;
     _reasoningEffort = definition.reasoningEffort;
     _permissionMode = definition.permissionMode;
-    _tools = definition.toolIds.toSet();
+    final alwaysOn = <String>{
+      for (final tool in widget.state.tools)
+        if (tool.alwaysOn) tool.id,
+    };
+    _tools = definition.toolIds.toSet()..removeAll(alwaysOn);
     _callableAgents = definition.callableAgentIds.toSet();
   }
 
@@ -431,18 +435,32 @@ class _AgentEditorState extends State<_AgentEditor> {
                 l10n.agentSettingsBuiltinTools,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              for (final tool in widget.state.tools)
+              for (final tool in _sortedTools)
                 CheckboxListTile(
-                  value: _tools.contains(tool.id),
-                  onChanged: editable
+                  key: ValueKey<String>('agent-tool-tile-${tool.id}'),
+                  value: tool.alwaysOn || _tools.contains(tool.id),
+                  // An always-on tool has no toggle to offer, so the tile is
+                  // checked and inert rather than lying about being editable.
+                  onChanged: editable && !tool.alwaysOn
                       ? (enabled) => setState(() {
                           enabled!
                               ? _tools.add(tool.id)
                               : _tools.remove(tool.id);
                         })
                       : null,
+                  secondary: tool.alwaysOn
+                      ? Icon(
+                          Icons.lock_outline,
+                          key: ValueKey<String>('agent-tool-lock-${tool.id}'),
+                        )
+                      : null,
                   title: Text(tool.name),
-                  subtitle: Text(tool.description),
+                  subtitle: Text(
+                    tool.alwaysOn
+                        ? '${tool.description} · '
+                              '${l10n.agentSettingsToolAlwaysOn}'
+                        : tool.description,
+                  ),
                 ),
               if (definition.mode == AgentMode.primary) ...<Widget>[
                 const SizedBox(height: 20),
@@ -473,6 +491,14 @@ class _AgentEditorState extends State<_AgentEditor> {
     );
   }
 
+  /// Always-on tools first, so the inert tiles do not interleave with the
+  /// ones the user can actually change.
+  List<AgentToolDefinitionDto> get _sortedTools =>
+      widget.state.tools.toList()..sort((left, right) {
+        if (left.alwaysOn != right.alwaysOn) return left.alwaysOn ? -1 : 1;
+        return left.name.compareTo(right.name);
+      });
+
   AgentDefinitionDto _editedDefinition() => widget.definition.copyWith(
     name: _name.text.trim(),
     description: _description.text.trim(),
@@ -489,6 +515,8 @@ class _AgentEditorState extends State<_AgentEditor> {
     ),
     reasoningEffort: _reasoningEffort,
     permissionMode: _permissionMode,
+    // Always-on ids are never written back: the daemon supplies them, so
+    // repeating them in the frontmatter would only go stale.
     toolIds: _tools.toList(growable: false)..sort(),
     callableAgentIds: _callableAgents.toList(growable: false)..sort(),
   );

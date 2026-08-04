@@ -14,6 +14,7 @@ List<RouteBase> get $appRoutes => [
   $providerSettingsRoute,
   $projectSettingsRoute,
   $agentSettingsRoute,
+  $mcpSettingsRoute,
   $skillSettingsRoute,
   $daemonSettingsRoute,
   $newHostRoute,
@@ -257,6 +258,38 @@ mixin $AgentSettingsRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/settings/agents',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $mcpSettingsRoute => GoRouteData.$route(
+  path: '/settings/mcp',
+  hasOverriddenOnExit: false,
+  factory: $McpSettingsRoute._fromState,
+);
+
+mixin $McpSettingsRoute on GoRouteData {
+  static McpSettingsRoute _fromState(GoRouterState state) =>
+      McpSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  McpSettingsRoute get _self => this as McpSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/mcp',
     queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
   );
 

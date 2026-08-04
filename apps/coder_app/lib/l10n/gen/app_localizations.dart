@@ -1591,6 +1591,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick a project to see and edit the skills committed to it.'**
   String get skillSettingsProjectHint;
+
+  /// Sidebar label for the MCP server settings category.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP'**
+  String get settingsCategoryMcp;
+
+  /// Heading of the MCP server list.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP servers'**
+  String get mcpSettingsHeading;
+
+  /// Tooltip of the add-server button.
+  ///
+  /// In en, this message translates to:
+  /// **'Add MCP server'**
+  String get mcpSettingsAdd;
+
+  /// Shown when no server exists.
+  ///
+  /// In en, this message translates to:
+  /// **'No MCP servers are configured.'**
+  String get mcpSettingsEmpty;
+
+  /// Placeholder in the detail pane.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a server to edit it.'**
+  String get mcpSettingsSelectServer;
+
+  /// Heading above servers the user configured.
+  ///
+  /// In en, this message translates to:
+  /// **'Yours'**
+  String get mcpSettingsScopeUser;
+
+  /// Heading above servers the repository declares.
+  ///
+  /// In en, this message translates to:
+  /// **'This project'**
+  String get mcpSettingsScopeProject;
+
+  /// Explains why a project server is read-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Defined by this repository, so Coder does not edit it.'**
+  String get mcpSettingsProjectReadOnly;
+
+  /// Badge on a project server a user server overrides.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden by your server of the same name'**
+  String get mcpSettingsShadowed;
+
+  /// Shows which file declares a server.
+  ///
+  /// In en, this message translates to:
+  /// **'Defined in {path}'**
+  String mcpSettingsSource(String path);
+
+  /// Label of the server id field.
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get mcpSettingsServerId;
+
+  /// Rejects an unusable server id.
+  ///
+  /// In en, this message translates to:
+  /// **'Use lower-case letters, digits, - and _.'**
+  String get mcpSettingsServerIdInvalid;
+
+  /// Label of the transport selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get mcpSettingsTransport;
+
+  /// Label of the stdio transport.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get mcpSettingsTransportStdio;
+
+  /// Label of the Streamable HTTP transport.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP'**
+  String get mcpSettingsTransportHttp;
+
+  /// Label of the executable field.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get mcpSettingsCommand;
+
+  /// Label of the arguments field.
+  ///
+  /// In en, this message translates to:
+  /// **'Arguments (one per line)'**
+  String get mcpSettingsArgs;
+
+  /// Label of the cwd field.
+  ///
+  /// In en, this message translates to:
+  /// **'Working directory (optional)'**
+  String get mcpSettingsWorkingDirectory;
+
+  /// Label of the endpoint field.
+  ///
+  /// In en, this message translates to:
+  /// **'URL'**
+  String get mcpSettingsUrl;
+
+  /// Label of the env field.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment (KEY=value, one per line)'**
+  String get mcpSettingsEnvironment;
+
+  /// Label of the headers field.
+  ///
+  /// In en, this message translates to:
+  /// **'Headers (Name: value, one per line)'**
+  String get mcpSettingsHeaders;
+
+  /// Label of the enable switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get mcpSettingsEnabled;
+
+  /// Explains the secret reference syntax.
+  ///
+  /// In en, this message translates to:
+  /// **'Never paste a secret here. Reference a stored secret or an environment variable instead:'**
+  String get mcpSettingsSecretHint;
+
+  /// Label of the test button.
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get mcpSettingsTest;
+
+  /// Reports a successful test.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected and found {count} tools.'**
+  String mcpSettingsTestSucceeded(int count);
+
+  /// Reports a failed test.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect: {error}'**
+  String mcpSettingsTestFailed(String error);
+
+  /// Label of the delete action.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete server'**
+  String get mcpSettingsDelete;
+
+  /// Confirms deleting a server.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}? Agents using its tools will lose them.'**
+  String mcpSettingsDeleteConfirm(String name);
+
+  /// Server status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get mcpSettingsStatusDisabled;
+
+  /// Server status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting'**
+  String get mcpSettingsStatusConnecting;
+
+  /// Server status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get mcpSettingsStatusReady;
+
+  /// Server status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get mcpSettingsStatusFailed;
+
+  /// Heading of the discovered tool list.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get mcpSettingsDiscoveredTools;
+
+  /// Shown when a ready server has no tools.
+  ///
+  /// In en, this message translates to:
+  /// **'This server publishes no tools.'**
+  String get mcpSettingsNoTools;
+
+  /// Heading of the retained server diagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Server output'**
+  String get mcpSettingsDiagnostics;
+
+  /// Label of the secret dialog action.
+  ///
+  /// In en, this message translates to:
+  /// **'Store a secret'**
+  String get mcpSettingsSecretSet;
+
+  /// Label of the secret key field.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference name'**
+  String get mcpSettingsSecretKey;
+
+  /// Label of the secret value field.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get mcpSettingsSecretValue;
+
+  /// Subtitle marking a tool every agent gets.
+  ///
+  /// In en, this message translates to:
+  /// **'Always available'**
+  String get agentSettingsToolAlwaysOn;
 }
 
 class _AppLocalizationsDelegate

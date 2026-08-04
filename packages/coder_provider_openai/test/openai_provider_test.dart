@@ -163,6 +163,71 @@ data: [DONE]
     expect(completed.usage['total_tokens'], 7);
   });
 
+  test('a tool opting out of strict schemas is never sent as strict', () async {
+    const tools = <ModelToolDefinition>[
+      ModelToolDefinition(
+        name: 'read_file',
+        description: 'read',
+        parameters: <String, dynamic>{
+          'type': 'object',
+          'properties': <String, dynamic>{},
+          'required': <String>[],
+          'additionalProperties': false,
+        },
+      ),
+      ModelToolDefinition(
+        name: 'mcp__github__create_issue',
+        description: 'create an issue',
+        parameters: <String, dynamic>{
+          'type': 'object',
+          'properties': <String, dynamic>{
+            'title': <String, dynamic>{'type': 'string'},
+            'body': <String, dynamic>{'type': 'string'},
+          },
+          'required': <String>['title'],
+        },
+        strict: false,
+      ),
+    ];
+    const responsesFixture = '''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''';
+
+    final responsesAdapter = _RecordingAdapter(responsesFixture);
+    await OpenAIResponsesProvider(
+      const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+      dio: Dio()..httpClientAdapter = responsesAdapter,
+    ).stream(_request(tools: tools), CancellationToken()).toList();
+    final responsesBody = Map<String, dynamic>.from(
+      responsesAdapter.options!.data as Map,
+    );
+    final responsesTools = responsesBody['tools']! as List;
+    expect(responsesTools.first, containsPair('strict', true));
+    expect(responsesTools.last, containsPair('strict', false));
+
+    final chatAdapter = _RecordingAdapter('''
+data: {"choices":[{"index":0,"delta":{"content":"hi"},"finish_reason":"stop"}]}
+
+data: {"choices":[],"usage":{"total_tokens":1}}
+
+data: [DONE]
+
+''');
+    await OpenAIChatCompletionsProvider(
+      const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+      dio: Dio()..httpClientAdapter = chatAdapter,
+    ).stream(_request(tools: tools), CancellationToken()).toList();
+    final chatBody = Map<String, dynamic>.from(
+      chatAdapter.options!.data as Map,
+    );
+    final chatTools = chatBody['tools']! as List;
+    expect((chatTools.first as Map)['function'], containsPair('strict', true));
+    expect((chatTools.last as Map)['function'], isNot(contains('strict')));
+  });
+
   test('Chat Completions rejects a truncated SSE response', () async {
     final adapter = _RecordingAdapter('''
 data: {"choices":[{"index":0,"delta":{"content":"partial"}}]}
@@ -443,12 +508,7 @@ data: [DONE]
 ModelRequest _request({
   List<ConversationItem> history = const <ConversationItem>[],
   String? forceToolName,
-}) => ModelRequest(
-  model: 'model',
-  reasoningEffort: 'medium',
-  instructions: 'instructions',
-  history: history,
-  tools: const <ModelToolDefinition>[
+  List<ModelToolDefinition> tools = const <ModelToolDefinition>[
     ModelToolDefinition(
       name: 'read_file',
       description: 'Read',
@@ -460,6 +520,12 @@ ModelRequest _request({
       },
     ),
   ],
+}) => ModelRequest(
+  model: 'model',
+  reasoningEffort: 'medium',
+  instructions: 'instructions',
+  history: history,
+  tools: tools,
   safetyIdentifier: 'safe',
   forceToolName: forceToolName,
 );

@@ -142,6 +142,7 @@ class AgentRunner {
                   name: tool.name,
                   description: tool.description,
                   parameters: tool.strictJsonSchema,
+                  strict: tool.strict,
                 ),
               )
               .toList(growable: false),

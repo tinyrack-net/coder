@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
+import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_service.dart';
@@ -24,6 +25,8 @@ class DaemonRpcServer {
     required this.timeline,
     required this.agents,
     required this.agentDefinitions,
+    required this.mcp,
+    required this.worktrees,
     required this.skills,
     required this.providers,
     required this.providerAuth,
@@ -49,6 +52,14 @@ class DaemonRpcServer {
         ),
       ),
     );
+    _mcpSubscription = mcp.changes.listen(
+      (_) => _broadcast(
+        const WireEnvelope(
+          type: RpcNotification.mcpServersChanged,
+          payload: <String, dynamic>{},
+        ),
+      ),
+    );
     _skillSubscription = skills.changes.listen(
       (_) => _broadcast(
         const WireEnvelope(
@@ -61,6 +72,12 @@ class DaemonRpcServer {
 
   /// The workspaces public API member.
   final WorkspaceService workspaces;
+
+  /// Connects and reports external MCP servers.
+  final McpService mcp;
+
+  /// Resolves a worktree id to the checkout its MCP scope belongs to.
+  final WorktreeRepository worktrees;
 
   /// The sessionRepository public API member.
   final SessionRepository sessionRepository;
@@ -96,6 +113,7 @@ class DaemonRpcServer {
   late final StreamSubscription<WireEnvelope> _eventSubscription;
   late final StreamSubscription<ProviderAuthAttemptDto> _authSubscription;
   late final StreamSubscription<void> _agentDefinitionSubscription;
+  late final StreamSubscription<void> _mcpSubscription;
   late final StreamSubscription<void> _skillSubscription;
 
   /// The call public API member.
@@ -129,6 +147,8 @@ class DaemonRpcServer {
       timeline: timeline,
       agents: agents,
       agentDefinitions: agentDefinitions,
+      mcp: mcp,
+      worktrees: worktrees,
       skills: skills,
       providers: providers,
       providerAuth: providerAuth,
@@ -159,6 +179,7 @@ class DaemonRpcServer {
     await _eventSubscription.cancel();
     await _authSubscription.cancel();
     await _agentDefinitionSubscription.cancel();
+    await _mcpSubscription.cancel();
     await _skillSubscription.cancel();
     await providerAuth.close();
     for (final session in List<_ClientSession>.of(_sessions)) {
@@ -191,6 +212,8 @@ class _ClientSession {
     required this.timeline,
     required this.agents,
     required this.agentDefinitions,
+    required this.mcp,
+    required this.worktrees,
     required this.skills,
     required this.providers,
     required this.providerAuth,
@@ -205,6 +228,8 @@ class _ClientSession {
   final TimelineRepository timeline;
   final SessionService agents;
   final AgentDefinitionService agentDefinitions;
+  final McpService mcp;
+  final WorktreeRepository worktrees;
   final SkillService skills;
   final ProviderService providers;
   final ProviderAuthCoordinator providerAuth;
@@ -238,6 +263,12 @@ class _ClientSession {
       RpcMethod.agentDefinitionReset,
       RpcMethod.agentDefinitionValidate,
       RpcMethod.agentToolCatalog,
+      RpcMethod.mcpServerList,
+      RpcMethod.mcpServerAdd,
+      RpcMethod.mcpServerUpdate,
+      RpcMethod.mcpServerRemove,
+      RpcMethod.mcpServerTest,
+      RpcMethod.mcpSecretSet,
       RpcMethod.skillList,
       RpcMethod.skillGet,
       RpcMethod.skillCreate,
@@ -351,6 +382,13 @@ class _ClientSession {
     }
   }
 
+  /// Resolves a worktree id to its checkout path, or null when absent.
+  Future<String?> _worktreeRoot(String? worktreeId) async {
+    if (worktreeId == null) return null;
+    final worktree = await worktrees.getById(worktreeId);
+    return worktree?.path;
+  }
+
   /// Resolves a workspace ID into the project scope skills merge over.
   Future<SkillScope> _skillScope(String? workspaceId) async {
     if (workspaceId == null) return SkillScope.global;
@@ -462,9 +500,42 @@ class _ClientSession {
           ),
         ).toJson();
       case RpcMethod.agentToolCatalog:
+        final request = AgentToolCatalogParamsDto.fromJson(payload);
         return AgentToolCatalogResultDto(
-          tools: agentDefinitions.toolCatalog(),
+          tools: agentDefinitions.toolCatalog(
+            workspaceRoot: await _worktreeRoot(request.worktreeId),
+          ),
         ).toJson();
+      case RpcMethod.mcpServerList:
+        final request = McpServersParamsDto.fromJson(payload);
+        final root = await _worktreeRoot(request.worktreeId);
+        if (root != null) await mcp.ensureProject(root);
+        return McpServersResultDto(
+          servers: mcp.states(workspaceRoot: root),
+        ).toJson();
+      case RpcMethod.mcpServerAdd:
+        final request = McpServerParamsDto.fromJson(payload);
+        return McpServerStateResultDto(
+          state: await mcp.addUserServer(request.server),
+        ).toJson();
+      case RpcMethod.mcpServerUpdate:
+        final request = McpServerParamsDto.fromJson(payload);
+        return McpServerStateResultDto(
+          state: await mcp.updateUserServer(request.server),
+        ).toJson();
+      case RpcMethod.mcpServerRemove:
+        final request = McpServerIdParamsDto.fromJson(payload);
+        await mcp.removeUserServer(request.id);
+        return const <String, dynamic>{};
+      case RpcMethod.mcpServerTest:
+        final request = McpServerParamsDto.fromJson(payload);
+        return McpServerStateResultDto(
+          state: await mcp.testServer(request.server),
+        ).toJson();
+      case RpcMethod.mcpSecretSet:
+        final request = McpSecretParamsDto.fromJson(payload);
+        await mcp.setSecret(request.key, request.value);
+        return const <String, dynamic>{};
       case RpcMethod.skillList:
         final request = SkillScopeParamsDto.fromJson(payload);
         return SkillListResultDto(

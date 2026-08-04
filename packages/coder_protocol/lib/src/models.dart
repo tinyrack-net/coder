@@ -112,6 +112,9 @@ enum ToolRisk {
 
   /// Starts a child process.
   command,
+
+  /// Runs an external MCP tool whose effects the daemon cannot classify.
+  dangerous,
 }
 
 /// Storage kind of a registered workspace repository.
@@ -522,11 +525,108 @@ abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
     required String description,
     required ToolRisk risk,
     @Default(true) bool available,
+    @Default(false) bool alwaysOn,
   }) = _AgentToolDefinitionDto;
 
   /// Decodes an agent tool definition.
   factory AgentToolDefinitionDto.fromJson(Map<String, dynamic> json) =>
       _$AgentToolDefinitionDtoFromJson(json);
+}
+
+/// Which configuration file an MCP server was declared in.
+enum McpConfigScope {
+  /// The daemon's own `mcp.json`, owned and edited by the user.
+  user,
+
+  /// A worktree's `.mcp.json`, committed alongside the code it serves.
+  project,
+}
+
+/// How the daemon reaches one MCP server.
+enum McpTransportKind {
+  /// Launches a child process and speaks over its stdio.
+  stdio,
+
+  /// Posts to a Streamable HTTP endpoint.
+  http,
+}
+
+/// One MCP server as declared in configuration.
+@freezed
+abstract class McpServerConfigDto with _$McpServerConfigDto {
+  /// Creates an MCP server configuration.
+  const factory McpServerConfigDto({
+    required String id,
+    required McpTransportKind transport,
+    @Default(true) bool enabled,
+    String? command,
+    @Default(<String>[]) List<String> args,
+    @Default(<String, String>{}) Map<String, String> env,
+    String? cwd,
+    String? url,
+    @Default(<String, String>{}) Map<String, String> headers,
+  }) = _McpServerConfigDto;
+
+  /// Decodes an MCP server configuration.
+  factory McpServerConfigDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServerConfigDtoFromJson(json);
+}
+
+/// Where one MCP server stands in its connection lifecycle.
+enum McpServerStatus {
+  /// Configured but switched off, so nothing is launched.
+  disabled,
+
+  /// Starting up or retrying after a failure.
+  connecting,
+
+  /// Handshake complete; its tools are published.
+  ready,
+
+  /// Could not connect; the daemon is backing off before retrying.
+  failed,
+}
+
+/// One tool published by a connected MCP server.
+@freezed
+abstract class McpToolSummaryDto with _$McpToolSummaryDto {
+  /// Creates an MCP tool summary.
+  const factory McpToolSummaryDto({
+    required String toolId,
+    required String name,
+    required String description,
+    String? title,
+  }) = _McpToolSummaryDto;
+
+  /// Decodes an MCP tool summary.
+  factory McpToolSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$McpToolSummaryDtoFromJson(json);
+}
+
+/// One configured MCP server and its live connection state.
+@freezed
+abstract class McpServerStateDto with _$McpServerStateDto {
+  /// Creates an MCP server state.
+  const factory McpServerStateDto({
+    required McpServerConfigDto config,
+    required McpServerStatus status,
+    required McpConfigScope scope,
+    required String sourcePath,
+    @Default(false) bool shadowed,
+    String? protocolVersion,
+    String? serverName,
+    String? serverVersion,
+    @Default(<McpToolSummaryDto>[]) List<McpToolSummaryDto> tools,
+    String? error,
+    @Default(<String>[]) List<String> diagnostics,
+    DateTime? lastConnectedAt,
+    DateTime? nextRetryAt,
+    @Default(0) int attempt,
+  }) = _McpServerStateDto;
+
+  /// Decodes an MCP server state.
+  factory McpServerStateDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServerStateDtoFromJson(json);
 }
 
 /// Where one skill was loaded from, ordered by ascending precedence.

@@ -9,6 +9,7 @@ tags:
   feature_test__session_lifecycle__contract:
   feature_test__turn_execution__contract:
   feature_test__agent_definition_management__contract:
+  feature_test__mcp_server_management__contract:
   feature_test__skill_management__contract:
   feature_test__provider_catalog__contract:
   feature_test__provider_connection_management__contract:

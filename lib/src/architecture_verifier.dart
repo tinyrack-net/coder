@@ -42,9 +42,11 @@ final class ArchitectureVerifier {
         'coder_agent': <String>{'coder_protocol'},
         'coder_provider_openai': <String>{'coder_agent', 'coder_protocol'},
         'coder_client': <String>{'coder_protocol'},
+        'coder_mcp': <String>{},
         'coder_daemon': <String>{
           'coder_agent',
           'coder_client',
+          'coder_mcp',
           'coder_protocol',
           'coder_provider_openai',
         },
@@ -206,6 +208,7 @@ final class ArchitectureVerifier {
     }
     if (package == 'coder_daemon') {
       return path.endsWith('/agent_service.dart') ||
+          path.endsWith('/mcp_service.dart') ||
           path.endsWith('/provider_service.dart');
     }
     return package == 'coder_agent' && path.endsWith('/runtime.dart');

@@ -642,6 +642,69 @@ Map<String, dynamic> _$AgentDefinitionResultDtoToJson(
   _AgentDefinitionResultDto instance,
 ) => <String, dynamic>{'definition': instance.definition};
 
+_AgentToolCatalogParamsDto _$AgentToolCatalogParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentToolCatalogParamsDto(worktreeId: json['worktreeId'] as String?);
+
+Map<String, dynamic> _$AgentToolCatalogParamsDtoToJson(
+  _AgentToolCatalogParamsDto instance,
+) => <String, dynamic>{'worktreeId': instance.worktreeId};
+
+_McpServersParamsDto _$McpServersParamsDtoFromJson(Map<String, dynamic> json) =>
+    _McpServersParamsDto(worktreeId: json['worktreeId'] as String?);
+
+Map<String, dynamic> _$McpServersParamsDtoToJson(
+  _McpServersParamsDto instance,
+) => <String, dynamic>{'worktreeId': instance.worktreeId};
+
+_McpServersResultDto _$McpServersResultDtoFromJson(Map<String, dynamic> json) =>
+    _McpServersResultDto(
+      servers: (json['servers'] as List<dynamic>)
+          .map((e) => McpServerStateDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$McpServersResultDtoToJson(
+  _McpServersResultDto instance,
+) => <String, dynamic>{'servers': instance.servers};
+
+_McpServerParamsDto _$McpServerParamsDtoFromJson(Map<String, dynamic> json) =>
+    _McpServerParamsDto(
+      server: McpServerConfigDto.fromJson(
+        json['server'] as Map<String, dynamic>,
+      ),
+    );
+
+Map<String, dynamic> _$McpServerParamsDtoToJson(_McpServerParamsDto instance) =>
+    <String, dynamic>{'server': instance.server};
+
+_McpServerIdParamsDto _$McpServerIdParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _McpServerIdParamsDto(id: json['id'] as String);
+
+Map<String, dynamic> _$McpServerIdParamsDtoToJson(
+  _McpServerIdParamsDto instance,
+) => <String, dynamic>{'id': instance.id};
+
+_McpServerStateResultDto _$McpServerStateResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _McpServerStateResultDto(
+  state: McpServerStateDto.fromJson(json['state'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$McpServerStateResultDtoToJson(
+  _McpServerStateResultDto instance,
+) => <String, dynamic>{'state': instance.state};
+
+_McpSecretParamsDto _$McpSecretParamsDtoFromJson(Map<String, dynamic> json) =>
+    _McpSecretParamsDto(
+      key: json['key'] as String,
+      value: json['value'] as String,
+    );
+
+Map<String, dynamic> _$McpSecretParamsDtoToJson(_McpSecretParamsDto instance) =>
+    <String, dynamic>{'key': instance.key, 'value': instance.value};
+
 _AgentToolCatalogResultDto _$AgentToolCatalogResultDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentToolCatalogResultDto(

@@ -668,6 +668,93 @@ abstract class AgentDefinitionResultDto with _$AgentDefinitionResultDto {
 }
 
 @freezed
+/// Scopes an agent tool catalog request to one worktree.
+abstract class AgentToolCatalogParamsDto with _$AgentToolCatalogParamsDto {
+  /// Creates agent tool catalog parameters.
+  const factory AgentToolCatalogParamsDto({String? worktreeId}) =
+      _AgentToolCatalogParamsDto;
+
+  /// Decodes agent tool catalog parameters.
+  factory AgentToolCatalogParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentToolCatalogParamsDtoFromJson(json);
+}
+
+@freezed
+/// Scopes an MCP server listing to one worktree.
+abstract class McpServersParamsDto with _$McpServersParamsDto {
+  /// Creates MCP server listing parameters.
+  const factory McpServersParamsDto({String? worktreeId}) =
+      _McpServersParamsDto;
+
+  /// Decodes MCP server listing parameters.
+  factory McpServersParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServersParamsDtoFromJson(json);
+}
+
+@freezed
+/// Returns every configured MCP server and its state.
+abstract class McpServersResultDto with _$McpServersResultDto {
+  /// Creates an MCP server listing result.
+  const factory McpServersResultDto({
+    required List<McpServerStateDto> servers,
+  }) = _McpServersResultDto;
+
+  /// Decodes an MCP server listing result.
+  factory McpServersResultDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServersResultDtoFromJson(json);
+}
+
+@freezed
+/// Carries one MCP server configuration.
+abstract class McpServerParamsDto with _$McpServerParamsDto {
+  /// Creates MCP server parameters.
+  const factory McpServerParamsDto({required McpServerConfigDto server}) =
+      _McpServerParamsDto;
+
+  /// Decodes MCP server parameters.
+  factory McpServerParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServerParamsDtoFromJson(json);
+}
+
+@freezed
+/// Identifies one configured MCP server.
+abstract class McpServerIdParamsDto with _$McpServerIdParamsDto {
+  /// Creates MCP server id parameters.
+  const factory McpServerIdParamsDto({required String id}) =
+      _McpServerIdParamsDto;
+
+  /// Decodes MCP server id parameters.
+  factory McpServerIdParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServerIdParamsDtoFromJson(json);
+}
+
+@freezed
+/// Returns one MCP server's state.
+abstract class McpServerStateResultDto with _$McpServerStateResultDto {
+  /// Creates an MCP server state result.
+  const factory McpServerStateResultDto({required McpServerStateDto state}) =
+      _McpServerStateResultDto;
+
+  /// Decodes an MCP server state result.
+  factory McpServerStateResultDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServerStateResultDtoFromJson(json);
+}
+
+@freezed
+/// Stores one secret an MCP configuration may reference.
+abstract class McpSecretParamsDto with _$McpSecretParamsDto {
+  /// Creates MCP secret parameters.
+  const factory McpSecretParamsDto({
+    required String key,
+    required String value,
+  }) = _McpSecretParamsDto;
+
+  /// Decodes MCP secret parameters.
+  factory McpSecretParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$McpSecretParamsDtoFromJson(json);
+}
+
+@freezed
 /// Returns the daemon's agent tool catalog.
 abstract class AgentToolCatalogResultDto with _$AgentToolCatalogResultDto {
   /// Creates an agent tool catalog result.

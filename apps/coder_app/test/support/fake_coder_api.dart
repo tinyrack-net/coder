@@ -628,15 +628,69 @@ final class FakeCoderApi implements CoderApi {
   ) async => _coder.copyWith(id: id, systemPrompt: markdown);
 
   @override
-  Future<List<AgentToolDefinitionDto>> listAgentTools() async =>
-      const <AgentToolDefinitionDto>[
-        AgentToolDefinitionDto(
-          id: 'read_file',
-          name: 'read_file',
-          description: 'Read a file.',
-          risk: ToolRisk.read,
-        ),
-      ];
+  Future<List<AgentToolDefinitionDto>> listAgentTools({
+    String? worktreeId,
+  }) async => const <AgentToolDefinitionDto>[
+    AgentToolDefinitionDto(
+      id: 'read_file',
+      name: 'read_file',
+      description: 'Read a file.',
+      risk: ToolRisk.read,
+      alwaysOn: true,
+    ),
+    AgentToolDefinitionDto(
+      id: 'run_command',
+      name: 'run_command',
+      description: 'Run a command.',
+      risk: ToolRisk.command,
+    ),
+  ];
+
+  /// MCP servers this fake daemon reports, keyed by id.
+  final Map<String, McpServerStateDto> mcpServers =
+      <String, McpServerStateDto>{};
+
+  /// Secrets stored through [setMcpSecret].
+  final Map<String, String> mcpSecrets = <String, String>{};
+
+  @override
+  Future<List<McpServerStateDto>> listMcpServers({String? worktreeId}) async =>
+      mcpServers.values.toList(growable: false);
+
+  @override
+  Future<McpServerStateDto> addMcpServer(McpServerConfigDto server) async =>
+      mcpServers[server.id] = _readyState(server);
+
+  @override
+  Future<McpServerStateDto> updateMcpServer(McpServerConfigDto server) async =>
+      mcpServers[server.id] = _readyState(server);
+
+  @override
+  Future<void> removeMcpServer(String id) async => mcpServers.remove(id);
+
+  @override
+  Future<McpServerStateDto> testMcpServer(McpServerConfigDto server) async =>
+      _readyState(server);
+
+  @override
+  Future<void> setMcpSecret(String key, String value) async =>
+      mcpSecrets[key] = value;
+
+  McpServerStateDto _readyState(McpServerConfigDto server) => McpServerStateDto(
+    config: server,
+    status: server.enabled ? McpServerStatus.ready : McpServerStatus.disabled,
+    scope: McpConfigScope.user,
+    sourcePath: '/config/mcp.json',
+    serverName: server.id,
+    protocolVersion: '2025-06-18',
+    tools: <McpToolSummaryDto>[
+      McpToolSummaryDto(
+        toolId: 'mcp__${server.id}__echo',
+        name: 'echo',
+        description: 'Echoes its argument.',
+      ),
+    ],
+  );
 
   List<SkillDto> _skillsFor(String? workspaceId) =>
       workspaceId == null ? _skills : <SkillDto>[..._skills, ..._projectSkills];

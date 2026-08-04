@@ -101,6 +101,20 @@ void main() {
   );
 
   testWidgets(
+    'McpSettingsRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const McpSettingsRoute(hostId: 'server').location,
+      find.text('MCP 서버'),
+    ),
+    tags: const <String>[
+      'route_test__mcp_settings_route__widget',
+      'feature_test__mcp_server_management__widget',
+    ],
+  );
+
+  testWidgets(
     'ProviderSettingsRoute renders at desktop and mobile sizes',
     (tester) => _verifyRoute(
       tester,
