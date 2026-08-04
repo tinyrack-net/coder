@@ -107,6 +107,10 @@
   "@workspaceArchiveRisky": {"description": "Archive confirmation label when the checkout has unsaved work."},
   "workspaceNoDaemons": "No daemons are configured.",
   "@workspaceNoDaemons": {"description": "Empty state of the workspace sidebar."},
+  "workspaceNoConnectedDaemons": "No daemon is connected.",
+  "@workspaceNoConnectedDaemons": {"description": "Sidebar empty state when every configured daemon is offline."},
+  "workspaceNoWorkspaces": "No workspaces yet.",
+  "@workspaceNoWorkspaces": {"description": "Sidebar empty state when connected daemons have no workspace."},
   "workspaceOpenDaemonSettings": "Daemon settings",
   "@workspaceOpenDaemonSettings": {"description": "Button that opens daemon settings from the empty sidebar."},
 

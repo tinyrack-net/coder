@@ -153,9 +153,10 @@ void main() {
       // Unmount before the daemons stop so no provider request outlives its
       // client; tear-downs registered earlier run after this one.
       addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
-      await _pumpUntil(tester, find.text('내장 daemon'));
-      await _pumpUntil(tester, find.text('Remote daemon'));
+      // The sidebar has no daemon level; each daemon names the workspace rows
+      // it serves, so a subtitle is the evidence that it connected.
       await _pumpUntil(tester, find.text('E2E Workspace'));
+      await _pumpUntil(tester, find.textContaining('내장 daemon · '));
 
       // Projects are added from inside the new-workspace project select.
       await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
@@ -164,12 +165,13 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('new-workspace-project-add')));
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.descendant(
-          of: find.byType(SimpleDialog),
-          matching: find.text('Remote daemon'),
-        ),
+      final remoteOption = find.descendant(
+        of: find.byType(SimpleDialog),
+        matching: find.text('Remote daemon'),
       );
+      // The remote daemon is only offered once its connection is online.
+      await _pumpUntil(tester, remoteOption);
+      await tester.tap(remoteOption);
       await _pumpUntil(tester, find.text('Daemon의 폴더 선택'));
       await tester.enterText(
         find.byKey(const ValueKey('directory-browser-path')),

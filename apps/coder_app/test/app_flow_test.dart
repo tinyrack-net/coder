@@ -46,7 +46,7 @@ void main() {
   );
 
   testWidgets(
-    'desktop workspace uses host repository tree and session tabs',
+    'desktop workspace uses a flat workspace tree and session tabs',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -71,7 +71,11 @@ void main() {
 
       expect(find.text('Workspaces'), findsOneWidget);
       expect(find.byKey(const ValueKey('workspace-new-button')), findsOne);
-      expect(find.text('Test daemon'), findsOneWidget);
+      // The daemon has no tree level of its own; it names the workspace row.
+      expect(
+        find.text('Test daemon · ${workspace.rootPath}'),
+        findsOneWidget,
+      );
       // The composer's agent chip is also labelled 'Coder', so the repository
       // entry is matched through its tile.
       expect(find.widgetWithText(ListTile, 'Coder'), findsOneWidget);

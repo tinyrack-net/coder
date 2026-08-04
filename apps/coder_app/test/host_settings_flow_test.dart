@@ -46,8 +46,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // The sidebar lists workspaces, not daemons, so an unreachable daemon
+    // surfaces as an empty state instead of a status row.
+    expect(find.text('연결된 daemon이 없습니다.'), findsOneWidget);
+    await tester.tap(find.text('Daemon 설정'));
+    await tester.pumpAndSettle();
     expect(find.text('Offline daemon'), findsWidgets);
-    expect(find.text('자동 연결 꺼짐'), findsOneWidget);
+    expect(find.textContaining('자동 연결 꺼짐'), findsWidgets);
   });
 
   testWidgets(
@@ -259,19 +264,21 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
-    expect(find.textContaining('온라인'), findsOneWidget);
-    expect(find.textContaining('중복 daemon'), findsOneWidget);
-    expect(find.textContaining('오류'), findsOneWidget);
-    expect(find.textContaining('연결 중'), findsOneWidget);
-    expect(find.textContaining('자동 연결 꺼짐'), findsOneWidget);
 
     onlineApi.emitState(ClientConnectionState.reconnecting);
     await tester.pump();
-    expect(find.textContaining('재연결 중'), findsOneWidget);
+    // Runtime status lives in daemon settings; the sidebar shows workspaces.
     await tester.tap(find.byTooltip('설정'));
     await tester.pumpAndSettle();
+    expect(
+      find.textContaining('같은 daemon이 이미 등록되어 있습니다.'),
+      findsOneWidget,
+    );
+    // A failed daemon reports its own message in place of the generic status.
+    expect(find.textContaining('연결 중'), findsOneWidget);
     expect(find.textContaining('재연결 중'), findsOneWidget);
     expect(find.textContaining('bad token'), findsOneWidget);
+    // The idle daemon sits below the fold of the settings list.
     await tester.drag(find.byType(ListView).last, const Offset(0, -1000));
     await tester.pumpAndSettle();
     expect(find.textContaining('자동 연결 꺼짐'), findsWidgets);

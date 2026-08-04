@@ -10,7 +10,15 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Left navigation listing every daemon, repository, and worktree.
+/// One workspace row, resolved against the daemon that serves it.
+typedef _WorkspaceEntry = ({
+  String hostId,
+  String hostLabel,
+  WorkspaceDto workspace,
+  List<WorktreeDto> worktrees,
+});
+
+/// Left navigation listing every workspace and its worktrees.
 class WorkspaceSidebar extends StatelessWidget {
   /// Creates the workspace sidebar.
   const WorkspaceSidebar({
@@ -45,13 +53,51 @@ class WorkspaceSidebar extends StatelessWidget {
   /// Called when the open checkout was archived.
   final VoidCallback onArchivedSelection;
 
+  /// Flattens every connected daemon's catalog into one workspace list.
+  ///
+  /// Daemons that are not connected are left out entirely; the sidebar shows
+  /// their absence as an empty state instead of a per-daemon status row.
+  List<_WorkspaceEntry> _entries(
+    AppLocalizations l10n,
+    List<HostRuntimeSnapshot> runtimes,
+    Map<String, WorkspaceCatalogDto> catalogs,
+  ) {
+    final entries = <_WorkspaceEntry>[];
+    for (final host in runtimes) {
+      if (!host.connected) continue;
+      final hostCatalog = catalogs[host.id];
+      if (hostCatalog == null) continue;
+      final label = hostLabel(l10n, host);
+      for (final workspace in hostCatalog.workspaces) {
+        entries.add((
+          hostId: host.id,
+          hostLabel: label,
+          workspace: workspace,
+          worktrees: hostCatalog.worktrees
+              .where((item) => item.workspaceId == workspace.id)
+              .toList(growable: false),
+        ));
+      }
+    }
+    entries.sort((a, b) {
+      final byName = a.workspace.name.toLowerCase().compareTo(
+        b.workspace.name.toLowerCase(),
+      );
+      return byName != 0 ? byName : a.hostLabel.compareTo(b.hostLabel);
+    });
+    return entries;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final runtimes =
         registry?.runtimes.values.toList(growable: false) ??
         const <HostRuntimeSnapshot>[];
     final catalogs =
         catalog.value?.catalogs ?? const <String, WorkspaceCatalogDto>{};
+    final entries = _entries(l10n, runtimes, catalogs);
+    final connected = runtimes.any((host) => host.connected);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -61,161 +107,142 @@ class WorkspaceSidebar extends StatelessWidget {
             key: const ValueKey('workspace-new-button'),
             onPressed: onNewWorkspace,
             icon: const Icon(Icons.add, size: 18),
-            label: Text(AppLocalizations.of(context).workspaceNewWorkspace),
+            label: Text(l10n.workspaceNewWorkspace),
           ),
         ),
         const Divider(height: 1),
-        Expanded(
-          child: runtimes.isEmpty
-              ? _NoDaemonState(onSettings: onOpenDaemonSettings)
-              : ListView(
-                  children: <Widget>[
-                    for (final host in runtimes)
-                      _HostTreeNode(
-                        host: host,
-                        catalog: catalogs[host.id],
-                        selected: selected,
-                        onSelect: onSelect,
-                        onArchivedSelection: onArchivedSelection,
-                      ),
-                  ],
-                ),
-        ),
+        Expanded(child: _body(context, l10n, runtimes, connected, entries)),
       ],
     );
   }
-}
 
-class _HostTreeNode extends StatelessWidget {
-  const _HostTreeNode({
-    required this.host,
-    required this.catalog,
-    required this.selected,
-    required this.onSelect,
-    required this.onArchivedSelection,
-  });
-
-  final HostRuntimeSnapshot host;
-  final WorkspaceCatalogDto? catalog;
-  final WorkspaceSelection? selected;
-  final ValueChanged<WorkspaceSelection> onSelect;
-  final VoidCallback onArchivedSelection;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final workspaces = catalog?.workspaces ?? const <WorkspaceDto>[];
-    if (!host.connected) {
-      final error = hostErrorText(l10n, host);
-      return ListTile(
-        leading: const Icon(Icons.cloud_off_outlined),
-        title: Text(hostLabel(l10n, host)),
-        subtitle: Text(
-          '${_hostStatusLabel(l10n, host.status)}'
-          '${error == null ? '' : ' · $error'}',
-        ),
+  Widget _body(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<HostRuntimeSnapshot> runtimes,
+    bool connected,
+    List<_WorkspaceEntry> entries,
+  ) {
+    if (runtimes.isEmpty) {
+      return _SidebarEmptyState(
+        message: l10n.workspaceNoDaemons,
+        onSettings: onOpenDaemonSettings,
       );
     }
-    return ExpansionTile(
-      initiallyExpanded: true,
-      leading: const Icon(Icons.dns_outlined),
-      title: Text(hostLabel(l10n, host)),
-      subtitle: Text(_hostStatusLabel(l10n, host.status)),
+    if (!connected) {
+      return _SidebarEmptyState(
+        message: l10n.workspaceNoConnectedDaemons,
+        onSettings: onOpenDaemonSettings,
+      );
+    }
+    if (entries.isEmpty) {
+      return _SidebarEmptyState(message: l10n.workspaceNoWorkspaces);
+    }
+    return ListView(
       children: <Widget>[
-        for (final workspace in workspaces)
-          _RepositoryTreeNode(
+        for (final entry in entries)
+          _WorkspaceTreeNode(
             onSelect: onSelect,
             onArchivedSelection: onArchivedSelection,
-            hostId: host.id,
-            workspace: workspace,
-            worktrees: catalog!.worktrees
-                .where((item) => item.workspaceId == workspace.id)
-                .toList(growable: false),
+            hostId: entry.hostId,
+            hostLabel: entry.hostLabel,
+            workspace: entry.workspace,
+            worktrees: entry.worktrees,
             selected: selected,
+            // A lone workspace has no sibling to choose between, so opening it
+            // saves the first click on a fresh launch.
+            expandedByDefault:
+                entries.length == 1 ||
+                selected?.workspaceId == entry.workspace.id,
           ),
       ],
     );
   }
 }
 
-class _RepositoryTreeNode extends ConsumerWidget {
-  const _RepositoryTreeNode({
+class _WorkspaceTreeNode extends ConsumerWidget {
+  const _WorkspaceTreeNode({
     required this.onSelect,
     required this.onArchivedSelection,
     required this.hostId,
+    required this.hostLabel,
     required this.workspace,
     required this.worktrees,
     required this.selected,
+    required this.expandedByDefault,
   });
 
   final ValueChanged<WorkspaceSelection> onSelect;
   final VoidCallback onArchivedSelection;
   final String hostId;
+  final String hostLabel;
   final WorkspaceDto workspace;
   final List<WorktreeDto> worktrees;
   final WorkspaceSelection? selected;
+  final bool expandedByDefault;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(left: 16),
-      child: ExpansionTile(
-        initiallyExpanded: selected?.workspaceId == workspace.id,
-        leading: Icon(
-          workspace.kind == WorkspaceKind.git
-              ? Icons.account_tree_outlined
-              : Icons.folder_outlined,
+    final theme = Theme.of(context);
+    return ExpansionTile(
+      initiallyExpanded: expandedByDefault,
+      leading: Icon(
+        workspace.kind == WorkspaceKind.git
+            ? Icons.account_tree_outlined
+            : Icons.folder_outlined,
+      ),
+      title: Text(workspace.name),
+      subtitle: Text(
+        '$hostLabel · ${workspace.rootPath}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
-        title: Text(workspace.name),
-        subtitle: Text(
-          workspace.rootPath,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        children: <Widget>[
-          for (final worktree in worktrees)
-            ListTile(
-              contentPadding: const EdgeInsets.only(left: 48, right: 12),
-              selected:
-                  selected?.hostId == hostId &&
-                  selected?.worktreeId == worktree.id,
-              leading: Icon(
-                worktree.kind == WorktreeKind.checkout
-                    ? Icons.home_work_outlined
-                    : Icons.call_split_outlined,
-                size: 20,
-              ),
-              title: Text(worktree.branch ?? worktree.name),
-              subtitle: Text(
-                worktree.path,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: PopupMenuButton<String>(
-                tooltip: l10n.workspaceWorktreeMenu,
-                onSelected: (action) {
-                  if (action == 'archive') {
-                    unawaited(_archiveWorktree(context, ref, worktree));
-                  }
-                },
-                itemBuilder: (context) => <PopupMenuEntry<String>>[
-                  PopupMenuItem<String>(
-                    value: 'archive',
-                    child: Text(l10n.workspaceArchive),
-                  ),
-                ],
-              ),
-              onTap: () => onSelect(
-                WorkspaceSelection(
-                  hostId: hostId,
-                  workspaceId: workspace.id,
-                  worktreeId: worktree.id,
+      ),
+      children: <Widget>[
+        for (final worktree in worktrees)
+          ListTile(
+            contentPadding: const EdgeInsets.only(left: 32, right: 12),
+            selected:
+                selected?.hostId == hostId &&
+                selected?.worktreeId == worktree.id,
+            leading: Icon(
+              worktree.kind == WorktreeKind.checkout
+                  ? Icons.home_work_outlined
+                  : Icons.call_split_outlined,
+              size: 20,
+            ),
+            title: Text(worktree.branch ?? worktree.name),
+            subtitle: Text(
+              worktree.path,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: PopupMenuButton<String>(
+              tooltip: l10n.workspaceWorktreeMenu,
+              onSelected: (action) {
+                if (action == 'archive') {
+                  unawaited(_archiveWorktree(context, ref, worktree));
+                }
+              },
+              itemBuilder: (context) => <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: 'archive',
+                  child: Text(l10n.workspaceArchive),
                 ),
+              ],
+            ),
+            onTap: () => onSelect(
+              WorkspaceSelection(
+                hostId: hostId,
+                workspaceId: workspace.id,
+                worktreeId: worktree.id,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -296,39 +323,36 @@ class _RepositoryTreeNode extends ConsumerWidget {
   }
 }
 
-class _NoDaemonState extends StatelessWidget {
-  const _NoDaemonState({required this.onSettings});
+class _SidebarEmptyState extends StatelessWidget {
+  const _SidebarEmptyState({required this.message, this.onSettings});
 
-  final VoidCallback onSettings;
+  final String message;
+
+  /// Offered only when daemon settings are what the user needs next.
+  final VoidCallback? onSettings;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(AppLocalizations.of(context).workspaceNoDaemons),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: onSettings,
-            child: Text(
-              AppLocalizations.of(context).workspaceOpenDaemonSettings,
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) {
+    final onSettings = this.onSettings;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(message, textAlign: TextAlign.center),
+            if (onSettings != null) ...<Widget>[
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: onSettings,
+                child: Text(
+                  AppLocalizations.of(context).workspaceOpenDaemonSettings,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
-
-String _hostStatusLabel(AppLocalizations l10n, HostRuntimeStatus status) =>
-    switch (status) {
-      HostRuntimeStatus.online => l10n.hostStatusOnline,
-      HostRuntimeStatus.connecting => l10n.hostStatusConnecting,
-      HostRuntimeStatus.reconnecting => l10n.hostStatusReconnecting,
-      HostRuntimeStatus.offline => l10n.hostStatusOffline,
-      HostRuntimeStatus.error => l10n.hostStatusError,
-      HostRuntimeStatus.conflict => l10n.hostStatusConflict,
-      HostRuntimeStatus.idle => l10n.hostStatusIdle,
-    };

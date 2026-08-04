@@ -380,6 +380,18 @@ abstract class AppLocalizations {
   /// **'No daemons are configured.'**
   String get workspaceNoDaemons;
 
+  /// Sidebar empty state when every configured daemon is offline.
+  ///
+  /// In en, this message translates to:
+  /// **'No daemon is connected.'**
+  String get workspaceNoConnectedDaemons;
+
+  /// Sidebar empty state when connected daemons have no workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'No workspaces yet.'**
+  String get workspaceNoWorkspaces;
+
   /// Button that opens daemon settings from the empty sidebar.
   ///
   /// In en, this message translates to:

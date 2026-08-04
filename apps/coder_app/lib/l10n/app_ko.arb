@@ -51,6 +51,8 @@
   "workspaceArchiveKeepsDirectory": "등록만 숨기고 디스크의 checkout은 유지합니다.",
   "workspaceArchiveRisky": "위험을 확인하고 Archive",
   "workspaceNoDaemons": "설정된 daemon이 없습니다.",
+  "workspaceNoConnectedDaemons": "연결된 daemon이 없습니다.",
+  "workspaceNoWorkspaces": "아직 workspace가 없습니다.",
   "workspaceOpenDaemonSettings": "Daemon 설정",
 
   "hostStatusOnline": "온라인",

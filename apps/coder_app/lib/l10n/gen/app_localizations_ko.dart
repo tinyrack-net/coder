@@ -157,6 +157,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceNoDaemons => '설정된 daemon이 없습니다.';
 
   @override
+  String get workspaceNoConnectedDaemons => '연결된 daemon이 없습니다.';
+
+  @override
+  String get workspaceNoWorkspaces => '아직 workspace가 없습니다.';
+
+  @override
   String get workspaceOpenDaemonSettings => 'Daemon 설정';
 
   @override

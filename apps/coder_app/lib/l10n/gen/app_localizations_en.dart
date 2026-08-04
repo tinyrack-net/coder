@@ -159,6 +159,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceNoDaemons => 'No daemons are configured.';
 
   @override
+  String get workspaceNoConnectedDaemons => 'No daemon is connected.';
+
+  @override
+  String get workspaceNoWorkspaces => 'No workspaces yet.';
+
+  @override
   String get workspaceOpenDaemonSettings => 'Daemon settings';
 
   @override

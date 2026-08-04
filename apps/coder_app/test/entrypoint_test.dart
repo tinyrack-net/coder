@@ -2,6 +2,7 @@ import 'package:coder_app/main.dart' as platform_entry;
 import 'package:coder_app/main_desktop.dart' as desktop_entry;
 import 'package:coder_app/main_mobile.dart' as mobile_entry;
 import 'package:coder_app/src/app.dart';
+import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fake_coder_api.dart';
@@ -31,12 +32,23 @@ void main() {
   testWidgets('desktop and mobile runners accept test services', (
     tester,
   ) async {
-    final desktopApi = FakeCoderApi();
+    final desktopApi = FakeCoderApi(
+      workspaces: <WorkspaceDto>[
+        WorkspaceDto(
+          id: 'workspace',
+          name: 'Coder',
+          rootPath: '/repos/coder',
+          kind: WorkspaceKind.git,
+          createdAt: DateTime.utc(2026, 8, 3),
+        ),
+      ],
+    );
     await desktop_entry.runDesktopApp(
       services: fakeAppServices(desktopApi),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Test daemon'), findsOneWidget);
+    // The injected daemon names the workspace row it serves.
+    expect(find.text('Test daemon · /repos/coder'), findsOneWidget);
 
     final mobileApi = FakeCoderApi();
     await mobile_entry.runMobileApp(
