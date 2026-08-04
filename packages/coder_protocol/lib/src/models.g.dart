@@ -301,6 +301,47 @@ const _$ToolRiskEnumMap = {
   ToolRisk.dangerous: 'dangerous',
 };
 
+_McpServerConfigDto _$McpServerConfigDtoFromJson(Map<String, dynamic> json) =>
+    _McpServerConfigDto(
+      id: json['id'] as String,
+      transport: $enumDecode(_$McpTransportKindEnumMap, json['transport']),
+      enabled: json['enabled'] as bool? ?? true,
+      command: json['command'] as String?,
+      args:
+          (json['args'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+          const <String>[],
+      env:
+          (json['env'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as String),
+          ) ??
+          const <String, String>{},
+      cwd: json['cwd'] as String?,
+      url: json['url'] as String?,
+      headers:
+          (json['headers'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as String),
+          ) ??
+          const <String, String>{},
+    );
+
+Map<String, dynamic> _$McpServerConfigDtoToJson(_McpServerConfigDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'transport': _$McpTransportKindEnumMap[instance.transport]!,
+      'enabled': instance.enabled,
+      'command': instance.command,
+      'args': instance.args,
+      'env': instance.env,
+      'cwd': instance.cwd,
+      'url': instance.url,
+      'headers': instance.headers,
+    };
+
+const _$McpTransportKindEnumMap = {
+  McpTransportKind.stdio: 'stdio',
+  McpTransportKind.http: 'http',
+};
+
 _SessionModelSelectionDto _$SessionModelSelectionDtoFromJson(
   Map<String, dynamic> json,
 ) => _SessionModelSelectionDto(

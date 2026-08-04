@@ -533,6 +533,45 @@ abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
       _$AgentToolDefinitionDtoFromJson(json);
 }
 
+/// Which configuration file an MCP server was declared in.
+enum McpConfigScope {
+  /// The daemon's own `mcp.json`, owned and edited by the user.
+  user,
+
+  /// A worktree's `.mcp.json`, committed alongside the code it serves.
+  project,
+}
+
+/// How the daemon reaches one MCP server.
+enum McpTransportKind {
+  /// Launches a child process and speaks over its stdio.
+  stdio,
+
+  /// Posts to a Streamable HTTP endpoint.
+  http,
+}
+
+/// One MCP server as declared in configuration.
+@freezed
+abstract class McpServerConfigDto with _$McpServerConfigDto {
+  /// Creates an MCP server configuration.
+  const factory McpServerConfigDto({
+    required String id,
+    required McpTransportKind transport,
+    @Default(true) bool enabled,
+    String? command,
+    @Default(<String>[]) List<String> args,
+    @Default(<String, String>{}) Map<String, String> env,
+    String? cwd,
+    String? url,
+    @Default(<String, String>{}) Map<String, String> headers,
+  }) = _McpServerConfigDto;
+
+  /// Decodes an MCP server configuration.
+  factory McpServerConfigDto.fromJson(Map<String, dynamic> json) =>
+      _$McpServerConfigDtoFromJson(json);
+}
+
 /// How a session collaborates: planning first, or working directly.
 enum SessionMode {
   /// Explores and proposes a plan instead of doing the work.

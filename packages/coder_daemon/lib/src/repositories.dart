@@ -180,6 +180,15 @@ abstract interface class CredentialRepository {
 
   /// Removes one provider connection credential.
   Future<void> removeCredential(String connectionId);
+
+  /// Secrets referenced from MCP configuration, keyed by reference name.
+  Map<String, String> get mcpSecrets;
+
+  /// Atomically stores one MCP secret.
+  Future<void> setMcpSecret(String key, String value);
+
+  /// Removes one MCP secret.
+  Future<void> removeMcpSecret(String key);
 }
 
 /// Secret credential material held only inside the daemon.

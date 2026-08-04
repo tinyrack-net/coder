@@ -639,6 +639,8 @@ final class _ProviderRepository implements ProviderRepository {
 
 final class _Credentials implements CredentialRepository {
   final Map<String, ProviderCredential> values = <String, ProviderCredential>{};
+  @override
+  final Map<String, String> mcpSecrets = <String, String>{};
   String? token;
 
   @override
@@ -666,6 +668,16 @@ final class _Credentials implements CredentialRepository {
     ProviderCredential credential,
   ) async {
     values[connectionId] = credential;
+  }
+
+  @override
+  Future<void> setMcpSecret(String key, String value) async {
+    mcpSecrets[key] = value;
+  }
+
+  @override
+  Future<void> removeMcpSecret(String key) async {
+    mcpSecrets.remove(key);
   }
 }
 

@@ -3391,6 +3391,311 @@ as bool,
 
 
 /// @nodoc
+mixin _$McpServerConfigDto {
+
+ String get id; McpTransportKind get transport; bool get enabled; String? get command; List<String> get args; Map<String, String> get env; String? get cwd; String? get url; Map<String, String> get headers;
+/// Create a copy of McpServerConfigDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpServerConfigDtoCopyWith<McpServerConfigDto> get copyWith => _$McpServerConfigDtoCopyWithImpl<McpServerConfigDto>(this as McpServerConfigDto, _$identity);
+
+  /// Serializes this McpServerConfigDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServerConfigDto&&(identical(other.id, id) || other.id == id)&&(identical(other.transport, transport) || other.transport == transport)&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.command, command) || other.command == command)&&const DeepCollectionEquality().equals(other.args, args)&&const DeepCollectionEquality().equals(other.env, env)&&(identical(other.cwd, cwd) || other.cwd == cwd)&&(identical(other.url, url) || other.url == url)&&const DeepCollectionEquality().equals(other.headers, headers));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,transport,enabled,command,const DeepCollectionEquality().hash(args),const DeepCollectionEquality().hash(env),cwd,url,const DeepCollectionEquality().hash(headers));
+
+@override
+String toString() {
+  return 'McpServerConfigDto(id: $id, transport: $transport, enabled: $enabled, command: $command, args: $args, env: $env, cwd: $cwd, url: $url, headers: $headers)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpServerConfigDtoCopyWith<$Res>  {
+  factory $McpServerConfigDtoCopyWith(McpServerConfigDto value, $Res Function(McpServerConfigDto) _then) = _$McpServerConfigDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, McpTransportKind transport, bool enabled, String? command, List<String> args, Map<String, String> env, String? cwd, String? url, Map<String, String> headers
+});
+
+
+
+
+}
+/// @nodoc
+class _$McpServerConfigDtoCopyWithImpl<$Res>
+    implements $McpServerConfigDtoCopyWith<$Res> {
+  _$McpServerConfigDtoCopyWithImpl(this._self, this._then);
+
+  final McpServerConfigDto _self;
+  final $Res Function(McpServerConfigDto) _then;
+
+/// Create a copy of McpServerConfigDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? transport = null,Object? enabled = null,Object? command = freezed,Object? args = null,Object? env = null,Object? cwd = freezed,Object? url = freezed,Object? headers = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,transport: null == transport ? _self.transport : transport // ignore: cast_nullable_to_non_nullable
+as McpTransportKind,enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
+as bool,command: freezed == command ? _self.command : command // ignore: cast_nullable_to_non_nullable
+as String?,args: null == args ? _self.args : args // ignore: cast_nullable_to_non_nullable
+as List<String>,env: null == env ? _self.env : env // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,cwd: freezed == cwd ? _self.cwd : cwd // ignore: cast_nullable_to_non_nullable
+as String?,url: freezed == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String?,headers: null == headers ? _self.headers : headers // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [McpServerConfigDto].
+extension McpServerConfigDtoPatterns on McpServerConfigDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpServerConfigDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpServerConfigDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpServerConfigDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerConfigDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpServerConfigDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpServerConfigDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  McpTransportKind transport,  bool enabled,  String? command,  List<String> args,  Map<String, String> env,  String? cwd,  String? url,  Map<String, String> headers)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpServerConfigDto() when $default != null:
+return $default(_that.id,_that.transport,_that.enabled,_that.command,_that.args,_that.env,_that.cwd,_that.url,_that.headers);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  McpTransportKind transport,  bool enabled,  String? command,  List<String> args,  Map<String, String> env,  String? cwd,  String? url,  Map<String, String> headers)  $default,) {final _that = this;
+switch (_that) {
+case _McpServerConfigDto():
+return $default(_that.id,_that.transport,_that.enabled,_that.command,_that.args,_that.env,_that.cwd,_that.url,_that.headers);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  McpTransportKind transport,  bool enabled,  String? command,  List<String> args,  Map<String, String> env,  String? cwd,  String? url,  Map<String, String> headers)?  $default,) {final _that = this;
+switch (_that) {
+case _McpServerConfigDto() when $default != null:
+return $default(_that.id,_that.transport,_that.enabled,_that.command,_that.args,_that.env,_that.cwd,_that.url,_that.headers);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpServerConfigDto implements McpServerConfigDto {
+  const _McpServerConfigDto({required this.id, required this.transport, this.enabled = true, this.command, final  List<String> args = const <String>[], final  Map<String, String> env = const <String, String>{}, this.cwd, this.url, final  Map<String, String> headers = const <String, String>{}}): _args = args,_env = env,_headers = headers;
+  factory _McpServerConfigDto.fromJson(Map<String, dynamic> json) => _$McpServerConfigDtoFromJson(json);
+
+@override final  String id;
+@override final  McpTransportKind transport;
+@override@JsonKey() final  bool enabled;
+@override final  String? command;
+ final  List<String> _args;
+@override@JsonKey() List<String> get args {
+  if (_args is EqualUnmodifiableListView) return _args;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_args);
+}
+
+ final  Map<String, String> _env;
+@override@JsonKey() Map<String, String> get env {
+  if (_env is EqualUnmodifiableMapView) return _env;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_env);
+}
+
+@override final  String? cwd;
+@override final  String? url;
+ final  Map<String, String> _headers;
+@override@JsonKey() Map<String, String> get headers {
+  if (_headers is EqualUnmodifiableMapView) return _headers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_headers);
+}
+
+
+/// Create a copy of McpServerConfigDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpServerConfigDtoCopyWith<_McpServerConfigDto> get copyWith => __$McpServerConfigDtoCopyWithImpl<_McpServerConfigDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpServerConfigDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServerConfigDto&&(identical(other.id, id) || other.id == id)&&(identical(other.transport, transport) || other.transport == transport)&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.command, command) || other.command == command)&&const DeepCollectionEquality().equals(other._args, _args)&&const DeepCollectionEquality().equals(other._env, _env)&&(identical(other.cwd, cwd) || other.cwd == cwd)&&(identical(other.url, url) || other.url == url)&&const DeepCollectionEquality().equals(other._headers, _headers));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,transport,enabled,command,const DeepCollectionEquality().hash(_args),const DeepCollectionEquality().hash(_env),cwd,url,const DeepCollectionEquality().hash(_headers));
+
+@override
+String toString() {
+  return 'McpServerConfigDto(id: $id, transport: $transport, enabled: $enabled, command: $command, args: $args, env: $env, cwd: $cwd, url: $url, headers: $headers)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpServerConfigDtoCopyWith<$Res> implements $McpServerConfigDtoCopyWith<$Res> {
+  factory _$McpServerConfigDtoCopyWith(_McpServerConfigDto value, $Res Function(_McpServerConfigDto) _then) = __$McpServerConfigDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, McpTransportKind transport, bool enabled, String? command, List<String> args, Map<String, String> env, String? cwd, String? url, Map<String, String> headers
+});
+
+
+
+
+}
+/// @nodoc
+class __$McpServerConfigDtoCopyWithImpl<$Res>
+    implements _$McpServerConfigDtoCopyWith<$Res> {
+  __$McpServerConfigDtoCopyWithImpl(this._self, this._then);
+
+  final _McpServerConfigDto _self;
+  final $Res Function(_McpServerConfigDto) _then;
+
+/// Create a copy of McpServerConfigDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? transport = null,Object? enabled = null,Object? command = freezed,Object? args = null,Object? env = null,Object? cwd = freezed,Object? url = freezed,Object? headers = null,}) {
+  return _then(_McpServerConfigDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,transport: null == transport ? _self.transport : transport // ignore: cast_nullable_to_non_nullable
+as McpTransportKind,enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
+as bool,command: freezed == command ? _self.command : command // ignore: cast_nullable_to_non_nullable
+as String?,args: null == args ? _self._args : args // ignore: cast_nullable_to_non_nullable
+as List<String>,env: null == env ? _self._env : env // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,cwd: freezed == cwd ? _self.cwd : cwd // ignore: cast_nullable_to_non_nullable
+as String?,url: freezed == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String?,headers: null == headers ? _self._headers : headers // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$SessionModelSelectionDto {
 
  String get providerConnectionId; String get modelId;

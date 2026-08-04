@@ -48,6 +48,14 @@ tags:
   feature_test__agent_definition_management__verticalSlice:
   feature_test__agent_definition_management__widget:
   feature_test__agent_definition_management__e2e:
+  feature_test__mcp_server_management__unit:
+  feature_test__mcp_server_management__contract:
+  feature_test__mcp_server_management__verticalSlice:
+  feature_test__mcp_server_management__widget:
+  feature_test__mcp_server_management__e2e:
+  feature_test__mcp_tool_execution__unit:
+  feature_test__mcp_tool_execution__verticalSlice:
+  feature_test__mcp_tool_execution__widget:
   feature_test__agent_delegation__unit:
   feature_test__agent_delegation__verticalSlice:
   feature_test__agent_delegation__widget:
