@@ -32,6 +32,7 @@ final class McpService implements AgentToolCatalog {
     this._timerFactory = _realTimer,
     this.initialBackoff = const Duration(seconds: 1),
     this.maximumBackoff = const Duration(seconds: 60),
+    this.projectIdleTimeout = const Duration(minutes: 30),
   });
 
   /// Version reported to servers during the handshake.
@@ -43,6 +44,9 @@ final class McpService implements AgentToolCatalog {
   /// Upper bound on the reconnection delay.
   final Duration maximumBackoff;
 
+  /// How long an unused worktree keeps its project servers running.
+  final Duration projectIdleTimeout;
+
   final McpConfigStore _store;
   final CredentialRepository _credentials;
   final McpTransportFactory _transports;
@@ -52,6 +56,7 @@ final class McpService implements AgentToolCatalog {
   final Random _jitter = Random(0x6d6370);
 
   final Map<String, _Connection> _user = <String, _Connection>{};
+  final Map<String, _Project> _projects = <String, _Project>{};
   final StreamController<void> _changes = StreamController<void>.broadcast();
 
   bool _closed = false;
@@ -63,18 +68,74 @@ final class McpService implements AgentToolCatalog {
   List<AgentToolDefinitionDto> tools({String? workspaceRoot}) =>
       <AgentToolDefinitionDto>[
         for (final connection in _user.values) ...connection.toolDefinitions,
+        if (workspaceRoot != null)
+          for (final connection
+              in _projects[workspaceRoot]?.connections.values ??
+                  const <String, _Connection>{}.values)
+            ...connection.toolDefinitions,
       ];
 
   /// Every configured server and its live state, user scope first.
-  List<McpServerStateDto> states() => <McpServerStateDto>[
-    for (final connection in _user.values) connection.state,
-  ];
+  List<McpServerStateDto> states({String? workspaceRoot}) =>
+      <McpServerStateDto>[
+        for (final connection in _user.values) connection.state,
+        for (final entry in _projects.entries)
+          if (workspaceRoot == null || entry.key == workspaceRoot)
+            for (final connection in entry.value.connections.values)
+              connection.state,
+      ];
+
+  /// Why the project configuration for [workspaceRoot] could not be read.
+  String? projectError(String workspaceRoot) => _projects[workspaceRoot]?.error;
 
   /// Returns the tool behind [id], or null when its server is not ready.
+  ///
+  /// A user server always wins over a project server of the same id, so a
+  /// repository cannot redirect a tool the user configured for themselves.
   AgentTool? tool(String id, {String? workspaceRoot}) {
     final parsed = parseMcpToolId(id);
     if (parsed == null) return null;
-    return _user[parsed.server]?.toolNamed(id);
+    final user = _user[parsed.server]?.toolNamed(id);
+    if (user != null) return user;
+    if (workspaceRoot == null) return null;
+    return _projects[workspaceRoot]?.connections[parsed.server]?.toolNamed(id);
+  }
+
+  /// Connects the servers declared by [workspaceRoot], if any.
+  ///
+  /// Called when a turn resolves its worktree. Connections start in the
+  /// background, so the first turn in a worktree runs with the user's servers
+  /// and the project's join from the next one.
+  Future<void> ensureProject(String workspaceRoot) async {
+    if (_closed) return;
+    final existing = _projects[workspaceRoot];
+    if (existing != null) {
+      existing.lastUsedAt = _clock.nowUtc();
+      return;
+    }
+    final project = _Project(
+      rootPath: workspaceRoot,
+      lastUsedAt: _clock.nowUtc(),
+    );
+    _projects[workspaceRoot] = project;
+    project.watch = _store
+        .watch(McpConfigScope.project, rootPath: workspaceRoot)
+        .listen((_) => unawaited(_reloadProject(workspaceRoot)));
+    await _reloadProject(workspaceRoot);
+  }
+
+  /// Disposes project servers for worktrees no turn has touched recently.
+  ///
+  /// Without this, moving between repositories would accumulate stdio child
+  /// processes for the lifetime of the daemon.
+  void releaseIdleProjects() {
+    final cutoff = _clock.nowUtc().subtract(projectIdleTimeout);
+    for (final entry in _projects.entries.toList(growable: false)) {
+      if (entry.value.lastUsedAt.isAfter(cutoff)) continue;
+      _projects.remove(entry.key);
+      unawaited(entry.value.dispose());
+    }
+    _announce();
   }
 
   /// Reads configuration and starts connecting in the background.
@@ -116,9 +177,74 @@ final class McpService implements AgentToolCatalog {
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
-    await Future.wait(_user.values.map((connection) => connection.dispose()));
+    await Future.wait(<Future<void>>[
+      ..._user.values.map((connection) => connection.dispose()),
+      ..._projects.values.map((project) => project.dispose()),
+    ]);
     _user.clear();
+    _projects.clear();
     await _changes.close();
+  }
+
+  Future<void> _reloadProject(String workspaceRoot) async {
+    final project = _projects[workspaceRoot];
+    if (project == null || _closed) return;
+    List<McpServerConfigDto> declared;
+    try {
+      final document = await _store.load(
+        McpConfigScope.project,
+        rootPath: workspaceRoot,
+      );
+      declared = document.servers;
+      project
+        ..sourcePath = document.sourcePath
+        ..error = null;
+    } on Object catch (failure) {
+      // A repository with a broken .mcp.json still has to be workable, so the
+      // failure is recorded against the worktree instead of thrown at a turn.
+      project
+        ..error = '$failure'
+        ..sourcePath = _store.sourcePath(
+          McpConfigScope.project,
+          rootPath: workspaceRoot,
+        );
+      declared = const <McpServerConfigDto>[];
+    }
+    _applyProjectDocument(project, declared);
+  }
+
+  void _applyProjectDocument(
+    _Project project,
+    List<McpServerConfigDto> servers,
+  ) {
+    final desired = <String, McpServerConfigDto>{
+      for (final server in servers) server.id: server,
+    };
+    for (final id in project.connections.keys.toList(growable: false)) {
+      final wanted = desired[id];
+      final existing = project.connections[id]!;
+      final stillShadowed = _user.containsKey(id);
+      if (wanted == null ||
+          wanted != existing.config ||
+          stillShadowed != existing.shadowed) {
+        project.connections.remove(id);
+        unawaited(existing.dispose());
+      }
+    }
+    for (final server in servers) {
+      if (project.connections.containsKey(server.id)) continue;
+      final connection = _Connection(
+        config: server,
+        sourcePath: project.sourcePath,
+        scope: McpConfigScope.project,
+        service: this,
+        // A repository may not take over an id the user already configured.
+        shadowed: _user.containsKey(server.id),
+      );
+      project.connections[server.id] = connection;
+      connection.start();
+    }
+    _announce();
   }
 
   void _applyUserDocument(McpConfigDocument document) {
@@ -193,18 +319,43 @@ final class McpService implements AgentToolCatalog {
   }
 }
 
+final class _Project {
+  _Project({required this.rootPath, required this.lastUsedAt});
+
+  final String rootPath;
+  final Map<String, _Connection> connections = <String, _Connection>{};
+
+  DateTime lastUsedAt;
+  String sourcePath = '';
+  String? error;
+  StreamSubscription<void>? watch;
+
+  Future<void> dispose() async {
+    await watch?.cancel();
+    watch = null;
+    await Future.wait(
+      connections.values.map((connection) => connection.dispose()),
+    );
+    connections.clear();
+  }
+}
+
 final class _Connection {
   _Connection({
     required this.config,
     required this.sourcePath,
     required this.scope,
     required this.service,
+    this.shadowed = false,
   });
 
   final McpServerConfigDto config;
   final String sourcePath;
   final McpConfigScope scope;
   final McpService service;
+
+  /// Whether a user server of the same id already owns this name.
+  final bool shadowed;
 
   final List<String> diagnostics = <String>[];
 
@@ -240,6 +391,7 @@ final class _Connection {
     status: status,
     scope: scope,
     sourcePath: sourcePath,
+    shadowed: shadowed,
     protocolVersion: client?.identity?.protocolVersion,
     serverName: client?.identity?.name,
     serverVersion: client?.identity?.version,
@@ -274,7 +426,7 @@ final class _Connection {
   }
 
   void start() {
-    if (!config.enabled) {
+    if (shadowed || !config.enabled) {
       status = McpServerStatus.disabled;
       return;
     }

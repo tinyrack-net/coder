@@ -183,12 +183,19 @@ abstract final class DaemonApplication {
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: clock,
         ids: ids,
-        toolsFactory: (ids, workspaceRoot) => resolveAgentToolIds(ids)
-            .map(
-              (id) =>
-                  toolById[id] ?? mcp.tool(id, workspaceRoot: workspaceRoot),
-            )
-            .whereType<AgentTool>(),
+        toolsFactory: (ids, workspaceRoot) {
+          // Starting a turn is what marks a worktree as in use: its project
+          // servers connect in the background and join from the next turn,
+          // and worktrees nothing has touched lately are released.
+          unawaited(mcp.ensureProject(workspaceRoot));
+          mcp.releaseIdleProjects();
+          return resolveAgentToolIds(ids)
+              .map(
+                (id) =>
+                    toolById[id] ?? mcp.tool(id, workspaceRoot: workspaceRoot),
+              )
+              .whereType<AgentTool>();
+        },
       );
       final workspaceService = WorkspaceService(
         database.workspaceDao,
