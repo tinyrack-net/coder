@@ -28,6 +28,10 @@ tags:
   feature_test__desktop_residency__unit:
   feature_test__desktop_residency__widget:
   feature_test__desktop_residency__platformSmoke:
+  feature_test__desktop_window_chrome__unit:
+  feature_test__desktop_window_chrome__widget:
+  feature_test__desktop_window_chrome__e2e:
+  feature_test__desktop_window_chrome__platformSmoke:
   feature_test__worktree_lifecycle__e2e:
   feature_test__session_lifecycle__unit:
   feature_test__session_lifecycle__widget:

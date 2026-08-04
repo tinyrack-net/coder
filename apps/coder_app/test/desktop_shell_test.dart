@@ -9,6 +9,77 @@ import 'package:window_manager/window_manager.dart';
 void main() {
   group('window adapter', () {
     test(
+      'custom title bars are enabled only on Windows and Linux',
+      () async {
+        Future<(PluginDesktopWindow, List<bool>)> build(
+          TargetPlatform platform,
+        ) async {
+          final hidden = <bool>[];
+          final window = PluginDesktopWindow(
+            platform: platform,
+            initialize: () async {},
+            configureCustomTitleBar: ({required enabled}) async {
+              hidden.add(enabled);
+            },
+            readyToShow: (onReady) => onReady(),
+          );
+          await window.prepare(startHidden: true);
+          return (window, hidden);
+        }
+
+        final windows = await build(TargetPlatform.windows);
+        final linux = await build(TargetPlatform.linux);
+        final macos = await build(TargetPlatform.macOS);
+
+        expect(windows.$1.supportsCustomTitleBar, isTrue);
+        expect(linux.$1.supportsCustomTitleBar, isTrue);
+        expect(macos.$1.supportsCustomTitleBar, isFalse);
+        expect(windows.$2, <bool>[true]);
+        expect(linux.$2, <bool>[true]);
+        expect(macos.$2, isEmpty);
+      },
+      tags: const <String>['feature_test__desktop_window_chrome__unit'],
+    );
+
+    test(
+      'custom frame commands and native maximize events stay synchronized',
+      () async {
+        var drags = 0;
+        var minimizes = 0;
+        var maximizes = 0;
+        var unmaximizes = 0;
+        final listeners = <WindowListener>[];
+        final window = PluginDesktopWindow(
+          platform: TargetPlatform.windows,
+          startWindowDrag: () async => drags += 1,
+          minimizeWindow: () async => minimizes += 1,
+          maximizeWindow: () async => maximizes += 1,
+          unmaximizeWindow: () async => unmaximizes += 1,
+          preventClose: ({required prevent}) async {},
+          addWindowListener: listeners.add,
+          removeWindowListener: listeners.remove,
+        );
+
+        await window.interceptClose(() {});
+        await window.startDragging();
+        await window.minimize();
+        // Native maximize events may arrive after a second caption click.
+        await window.toggleMaximized();
+        expect(window.maximized.value, isTrue);
+
+        await window.toggleMaximized();
+        expect(window.maximized.value, isFalse);
+        expect((drags, minimizes, maximizes, unmaximizes), (1, 1, 1, 1));
+
+        listeners.single.onWindowMaximize();
+        expect(window.maximized.value, isTrue);
+        listeners.single.onWindowUnmaximize();
+        expect(window.maximized.value, isFalse);
+      },
+      tags: const <String>['feature_test__desktop_window_chrome__unit'],
+    );
+
+    test(
       'preparing a normal launch shows the window and a hidden one does not',
       () async {
         var initialized = 0;
@@ -143,10 +214,7 @@ void main() {
         final harness = build();
         final selected = <String>[];
 
-        await harness.tray.install(
-          menu: model,
-          onSelected: selected.add,
-        );
+        await harness.tray.install(menu: model, onSelected: selected.add);
 
         expect(harness.icons, <String>['assets/tray/tray_icon.png']);
         expect(harness.templates, <bool>[false]);

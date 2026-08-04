@@ -132,6 +132,30 @@ class AppLocalizationsKo extends AppLocalizations {
   String get trayQuit => '종료';
 
   @override
+  String get desktopMenuFile => '파일';
+
+  @override
+  String get desktopMenuView => '보기';
+
+  @override
+  String get desktopMenuHelp => '도움말';
+
+  @override
+  String get desktopMenuAbout => 'Tinyrack Coder 정보';
+
+  @override
+  String get desktopWindowMinimize => '최소화';
+
+  @override
+  String get desktopWindowMaximize => '최대화';
+
+  @override
+  String get desktopWindowRestore => '복원';
+
+  @override
+  String get desktopWindowClose => '트레이로 닫기';
+
+  @override
   String get workspacesTitle => 'Workspaces';
 
   @override

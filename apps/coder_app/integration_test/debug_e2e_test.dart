@@ -139,6 +139,9 @@ void main() {
           'remote': 'remote-token-0123456789abcdef0123456789',
         },
       );
+      final desktopWindow = PluginDesktopWindow();
+      await desktopWindow.prepare(startHidden: false);
+      addTearDown(desktopWindow.releaseClose);
 
       await tester.pumpWidget(
         CoderApp(
@@ -150,6 +153,7 @@ void main() {
             clientKind: 'desktop-integration-test',
             embeddedLauncher: embeddedLauncher,
           ),
+          desktopWindow: desktopWindow,
         ),
       );
       // Unmount before the daemons stop so no provider request outlives its
@@ -160,8 +164,11 @@ void main() {
       await _pumpUntil(tester, find.text('E2E Workspace'));
       await _pumpUntil(tester, find.textContaining('내장 daemon · '));
 
-      // Projects are added from inside the new-workspace project select.
-      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      // The global desktop menu reaches the same typed new-workspace route.
+      expect(find.text('파일'), findsOneWidget);
+      await tester.tap(find.text('파일'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('New workspace').last);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
       await tester.pumpAndSettle();
@@ -717,6 +724,7 @@ void main() {
       'feature_test__provider_catalog__e2e',
       'feature_test__provider_connection_management__e2e',
       'feature_test__provider_custom__e2e',
+      'feature_test__desktop_window_chrome__e2e',
     ],
   );
 
@@ -733,7 +741,13 @@ void main() {
       addTearDown(window.releaseClose);
 
       await window.prepare(startHidden: false);
+      expect(window.supportsCustomTitleBar, isTrue);
       expect(await window.isVisible(), isTrue);
+
+      await window.toggleMaximized();
+      expect(window.maximized.value, isTrue);
+      await window.toggleMaximized();
+      expect(window.maximized.value, isFalse);
 
       var closes = 0;
       await window.interceptClose(() => closes += 1);
@@ -756,13 +770,29 @@ void main() {
       // Hiding must leave the process alive, which is the whole point of
       // closing to the tray.
       await window.hide();
-      expect(await window.isVisible(), isFalse);
+      await _waitForWindowVisibility(window, visible: false);
       await window.show();
-      expect(await window.isVisible(), isTrue);
+      await _waitForWindowVisibility(window, visible: true);
       expect(closes, 0);
     },
-    tags: const <String>['feature_test__desktop_residency__platformSmoke'],
+    tags: const <String>[
+      'feature_test__desktop_residency__platformSmoke',
+      'feature_test__desktop_window_chrome__platformSmoke',
+    ],
   );
+}
+
+Future<void> _waitForWindowVisibility(
+  DesktopWindow window, {
+  required bool visible,
+}) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 5));
+  while (await window.isVisible() != visible) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('window visibility did not become $visible');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
 }
 
 Future<ProviderConnectionDto> _waitForProviderDefaultModel(
