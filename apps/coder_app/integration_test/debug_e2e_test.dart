@@ -354,6 +354,70 @@ void main() {
         <String>['reviewer'],
       );
 
+      await tester.tap(find.text('스킬'));
+      await _pumpUntil(tester, find.byTooltip('스킬 추가'));
+      await tester.tap(find.byTooltip('스킬 추가'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'ID (디렉터리 이름)'),
+        'e2e-skill',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, '이름').last,
+        'e2e-skill',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, '설명').last,
+        'Explains the end-to-end flow.',
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      final createSkill = find.widgetWithText(FilledButton, '생성');
+      await tester.ensureVisible(createSkill);
+      await tester.pumpAndSettle();
+      await tester.tap(createSkill);
+      await _pumpUntilGone(tester, find.text('스킬 추가'));
+      await _pumpUntilCondition(
+        tester,
+        () async => (await setupClient.listSkills()).any(
+          (skill) => skill.id == 'e2e-skill',
+        ),
+        'the new skill to reach the daemon',
+      );
+      expect(
+        (await setupClient.getSkill('e2e-skill')).sourcePath,
+        startsWith(home.path),
+      );
+
+      // A toggleable built-in can be turned off, and the daemon remembers it.
+      final commitSwitch = find.descendant(
+        of: find.widgetWithText(ListTile, 'commit').first,
+        matching: find.byType(Switch),
+      );
+      await tester.ensureVisible(commitSwitch);
+      await tester.pumpAndSettle();
+      await tester.tap(commitSwitch);
+      await _pumpUntilCondition(
+        tester,
+        () async => !(await setupClient.getSkill('commit')).isEnabled,
+        'the built-in skill to turn off',
+      );
+
+      await tester.tap(find.text('e2e-skill').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('스킬 삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await _pumpUntilCondition(
+        tester,
+        () async => (await setupClient.listSkills()).every(
+          (skill) => skill.id != 'e2e-skill',
+        ),
+        'the skill to be archived',
+      );
+
+      await tester.tap(find.text('Agent'));
+      await _pumpUntil(tester, find.text('Agents'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.arrow_back).first);
       await _pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
@@ -648,6 +712,7 @@ void main() {
       'feature_test__session_tabs__e2e',
       'feature_test__turn_execution__e2e',
       'feature_test__agent_definition_management__e2e',
+      'feature_test__skill_management__e2e',
       'feature_test__agent_delegation__e2e',
       'feature_test__provider_catalog__e2e',
       'feature_test__provider_connection_management__e2e',

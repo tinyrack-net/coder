@@ -36,6 +36,16 @@ void main() {
     createdAt: now,
     updatedAt: now,
   );
+  const skill = SkillDto(
+    id: 'commit',
+    name: 'commit',
+    description: 'Writes atomic commits.',
+    source: SkillSource.config,
+    sourcePath: '/config/skills/commit/SKILL.md',
+    contentHash: 'skill-hash',
+    body: 'Stage related changes together.',
+    isEditable: true,
+  );
   const agentDefinition = AgentDefinitionDto(
     id: 'coder',
     name: 'Coder',
@@ -128,6 +138,7 @@ void main() {
             agent: agent,
             agentDefinition: agentDefinition,
             agentTool: agentTool,
+            skill: skill,
             definition: definition,
             connection: connection,
             model: model,
@@ -282,6 +293,35 @@ void main() {
       expect(await client.listAgentTools(), <AgentToolDefinitionDto>[
         agentTool,
       ]);
+      expect(await client.listSkills(), <SkillDto>[skill]);
+      expect(
+        await client.listSkills(workspaceId: 'workspace'),
+        <SkillDto>[skill],
+      );
+      expect(await client.getSkill('commit'), skill);
+      expect(
+        await client.createSkill(
+          id: 'commit',
+          source: SkillSource.project,
+          name: 'commit',
+          description: 'Writes atomic commits.',
+          body: 'Stage related changes together.',
+          workspaceId: 'workspace',
+        ),
+        skill,
+      );
+      expect(
+        await client.updateSkill(
+          skill,
+          expectedContentHash: skill.contentHash,
+        ),
+        skill,
+      );
+      await client.deleteSkill('commit', workspaceId: 'workspace');
+      expect(
+        await client.setSkillEnabled('commit', enabled: false),
+        skill,
+      );
       final catalog = await client.listProviderCatalog();
       expect(catalog.definitions, <ProviderDefinitionDto>[definition]);
       expect(await client.listProviderConnections(), <ProviderConnectionDto>[
@@ -358,6 +398,10 @@ void main() {
           const <String, dynamic>{},
         )
         ..sendNotification(
+          RpcNotification.skillsChanged,
+          const <String, dynamic>{},
+        )
+        ..sendNotification(
           RpcNotification.approvalRequested,
           approval.toJson(),
         )
@@ -376,6 +420,7 @@ void main() {
         events.whereType<AgentDefinitionsChangedClientEvent>(),
         hasLength(1),
       );
+      expect(events.whereType<SkillsChangedClientEvent>(), hasLength(1));
       expect(
         events.whereType<ApprovalRequestedClientEvent>().single.approval,
         approval,
@@ -410,6 +455,12 @@ void main() {
           RpcMethod.agentDefinitionReset,
           RpcMethod.agentDefinitionValidate,
           RpcMethod.agentToolCatalog,
+          RpcMethod.skillList,
+          RpcMethod.skillGet,
+          RpcMethod.skillCreate,
+          RpcMethod.skillUpdate,
+          RpcMethod.skillDelete,
+          RpcMethod.skillSetEnabled,
           RpcMethod.providerCatalog,
           RpcMethod.providerConnectionsList,
           RpcMethod.providerConnectApiKey,
@@ -443,6 +494,7 @@ void main() {
       'feature_test__session_lifecycle__contract',
       'feature_test__turn_execution__contract',
       'feature_test__agent_definition_management__contract',
+      'feature_test__skill_management__contract',
       'feature_test__provider_catalog__contract',
       'feature_test__provider_connection_management__contract',
       'feature_test__provider_oauth__contract',
@@ -680,6 +732,7 @@ void _registerFixtureMethods(
   required SessionDto agent,
   required AgentDefinitionDto agentDefinition,
   required AgentToolDefinitionDto agentTool,
+  required SkillDto skill,
   required ProviderDefinitionDto definition,
   required ProviderConnectionDto connection,
   required ProviderModelDto model,
@@ -781,6 +834,14 @@ void _registerFixtureMethods(
     RpcMethod.agentToolCatalog: AgentToolCatalogResultDto(
       tools: <AgentToolDefinitionDto>[agentTool],
     ).toJson(),
+    RpcMethod.skillList: SkillListResultDto(
+      skills: <SkillDto>[skill],
+    ).toJson(),
+    RpcMethod.skillGet: SkillResultDto(skill: skill).toJson(),
+    RpcMethod.skillCreate: SkillResultDto(skill: skill).toJson(),
+    RpcMethod.skillUpdate: SkillResultDto(skill: skill).toJson(),
+    RpcMethod.skillDelete: const <String, dynamic>{},
+    RpcMethod.skillSetEnabled: SkillResultDto(skill: skill).toJson(),
     RpcMethod.providerCatalog: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
         definitions: <ProviderDefinitionDto>[definition],

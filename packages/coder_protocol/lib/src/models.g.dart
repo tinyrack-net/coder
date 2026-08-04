@@ -298,6 +298,73 @@ const _$ToolRiskEnumMap = {
   ToolRisk.command: 'command',
 };
 
+_SkillDiagnosticDto _$SkillDiagnosticDtoFromJson(Map<String, dynamic> json) =>
+    _SkillDiagnosticDto(
+      code: json['code'] as String,
+      message: json['message'] as String,
+    );
+
+Map<String, dynamic> _$SkillDiagnosticDtoToJson(_SkillDiagnosticDto instance) =>
+    <String, dynamic>{'code': instance.code, 'message': instance.message};
+
+_SkillResourceDto _$SkillResourceDtoFromJson(Map<String, dynamic> json) =>
+    _SkillResourceDto(
+      path: json['path'] as String,
+      sizeBytes: (json['sizeBytes'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$SkillResourceDtoToJson(_SkillResourceDto instance) =>
+    <String, dynamic>{'path': instance.path, 'sizeBytes': instance.sizeBytes};
+
+_SkillDto _$SkillDtoFromJson(Map<String, dynamic> json) => _SkillDto(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  description: json['description'] as String,
+  source: $enumDecode(_$SkillSourceEnumMap, json['source']),
+  sourcePath: json['sourcePath'] as String,
+  contentHash: json['contentHash'] as String,
+  body: json['body'] as String,
+  resources:
+      (json['resources'] as List<dynamic>?)
+          ?.map((e) => SkillResourceDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <SkillResourceDto>[],
+  isEnabled: json['isEnabled'] as bool? ?? true,
+  isMandatory: json['isMandatory'] as bool? ?? false,
+  isEditable: json['isEditable'] as bool? ?? false,
+  isShadowed: json['isShadowed'] as bool? ?? false,
+  isStale: json['isStale'] as bool? ?? false,
+  diagnostics:
+      (json['diagnostics'] as List<dynamic>?)
+          ?.map((e) => SkillDiagnosticDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <SkillDiagnosticDto>[],
+);
+
+Map<String, dynamic> _$SkillDtoToJson(_SkillDto instance) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'description': instance.description,
+  'source': _$SkillSourceEnumMap[instance.source]!,
+  'sourcePath': instance.sourcePath,
+  'contentHash': instance.contentHash,
+  'body': instance.body,
+  'resources': instance.resources,
+  'isEnabled': instance.isEnabled,
+  'isMandatory': instance.isMandatory,
+  'isEditable': instance.isEditable,
+  'isShadowed': instance.isShadowed,
+  'isStale': instance.isStale,
+  'diagnostics': instance.diagnostics,
+};
+
+const _$SkillSourceEnumMap = {
+  SkillSource.builtIn: 'builtIn',
+  SkillSource.userHome: 'userHome',
+  SkillSource.config: 'config',
+  SkillSource.project: 'project',
+};
+
 _SessionModelSelectionDto _$SessionModelSelectionDtoFromJson(
   Map<String, dynamic> json,
 ) => _SessionModelSelectionDto(

@@ -709,4 +709,116 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hookFailureNoOutput => '(no output)';
+
+  @override
+  String get settingsCategorySkill => 'Skill';
+
+  @override
+  String get skillSettingsHeading => 'Skills';
+
+  @override
+  String skillSettingsCount(int count) {
+    return '$count skills';
+  }
+
+  @override
+  String get skillSettingsSelectSkill => 'Select a skill.';
+
+  @override
+  String get skillSettingsList => 'Skill list';
+
+  @override
+  String get skillSettingsAdd => 'Add skill';
+
+  @override
+  String get skillSettingsAddTitle => 'Add skill';
+
+  @override
+  String get skillSettingsIdLabel => 'ID (directory name)';
+
+  @override
+  String get skillSettingsIdInvalid =>
+      'Only lowercase letters, digits, -, and _ are allowed.';
+
+  @override
+  String get skillSettingsIdTaken => 'That skill ID already exists.';
+
+  @override
+  String get skillSettingsNameRequired => 'Enter a name.';
+
+  @override
+  String get skillSettingsCopyPath => 'Copy file location';
+
+  @override
+  String get skillSettingsDelete => 'Delete skill';
+
+  @override
+  String skillSettingsDeleteTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get skillSettingsDeleteMessage =>
+      'The skill directory moves to .archive next to it.';
+
+  @override
+  String get skillSettingsEnabled => 'Enabled';
+
+  @override
+  String get skillSettingsMandatory => 'This built-in skill is always enabled.';
+
+  @override
+  String get skillSettingsReadOnly =>
+      'Built-in skills ship with the app and cannot be edited.';
+
+  @override
+  String get skillSettingsInstructions => 'Instructions (Markdown)';
+
+  @override
+  String get skillSettingsResources => 'Bundled files';
+
+  @override
+  String get skillSettingsNoResources =>
+      'No files are bundled with this skill.';
+
+  @override
+  String get skillSettingsSaveFailedTitle => 'Could not save the skill';
+
+  @override
+  String get skillSettingsReload => 'Reload';
+
+  @override
+  String get skillSettingsOverwrite => 'Overwrite';
+
+  @override
+  String get skillSettingsShadowed => 'Another source overrides this skill.';
+
+  @override
+  String get skillSettingsStale =>
+      'This file no longer parses; the last good version is shown.';
+
+  @override
+  String get skillSettingsSource => 'Source';
+
+  @override
+  String get skillSettingsSourceBuiltIn => 'Built-in';
+
+  @override
+  String get skillSettingsSourceUserHome => 'Global';
+
+  @override
+  String get skillSettingsSourceConfig => 'Settings';
+
+  @override
+  String get skillSettingsSourceProject => 'Project';
+
+  @override
+  String get skillSettingsProject => 'Project';
+
+  @override
+  String get skillSettingsProjectNone => 'Global skills only';
+
+  @override
+  String get skillSettingsProjectHint =>
+      'Pick a project to see and edit the skills committed to it.';
 }

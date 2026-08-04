@@ -134,6 +134,17 @@ void main() {
   );
 
   testWidgets(
+    'SkillSettingsRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const SkillSettingsRoute(hostId: 'server').location,
+      find.text('스킬'),
+    ),
+    tags: const <String>['route_test__skill_settings_route__widget'],
+  );
+
+  testWidgets(
     'DaemonSettingsRoute renders at desktop and mobile sizes',
     (tester) => _verifyRoute(
       tester,

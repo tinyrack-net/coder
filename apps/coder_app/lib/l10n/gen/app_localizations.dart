@@ -1381,6 +1381,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'(no output)'**
   String get hookFailureNoOutput;
+
+  /// Sidebar label for the skill settings category.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill'**
+  String get settingsCategorySkill;
+
+  /// Heading above the skill list.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills'**
+  String get skillSettingsHeading;
+
+  /// Number of skills visible in the current scope.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} skills'**
+  String skillSettingsCount(int count);
+
+  /// Placeholder shown before a skill is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a skill.'**
+  String get skillSettingsSelectSkill;
+
+  /// Tooltip for returning to the skill list on narrow layouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill list'**
+  String get skillSettingsList;
+
+  /// Tooltip for the add-skill button.
+  ///
+  /// In en, this message translates to:
+  /// **'Add skill'**
+  String get skillSettingsAdd;
+
+  /// Title of the add-skill dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add skill'**
+  String get skillSettingsAddTitle;
+
+  /// Label for the skill ID field, which names the directory.
+  ///
+  /// In en, this message translates to:
+  /// **'ID (directory name)'**
+  String get skillSettingsIdLabel;
+
+  /// Validation error for a malformed skill ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Only lowercase letters, digits, -, and _ are allowed.'**
+  String get skillSettingsIdInvalid;
+
+  /// Validation error for a skill ID already in use.
+  ///
+  /// In en, this message translates to:
+  /// **'That skill ID already exists.'**
+  String get skillSettingsIdTaken;
+
+  /// Validation error for an empty skill name.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get skillSettingsNameRequired;
+
+  /// Tooltip for copying the skill file path.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy file location'**
+  String get skillSettingsCopyPath;
+
+  /// Tooltip for deleting a skill.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete skill'**
+  String get skillSettingsDelete;
+
+  /// Title of the delete confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String skillSettingsDeleteTitle(String name);
+
+  /// Explains that deleting archives the directory.
+  ///
+  /// In en, this message translates to:
+  /// **'The skill directory moves to .archive next to it.'**
+  String get skillSettingsDeleteMessage;
+
+  /// Label for the per-skill enable switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get skillSettingsEnabled;
+
+  /// Tooltip explaining why a built-in skill cannot be turned off.
+  ///
+  /// In en, this message translates to:
+  /// **'This built-in skill is always enabled.'**
+  String get skillSettingsMandatory;
+
+  /// Explains that built-in skills are read-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in skills ship with the app and cannot be edited.'**
+  String get skillSettingsReadOnly;
+
+  /// Label for the skill body editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions (Markdown)'**
+  String get skillSettingsInstructions;
+
+  /// Heading above the bundled file list.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundled files'**
+  String get skillSettingsResources;
+
+  /// Shown when a skill bundles no extra files.
+  ///
+  /// In en, this message translates to:
+  /// **'No files are bundled with this skill.'**
+  String get skillSettingsNoResources;
+
+  /// Title of the save-conflict dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the skill'**
+  String get skillSettingsSaveFailedTitle;
+
+  /// Discards the edit and reloads the file.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get skillSettingsReload;
+
+  /// Saves over the external change.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite'**
+  String get skillSettingsOverwrite;
+
+  /// Explains that a higher-precedence source wins.
+  ///
+  /// In en, this message translates to:
+  /// **'Another source overrides this skill.'**
+  String get skillSettingsShadowed;
+
+  /// Explains that the file failed to parse.
+  ///
+  /// In en, this message translates to:
+  /// **'This file no longer parses; the last good version is shown.'**
+  String get skillSettingsStale;
+
+  /// Label for the source a skill was loaded from.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get skillSettingsSource;
+
+  /// Source badge for skills shipped with the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in'**
+  String get skillSettingsSourceBuiltIn;
+
+  /// Source badge for skills in the shared user home tree.
+  ///
+  /// In en, this message translates to:
+  /// **'Global'**
+  String get skillSettingsSourceUserHome;
+
+  /// Source badge for skills in the daemon configuration directory.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get skillSettingsSourceConfig;
+
+  /// Source badge for skills committed to a project.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get skillSettingsSourceProject;
+
+  /// Label for the project selector on the skill page.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get skillSettingsProject;
+
+  /// Project selector entry that shows only global skills.
+  ///
+  /// In en, this message translates to:
+  /// **'Global skills only'**
+  String get skillSettingsProjectNone;
+
+  /// Explains what picking a project adds to the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a project to see and edit the skills committed to it.'**
+  String get skillSettingsProjectHint;
 }
 
 class _AppLocalizationsDelegate
