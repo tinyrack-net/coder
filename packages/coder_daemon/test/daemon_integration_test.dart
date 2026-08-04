@@ -560,6 +560,13 @@ void main() {
       expect(approval.preview, 'fake.echo');
       await client.resolveApproval(approvalId: approval.id, approved: true);
       await completed;
+      // turn.completed precedes the daemon's own final writes, so let the
+      // session settle before the teardown closes its database.
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
 
       final timeline = await client.subscribeTimeline(session.id);
       final requested = timeline
@@ -757,6 +764,11 @@ void main() {
         prompt: 'Write a file.',
       );
       await completed;
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
 
       // The turn succeeded on built-in tools alone.
       expect(
