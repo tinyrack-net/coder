@@ -50,6 +50,8 @@ unknown or skipped.
 
 ```sh
 dart pub get --enforce-lockfile
+dart run melos test:dart
+dart run melos test:flutter
 dart run melos test:unit
 dart run melos test:widget
 dart run melos test:contract
@@ -63,14 +65,38 @@ xvfb-run -a dart run melos verify:debug
 
 `verify:fast` checks formatting, strict analysis, dependency declarations,
 architecture and feature contracts, generated-code drift, and
-unit/widget/contract/vertical-slice tests. `verify` adds goldens and per-package
-coverage. `verify:debug` is deliberately separate because it compiles and
-launches the Linux desktop runner.
+all Dart and Flutter tests. Generated-code drift is checked first; once it is
+clean, independent checks run concurrently with a maximum of four tasks.
+`verify` uses the coverage runs as the canonical test execution instead of
+running the same tests once normally and again with instrumentation. Dart and
+Flutter coverage plus goldens run concurrently, followed by the per-package
+coverage threshold check. `verify:debug` is deliberately separate because it
+compiles and launches the Linux desktop runner.
+
+Focused layer commands remain available for development. `test:dart` is the
+single-pass aggregate for the root and every non-Flutter package, including the
+daemon vertical slice exactly once; `test:flutter` is the single-pass aggregate
+for app unit and widget tests. Package processes use bounded concurrency so a
+parallel workspace run does not multiply each package's own test workers.
 
 Golden tests run in their own canonical Linux process. Coverage excludes the
 `golden` tag so font/rendering configuration from unrelated test isolates cannot
 make pixel comparisons nondeterministic; the same UI behavior remains covered by
 widget tests and `test:golden` is still a required gate.
+
+## Continuous integration
+
+Pull requests and main pushes run independent static, generated-source,
+platform-test, coverage, golden, Debug E2E, and mobile-build jobs. Linux coverage
+is the Linux execution of the full suite; macOS and Windows run the non-coverage
+Dart and Flutter suites independently. The `Quality Gate` job requires every
+job to succeed and is the sole required branch-protection check.
+
+Nightly runs are limited to macOS/Windows desktop E2E and Android/iOS smoke
+tests. Release packages are built only for version tags or an explicit manual
+dispatch. Tag builds start in parallel with verification, while publishing
+waits for both `Quality Gate` and all four platform artifacts. Homebrew and
+WinGet publishing proceed independently after the GitHub Release is available.
 
 ## Coverage
 

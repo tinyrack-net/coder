@@ -4,17 +4,30 @@ import 'package:coder_workspace/src/coverage_verifier.dart';
 import 'package:path/path.dart' as p;
 
 /// Enforces line and branch coverage for every workspace package.
-void main() {
+void main(List<String> arguments) {
   final root = Directory.current.path;
   final verifier = CoverageVerifier(root);
-  final packageDirectories = <String>[
-    ...Directory(
-      p.join(root, 'packages'),
-    ).listSync().whereType<Directory>().map((directory) => directory.path),
-    ...Directory(
-      p.join(root, 'apps'),
-    ).listSync().whereType<Directory>().map((directory) => directory.path),
-  ]..sort();
+  final scopes = <String>{};
+  for (final argument in arguments) {
+    if (!argument.startsWith('--scope=') || argument.length == 8) {
+      stderr.writeln(
+        'Usage: dart run tool/verify_coverage.dart [--scope=NAME]...',
+      );
+      exitCode = 64;
+      return;
+    }
+    scopes.add(argument.substring(8));
+  }
+  final List<String> packageDirectories;
+  try {
+    packageDirectories = CoverageWorkspace(
+      root,
+    ).packageDirectories(scopes: scopes);
+  } on UnknownCoverageScopeException catch (error) {
+    stderr.writeln(error);
+    exitCode = 64;
+    return;
+  }
   final failures = <String>[];
   for (final directory in packageDirectories) {
     final name = p.basename(directory);

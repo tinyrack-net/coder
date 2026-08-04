@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Coder Workspace"
+  short_description: "Run the correct Coder test and release gates"
+  default_prompt: "Use $verify-coder-workspace to select and run the correct verification for this change."
