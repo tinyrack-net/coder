@@ -553,8 +553,12 @@ void main() {
       await tester.tap(find.text('API key 필요'));
       await tester.tap(find.widgetWithText(FilledButton, '저장'));
       await _pumpUntil(tester, find.text('E2E Provider'));
-      final providerConnection = (await remoteClient.listProviderConnections())
-          .singleWhere((item) => item.displayName == 'E2E Provider');
+      // The connection is stored before its model catalog is fetched, so the
+      // default model appears a moment after the name does.
+      final providerConnection = await _waitForProviderDefaultModel(
+        remoteClient,
+        'E2E Provider',
+      );
       expect(providerConnection.defaultModelId, 'e2e-model');
       final connectedSection = find.byKey(
         const ValueKey('provider-settings-connected'),
@@ -693,6 +697,23 @@ void main() {
       expect(closes, 0);
     },
     tags: const <String>['feature_test__desktop_residency__platformSmoke'],
+  );
+}
+
+Future<ProviderConnectionDto> _waitForProviderDefaultModel(
+  CoderApi api,
+  String displayName, {
+  int attempts = 50,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    final connection = (await api.listProviderConnections())
+        .where((item) => item.displayName == displayName)
+        .singleOrNull;
+    if (connection?.defaultModelId != null) return connection!;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw TestFailure(
+    'Timed out waiting for $displayName to resolve a default model.',
   );
 }
 

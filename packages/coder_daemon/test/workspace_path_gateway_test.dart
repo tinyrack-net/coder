@@ -8,8 +8,12 @@ void main() {
   test(
     'filesystem gateway canonicalizes, creates, filters, and limits',
     () async {
-      final root = await Directory.systemTemp.createTemp('coder-path-port-');
-      addTearDown(() => root.delete(recursive: true));
+      final created = await Directory.systemTemp.createTemp('coder-path-port-');
+      addTearDown(() => created.delete(recursive: true));
+      // macOS puts the system temporary directory behind a /var symlink to
+      // /private/var, and canonicalizing is the gateway's whole job, so the
+      // expectations have to start from the resolved path a caller would get.
+      final root = Directory(await created.resolveSymbolicLinks());
       const gateway = IoWorkspacePathGateway();
       final alpha = await Directory(p.join(root.path, 'alpha')).create();
       await Directory(p.join(root.path, 'beta')).create();

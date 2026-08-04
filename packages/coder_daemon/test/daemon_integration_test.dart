@@ -588,8 +588,13 @@ void main() {
     'real daemon creates and archives a Git worktree over WebSocket',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-git-home-');
-      final repository = await Directory.systemTemp.createTemp(
-        'coder-git-repository-',
+      // The daemon canonicalizes every workspace path, and macOS reaches its
+      // temporary directory through a /var symlink to /private/var, so the
+      // fixture starts from the resolved path the daemon will report back.
+      final repository = Directory(
+        await (await Directory.systemTemp.createTemp(
+          'coder-git-repository-',
+        )).resolveSymbolicLinks(),
       );
       await _runGit(repository.path, <String>['init', '-b', 'main']);
       await File('${repository.path}/README.md').writeAsString('# fixture\n');
