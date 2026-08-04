@@ -259,6 +259,8 @@
   "@agentSettingsPinnedModel": {"description": "Model mode that pins one provider and model."},
   "agentSettingsBuiltinTools": "Built-in tools",
   "@agentSettingsBuiltinTools": {"description": "Heading of the tool permission list."},
+  "agentSettingsToolAlwaysOn": "Always available",
+  "@agentSettingsToolAlwaysOn": {"description": "Subtitle marking a tool every agent gets."},
   "agentSettingsSubagents": "Callable subagents",
   "@agentSettingsSubagents": {"description": "Heading of the subagent list."},
   "agentSettingsNoSubagents": "No subagents are registered.",

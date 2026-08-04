@@ -604,6 +604,13 @@ final class FakeCoderApi implements CoderApi {
           name: 'read_file',
           description: 'Read a file.',
           risk: ToolRisk.read,
+          alwaysOn: true,
+        ),
+        AgentToolDefinitionDto(
+          id: 'run_command',
+          name: 'run_command',
+          description: 'Run a command.',
+          risk: ToolRisk.command,
         ),
       ];
 

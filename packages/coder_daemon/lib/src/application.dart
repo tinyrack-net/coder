@@ -136,16 +136,22 @@ abstract final class DaemonApplication {
       final toolById = <String, AgentTool>{
         for (final tool in builtInTools) tool.name: tool,
       };
+      final builtInCatalog = StaticAgentToolCatalog(
+        builtInTools
+            .map(
+              (tool) => AgentToolDefinitionDto(
+                id: tool.name,
+                name: tool.name,
+                description: tool.description,
+                risk: tool.risk,
+                alwaysOn: alwaysOnBuiltInToolIds.contains(tool.name),
+              ),
+            )
+            .toList(growable: false),
+      );
       final agentDefinitions = AgentDefinitionService(
         store: FileAgentDefinitionStore(config.configDirectory),
-        tools: builtInTools.map(
-          (tool) => AgentToolDefinitionDto(
-            id: tool.name,
-            name: tool.name,
-            description: tool.description,
-            risk: tool.risk,
-          ),
-        ),
+        tools: builtInCatalog,
       );
       await agentDefinitions.initialize();
       final service = SessionService(
@@ -158,8 +164,9 @@ abstract final class DaemonApplication {
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: clock,
         ids: ids,
-        toolsFactory: (ids) =>
-            ids.map((id) => toolById[id]).whereType<AgentTool>(),
+        toolsFactory: (ids, workspaceRoot) => resolveAgentToolIds(
+          ids,
+        ).map((id) => toolById[id]).whereType<AgentTool>(),
       );
       final workspaceService = WorkspaceService(
         database.workspaceDao,

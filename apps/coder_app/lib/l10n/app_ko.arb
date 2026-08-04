@@ -126,6 +126,7 @@
   "agentSettingsDaemonDefaultModel": "Daemon 기본 provider/model",
   "agentSettingsPinnedModel": "고정 provider/model",
   "agentSettingsBuiltinTools": "내장 도구",
+  "agentSettingsToolAlwaysOn": "항상 사용 가능",
   "agentSettingsSubagents": "호출 가능한 Subagent",
   "agentSettingsNoSubagents": "등록된 Subagent가 없습니다.",
   "agentSettingsSaveFailedTitle": "Agent 저장 실패",

@@ -378,6 +378,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSettingsBuiltinTools => 'Built-in tools';
 
   @override
+  String get agentSettingsToolAlwaysOn => 'Always available';
+
+  @override
   String get agentSettingsSubagents => 'Callable subagents';
 
   @override

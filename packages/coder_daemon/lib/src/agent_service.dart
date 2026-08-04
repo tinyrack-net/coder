@@ -12,7 +12,8 @@ import 'package:coder_protocol/coder_protocol.dart';
 typedef DaemonEventSink = void Function(WireEnvelope event);
 
 /// Signature used by AgentToolsFactory.
-typedef AgentToolsFactory = Iterable<AgentTool> Function(Iterable<String> ids);
+typedef AgentToolsFactory =
+    Iterable<AgentTool> Function(Iterable<String> ids, String workspaceRoot);
 
 /// SessionService defines a public contract.
 class SessionService {
@@ -93,7 +94,7 @@ class SessionService {
 
     final permissionMode = await _effectivePermission(session, definition);
     final tools = <AgentTool>[
-      ..._toolsFactory(definition.toolIds),
+      ..._toolsFactory(definition.toolIds, worktree.path),
       if (definition.mode == AgentMode.primary &&
           definition.callableAgentIds.isNotEmpty)
         _DelegateAgentTool(

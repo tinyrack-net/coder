@@ -788,6 +788,12 @@ abstract class AppLocalizations {
   /// **'Built-in tools'**
   String get agentSettingsBuiltinTools;
 
+  /// Subtitle marking a tool every agent gets.
+  ///
+  /// In en, this message translates to:
+  /// **'Always available'**
+  String get agentSettingsToolAlwaysOn;
+
   /// Heading of the subagent list.
   ///
   /// In en, this message translates to:

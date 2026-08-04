@@ -374,6 +374,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsBuiltinTools => '내장 도구';
 
   @override
+  String get agentSettingsToolAlwaysOn => '항상 사용 가능';
+
+  @override
   String get agentSettingsSubagents => '호출 가능한 Subagent';
 
   @override

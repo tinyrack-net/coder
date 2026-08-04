@@ -293,14 +293,14 @@ Review the requested code without modifying it.
       final store = FileAgentDefinitionStore(directory.path);
       final service = AgentDefinitionService(
         store: store,
-        tools: const <AgentToolDefinitionDto>[
+        tools: const StaticAgentToolCatalog(<AgentToolDefinitionDto>[
           AgentToolDefinitionDto(
             id: 'read_file',
             name: 'read_file',
             description: 'Read files.',
             risk: ToolRisk.read,
           ),
-        ],
+        ]),
       );
       addTearDown(service.close);
       await service.initialize();
@@ -422,7 +422,7 @@ Review the requested code without modifying it.
       final store = FileAgentDefinitionStore(directory.path);
       final service = AgentDefinitionService(
         store: store,
-        tools: const <AgentToolDefinitionDto>[
+        tools: const StaticAgentToolCatalog(<AgentToolDefinitionDto>[
           AgentToolDefinitionDto(
             id: 'z_tool',
             name: 'Zulu',
@@ -435,7 +435,7 @@ Review the requested code without modifying it.
             description: 'First.',
             risk: ToolRisk.read,
           ),
-        ],
+        ]),
       );
       addTearDown(service.close);
       await service.initialize();

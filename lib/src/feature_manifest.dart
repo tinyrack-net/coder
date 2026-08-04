@@ -210,6 +210,24 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'mcp.server.management',
+    description:
+        'Adds, edits, tests, and removes external MCP servers and shows '
+        'their connection status and discovered tools.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+    },
+  ),
+  FeatureContract(
+    id: 'mcp.tool.execution',
+    description:
+        'Executes namespaced MCP tools inside a turn with approval, and '
+        'degrades safely when a server is offline.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+    },
+  ),
+  FeatureContract(
     id: 'agent.delegation',
     description:
         'Delegates to an allowlisted subagent and exposes its session.',

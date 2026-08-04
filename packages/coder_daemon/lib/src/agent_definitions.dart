@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
@@ -594,38 +595,93 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
   model: const AgentModelSelectionDto(source: AgentModelSource.daemonDefault),
   reasoningEffort: 'medium',
   permissionMode: PermissionMode.ask,
-  toolIds: const <String>[
-    'list_directory',
-    'read_file',
-    'search_text',
-    'apply_patch',
-    'run_command',
-  ],
+  // The read tools are always on, so only the opt-in ones are listed here.
+  toolIds: const <String>['apply_patch', 'run_command'],
   callableAgentIds: const <String>[],
   contentHash: '',
   sourcePath: sourcePath,
   isBuiltIn: true,
 );
 
+/// Built-in tools every agent gets, whichever tools it lists.
+///
+/// Reading the workspace is how an agent grounds itself before it acts, so
+/// these are a property of the daemon rather than a per-agent choice. Writing
+/// and running commands stay opt-in.
+const Set<String> alwaysOnBuiltInToolIds = <String>{
+  'list_directory',
+  'read_file',
+  'search_text',
+};
+
+/// Returns the tool ids a turn runs with, always-on tools first.
+List<String> resolveAgentToolIds(Iterable<String> chosen) =>
+    List<String>.unmodifiable(<String>{...alwaysOnBuiltInToolIds, ...chosen});
+
+/// A live view of the tools a turn may use.
+///
+/// The set is not fixed at startup: MCP servers publish tools as they connect,
+/// and a worktree's own servers only exist for turns running in that worktree.
+abstract interface class AgentToolCatalog {
+  /// Returns the tools visible to [workspaceRoot], or the unscoped set.
+  List<AgentToolDefinitionDto> tools({String? workspaceRoot});
+
+  /// Emits whenever the returned set would differ.
+  Stream<void> get changes;
+}
+
+/// A catalog of tools compiled into the daemon.
+final class StaticAgentToolCatalog implements AgentToolCatalog {
+  /// Creates a catalog over a fixed list.
+  const StaticAgentToolCatalog(this._tools);
+
+  final List<AgentToolDefinitionDto> _tools;
+
+  @override
+  List<AgentToolDefinitionDto> tools({String? workspaceRoot}) => _tools;
+
+  @override
+  Stream<void> get changes => const Stream<void>.empty();
+}
+
+/// Presents several catalogs as one.
+final class CompositeAgentToolCatalog implements AgentToolCatalog {
+  /// Creates a catalog presenting every source, in priority order.
+  CompositeAgentToolCatalog(this._sources);
+
+  final List<AgentToolCatalog> _sources;
+
+  @override
+  List<AgentToolDefinitionDto> tools({String? workspaceRoot}) =>
+      <AgentToolDefinitionDto>[
+        for (final source in _sources)
+          ...source.tools(workspaceRoot: workspaceRoot),
+      ];
+
+  @override
+  Stream<void> get changes => StreamGroup.merge(
+    <Stream<void>>[for (final source in _sources) source.changes],
+  );
+}
+
 /// Validates domain relationships independently of filesystem mechanics.
 final class AgentDefinitionService {
   /// Creates an agent definition application service.
   AgentDefinitionService({
     required this._store,
-    required Iterable<AgentToolDefinitionDto> tools,
+    required AgentToolCatalog tools,
     this.codec = const AgentMarkdownCodec(),
-  }) : _tools = <String, AgentToolDefinitionDto>{
-         for (final tool in tools) tool.id: tool,
-       };
+  }) : _catalog = tools;
 
   final AgentDefinitionStore _store;
-  final Map<String, AgentToolDefinitionDto> _tools;
+  final AgentToolCatalog _catalog;
 
   /// Codec used for validation-only RPC requests.
   final AgentMarkdownCodec codec;
 
-  /// Emits after source files or diagnostics change.
-  Stream<void> get changes => _store.changes;
+  /// Emits after source files, diagnostics, or the tool catalog change.
+  Stream<void> get changes =>
+      StreamGroup.merge(<Stream<void>>[_store.changes, _catalog.changes]);
 
   /// Initializes the source store.
   Future<void> initialize() => _store.initialize();
@@ -652,11 +708,11 @@ final class AgentDefinitionService {
     return _decorate(definition);
   }
 
-  /// Returns the runtime tool catalog.
-  List<AgentToolDefinitionDto> toolCatalog() {
-    final tools = _tools.values.toList(growable: false)
+  /// Returns the runtime tool catalog visible to [workspaceRoot].
+  List<AgentToolDefinitionDto> toolCatalog({String? workspaceRoot}) {
+    final tools = _catalog.tools(workspaceRoot: workspaceRoot).toList()
       ..sort((left, right) => left.name.compareTo(right.name));
-    return tools;
+    return List<AgentToolDefinitionDto>.unmodifiable(tools);
   }
 
   /// Whether an active or archived definition fixes itself to a connection.
@@ -754,8 +810,14 @@ final class AgentDefinitionService {
   }
 
   Future<AgentDefinitionDto> _decorate(AgentDefinitionDto definition) async {
+    final available = <String>{
+      for (final tool in _catalog.tools()) tool.id,
+    };
     final unavailable = definition.toolIds
-        .where((id) => !_tools.containsKey(id))
+        .where(
+          (id) =>
+              !available.contains(id) && !alwaysOnBuiltInToolIds.contains(id),
+        )
         .map(
           (id) => AgentDefinitionDiagnosticDto(
             code: 'unavailable_tool',
