@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "net.tinyrack.coder_app"
+    namespace = "net.tinyrack.coder"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "net.tinyrack.coder_app"
+        applicationId = "net.tinyrack.coder"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

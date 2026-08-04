@@ -35,7 +35,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project, show_on_first_frame);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"coder_app", origin, size)) {
+  if (!window.Create(L"Coder", origin, size)) {
     return EXIT_FAILURE;
   }
   // Left true on purpose. window_manager intercepts WM_CLOSE, so the user's

@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "net.tinyrack" "\0"
-            VALUE "FileDescription", "coder_app" "\0"
+            VALUE "FileDescription", "Coder" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "coder_app" "\0"
+            VALUE "InternalName", "Coder" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 net.tinyrack. All rights reserved." "\0"
-            VALUE "OriginalFilename", "coder_app.exe" "\0"
-            VALUE "ProductName", "coder_app" "\0"
+            VALUE "OriginalFilename", "coder.exe" "\0"
+            VALUE "ProductName", "Coder" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
