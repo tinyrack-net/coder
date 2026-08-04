@@ -8,6 +8,12 @@ on:
       - "v*.*.*"
   pull_request:
   workflow_dispatch:
+    inputs:
+      package_release:
+        description: Build release packages without publishing a GitHub Release
+        required: true
+        type: boolean
+        default: true
   schedule:
     - cron: "17 18 * * *"
 
@@ -25,46 +31,140 @@ env:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' &&
-    !startsWith(github.ref, 'refs/tags/v') }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') &&
+    github.event_name != 'workflow_dispatch' }}
 
 jobs:
-  # Fast, identical checks on every desktop platform. Goldens and coverage are
-  # deliberately excluded: goldens are pinned to Linux by AlchemistConfig, and
-  # the coverage gate is per package, so running either three times would only
-  # buy flakiness.
-  verify:
-    name: Verify (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-24.04
-          - macos-26
-          - windows-2025
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+  static-linux:
+    name: Static checks
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - name: Install Linux desktop dependencies
-        if: runner.os == 'Linux'
-        run: >-
-          sudo apt-get update && sudo apt-get install -y
-          clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev
-          libayatana-appindicator3-dev
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos verify:fast
+      - run: dart run melos format:check
+      - run: dart run melos analyze
+      - run: dart run melos dependencies:check
+      - run: dart run melos architecture:check
+      - run: dart run melos features:check
+      - name: Validate the workflow
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7
 
-  # The Linux-only gates: canonical goldens, the 90/80 coverage floor, and the
-  # real Debug runner against a real embedded daemon.
-  quality-linux:
-    name: Goldens, coverage, and Debug E2E
+  generated-linux:
+    name: Generated sources
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos generate:check
+
+  dart-tests:
+    name: Dart tests (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - macos-26
+          - windows-2025
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos test:dart
+
+  flutter-tests:
+    name: Flutter tests (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - macos-26
+          - windows-2025
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos test:flutter
+
+  coverage-dart-linux:
+    name: Dart coverage
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos test:coverage:dart
+      - name: Enforce Dart package coverage
+        run: >-
+          dart run tool/verify_coverage.dart
+          --scope=coder_agent
+          --scope=coder_client
+          --scope=coder_daemon
+          --scope=coder_protocol
+          --scope=coder_provider_openai
+
+  coverage-flutter-linux:
+    name: Flutter coverage
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos test:coverage:flutter
+      - run: dart run tool/verify_coverage.dart --scope=coder_app
+
+  golden-linux:
+    name: Linux goldens
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos test:golden
+
+  debug-e2e-linux:
+    name: Linux Debug E2E
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
@@ -77,12 +177,11 @@ jobs:
           clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev xvfb
           libayatana-appindicator3-dev
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos test:golden
-      - run: dart run melos test:coverage
       - run: xvfb-run -a dart run melos verify:debug
 
   mobile-debug-build:
     name: Mobile Debug Build (${{ matrix.os }})
+    if: github.event_name != 'schedule'
     strategy:
       fail-fast: false
       matrix:
@@ -105,12 +204,31 @@ jobs:
       - run: ${{ matrix.command }}
         working-directory: apps/coder_app
 
+  quality-gate:
+    name: Quality Gate
+    if: always() && github.event_name != 'schedule'
+    needs:
+      - static-linux
+      - generated-linux
+      - dart-tests
+      - flutter-tests
+      - coverage-dart-linux
+      - coverage-flutter-linux
+      - golden-linux
+      - debug-e2e-linux
+      - mobile-debug-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every quality job to succeed
+        env:
+          QUALITY_RESULTS: ${{ toJSON(needs) }}
+        run: jq -e 'all(.[]; .result == "success")' <<< "$QUALITY_RESULTS"
+
   build-and-package:
     name: Build & Package (${{ matrix.target }})
-    needs:
-      - verify
-      - quality-linux
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.package_release)
     strategy:
       fail-fast: false
       matrix:
@@ -257,6 +375,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coder-${{ matrix.target }}
+          retention-days: 7
           path: |
             dist/*.AppImage
             dist/*.deb
@@ -271,6 +390,7 @@ jobs:
     name: Publish Release
     needs:
       - build-and-package
+      - quality-gate
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -305,10 +425,26 @@ jobs:
       - name: Upload the release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          while IFS= read -r artifact_path; do
-            gh release upload "${GITHUB_REF_NAME}" "${artifact_path}" --clobber
-          done < <(find release-assets -maxdepth 1 -type f | sort)
+        run: gh release upload "${GITHUB_REF_NAME}" release-assets/* --clobber
+
+  publish-homebrew:
+    name: Publish Homebrew
+    needs: publish-release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - run: dart pub global activate shipworld ${{ env.SHIPWORLD_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: coder-macos-arm64
+          path: release-assets
 
       - name: Generate the Homebrew Cask
         run: |
