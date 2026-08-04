@@ -354,6 +354,52 @@ void main() {
         <String>['reviewer'],
       );
 
+      // MCP: add a server through the real UI against the real daemon, see
+      // it reach configuration, then remove it again.
+      await tester.tap(find.text('MCP'));
+      await _pumpUntil(tester, find.text('MCP 서버'));
+      await tester.tap(find.byKey(const ValueKey('mcp-server-add')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('mcp-field-id')),
+        'e2e',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('mcp-field-command')),
+        '/nonexistent/mcp-server',
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      final saveServer = find.byKey(const ValueKey('mcp-server-save'));
+      await tester.ensureVisible(saveServer);
+      await tester.pumpAndSettle();
+      await tester.tap(saveServer);
+      await _pumpUntilCondition(
+        tester,
+        () async => (await setupClient.listMcpServers()).any(
+          (server) => server.config.id == 'e2e',
+        ),
+        'the MCP server to reach daemon configuration',
+      );
+      expect(
+        find.byKey(const ValueKey('mcp-server-tile-e2e')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('mcp-server-tile-e2e')));
+      await tester.pumpAndSettle();
+      final deleteServer = find.byKey(const ValueKey('mcp-server-delete'));
+      await tester.ensureVisible(deleteServer);
+      await tester.pumpAndSettle();
+      await tester.tap(deleteServer);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('mcp-delete-confirm')));
+      await _pumpUntilGone(
+        tester,
+        find.byKey(const ValueKey('mcp-server-tile-e2e')),
+      );
+
+      await tester.tap(find.text('Agent'));
+      await _pumpUntil(tester, find.text('Agents'));
       await tester.tap(find.byIcon(Icons.arrow_back).first);
       await _pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
@@ -648,6 +694,7 @@ void main() {
       'feature_test__session_tabs__e2e',
       'feature_test__turn_execution__e2e',
       'feature_test__agent_definition_management__e2e',
+      'feature_test__mcp_server_management__e2e',
       'feature_test__agent_delegation__e2e',
       'feature_test__provider_catalog__e2e',
       'feature_test__provider_connection_management__e2e',

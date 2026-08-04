@@ -57,3 +57,7 @@ all interfaces exposes the plain daemon port, which must be isolated by the
 operator's firewall when TLS is mandatory. See
 [`docs/remote-daemon.md`](docs/remote-daemon.md) for Caddy/Nginx WebSocket,
 authentication-header, and development-data reset examples.
+
+See [`docs/mcp.md`](docs/mcp.md) for configuring external MCP servers, the
+secret reference syntax, and the trust implications of a repository-declared
+`.mcp.json`.

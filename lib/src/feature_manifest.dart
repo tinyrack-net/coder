@@ -228,6 +228,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       FeatureVerificationLayer.contract,
       FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
     },
   ),
   FeatureContract(
