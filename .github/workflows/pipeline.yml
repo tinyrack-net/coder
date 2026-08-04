@@ -1,0 +1,451 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 18 * * *"
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.44.8
+  SHIPWORLD_VERSION: 0.2.0
+  APPIMAGETOOL_SHA256: >-
+    a6d71e2b6cd66f8e8d16c37ad164658985e0cf5fcaa950c90a482890cb9d13e0
+  NFPM_VERSION: 2.47.0
+  NFPM_SHA256: >-
+    3f1cf344bd0b57373ca55636a78c08b0491f7293d609a456a9ac3b0b150fda97
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' &&
+    !startsWith(github.ref, 'refs/tags/v') }}
+
+jobs:
+  # Fast, identical checks on every desktop platform. Goldens and coverage are
+  # deliberately excluded: goldens are pinned to Linux by AlchemistConfig, and
+  # the coverage gate is per package, so running either three times would only
+  # buy flakiness.
+  verify:
+    name: Verify (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - macos-26
+          - windows-2025
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev
+          libayatana-appindicator3-dev
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos verify:fast
+
+  # The Linux-only gates: canonical goldens, the 90/80 coverage floor, and the
+  # real Debug runner against a real embedded daemon.
+  quality-linux:
+    name: Goldens, coverage, and Debug E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Install Linux desktop dependencies
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev xvfb
+          libayatana-appindicator3-dev
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos test:golden
+      - run: dart run melos test:coverage
+      - run: xvfb-run -a dart run melos verify:debug
+
+  mobile-debug-build:
+    name: Mobile Debug Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            command: flutter build apk --debug -t lib/main_mobile.dart
+          - os: macos-26
+            command: >-
+              flutter build ios --debug --simulator --no-codesign
+              -t lib/main_mobile.dart
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: ${{ matrix.command }}
+        working-directory: apps/coder_app
+
+  build-and-package:
+    name: Build & Package (${{ matrix.target }})
+    needs:
+      - verify
+      - quality-linux
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Flutter publishes no Linux arm64 SDK, so that target is absent
+          # until it does.
+          - os: ubuntu-24.04
+            target: linux-x64
+            platform: linux
+          - os: macos-15-intel
+            target: macos-x64
+            platform: macos
+          - os: macos-26
+            target: macos-arm64
+            platform: macos
+          - os: windows-2025
+            target: windows-x64
+            platform: windows
+            arch: x64
+          - os: windows-11-arm
+            target: windows-arm64
+            platform: windows
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Install Linux desktop dependencies
+        if: matrix.platform == 'linux'
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev
+          libayatana-appindicator3-dev rpm
+      - run: dart pub get --enforce-lockfile
+      - name: Install shipworld
+        run: dart pub global activate shipworld ${{ env.SHIPWORLD_VERSION }}
+
+      - name: Build release bundle
+        run: dart run melos build:${{ matrix.platform }}:release
+
+      # --- Linux ---------------------------------------------------------
+      - name: Install verified appimagetool and nfpm
+        if: matrix.platform == 'linux'
+        run: |
+          curl --fail --location --output appimagetool \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+          echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum --check -
+          chmod +x appimagetool
+          curl --fail --location --output nfpm.deb \
+            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
+          echo "${NFPM_SHA256}  nfpm.deb" | sha256sum --check -
+          sudo dpkg -i nfpm.deb
+      - name: Package Linux artifacts
+        if: matrix.platform == 'linux'
+        env:
+          BUNDLE: apps/coder_app/build/linux/x64/release/bundle
+        run: |
+          dart pub global run shipworld:shipworld package linux appimage coder --input "$BUNDLE" \
+            --output dist/Coder-linux-x64.AppImage --arch x86_64 \
+            --tool "${GITHUB_WORKSPACE}/appimagetool"
+          dart pub global run shipworld:shipworld package linux deb coder --input "$BUNDLE" \
+            --output dist/coder-linux-x64.deb --arch amd64
+          dart pub global run shipworld:shipworld package linux rpm coder --input "$BUNDLE" \
+            --output dist/coder-linux-x64.rpm --arch x86_64
+          tar -czf dist/Coder-linux-x64.tar.gz -C "$BUNDLE" .
+      - name: Verify the Linux packages install
+        if: matrix.platform == 'linux'
+        run: |
+          dpkg-deb --contents dist/coder-linux-x64.deb | grep 'usr/bin/coder ->'
+          rpm -qpl dist/coder-linux-x64.rpm | grep '/usr/lib/coder/coder'
+          # A package that builds but cannot install is the failure the
+          # rendering tests cannot see.
+          sudo dpkg -i dist/coder-linux-x64.deb
+          test -x /usr/bin/coder
+          sudo dpkg -r coder
+
+      # --- macOS ---------------------------------------------------------
+      - name: Sign and archive the macOS app
+        if: matrix.platform == 'macos'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          APPLE_NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
+          APP: apps/coder_app/build/macos/Build/Products/Release/Coder.app
+        run: |
+          dart pub global run shipworld:shipworld package macos sign coder --input "$APP" --app-bundle \
+            ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
+          dart pub global run shipworld:shipworld package macos archive coder --input "$APP" \
+            --output dist/Coder-${{ matrix.target }}.zip
+          codesign --verify --deep --strict "$APP"
+
+      # --- Windows -------------------------------------------------------
+      - name: Build the Windows installer
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path apps/coder_app/pubspec.yaml `
+            -Pattern '^version:\s*(\S+)').Matches[0].Groups[1].Value.Split('+')[0]
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
+            "/DAppVersion=$version" `
+            "/DAppArch=${{ matrix.arch }}" `
+            "/DSourceDir=$PWD\apps\coder_app\build\windows\${{ matrix.arch }}\runner\Release" `
+            "/DOutputDir=$PWD\dist" `
+            apps\coder_app\windows\installer\coder.iss
+      - name: Build the Windows MSIX
+        if: matrix.platform == 'windows' && startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME || 'tinyrack.coder' }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER || 'CN=tinyrack' }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME ||
+            'tinyrack' }}
+        run: dart pub global run shipworld:shipworld package windows msix coder
+          --input apps/coder_app/build/windows/${{ matrix.arch }}/runner/Release
+          --launcher coder.exe --arch ${{ matrix.arch }}
+          --output dist/Coder-win-${{ matrix.arch }}.msix
+          --package-root dist/msix/${{ matrix.arch }}
+      - name: Archive the Windows release directory
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: Compress-Archive
+          -Path apps/coder_app/build/windows/${{ matrix.arch }}/runner/Release/*
+          -DestinationPath dist/Coder-${{ matrix.target }}.zip
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: coder-${{ matrix.target }}
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.zip
+            dist/*.tar.gz
+            dist/*.exe
+            dist/*.msix
+          if-no-files-found: error
+
+  bundle-msix:
+    name: Bundle MSIX
+    needs: build-and-package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - run: dart pub global activate shipworld ${{ env.SHIPWORLD_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: coder-windows-*
+          path: dist
+          merge-multiple: true
+      - name: Bundle the Windows MSIX packages
+        shell: pwsh
+        run: dart pub global run shipworld:shipworld package windows bundle coder --package-dir dist
+          --output dist/Coder-windows.msixbundle
+          --working-directory dist/msix/bundle
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coder-windows-msixbundle
+          path: dist/Coder-windows.msixbundle
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish Release
+    needs:
+      - build-and-package
+      - bundle-msix
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - run: dart pub global activate shipworld ${{ env.SHIPWORLD_VERSION }}
+
+      - name: Verify the tag matches the app version
+        run: dart pub global run shipworld:shipworld release verify coder
+
+      - name: Create the GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "GitHub Release ${GITHUB_REF_NAME} already exists"
+          else
+            gh release create "${GITHUB_REF_NAME}" --generate-notes
+          fi
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: coder-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Upload the release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          while IFS= read -r artifact_path; do
+            gh release upload "${GITHUB_REF_NAME}" "${artifact_path}" --clobber
+          done < <(find release-assets -maxdepth 1 -type f | sort)
+
+      - name: Generate the Homebrew Cask
+        run: |
+          url="https://github.com/${{ github.repository }}/releases/download"
+          dart pub global run shipworld:shipworld package homebrew cask coder \
+            --archive release-assets/Coder-macos-arm64.zip \
+            --url "${url}/${GITHUB_REF_NAME}/Coder-macos-arm64.zip" \
+            --output release-assets/coder.rb
+
+      - name: Checkout the Homebrew tap
+        uses: actions/checkout@v5
+        with:
+          repository: tinyrack-net/homebrew-tap
+          path: homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Update the Homebrew tap
+        run: |
+          mkdir -p homebrew-tap/Casks
+          cp release-assets/coder.rb homebrew-tap/Casks/coder.rb
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/coder.rb
+          git commit -m "Update coder to ${GITHUB_REF_NAME}" ||
+            echo "No changes to commit"
+          git push
+
+  publish-winget:
+    name: Publish WinGet
+    needs: publish-release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - name: Submit the WinGet manifest update
+        shell: pwsh
+        env:
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:WINGET_CREATE_GITHUB_TOKEN)) {
+            throw "WINGET_TOKEN repository secret is required for WinGet publishing."
+          }
+
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          $downloadUrl = "https://github.com/${{ github.repository }}/releases/download/$env:GITHUB_REF_NAME"
+          $releaseNotesUrl = "https://github.com/${{ github.repository }}/releases/tag/$env:GITHUB_REF_NAME"
+
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe update tinyrack.coder `
+            --version $version `
+            --urls "$downloadUrl/Coder-setup-win-x64.exe|x64" "$downloadUrl/Coder-setup-win-arm64.exe|arm64" `
+            --release-notes-url "$releaseNotesUrl" `
+            --submit `
+            --no-open
+
+  nightly-desktop-e2e:
+    name: Nightly Desktop E2E (${{ matrix.os }})
+    if: github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-26
+            device: macos
+          - os: windows-2025
+            device: windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: flutter test integration_test/debug_e2e_test.dart -d ${{ matrix.device }}
+        working-directory: apps/coder_app
+
+  nightly-android-smoke:
+    name: Nightly Android Smoke
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          script: >-
+            cd apps/coder_app &&
+            flutter test integration_test/remote_bootstrap_smoke_test.dart
+            -d emulator-5554
+
+  nightly-ios-smoke:
+    name: Nightly iOS Smoke
+    if: github.event_name == 'schedule'
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - name: Boot an iOS simulator
+        run: |
+          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for values in data["devices"].values() for d in values if d["isAvailable"] and "iPhone" in d["name"]))')
+          xcrun simctl boot "$device_id" || true
+          echo "IOS_DEVICE_ID=$device_id" >> "$GITHUB_ENV"
+      - run: flutter test integration_test/remote_bootstrap_smoke_test.dart -d "$IOS_DEVICE_ID"
+        working-directory: apps/coder_app

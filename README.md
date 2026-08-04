@@ -48,6 +48,9 @@ flutter run -d linux -t lib/main_desktop.dart
 flutter run -t lib/main_mobile.dart
 ```
 
+Release builds, packaging, and the winget and Homebrew channels are described
+in [`docs/releasing.md`](docs/releasing.md).
+
 The daemon intentionally does not implement TLS or certificate bypasses. Keep
 it bound to loopback when terminating TLS in a local reverse proxy. Binding to
 all interfaces exposes the plain daemon port, which must be isolated by the
