@@ -146,6 +146,9 @@ enum ChatToolGlyph {
   /// Tool discovery.
   tools,
 
+  /// Time and waiting.
+  clock,
+
   /// Images loaded into the model context.
   image,
 
@@ -426,6 +429,33 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
           ? _genericResult(l10n, output)
           : answers.join(', ');
     },
+  ),
+  'current_time': _ToolSpec(
+    glyph: ChatToolGlyph.clock,
+    title: (l10n, activity) => 'Now()',
+    result: (l10n, activity, output) =>
+        output is ChatToolJsonObject && output.value['utc'] is String
+        ? output.value['utc']! as String
+        : _genericResult(l10n, output),
+  ),
+  // A running sleep renders as its own countdown card; this only draws one
+  // that failed or was denied.
+  'sleep': _ToolSpec(
+    glyph: ChatToolGlyph.clock,
+    title: (l10n, activity) {
+      final milliseconds = activity.arguments['duration_ms'];
+      return milliseconds is int ? 'Sleep(${milliseconds}ms)' : 'Sleep()';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final slept = output.value['sleptMs'];
+      return slept is int
+          ? l10n.chatSleepDone((slept / 1000).ceil())
+          : _genericResult(l10n, output);
+    },
+    isFailure: _hasErrorKey,
   ),
   'tool_search': _ToolSpec(
     glyph: ChatToolGlyph.tools,

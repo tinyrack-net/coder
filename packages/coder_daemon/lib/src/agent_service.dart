@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/agent_clock.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
 import 'package:coder_daemon/src/ports.dart';
@@ -63,6 +64,9 @@ class SessionService {
       <String, Completer<ApprovalDecision>>{};
   final Map<String, Completer<List<UserAnswer>>> _pendingQuestions =
       <String, Completer<List<UserAnswer>>>{};
+  final Map<String, Completer<void>> _pendingInput =
+      <String, Completer<void>>{};
+  final Set<String> _notedInput = <String>{};
   final Map<String, Completer<AgentRunResult>> _turnCompletions =
       <String, Completer<AgentRunResult>>{};
 
@@ -101,6 +105,9 @@ class SessionService {
     if (!created) return false;
 
     final cancellation = CancellationToken();
+    // Starting a turn consumes whatever the client had queued, so a stale
+    // notice cannot shorten a later wait.
+    _notedInput.remove(sessionId);
     _activeTurns[sessionId] = cancellation;
     if (trackCompletion) {
       _turnCompletions[turnId] = Completer<AgentRunResult>();
@@ -139,6 +146,11 @@ class SessionService {
       _emitSession(updated);
     }
 
+    final agentClock = SessionAgentClock(
+      clock: _clock,
+      sessionId: sessionId,
+      pendingInput: pendingInput,
+    );
     final permissionMode = await _effectivePermission(session, definition);
     // Skills resolve against the worktree, so a branch carries the project
     // skills that were committed to it.
@@ -146,6 +158,8 @@ class SessionService {
     final skillSummaries = skills.summaries();
     final tools = <AgentTool>[
       ..._toolsFactory(definition.toolIds, worktree.path, sessionId, turnId),
+      CurrentTimeTool(clock: agentClock),
+      SleepTool(clock: agentClock),
       AskUserTool(
         coordinator: _DatabaseUserQuestionCoordinator(
           timeline: _timeline,
@@ -410,6 +424,28 @@ class SessionService {
       data: <String, dynamic>{'approvalId': approval.id, 'status': status.name},
     );
     return approval;
+  }
+
+  /// Completes once the client queues input for [sessionId].
+  ///
+  /// Waiters share one completer, so a single notice wakes every sleeping
+  /// tool in that session and a fresh completer takes its place.
+  /// The notice is sticky: a client that queues something before the agent
+  /// starts waiting would otherwise have its signal dropped, and the next
+  /// sleep would run its full duration.
+  Future<void> pendingInput(String sessionId) {
+    if (_notedInput.remove(sessionId)) return Future<void>.value();
+    return _pendingInput.putIfAbsent(sessionId, Completer<void>.new).future;
+  }
+
+  /// Reports that the client has something queued for [sessionId].
+  ///
+  /// Best-effort: it only shortens a wait, so a lost notice costs a longer
+  /// sleep and nothing else.
+  void notePendingInput(String sessionId) {
+    _notedInput.add(sessionId);
+    final waiting = _pendingInput.remove(sessionId);
+    if (waiting != null && !waiting.isCompleted) waiting.complete();
   }
 
   /// Answers a pending agent question and lets its turn continue.

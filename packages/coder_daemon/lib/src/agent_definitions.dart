@@ -618,6 +618,8 @@ const Set<String> alwaysOnBuiltInToolIds = <String>{
   'update_plan',
   'ask_user',
   'view_image',
+  'current_time',
+  'sleep',
 };
 
 /// How many MCP tools a turn tolerates before they are withheld.

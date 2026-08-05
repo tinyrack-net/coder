@@ -520,6 +520,14 @@ Map<String, dynamic> _$ApprovalResolveParamsDtoToJson(
   'approved': instance.approved,
 };
 
+_SessionPendingInputParamsDto _$SessionPendingInputParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionPendingInputParamsDto(sessionId: json['sessionId'] as String);
+
+Map<String, dynamic> _$SessionPendingInputParamsDtoToJson(
+  _SessionPendingInputParamsDto instance,
+) => <String, dynamic>{'sessionId': instance.sessionId};
+
 _UserQuestionAnswerParamsDto _$UserQuestionAnswerParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _UserQuestionAnswerParamsDto(

@@ -1239,6 +1239,20 @@ class ConversationController extends _$ConversationController {
         ],
       ),
     );
+    // Best-effort: it only shortens a sleeping agent's wait, so a failure
+    // costs a longer wait and nothing else.
+    unawaited(_notePendingInput());
+  }
+
+  Future<void> _notePendingInput() async {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    try {
+      final api = await _requireHostApi(ref, hostId);
+      await api.notePendingInput(sessionId);
+    } on Object {
+      // Not state, so a lost notice is not worth surfacing.
+    }
   }
 
   /// Removes one waiting prompt and returns it, so it can be edited again.

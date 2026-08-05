@@ -442,6 +442,47 @@ void main() {
   );
 
   test(
+    'the clock tools read as time, and a finished sleep as a duration',
+    tags: const <String>['feature_test__tool_clock__widget'],
+    () {
+      final now = describeToolActivity(
+        testL10n,
+        activity(
+          'current_time',
+          output: '{"utc":"2026-08-05T14:23:01.000Z","unixSeconds":1785508981}',
+        ),
+      );
+      expect(now.glyph, ChatToolGlyph.clock);
+      expect(chatToolIcon(now.glyph), CoderIcons.time);
+      expect(now.title, 'Now()');
+      expect(now.resultLine, '2026-08-05T14:23:01.000Z');
+
+      // A running sleep is its own card; this spec only draws the leftovers.
+      final slept = describeToolActivity(
+        testL10n,
+        activity(
+          'sleep',
+          arguments: const <String, dynamic>{'duration_ms': 2500},
+          output: '{"sleptMs":2500,"outcome":"elapsed"}',
+        ),
+      );
+      expect(slept.title, 'Sleep(2500ms)');
+      expect(slept.resultLine, '3초 대기함');
+
+      final rejected = describeToolActivity(
+        testL10n,
+        activity(
+          'sleep',
+          output: '{"error":"duration_ms must be an integer."}',
+          isError: true,
+        ),
+      );
+      expect(rejected.title, 'Sleep()');
+      expect(rejected.isFailure, isTrue);
+    },
+  );
+
+  test(
     'tool_search reports what it loaded and what stays hidden',
     tags: const <String>['feature_test__tool_search_deferred__widget'],
     () {

@@ -923,6 +923,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get chatSleepWaiting => 'Waiting';
+
+  @override
+  String chatSleepRemaining(int seconds) {
+    return '${seconds}s left';
+  }
+
+  @override
+  String chatSleepDone(int seconds) {
+    return 'Waited ${seconds}s';
+  }
+
+  @override
   String toolSearchFound(int found, int remaining) {
     return '$found loaded · $remaining still hidden';
   }

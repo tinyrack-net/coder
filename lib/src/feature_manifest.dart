@@ -518,9 +518,12 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'conversation.turn.queue',
     description:
-        'Queues prompts typed during a turn and starts them as it finishes.',
+        'Queues prompts typed during a turn, starts them as it finishes, and '
+        'tells the daemon so a sleeping agent wakes early.',
+    apiMethods: <String>['notePendingInput'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
       FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
     },
@@ -551,6 +554,17 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Runs and drives interactive pseudo-terminal sessions inside a turn, '
         'with scoped session lifetime and per-session approval.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'tool.clock',
+    description:
+        'Reports the current UTC time and pauses a turn, ending the pause '
+        'early when the user queues new input.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.verticalSlice,

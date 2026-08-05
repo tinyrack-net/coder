@@ -223,6 +223,32 @@ final class ChatNotice extends ChatItem {
   final int? toolRounds;
 }
 
+/// One `sleep` call, rendered as a countdown rather than a tool row.
+final class ChatSleep extends ChatItem {
+  /// Creates a sleep item.
+  const ChatSleep({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+    required this.duration,
+    required this.startedAt,
+    required this.isRunning,
+    this.reason,
+  });
+
+  /// How long the agent asked to wait.
+  final Duration duration;
+
+  /// When the request was recorded, so elapsed time is recomputed on replay.
+  final DateTime startedAt;
+
+  /// Whether the wait is still in progress.
+  final bool isRunning;
+
+  /// What the agent said it was waiting for.
+  final String? reason;
+}
+
 /// A notice that some tools were withheld from the model's tool list.
 final class ChatDeferredTools extends ChatItem {
   /// Creates a deferred-tools notice.
@@ -281,6 +307,7 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
   final openAssistant = <String?, _AssistantBuilder>{};
   final openTools = <String, _ToolBuilder>{};
   final openPlans = <String, _PlanBuilder>{};
+  final openSleeps = <String, _SleepBuilder>{};
   final terminatedTurns = <String?>{};
 
   void closeAssistant(String? turnId) => openAssistant.remove(turnId);
@@ -355,6 +382,23 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
             continue;
           }
         }
+        if (_string(event.data['name']) == 'sleep' &&
+            !openSleeps.containsKey('$turnId/$callId')) {
+          final arguments = _map(event.data['arguments']);
+          final milliseconds = arguments['duration_ms'];
+          if (milliseconds is int && milliseconds > 0) {
+            final builder = _SleepBuilder(
+              key: 'sleep-$callId-${event.sequence}',
+              turnId: turnId,
+              createdAt: event.createdAt,
+              duration: Duration(milliseconds: milliseconds),
+              reason: _string(arguments['reason']),
+            );
+            openSleeps['$turnId/$callId'] = builder;
+            builders.add(builder);
+            continue;
+          }
+        }
         final existing = openTools['$turnId/$callId'];
         if (existing != null && existing.status == ChatToolStatus.running) {
           continue;
@@ -390,6 +434,11 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           'tool.failed' => ChatToolStatus.failed,
           _ => ChatToolStatus.denied,
         };
+        final sleep = openSleeps['$turnId/$callId'];
+        if (sleep != null) {
+          sleep.finish();
+          continue;
+        }
         final plan = openPlans['$turnId/$callId'];
         if (plan != null) {
           if (status != ChatToolStatus.succeeded ||
@@ -689,6 +738,41 @@ final class _PlanBuilder extends _ChatItemBuilder {
       ),
     ];
   }
+}
+
+final class _SleepBuilder extends _ChatItemBuilder {
+  _SleepBuilder({
+    required this.key,
+    required this.turnId,
+    required this.createdAt,
+    required this.duration,
+    required this.reason,
+  });
+
+  final String key;
+
+  @override
+  final String? turnId;
+
+  final DateTime createdAt;
+  final Duration duration;
+  final String? reason;
+  bool _running = true;
+
+  void finish() => _running = false;
+
+  @override
+  List<ChatItem> build({required bool isStreaming}) => <ChatItem>[
+    ChatSleep(
+      key: key,
+      turnId: turnId,
+      createdAt: createdAt,
+      duration: duration,
+      startedAt: createdAt,
+      isRunning: _running,
+      reason: reason,
+    ),
+  ];
 }
 
 final class _ToolBuilder extends _ChatItemBuilder {

@@ -197,6 +197,9 @@ abstract final class RpcMethod {
   /// Answers a pending agent question and unblocks its turn.
   static const String userQuestionAnswer = 'userQuestion.answer';
 
+  /// Reports that the client has queued input for a session.
+  static const String sessionPendingInput = 'session.pendingInput';
+
   /// The timelineSubscribe public API member.
   static const String timelineSubscribe = 'timeline.subscribe';
 }

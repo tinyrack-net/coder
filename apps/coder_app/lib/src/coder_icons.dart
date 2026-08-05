@@ -183,6 +183,9 @@ abstract final class CoderIcons {
   /// Semantic Lucide glyph.
   static const IconData queue = LucideIcons.clock;
 
+  /// Reading the time and waiting on it.
+  static const IconData time = LucideIcons.timer;
+
   /// Semantic Lucide glyph.
   static const IconData checklist = LucideIcons.listChecks;
 

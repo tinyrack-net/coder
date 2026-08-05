@@ -1122,6 +1122,20 @@
     "description": "Result line while a pseudo-terminal session is still running.",
     "placeholders": {"lines": {"type": "int"}}
   },
+  "chatSleepWaiting": "Waiting",
+  "@chatSleepWaiting": {
+    "description": "Label of the sleep countdown card."
+  },
+  "chatSleepRemaining": "{seconds}s left",
+  "@chatSleepRemaining": {
+    "description": "Remaining time on the sleep countdown.",
+    "placeholders": {"seconds": {"type": "int"}}
+  },
+  "chatSleepDone": "Waited {seconds}s",
+  "@chatSleepDone": {
+    "description": "Shown once a sleep has finished.",
+    "placeholders": {"seconds": {"type": "int"}}
+  },
   "toolSearchFound": "{found} loaded · {remaining} still hidden",
   "@toolSearchFound": {
     "description": "Result line of a tool_search call.",

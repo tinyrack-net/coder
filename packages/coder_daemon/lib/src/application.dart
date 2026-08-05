@@ -176,6 +176,22 @@ abstract final class DaemonApplication {
             alwaysOn: true,
           ),
           const AgentToolDefinitionDto(
+            id: 'current_time',
+            name: 'current_time',
+            description: 'Get the current time in UTC.',
+            risk: ToolRisk.read,
+            alwaysOn: true,
+          ),
+          const AgentToolDefinitionDto(
+            id: 'sleep',
+            name: 'sleep',
+            description:
+                'Pause before checking something again; ends early on new '
+                'user input.',
+            risk: ToolRisk.read,
+            alwaysOn: true,
+          ),
+          const AgentToolDefinitionDto(
             id: 'list_mcp_resources',
             name: 'list_mcp_resources',
             description:

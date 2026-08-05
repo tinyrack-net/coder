@@ -162,3 +162,4 @@ tags:
   feature_test__tool_context_budget__widget:
   feature_test__mcp_resource_access__widget:
   feature_test__tool_search_deferred__widget:
+  feature_test__tool_clock__widget:

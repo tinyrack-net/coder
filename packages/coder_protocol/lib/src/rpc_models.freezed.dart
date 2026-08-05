@@ -9521,6 +9521,269 @@ as bool,
 
 
 /// @nodoc
+mixin _$SessionPendingInputParamsDto {
+
+ String get sessionId;
+/// Create a copy of SessionPendingInputParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SessionPendingInputParamsDtoCopyWith<SessionPendingInputParamsDto> get copyWith => _$SessionPendingInputParamsDtoCopyWithImpl<SessionPendingInputParamsDto>(this as SessionPendingInputParamsDto, _$identity);
+
+  /// Serializes this SessionPendingInputParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionPendingInputParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId);
+
+@override
+String toString() {
+  return 'SessionPendingInputParamsDto(sessionId: $sessionId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SessionPendingInputParamsDtoCopyWith<$Res>  {
+  factory $SessionPendingInputParamsDtoCopyWith(SessionPendingInputParamsDto value, $Res Function(SessionPendingInputParamsDto) _then) = _$SessionPendingInputParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SessionPendingInputParamsDtoCopyWithImpl<$Res>
+    implements $SessionPendingInputParamsDtoCopyWith<$Res> {
+  _$SessionPendingInputParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SessionPendingInputParamsDto _self;
+  final $Res Function(SessionPendingInputParamsDto) _then;
+
+/// Create a copy of SessionPendingInputParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SessionPendingInputParamsDto].
+extension SessionPendingInputParamsDtoPatterns on SessionPendingInputParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionPendingInputParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SessionPendingInputParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionPendingInputParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SessionPendingInputParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionPendingInputParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SessionPendingInputParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SessionPendingInputParamsDto() when $default != null:
+return $default(_that.sessionId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId)  $default,) {final _that = this;
+switch (_that) {
+case _SessionPendingInputParamsDto():
+return $default(_that.sessionId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId)?  $default,) {final _that = this;
+switch (_that) {
+case _SessionPendingInputParamsDto() when $default != null:
+return $default(_that.sessionId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SessionPendingInputParamsDto implements SessionPendingInputParamsDto {
+  const _SessionPendingInputParamsDto({required this.sessionId});
+  factory _SessionPendingInputParamsDto.fromJson(Map<String, dynamic> json) => _$SessionPendingInputParamsDtoFromJson(json);
+
+@override final  String sessionId;
+
+/// Create a copy of SessionPendingInputParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SessionPendingInputParamsDtoCopyWith<_SessionPendingInputParamsDto> get copyWith => __$SessionPendingInputParamsDtoCopyWithImpl<_SessionPendingInputParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SessionPendingInputParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionPendingInputParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId);
+
+@override
+String toString() {
+  return 'SessionPendingInputParamsDto(sessionId: $sessionId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SessionPendingInputParamsDtoCopyWith<$Res> implements $SessionPendingInputParamsDtoCopyWith<$Res> {
+  factory _$SessionPendingInputParamsDtoCopyWith(_SessionPendingInputParamsDto value, $Res Function(_SessionPendingInputParamsDto) _then) = __$SessionPendingInputParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId
+});
+
+
+
+
+}
+/// @nodoc
+class __$SessionPendingInputParamsDtoCopyWithImpl<$Res>
+    implements _$SessionPendingInputParamsDtoCopyWith<$Res> {
+  __$SessionPendingInputParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SessionPendingInputParamsDto _self;
+  final $Res Function(_SessionPendingInputParamsDto) _then;
+
+/// Create a copy of SessionPendingInputParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,}) {
+  return _then(_SessionPendingInputParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$UserQuestionAnswerParamsDto {
 
  String get requestId; List<UserQuestionAnswerDto> get answers;

@@ -1742,6 +1742,24 @@ abstract class AppLocalizations {
   /// **'running · {lines} lines'**
   String toolExecRunning(int lines);
 
+  /// Label of the sleep countdown card.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get chatSleepWaiting;
+
+  /// Remaining time on the sleep countdown.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s left'**
+  String chatSleepRemaining(int seconds);
+
+  /// Shown once a sleep has finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Waited {seconds}s'**
+  String chatSleepDone(int seconds);
+
   /// Result line of a tool_search call.
   ///
   /// In en, this message translates to:

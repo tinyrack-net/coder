@@ -907,6 +907,19 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get chatSleepWaiting => '대기 중';
+
+  @override
+  String chatSleepRemaining(int seconds) {
+    return '$seconds초 남음';
+  }
+
+  @override
+  String chatSleepDone(int seconds) {
+    return '$seconds초 대기함';
+  }
+
+  @override
   String toolSearchFound(int found, int remaining) {
     return '$found개 로드 · $remaining개 남음';
   }

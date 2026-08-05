@@ -526,6 +526,19 @@ abstract class ApprovalResolveParamsDto with _$ApprovalResolveParamsDto {
 }
 
 @freezed
+/// Announces that the client has a prompt waiting for one session.
+abstract class SessionPendingInputParamsDto
+    with _$SessionPendingInputParamsDto {
+  /// Creates a [SessionPendingInputParamsDto].
+  const factory SessionPendingInputParamsDto({required String sessionId}) =
+      _SessionPendingInputParamsDto;
+
+  /// Decodes a [SessionPendingInputParamsDto].
+  factory SessionPendingInputParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionPendingInputParamsDtoFromJson(json);
+}
+
+@freezed
 /// Answers to every question of one pending [UserQuestionRequestDto].
 abstract class UserQuestionAnswerParamsDto with _$UserQuestionAnswerParamsDto {
   /// The UserQuestionAnswerParamsDto public API member.
