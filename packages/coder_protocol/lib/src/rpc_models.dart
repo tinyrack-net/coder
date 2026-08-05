@@ -63,6 +63,35 @@ abstract class DirectorySuggestParamsDto with _$DirectorySuggestParamsDto {
 }
 
 @freezed
+/// Searches one worktree for files a composer mention can reference.
+abstract class FileSearchParamsDto with _$FileSearchParamsDto {
+  /// Creates file search parameters.
+  ///
+  /// An empty [query] asks for the head of the index rather than no results.
+  const factory FileSearchParamsDto({
+    required String worktreeId,
+    required String query,
+    @Default(50) int limit,
+  }) = _FileSearchParamsDto;
+
+  /// Decodes file search parameters.
+  factory FileSearchParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$FileSearchParamsDtoFromJson(json);
+}
+
+@freezed
+/// Scopes an agent command request to the global sources plus one workspace.
+abstract class CommandListParamsDto with _$CommandListParamsDto {
+  /// Creates command list parameters.
+  const factory CommandListParamsDto({String? workspaceId}) =
+      _CommandListParamsDto;
+
+  /// Decodes command list parameters.
+  factory CommandListParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$CommandListParamsDtoFromJson(json);
+}
+
+@freezed
 /// Requests local branches for one Git workspace.
 abstract class GitBranchesListParamsDto with _$GitBranchesListParamsDto {
   /// Creates branch-list parameters.
@@ -620,6 +649,23 @@ abstract class DirectorySuggestResultDto with _$DirectorySuggestResultDto {
 }
 
 @freezed
+/// Result of a worktree file search.
+abstract class FileSearchResultDto with _$FileSearchResultDto {
+  /// Creates file matches.
+  ///
+  /// [truncated] reports that indexing stopped at its entry budget, so the
+  /// worktree holds files this search could never rank.
+  const factory FileSearchResultDto({
+    required List<FileMatchDto> matches,
+    @Default(false) bool truncated,
+  }) = _FileSearchResultDto;
+
+  /// Decodes file matches.
+  factory FileSearchResultDto.fromJson(Map<String, dynamic> json) =>
+      _$FileSearchResultDtoFromJson(json);
+}
+
+@freezed
 /// Result containing local Git branches.
 abstract class GitBranchesListResultDto with _$GitBranchesListResultDto {
   /// Creates a branch-list result.
@@ -996,6 +1042,19 @@ abstract class SkillListResultDto with _$SkillListResultDto {
   /// Decodes a skill list result.
   factory SkillListResultDto.fromJson(Map<String, dynamic> json) =>
       _$SkillListResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns every agent command visible in one scope.
+abstract class CommandListResultDto with _$CommandListResultDto {
+  /// Creates a command list result.
+  const factory CommandListResultDto({
+    required List<AgentCommandDto> commands,
+  }) = _CommandListResultDto;
+
+  /// Decodes a command list result.
+  factory CommandListResultDto.fromJson(Map<String, dynamic> json) =>
+      _$CommandListResultDtoFromJson(json);
 }
 
 @freezed

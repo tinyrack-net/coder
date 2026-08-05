@@ -535,6 +535,26 @@ abstract class DirectorySuggestionDto with _$DirectorySuggestionDto {
 }
 
 @freezed
+/// One worktree entry matched by a composer file mention search.
+abstract class FileMatchDto with _$FileMatchDto {
+  /// Creates a file match.
+  ///
+  /// [relativePath] is POSIX separated and relative to the worktree root so a
+  /// mention stays stable when the same worktree is opened from another host.
+  const factory FileMatchDto({
+    required String relativePath,
+    required String absolutePath,
+    required String name,
+    required bool isDirectory,
+    @Default(0) int score,
+  }) = _FileMatchDto;
+
+  /// Decodes a file match.
+  factory FileMatchDto.fromJson(Map<String, dynamic> json) =>
+      _$FileMatchDtoFromJson(json);
+}
+
+@freezed
 /// One local branch available to a workspace.
 abstract class GitBranchDto with _$GitBranchDto {
   /// Creates a Git branch descriptor.
@@ -764,6 +784,40 @@ abstract class McpServerStateDto with _$McpServerStateDto {
   /// Decodes an MCP server state.
   factory McpServerStateDto.fromJson(Map<String, dynamic> json) =>
       _$McpServerStateDtoFromJson(json);
+}
+
+/// Where one agent command was loaded from, ordered by ascending precedence.
+enum AgentCommandSource {
+  /// Lives in the shared `~/.agents/commands` tree.
+  userHome,
+
+  /// Lives in the daemon configuration directory.
+  config,
+
+  /// Lives in `<workspace root>/.agents/commands`.
+  project,
+}
+
+@freezed
+/// One Markdown-defined command the composer offers behind `/`.
+abstract class AgentCommandDto with _$AgentCommandDto {
+  /// Creates an agent command.
+  ///
+  /// [body] is the prompt template sent in place of the typed command, and
+  /// [argumentHint] documents the trailing arguments the template expects.
+  const factory AgentCommandDto({
+    required String id,
+    required String name,
+    required String description,
+    required AgentCommandSource source,
+    required String sourcePath,
+    required String body,
+    String? argumentHint,
+  }) = _AgentCommandDto;
+
+  /// Decodes an agent command.
+  factory AgentCommandDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentCommandDtoFromJson(json);
 }
 
 /// Where one skill was loaded from, ordered by ascending precedence.

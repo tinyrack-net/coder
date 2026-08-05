@@ -2224,6 +2224,191 @@ void main() {
       );
     },
   );
+
+  test(
+    'composer file search honours gitignore over a real daemon',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-mention-home-');
+      final repository = Directory(
+        await (await Directory.systemTemp.createTemp(
+          'coder-mention-repository-',
+        )).resolveSymbolicLinks(),
+      );
+      await _runGit(repository.path, <String>['init', '-b', 'main']);
+      await File(p.join(repository.path, '.gitignore')).writeAsString(
+        'secrets.env\n',
+      );
+      await Directory(p.join(repository.path, 'lib')).create(recursive: true);
+      await File(
+        p.join(repository.path, 'lib', 'composer.dart'),
+      ).writeAsString('// composer\n');
+      await File(
+        p.join(repository.path, 'secrets.env'),
+      ).writeAsString('TOKEN=nope\n');
+
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'mention-token-0123456789abcdef0123456789',
+          useEnvironmentCredentials: false,
+        ),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await repository.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: DaemonCredentials(bearerToken: handle.bearerToken),
+        clientId: 'mention-vertical-slice',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'mention-workspace',
+        checkoutId: 'mention-checkout',
+        rootPath: repository.path,
+        name: 'Mention fixture',
+      );
+      final worktreeId = registered.worktrees.single.id;
+
+      final matched = await client.searchFiles(
+        worktreeId: worktreeId,
+        query: 'composer',
+      );
+      expect(
+        matched.matches.map((match) => match.relativePath),
+        contains('lib/composer.dart'),
+      );
+      expect(matched.matches.single.absolutePath, startsWith(repository.path));
+
+      final everything = await client.searchFiles(
+        worktreeId: worktreeId,
+        query: '',
+      );
+      expect(
+        everything.matches.map((match) => match.relativePath),
+        isNot(contains('secrets.env')),
+      );
+      expect(
+        everything.matches.map((match) => match.relativePath),
+        contains('.gitignore'),
+      );
+
+      await expectLater(
+        client.searchFiles(worktreeId: 'missing', query: 'composer'),
+        throwsA(isA<Exception>()),
+      );
+    },
+    tags: const <String>['feature_test__composer_file_mention__verticalSlice'],
+  );
+
+  test(
+    'agent commands merge across sources and follow disk changes',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-command-home-');
+      final agentsHome = await Directory.systemTemp.createTemp(
+        'coder-command-agents-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-command-workspace-',
+      );
+      const bearerToken = 'command-token-0123456789abcdef0123456789';
+      addTearDown(() async {
+        await home.delete(recursive: true);
+        await agentsHome.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+
+      await _writeCommand(
+        p.join(agentsHome.path, '.agents', 'commands'),
+        name: 'review',
+        description: 'From the user home.',
+        body: 'Global review.',
+      );
+      await _writeCommand(
+        p.join(workspace.path, '.agents', 'commands'),
+        name: 'review',
+        description: 'From the project.',
+        body: r'Review $ARGUMENTS.',
+        argumentHint: '<path>',
+      );
+
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          userHomeDirectory: agentsHome.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+      );
+      addTearDown(handle.stop);
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'command-vertical-slice',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final global = await client.listCommands();
+      expect(global.single.name, 'review');
+      expect(global.single.description, 'From the user home.');
+      expect(global.single.source, AgentCommandSource.userHome);
+
+      await client.registerWorkspace(
+        workspaceId: 'command-workspace',
+        checkoutId: 'command-checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final scoped = await client.listCommands(
+        workspaceId: 'command-workspace',
+      );
+      expect(scoped.single.source, AgentCommandSource.project);
+      expect(scoped.single.description, 'From the project.');
+      expect(scoped.single.argumentHint, '<path>');
+      expect(scoped.single.body, r'Review $ARGUMENTS.');
+
+      final changed = client.events
+          .where((event) => event is CommandsChangedClientEvent)
+          .first;
+      await _writeCommand(
+        p.join(agentsHome.path, '.agents', 'commands'),
+        name: 'ship',
+        description: 'Ships the branch.',
+        body: 'Ship it.',
+      );
+      await changed.timeout(const Duration(seconds: 10));
+
+      expect(
+        (await client.listCommands()).map((command) => command.name),
+        containsAll(<String>['review', 'ship']),
+      );
+    },
+    tags: const <String>['feature_test__composer_slash_command__verticalSlice'],
+  );
+}
+
+Future<void> _writeCommand(
+  String directory, {
+  required String name,
+  required String description,
+  required String body,
+  String? argumentHint,
+}) async {
+  await Directory(directory).create(recursive: true);
+  await File(p.join(directory, '$name.md')).writeAsString(
+    '---\n'
+    'description: $description\n'
+    '${argumentHint == null ? '' : 'argument-hint: $argumentHint\n'}'
+    '---\n\n'
+    '$body\n',
+  );
 }
 
 /// Provider that answers every turn with one assistant message.

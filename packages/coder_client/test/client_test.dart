@@ -359,6 +359,21 @@ void main() {
       );
       await client.unregisterWorkspace(workspace.id);
       expect(await client.suggestDirectories('work'), isNotEmpty);
+      final search = await client.searchFiles(
+        worktreeId: 'worktree-1',
+        query: 'app',
+      );
+      expect(search.matches.single.relativePath, 'lib/app.dart');
+      expect(search.truncated, isTrue);
+      expect(
+        connector.requests
+            .lastWhere((request) => request.method == RpcMethod.fileSearch)
+            .payload,
+        const FileSearchParamsDto(
+          worktreeId: 'worktree-1',
+          query: 'app',
+        ).toJson(),
+      );
       expect(await client.listGitBranches(workspace.id), isNotEmpty);
       expect(
         await client.createWorktree(
@@ -513,6 +528,17 @@ void main() {
       await client.removeMcpServer('github');
       expect(await client.testMcpServer(mcpServer.config), mcpServer);
       await client.setMcpSecret('github.token', 'secret');
+      expect((await client.listCommands()).single.name, 'review');
+      expect(
+        (await client.listCommands(workspaceId: 'workspace')).single.source,
+        AgentCommandSource.project,
+      );
+      expect(
+        connector.requests
+            .lastWhere((request) => request.method == RpcMethod.commandList)
+            .payload,
+        const CommandListParamsDto(workspaceId: 'workspace').toJson(),
+      );
       expect(await client.listSkills(), <SkillDto>[skill]);
       expect(
         await client.listSkills(workspaceId: 'workspace'),
@@ -629,6 +655,10 @@ void main() {
           const <String, dynamic>{},
         )
         ..sendNotification(
+          RpcNotification.commandsChanged,
+          const <String, dynamic>{},
+        )
+        ..sendNotification(
           RpcNotification.approvalRequested,
           approval.toJson(),
         )
@@ -664,6 +694,7 @@ void main() {
         hasLength(1),
       );
       expect(events.whereType<SkillsChangedClientEvent>(), hasLength(1));
+      expect(events.whereType<CommandsChangedClientEvent>(), hasLength(1));
       expect(
         events.whereType<ApprovalRequestedClientEvent>().single.approval,
         approval,
@@ -687,6 +718,7 @@ void main() {
           RpcMethod.workspaceRefresh,
           RpcMethod.workspaceUnregister,
           RpcMethod.directorySuggest,
+          RpcMethod.fileSearch,
           RpcMethod.gitBranchesList,
           RpcMethod.worktreeCreate,
           RpcMethod.worktreeArchivePreview,
@@ -714,6 +746,7 @@ void main() {
           RpcMethod.mcpServerRemove,
           RpcMethod.mcpServerTest,
           RpcMethod.mcpSecretSet,
+          RpcMethod.commandList,
           RpcMethod.skillList,
           RpcMethod.skillGet,
           RpcMethod.skillCreate,
@@ -757,6 +790,8 @@ void main() {
       'feature_test__agent_definition_management__contract',
       'feature_test__mcp_server_management__contract',
       'feature_test__skill_management__contract',
+      'feature_test__composer_file_mention__contract',
+      'feature_test__composer_slash_command__contract',
       'feature_test__provider_catalog__contract',
       'feature_test__provider_connection_management__contract',
       'feature_test__provider_oauth__contract',
@@ -1049,6 +1084,31 @@ void _registerFixtureMethods(
     RpcMethod.directorySuggest: const DirectorySuggestResultDto(
       suggestions: <DirectorySuggestionDto>[
         DirectorySuggestionDto(path: '/workspace', name: 'Workspace'),
+      ],
+    ).toJson(),
+    RpcMethod.fileSearch: const FileSearchResultDto(
+      matches: <FileMatchDto>[
+        FileMatchDto(
+          relativePath: 'lib/app.dart',
+          absolutePath: '/workspace/lib/app.dart',
+          name: 'app.dart',
+          isDirectory: false,
+          score: 620,
+        ),
+      ],
+      truncated: true,
+    ).toJson(),
+    RpcMethod.commandList: const CommandListResultDto(
+      commands: <AgentCommandDto>[
+        AgentCommandDto(
+          id: 'review',
+          name: 'review',
+          description: 'Reviews the working diff.',
+          source: AgentCommandSource.project,
+          sourcePath: '/workspace/.agents/commands/review.md',
+          body: 'Review the diff.',
+          argumentHint: '<path>',
+        ),
       ],
     ).toJson(),
     RpcMethod.gitBranchesList: const GitBranchesListResultDto(

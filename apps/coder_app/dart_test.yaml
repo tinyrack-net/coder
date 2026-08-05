@@ -112,6 +112,12 @@ tags:
   feature_test__terminal_lifecycle__e2e:
   feature_test__terminal_lifecycle__platformSmoke:
   feature_test__terminal_settings__widget:
+  feature_test__composer_file_mention__unit:
+  feature_test__composer_file_mention__widget:
+  feature_test__composer_file_mention__e2e:
+  feature_test__composer_slash_command__unit:
+  feature_test__composer_slash_command__widget:
+  feature_test__composer_slash_command__e2e:
   feature_test__turn_execution__unit:
   feature_test__turn_execution__widget:
   feature_test__turn_execution__e2e:

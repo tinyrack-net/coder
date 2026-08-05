@@ -26,6 +26,10 @@ tags:
   feature_test__mcp_server_management__verticalSlice:
   feature_test__mcp_tool_execution__unit:
   feature_test__mcp_tool_execution__verticalSlice:
+  feature_test__composer_file_mention__unit:
+  feature_test__composer_file_mention__verticalSlice:
+  feature_test__composer_slash_command__unit:
+  feature_test__composer_slash_command__verticalSlice:
   feature_test__skill_management__unit:
   feature_test__skill_management__verticalSlice:
   feature_test__skill_invocation__unit:

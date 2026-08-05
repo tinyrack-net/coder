@@ -97,6 +97,12 @@ final class SkillsChangedClientEvent extends ClientEvent {
   const SkillsChangedClientEvent();
 }
 
+/// Signals that the daemon's agent command catalog changed.
+final class CommandsChangedClientEvent extends ClientEvent {
+  /// Creates a command catalog invalidation event.
+  const CommandsChangedClientEvent();
+}
+
 /// ApprovalRequestedClientEvent defines a public contract.
 final class ApprovalRequestedClientEvent extends ClientEvent {
   /// Creates a [ApprovalRequestedClientEvent].
@@ -156,6 +162,15 @@ abstract interface class CoderApi {
   Future<List<DirectorySuggestionDto>> suggestDirectories(
     String query, {
     int limit = 30,
+  });
+
+  /// Searches one worktree for files a composer mention can reference.
+  ///
+  /// An empty [query] returns the head of the index rather than no results.
+  Future<FileSearchResultDto> searchFiles({
+    required String worktreeId,
+    required String query,
+    int limit = 50,
   });
 
   /// Lists local branches in one Git repository.
@@ -335,6 +350,9 @@ abstract interface class CoderApi {
 
   /// Stores one secret an MCP configuration may reference.
   Future<void> setMcpSecret(String key, String value);
+
+  /// Lists agent commands from the global sources plus one workspace.
+  Future<List<AgentCommandDto>> listCommands({String? workspaceId});
 
   /// Lists skills from the global sources plus one optional workspace.
   Future<List<SkillDto>> listSkills({String? workspaceId});

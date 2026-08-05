@@ -7,7 +7,7 @@ void main() {
   final now = DateTime.utc(2026, 8, 2);
 
   test('protocol v18 exposes terminals and existing typed contracts', () {
-    expect(coderProtocolVersion, 18);
+    expect(coderProtocolVersion, 19);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -28,6 +28,9 @@ void main() {
     expect(RpcMethod.skillDelete, 'skill.delete');
     expect(RpcMethod.skillSetEnabled, 'skill.setEnabled');
     expect(RpcNotification.skillsChanged, 'skills.changed');
+    expect(RpcMethod.fileSearch, 'file.search');
+    expect(RpcMethod.commandList, 'command.list');
+    expect(RpcNotification.commandsChanged, 'commands.changed');
     expect(RpcMethod.sessionList, 'session.list');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -556,7 +559,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 18);
+    expect(coderProtocolVersion, 19);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -1345,6 +1348,7 @@ void main() {
       ...McpTransportKind.values,
       ...McpServerStatus.values,
       ...SkillSource.values,
+      ...AgentCommandSource.values,
       ...WorkspaceKind.values,
       ...WorktreeKind.values,
       ...WorktreeCreateMode.values,
@@ -1514,6 +1518,117 @@ void main() {
       'feature_test__terminal_lifecycle__contract',
       'feature_test__terminal_settings__contract',
     ],
+  );
+
+  test(
+    'composer file mention contracts round-trip and default to a capped search',
+    () {
+      const match = FileMatchDto(
+        relativePath: 'lib/src/app.dart',
+        absolutePath: '/worktree/lib/src/app.dart',
+        name: 'app.dart',
+        isDirectory: false,
+        score: 720,
+      );
+
+      expect(
+        const FileSearchParamsDto(worktreeId: 'w', query: 'app').limit,
+        50,
+      );
+      expect(
+        const FileSearchResultDto(matches: <FileMatchDto>[]).truncated,
+        isFalse,
+      );
+      expect(
+        const FileMatchDto(
+          relativePath: 'lib',
+          absolutePath: '/worktree/lib',
+          name: 'lib',
+          isDirectory: true,
+        ).score,
+        0,
+      );
+
+      _roundTrip(match, (value) => value.toJson(), FileMatchDto.fromJson);
+      _roundTrip(
+        const FileSearchParamsDto(
+          worktreeId: 'worktree',
+          query: 'app',
+          limit: 20,
+        ),
+        (value) => value.toJson(),
+        FileSearchParamsDto.fromJson,
+      );
+      _roundTrip(
+        const FileSearchResultDto(
+          matches: <FileMatchDto>[match],
+          truncated: true,
+        ),
+        (value) => value.toJson(),
+        FileSearchResultDto.fromJson,
+      );
+
+      expect(
+        () => FileSearchParamsDto.fromJson(<String, dynamic>{'query': 'app'}),
+        throwsA(isA<TypeError>()),
+      );
+    },
+    tags: const <String>['feature_test__composer_file_mention__contract'],
+  );
+
+  test(
+    'composer slash command contracts round-trip across every command source',
+    () {
+      const command = AgentCommandDto(
+        id: 'review',
+        name: 'review',
+        description: 'Reviews the working diff.',
+        source: AgentCommandSource.project,
+        sourcePath: '/worktree/.agents/commands/review.md',
+        body: r'Review $ARGUMENTS and report defects.',
+        argumentHint: '<path>',
+      );
+
+      expect(command.argumentHint, '<path>');
+      expect(const CommandListParamsDto().workspaceId, isNull);
+      expect(AgentCommandSource.values, <AgentCommandSource>[
+        AgentCommandSource.userHome,
+        AgentCommandSource.config,
+        AgentCommandSource.project,
+      ]);
+
+      for (final source in AgentCommandSource.values) {
+        _roundTrip(
+          AgentCommandDto(
+            id: 'review',
+            name: 'review',
+            description: 'Reviews the working diff.',
+            source: source,
+            sourcePath: '/commands/review.md',
+            body: 'Review the diff.',
+          ),
+          (value) => value.toJson(),
+          AgentCommandDto.fromJson,
+        );
+      }
+
+      _roundTrip(
+        const CommandListParamsDto(workspaceId: 'workspace'),
+        (value) => value.toJson(),
+        CommandListParamsDto.fromJson,
+      );
+      _roundTrip(
+        const CommandListResultDto(commands: <AgentCommandDto>[command]),
+        (value) => value.toJson(),
+        CommandListResultDto.fromJson,
+      );
+
+      expect(
+        () => AgentCommandDto.fromJson(<String, dynamic>{'id': 'review'}),
+        throwsA(isA<TypeError>()),
+      );
+    },
+    tags: const <String>['feature_test__composer_slash_command__contract'],
   );
 }
 

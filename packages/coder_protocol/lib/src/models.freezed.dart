@@ -3107,6 +3107,281 @@ as String,
 
 
 /// @nodoc
+mixin _$FileMatchDto {
+
+ String get relativePath; String get absolutePath; String get name; bool get isDirectory; int get score;
+/// Create a copy of FileMatchDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileMatchDtoCopyWith<FileMatchDto> get copyWith => _$FileMatchDtoCopyWithImpl<FileMatchDto>(this as FileMatchDto, _$identity);
+
+  /// Serializes this FileMatchDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileMatchDto&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.absolutePath, absolutePath) || other.absolutePath == absolutePath)&&(identical(other.name, name) || other.name == name)&&(identical(other.isDirectory, isDirectory) || other.isDirectory == isDirectory)&&(identical(other.score, score) || other.score == score));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,relativePath,absolutePath,name,isDirectory,score);
+
+@override
+String toString() {
+  return 'FileMatchDto(relativePath: $relativePath, absolutePath: $absolutePath, name: $name, isDirectory: $isDirectory, score: $score)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileMatchDtoCopyWith<$Res>  {
+  factory $FileMatchDtoCopyWith(FileMatchDto value, $Res Function(FileMatchDto) _then) = _$FileMatchDtoCopyWithImpl;
+@useResult
+$Res call({
+ String relativePath, String absolutePath, String name, bool isDirectory, int score
+});
+
+
+
+
+}
+/// @nodoc
+class _$FileMatchDtoCopyWithImpl<$Res>
+    implements $FileMatchDtoCopyWith<$Res> {
+  _$FileMatchDtoCopyWithImpl(this._self, this._then);
+
+  final FileMatchDto _self;
+  final $Res Function(FileMatchDto) _then;
+
+/// Create a copy of FileMatchDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? relativePath = null,Object? absolutePath = null,Object? name = null,Object? isDirectory = null,Object? score = null,}) {
+  return _then(_self.copyWith(
+relativePath: null == relativePath ? _self.relativePath : relativePath // ignore: cast_nullable_to_non_nullable
+as String,absolutePath: null == absolutePath ? _self.absolutePath : absolutePath // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,isDirectory: null == isDirectory ? _self.isDirectory : isDirectory // ignore: cast_nullable_to_non_nullable
+as bool,score: null == score ? _self.score : score // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FileMatchDto].
+extension FileMatchDtoPatterns on FileMatchDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileMatchDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileMatchDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileMatchDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileMatchDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileMatchDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileMatchDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String relativePath,  String absolutePath,  String name,  bool isDirectory,  int score)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileMatchDto() when $default != null:
+return $default(_that.relativePath,_that.absolutePath,_that.name,_that.isDirectory,_that.score);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String relativePath,  String absolutePath,  String name,  bool isDirectory,  int score)  $default,) {final _that = this;
+switch (_that) {
+case _FileMatchDto():
+return $default(_that.relativePath,_that.absolutePath,_that.name,_that.isDirectory,_that.score);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String relativePath,  String absolutePath,  String name,  bool isDirectory,  int score)?  $default,) {final _that = this;
+switch (_that) {
+case _FileMatchDto() when $default != null:
+return $default(_that.relativePath,_that.absolutePath,_that.name,_that.isDirectory,_that.score);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileMatchDto implements FileMatchDto {
+  const _FileMatchDto({required this.relativePath, required this.absolutePath, required this.name, required this.isDirectory, this.score = 0});
+  factory _FileMatchDto.fromJson(Map<String, dynamic> json) => _$FileMatchDtoFromJson(json);
+
+@override final  String relativePath;
+@override final  String absolutePath;
+@override final  String name;
+@override final  bool isDirectory;
+@override@JsonKey() final  int score;
+
+/// Create a copy of FileMatchDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileMatchDtoCopyWith<_FileMatchDto> get copyWith => __$FileMatchDtoCopyWithImpl<_FileMatchDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileMatchDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileMatchDto&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.absolutePath, absolutePath) || other.absolutePath == absolutePath)&&(identical(other.name, name) || other.name == name)&&(identical(other.isDirectory, isDirectory) || other.isDirectory == isDirectory)&&(identical(other.score, score) || other.score == score));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,relativePath,absolutePath,name,isDirectory,score);
+
+@override
+String toString() {
+  return 'FileMatchDto(relativePath: $relativePath, absolutePath: $absolutePath, name: $name, isDirectory: $isDirectory, score: $score)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileMatchDtoCopyWith<$Res> implements $FileMatchDtoCopyWith<$Res> {
+  factory _$FileMatchDtoCopyWith(_FileMatchDto value, $Res Function(_FileMatchDto) _then) = __$FileMatchDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String relativePath, String absolutePath, String name, bool isDirectory, int score
+});
+
+
+
+
+}
+/// @nodoc
+class __$FileMatchDtoCopyWithImpl<$Res>
+    implements _$FileMatchDtoCopyWith<$Res> {
+  __$FileMatchDtoCopyWithImpl(this._self, this._then);
+
+  final _FileMatchDto _self;
+  final $Res Function(_FileMatchDto) _then;
+
+/// Create a copy of FileMatchDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? relativePath = null,Object? absolutePath = null,Object? name = null,Object? isDirectory = null,Object? score = null,}) {
+  return _then(_FileMatchDto(
+relativePath: null == relativePath ? _self.relativePath : relativePath // ignore: cast_nullable_to_non_nullable
+as String,absolutePath: null == absolutePath ? _self.absolutePath : absolutePath // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,isDirectory: null == isDirectory ? _self.isDirectory : isDirectory // ignore: cast_nullable_to_non_nullable
+as bool,score: null == score ? _self.score : score // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$GitBranchDto {
 
  String get name; bool get current; bool get checkedOut; bool get isRemote; bool get isDefault;
@@ -6024,6 +6299,287 @@ $McpServerConfigDtoCopyWith<$Res> get config {
     return _then(_self.copyWith(config: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$AgentCommandDto {
+
+ String get id; String get name; String get description; AgentCommandSource get source; String get sourcePath; String get body; String? get argumentHint;
+/// Create a copy of AgentCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentCommandDtoCopyWith<AgentCommandDto> get copyWith => _$AgentCommandDtoCopyWithImpl<AgentCommandDto>(this as AgentCommandDto, _$identity);
+
+  /// Serializes this AgentCommandDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentCommandDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.source, source) || other.source == source)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.body, body) || other.body == body)&&(identical(other.argumentHint, argumentHint) || other.argumentHint == argumentHint));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,description,source,sourcePath,body,argumentHint);
+
+@override
+String toString() {
+  return 'AgentCommandDto(id: $id, name: $name, description: $description, source: $source, sourcePath: $sourcePath, body: $body, argumentHint: $argumentHint)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentCommandDtoCopyWith<$Res>  {
+  factory $AgentCommandDtoCopyWith(AgentCommandDto value, $Res Function(AgentCommandDto) _then) = _$AgentCommandDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String name, String description, AgentCommandSource source, String sourcePath, String body, String? argumentHint
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentCommandDtoCopyWithImpl<$Res>
+    implements $AgentCommandDtoCopyWith<$Res> {
+  _$AgentCommandDtoCopyWithImpl(this._self, this._then);
+
+  final AgentCommandDto _self;
+  final $Res Function(AgentCommandDto) _then;
+
+/// Create a copy of AgentCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? source = null,Object? sourcePath = null,Object? body = null,Object? argumentHint = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as AgentCommandSource,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
+as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
+as String,argumentHint: freezed == argumentHint ? _self.argumentHint : argumentHint // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentCommandDto].
+extension AgentCommandDtoPatterns on AgentCommandDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentCommandDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentCommandDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentCommandDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentCommandDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentCommandDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentCommandDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentCommandSource source,  String sourcePath,  String body,  String? argumentHint)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentCommandDto() when $default != null:
+return $default(_that.id,_that.name,_that.description,_that.source,_that.sourcePath,_that.body,_that.argumentHint);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentCommandSource source,  String sourcePath,  String body,  String? argumentHint)  $default,) {final _that = this;
+switch (_that) {
+case _AgentCommandDto():
+return $default(_that.id,_that.name,_that.description,_that.source,_that.sourcePath,_that.body,_that.argumentHint);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AgentCommandSource source,  String sourcePath,  String body,  String? argumentHint)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentCommandDto() when $default != null:
+return $default(_that.id,_that.name,_that.description,_that.source,_that.sourcePath,_that.body,_that.argumentHint);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentCommandDto implements AgentCommandDto {
+  const _AgentCommandDto({required this.id, required this.name, required this.description, required this.source, required this.sourcePath, required this.body, this.argumentHint});
+  factory _AgentCommandDto.fromJson(Map<String, dynamic> json) => _$AgentCommandDtoFromJson(json);
+
+@override final  String id;
+@override final  String name;
+@override final  String description;
+@override final  AgentCommandSource source;
+@override final  String sourcePath;
+@override final  String body;
+@override final  String? argumentHint;
+
+/// Create a copy of AgentCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentCommandDtoCopyWith<_AgentCommandDto> get copyWith => __$AgentCommandDtoCopyWithImpl<_AgentCommandDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentCommandDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentCommandDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.source, source) || other.source == source)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.body, body) || other.body == body)&&(identical(other.argumentHint, argumentHint) || other.argumentHint == argumentHint));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,description,source,sourcePath,body,argumentHint);
+
+@override
+String toString() {
+  return 'AgentCommandDto(id: $id, name: $name, description: $description, source: $source, sourcePath: $sourcePath, body: $body, argumentHint: $argumentHint)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentCommandDtoCopyWith<$Res> implements $AgentCommandDtoCopyWith<$Res> {
+  factory _$AgentCommandDtoCopyWith(_AgentCommandDto value, $Res Function(_AgentCommandDto) _then) = __$AgentCommandDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String name, String description, AgentCommandSource source, String sourcePath, String body, String? argumentHint
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentCommandDtoCopyWithImpl<$Res>
+    implements _$AgentCommandDtoCopyWith<$Res> {
+  __$AgentCommandDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentCommandDto _self;
+  final $Res Function(_AgentCommandDto) _then;
+
+/// Create a copy of AgentCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? source = null,Object? sourcePath = null,Object? body = null,Object? argumentHint = freezed,}) {
+  return _then(_AgentCommandDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as AgentCommandSource,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
+as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
+as String,argumentHint: freezed == argumentHint ? _self.argumentHint : argumentHint // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
 }
 
 

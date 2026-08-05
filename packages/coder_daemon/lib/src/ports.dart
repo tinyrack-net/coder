@@ -110,6 +110,45 @@ final class IoWorkspacePathGateway implements WorkspacePathGateway {
   }
 }
 
+/// One request for worktree files a composer mention can reference.
+final class FileSearchRequest {
+  /// Creates a file search request.
+  ///
+  /// [maxDepth] and [maxScannedEntries] bound the fallback walk used outside a
+  /// Git repository so an unbounded tree cannot stall the daemon.
+  const FileSearchRequest({
+    required this.root,
+    required this.query,
+    this.limit = 50,
+    this.maxDepth = 12,
+    this.maxScannedEntries = 20000,
+  });
+
+  /// Absolute worktree root the search is scoped to.
+  final String root;
+
+  /// Query typed after the mention sigil; empty asks for the index head.
+  final String query;
+
+  /// Largest number of matches to return.
+  final int limit;
+
+  /// Deepest directory level the fallback walk descends into.
+  final int maxDepth;
+
+  /// Largest number of entries the fallback walk inspects.
+  final int maxScannedEntries;
+}
+
+/// Gitignore-aware file index backing composer file mentions.
+abstract interface class WorkspaceFileIndexGateway {
+  /// Returns ranked matches for [request].
+  Future<FileSearchResultDto> search(FileSearchRequest request);
+
+  /// Drops any cached index for [root].
+  void invalidate(String root);
+}
+
 /// One checkout reported by `git worktree list --porcelain`.
 final class GitWorktreeSnapshot {
   /// Creates a Git worktree snapshot.

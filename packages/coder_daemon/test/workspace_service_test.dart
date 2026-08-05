@@ -7,6 +7,8 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
+import 'support/fake_file_index_gateway.dart';
+
 void main() {
   test('parses git worktree porcelain without shell-dependent output', () {
     final worktrees = parseGitWorktreePorcelain('''
@@ -43,6 +45,7 @@ branch refs/heads/feature/settings
         git,
         _FixedClock(),
         '/state/worktrees',
+        FakeFileIndexGateway(),
       );
 
       final registered = await service.register(
@@ -102,6 +105,7 @@ branch refs/heads/feature/settings
         git,
         _FixedClock(),
         '/state/worktrees',
+        FakeFileIndexGateway(),
       );
       await service.register(
         const WorkspaceRegisterParamsDto(
@@ -151,6 +155,7 @@ branch refs/heads/feature/settings
         git,
         _FixedClock(),
         '/state/worktrees',
+        FakeFileIndexGateway(),
       );
 
       final registered = await service.register(
@@ -209,6 +214,7 @@ branch refs/heads/feature/settings
         git,
         _FixedClock(),
         '/state/worktrees',
+        FakeFileIndexGateway(),
       );
       await service.register(
         const WorkspaceRegisterParamsDto(
@@ -313,6 +319,96 @@ branch refs/heads/feature/settings
     },
   );
 
+  group(
+    'searchFiles',
+    tags: const <String>[
+      'feature_test__composer_file_mention__unit',
+    ],
+    () {
+      late CoderDatabase database;
+      late FakeFileIndexGateway fileIndex;
+      late WorkspaceService service;
+
+      setUp(() async {
+        database = CoderDatabase.forTesting(
+          NativeDatabase.memory(),
+          clock: _FixedClock(),
+        );
+        addTearDown(database.close);
+        fileIndex = FakeFileIndexGateway();
+        service = WorkspaceService(
+          database.workspaceDao,
+          database.worktreeDao,
+          database.sessionDao,
+          _FakeWorkspacePaths(),
+          _FakeGitGateway(),
+          _FixedClock(),
+          '/state/worktrees',
+          fileIndex,
+        );
+        await service.register(
+          const WorkspaceRegisterParamsDto(
+            workspaceId: 'repo-1',
+            checkoutId: 'checkout-1',
+            rootPath: '/repo',
+            name: 'Repository',
+          ),
+        );
+      });
+
+      test('resolves the worktree root before searching', () async {
+        fileIndex.matches['/repo'] = <FileMatchDto>[
+          const FileMatchDto(
+            relativePath: 'lib/app.dart',
+            absolutePath: '/repo/lib/app.dart',
+            name: 'app.dart',
+            isDirectory: false,
+          ),
+        ];
+
+        final result = await service.searchFiles(
+          const FileSearchParamsDto(worktreeId: 'checkout-1', query: 'app'),
+        );
+
+        expect(fileIndex.requests.single.root, '/repo');
+        expect(fileIndex.requests.single.query, 'app');
+        expect(result.matches.single.relativePath, 'lib/app.dart');
+      });
+
+      test('clamps the limit into a range the index can serve', () async {
+        await service.searchFiles(
+          const FileSearchParamsDto(
+            worktreeId: 'checkout-1',
+            query: 'app',
+            limit: 5000,
+          ),
+        );
+        await service.searchFiles(
+          const FileSearchParamsDto(
+            worktreeId: 'checkout-1',
+            query: 'app',
+            limit: 0,
+          ),
+        );
+
+        expect(
+          fileIndex.requests.map((request) => request.limit),
+          <int>[100, 1],
+        );
+      });
+
+      test('rejects a worktree the daemon does not know', () async {
+        await expectLater(
+          service.searchFiles(
+            const FileSearchParamsDto(worktreeId: 'missing', query: 'app'),
+          ),
+          throwsA(isA<FormatException>()),
+        );
+        expect(fileIndex.requests, isEmpty);
+      });
+    },
+  );
+
   test('archive refuses a worktree with a running session', () async {
     final database = CoderDatabase.forTesting(
       NativeDatabase.memory(),
@@ -327,6 +423,7 @@ branch refs/heads/feature/settings
       _FakeGitGateway(),
       _FixedClock(),
       '/state/worktrees',
+      FakeFileIndexGateway(),
     );
     await service.register(
       const WorkspaceRegisterParamsDto(
@@ -382,6 +479,7 @@ branch refs/heads/feature/settings
         git,
         _FixedClock(),
         '/state/worktrees',
+        FakeFileIndexGateway(),
         projectSettings,
         hooks,
       );
