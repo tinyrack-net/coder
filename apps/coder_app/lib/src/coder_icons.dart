@@ -172,6 +172,15 @@ abstract final class CoderIcons {
   static const IconData checklist = LucideIcons.listChecks;
 
   /// Semantic Lucide glyph.
+  static const IconData reasoning = LucideIcons.brain;
+
+  /// Semantic Lucide glyph.
+  static const IconData permission = LucideIcons.shieldCheck;
+
+  /// Semantic Lucide glyph.
+  static const IconData fast = LucideIcons.zap;
+
+  /// Semantic Lucide glyph.
   static const IconData computer = LucideIcons.monitor;
 
   /// Semantic Lucide glyph.

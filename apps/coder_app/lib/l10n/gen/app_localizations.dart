@@ -1460,6 +1460,90 @@ abstract class AppLocalizations {
   /// **'Type a coding request…'**
   String get composerInputHint;
 
+  /// Label of the composer reasoning effort chip when inheriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Effort'**
+  String get composerReasoningEffort;
+
+  /// Tooltip of the composer reasoning effort chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select reasoning effort'**
+  String get composerSelectReasoningEffort;
+
+  /// Menu entry restoring the agent definition reasoning effort.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent default'**
+  String get composerInheritReasoningEffort;
+
+  /// Label of the composer permission mode chip when inheriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get composerPermissionMode;
+
+  /// Tooltip of the composer permission mode chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select permissions'**
+  String get composerSelectPermissionMode;
+
+  /// Menu entry restoring the agent definition permission mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent default'**
+  String get composerInheritPermissionMode;
+
+  /// Permission mode allowing read-only tools.
+  ///
+  /// In en, this message translates to:
+  /// **'Read only'**
+  String get composerPermissionReadOnly;
+
+  /// Permission mode asking before every mutation.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get composerPermissionAsk;
+
+  /// Permission mode allowing workspace writes without asking.
+  ///
+  /// In en, this message translates to:
+  /// **'Write workspace'**
+  String get composerPermissionWorkspaceWrite;
+
+  /// Label of the composer fast mode toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get composerFastMode;
+
+  /// Tooltip of the composer fast mode toggle when it is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Faster responses at a higher credit rate'**
+  String get composerFastModeTooltip;
+
+  /// Tooltip of the composer fast mode toggle when it is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast mode is on; tap to use the standard tier'**
+  String get composerFastModeOnTooltip;
+
+  /// Hint naming the keyboard shortcut that focuses the composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+L to focus'**
+  String get composerFocusShortcut;
+
+  /// Tooltip shown when a composer setting cannot change mid-turn.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings change between turns'**
+  String get composerSettingLocked;
+
   /// Accessible label for the composer send button.
   ///
   /// In en, this message translates to:

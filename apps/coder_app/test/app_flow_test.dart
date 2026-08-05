@@ -869,6 +869,160 @@ void main() {
   );
 
   testWidgets(
+    'composer turn settings follow model capabilities and return to inherit',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        connections: <ProviderConnectionDto>[
+          ProviderConnectionDto(
+            id: 'openai',
+            definitionId: 'openai',
+            displayName: 'OpenAI',
+            status: ProviderConnectionStatus.connected,
+            authKind: ProviderAuthKind.apiKey,
+            credentialOrigin: ProviderCredentialOrigin.stored,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        models: const <String, List<ProviderModelDto>>{
+          'openai': <ProviderModelDto>[
+            ProviderModelDto(
+              connectionId: 'openai',
+              id: 'gpt-5.6-sol',
+              label: 'GPT-5.6 Sol',
+              source: ProviderModelSource.bundled,
+              capabilities: ModelCapabilitiesDto(
+                streaming: CapabilitySupport.supported,
+                toolCalling: CapabilitySupport.supported,
+                reasoningEffort: CapabilitySupport.supported,
+                serviceTier: CapabilitySupport.supported,
+                supportedReasoningEfforts: <String>['low', 'high'],
+                supportedServiceTiers: <String>['default', 'priority'],
+              ),
+            ),
+            // A model the catalog says cannot honour either setting.
+            ProviderModelDto(
+              connectionId: 'openai',
+              id: 'gpt-5.6-plain',
+              label: 'GPT-5.6 Plain',
+              source: ProviderModelSource.bundled,
+              capabilities: ModelCapabilitiesDto(
+                streaming: CapabilitySupport.supported,
+                toolCalling: CapabilitySupport.supported,
+                reasoningEffort: CapabilitySupport.unsupported,
+                serviceTier: CapabilitySupport.unsupported,
+              ),
+            ),
+          ],
+        },
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      // Permissions never depend on the model, so the chip is always offered.
+      expect(
+        find.byKey(const ValueKey('session-composer-permission')),
+        findsOne,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('session-composer-effort')), findsOne);
+      expect(find.byKey(const ValueKey('session-composer-fast')), findsOne);
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-effort')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-effort-high')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('high'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-permission')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-permission-readOnly')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-fast')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Audit the parser',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      final created = api.createdSessions.single;
+      expect(created.reasoningEffort, 'high');
+      expect(created.permissionMode, PermissionMode.readOnly);
+      expect(created.serviceTier, 'priority');
+
+      // Toggling fast mode off restores the provider default tier.
+      await tester.tap(find.byKey(const ValueKey('session-composer-fast')));
+      await tester.pumpAndSettle();
+      expect(api.updatedSessionServiceTiers.single.serviceTier, isNull);
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-effort')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-effort-inherit')),
+      );
+      await tester.pumpAndSettle();
+      expect(api.updatedSessionReasoningEfforts.single.reasoningEffort, isNull);
+
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-permission')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-permission-inherit')),
+      );
+      await tester.pumpAndSettle();
+      expect(api.updatedSessionPermissionModes.single.permissionMode, isNull);
+
+      // A model without the capability hides both controls again.
+      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-openai-gpt-5.6-plain')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('session-composer-effort')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('session-composer-fast')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('session-composer-permission')),
+        findsOne,
+      );
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
+
+  testWidgets(
     'plan mode starts a planning session and implements the proposal',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));

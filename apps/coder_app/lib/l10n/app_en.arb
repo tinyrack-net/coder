@@ -922,6 +922,62 @@
   "@composerInputHint": {
     "description": "Hint of the composer text field."
   },
+  "composerReasoningEffort": "Effort",
+  "@composerReasoningEffort": {
+    "description": "Label of the composer reasoning effort chip when inheriting."
+  },
+  "composerSelectReasoningEffort": "Select reasoning effort",
+  "@composerSelectReasoningEffort": {
+    "description": "Tooltip of the composer reasoning effort chip."
+  },
+  "composerInheritReasoningEffort": "Agent default",
+  "@composerInheritReasoningEffort": {
+    "description": "Menu entry restoring the agent definition reasoning effort."
+  },
+  "composerPermissionMode": "Permissions",
+  "@composerPermissionMode": {
+    "description": "Label of the composer permission mode chip when inheriting."
+  },
+  "composerSelectPermissionMode": "Select permissions",
+  "@composerSelectPermissionMode": {
+    "description": "Tooltip of the composer permission mode chip."
+  },
+  "composerInheritPermissionMode": "Agent default",
+  "@composerInheritPermissionMode": {
+    "description": "Menu entry restoring the agent definition permission mode."
+  },
+  "composerPermissionReadOnly": "Read only",
+  "@composerPermissionReadOnly": {
+    "description": "Permission mode allowing read-only tools."
+  },
+  "composerPermissionAsk": "Ask",
+  "@composerPermissionAsk": {
+    "description": "Permission mode asking before every mutation."
+  },
+  "composerPermissionWorkspaceWrite": "Write workspace",
+  "@composerPermissionWorkspaceWrite": {
+    "description": "Permission mode allowing workspace writes without asking."
+  },
+  "composerFastMode": "Fast",
+  "@composerFastMode": {
+    "description": "Label of the composer fast mode toggle."
+  },
+  "composerFastModeTooltip": "Faster responses at a higher credit rate",
+  "@composerFastModeTooltip": {
+    "description": "Tooltip of the composer fast mode toggle when it is off."
+  },
+  "composerFastModeOnTooltip": "Fast mode is on; tap to use the standard tier",
+  "@composerFastModeOnTooltip": {
+    "description": "Tooltip of the composer fast mode toggle when it is on."
+  },
+  "composerFocusShortcut": "Ctrl+L to focus",
+  "@composerFocusShortcut": {
+    "description": "Hint naming the keyboard shortcut that focuses the composer."
+  },
+  "composerSettingLocked": "Settings change between turns",
+  "@composerSettingLocked": {
+    "description": "Tooltip shown when a composer setting cannot change mid-turn."
+  },
   "composerSendLabel": "Send message",
   "@composerSendLabel": {
     "description": "Accessible label for the composer send button."

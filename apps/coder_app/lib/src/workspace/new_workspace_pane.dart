@@ -225,6 +225,15 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       onModeChanged: (mode) => _notifier(project)?.selectMode(
                         mode,
                       ),
+                      reasoningEffort: draft?.reasoningEffort,
+                      onReasoningEffortChanged: (effort) =>
+                          _notifier(project)?.selectReasoningEffort(effort),
+                      permissionMode: draft?.permissionMode,
+                      onPermissionModeChanged: (mode) =>
+                          _notifier(project)?.selectPermissionMode(mode),
+                      serviceTier: draft?.serviceTier,
+                      onServiceTierChanged: (tier) =>
+                          _notifier(project)?.selectServiceTier(tier),
                     ),
                     onModeToggled: project == null
                         ? null
