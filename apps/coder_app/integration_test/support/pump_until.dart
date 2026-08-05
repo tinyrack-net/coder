@@ -27,6 +27,11 @@ const Duration _pollInterval = Duration(milliseconds: 100);
 /// Pumps until [condition] holds, and fails after [budget].
 ///
 /// [description] completes the sentence "Timed out after 60s waiting for ...".
+///
+/// The pump comes before the first check on purpose. Callers wait on states
+/// that the frame after their own action produces, such as a composer that
+/// disables its send button once a turn starts; checking first would read the
+/// state the action was about to change and return immediately.
 Future<void> pumpUntilCondition(
   WidgetTester tester,
   FutureOr<bool> Function() condition,
@@ -34,8 +39,8 @@ Future<void> pumpUntilCondition(
   Duration budget = e2eWaitBudget,
 }) async {
   for (var polled = Duration.zero; polled < budget; polled += _pollInterval) {
-    if (await condition()) return;
     await tester.pump(_pollInterval);
+    if (await condition()) return;
   }
   throw TestFailure(
     'Timed out after ${budget.inSeconds}s waiting for $description.',
@@ -65,6 +70,9 @@ Future<void> pumpUntilGone(
   '$finder to disappear',
   budget: budget,
 );
+
+// The two helpers below poll state the widget tree does not own, so there is no
+// frame to wait for and they read before their first delay.
 
 /// Waits for [read] to produce a value, for state the widget tree does not own.
 Future<T> awaitValue<T extends Object>(
