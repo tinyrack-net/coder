@@ -1,0 +1,48 @@
+import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/host_ports.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+
+import 'fake_coder_api.dart';
+import 'localization.dart';
+
+/// Pumps the routed app at [initialLocation] and returns its router.
+///
+/// Tests that assert navigation behaviour need the router itself, so this
+/// builds one explicitly rather than going through [CoderApp].
+Future<GoRouter> pumpRoutedApp(
+  WidgetTester tester,
+  FakeCoderApi api, {
+  required String initialLocation,
+  MemoryAppStore? store,
+}) async {
+  final router = GoRouter(initialLocation: initialLocation, routes: $appRoutes);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appServicesProvider.overrideWithValue(
+          fakeAppServices(api, store: store),
+        ),
+      ],
+      child: MaterialApp.router(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
+        locale: testLocale,
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        routerConfig: router,
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return router;
+}
+
+/// Location of the top-most page of [router], including query parameters.
+///
+/// [GoRouter.routeInformationProvider] reports the base configuration, which
+/// does not move when a route is pushed, so it cannot see a pushed task.
+String currentLocation(GoRouter router) => router.state.uri.toString();

@@ -204,6 +204,17 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'app.navigation',
+    description:
+        'Opens settings and daemon editing as pushed tasks that close back to '
+        'the screen they were opened from, moves laterally between settings '
+        'categories and workspace selections without changing the stack, and '
+        'still closes to a sensible destination when entered by deep link.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'settings.startup',
     description:
         'Registers the app with the operating system login items and chooses '

@@ -89,8 +89,7 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     void newWorkspace() => widget.router.go(
       const WorkspaceHomeRoute(compose: true).location,
     );
-    void openSettings() =>
-        widget.router.go(const GeneralSettingsRoute().location);
+    void openSettings() => openSettingsTask(widget.router);
     void toggleSidebar() => unawaited(
       ref
           .read(hostRegistryControllerProvider.notifier)
@@ -233,7 +232,7 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     await _window?.show();
     if (!mounted) return;
     setState(() => _windowVisible = true);
-    widget.router.go(const GeneralSettingsRoute().location);
+    openSettingsTask(widget.router);
   }
 
   Future<void> _quit() async {
