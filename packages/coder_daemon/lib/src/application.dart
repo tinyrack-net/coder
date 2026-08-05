@@ -272,7 +272,7 @@ abstract final class DaemonApplication {
         worktreeHooks,
       );
       final terminals = TerminalService(
-        gateway: const PortableTerminalGateway(),
+        gateway: const TinyrackTerminalGateway(),
         worktreePath: (worktreeId) async {
           final worktree = await database.worktreeDao.getById(worktreeId);
           if (worktree == null || worktree.archivedAt != null) {

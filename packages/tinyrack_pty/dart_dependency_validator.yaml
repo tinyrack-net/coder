@@ -1,0 +1,6 @@
+# Build-hook packages must be runtime dependencies because consuming Dart and
+# Flutter builds execute hook/build.dart after dependency resolution.
+ignore:
+  - code_assets
+  - hooks
+  - native_toolchain_c

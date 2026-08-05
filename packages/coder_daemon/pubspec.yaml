@@ -20,9 +20,9 @@ dependencies:
   drift: 2.34.0
   json_rpc_2: ^4.1.0
   path: ^1.9.1
-  portable_pty: ^0.0.5
   shelf: ^1.4.2
   shelf_web_socket: ^3.0.0
+  tinyrack_pty: ^0.1.0
   uuid: ^4.6.0
   web_socket_channel: ^3.0.3
   yaml: ^3.1.3
