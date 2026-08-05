@@ -755,6 +755,13 @@ final class HostRegistry {
     if (error is CoderClientException && error.code == 'protocol_mismatch') {
       return HostConnectionFailure.protocolMismatch(error.message);
     }
+    if (error is CoderClientException &&
+        error.code == localNetworkUnreachableCode) {
+      return HostConnectionFailure.network(
+        error.message,
+        reason: HostFailureReason.localNetworkUnreachable,
+      );
+    }
     return HostConnectionFailure.network('$error');
   }
 

@@ -402,6 +402,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get hostErrorEmbeddedPortInUse => '선택한 포트를 이미 사용 중입니다.';
 
   @override
+  String get hostErrorLocalNetworkUnreachable =>
+      'Daemon에 연결하지 못했습니다. Daemon이 실행 중인지, 그리고 이 사이트의 로컬 네트워크 접근을 허용했는지 확인하세요.';
+
+  @override
   String get appSettingsTitle => '앱 설정';
 
   @override

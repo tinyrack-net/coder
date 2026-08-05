@@ -123,6 +123,7 @@
   "hostErrorDuplicate": "같은 daemon이 이미 등록되어 있습니다.",
   "hostErrorUnauthorized": "Daemon이 bearer token을 거부했습니다.",
   "hostErrorEmbeddedPortInUse": "선택한 포트를 이미 사용 중입니다.",
+  "hostErrorLocalNetworkUnreachable": "Daemon에 연결하지 못했습니다. Daemon이 실행 중인지, 그리고 이 사이트의 로컬 네트워크 접근을 허용했는지 확인하세요.",
   "appSettingsTitle": "앱 설정",
   "appSettingsLocalSection": "로컬 실행",
   "appSettingsEmbeddedSubtitle": "앱과 함께 시작하고 앱 종료 시 중지합니다. 시작 실패는 앱 사용을 막지 않습니다.",

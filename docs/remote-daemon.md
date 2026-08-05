@@ -17,7 +17,7 @@ coder-cli daemon start
 
 The same options are available as flags: `coder-cli daemon start --listen
 127.0.0.1:7337 --token '<secret>'`. From a checkout, `dart run melos
-run:daemon` runs the same command.
+run:daemon` builds the CLI and runs the same command.
 
 The bearer token grants the complete daemon API, including Provider credentials
 and Markdown Agent settings. Tinyrack Coder does not implement user roles or
@@ -70,16 +70,15 @@ changes their behaviour. The same allowlist drives the CORS headers on
 
 ### Reaching a daemon on your own machine
 
-**The hosted web app cannot connect to a loopback daemon without the browser's
-Local Network Access permission.** This is the one case where the web build is
-strictly less capable than the desktop app, and it is worth understanding
-before choosing between them.
+**The hosted web app reaches a loopback daemon once you grant the browser's
+Local Network Access permission.** Chrome shows the prompt on the first
+connection attempt; accepting it connects normally. This was verified against
+the deployed app with a daemon on `127.0.0.1`.
 
 The obstacle is not mixed content. Loopback is a potentially trustworthy
 origin, so `ws://127.0.0.1:7337` from an HTTPS page is not blocked as insecure.
-What blocks it is Local Network Access: a public page reaching a private
-address needs the user's permission. Measured against the deployed app in
-Chrome 151:
+What gates it is Local Network Access: a public page reaching a private address
+needs the user's permission. Refused, the attempt fails as:
 
 ```
 fetch  → blocked by CORS policy: Permission was denied for this request to
@@ -88,20 +87,27 @@ fetch  → blocked by CORS policy: Permission was denied for this request to
 ws     → net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS
 ```
 
-The daemon cannot fix this from its side. The permission is evaluated before
-any request is made — with the checks active the daemon receives nothing, not
-even a preflight, so no response header changes the outcome. Running the same
-probe with `--disable-features=LocalNetworkAccessChecks` connects and completes
-the handshake normally, which confirms nothing else is wrong.
+The daemon has no part in this either way. The permission is evaluated before
+any request is made, so with the checks active and the permission refused the
+daemon receives nothing, not even a preflight, and no response header changes
+the outcome.
 
-Whether accepting the browser's permission prompt is sufficient has not been
-verified here: a headless browser denies the prompt automatically, and
-granting the permission over the DevTools protocol did not substitute for it.
+The permission requires a real click. A headless browser denies the prompt
+automatically and granting it over the DevTools protocol does not substitute,
+so this path cannot be covered by an automated test and is verified by hand.
 
-Three arrangements avoid the problem entirely:
+Because a browser reports every WebSocket failure identically — deliberately,
+so that a page cannot scan the local network — the app cannot tell a refused
+permission from a daemon that is not running. It names both causes in the one
+error it can raise. Note also that this applies only to a **public** page: a
+web build served from `localhost` is already in the loopback address space, so
+Local Network Access never applies to it and a local development build proves
+nothing about the deployed one.
 
-- **Use the desktop app** for a daemon on the same machine. It is the intended
-  tool for that case and has no browser in the path.
+Three arrangements avoid needing the permission at all:
+
+- **Use the desktop app** for a daemon on the same machine. It has no browser
+  in the path.
 - **Put the daemon behind a `wss://` reverse proxy** on a routable host, as
   below, and register that address. This is a public-to-public connection, so
   Local Network Access does not apply.

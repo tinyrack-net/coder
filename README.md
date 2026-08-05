@@ -66,9 +66,8 @@ flutter run -d chrome -t lib/main_web.dart
 
 The web build is a client only, hosted at `https://coder.tinyrack.net`. It
 connects to a daemon you run yourself, which has to allow the page's origin
-first. It suits a daemon reachable over `wss://`; for one on your own machine
-prefer the desktop app, because browsers gate a public page reaching a loopback
-address behind a Local Network Access permission. See
+first. A daemon on your own machine also works, after granting the browser's
+Local Network Access permission once. See
 [`docs/remote-daemon.md`](docs/remote-daemon.md).
 
 Release builds, packaging, and the winget and Homebrew channels are described

@@ -294,6 +294,48 @@ void main() {
     tags: const <String>['feature_test__daemon_exposure__widget'],
   );
 
+  testWidgets(
+    'a browser explains a failed local-network daemon connection',
+    (tester) async {
+      final profile = RemoteDaemonProfile(
+        id: 'remote',
+        label: 'Loopback',
+        websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+        // Auto-connect would leave a retry timer pending past teardown.
+        autoConnect: false,
+        createdAt: DateTime.utc(2024),
+        updatedAt: DateTime.utc(2024),
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[profile],
+        tokens: const <String, String>{'remote': 'token'},
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const _LocalNetworkUnreachableClients(),
+            clientKind: 'web',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(findAccessibleAction('설정'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '다시 연결'));
+      await tester.pumpAndSettle();
+
+      // The browser cannot say which of the two causes it was, so both have
+      // to reach the user.
+      expect(find.textContaining('실행 중인지'), findsWidgets);
+      expect(find.textContaining('로컬 네트워크 접근'), findsWidgets);
+    },
+    tags: const <String>['feature_test__daemon_management__widget'],
+  );
+
   testWidgets('host home and settings render independent runtime statuses', (
     tester,
   ) async {
@@ -394,6 +436,26 @@ final class _OfflineClients implements HostClientFactory {
     required String clientKind,
   }) => Future<CoderApi>.error(
     const HostConnectionFailure.network('offline'),
+  );
+}
+
+/// Stands in for a browser that refuses to explain a failed connection to a
+/// daemon on the user's own machine.
+final class _LocalNetworkUnreachableClients implements HostClientFactory {
+  const _LocalNetworkUnreachableClients();
+
+  @override
+  Future<CoderApi> connect({
+    required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
+    required String clientId,
+    required String clientKind,
+  }) => Future<CoderApi>.error(
+    const CoderClientException(
+      'Could not reach a daemon at 127.0.0.1:7337.',
+      code: localNetworkUnreachableCode,
+      retryable: true,
+    ),
   );
 }
 
