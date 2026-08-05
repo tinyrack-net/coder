@@ -30,6 +30,9 @@ enum FeatureSurface {
 
   /// Android and iOS remote-only runners.
   mobile,
+
+  /// The browser build, which is remote-only for the same reason as mobile.
+  web,
 }
 
 /// One stable, user-observable E2E behavior owned by a feature.

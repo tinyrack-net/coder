@@ -1,0 +1,34 @@
+import 'package:coder_client/src/web_socket_connector.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+/// Creates the connector used in a browser.
+WebSocketConnector createConnector() => const WebWebSocketConnector();
+
+/// Connects from a browser, where request headers cannot be set.
+///
+/// The `Authorization` header the other clients send is translated into a
+/// subprotocol, which the daemon accepts as an equivalent credential.
+final class WebWebSocketConnector implements WebSocketConnector {
+  /// Creates a [WebWebSocketConnector].
+  const WebWebSocketConnector();
+
+  @override
+  Future<WebSocketChannel> connect(
+    Uri uri, {
+    required Map<String, String> headers,
+  }) async {
+    final authorization = headers['Authorization'] ?? headers['authorization'];
+    final token = authorization != null && authorization.startsWith('Bearer ')
+        ? authorization.substring('Bearer '.length)
+        : null;
+    final channel = WebSocketChannel.connect(
+      uri,
+      protocols: <String>[
+        coderWebSocketProtocol,
+        if (token != null) encodeWebSocketTokenProtocol(token),
+      ],
+    );
+    await channel.ready;
+    return channel;
+  }
+}

@@ -6,7 +6,7 @@ import 'package:coder_app/src/advanced_settings_page.dart';
 import 'package:coder_app/src/agent_settings_page.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/app_settings_page.dart';
-import 'package:coder_app/src/attachment_io.dart';
+import 'package:coder_app/src/attachment_ports.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';

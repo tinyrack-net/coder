@@ -17,6 +17,8 @@ targets:
           path: apps/coder_app/lib/src/version.g.dart
         - type: dart-constant
           path: packages/coder_daemon/lib/src/version.g.dart
+        - type: dart-constant
+          path: packages/coder_cli/lib/src/version.g.dart
     tag: "v{version}"
     commit: "release: v{version}"
     branch: main
@@ -74,3 +76,34 @@ targets:
           - libayatana-appindicator-gtk3
         release: "1"
         group: Development/Tools
+
+  coder-cli:
+    kind: cli-application
+    root: .
+    version:
+      # The CLI rides the application's version and tag so that one release
+      # ships a matching daemon, desktop app, and command line. Its version
+      # file is written by the `coder` target above, which is why nothing is
+      # synchronized here.
+      source: apps/coder_app/pubspec.yaml
+    tag: "v{version}"
+    commit: "release: v{version}"
+    branch: main
+    payload:
+      kind: executable
+      launcher: coder-cli
+    product:
+      name: coder-cli
+      display-name: Coder CLI
+      description: Command-line client for the Tinyrack Coder daemon
+      executable: coder-cli
+      homepage: https://github.com/tinyrack-net/coder
+      repository: tinyrack-net/coder
+    macos:
+      entitlements: packages/coder_cli/macos/Release.entitlements
+      bundle-id: net.tinyrack.coder.cli
+    homebrew:
+      formula-class: CoderCli
+      # shipworld reads `<prefix>-<platform>-<arch>` bare executables from the
+      # artifacts directory and installs them under this name.
+      artifact-prefix: coder-cli

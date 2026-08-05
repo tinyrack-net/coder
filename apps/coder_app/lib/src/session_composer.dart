@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
-import 'package:coder_app/src/attachment_io.dart';
+import 'package:coder_app/src/attachment_ports.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/controller.dart';

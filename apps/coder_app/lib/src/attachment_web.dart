@@ -1,23 +1,23 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:coder_app/src/attachment_ports.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 export 'package:coder_app/src/attachment_ports.dart';
 
-/// Production native attachment input adapter.
-final class NativeAttachmentInput implements AttachmentInputPort {
-  /// Creates the native adapter.
-  const NativeAttachmentInput();
+/// Composer input adapter for a browser.
+///
+/// The file picker, clipboard, and drop plugins all ship web implementations,
+/// so this differs from the native adapter only in lacking `dart:io`.
+final class WebAttachmentInput implements AttachmentInputPort {
+  /// Creates the web adapter.
+  const WebAttachmentInput();
 
   @override
-  bool get supportsDrop =>
-      Platform.isLinux || Platform.isMacOS || Platform.isWindows;
+  bool get supportsDrop => true;
 
   @override
   Future<List<PendingAttachment>> pickFiles() async {
@@ -84,13 +84,14 @@ final class NativeAttachmentInput implements AttachmentInputPort {
   }
 
   Future<PendingAttachment> _fromXFile(XFile file) async {
-    final length = await file.length();
+    // A browser has already buffered the selection, so the length is known
+    // without touching a filesystem.
+    final bytes = await file.readAsBytes();
     return _validated(
-      PendingAttachment(
+      PendingAttachment.fromBytes(
         fileName: file.name,
         mimeType: file.mimeType ?? mimeFromAttachmentName(file.name),
-        byteSize: length,
-        openRead: file.openRead,
+        bytes: bytes,
       ),
     );
   }
@@ -103,10 +104,10 @@ final class NativeAttachmentInput implements AttachmentInputPort {
   }
 }
 
-/// Production save/share adapter.
-final class NativeAttachmentExport implements AttachmentExportPort {
-  /// Creates the native export adapter.
-  const NativeAttachmentExport();
+/// Download adapter for a browser.
+final class WebAttachmentExport implements AttachmentExportPort {
+  /// Creates the web export adapter.
+  const WebAttachmentExport();
 
   @override
   Future<void> export({
@@ -114,17 +115,9 @@ final class NativeAttachmentExport implements AttachmentExportPort {
     required String mimeType,
     required Uint8List bytes,
   }) async {
+    // `saveTo` is a no-op on the web; `getSaveLocation` returning a name is
+    // what triggers the browser download.
     final file = XFile.fromData(bytes, mimeType: mimeType, name: fileName);
-    if (Platform.isAndroid || Platform.isIOS) {
-      await SharePlus.instance.share(
-        ShareParams(
-          files: <XFile>[file],
-          fileNameOverrides: <String>[fileName],
-        ),
-      );
-      return;
-    }
-    final location = await getSaveLocation(suggestedName: fileName);
-    if (location != null) await file.saveTo(location.path);
+    await file.saveTo(fileName);
   }
 }

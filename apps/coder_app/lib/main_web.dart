@@ -1,0 +1,22 @@
+import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/attachment_web.dart';
+import 'package:coder_app/src/remote_bootstrap.dart';
+import 'package:flutter/material.dart';
+
+/// Starts the web widget tree with an injectable remote-only bootstrap.
+///
+/// A browser cannot host a daemon, so this reuses the mobile bootstrap and
+/// simply never supplies an embedded launcher.
+Future<void> runWebApp({AppServices? services}) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    CoderApp(
+      services: services ?? await createRemoteServices(clientKind: 'web'),
+      attachmentInput: const WebAttachmentInput(),
+    ),
+  );
+}
+
+/// Starts the production web application.
+Future<void> main() => runWebApp();

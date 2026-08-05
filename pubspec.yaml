@@ -49,7 +49,7 @@ melos:
     test:widget:
       run: dart run melos test:flutter
     test:contract:
-      run: dart run melos exec --no-flutter --scope=coder_protocol --scope=coder_client --scope=coder_provider_openai --scope=coder_daemon -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
+      run: dart run melos exec --no-flutter --scope=coder_protocol --scope=coder_client --scope=coder_cli --scope=coder_provider_openai --scope=coder_daemon -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
     test:vertical-slice:
       run: dart test packages/coder_daemon/test/daemon_integration_test.dart --test-randomize-ordering-seed=random
     test:golden:
@@ -72,6 +72,12 @@ melos:
       run: dart run melos test:e2e:linux
     run:daemon:
       run: dart run packages/coder_daemon/bin/coder_daemon.dart
+    run:cli:
+      run: dart run packages/coder_cli/bin/coder_cli.dart
+      stdio: inherit
+    build:cli:
+      # `dart compile exe` does not create its output directory.
+      run: mkdir -p dist && dart compile exe packages/coder_cli/bin/coder_cli.dart -o dist/coder-cli
     run:desktop:
       # `stdio: inherit` gives flutter run a real terminal so r/R/q work; it is
       # incompatible with melos exec, hence the explicit package directory.
@@ -88,6 +94,10 @@ melos:
       run: dart run melos exec --scope=coder_app -- flutter build macos --debug -t lib/main_desktop.dart
     build:windows:
       run: dart run melos exec --scope=coder_app -- flutter build windows --debug -t lib/main_desktop.dart
+    build:web:
+      run: dart run melos exec --scope=coder_app -- flutter build web -t lib/main_web.dart
+    build:web:release:
+      run: dart run melos exec --scope=coder_app -- flutter build web --release -t lib/main_web.dart
     build:linux:release:
       run: dart run melos exec --scope=coder_app -- flutter build linux --release -t lib/main_desktop.dart
     build:macos:release:

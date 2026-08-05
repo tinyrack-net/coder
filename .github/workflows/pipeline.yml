@@ -251,6 +251,28 @@ jobs:
       - run: ${{ matrix.command }}
         working-directory: apps/coder_app
 
+  web-build:
+    name: Web Build
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      # A dart:io import reaching the web entrypoint only fails here, so this
+      # runs on every pull request rather than at release time.
+      - run: dart run melos build:web:release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-assets
+          retention-days: 7
+          path: apps/coder_app/build/web
+          if-no-files-found: error
+
   quality-gate:
     name: Quality Gate
     if: always() && github.event_name != 'schedule'
@@ -265,6 +287,7 @@ jobs:
       - debug-e2e-linux
       - mobile-debug-build
       - desktop-debug-build
+      - web-build
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -434,10 +457,136 @@ jobs:
             dist/*.msix
           if-no-files-found: error
 
+  deploy-web:
+    name: Deploy Web
+    needs:
+      - quality-gate
+      - web-build
+    # Only main and tags publish; a pull request stops at web-build.
+    if: github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: web-assets
+          path: apps/coder_app/build/web
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          # Read from either scope so the deployment does not depend on which
+          # organisation tab the credentials live in. A secret is preferred
+          # because only a secret is masked in logs.
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN ||
+            vars.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID ||
+            vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/coder_app
+          command: deploy
+
+  build-cli:
+    name: Build CLI (${{ matrix.target }})
+    if: startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.package_release)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The CLI is plain Dart, so unlike the desktop app it is not held to
+          # the platforms Flutter publishes an SDK for. Homebrew needs all four
+          # of these; dropping one makes the generated Formula unbuildable.
+          - os: ubuntu-24.04
+            target: linux-x64
+            platform: linux
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            platform: linux
+          - os: macos-15-intel
+            target: macos-x64
+            platform: macos
+          - os: macos-26
+            target: macos-arm64
+            platform: macos
+          - os: windows-2025
+            target: windows-x64
+            platform: windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - run: dart pub get --enforce-lockfile
+
+      - name: Compile the CLI
+        shell: bash
+        # Homebrew installs the downloaded file directly as the binary, so the
+        # artifact is a bare executable named for its platform rather than an
+        # archive.
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            dart compile exe packages/coder_cli/bin/coder_cli.dart \
+              -o dist/coder-cli.exe
+          else
+            dart compile exe packages/coder_cli/bin/coder_cli.dart \
+              -o dist/coder-cli-${{ matrix.target }}
+          fi
+
+      - name: Sign and notarize the macOS binary
+        if: matrix.platform == 'macos'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          APPLE_NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
+        run: |
+          dart pub global activate shipworld ${{ env.SHIPWORLD_VERSION }}
+          dart pub global run shipworld:shipworld package macos sign coder-cli \
+            --input dist/coder-cli-${{ matrix.target }} \
+            ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
+          codesign --verify --strict dist/coder-cli-${{ matrix.target }}
+
+      - name: Archive the Windows CLI
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        # WinGet consumes a zip with a nested portable executable; the bare
+        # exe is not uploaded because no channel installs it directly.
+        run: Compress-Archive -Path dist/coder-cli.exe
+          -DestinationPath dist/coder-cli-${{ matrix.target }}.zip
+
+      - name: Smoke-test the binary
+        # Cross-built arm64 would not run here, but every target in this matrix
+        # is built on its own architecture, so the binary has to work.
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            ./dist/coder-cli.exe --version
+          else
+            ./dist/coder-cli-${{ matrix.target }} --version
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: coder-cli-${{ matrix.target }}
+          retention-days: 7
+          path: |
+            dist/coder-cli-${{ matrix.target }}
+            dist/coder-cli-${{ matrix.target }}.zip
+          if-no-files-found: error
+
   publish-release:
     name: Publish Release
     needs:
       - build-and-package
+      - build-cli
       - quality-gate
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
@@ -493,6 +642,11 @@ jobs:
         with:
           name: coder-macos-arm64
           path: release-assets
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: coder-cli-*
+          path: cli-assets
+          merge-multiple: true
 
       - name: Generate the Homebrew Cask
         run: |
@@ -501,6 +655,13 @@ jobs:
             --archive release-assets/Coder-macos-arm64.zip \
             --url "${url}/${GITHUB_REF_NAME}/Coder-macos-arm64.zip" \
             --output release-assets/coder.rb
+
+      - name: Generate the Homebrew Formula
+        # The Formula points at the four bare executables already attached to
+        # this release, so it reads their checksums from the same artifacts.
+        run: dart pub global run shipworld:shipworld package homebrew formula
+          coder-cli --artifacts-dir cli-assets
+          --output release-assets/coder-cli.rb
 
       - name: Checkout the Homebrew tap
         uses: actions/checkout@v5
@@ -511,14 +672,15 @@ jobs:
 
       - name: Update the Homebrew tap
         run: |
-          mkdir -p homebrew-tap/Casks
+          mkdir -p homebrew-tap/Casks homebrew-tap/Formula
           cp release-assets/coder.rb homebrew-tap/Casks/coder.rb
+          cp release-assets/coder-cli.rb homebrew-tap/Formula/coder-cli.rb
           cd homebrew-tap
           git config user.name "github-actions[bot]"
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Casks/coder.rb
-          git commit -m "Update coder to ${GITHUB_REF_NAME}" ||
+          git add Casks/coder.rb Formula/coder-cli.rb
+          git commit -m "Update coder and coder-cli to ${GITHUB_REF_NAME}" ||
             echo "No changes to commit"
           git push
 
@@ -547,6 +709,15 @@ jobs:
           .\wingetcreate.exe update tinyrack.coder `
             --version $version `
             --urls "$downloadUrl/Coder-setup-win-x64.exe|x64" `
+            --release-notes-url "$releaseNotesUrl" `
+            --submit `
+            --no-open
+
+          # The CLI ships as a portable zip rather than an installer, so it is
+          # a separate winget package from the desktop app.
+          .\wingetcreate.exe update tinyrack.coder-cli `
+            --version $version `
+            --urls "$downloadUrl/coder-cli-windows-x64.zip|x64" `
             --release-notes-url "$releaseNotesUrl" `
             --submit `
             --no-open

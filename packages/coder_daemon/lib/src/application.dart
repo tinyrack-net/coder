@@ -301,6 +301,7 @@ abstract final class DaemonApplication {
         serverInfo: info,
         token: token,
         events: events.stream,
+        allowedOrigins: config.allowedOrigins,
       );
       final http = await shelf_io.serve(
         rpc.call,

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
-import 'package:coder_app/src/attachment_io.dart';
+import 'package:coder_app/src/attachment_ports.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';

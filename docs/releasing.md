@@ -1,9 +1,11 @@
 # Releasing
 
-Coder ships as a desktop application. One tag drives every artifact through
-`.github/workflows/pipeline.yml`.
+Coder ships as a desktop application and a standalone command-line client. One
+tag drives every artifact through `.github/workflows/pipeline.yml`.
 
 ## What is published
+
+### Desktop application
 
 | Platform | Artifacts | Channel |
 | --- | --- | --- |
@@ -16,6 +18,53 @@ arm64 Windows runner can install it. macOS is the one platform with an arm64
 SDK, which is why it is the only architecture pair here. Both arm64 desktop
 targets become possible the day Flutter ships those SDKs.
 
+### Command-line client
+
+| Platform | Artifacts | Channel |
+| --- | --- | --- |
+| Linux x64 and arm64 | bare `coder-cli-linux-<arch>` | GitHub Releases, `brew install tinyrack-net/tap/coder-cli` |
+| macOS x64 and arm64 | signed, notarized `coder-cli-macos-<arch>` | GitHub Releases, `brew install tinyrack-net/tap/coder-cli` |
+| Windows x64 | `coder-cli-windows-x64.zip` | GitHub Releases, `winget install tinyrack.coder-cli` |
+
+The CLI is plain Dart compiled with `dart compile exe`, so the `build-cli` job
+is not held to the platforms Flutter supports and covers arm64 Linux too. It
+carries no database or provider stack, which is why the binary is a few
+megabytes and needs no `libsqlite3` at runtime.
+
+The CLI artifacts are **bare executables, not archives**, because the generated
+Homebrew Formula installs the downloaded file directly as the binary. The
+Formula also requires all four of macOS x64/arm64 and Linux x64/arm64; dropping
+one target makes it unbuildable. Windows is the exception, shipping a zip
+because WinGet consumes a nested portable executable.
+
+The Cask (`coder`) and the Formula (`coder-cli`) land in the same
+`tinyrack-net/homebrew-tap` commit.
+
+### Web client
+
+| Artifact | Channel |
+| --- | --- |
+| `flutter build web` output | `tinyrack-coder` Worker at `https://coder.tinyrack.net` |
+
+`apps/coder_app/wrangler.jsonc` binds the custom domain, so the deploying API
+token needs Workers Routes and Zone read on `tinyrack.net` alongside Workers
+Scripts edit. The hostname is also the daemon's default allowed origin
+(`defaultAllowedOrigins` in `packages/coder_daemon/lib/src/config.dart`);
+changing one without the other locks every browser client out.
+
+The web build is a static client with no server of its own; it connects to a
+daemon the user runs. It is **not** tied to a version tag: `deploy-web`
+publishes on every push to `main` as well as on tags, because there is nothing
+to install and no version for a user to be stranded on.
+
+`web-build` runs on every pull request and is part of the quality gate. That
+is deliberate: a `dart:io` import reaching the web entrypoint compiles fine
+everywhere else and only fails there, so without it the breakage would surface
+at release time.
+
+See [`remote-daemon.md`](remote-daemon.md) for the origin allowlist a daemon
+needs before a browser can reach it.
+
 WinGet consumes the Inno Setup `setup.exe`; the MSIX exists for the Microsoft
 Store path and is not yet submitted. There is no `.msixbundle` because there is
 only one Windows architecture to bundle.
@@ -27,9 +76,16 @@ Release need. Setting them turns the step back on with no workflow change.
 ## Cutting a release
 
 Versions come from `apps/coder_app/pubspec.yaml` and are mirrored into
-`apps/coder_app/lib/src/version.g.dart` and
-`packages/coder_daemon/lib/src/version.g.dart` by the release tool. Never edit
-those two by hand.
+`apps/coder_app/lib/src/version.g.dart`,
+`packages/coder_daemon/lib/src/version.g.dart`, and
+`packages/coder_cli/lib/src/version.g.dart` by the release tool. Never edit
+those three by hand.
+
+`shipworld.yaml` declares two targets. Only `coder` is ever released: it owns
+the version source and writes all three version files. The `coder-cli` target
+exists so the Formula can be generated with its own product metadata, and
+reads the same version, which is why one tag ships a matching desktop app,
+daemon, and CLI.
 
 ```sh
 dart pub global activate shipworld 0.2.3
@@ -59,7 +115,14 @@ All are repository secrets on `tinyrack-net/coder`.
 | `APPLE_NOTARY_ISSUER_ID` | notarization | yes |
 | `APPLE_NOTARY_KEY_P8_BASE64` | notarization | yes |
 | `HOMEBREW_TAP_TOKEN` | pushing the Cask to the tap | yes |
-| `WINGET_TOKEN` | the winget-pkgs pull request | yes |
+| `WINGET_TOKEN` | the winget-pkgs pull requests | yes |
+| `CLOUDFLARE_API_TOKEN` | the web deployment | organisation-wide |
+| `CLOUDFLARE_ACCOUNT_ID` | the web deployment | organisation-wide |
+
+The two Cloudflare values are read as either a secret or an Actions variable,
+so the deployment works from whichever organisation tab holds them. Prefer the
+secret for `CLOUDFLARE_API_TOKEN`: an Actions variable is not masked in logs,
+and that token can deploy Workers.
 | `MSIX_IDENTITY_NAME` | MSIX identity, optional | no, `tinyrack.coder` |
 | `MSIX_PUBLISHER` | MSIX identity, optional | yes, matches the signing certificate |
 | `MSIX_PUBLISHER_DISPLAY_NAME` | MSIX identity, optional | yes |
@@ -92,3 +155,21 @@ the dynamic loader resolves it against the real path, not the link.
 
 Linux needs `libayatana-appindicator3-dev` to build and a StatusNotifier host
 to show the tray icon; on GNOME that means the AppIndicator extension.
+
+The CLI and its Formula need no Flutter toolchain:
+
+```sh
+dart run melos build:cli
+./dist/coder-cli --version
+
+# The Formula wants one bare executable per platform, named for its target.
+mkdir -p dist/homebrew
+for target in macos-arm64 macos-x64 linux-arm64 linux-x64; do
+  cp dist/coder-cli "dist/homebrew/coder-cli-$target"   # real builds per host
+done
+shipworld package homebrew formula coder-cli \
+  --artifacts-dir dist/homebrew --output dist/coder-cli.rb
+```
+
+Copying one binary across all four names only checks that the Formula renders;
+a real release builds each on its own runner.

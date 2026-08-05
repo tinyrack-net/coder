@@ -79,7 +79,7 @@ final class CoderApiProviderCliBackend implements ProviderCliBackend {
   Future<ProviderCatalogDto> refreshCatalog() => _api.refreshProviderCatalog();
 }
 
-/// Executes one `coder_daemon provider` subcommand.
+/// Executes one `coder-cli provider` subcommand.
 Future<int> runProviderCommand(
   List<String> arguments, {
   required ProviderCliBackend backend,
@@ -88,7 +88,7 @@ Future<int> runProviderCommand(
   Duration pollInterval = const Duration(seconds: 1),
 }) async {
   if (arguments.isEmpty || arguments.first == 'help') {
-    output.writeln(_providerUsage);
+    output.writeln(providerUsage);
     return 0;
   }
   switch (arguments.first) {
@@ -205,7 +205,11 @@ bool _terminal(ProviderAuthAttemptStatus status) =>
     status == ProviderAuthAttemptStatus.cancelled ||
     status == ProviderAuthAttemptStatus.expired;
 
-const String _providerUsage = '''
+/// Usage text for the `provider` commands.
+///
+/// Public so the entrypoint can answer `help` without first connecting to a
+/// daemon that may not be running.
+const String providerUsage = '''
 provider list
 provider connect <id> [--method api-key|chatgpt-browser|chatgpt-device]
 provider disconnect <connection-id>

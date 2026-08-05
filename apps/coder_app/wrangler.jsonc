@@ -1,0 +1,24 @@
+{
+  // There is no node_modules here to point a "$schema" at; wrangler is run
+  // through npx by the deploy job.
+  "name": "tinyrack-coder",
+  "compatibility_date": "2026-08-01",
+  // Binds the Worker to the apex-zone hostname instead of leaving it on
+  // workers.dev. The daemon's default origin allowlist names this same host,
+  // so changing one without the other locks every browser client out.
+  "routes": [
+    {
+      "pattern": "coder.tinyrack.net",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "build/web",
+    // The app routes with go_router, so every unknown path has to reach
+    // index.html rather than 404.
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

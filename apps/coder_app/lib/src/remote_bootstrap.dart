@@ -4,10 +4,14 @@ import 'package:coder_app/src/host_ports.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Creates remote-only mobile services; no daemon launcher is reachable.
+/// Creates remote-only services; no daemon launcher is reachable.
+///
+/// Mobile and the web share this path: neither can host a daemon, so both
+/// only ever connect to one the user runs elsewhere.
 Future<AppServices> createRemoteServices({
   HostClientFactory clients = const WebSocketHostClientFactory(),
   FlutterSecureStorage secureStorage = const FlutterSecureStorage(),
+  String clientKind = 'mobile',
 }) async {
   final store = SharedPreferencesAppStore(
     await SharedPreferences.getInstance(),
@@ -17,6 +21,6 @@ Future<AppServices> createRemoteServices({
     profiles: store,
     credentials: SecureRemoteHostCredentialStore(secureStorage),
     clients: clients,
-    clientKind: 'mobile',
+    clientKind: clientKind,
   );
 }

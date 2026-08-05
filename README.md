@@ -38,15 +38,31 @@ profiles and the last selected host remain navigable.
 
 Provider and Markdown Agent setup belongs to a connected daemon. Every client
 uses one bearer token, which grants the complete daemon API for both local and
-remote connections.
+remote connections. `coder-cli` drives the same setup from a terminal against
+an already running daemon, discovering its token from the same configuration
+directory:
 
-Desktop and mobile use separate targets so the mobile bootstrap never starts a
-daemon. Run these commands from `apps/coder_app`:
+```sh
+brew install tinyrack-net/tap/coder-cli   # or winget install tinyrack.coder-cli
+coder-cli provider list
+coder-cli agent apply reviewer --file reviewer.md
+```
+
+From a checkout, `dart run melos run:cli -- provider list` runs the same
+commands without installing anything.
+
+Desktop, mobile, and web use separate targets so that only the desktop
+bootstrap can start a daemon. Run these commands from `apps/coder_app`:
 
 ```sh
 flutter run -d linux -t lib/main_desktop.dart
 flutter run -t lib/main_mobile.dart
+flutter run -d chrome -t lib/main_web.dart
 ```
+
+The web build is a client only, hosted at `https://coder.tinyrack.net`. It
+connects to a daemon you run yourself, which has to allow the page's origin
+first; see [`docs/remote-daemon.md`](docs/remote-daemon.md).
 
 Release builds, packaging, and the winget and Homebrew channels are described
 in [`docs/releasing.md`](docs/releasing.md).

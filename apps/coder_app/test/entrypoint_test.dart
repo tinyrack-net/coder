@@ -1,7 +1,10 @@
 import 'package:coder_app/main.dart' as platform_entry;
 import 'package:coder_app/main_desktop.dart' as desktop_entry;
 import 'package:coder_app/main_mobile.dart' as mobile_entry;
+import 'package:coder_app/main_web.dart' as web_entry;
 import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/attachment_export_web.dart';
+import 'package:coder_app/src/attachment_web.dart';
 import 'package:coder_app/src/desktop_startup.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
@@ -69,6 +72,21 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(CoderApp), findsOneWidget);
+  });
+
+  testWidgets('the web runner starts remote-only', (tester) async {
+    await web_entry.runWebApp(services: fakeAppServices(FakeCoderApi()));
+    await tester.pump();
+
+    expect(find.byType(CoderApp), findsOneWidget);
+  });
+
+  test('the web attachment adapters replace their native counterparts', () {
+    // A browser has no filesystem, so both ports need a web implementation or
+    // the composer silently loses file support.
+    expect(createAttachmentExport(), isA<WebAttachmentExport>());
+    // super_drag_and_drop ships a web implementation, so drop stays available.
+    expect(const WebAttachmentInput().supportsDrop, isTrue);
   });
 
   testWidgets(

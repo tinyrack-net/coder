@@ -42,6 +42,7 @@ final class ArchitectureVerifier {
         'coder_agent': <String>{'coder_protocol'},
         'coder_provider_openai': <String>{'coder_agent', 'coder_protocol'},
         'coder_client': <String>{'coder_protocol'},
+        'coder_cli': <String>{'coder_client', 'coder_protocol'},
         'coder_mcp': <String>{},
         'coder_daemon': <String>{
           'coder_agent',
