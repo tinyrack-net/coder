@@ -16,6 +16,7 @@ String hostFailureText(AppLocalizations l10n, HostFailureReason reason) =>
       HostFailureReason.noStoredBearerToken => l10n.hostErrorNoToken,
       HostFailureReason.duplicateDaemon => l10n.hostErrorDuplicate,
       HostFailureReason.rejectedBearerToken => l10n.hostErrorUnauthorized,
+      HostFailureReason.embeddedPortInUse => l10n.hostErrorEmbeddedPortInUse,
     };
 
 /// Returns the failure text to show for one daemon, or null when healthy.

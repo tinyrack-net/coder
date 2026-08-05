@@ -62,9 +62,10 @@ void main() {
 
       final session = await launcher.start(
         exposure: EmbeddedDaemonExposure.allInterfaces,
+        port: 8123,
       );
       expect(startedConfig?.host, '0.0.0.0');
-      expect(startedConfig?.port, config.port);
+      expect(startedConfig?.port, 8123);
       expect(startedConfig?.homeDirectory, config.homeDirectory);
       expect(startedConfig?.bearerToken, config.bearerToken);
       expect(session.endpoint.websocketUri.scheme, 'ws');
@@ -77,6 +78,29 @@ void main() {
       expect(handle.stops, 1);
     },
   );
+
+  test('isolate launcher preserves a typed port conflict', () async {
+    final launcher = IsolateEmbeddedDaemonLauncher(
+      config: const DaemonConfig(homeDirectory: '/test-home'),
+      startDaemon: (value) => Future<DaemonHandle>.error(
+        const EmbeddedDaemonStartupException(
+          'address already in use',
+          reason: EmbeddedDaemonStartupFailureReason.portInUse,
+        ),
+      ),
+    );
+
+    await expectLater(
+      launcher.start(exposure: EmbeddedDaemonExposure.loopback, port: 7337),
+      throwsA(
+        isA<HostConnectionFailure>().having(
+          (error) => error.reason,
+          'reason',
+          HostFailureReason.embeddedPortInUse,
+        ),
+      ),
+    );
+  });
 
   test(
     'real embedded launcher starts in loopback and all-interface modes',
@@ -97,7 +121,7 @@ void main() {
       );
 
       for (final exposure in EmbeddedDaemonExposure.values) {
-        final session = await launcher.start(exposure: exposure);
+        final session = await launcher.start(exposure: exposure, port: 0);
         final client = await CoderClient.connect(
           endpoint: session.endpoint,
           credentials: session.credentials,
@@ -210,6 +234,7 @@ final class _UnusedLauncher implements EmbeddedDaemonLauncher {
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   }) => throw StateError('No daemon is expected in a factory test.');
 }
 

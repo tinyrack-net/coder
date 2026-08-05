@@ -48,11 +48,21 @@ final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   }) async {
     try {
       final baseConfig = config ?? DaemonConfig.fromEnvironment();
       return _EmbeddedSession(
-        await startDaemon(baseConfig.copyWith(host: exposure.bindHost)),
+        await startDaemon(
+          baseConfig.copyWith(host: exposure.bindHost, port: port),
+        ),
+      );
+    } on EmbeddedDaemonStartupException catch (error) {
+      throw HostConnectionFailure.network(
+        error.message,
+        reason: error.reason == EmbeddedDaemonStartupFailureReason.portInUse
+            ? HostFailureReason.embeddedPortInUse
+            : null,
       );
     } on Exception catch (error) {
       throw HostConnectionFailure.network('$error');

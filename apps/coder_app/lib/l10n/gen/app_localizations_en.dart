@@ -282,6 +282,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hostErrorUnauthorized => 'The daemon rejected the bearer token.';
 
   @override
+  String get hostErrorEmbeddedPortInUse =>
+      'The selected port is already in use.';
+
+  @override
   String get appSettingsTitle => 'App settings';
 
   @override
@@ -297,6 +301,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appSettingsExposureSubtitle =>
       'Off accepts connections from this machine only; on accepts them on every IPv4 interface.';
+
+  @override
+  String get appSettingsEmbeddedPort => 'Port';
+
+  @override
+  String get appSettingsEmbeddedPortHelp =>
+      'Choose a port from 1 to 65535. Applying restarts the embedded daemon when it is running.';
+
+  @override
+  String get appSettingsEmbeddedPortInvalid =>
+      'Enter a whole number from 1 to 65535.';
+
+  @override
+  String get appSettingsEmbeddedPortApply => 'Apply';
+
+  @override
+  String get appSettingsEmbeddedFailureTitle =>
+      'The embedded daemon could not start';
+
+  @override
+  String appSettingsEmbeddedPortConflict(int port) {
+    return 'Port $port is being used by another process. Choose another port and apply it, or retry after the port becomes available.';
+  }
 
   @override
   String get appSettingsRemoteSection => 'Remote daemons';

@@ -92,7 +92,6 @@ void main() {
         initialHandle: handle,
         homeDirectory: home.path,
         bearerToken: 'e2e-token-0123456789abcdef0123456789',
-        port: handle.boundEndpoint.port,
         provider: agentProvider,
       );
       final remoteHandle = await DaemonApplication.start(
@@ -164,6 +163,9 @@ void main() {
 
       final now = DateTime.utc(2026, 8, 3);
       final appStore = MemoryAppStore(
+        settings: AppSettings(
+          embeddedDaemonPort: handle.boundEndpoint.port,
+        ),
         profiles: <RemoteDaemonProfile>[
           RemoteDaemonProfile(
             id: 'remote',
@@ -1947,13 +1949,11 @@ final class _RestartableLauncher implements EmbeddedDaemonLauncher {
     required EmbeddedDaemonHandle initialHandle,
     required this.homeDirectory,
     required this.bearerToken,
-    required this.port,
     required this.provider,
   }) : _current = initialHandle;
 
   final String homeDirectory;
   final String bearerToken;
-  final int port;
   final ModelProvider provider;
   final List<EmbeddedDaemonExposure> exposures = <EmbeddedDaemonExposure>[];
   EmbeddedDaemonHandle? _current;
@@ -1962,6 +1962,7 @@ final class _RestartableLauncher implements EmbeddedDaemonLauncher {
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   }) async {
     exposures.add(exposure);
     final handle = _initial

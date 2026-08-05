@@ -67,7 +67,8 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'daemon.exposure',
     description:
-        'Restarts the embedded daemon on loopback or all IPv4 interfaces.',
+        'Configures and restarts the embedded daemon listener address and '
+        'port.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -85,6 +86,11 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       FeatureScenario(
         id: 'restart_failure_recovery',
         description: 'Reports a restart failure and keeps a recoverable host.',
+        surfaces: _desktop,
+      ),
+      FeatureScenario(
+        id: 'port_change_restart',
+        description: 'Applies a new listener port and reconnects the daemon.',
         surfaces: _desktop,
       ),
     ],
@@ -193,7 +199,8 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'desktop.residency',
     description:
         'Keeps the desktop app and its embedded daemon resident in the tray '
-        'when the window is closed, and quits only from the tray menu.',
+        'when the window is closed, reports daemon health without unbounded '
+        'failure details, and quits only from the tray menu.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.widget,

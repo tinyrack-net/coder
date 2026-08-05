@@ -11,6 +11,9 @@ const String embeddedHostId = 'embedded';
 /// only surfaces where no localizations are in scope.
 const String embeddedDaemonFallbackLabel = 'Embedded daemon';
 
+/// Default TCP port used by the app-owned daemon.
+const int defaultEmbeddedDaemonPort = 7337;
+
 /// Failure causes the app itself raises, so the UI can localize them.
 ///
 /// Failures reported by a daemon keep their server-supplied text instead,
@@ -27,6 +30,9 @@ enum HostFailureReason {
 
   /// The daemon answered the handshake with 401 or 403.
   rejectedBearerToken,
+
+  /// The configured embedded-daemon port is owned by another process.
+  embeddedPortInUse,
 }
 
 /// Network interfaces exposed by the app-owned desktop daemon.
@@ -49,6 +55,7 @@ final class AppSettings {
   const AppSettings({
     this.embeddedDaemonEnabled = true,
     this.embeddedDaemonExposure = EmbeddedDaemonExposure.loopback,
+    this.embeddedDaemonPort = defaultEmbeddedDaemonPort,
     this.lastActiveHostId,
     this.lastWorktree,
     this.localeTag,
@@ -56,13 +63,19 @@ final class AppSettings {
     this.sidebarCollapsed = false,
     this.startAtBoot = true,
     this.startMinimizedAtBoot = true,
-  });
+  }) : assert(
+         embeddedDaemonPort >= 1 && embeddedDaemonPort <= 65535,
+         'embeddedDaemonPort must be between 1 and 65535.',
+       );
 
   /// Whether desktop should manage an app-owned daemon.
   final bool embeddedDaemonEnabled;
 
   /// Listener exposure selected for the app-owned desktop daemon.
   final EmbeddedDaemonExposure embeddedDaemonExposure;
+
+  /// TCP port selected for the app-owned desktop daemon.
+  final int embeddedDaemonPort;
 
   /// Last host selected by the user, including an offline host.
   final String? lastActiveHostId;
@@ -92,6 +105,7 @@ final class AppSettings {
   AppSettings copyWith({
     bool? embeddedDaemonEnabled,
     EmbeddedDaemonExposure? embeddedDaemonExposure,
+    int? embeddedDaemonPort,
     String? lastActiveHostId,
     bool clearLastActiveHost = false,
     WorkspaceSelection? lastWorktree,
@@ -106,6 +120,7 @@ final class AppSettings {
     embeddedDaemonEnabled: embeddedDaemonEnabled ?? this.embeddedDaemonEnabled,
     embeddedDaemonExposure:
         embeddedDaemonExposure ?? this.embeddedDaemonExposure,
+    embeddedDaemonPort: embeddedDaemonPort ?? this.embeddedDaemonPort,
     lastActiveHostId: clearLastActiveHost
         ? null
         : lastActiveHostId ?? this.lastActiveHostId,

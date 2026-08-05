@@ -1,7 +1,25 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
-import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/tray_menu_model.dart';
+
+String _trayHostStatusText(
+  AppLocalizations l10n,
+  HostRuntimeSnapshot? runtime,
+) {
+  // Native tray menus do not expose a reliable cross-platform width limit.
+  // Keep daemon-provided failure details in Settings so one verbose message
+  // cannot expand the Ubuntu tray menu to the width of the screen.
+  if (runtime == null) return l10n.hostStatusPending;
+  return switch (runtime.status) {
+    HostRuntimeStatus.online => l10n.hostStatusOnline,
+    HostRuntimeStatus.connecting => l10n.hostStatusConnecting,
+    HostRuntimeStatus.reconnecting => l10n.hostStatusReconnecting,
+    HostRuntimeStatus.offline => l10n.hostStatusOffline,
+    HostRuntimeStatus.error => l10n.hostStatusError,
+    HostRuntimeStatus.conflict => l10n.hostStatusConflict,
+    HostRuntimeStatus.idle => l10n.hostStatusIdle,
+  };
+}
 
 /// Builds the tray presentation from localized strings and live app state.
 ///
@@ -33,7 +51,7 @@ TrayMenuModel buildTrayMenu({
         key: trayItemDaemonStatus,
         label:
             '${l10n.embeddedDaemonName}: '
-            '${hostStatusText(l10n, embeddedDaemon)}',
+            '${_trayHostStatusText(l10n, embeddedDaemon)}',
         enabled: false,
       ),
     ],

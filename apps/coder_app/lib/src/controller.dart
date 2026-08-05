@@ -130,6 +130,10 @@ class HostRegistryController extends _$HostRegistryController {
   Future<void> setEmbeddedDaemonExposure(EmbeddedDaemonExposure exposure) =>
       _registry.setEmbeddedDaemonExposure(exposure);
 
+  /// Changes the app-owned daemon port and restarts it when active.
+  Future<void> setEmbeddedDaemonPort(int port) =>
+      _registry.setEmbeddedDaemonPort(port);
+
   /// Persists the app UI language, where null follows the system locale.
   Future<void> setLocaleTag(String? tag) => _registry.setLocaleTag(tag);
 
