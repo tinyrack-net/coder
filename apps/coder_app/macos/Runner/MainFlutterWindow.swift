@@ -9,6 +9,12 @@ class MainFlutterWindow: NSWindow {
     // told to pass --start-minimized, so it has to reach Dart.
     project.dartEntrypointArguments = MainFlutterWindow.entrypointArguments()
 
+    // The brand tile color the boot splash also paints. Without it the window
+    // shows the default light surface until Flutter's first frame arrives.
+    self.backgroundColor = NSColor(
+      srgbRed: 0x0a / 255.0, green: 0x0a / 255.0, blue: 0x0a / 255.0, alpha: 1.0
+    )
+
     let flutterViewController = FlutterViewController(project: project)
     let windowFrame = self.frame
     self.contentViewController = flutterViewController

@@ -22,8 +22,48 @@
 
   <title>Coder</title>
   <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0a0a">
+
+  <!--
+    Painted before the Flutter engine is downloaded, which no Dart code can
+    cover. The colors match `manifest.json` and the boot splash Dart renders
+    once the engine is up; this file is outside the tinyrack_ui build, so
+    there is no token to reference here.
+  -->
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background-color: #0a0a0a;
+    }
+
+    #boot-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #0a0a0a;
+      opacity: 1;
+      transition: opacity 150ms ease-out;
+    }
+
+    #boot-splash[data-loaded] {
+      opacity: 0;
+    }
+
+    /* Matches --tinyrack-brand-mark-sm, which the Dart splash also uses. The
+       two must agree or the mark jumps when the overlay hands over. */
+    #boot-splash img {
+      width: 64px;
+      height: 64px;
+    }
+  </style>
 </head>
 <body>
+  <div id="boot-splash">
+    <img src="icons/Icon-192.png" alt="">
+  </div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
