@@ -8,7 +8,6 @@ import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/coder_icons.dart';
-import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -733,13 +732,11 @@ void main() {
       // The session route keeps the sidebar, so the new worktree is listed.
       await _pumpUntil(tester, find.text('feature-e2e'));
       await tester.pumpAndSettle();
-      final managedRow = find.ancestor(
-        of: find.text('feature-e2e'),
-        matching: find.byType(CoderListRow),
-      );
-      final managedMenu = find.descendant(
-        of: managedRow.last,
-        matching: find.byType(TRMenu),
+      final managedWorktree = (await setupClient.getWorkspaceCatalog())
+          .worktrees
+          .singleWhere((worktree) => worktree.branch == 'feature-e2e');
+      final managedMenu = find.byKey(
+        ValueKey<String>('worktree-menu-${managedWorktree.id}'),
       );
       await tester.ensureVisible(managedMenu);
       await tester.pumpAndSettle();

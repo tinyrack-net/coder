@@ -56,6 +56,7 @@ void main() {
     WidgetTester tester, {
     required List<HostRuntimeSnapshot> hosts,
     required Map<String, WorkspaceCatalogDto> catalogs,
+    ValueChanged<WorkspaceSelection>? onSelect,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -84,7 +85,7 @@ void main() {
               ),
               selected: null,
               onNewWorkspace: () {},
-              onSelect: (_) {},
+              onSelect: onSelect ?? (_) {},
               onOpenDaemonSettings: () {},
               onArchivedSelection: () {},
             ),
@@ -124,17 +125,62 @@ void main() {
       expect(find.text('First daemon'), findsNothing);
       expect(find.text('Second daemon · /repos/alpha'), findsOneWidget);
       expect(find.text('First daemon · /repos/zed'), findsOneWidget);
+      final tree = find.byKey(
+        const ValueKey<String>('workspace-sidebar-tree'),
+      );
+      expect(tree, findsOneWidget);
+      expect(find.byType(TRCollapsible), findsNothing);
       final names = tester
           .widgetList<Text>(
-            find.descendant(
-              of: find.byType(TRCollapsible),
-              matching: find.byType(Text),
-            ),
+            find.descendant(of: tree, matching: find.byType(Text)),
           )
           .map((text) => text.data)
           .where((data) => data == 'Alpha' || data == 'Zed')
           .toList(growable: false);
       expect(names, <String>['Alpha', 'Zed']);
+      expect(find.text('main'), findsNothing);
+      await tester.tap(find.text('Alpha'));
+      await tester.pumpAndSettle();
+      expect(find.text('main'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
+    'tree navigation expands workspaces and selects typed worktrees',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final project = workspace('project', 'Project');
+      WorkspaceSelection? selection;
+      await pump(
+        tester,
+        hosts: <HostRuntimeSnapshot>[host('up', 'Up daemon')],
+        catalogs: <String, WorkspaceCatalogDto>{
+          'up': WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[project],
+            worktrees: <WorktreeDto>[
+              worktree('project-main', project.id, 'main'),
+            ],
+          ),
+        },
+        onSelect: (value) => selection = value,
+      );
+
+      expect(
+        find.byKey(const ValueKey<String>('workspace-sidebar-tree')),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('main'));
+      await tester.pumpAndSettle();
+      expect(
+        selection,
+        const WorkspaceSelection(
+          hostId: 'up',
+          workspaceId: 'project',
+          worktreeId: 'project-main',
+        ),
+      );
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
   );

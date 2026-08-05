@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/coder_icons.dart';
-import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -22,8 +21,14 @@ typedef _WorkspaceEntry = ({
   List<WorktreeDto> worktrees,
 });
 
+typedef _WorkspaceNavValue = ({
+  String hostId,
+  String workspaceId,
+  String? worktreeId,
+});
+
 /// Left navigation listing every workspace and its worktrees.
-class WorkspaceSidebar extends StatelessWidget {
+class WorkspaceSidebar extends ConsumerWidget {
   /// Creates the workspace sidebar.
   const WorkspaceSidebar({
     required this.registry,
@@ -94,7 +99,7 @@ class WorkspaceSidebar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final runtimes =
         registry?.runtimes.values.toList(growable: false) ??
@@ -124,13 +129,16 @@ class WorkspaceSidebar extends StatelessWidget {
           ),
         ),
         const TRSeparator(),
-        Expanded(child: _body(context, l10n, runtimes, connected, entries)),
+        Expanded(
+          child: _body(context, ref, l10n, runtimes, connected, entries),
+        ),
       ],
     );
   }
 
   Widget _body(
     BuildContext context,
+    WidgetRef ref,
     AppLocalizations l10n,
     List<HostRuntimeSnapshot> runtimes,
     bool connected,
@@ -152,167 +160,135 @@ class WorkspaceSidebar extends StatelessWidget {
       return _SidebarEmptyState(message: l10n.workspaceNoWorkspaces);
     }
     return ListView(
+      padding: const EdgeInsets.all(TRSpacing.extraSmall),
       children: <Widget>[
-        for (final entry in entries)
-          _WorkspaceTreeNode(
-            key: ValueKey<String>(
-              'workspace-tree-${entry.hostId}-${entry.workspace.id}',
-            ),
-            onSelect: onSelect,
-            onArchivedSelection: onArchivedSelection,
-            hostId: entry.hostId,
-            hostLabel: entry.hostLabel,
-            api: entry.api,
-            workspace: entry.workspace,
-            worktrees: entry.worktrees,
-            selected: selected,
-            // A lone workspace has no sibling to choose between, so opening it
-            // saves the first click on a fresh launch.
-            expandedByDefault:
-                entries.length == 1 ||
-                selected?.workspaceId == entry.workspace.id,
-          ),
+        TRTreeNav<_WorkspaceNavValue>.controlled(
+          key: const ValueKey<String>('workspace-sidebar-tree'),
+          pageStorageId: 'workspace-sidebar-tree',
+          semanticLabel: l10n.workspacesTitle,
+          value: selected == null
+              ? null
+              : (
+                  hostId: selected!.hostId,
+                  workspaceId: selected!.workspaceId,
+                  worktreeId: selected!.worktreeId,
+                ),
+          items: <TRTreeNavItem<_WorkspaceNavValue>>[
+            for (final entry in entries)
+              _treeItem(context, ref, l10n, entry, entries.length),
+          ],
+          onValueChange: (value) {
+            final worktreeId = value?.worktreeId;
+            if (value == null || worktreeId == null) return;
+            onSelect(
+              WorkspaceSelection(
+                hostId: value.hostId,
+                workspaceId: value.workspaceId,
+                worktreeId: worktreeId,
+              ),
+            );
+          },
+        ),
       ],
     );
   }
-}
 
-class _WorkspaceTreeNode extends ConsumerWidget {
-  const _WorkspaceTreeNode({
-    required this.onSelect,
-    required this.onArchivedSelection,
-    required this.hostId,
-    required this.hostLabel,
-    required this.api,
-    required this.workspace,
-    required this.worktrees,
-    required this.selected,
-    required this.expandedByDefault,
-    super.key,
-  });
-
-  final ValueChanged<WorkspaceSelection> onSelect;
-  final VoidCallback onArchivedSelection;
-  final String hostId;
-  final String hostLabel;
-  final CoderApi api;
-  final WorkspaceDto workspace;
-  final List<WorktreeDto> worktrees;
-  final WorkspaceSelection? selected;
-  final bool expandedByDefault;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: TRSpacing.extraSmall,
-        vertical: TRSpacing.extraSmall,
+  TRTreeNavItem<_WorkspaceNavValue> _treeItem(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    _WorkspaceEntry entry,
+    int workspaceCount,
+  ) {
+    final workspace = entry.workspace;
+    return TRTreeNavGroup<_WorkspaceNavValue>(
+      value: (
+        hostId: entry.hostId,
+        workspaceId: workspace.id,
+        worktreeId: null,
       ),
-      child: TRCollapsible(
-        defaultOpen: expandedByDefault,
-        trigger: Row(
-          children: <Widget>[
-            Icon(
-              workspace.kind == WorkspaceKind.git
-                  ? CoderIcons.worktree
-                  : CoderIcons.folder,
+      initiallyExpanded:
+          workspaceCount == 1 || selected?.workspaceId == workspace.id,
+      leading: Icon(
+        workspace.kind == WorkspaceKind.git
+            ? CoderIcons.worktree
+            : CoderIcons.folder,
+      ),
+      label: Row(
+        children: <Widget>[
+          Expanded(child: Text(workspace.name)),
+          TRMenu(
+            key: ValueKey<String>('workspace-menu-${workspace.id}'),
+            trigger: Icon(
+              CoderIcons.more,
+              semanticLabel: l10n.workspaceProjectMenu,
             ),
-            const SizedBox(width: TRSpacing.small),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(workspace.name),
-                  Text(
-                    '$hostLabel · ${workspace.rootPath}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+            menuChildren: <Widget>[
+              TRMenuItem(
+                key: ValueKey<String>(
+                  'workspace-unregister-${workspace.id}',
+                ),
+                onPressed: () => unawaited(
+                  _unregisterWorkspace(context, ref, entry),
+                ),
+                child: Text(l10n.workspaceUnregister),
               ),
+            ],
+          ),
+        ],
+      ),
+      description: Text(
+        '${entry.hostLabel} · ${workspace.rootPath}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      children: <TRTreeNavItem<_WorkspaceNavValue>>[
+        for (final worktree in entry.worktrees)
+          TRTreeNavLeaf<_WorkspaceNavValue>(
+            value: (
+              hostId: entry.hostId,
+              workspaceId: workspace.id,
+              worktreeId: worktree.id,
             ),
-            TRMenu(
-              key: ValueKey<String>('workspace-menu-${workspace.id}'),
+            leading: Icon(
+              worktree.kind == WorktreeKind.checkout
+                  ? CoderIcons.workspace
+                  : CoderIcons.branch,
+            ),
+            label: Text(worktree.branch ?? worktree.name),
+            description: Text(
+              worktree.path,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: TRMenu(
+              key: ValueKey<String>('worktree-menu-${worktree.id}'),
               trigger: Icon(
                 CoderIcons.more,
-                semanticLabel: l10n.workspaceProjectMenu,
+                semanticLabel: l10n.workspaceWorktreeMenu,
               ),
               menuChildren: <Widget>[
                 TRMenuItem(
-                  key: ValueKey<String>(
-                    'workspace-unregister-${workspace.id}',
-                  ),
                   onPressed: () => unawaited(
-                    _unregisterWorkspace(context, ref),
+                    _archiveWorktree(context, ref, entry, worktree),
                   ),
-                  child: Text(l10n.workspaceUnregister),
+                  child: Text(l10n.workspaceArchive),
                 ),
               ],
             ),
-          ],
-        ),
-        content: Column(
-          children: <Widget>[
-            for (final worktree in worktrees)
-              CoderListRow(
-                contentPadding: const EdgeInsets.only(left: 32, right: 12),
-                selected:
-                    selected?.hostId == hostId &&
-                    selected?.worktreeId == worktree.id,
-                leading: Icon(
-                  worktree.kind == WorktreeKind.checkout
-                      ? CoderIcons.workspace
-                      : CoderIcons.branch,
-                  size: 20,
-                ),
-                title: Text(worktree.branch ?? worktree.name),
-                subtitle: Text(
-                  worktree.path,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: TRMenu(
-                  key: ValueKey<String>('worktree-menu-${worktree.id}'),
-                  trigger: Icon(
-                    CoderIcons.more,
-                    semanticLabel: l10n.workspaceWorktreeMenu,
-                  ),
-                  menuChildren: <Widget>[
-                    TRMenuItem(
-                      onPressed: () => unawaited(
-                        _archiveWorktree(context, ref, worktree),
-                      ),
-                      child: Text(l10n.workspaceArchive),
-                    ),
-                  ],
-                ),
-                onTap: () => onSelect(
-                  WorkspaceSelection(
-                    hostId: hostId,
-                    workspaceId: workspace.id,
-                    worktreeId: worktree.id,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 
   Future<void> _archiveWorktree(
     BuildContext context,
     WidgetRef ref,
+    _WorkspaceEntry entry,
     WorktreeDto worktree,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final preview = await api.previewWorktreeArchive(worktree.id);
+    final preview = await entry.api.previewWorktreeArchive(worktree.id);
     if (!context.mounted) return;
     if (preview.runningSessionCount > 0) {
       await showTRDialog<void>(
@@ -367,10 +343,10 @@ class _WorkspaceTreeNode extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    final archived = await api.archiveWorktree(worktree.id, force: risky);
+    final archived = await entry.api.archiveWorktree(worktree.id, force: risky);
     await ref
         .read(workspaceCatalogControllerProvider.notifier)
-        .refreshHost(hostId);
+        .refreshHost(entry.hostId);
     // Teardown never blocks the archive, so surface failures afterwards.
     if (context.mounted) {
       reportWorktreeHookFailure(context, archived.hookRuns);
@@ -383,8 +359,10 @@ class _WorkspaceTreeNode extends ConsumerWidget {
   Future<void> _unregisterWorkspace(
     BuildContext context,
     WidgetRef ref,
+    _WorkspaceEntry entry,
   ) async {
     final l10n = AppLocalizations.of(context);
+    final workspace = entry.workspace;
     final confirmed = await showTRDialog<bool>(
       context: context,
       builder: (context) => TRAlertDialog(
@@ -408,7 +386,7 @@ class _WorkspaceTreeNode extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    await api.unregisterWorkspace(workspace.id);
+    await entry.api.unregisterWorkspace(workspace.id);
     ref.invalidate(workspaceCatalogControllerProvider);
     if (selected?.workspaceId == workspace.id) onArchivedSelection();
   }

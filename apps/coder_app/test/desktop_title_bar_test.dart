@@ -51,6 +51,29 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DesktopTitleBar), findsOneWidget);
+      final borderFinder = find.byKey(
+        const ValueKey<String>('desktop-title-bar-border'),
+      );
+      expect(borderFinder, findsOneWidget);
+      final borderBox = tester.widget<DecoratedBox>(borderFinder);
+      expect(borderBox.position, DecorationPosition.foreground);
+      final borderDecoration = borderBox.decoration as BoxDecoration;
+      expect(
+        (borderDecoration.border! as Border).bottom.color,
+        tester.element(borderFinder).tinyrackTheme.border,
+      );
+      for (final key in <String>[
+        'desktop-title-bar-minimize',
+        'desktop-title-bar-maximize',
+      ]) {
+        final caption = tester.widget<TRWindowCaptionButton>(
+          find.descendant(
+            of: find.byKey(ValueKey<String>(key)),
+            matching: find.byType(TRWindowCaptionButton),
+          ),
+        );
+        expect(caption.glyphStyle, TRWindowCaptionGlyphStyle.expandCollapse);
+      }
       await tester.drag(
         find.byKey(const ValueKey<String>('desktop-title-bar-drag-area')),
         const Offset(30, 0),
@@ -70,6 +93,15 @@ void main() {
         find.byKey(const ValueKey<String>('desktop-title-bar-restore')),
         findsOneWidget,
       );
+      final restore = tester.widget<TRWindowCaptionButton>(
+        find.descendant(
+          of: find.byKey(
+            const ValueKey<String>('desktop-title-bar-restore'),
+          ),
+          matching: find.byType(TRWindowCaptionButton),
+        ),
+      );
+      expect(restore.glyphStyle, TRWindowCaptionGlyphStyle.expandCollapse);
 
       await tester.tap(
         find.byKey(const ValueKey<String>('desktop-title-bar-close')),

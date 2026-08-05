@@ -507,12 +507,15 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
             children: <Widget>[
               SizedBox(
                 width: 230,
-                child: _SettingsSidebar(
-                  selected: widget.category,
-                  hostId: _hostId,
+                child: TRAppShellSidebar(
+                  key: const ValueKey<String>('settings-sidebar-surface'),
+                  scroll: false,
+                  child: _SettingsSidebar(
+                    selected: widget.category,
+                    hostId: _hostId,
+                  ),
                 ),
               ),
-              const VerticalDivider(width: 1),
               Expanded(child: detail),
             ],
           );
@@ -534,80 +537,38 @@ class _SettingsSidebar extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: <Widget>[
-        CoderListRow(
-          selected: selected == SettingsCategory.general,
-          leading: const Icon(CoderIcons.tune),
-          title: Text(l10n.settingsCategoryGeneral),
-          onTap: () => _goToSettingsCategory(
-            context,
-            SettingsCategory.general,
-            hostId: hostId,
-          ),
-        ),
-        CoderListRow(
-          selected: selected == SettingsCategory.project,
-          leading: const Icon(CoderIcons.projects),
-          title: Text(l10n.settingsCategoryProjects),
-          onTap: () => _goToSettingsCategory(
-            context,
-            SettingsCategory.project,
-            hostId: hostId,
-          ),
-        ),
-        CoderListRow(
-          selected: selected == SettingsCategory.agent,
-          leading: const Icon(CoderIcons.agent),
-          title: Text(l10n.settingsCategoryAgent),
-          onTap: () => _goToSettingsCategory(
-            context,
-            SettingsCategory.agent,
-            hostId: hostId,
-          ),
-        ),
-        CoderListRow(
-          selected: selected == SettingsCategory.mcp,
-          leading: const Icon(CoderIcons.extension),
-          title: Text(l10n.settingsCategoryMcp),
-          onTap: () => _goToSettingsCategory(
-            context,
-            SettingsCategory.mcp,
-            hostId: hostId,
-          ),
-        ),
-        CoderListRow(
-          selected: selected == SettingsCategory.skill,
-          leading: const Icon(CoderIcons.sparkle),
-          title: Text(l10n.settingsCategorySkill),
-          onTap: () => _goToSettingsCategory(
-            context,
-            SettingsCategory.skill,
-            hostId: hostId,
-          ),
-        ),
-        CoderListRow(
-          selected: selected == SettingsCategory.provider,
-          leading: const Icon(CoderIcons.network),
-          title: Text(l10n.settingsCategoryProvider),
-          onTap: () => _goToSettingsCategory(
-            context,
-            SettingsCategory.provider,
-            hostId: hostId,
-          ),
-        ),
-        CoderListRow(
-          selected: selected == SettingsCategory.daemon,
-          leading: const Icon(CoderIcons.daemon),
-          title: Text(l10n.settingsCategoryDaemon),
-          onTap: () => _goToSettingsCategory(
-            context,
-            SettingsCategory.daemon,
-            hostId: hostId,
-          ),
+        TRTreeNav<SettingsCategory>.controlled(
+          key: const ValueKey<String>('settings-sidebar-tree'),
+          pageStorageId: 'settings-sidebar-tree',
+          semanticLabel: l10n.settingsTitle,
+          value: selected,
+          items: <TRTreeNavItem<SettingsCategory>>[
+            for (final category in SettingsCategory.values)
+              TRTreeNavLeaf<SettingsCategory>(
+                value: category,
+                leading: Icon(_settingsCategoryIcon(category)),
+                label: Text(_settingsCategoryLabel(l10n, category)),
+              ),
+          ],
+          onValueChange: (category) {
+            if (category == null) return;
+            _goToSettingsCategory(context, category, hostId: hostId);
+          },
         ),
       ],
     );
   }
 }
+
+IconData _settingsCategoryIcon(SettingsCategory category) => switch (category) {
+  SettingsCategory.general => CoderIcons.tune,
+  SettingsCategory.project => CoderIcons.projects,
+  SettingsCategory.agent => CoderIcons.agent,
+  SettingsCategory.mcp => CoderIcons.extension,
+  SettingsCategory.skill => CoderIcons.sparkle,
+  SettingsCategory.provider => CoderIcons.network,
+  SettingsCategory.daemon => CoderIcons.daemon,
+};
 
 String _settingsCategoryLabel(
   AppLocalizations l10n,
@@ -790,8 +751,14 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
           return Row(
             children: <Widget>[
               if (!collapsed) ...<Widget>[
-                SizedBox(width: 320, child: sidebar),
-                const VerticalDivider(width: 1),
+                SizedBox(
+                  width: 320,
+                  child: TRAppShellSidebar(
+                    key: const ValueKey<String>('workspace-sidebar-surface'),
+                    scroll: false,
+                    child: sidebar,
+                  ),
+                ),
               ],
               Expanded(child: detail),
             ],
