@@ -792,6 +792,128 @@ void main() {
     tags: const <String>['feature_test__workspace_catalog__widget'],
   );
 
+  testWidgets(
+    'the sidebar animates between its expanded and collapsed widths',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const WorkspaceHomeRoute().location,
+        store: MemoryAppStore(),
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      final surface = find.byKey(const ValueKey('workspace-sidebar-surface'));
+      final expanded = tester.getSize(surface).width;
+      expect(expanded, greaterThan(0));
+
+      await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
+      await tester.pump();
+      await tester.pump(TRMotion.normal ~/ 2);
+      final collapsing = tester.getSize(surface).width;
+      expect(collapsing, greaterThan(0));
+      expect(collapsing, lessThan(expanded));
+
+      await tester.pumpAndSettle();
+      expect(tester.getSize(surface).width, 0);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
+      await tester.pump();
+      await tester.pump(TRMotion.normal ~/ 2);
+      final expanding = tester.getSize(surface).width;
+      expect(expanding, greaterThan(0));
+      expect(expanding, lessThan(expanded));
+
+      await tester.pumpAndSettle();
+      expect(tester.getSize(surface).width, expanded);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
+    'reduced motion collapses the sidebar without animating',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const WorkspaceHomeRoute().location,
+        store: MemoryAppStore(),
+        disableAnimations: true,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      final surface = find.byKey(const ValueKey('workspace-sidebar-surface'));
+      expect(tester.getSize(surface).width, greaterThan(0));
+
+      await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
+      // One frame settles the persisted flag and the collapse together.
+      await tester.pump();
+      expect(tester.getSize(surface).width, 0);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
+    'a collapsed sidebar is unreachable by pointer, semantics, and keyboard',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final semantics = tester.ensureSemantics();
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const WorkspaceHomeRoute().location,
+        store: MemoryAppStore(),
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      final newWorkspace = find.byKey(const ValueKey('workspace-new-button'));
+      expect(newWorkspace.hitTestable(), findsOne);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
+      await tester.pump();
+      expect(newWorkspace.hitTestable(), findsNothing);
+
+      await tester.pumpAndSettle();
+      expect(newWorkspace, findsNothing);
+      expect(find.bySemanticsLabel('New workspace'), findsNothing);
+      final surface = find.byKey(const ValueKey('workspace-sidebar-surface'));
+      for (var press = 0; press < 6; press++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        final focused = FocusManager.instance.primaryFocus?.context;
+        if (focused == null) continue;
+        expect(
+          find
+              .ancestor(of: find.byWidget(focused.widget), matching: surface)
+              .evaluate(),
+          isEmpty,
+        );
+      }
+      semantics.dispose();
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
   testWidgets('mobile opens selected worktree as a session-only detail', (
     tester,
   ) async {
@@ -1880,8 +2002,17 @@ Future<GoRouter> _pumpRoute(
   FakeCoderApi api,
   String location, {
   MemoryAppStore? store,
+  bool disableAnimations = false,
 }) async {
   final router = GoRouter(initialLocation: location, routes: $appRoutes);
+  final app = MaterialApp.router(
+    theme: testLightTheme,
+    darkTheme: testDarkTheme,
+    locale: testLocale,
+    localizationsDelegates: testLocalizationsDelegates,
+    supportedLocales: testSupportedLocales,
+    routerConfig: router,
+  );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -1889,14 +2020,15 @@ Future<GoRouter> _pumpRoute(
           fakeAppServices(api, store: store),
         ),
       ],
-      child: MaterialApp.router(
-        theme: testLightTheme,
-        darkTheme: testDarkTheme,
-        locale: testLocale,
-        localizationsDelegates: testLocalizationsDelegates,
-        supportedLocales: testSupportedLocales,
-        routerConfig: router,
-      ),
+      child: disableAnimations
+          ? MediaQuery(
+              data: MediaQueryData(
+                disableAnimations: true,
+                size: tester.view.physicalSize / tester.view.devicePixelRatio,
+              ),
+              child: app,
+            )
+          : app,
     ),
   );
   await tester.pumpAndSettle();
