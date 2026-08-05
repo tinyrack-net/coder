@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
+import 'package:coder_daemon/src/attachment_service.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
@@ -24,6 +25,7 @@ class DaemonRpcServer {
     required this.sessionRepository,
     required this.timeline,
     required this.agents,
+    required this.attachments,
     required this.agentDefinitions,
     required this.mcp,
     required this.worktrees,
@@ -88,6 +90,9 @@ class DaemonRpcServer {
   /// The agents public API member.
   final SessionService agents;
 
+  /// Daemon-owned attachment payload service.
+  final AttachmentService attachments;
+
   /// Markdown-backed agent definition application service.
   final AgentDefinitionService agentDefinitions;
 
@@ -128,7 +133,12 @@ class DaemonRpcServer {
         headers: <String, String>{'content-type': 'application/json'},
       );
     }
-    if (request.url.path != 'ws') return Response.notFound('Not found');
+    final isAttachmentRequest =
+        request.url.path == 'attachments' ||
+        request.url.pathSegments.firstOrNull == 'attachments';
+    if (request.url.path != 'ws' && !isAttachmentRequest) {
+      return Response.notFound('Not found');
+    }
     final authorization = request.headers['authorization'];
     final candidate = authorization?.startsWith('Bearer ') == true
         ? authorization!.substring('Bearer '.length)
@@ -136,7 +146,58 @@ class DaemonRpcServer {
     if (!_constantTimeEquals(candidate, token)) {
       return Response.unauthorized('A valid bearer token is required.');
     }
+    if (isAttachmentRequest) return _attachmentRequest(request);
     return webSocketHandler(_openSession)(request);
+  }
+
+  Future<Response> _attachmentRequest(Request request) async {
+    try {
+      if (request.method == 'POST' && request.url.path == 'attachments') {
+        final encodedName = request.headers['x-file-name'];
+        final contentLength = int.tryParse(
+          request.headers['content-length'] ?? '',
+        );
+        if (encodedName == null || contentLength == null) {
+          return Response.badRequest(
+            body: 'x-file-name and content-length are required.',
+          );
+        }
+        final attachment = await attachments.upload(
+          fileName: Uri.decodeComponent(encodedName),
+          mimeType:
+              request.headers['content-type'] ?? 'application/octet-stream',
+          declaredByteSize: contentLength,
+          bytes: request.read(),
+        );
+        return Response.ok(
+          jsonEncode(attachment.toJson()),
+          headers: <String, String>{
+            'content-type': 'application/json',
+            'x-content-type-options': 'nosniff',
+          },
+        );
+      }
+      if (request.method == 'GET' && request.url.pathSegments.length == 2) {
+        final id = request.url.pathSegments[1];
+        final (attachment, bytes) = await attachments.download(id);
+        return Response.ok(
+          bytes,
+          headers: <String, String>{
+            'content-type': attachment.mimeType,
+            'content-length': attachment.byteSize.toString(),
+            'content-disposition':
+                "attachment; filename*=UTF-8''"
+                '${Uri.encodeComponent(attachment.fileName)}',
+            'x-content-type-options': 'nosniff',
+          },
+        );
+      }
+      return Response.notFound('Not found');
+    } on FormatException catch (error) {
+      return Response.badRequest(body: error.message);
+    } on AttachmentNotFoundException {
+      return Response.notFound('Attachment not found.');
+    }
   }
 
   void _openSession(WebSocketChannel channel, String? protocol) {
@@ -722,6 +783,7 @@ class _ClientSession {
           sessionId: request.sessionId,
           turnId: request.turnId,
           prompt: request.prompt,
+          attachmentIds: request.attachmentIds,
         );
         return TurnStartResultDto(created: created).toJson();
       case RpcMethod.turnCancel:

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
@@ -21,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 void main() {
@@ -66,7 +69,15 @@ void main() {
         );
         await request.response.close();
       });
-      final agentProvider = _AgentE2eProvider();
+      final attachmentCapture = File(
+        '${home.path}/provider-attachment-capture.json',
+      );
+      final imageBytes = base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+'
+        'A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      );
+      final documentBytes = utf8.encode('attachment document\n');
+      final agentProvider = _AgentE2eProvider(attachmentCapture.path);
       final handle = await EmbeddedDaemonHandle.start(
         DaemonConfig(
           homeDirectory: home.path,
@@ -171,6 +182,10 @@ void main() {
             embeddedLauncher: embeddedLauncher,
           ),
           desktopWindow: desktopWindow,
+          attachmentInput: _E2eAttachmentInput(
+            imageBytes: imageBytes,
+            documentBytes: documentBytes,
+          ),
         ),
       );
       // Unmount before the daemons stop so no provider request outlives its
@@ -652,12 +667,143 @@ void main() {
       expect(find.textContaining('Edit('), findsWidgets);
       expect(find.textContaining('changedFiles'), findsNothing);
       expect(find.textContaining('"isError"'), findsNothing);
+      await _pumpUntilCondition(
+        tester,
+        () async =>
+            (await setupClient.listSessions(worktreeId: 'checkout-e2e'))
+                .singleWhere(
+                  (session) => session.origin == SessionOrigin.manual,
+                )
+                .status ==
+            SessionStatus.idle,
+        'the current session to become idle',
+      );
+      expect(tester.takeException(), isNull);
+
+      // Attachments use the authenticated HTTP transport even though the turn
+      // and timeline continue to use the WebSocket API.
+      await File('${workspace.path}/agent-output.txt').writeAsString(
+        'agent attachment\n',
+      );
+      final attachmentSession = (await setupClient.listSessions(
+        worktreeId: 'checkout-e2e',
+      )).singleWhere((session) => session.origin == SessionOrigin.manual);
+      final attachButton = find
+          .byKey(const ValueKey('session-composer-attach'))
+          .hitTestable();
+      expect(tester.widget<TRIconButton>(attachButton).onPressed, isNotNull);
+      await tester.tap(attachButton);
+      await _pumpUntil(tester, find.textContaining('fixture.png'));
+      expect(find.textContaining('fixture.txt'), findsOneWidget);
+      await tester.tap(find.byKey(send));
+      await _pumpUntilCondition(
+        tester,
+        attachmentCapture.exists,
+        'the provider to receive hydrated attachments',
+      );
+      final providerAttachments =
+          (jsonDecode(
+                    await attachmentCapture.readAsString(),
+                  )
+                  as List<dynamic>)
+              .cast<Map<String, dynamic>>();
+      expect(
+        providerAttachments.map((attachment) => attachment['fileName']),
+        orderedEquals(<String>['fixture.png', 'fixture.txt']),
+      );
+      expect(
+        base64Decode(providerAttachments[0]['bytes']! as String),
+        orderedEquals(imageBytes),
+      );
+      expect(
+        base64Decode(providerAttachments[1]['bytes']! as String),
+        orderedEquals(documentBytes),
+      );
+      final attachmentTimeline = await setupClient.subscribeTimeline(
+        attachmentSession.id,
+      );
+      final uploadedSnapshots =
+          attachmentTimeline
+                  .lastWhere(
+                    (event) =>
+                        event.type == 'user.message' &&
+                        (event.data['attachments'] as List? ??
+                                const <dynamic>[])
+                            .isNotEmpty,
+                  )
+                  .data['attachments']!
+              as List<dynamic>;
+      final imageAttachmentId =
+          (uploadedSnapshots.first! as Map<String, dynamic>)['id']! as String;
+      await _pumpUntil(
+        tester,
+        find.byKey(ValueKey('chat-attachment-$imageAttachmentId')),
+        attempts: 300,
+      );
+      await tester.tap(
+        find.byKey(ValueKey('chat-attachment-$imageAttachmentId')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(InteractiveViewer), findsOneWidget);
+      Navigator.of(tester.element(find.byType(InteractiveViewer))).pop();
+      await tester.pumpAndSettle();
+      await _pumpUntil(
+        tester,
+        find.text('Attached fixtures.', findRichText: true),
+        attempts: 300,
+      );
+
+      await tester.enterText(
+        find.byKey(composer),
+        'Publish outbound attachment',
+      );
+      await tester.tap(find.byKey(send));
+      await _pumpUntilCondition(
+        tester,
+        () async => (await setupClient.subscribeTimeline(
+          attachmentSession.id,
+        )).any((event) => event.type == 'assistant.attachment'),
+        'the agent to publish its outbound attachment',
+        attempts: 300,
+      );
+      await _pumpUntil(
+        tester,
+        find.textContaining('agent-output.txt'),
+        attempts: 300,
+      );
+      final outboundTimeline = await setupClient.subscribeTimeline(
+        attachmentSession.id,
+      );
+      final outboundEvent = outboundTimeline.singleWhere(
+        (event) => event.type == 'assistant.attachment',
+      );
+      final outboundId = outboundEvent.data['id']! as String;
+      final outboundDownload = await setupClient.downloadAttachment(outboundId);
+      expect(
+        await outboundDownload.bytes.expand((chunk) => chunk).toList(),
+        utf8.encode('agent attachment\n'),
+      );
+      await _pumpUntil(
+        tester,
+        find.text('Published outbound attachment.', findRichText: true),
+        attempts: 300,
+      );
 
       // Plan mode proposes work and hands it back for approval.
       await tester.tap(
         find.byKey(const ValueKey('session-composer-mode')).hitTestable(),
       );
-      await _pumpUntil(tester, find.textContaining('Plan 모드'));
+      await _pumpUntilCondition(
+        tester,
+        () async =>
+            (await setupClient.listSessions(
+                  worktreeId: 'checkout-e2e',
+                ))
+                .singleWhere((session) => session.id == attachmentSession.id)
+                .mode ==
+            SessionMode.plan,
+        'the attachment session to enter plan mode',
+      );
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(composer), 'Plan the change');
       await tester.pump();
@@ -705,6 +851,25 @@ void main() {
       expect(child.parentSessionId, parent.id);
       final timeline = await reconnected.subscribeTimeline(parent.id);
       expect(timeline.map((event) => event.type), contains('turn.completed'));
+      final restoredAttachmentTimeline = await reconnected.subscribeTimeline(
+        parent.id,
+      );
+      expect(
+        restoredAttachmentTimeline.map((event) => event.type),
+        contains('assistant.attachment'),
+      );
+      final restoredUserAttachment = restoredAttachmentTimeline.singleWhere(
+        (event) =>
+            event.type == 'user.message' &&
+            (event.data['attachments'] as List? ?? const <dynamic>[])
+                .isNotEmpty,
+      );
+      expect(
+        (restoredUserAttachment.data['attachments']! as List<dynamic>).map(
+          (item) => (item! as Map<String, dynamic>)['fileName'],
+        ),
+        orderedEquals(<String>['fixture.png', 'fixture.txt']),
+      );
       expect(
         timeline.map((event) => event.sequence),
         orderedEquals(
@@ -855,6 +1020,7 @@ void main() {
       'feature_test__provider_connection_management__e2e',
       'feature_test__provider_custom__e2e',
       'feature_test__desktop_window_chrome__e2e',
+      'feature_test__conversation_attachments__e2e',
     ],
   );
 
@@ -896,6 +1062,8 @@ void main() {
       );
       await tray.install(menu: menu, onSelected: (_) {});
       await tray.update(menu);
+      expect(const NativeAttachmentInput(), isA<AttachmentInputPort>());
+      expect(const NativeAttachmentExport(), isA<AttachmentExportPort>());
 
       // Hiding must leave the process alive, which is the whole point of
       // closing to the tray.
@@ -908,6 +1076,7 @@ void main() {
     tags: const <String>[
       'feature_test__desktop_residency__platformSmoke',
       'feature_test__desktop_window_chrome__platformSmoke',
+      'feature_test__conversation_attachments__platformSmoke',
     ],
   );
 }
@@ -923,6 +1092,41 @@ Future<void> _waitForWindowVisibility(
     }
     await Future<void>.delayed(const Duration(milliseconds: 50));
   }
+}
+
+final class _E2eAttachmentInput implements AttachmentInputPort {
+  const _E2eAttachmentInput({
+    required this.imageBytes,
+    required this.documentBytes,
+  });
+
+  final Uint8List imageBytes;
+  final List<int> documentBytes;
+
+  @override
+  bool get supportsDrop => false;
+
+  @override
+  Future<List<PendingAttachment>> pickFiles() async => <PendingAttachment>[
+    PendingAttachment.fromBytes(
+      fileName: 'fixture.png',
+      mimeType: 'image/png',
+      bytes: imageBytes,
+    ),
+    PendingAttachment.fromBytes(
+      fileName: 'fixture.txt',
+      mimeType: 'text/plain',
+      bytes: Uint8List.fromList(documentBytes),
+    ),
+  ];
+
+  @override
+  Future<List<PendingAttachment>> pasteFiles() async =>
+      const <PendingAttachment>[];
+
+  @override
+  Future<List<PendingAttachment>> droppedFiles(PerformDropEvent event) async =>
+      const <PendingAttachment>[];
 }
 
 Future<ProviderConnectionDto> _waitForProviderModels(
@@ -1217,6 +1421,10 @@ final class _PatchProvider implements ModelProvider {
 }
 
 final class _AgentE2eProvider implements ModelProvider {
+  const _AgentE2eProvider(this.attachmentCapturePath);
+
+  final String attachmentCapturePath;
+
   @override
   String get id => 'agent-e2e-fake';
 
@@ -1226,10 +1434,8 @@ final class _AgentE2eProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
-    final latestPrompt = request.history
-        .whereType<UserConversationItem>()
-        .last
-        .text;
+    final latestUser = request.history.whereType<UserConversationItem>().last;
+    final latestPrompt = latestUser.text;
     if (request.instructions.contains('You are in Plan Mode')) {
       const plan =
           'Explored the workspace.\n'
@@ -1251,6 +1457,60 @@ final class _AgentE2eProvider implements ModelProvider {
     final hasPatchResult = request.history
         .whereType<ToolResultConversationItem>()
         .any((item) => item.callId == 'patch-call');
+    final hasAttachResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'attach-call');
+
+    if (latestUser.attachments.isNotEmpty) {
+      await File(attachmentCapturePath).writeAsString(
+        jsonEncode(
+          latestUser.attachments
+              .map(
+                (attachment) => <String, dynamic>{
+                  'fileName': attachment.fileName,
+                  'bytes': base64Encode(attachment.bytes!),
+                },
+              )
+              .toList(growable: false),
+        ),
+      );
+      yield const ModelTextDelta('Attached fixtures.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Attached fixtures.'),
+      );
+      return;
+    }
+
+    if (latestPrompt == 'Publish outbound attachment') {
+      if (!hasAttachResult) {
+        const arguments = <String, dynamic>{'path': 'agent-output.txt'};
+        yield const ModelFunctionCall(
+          callId: 'attach-call',
+          name: 'attach_file',
+          arguments: arguments,
+        );
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: '',
+            toolCalls: <ConversationToolCall>[
+              ConversationToolCall(
+                callId: 'attach-call',
+                name: 'attach_file',
+                arguments: arguments,
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      yield const ModelTextDelta('Published outbound attachment.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: 'Published outbound attachment.',
+        ),
+      );
+      return;
+    }
 
     if (latestPrompt == 'Delegate review' &&
         delegateEnabled &&

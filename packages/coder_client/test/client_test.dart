@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:async/async.dart';
 import 'package:coder_client/coder_client.dart';
@@ -141,6 +143,130 @@ void main() {
     type: 'assistant.delta',
     data: const <String, dynamic>{'text': 'hello'},
     createdAt: now,
+  );
+
+  test(
+    'attachments use authenticated streaming HTTP with typed failures',
+    tags: const <String>['feature_test__conversation_attachments__contract'],
+    () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => server.close(force: true));
+      final requests =
+          <({String method, String path, String? authorization})>[];
+      final bodies = <List<int>>[];
+      server.listen((request) async {
+        requests.add((
+          method: request.method,
+          path: request.uri.path,
+          authorization: request.headers.value(HttpHeaders.authorizationHeader),
+        ));
+        if (request.method == 'POST') {
+          bodies.add(await request.expand((chunk) => chunk).toList());
+          if (request.headers.value('x-file-name') == 'reject.txt') {
+            request.response
+              ..statusCode = HttpStatus.unprocessableEntity
+              ..write('rejected upload');
+          } else {
+            request.response
+              ..headers.contentType = ContentType.json
+              ..write(
+                jsonEncode(
+                  AttachmentDto(
+                    id: 'attachment-1',
+                    fileName: 'report.txt',
+                    mimeType: 'text/plain',
+                    byteSize: 3,
+                    kind: AttachmentKind.file,
+                    sha256: 'digest',
+                    createdAt: now,
+                  ).toJson(),
+                ),
+              );
+          }
+          await request.response.close();
+          return;
+        }
+        if (request.uri.path.endsWith('/missing')) {
+          request.response.statusCode = HttpStatus.notFound;
+          await request.response.close();
+          return;
+        }
+        request.response
+          ..headers.contentType = ContentType.text
+          ..headers.set(
+            'content-disposition',
+            "attachment; filename*=UTF-8''report%20copy.txt",
+          )
+          ..contentLength = 3
+          ..add(<int>[4, 5, 6]);
+        await request.response.close();
+      });
+
+      final connector = _TestConnector(onConfigure: _registerHello);
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint.parse('ws://127.0.0.1:${server.port}/ws'),
+        credentials: const DaemonCredentials(bearerToken: 'attachment-token'),
+        clientId: 'attachment-client',
+        clientKind: 'test',
+        connector: connector,
+      );
+      addTearDown(client.close);
+
+      final uploaded = await client.uploadAttachment(
+        fileName: 'report.txt',
+        mimeType: 'text/plain',
+        byteSize: 3,
+        bytes: Stream<List<int>>.value(<int>[1, 2, 3]),
+      );
+      expect(uploaded.id, 'attachment-1');
+      expect(bodies.single, <int>[1, 2, 3]);
+
+      final download = await client.downloadAttachment(uploaded.id);
+      expect(download.fileName, 'report copy.txt');
+      expect(download.mimeType, 'text/plain');
+      expect(download.byteSize, 3);
+      expect(await download.bytes.expand((chunk) => chunk).toList(), <int>[
+        4,
+        5,
+        6,
+      ]);
+      expect(
+        requests.every(
+          (request) => request.authorization == 'Bearer attachment-token',
+        ),
+        isTrue,
+      );
+
+      expect(
+        client.uploadAttachment(
+          fileName: 'reject.txt',
+          mimeType: 'text/plain',
+          byteSize: 1,
+          bytes: Stream<List<int>>.value(<int>[9]),
+        ),
+        throwsA(
+          isA<CoderClientException>()
+              .having((error) => error.code, 'code', 'attachment_upload_failed')
+              .having((error) => error.message, 'message', 'rejected upload'),
+        ),
+      );
+      expect(
+        client.downloadAttachment('missing'),
+        throwsA(
+          isA<CoderClientException>()
+              .having(
+                (error) => error.code,
+                'code',
+                'attachment_download_failed',
+              )
+              .having(
+                (error) => error.message,
+                'message',
+                'Attachment download failed.',
+              ),
+        ),
+      );
+    },
   );
 
   test(

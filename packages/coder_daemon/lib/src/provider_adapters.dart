@@ -127,6 +127,8 @@ abstract interface class ModelProviderFactory {
     required ProviderRuntimeConfig config,
     required ProviderCredential? credential,
     required bool supportsReasoningEffort,
+    required bool supportsImageInput,
+    required bool supportsFileInput,
   });
 }
 
@@ -143,6 +145,8 @@ final class OpenAICompatibleProviderFactory implements ModelProviderFactory {
     required ProviderRuntimeConfig config,
     required ProviderCredential? credential,
     required bool supportsReasoningEffort,
+    required bool supportsImageInput,
+    required bool supportsFileInput,
   }) {
     final apiKey = switch (credential) {
       ApiKeyCredential(:final key) => key,
@@ -155,6 +159,8 @@ final class OpenAICompatibleProviderFactory implements ModelProviderFactory {
       baseUrl: config.baseUrl,
       requiresApiKey: credential != null,
       supportsReasoningEffort: supportsReasoningEffort,
+      supportsImageInput: supportsImageInput,
+      supportsFileInput: supportsFileInput,
       strictToolSchema: config.strictToolSchema,
       additionalHeaders: <String, String>{
         if (credential is OAuthCredential) 'originator': 'tinyrack_coder',

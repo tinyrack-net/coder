@@ -211,6 +211,29 @@ jobs:
       - run: ${{ matrix.command }}
         working-directory: apps/coder_app
 
+  desktop-debug-build:
+    name: Desktop Debug Build (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-26
+            command: flutter build macos --debug -t lib/main_desktop.dart
+          - os: windows-2025
+            command: flutter build windows --debug -t lib/main_desktop.dart
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      - run: ${{ matrix.command }}
+        working-directory: apps/coder_app
+
   quality-gate:
     name: Quality Gate
     if: always() && github.event_name != 'schedule'
@@ -224,6 +247,7 @@ jobs:
       - golden-linux
       - debug-e2e-linux
       - mobile-debug-build
+      - desktop-debug-build
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

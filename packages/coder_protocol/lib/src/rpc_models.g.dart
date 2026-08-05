@@ -425,6 +425,11 @@ _TurnStartParamsDto _$TurnStartParamsDtoFromJson(Map<String, dynamic> json) =>
       sessionId: json['sessionId'] as String,
       turnId: json['turnId'] as String,
       prompt: json['prompt'] as String,
+      attachmentIds:
+          (json['attachmentIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
     );
 
 Map<String, dynamic> _$TurnStartParamsDtoToJson(_TurnStartParamsDto instance) =>
@@ -432,6 +437,7 @@ Map<String, dynamic> _$TurnStartParamsDtoToJson(_TurnStartParamsDto instance) =>
       'sessionId': instance.sessionId,
       'turnId': instance.turnId,
       'prompt': instance.prompt,
+      'attachmentIds': instance.attachmentIds,
     };
 
 _SessionIdParamsDto _$SessionIdParamsDtoFromJson(Map<String, dynamic> json) =>

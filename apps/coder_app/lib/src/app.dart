@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/agent_settings_page.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/app_settings_page.dart';
+import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
@@ -39,6 +41,7 @@ class CoderApp extends StatelessWidget {
   /// Creates the application.
   CoderApp({
     required this.services,
+    this.attachmentInput,
     this.externalUrlOpener = const PlatformExternalUrlOpener(),
     this.desktopWindow,
     this.trayIcon,
@@ -49,6 +52,9 @@ class CoderApp extends StatelessWidget {
 
   /// Platform services used by feature controllers.
   final AppServices services;
+
+  /// Platform file picker, clipboard, and desktop drop adapter.
+  final AttachmentInputPort? attachmentInput;
 
   /// Opens interactive provider authorization pages.
   final ExternalUrlOpener externalUrlOpener;
@@ -71,6 +77,7 @@ class CoderApp extends StatelessWidget {
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(services),
+      attachmentInputProvider.overrideWithValue(attachmentInput),
       externalUrlOpenerProvider.overrideWithValue(externalUrlOpener),
       desktopWindowProvider.overrideWithValue(desktopWindow),
       trayIconProvider.overrideWithValue(trayIcon),
@@ -1008,7 +1015,12 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                 : null,
           ),
           Expanded(
-            child: ChatTimelineView(items: items, busy: busy),
+            child: ChatTimelineView(
+              items: items,
+              busy: busy,
+              loadAttachment: _loadAttachment,
+              exportAttachment: _exportAttachment,
+            ),
           ),
           // A plan and any number of approvals sit between the timeline and
           // the composer, and each grows with the content it previews. The
@@ -1102,7 +1114,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                                     : SessionMode.plan,
                               ),
                         ),
-                  onSubmit: (prompt) => unawaited(_send(current.id, prompt)),
+                  attachmentInput: ref.read(attachmentInputProvider),
+                  onSubmit: (submission) => _send(current.id, submission),
                 ),
               ],
             ),
@@ -1112,7 +1125,10 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     );
   }
 
-  Future<void> _send(String sessionId, String prompt) async {
+  Future<void> _send(
+    String sessionId,
+    ComposerSubmission submission,
+  ) async {
     await ref
         .read(
           conversationControllerProvider(
@@ -1120,7 +1136,28 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             sessionId,
           ).notifier,
         )
-        .startTurn(prompt);
+        .startTurn(
+          submission.text,
+          attachments: submission.attachments,
+        );
+  }
+
+  Future<Uint8List> _loadAttachment(ChatAttachment attachment) async {
+    final registry = await ref.read(hostRegistryControllerProvider.future);
+    final api = registry.runtimes[widget.selection.hostId]?.api;
+    if (api == null) throw StateError('Daemon is not connected.');
+    return readAttachmentDownload(await api.downloadAttachment(attachment.id));
+  }
+
+  Future<void> _exportAttachment(ChatAttachment attachment) async {
+    final bytes = await _loadAttachment(attachment);
+    await ref
+        .read(attachmentExportProvider)
+        .export(
+          fileName: attachment.fileName,
+          mimeType: attachment.mimeType,
+          bytes: bytes,
+        );
   }
 }
 

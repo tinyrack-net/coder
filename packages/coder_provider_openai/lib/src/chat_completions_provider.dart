@@ -97,8 +97,21 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
     final result = <Map<String, dynamic>>[];
     for (final item in history) {
       switch (item) {
-        case UserConversationItem(:final text):
-          result.add(<String, dynamic>{'role': 'user', 'content': text});
+        case UserConversationItem(:final text, :final attachments):
+          final content = StringBuffer(text);
+          for (final attachment in attachments) {
+            if (content.isNotEmpty) content.writeln();
+            content.write(
+              '[Attachment id=${attachment.id}, '
+              'file=${attachment.fileName}, mime=${attachment.mimeType}, '
+              'bytes=${attachment.byteSize}, path=${attachment.path}. '
+              'Use read_attachment with the attachment id.]',
+            );
+          }
+          result.add(<String, dynamic>{
+            'role': 'user',
+            'content': content.toString(),
+          });
         case AssistantConversationItem(:final text, :final toolCalls):
           result.add(<String, dynamic>{
             'role': 'assistant',

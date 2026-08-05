@@ -7,6 +7,103 @@ import 'package:test/test.dart';
 
 void main() {
   test(
+    'Responses maps hydrated image and document attachments to content parts',
+    tags: const <String>['feature_test__conversation_attachments__unit'],
+    () async {
+      final adapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ok"}]}],"usage":{}}}
+
+data: [DONE]
+
+''');
+      final dio = Dio()..httpClientAdapter = adapter;
+      final provider = OpenAIResponsesProvider(
+        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        dio: dio,
+      );
+      await provider
+          .stream(
+            ModelRequest(
+              model: 'gpt-5.6-sol',
+              reasoningEffort: 'medium',
+              instructions: 'test',
+              history: <ConversationItem>[
+                UserConversationItem(
+                  'inspect these',
+                  attachments: <ConversationAttachment>[
+                    ConversationAttachment(
+                      id: 'image',
+                      fileName: 'diagram.png',
+                      mimeType: 'image/png',
+                      byteSize: 3,
+                      path: '/attachments/image.blob',
+                      bytes: Uint8List.fromList(<int>[1, 2, 3]),
+                    ),
+                    ConversationAttachment(
+                      id: 'document',
+                      fileName: 'notes.txt',
+                      mimeType: 'text/plain',
+                      byteSize: 2,
+                      path: '/attachments/document.blob',
+                      bytes: Uint8List.fromList(<int>[4, 5]),
+                    ),
+                    const ConversationAttachment(
+                      id: 'archive',
+                      fileName: 'source.zip',
+                      mimeType: 'application/zip',
+                      byteSize: 12,
+                      path: '/attachments/archive.blob',
+                    ),
+                  ],
+                ),
+              ],
+              tools: const <ModelToolDefinition>[],
+              safetyIdentifier: 'safe-user',
+            ),
+            CancellationToken(),
+          )
+          .toList();
+
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      final input = (body['input'] as List).single as Map;
+      final content = input['content']! as List;
+      expect(
+        content,
+        contains(
+          equals(<String, dynamic>{
+            'type': 'input_image',
+            'image_url': 'data:image/png;base64,AQID',
+            'detail': 'auto',
+          }),
+        ),
+      );
+      expect(
+        content,
+        contains(
+          equals(<String, dynamic>{
+            'type': 'input_text',
+            'text':
+                '[Attachment id=archive, file=source.zip, '
+                'mime=application/zip, bytes=12, '
+                'path=/attachments/archive.blob. '
+                'Use read_attachment with the attachment id.]',
+          }),
+        ),
+      );
+      expect(
+        content,
+        contains(
+          equals(<String, dynamic>{
+            'type': 'input_file',
+            'filename': 'notes.txt',
+            'file_data': 'data:text/plain;base64,BAU=',
+          }),
+        ),
+      );
+    },
+  );
+
+  test(
     'Responses request is stateless, strict, sequential, '
     'and preserves output items',
     () async {

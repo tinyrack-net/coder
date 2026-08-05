@@ -1,0 +1,34 @@
+import javax.inject.Inject
+import org.gradle.process.ExecOperations
+
+abstract class CoderExecOperations {
+    @Inject
+    abstract ExecOperations getExecOperations()
+}
+
+def execOperations = objects
+    .newInstance(CoderExecOperations)
+    .execOperations
+
+// irondash_engine_context 0.5.5 bundles CargoKit code that invokes the
+// Project.exec dynamic method removed by Gradle 9. Keep the bridge in the app
+// build rather than modifying the pub cache, and delegate execution to the
+// supported Gradle service.
+subprojects { childProject ->
+    childProject.ext.exec = { Closure action ->
+        execOperations.exec { spec ->
+            action.delegate = spec
+            action.resolveStrategy = Closure.DELEGATE_FIRST
+            action.call(spec)
+        }
+    }
+
+    childProject.afterEvaluate {
+        def android = childProject.extensions.findByName('android')
+        if (android != null && android.hasProperty('compileSdk')) {
+            // The same package pins API 31, while its AndroidX dependencies
+            // require API 34. Match the current Flutter project default.
+            android.compileSdk = 36
+        }
+    }
+}

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:alchemist/alchemist.dart';
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
@@ -42,7 +43,17 @@ void main() {
       sequence: 1,
       turnId: 'turn-1',
       type: 'user.message',
-      data: const <String, dynamic>{'text': 'Fix the failing parser test'},
+      data: const <String, dynamic>{
+        'text': 'Fix the failing parser test',
+        'attachments': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'fixture-image',
+            'fileName': 'failure.png',
+            'mimeType': 'image/png',
+            'byteSize': 28412,
+          },
+        ],
+      },
       createdAt: now,
     ),
     TimelineEventDto(
@@ -110,6 +121,19 @@ void main() {
     TimelineEventDto(
       sessionId: 'agent-1',
       sequence: 7,
+      turnId: 'turn-1',
+      type: 'assistant.attachment',
+      data: const <String, dynamic>{
+        'id': 'result-file',
+        'fileName': 'test-report.txt',
+        'mimeType': 'text/plain',
+        'byteSize': 1280,
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 8,
       turnId: 'turn-1',
       type: 'turn.completed',
       data: const <String, dynamic>{'toolRounds': 2},
@@ -585,6 +609,7 @@ Widget _composerState(
 }) => ProviderScope(
   overrides: [
     appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+    attachmentInputProvider.overrideWithValue(null),
   ],
   child: _material(
     mode,
@@ -659,6 +684,7 @@ Widget _sessionComposer(ThemeMode mode) {
   return ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(fakeAppServices(api)),
+      attachmentInputProvider.overrideWithValue(null),
     ],
     child: _material(
       mode,
@@ -967,6 +993,7 @@ Widget _shell(ThemeMode mode, {bool collapsed = false}) {
       appServicesProvider.overrideWithValue(
         fakeAppServices(api, store: store),
       ),
+      attachmentInputProvider.overrideWithValue(null),
     ],
     child: _material(
       mode,

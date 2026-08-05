@@ -16,6 +16,8 @@ class OpenAIProviderConfig {
     this.maxConnectAttempts = 3,
     this.requiresApiKey = true,
     this.supportsReasoningEffort = true,
+    this.supportsImageInput = true,
+    this.supportsFileInput = true,
     this.strictToolSchema = true,
     this.additionalHeaders = const <String, String>{},
   });
@@ -37,6 +39,12 @@ class OpenAIProviderConfig {
 
   /// The supportsReasoningEffort public API member.
   final bool supportsReasoningEffort;
+
+  /// Whether hydrated images may be sent as Responses content parts.
+  final bool supportsImageInput;
+
+  /// Whether hydrated documents may be sent as Responses content parts.
+  final bool supportsFileInput;
 
   /// The strictToolSchema public API member.
   final bool strictToolSchema;
@@ -155,14 +163,46 @@ class OpenAIResponsesProvider implements ModelProvider {
 
   List<Map<String, dynamic>> _responsesInput(List<ConversationItem> history) {
     final result = <Map<String, dynamic>>[];
+    var directFileBytes = 0;
     for (final item in history) {
       switch (item) {
-        case UserConversationItem(:final text):
+        case UserConversationItem(:final text, :final attachments):
+          final content = <Map<String, dynamic>>[
+            if (text.isNotEmpty)
+              <String, dynamic>{'type': 'input_text', 'text': text},
+          ];
+          for (final attachment in attachments) {
+            final bytes = attachment.bytes;
+            if (_config.supportsImageInput &&
+                bytes != null &&
+                _supportedImageTypes.contains(attachment.mimeType)) {
+              content.add(<String, dynamic>{
+                'type': 'input_image',
+                'image_url':
+                    'data:${attachment.mimeType};base64,${base64Encode(bytes)}',
+                'detail': 'auto',
+              });
+            } else if (_config.supportsFileInput &&
+                bytes != null &&
+                _isSupportedFile(attachment) &&
+                directFileBytes + bytes.length <= _maxDirectFileBytes) {
+              directFileBytes += bytes.length;
+              content.add(<String, dynamic>{
+                'type': 'input_file',
+                'filename': attachment.fileName,
+                'file_data':
+                    'data:${attachment.mimeType};base64,${base64Encode(bytes)}',
+              });
+            } else {
+              content.add(<String, dynamic>{
+                'type': 'input_text',
+                'text': _attachmentFallback(attachment),
+              });
+            }
+          }
           result.add(<String, dynamic>{
             'role': 'user',
-            'content': <Map<String, dynamic>>[
-              <String, dynamic>{'type': 'input_text', 'text': text},
-            ],
+            'content': content,
           });
         case AssistantConversationItem(
           :final text,
@@ -201,6 +241,56 @@ class OpenAIResponsesProvider implements ModelProvider {
     }
     return result;
   }
+
+  static const Set<String> _supportedImageTypes = <String>{
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+    'image/gif',
+  };
+
+  static const int _maxDirectFileBytes = 50 * 1024 * 1024;
+
+  static const Set<String> _supportedFileTypes = <String>{
+    'application/pdf',
+    'application/json',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain',
+    'text/markdown',
+    'text/csv',
+    'text/html',
+    'text/xml',
+  };
+
+  static bool _isSupportedFile(ConversationAttachment attachment) =>
+      _supportedFileTypes.contains(attachment.mimeType) ||
+      <String>{
+        '.c',
+        '.cpp',
+        '.css',
+        '.dart',
+        '.go',
+        '.java',
+        '.js',
+        '.kt',
+        '.py',
+        '.rb',
+        '.rs',
+        '.sh',
+        '.ts',
+        '.yaml',
+        '.yml',
+      }.any(attachment.fileName.toLowerCase().endsWith);
+
+  static String _attachmentFallback(ConversationAttachment attachment) =>
+      '[Attachment id=${attachment.id}, file=${attachment.fileName}, '
+      'mime=${attachment.mimeType}, bytes=${attachment.byteSize}, '
+      'path=${attachment.path}. Use read_attachment with the attachment id.]';
 
   Stream<ModelEvent> _modelEvents(
     Stream<Uint8List> bytes,

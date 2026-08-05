@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -103,7 +104,17 @@ sealed class ConversationItem {
 
   factory ConversationItem.fromJson(Map<String, dynamic> json) {
     return switch (json['type']) {
-      'user' => UserConversationItem(json['text']! as String),
+      'user' => UserConversationItem(
+        json['text']! as String,
+        attachments: (json['attachments'] as List? ?? const <dynamic>[])
+            .whereType<Map<dynamic, dynamic>>()
+            .map(
+              (item) => ConversationAttachment.fromJson(
+                Map<String, dynamic>.from(item),
+              ),
+            )
+            .toList(growable: false),
+      ),
       'assistant' => AssistantConversationItem(
         text: json['text'] as String? ?? '',
         toolCalls: (json['toolCalls'] as List? ?? const <dynamic>[])
@@ -132,18 +143,101 @@ sealed class ConversationItem {
   Map<String, dynamic> toJson();
 }
 
+/// An attachment reference carried in provider conversation history.
+///
+/// Persisted JSON contains references and metadata only. [bytes] is populated
+/// just before a provider request and is deliberately never serialized.
+class ConversationAttachment {
+  /// Creates a conversation attachment reference.
+  const ConversationAttachment({
+    required this.id,
+    required this.fileName,
+    required this.mimeType,
+    required this.byteSize,
+    required this.path,
+    this.bytes,
+    this.kind,
+    this.sha256,
+    this.createdAt,
+  });
+
+  /// Decodes a persisted attachment reference.
+  factory ConversationAttachment.fromJson(Map<String, dynamic> json) =>
+      ConversationAttachment(
+        id: json['id']! as String,
+        fileName: json['fileName']! as String,
+        mimeType: json['mimeType']! as String,
+        byteSize: json['byteSize']! as int,
+        path: json['path']! as String,
+        kind: json['kind'] == null
+            ? null
+            : AttachmentKind.values.byName(json['kind']! as String),
+        sha256: json['sha256'] as String?,
+        createdAt: json['createdAt'] == null
+            ? null
+            : DateTime.parse(json['createdAt']! as String),
+      );
+
+  /// Stable daemon attachment identifier.
+  final String id;
+
+  /// Display-only original file name.
+  final String fileName;
+
+  /// Validated media type.
+  final String mimeType;
+
+  /// Exact content length.
+  final int byteSize;
+
+  /// Daemon-controlled path exposed to attachment tools as a fallback.
+  final String path;
+
+  /// Ephemeral bytes hydrated for a provider invocation.
+  final Uint8List? bytes;
+
+  /// Broad preview kind from the daemon metadata snapshot.
+  final AttachmentKind? kind;
+
+  /// Content digest from the daemon metadata snapshot.
+  final String? sha256;
+
+  /// Upload completion time from the daemon metadata snapshot.
+  final DateTime? createdAt;
+
+  /// Encodes only the durable reference and metadata.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'fileName': fileName,
+    'mimeType': mimeType,
+    'byteSize': byteSize,
+    'path': path,
+    if (kind != null) 'kind': kind!.name,
+    if (sha256 != null) 'sha256': sha256,
+    if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+  };
+}
+
 /// UserConversationItem defines a public contract.
 class UserConversationItem extends ConversationItem {
   /// Creates a [UserConversationItem].
-  const UserConversationItem(this.text);
+  const UserConversationItem(
+    this.text, {
+    this.attachments = const <ConversationAttachment>[],
+  });
 
   /// The text public API member.
   final String text;
+
+  /// Ordered attachment references submitted with this message.
+  final List<ConversationAttachment> attachments;
 
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
     'type': 'user',
     'text': text,
+    if (attachments.isNotEmpty)
+      'attachments': attachments.map((item) => item.toJson()).toList(),
   };
 }
 
@@ -398,13 +492,20 @@ class ToolExecutionContext {
 /// ToolResult defines a public contract.
 class ToolResult {
   /// Creates a [ToolResult].
-  const ToolResult({required this.output, this.isError = false});
+  const ToolResult({
+    required this.output,
+    this.isError = false,
+    this.attachments = const <ConversationAttachment>[],
+  });
 
   /// The output public API member.
   final String output;
 
   /// The isError public API member.
   final bool isError;
+
+  /// Files explicitly published by the tool for the user.
+  final List<ConversationAttachment> attachments;
 }
 
 /// AgentTool defines a public contract.

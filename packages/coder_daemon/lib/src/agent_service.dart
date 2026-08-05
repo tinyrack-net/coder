@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
+import 'package:coder_daemon/src/attachment_service.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
@@ -14,7 +15,12 @@ typedef DaemonEventSink = void Function(WireEnvelope event);
 
 /// Signature used by AgentToolsFactory.
 typedef AgentToolsFactory =
-    Iterable<AgentTool> Function(Iterable<String> ids, String workspaceRoot);
+    Iterable<AgentTool> Function(
+      Iterable<String> ids,
+      String workspaceRoot,
+      String sessionId,
+      String turnId,
+    );
 
 /// SessionService defines a public contract.
 class SessionService {
@@ -31,6 +37,7 @@ class SessionService {
     required this._ids,
     required this._toolsFactory,
     required this._skills,
+    required this._attachments,
   });
 
   final SessionRepository _sessions;
@@ -44,6 +51,7 @@ class SessionService {
   final IdGenerator _ids;
   final AgentToolsFactory _toolsFactory;
   final SkillService _skills;
+  final AttachmentService _attachments;
   final Map<String, CancellationToken> _activeTurns =
       <String, CancellationToken>{};
   final Map<String, Completer<ApprovalDecision>> _pendingApprovals =
@@ -56,6 +64,7 @@ class SessionService {
     required String sessionId,
     required String turnId,
     required String prompt,
+    List<String> attachmentIds = const <String>[],
     bool trackCompletion = false,
   }) async {
     final session = await _sessions.getById(sessionId);
@@ -80,6 +89,7 @@ class SessionService {
       id: turnId,
       sessionId: sessionId,
       prompt: prompt,
+      attachmentIds: attachmentIds,
     );
     if (!created) return false;
 
@@ -101,7 +111,7 @@ class SessionService {
     final skills = await _skills.viewFor(worktree.path);
     final skillSummaries = skills.summaries();
     final tools = <AgentTool>[
-      ..._toolsFactory(definition.toolIds, worktree.path),
+      ..._toolsFactory(definition.toolIds, worktree.path, sessionId, turnId),
       if (skillSummaries.isNotEmpty) SkillTool(skills),
       if (definition.mode == AgentMode.primary &&
           definition.callableAgentIds.isNotEmpty)
@@ -154,6 +164,13 @@ class SessionService {
           _timeline.appendProviderItems(sessionId, items),
     );
 
+    final turnAttachments = await _attachments.resolveAll(
+      attachmentIds,
+      hydrate: true,
+    );
+    final history = await _hydrateHistory(
+      await _timeline.providerHistory(sessionId),
+    );
     unawaited(
       _run(
         runner,
@@ -165,7 +182,8 @@ class SessionService {
           model: resolvedModel.modelId,
           reasoningEffort: definition.reasoningEffort,
           permissionMode: permissionMode,
-          history: await _timeline.providerHistory(sessionId),
+          history: history,
+          attachments: turnAttachments,
           safetyIdentifier: _safetyIdentifier,
           sessionMode: session.mode,
           customSystemPrompt: definition.promptEnabled
@@ -178,6 +196,23 @@ class SessionService {
     );
     return true;
   }
+
+  Future<List<ConversationItem>> _hydrateHistory(
+    List<ConversationItem> history,
+  ) async => Future.wait(
+    history.map((item) async {
+      if (item is! UserConversationItem || item.attachments.isEmpty) {
+        return item;
+      }
+      return UserConversationItem(
+        item.text,
+        attachments: await _attachments.resolveAll(
+          item.attachments.map((attachment) => attachment.id).toList(),
+          hydrate: true,
+        ),
+      );
+    }),
+  );
 
   Future<void> _run(
     AgentRunner runner,

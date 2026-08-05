@@ -23,6 +23,39 @@ void main() {
   setUp(() => sequence = 0);
 
   test(
+    'projects ordered user and assistant attachment timeline events',
+    tags: const <String>['feature_test__conversation_attachments__unit'],
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('user.message', <String, dynamic>{
+          'text': '',
+          'attachments': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'image-1',
+              'fileName': 'fixture.png',
+              'mimeType': 'image/png',
+              'byteSize': 11,
+              'path': '/daemon/image-1.blob',
+            },
+          ],
+        }),
+        event('assistant.attachment', <String, dynamic>{
+          'id': 'file-1',
+          'fileName': 'result.txt',
+          'mimeType': 'text/plain',
+          'byteSize': 5,
+          'path': '/daemon/file-1.blob',
+        }),
+      ]);
+      final user = items.first as ChatUserMessage;
+      expect(user.text, isEmpty);
+      expect(user.attachments.single.id, 'image-1');
+      final assistant = items.last as ChatAttachmentMessage;
+      expect(assistant.attachment.fileName, 'result.txt');
+    },
+  );
+
+  test(
     'assistant deltas of one turn merge even when tools interleave',
     () {
       final items = projectChatTimeline(<TimelineEventDto>[
@@ -112,6 +145,35 @@ void main() {
       expect(activities[3].status, ChatToolStatus.running);
     },
     tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'successful attach_file activity yields only its attachment card',
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'attach-1',
+          'name': 'attach_file',
+          'arguments': <String, dynamic>{'path': 'result.txt'},
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'attach-1',
+          'name': 'attach_file',
+          'output': '{"attachmentId":"attachment-1"}',
+          'isError': false,
+        }),
+        event('assistant.attachment', <String, dynamic>{
+          'id': 'attachment-1',
+          'fileName': 'result.txt',
+          'mimeType': 'text/plain',
+          'byteSize': 5,
+        }),
+      ]);
+
+      expect(items.whereType<ChatToolActivity>(), isEmpty);
+      expect(items.whereType<ChatAttachmentMessage>(), hasLength(1));
+    },
+    tags: const <String>['feature_test__conversation_attachments__unit'],
   );
 
   test(

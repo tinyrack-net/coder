@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/controller.dart';
@@ -12,6 +14,7 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Agent and model selectors shown above the chat input.
@@ -352,7 +355,8 @@ class DraftSessionPane extends ConsumerWidget {
                 ? SessionMode.normal
                 : SessionMode.plan,
           ),
-          onSubmit: (prompt) => unawaited(_start(ref, prompt, agent!, draft)),
+          attachmentInput: ref.read(attachmentInputProvider),
+          onSubmit: (submission) => _start(ref, submission, agent!, draft),
         ),
       ],
     );
@@ -360,7 +364,7 @@ class DraftSessionPane extends ConsumerWidget {
 
   Future<void> _start(
     WidgetRef ref,
-    String prompt,
+    ComposerSubmission submission,
     AgentDefinitionDto agent,
     SessionComposerDraft draft,
   ) async {
@@ -369,8 +373,13 @@ class DraftSessionPane extends ConsumerWidget {
         ref,
         selection: selection,
         agentDefinitionId: agent.id,
-        title: deriveSessionTitle(prompt),
-        prompt: prompt,
+        title: deriveSessionTitle(
+          submission.text.isEmpty
+              ? submission.attachments.first.fileName
+              : submission.text,
+        ),
+        prompt: submission.text,
+        attachments: submission.attachments,
         mode: draft.mode,
         model: draft.model,
       ),
@@ -388,6 +397,7 @@ class SessionComposer extends StatefulWidget {
     this.onModeToggled,
     this.header,
     this.hint,
+    this.attachmentInput,
     super.key,
   });
 
@@ -395,7 +405,10 @@ class SessionComposer extends StatefulWidget {
   final SessionComposerBar bar;
 
   /// Receives the trimmed prompt text.
-  final ValueChanged<String> onSubmit;
+  final FutureOr<void> Function(ComposerSubmission submission) onSubmit;
+
+  /// Native input boundary; null disables picker, paste, and drop.
+  final AttachmentInputPort? attachmentInput;
 
   /// Cycles the collaboration mode, mirroring the Shift+Tab shortcut.
   final VoidCallback? onModeToggled;
@@ -415,6 +428,10 @@ class SessionComposer extends StatefulWidget {
 
 class _SessionComposerState extends State<SessionComposer> {
   final _controller = TextEditingController();
+  final List<PendingAttachment> _attachments = <PendingAttachment>[];
+  bool _submitting = false;
+  bool _dragging = false;
+  String? _attachmentError;
 
   @override
   void dispose() {
@@ -423,75 +440,166 @@ class _SessionComposerState extends State<SessionComposer> {
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    top: false,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (widget.header != null) ...<Widget>[
-            widget.header!,
-            const SizedBox(height: 8),
-          ],
-          widget.bar,
-          if (widget.bar.mode == SessionMode.plan)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                AppLocalizations.of(context).composerPlanBanner,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-          const SizedBox(height: 8),
-          Row(
-            children: <Widget>[
-              Expanded(
-                // Shift+Tab cycles the mode instead of moving focus.
-                child: Focus(
-                  onKeyEvent: _handleKey,
-                  child: TRTextField(
-                    uiSize: TRUiSize.sm,
-                    key: const ValueKey('session-composer-input'),
-                    controller: _controller,
-                    minLines: 1,
-                    maxLines: 8,
-                    enabled: widget.enabled,
-                    placeholder: AppLocalizations.of(context).composerInputHint,
-                    onSubmitted: widget.enabled ? (_) => _submit() : null,
+  Widget build(BuildContext context) {
+    final content = SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (widget.header != null) ...<Widget>[
+              widget.header!,
+              const SizedBox(height: 8),
+            ],
+            widget.bar,
+            if (widget.bar.mode == SessionMode.plan)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  AppLocalizations.of(context).composerPlanBanner,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              TRIconButton(
-                key: const ValueKey('session-composer-send'),
-                intent: TRIntent.primary,
-                uiSize: TRUiSize.sm,
-                onPressed: widget.enabled ? _submit : null,
-                icon: const Icon(CoderIcons.send),
-                label: AppLocalizations.of(context).composerSendLabel,
+            if (_attachments.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: <Widget>[
+                  for (var index = 0; index < _attachments.length; index += 1)
+                    _PendingAttachmentPill(
+                      key: ValueKey('pending-attachment-$index'),
+                      attachment: _attachments[index],
+                      uploading: _submitting,
+                      onRemove: _submitting
+                          ? null
+                          : () => setState(() => _attachments.removeAt(index)),
+                    ),
+                ],
               ),
             ],
-          ),
-          if (widget.hint != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                widget.hint!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
+            const SizedBox(height: 8),
+            Row(
+              children: <Widget>[
+                TRIconButton(
+                  key: const ValueKey('session-composer-attach'),
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  onPressed:
+                      widget.enabled &&
+                          !_submitting &&
+                          widget.attachmentInput != null
+                      ? _pickFiles
+                      : null,
+                  icon: const Icon(CoderIcons.paperclip),
+                  label: 'Attach files',
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  // Shift+Tab cycles the mode instead of moving focus.
+                  child: Focus(
+                    onKeyEvent: _handleKey,
+                    child: TRTextField(
+                      uiSize: TRUiSize.sm,
+                      key: const ValueKey('session-composer-input'),
+                      controller: _controller,
+                      minLines: 1,
+                      maxLines: 8,
+                      enabled: widget.enabled && !_submitting,
+                      placeholder: AppLocalizations.of(
+                        context,
+                      ).composerInputHint,
+                      onSubmitted: widget.enabled && !_submitting
+                          ? (_) => unawaited(_submit())
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TRIconButton(
+                  key: const ValueKey('session-composer-send'),
+                  intent: TRIntent.primary,
+                  uiSize: TRUiSize.sm,
+                  onPressed: widget.enabled && !_submitting
+                      ? () => unawaited(_submit())
+                      : null,
+                  icon: const Icon(CoderIcons.send),
+                  label: AppLocalizations.of(context).composerSendLabel,
+                ),
+              ],
+            ),
+            if (widget.hint != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  widget.hint!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               ),
-            ),
-        ],
+            if (_attachmentError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  _attachmentError!,
+                  key: const ValueKey('session-composer-attachment-error'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+    final input = widget.attachmentInput;
+    if (input == null || !input.supportsDrop) return content;
+    return DropRegion(
+      formats: Formats.standardFormats,
+      onDropOver: (_) => widget.enabled && !_submitting
+          ? DropOperation.copy
+          : DropOperation.none,
+      onDropEnter: (_) => setState(() => _dragging = true),
+      onDropLeave: (_) => setState(() => _dragging = false),
+      onPerformDrop: (event) async {
+        setState(() => _dragging = false);
+        await _addFiles(input.droppedFiles(event));
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: _dragging
+              ? Border.all(color: Theme.of(context).colorScheme.primary)
+              : null,
+        ),
+        child: content,
+      ),
+    );
+  }
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyV &&
+        (HardwareKeyboard.instance.logicalKeysPressed.contains(
+              LogicalKeyboardKey.controlLeft,
+            ) ||
+            HardwareKeyboard.instance.logicalKeysPressed.contains(
+              LogicalKeyboardKey.controlRight,
+            ) ||
+            HardwareKeyboard.instance.logicalKeysPressed.contains(
+              LogicalKeyboardKey.metaLeft,
+            ) ||
+            HardwareKeyboard.instance.logicalKeysPressed.contains(
+              LogicalKeyboardKey.metaRight,
+            ))) {
+      final input = widget.attachmentInput;
+      if (input != null) unawaited(_addFiles(input.pasteFiles()));
+      return KeyEventResult.ignored;
+    }
     final toggle = widget.onModeToggled;
     if (toggle == null || event is! KeyDownEvent) {
       return KeyEventResult.ignored;
@@ -508,10 +616,159 @@ class _SessionComposerState extends State<SessionComposer> {
     return KeyEventResult.handled;
   }
 
-  void _submit() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-    _controller.clear();
-    widget.onSubmit(text);
+  Future<void> _pickFiles() async {
+    final input = widget.attachmentInput;
+    if (input != null) await _addFiles(input.pickFiles());
   }
+
+  Future<void> _addFiles(Future<List<PendingAttachment>> pending) async {
+    try {
+      final files = await pending;
+      if (_attachments.length + files.length > maxPendingAttachmentCount) {
+        throw const FormatException('A turn accepts at most 10 attachments.');
+      }
+      if (!mounted) return;
+      setState(() {
+        _attachmentError = null;
+        _attachments.addAll(files);
+      });
+    } on Exception catch (error) {
+      if (!mounted) return;
+      setState(() => _attachmentError = '$error');
+    }
+  }
+
+  Future<void> _submit() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty && _attachments.isEmpty) return;
+    final submission = ComposerSubmission(
+      text: text,
+      attachments: List<PendingAttachment>.unmodifiable(_attachments),
+    );
+    setState(() {
+      _submitting = true;
+      _attachmentError = null;
+    });
+    try {
+      await widget.onSubmit(submission);
+      if (!mounted) return;
+      _controller.clear();
+      setState(_attachments.clear);
+    } on Exception catch (error) {
+      if (mounted) setState(() => _attachmentError = '$error');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+}
+
+class _PendingAttachmentPill extends StatelessWidget {
+  const _PendingAttachmentPill({
+    required this.attachment,
+    required this.uploading,
+    required this.onRemove,
+    super.key,
+  });
+
+  final PendingAttachment attachment;
+  final bool uploading;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: const BoxConstraints(maxWidth: 260),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (uploading)
+          const SizedBox.square(
+            dimension: 24,
+            child: Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+          )
+        else
+          _PendingAttachmentPreview(attachment: attachment),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            '${attachment.fileName} · ${_formatBytes(attachment.byteSize)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 4),
+        TRIconButton(
+          key: ValueKey('remove-${attachment.fileName}'),
+          appearance: TRAppearance.ghost,
+          uiSize: TRUiSize.sm,
+          onPressed: onRemove,
+          icon: const Icon(CoderIcons.close),
+          label: 'Remove ${attachment.fileName}',
+        ),
+      ],
+    ),
+  );
+}
+
+class _PendingAttachmentPreview extends StatefulWidget {
+  const _PendingAttachmentPreview({required this.attachment});
+
+  final PendingAttachment attachment;
+
+  @override
+  State<_PendingAttachmentPreview> createState() =>
+      _PendingAttachmentPreviewState();
+}
+
+class _PendingAttachmentPreviewState extends State<_PendingAttachmentPreview> {
+  Future<Uint8List>? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.attachment.isImage) _bytes = _read();
+  }
+
+  Future<Uint8List> _read() async {
+    final builder = BytesBuilder(copy: false);
+    await widget.attachment.openRead().forEach(builder.add);
+    return builder.takeBytes();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = _bytes;
+    if (bytes == null) return const Icon(CoderIcons.file, size: 16);
+    return FutureBuilder<Uint8List>(
+      future: bytes,
+      builder: (context, snapshot) => snapshot.hasData
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: Image.memory(
+                snapshot.data!,
+                width: 24,
+                height: 24,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  CoderIcons.image,
+                  size: 16,
+                ),
+              ),
+            )
+          : const SizedBox.square(
+              dimension: 24,
+              child: Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+            ),
+    );
+  }
+}
+
+String _formatBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }

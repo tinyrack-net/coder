@@ -59,12 +59,13 @@ final class ModelsDevCatalogMetadataSource
     return <String, List<ProviderCatalogMetadata>>{
       for (final providerId in providerIds)
         if (data[providerId] case final Map<String, dynamic> provider)
-          providerId: _parseModels(provider),
+          providerId: _parseModels(provider, providerId),
     };
   }
 
   static List<ProviderCatalogMetadata> _parseModels(
     Map<String, dynamic> provider,
+    String providerId,
   ) {
     final models = provider['models'];
     if (models is! Map<String, dynamic>) {
@@ -90,6 +91,12 @@ final class ModelsDevCatalogMetadataSource
             reasoningEffort: reasoning
                 ? CapabilitySupport.supported
                 : CapabilitySupport.unsupported,
+            imageInput: providerId == 'openai'
+                ? CapabilitySupport.supported
+                : CapabilitySupport.unknown,
+            fileInput: providerId == 'openai'
+                ? CapabilitySupport.supported
+                : CapabilitySupport.unknown,
             supportedReasoningEfforts: _reasoningEfforts(model),
             source: CapabilitySource.refreshed,
           ),

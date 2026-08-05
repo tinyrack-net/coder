@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:coder_app/src/chat/chat_message_views.dart';
 import 'package:coder_app/src/chat/chat_plan_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
@@ -10,6 +12,8 @@ class ChatTimelineView extends StatefulWidget {
   const ChatTimelineView({
     required this.items,
     required this.busy,
+    this.loadAttachment,
+    this.exportAttachment,
     super.key,
   });
 
@@ -19,6 +23,12 @@ class ChatTimelineView extends StatefulWidget {
   /// Whether the session is currently running a turn.
   final bool busy;
 
+  /// Authenticated attachment byte loader.
+  final ChatAttachmentLoader? loadAttachment;
+
+  /// Platform file exporter.
+  final ChatAttachmentExporter? exportAttachment;
+
   @override
   State<ChatTimelineView> createState() => _ChatTimelineViewState();
 }
@@ -27,6 +37,14 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   // Expansion lives here so a card keeps its state when it scrolls out of the
   // cache extent or when new events shift every reversed index.
   final Set<String> _expanded = <String>{};
+  final Map<String, Future<Uint8List>> _attachmentCache =
+      <String, Future<Uint8List>>{};
+
+  Future<Uint8List> _load(ChatAttachment attachment) =>
+      _attachmentCache.putIfAbsent(
+        attachment.id,
+        () => widget.loadAttachment!(attachment),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +80,8 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
               onToggle: () => setState(() {
                 if (!_expanded.remove(item.key)) _expanded.add(item.key);
               }),
+              loadAttachment: widget.loadAttachment == null ? null : _load,
+              exportAttachment: widget.exportAttachment,
             ),
           );
         },
@@ -77,6 +97,8 @@ class ChatItemView extends StatelessWidget {
     required this.item,
     this.expanded = false,
     this.onToggle,
+    this.loadAttachment,
+    this.exportAttachment,
     super.key,
   });
 
@@ -89,11 +111,26 @@ class ChatItemView extends StatelessWidget {
   /// Called when an expandable item is tapped.
   final VoidCallback? onToggle;
 
+  /// Authenticated attachment byte loader.
+  final ChatAttachmentLoader? loadAttachment;
+
+  /// Platform file exporter.
+  final ChatAttachmentExporter? exportAttachment;
+
   @override
   Widget build(BuildContext context) {
     final value = item;
     return switch (value) {
-      ChatUserMessage() => ChatUserLine(message: value),
+      ChatUserMessage() => ChatUserLine(
+        message: value,
+        loadAttachment: loadAttachment,
+        exportAttachment: exportAttachment,
+      ),
+      ChatAttachmentMessage() => ChatAttachmentLine(
+        message: value,
+        loadAttachment: loadAttachment,
+        exportAttachment: exportAttachment,
+      ),
       ChatAssistantMessage() => ChatAssistantMessageView(message: value),
       ChatPlanProposal() => ChatPlanCard(proposal: value),
       ChatToolActivity() => ChatToolCard(

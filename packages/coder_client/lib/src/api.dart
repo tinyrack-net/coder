@@ -1,5 +1,28 @@
 import 'package:coder_protocol/coder_protocol.dart';
 
+/// Authenticated streaming attachment download.
+final class AttachmentDownload {
+  /// Creates a download stream and response metadata.
+  const AttachmentDownload({
+    required this.fileName,
+    required this.mimeType,
+    required this.byteSize,
+    required this.bytes,
+  });
+
+  /// Server-provided display filename.
+  final String fileName;
+
+  /// Validated response media type.
+  final String mimeType;
+
+  /// Exact response length.
+  final int byteSize;
+
+  /// Payload bytes.
+  final Stream<List<int>> bytes;
+}
+
 /// Values supported by ClientConnectionState.
 enum ClientConnectionState {
   /// The initial connection is opening.
@@ -312,7 +335,19 @@ abstract interface class CoderApi {
     required String sessionId,
     required String turnId,
     required String prompt,
+    List<String> attachmentIds = const <String>[],
   });
+
+  /// Streams one file into the daemon-owned attachment store.
+  Future<AttachmentDto> uploadAttachment({
+    required String fileName,
+    required String mimeType,
+    required int byteSize,
+    required Stream<List<int>> bytes,
+  });
+
+  /// Opens an authenticated attachment download stream.
+  Future<AttachmentDownload> downloadAttachment(String id);
 
   /// The cancelTurn public API member.
   Future<void> cancelTurn(String sessionId);

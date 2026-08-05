@@ -140,6 +140,55 @@ class Turns extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+/// Immutable attachment metadata; payload bytes live in the attachment store.
+class Attachments extends Table {
+  /// Stable opaque identifier used as the storage key.
+  TextColumn get id => text()();
+
+  /// Original display name, never used to construct a storage path.
+  TextColumn get fileName => text()();
+
+  /// Validated media type.
+  TextColumn get mimeType => text()();
+
+  /// Exact payload length.
+  IntColumn get byteSize => integer()();
+
+  /// Broad preview category.
+  TextColumn get kind => text()();
+
+  /// Lower-case SHA-256 digest.
+  TextColumn get sha256 => text()();
+
+  /// Upload completion time.
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+/// Ordered attachment relationship for inbound and outbound turn files.
+class TurnAttachments extends Table {
+  /// Owning turn.
+  TextColumn get turnId => text().references(Turns, #id)();
+
+  /// Attached immutable payload.
+  TextColumn get attachmentId => text().references(Attachments, #id)();
+
+  /// `user` or `assistant`.
+  TextColumn get direction => text()();
+
+  /// Stable order within the direction.
+  IntColumn get ordinal => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{
+    turnId,
+    direction,
+    ordinal,
+  };
+}
+
 /// TimelineEvents defines a public contract.
 class TimelineEvents extends Table {
   /// The sessionId public API member.
@@ -309,6 +358,8 @@ class ProviderModels extends Table {
     Worktrees,
     Sessions,
     Turns,
+    Attachments,
+    TurnAttachments,
     TimelineEvents,
     ApprovalRequests,
     ProviderStates,
@@ -321,6 +372,7 @@ class ProviderModels extends Table {
     WorkspaceDao,
     WorktreeDao,
     SessionDao,
+    AttachmentDao,
     TimelineDao,
     ProviderDao,
     RuntimeDao,
@@ -344,7 +396,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

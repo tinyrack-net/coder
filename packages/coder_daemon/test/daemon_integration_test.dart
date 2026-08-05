@@ -1282,6 +1282,174 @@ void main() {
     tags: const <String>['feature_test__provider_oauth__verticalSlice'],
   );
 
+  test(
+    'attachments stream through a remote client and survive daemon restart',
+    tags: const <String>[
+      'feature_test__conversation_attachments__verticalSlice',
+    ],
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'coder-attachment-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-attachment-workspace-',
+      );
+      await File(p.join(workspace.path, 'agent-result.txt')).writeAsString(
+        'agent bytes',
+      );
+      const token = 'attachment-token-0123456789abcdef0123456789';
+      final provider = _AttachmentProvider();
+      final config = DaemonConfig(
+        homeDirectory: home.path,
+        port: 0,
+        bearerToken: token,
+        useEnvironmentCredentials: false,
+        apiKey: 'test-api-key',
+      );
+      var handle = await DaemonApplication.start(config, provider: provider);
+      var client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: token),
+        clientId: 'attachment-integration',
+        clientKind: 'test',
+      );
+      addTearDown(() async {
+        await client.close();
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+
+      final unauthorizedClient = HttpClient();
+      final unauthorized = await unauthorizedClient.getUrl(
+        handle.boundEndpoint.replace(
+          scheme: 'http',
+          path: '/attachments/missing',
+        ),
+      );
+      expect(
+        (await unauthorized.close()).statusCode,
+        HttpStatus.unauthorized,
+      );
+      unauthorizedClient.close(force: true);
+
+      final imageBytes = <int>[
+        0x89,
+        0x50,
+        0x4e,
+        0x47,
+        0x0d,
+        0x0a,
+        0x1a,
+        0x0a,
+        1,
+        2,
+        3,
+      ];
+      final uploaded = await client.uploadAttachment(
+        fileName: 'fixture.png',
+        mimeType: 'image/png',
+        byteSize: imageBytes.length,
+        bytes: Stream<List<int>>.value(imageBytes),
+      );
+      expect(uploaded.kind, AttachmentKind.image);
+
+      final catalog = await client.registerWorkspace(
+        workspaceId: 'attachment-workspace',
+        checkoutId: 'attachment-checkout',
+        rootPath: workspace.path,
+        name: 'Attachments',
+      );
+      final models = await client.listProviderModels('openai');
+      final session = await client.createSession(
+        id: 'attachment-session',
+        worktreeId: catalog.worktrees.single.id,
+        title: 'Attachment session',
+        agentDefinitionId: 'coder',
+        model: SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: models.first.id,
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+      final completed = client.events
+          .where((event) => event is TimelineClientEvent)
+          .cast<TimelineClientEvent>()
+          .map((event) => event.event)
+          .firstWhere((event) => event.type == 'turn.completed')
+          .timeout(_eventTimeout);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'attachment-turn',
+        prompt: '',
+        attachmentIds: <String>[uploaded.id],
+      );
+      await completed;
+
+      final request = await provider.firstRequest.future;
+      final input = request.history.whereType<UserConversationItem>().last;
+      expect(input.text, isEmpty);
+      expect(input.attachments.single.bytes, imageBytes);
+      final timeline = await client.subscribeTimeline(session.id);
+      final userMessage = timeline.singleWhere(
+        (event) => event.type == 'user.message',
+      );
+      expect(userMessage.data['attachments'], hasLength(1));
+      final userAttachment =
+          (userMessage.data['attachments']! as List<Object?>).single!
+              as Map<String, dynamic>;
+      expect(userAttachment, isNot(contains('path')));
+      expect(userAttachment, isNot(contains('bytes')));
+      final outbound = timeline.singleWhere(
+        (event) => event.type == 'assistant.attachment',
+      );
+      expect(outbound.data, isNot(contains('path')));
+      expect(outbound.data, isNot(contains('bytes')));
+      final outboundId = outbound.data['id']! as String;
+
+      final imageDownload = await client.downloadAttachment(uploaded.id);
+      expect(
+        await imageDownload.bytes.expand((chunk) => chunk).toList(),
+        imageBytes,
+      );
+      final outboundDownload = await client.downloadAttachment(outboundId);
+      expect(
+        utf8.decode(
+          await outboundDownload.bytes.expand((chunk) => chunk).toList(),
+        ),
+        'agent bytes',
+      );
+
+      await client.close();
+      await handle.stop();
+      handle = await DaemonApplication.start(
+        config,
+        provider: _AttachmentProvider(),
+      );
+      client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: token),
+        clientId: 'attachment-reconnect',
+        clientKind: 'test',
+      );
+      final restored = await client.downloadAttachment(uploaded.id);
+      expect(
+        await restored.bytes.expand((chunk) => chunk).toList(),
+        imageBytes,
+      );
+      expect(
+        await client.subscribeTimeline(session.id),
+        contains(
+          predicate<TimelineEventDto>(
+            (event) =>
+                event.type == 'assistant.attachment' &&
+                event.data['id'] == outboundId,
+          ),
+        ),
+      );
+    },
+  );
+
   test('secrets are not persisted in daemon files', () async {
     final home = await Directory.systemTemp.createTemp('coder-secret-home-');
     final config = await Directory.systemTemp.createTemp(
@@ -1562,6 +1730,48 @@ class _PatchProvider implements ModelProvider {
     yield const ModelTextDelta('Created result.txt');
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'Created result.txt'),
+    );
+  }
+}
+
+final class _AttachmentProvider implements ModelProvider {
+  final Completer<ModelRequest> firstRequest = Completer<ModelRequest>();
+
+  @override
+  String get id => 'attachment-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    if (!firstRequest.isCompleted) firstRequest.complete(request);
+    final hasToolResult = request.history.any(
+      (item) => item is ToolResultConversationItem,
+    );
+    if (!hasToolResult) {
+      const arguments = <String, dynamic>{'path': 'agent-result.txt'};
+      yield const ModelFunctionCall(
+        callId: 'attach-call',
+        name: 'attach_file',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'attach-call',
+              name: 'attach_file',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Attached.'),
     );
   }
 }

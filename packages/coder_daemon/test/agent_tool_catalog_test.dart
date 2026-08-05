@@ -34,13 +34,22 @@ void main() {
       'list_directory',
       'read_file',
       'search_text',
+      'attach_file',
+      'read_attachment',
     });
   });
 
   test('resolution forces the always-on tools ahead of the chosen ones', () {
     expect(
       resolveAgentToolIds(const <String>['run_command']),
-      <String>['list_directory', 'read_file', 'search_text', 'run_command'],
+      <String>[
+        'list_directory',
+        'read_file',
+        'search_text',
+        'attach_file',
+        'read_attachment',
+        'run_command',
+      ],
     );
     // An agent that still lists a read tool gets it once, not twice.
     expect(
@@ -49,12 +58,20 @@ void main() {
         'list_directory',
         'read_file',
         'search_text',
+        'attach_file',
+        'read_attachment',
         'mcp__repo__lint',
       ],
     );
     expect(
       resolveAgentToolIds(const <String>[]),
-      <String>['list_directory', 'read_file', 'search_text'],
+      <String>[
+        'list_directory',
+        'read_file',
+        'search_text',
+        'attach_file',
+        'read_attachment',
+      ],
     );
   });
 
@@ -217,6 +234,8 @@ void main() {
             'list_directory',
             'read_file',
             'search_text',
+            'attach_file',
+            'read_attachment',
             'apply_patch',
             'run_command',
           ],

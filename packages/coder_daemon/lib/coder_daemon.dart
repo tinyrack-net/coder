@@ -1,5 +1,6 @@
 export 'src/agent_definitions.dart';
 export 'src/application.dart';
+export 'src/attachment_service.dart';
 export 'src/built_in_skills.dart';
 export 'src/config.dart';
 export 'src/embedded.dart';

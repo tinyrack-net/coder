@@ -2324,6 +2324,808 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
   }
 }
 
+class $AttachmentsTable extends Attachments
+    with TableInfo<$AttachmentsTable, Attachment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AttachmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mimeTypeMeta = const VerificationMeta(
+    'mimeType',
+  );
+  @override
+  late final GeneratedColumn<String> mimeType = GeneratedColumn<String>(
+    'mime_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _byteSizeMeta = const VerificationMeta(
+    'byteSize',
+  );
+  @override
+  late final GeneratedColumn<int> byteSize = GeneratedColumn<int>(
+    'byte_size',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
+  @override
+  late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
+    'sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    fileName,
+    mimeType,
+    byteSize,
+    kind,
+    sha256,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'attachments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Attachment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('mime_type')) {
+      context.handle(
+        _mimeTypeMeta,
+        mimeType.isAcceptableOrUnknown(data['mime_type']!, _mimeTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mimeTypeMeta);
+    }
+    if (data.containsKey('byte_size')) {
+      context.handle(
+        _byteSizeMeta,
+        byteSize.isAcceptableOrUnknown(data['byte_size']!, _byteSizeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_byteSizeMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('sha256')) {
+      context.handle(
+        _sha256Meta,
+        sha256.isAcceptableOrUnknown(data['sha256']!, _sha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_sha256Meta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Attachment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Attachment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      mimeType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mime_type'],
+      )!,
+      byteSize: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}byte_size'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      sha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sha256'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AttachmentsTable createAlias(String alias) {
+    return $AttachmentsTable(attachedDatabase, alias);
+  }
+}
+
+class Attachment extends DataClass implements Insertable<Attachment> {
+  /// Stable opaque identifier used as the storage key.
+  final String id;
+
+  /// Original display name, never used to construct a storage path.
+  final String fileName;
+
+  /// Validated media type.
+  final String mimeType;
+
+  /// Exact payload length.
+  final int byteSize;
+
+  /// Broad preview category.
+  final String kind;
+
+  /// Lower-case SHA-256 digest.
+  final String sha256;
+
+  /// Upload completion time.
+  final DateTime createdAt;
+  const Attachment({
+    required this.id,
+    required this.fileName,
+    required this.mimeType,
+    required this.byteSize,
+    required this.kind,
+    required this.sha256,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['file_name'] = Variable<String>(fileName);
+    map['mime_type'] = Variable<String>(mimeType);
+    map['byte_size'] = Variable<int>(byteSize);
+    map['kind'] = Variable<String>(kind);
+    map['sha256'] = Variable<String>(sha256);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  AttachmentsCompanion toCompanion(bool nullToAbsent) {
+    return AttachmentsCompanion(
+      id: Value(id),
+      fileName: Value(fileName),
+      mimeType: Value(mimeType),
+      byteSize: Value(byteSize),
+      kind: Value(kind),
+      sha256: Value(sha256),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Attachment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Attachment(
+      id: serializer.fromJson<String>(json['id']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      mimeType: serializer.fromJson<String>(json['mimeType']),
+      byteSize: serializer.fromJson<int>(json['byteSize']),
+      kind: serializer.fromJson<String>(json['kind']),
+      sha256: serializer.fromJson<String>(json['sha256']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'fileName': serializer.toJson<String>(fileName),
+      'mimeType': serializer.toJson<String>(mimeType),
+      'byteSize': serializer.toJson<int>(byteSize),
+      'kind': serializer.toJson<String>(kind),
+      'sha256': serializer.toJson<String>(sha256),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Attachment copyWith({
+    String? id,
+    String? fileName,
+    String? mimeType,
+    int? byteSize,
+    String? kind,
+    String? sha256,
+    DateTime? createdAt,
+  }) => Attachment(
+    id: id ?? this.id,
+    fileName: fileName ?? this.fileName,
+    mimeType: mimeType ?? this.mimeType,
+    byteSize: byteSize ?? this.byteSize,
+    kind: kind ?? this.kind,
+    sha256: sha256 ?? this.sha256,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Attachment copyWithCompanion(AttachmentsCompanion data) {
+    return Attachment(
+      id: data.id.present ? data.id.value : this.id,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
+      byteSize: data.byteSize.present ? data.byteSize.value : this.byteSize,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Attachment(')
+          ..write('id: $id, ')
+          ..write('fileName: $fileName, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('byteSize: $byteSize, ')
+          ..write('kind: $kind, ')
+          ..write('sha256: $sha256, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, fileName, mimeType, byteSize, kind, sha256, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Attachment &&
+          other.id == this.id &&
+          other.fileName == this.fileName &&
+          other.mimeType == this.mimeType &&
+          other.byteSize == this.byteSize &&
+          other.kind == this.kind &&
+          other.sha256 == this.sha256 &&
+          other.createdAt == this.createdAt);
+}
+
+class AttachmentsCompanion extends UpdateCompanion<Attachment> {
+  final Value<String> id;
+  final Value<String> fileName;
+  final Value<String> mimeType;
+  final Value<int> byteSize;
+  final Value<String> kind;
+  final Value<String> sha256;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const AttachmentsCompanion({
+    this.id = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.mimeType = const Value.absent(),
+    this.byteSize = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.sha256 = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AttachmentsCompanion.insert({
+    required String id,
+    required String fileName,
+    required String mimeType,
+    required int byteSize,
+    required String kind,
+    required String sha256,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       fileName = Value(fileName),
+       mimeType = Value(mimeType),
+       byteSize = Value(byteSize),
+       kind = Value(kind),
+       sha256 = Value(sha256),
+       createdAt = Value(createdAt);
+  static Insertable<Attachment> custom({
+    Expression<String>? id,
+    Expression<String>? fileName,
+    Expression<String>? mimeType,
+    Expression<int>? byteSize,
+    Expression<String>? kind,
+    Expression<String>? sha256,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fileName != null) 'file_name': fileName,
+      if (mimeType != null) 'mime_type': mimeType,
+      if (byteSize != null) 'byte_size': byteSize,
+      if (kind != null) 'kind': kind,
+      if (sha256 != null) 'sha256': sha256,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AttachmentsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? fileName,
+    Value<String>? mimeType,
+    Value<int>? byteSize,
+    Value<String>? kind,
+    Value<String>? sha256,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return AttachmentsCompanion(
+      id: id ?? this.id,
+      fileName: fileName ?? this.fileName,
+      mimeType: mimeType ?? this.mimeType,
+      byteSize: byteSize ?? this.byteSize,
+      kind: kind ?? this.kind,
+      sha256: sha256 ?? this.sha256,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (mimeType.present) {
+      map['mime_type'] = Variable<String>(mimeType.value);
+    }
+    if (byteSize.present) {
+      map['byte_size'] = Variable<int>(byteSize.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AttachmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('fileName: $fileName, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('byteSize: $byteSize, ')
+          ..write('kind: $kind, ')
+          ..write('sha256: $sha256, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TurnAttachmentsTable extends TurnAttachments
+    with TableInfo<$TurnAttachmentsTable, TurnAttachment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TurnAttachmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _turnIdMeta = const VerificationMeta('turnId');
+  @override
+  late final GeneratedColumn<String> turnId = GeneratedColumn<String>(
+    'turn_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES turns (id)',
+    ),
+  );
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachments (id)',
+    ),
+  );
+  static const VerificationMeta _directionMeta = const VerificationMeta(
+    'direction',
+  );
+  @override
+  late final GeneratedColumn<String> direction = GeneratedColumn<String>(
+    'direction',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ordinalMeta = const VerificationMeta(
+    'ordinal',
+  );
+  @override
+  late final GeneratedColumn<int> ordinal = GeneratedColumn<int>(
+    'ordinal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    turnId,
+    attachmentId,
+    direction,
+    ordinal,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'turn_attachments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TurnAttachment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('turn_id')) {
+      context.handle(
+        _turnIdMeta,
+        turnId.isAcceptableOrUnknown(data['turn_id']!, _turnIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_turnIdMeta);
+    }
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('direction')) {
+      context.handle(
+        _directionMeta,
+        direction.isAcceptableOrUnknown(data['direction']!, _directionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_directionMeta);
+    }
+    if (data.containsKey('ordinal')) {
+      context.handle(
+        _ordinalMeta,
+        ordinal.isAcceptableOrUnknown(data['ordinal']!, _ordinalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ordinalMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {turnId, direction, ordinal};
+  @override
+  TurnAttachment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TurnAttachment(
+      turnId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}turn_id'],
+      )!,
+      attachmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attachment_id'],
+      )!,
+      direction: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}direction'],
+      )!,
+      ordinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ordinal'],
+      )!,
+    );
+  }
+
+  @override
+  $TurnAttachmentsTable createAlias(String alias) {
+    return $TurnAttachmentsTable(attachedDatabase, alias);
+  }
+}
+
+class TurnAttachment extends DataClass implements Insertable<TurnAttachment> {
+  /// Owning turn.
+  final String turnId;
+
+  /// Attached immutable payload.
+  final String attachmentId;
+
+  /// `user` or `assistant`.
+  final String direction;
+
+  /// Stable order within the direction.
+  final int ordinal;
+  const TurnAttachment({
+    required this.turnId,
+    required this.attachmentId,
+    required this.direction,
+    required this.ordinal,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['turn_id'] = Variable<String>(turnId);
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['direction'] = Variable<String>(direction);
+    map['ordinal'] = Variable<int>(ordinal);
+    return map;
+  }
+
+  TurnAttachmentsCompanion toCompanion(bool nullToAbsent) {
+    return TurnAttachmentsCompanion(
+      turnId: Value(turnId),
+      attachmentId: Value(attachmentId),
+      direction: Value(direction),
+      ordinal: Value(ordinal),
+    );
+  }
+
+  factory TurnAttachment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TurnAttachment(
+      turnId: serializer.fromJson<String>(json['turnId']),
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      direction: serializer.fromJson<String>(json['direction']),
+      ordinal: serializer.fromJson<int>(json['ordinal']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'turnId': serializer.toJson<String>(turnId),
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'direction': serializer.toJson<String>(direction),
+      'ordinal': serializer.toJson<int>(ordinal),
+    };
+  }
+
+  TurnAttachment copyWith({
+    String? turnId,
+    String? attachmentId,
+    String? direction,
+    int? ordinal,
+  }) => TurnAttachment(
+    turnId: turnId ?? this.turnId,
+    attachmentId: attachmentId ?? this.attachmentId,
+    direction: direction ?? this.direction,
+    ordinal: ordinal ?? this.ordinal,
+  );
+  TurnAttachment copyWithCompanion(TurnAttachmentsCompanion data) {
+    return TurnAttachment(
+      turnId: data.turnId.present ? data.turnId.value : this.turnId,
+      attachmentId: data.attachmentId.present
+          ? data.attachmentId.value
+          : this.attachmentId,
+      direction: data.direction.present ? data.direction.value : this.direction,
+      ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TurnAttachment(')
+          ..write('turnId: $turnId, ')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('direction: $direction, ')
+          ..write('ordinal: $ordinal')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(turnId, attachmentId, direction, ordinal);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TurnAttachment &&
+          other.turnId == this.turnId &&
+          other.attachmentId == this.attachmentId &&
+          other.direction == this.direction &&
+          other.ordinal == this.ordinal);
+}
+
+class TurnAttachmentsCompanion extends UpdateCompanion<TurnAttachment> {
+  final Value<String> turnId;
+  final Value<String> attachmentId;
+  final Value<String> direction;
+  final Value<int> ordinal;
+  final Value<int> rowid;
+  const TurnAttachmentsCompanion({
+    this.turnId = const Value.absent(),
+    this.attachmentId = const Value.absent(),
+    this.direction = const Value.absent(),
+    this.ordinal = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TurnAttachmentsCompanion.insert({
+    required String turnId,
+    required String attachmentId,
+    required String direction,
+    required int ordinal,
+    this.rowid = const Value.absent(),
+  }) : turnId = Value(turnId),
+       attachmentId = Value(attachmentId),
+       direction = Value(direction),
+       ordinal = Value(ordinal);
+  static Insertable<TurnAttachment> custom({
+    Expression<String>? turnId,
+    Expression<String>? attachmentId,
+    Expression<String>? direction,
+    Expression<int>? ordinal,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (turnId != null) 'turn_id': turnId,
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (direction != null) 'direction': direction,
+      if (ordinal != null) 'ordinal': ordinal,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TurnAttachmentsCompanion copyWith({
+    Value<String>? turnId,
+    Value<String>? attachmentId,
+    Value<String>? direction,
+    Value<int>? ordinal,
+    Value<int>? rowid,
+  }) {
+    return TurnAttachmentsCompanion(
+      turnId: turnId ?? this.turnId,
+      attachmentId: attachmentId ?? this.attachmentId,
+      direction: direction ?? this.direction,
+      ordinal: ordinal ?? this.ordinal,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (turnId.present) {
+      map['turn_id'] = Variable<String>(turnId.value);
+    }
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (direction.present) {
+      map['direction'] = Variable<String>(direction.value);
+    }
+    if (ordinal.present) {
+      map['ordinal'] = Variable<int>(ordinal.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TurnAttachmentsCompanion(')
+          ..write('turnId: $turnId, ')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('direction: $direction, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $TimelineEventsTable extends TimelineEvents
     with TableInfo<$TimelineEventsTable, TimelineEvent> {
   @override
@@ -5245,6 +6047,10 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final $WorktreesTable worktrees = $WorktreesTable(this);
   late final $SessionsTable sessions = $SessionsTable(this);
   late final $TurnsTable turns = $TurnsTable(this);
+  late final $AttachmentsTable attachments = $AttachmentsTable(this);
+  late final $TurnAttachmentsTable turnAttachments = $TurnAttachmentsTable(
+    this,
+  );
   late final $TimelineEventsTable timelineEvents = $TimelineEventsTable(this);
   late final $ApprovalRequestsTable approvalRequests = $ApprovalRequestsTable(
     this,
@@ -5258,6 +6064,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final WorkspaceDao workspaceDao = WorkspaceDao(this as CoderDatabase);
   late final WorktreeDao worktreeDao = WorktreeDao(this as CoderDatabase);
   late final SessionDao sessionDao = SessionDao(this as CoderDatabase);
+  late final AttachmentDao attachmentDao = AttachmentDao(this as CoderDatabase);
   late final TimelineDao timelineDao = TimelineDao(this as CoderDatabase);
   late final ProviderDao providerDao = ProviderDao(this as CoderDatabase);
   late final RuntimeDao runtimeDao = RuntimeDao(this as CoderDatabase);
@@ -5270,6 +6077,8 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
     worktrees,
     sessions,
     turns,
+    attachments,
+    turnAttachments,
     timelineEvents,
     approvalRequests,
     providerStates,
@@ -7099,6 +7908,27 @@ final class $$TurnsTableReferences
     );
   }
 
+  static MultiTypedResultKey<$TurnAttachmentsTable, List<TurnAttachment>>
+  _turnAttachmentsRefsTable(_$CoderDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.turnAttachments,
+        aliasName: 'turns__id__turn_attachments__turn_id',
+      );
+
+  $$TurnAttachmentsTableProcessedTableManager get turnAttachmentsRefs {
+    final manager = $$TurnAttachmentsTableTableManager(
+      $_db,
+      $_db.turnAttachments,
+    ).filter((f) => f.turnId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _turnAttachmentsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$ApprovalRequestsTable, List<ApprovalRequest>>
   _approvalRequestsRefsTable(_$CoderDatabase db) =>
       MultiTypedResultKey.fromTable(
@@ -7181,6 +8011,31 @@ class $$TurnsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> turnAttachmentsRefs(
+    Expression<bool> Function($$TurnAttachmentsTableFilterComposer f) f,
+  ) {
+    final $$TurnAttachmentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.turnAttachments,
+      getReferencedColumn: (t) => t.turnId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnAttachmentsTableFilterComposer(
+            $db: $db,
+            $table: $db.turnAttachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 
   Expression<bool> approvalRequestsRefs(
@@ -7322,6 +8177,31 @@ class $$TurnsTableAnnotationComposer
     return composer;
   }
 
+  Expression<T> turnAttachmentsRefs<T extends Object>(
+    Expression<T> Function($$TurnAttachmentsTableAnnotationComposer a) f,
+  ) {
+    final $$TurnAttachmentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.turnAttachments,
+      getReferencedColumn: (t) => t.turnId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnAttachmentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.turnAttachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> approvalRequestsRefs<T extends Object>(
     Expression<T> Function($$ApprovalRequestsTableAnnotationComposer a) f,
   ) {
@@ -7361,7 +8241,11 @@ class $$TurnsTableTableManager
           $$TurnsTableUpdateCompanionBuilder,
           (Turn, $$TurnsTableReferences),
           Turn,
-          PrefetchHooks Function({bool sessionId, bool approvalRequestsRefs})
+          PrefetchHooks Function({
+            bool sessionId,
+            bool turnAttachmentsRefs,
+            bool approvalRequestsRefs,
+          })
         > {
   $$TurnsTableTableManager(_$CoderDatabase db, $TurnsTable table)
     : super(
@@ -7421,10 +8305,15 @@ class $$TurnsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({sessionId = false, approvalRequestsRefs = false}) {
+              ({
+                sessionId = false,
+                turnAttachmentsRefs = false,
+                approvalRequestsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
+                    if (turnAttachmentsRefs) db.turnAttachments,
                     if (approvalRequestsRefs) db.approvalRequests,
                   ],
                   addJoins:
@@ -7461,6 +8350,27 @@ class $$TurnsTableTableManager
                       },
                   getPrefetchedDataCallback: (items) async {
                     return [
+                      if (turnAttachmentsRefs)
+                        await $_getPrefetchedData<
+                          Turn,
+                          $TurnsTable,
+                          TurnAttachment
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TurnsTableReferences
+                              ._turnAttachmentsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TurnsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).turnAttachmentsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.turnId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (approvalRequestsRefs)
                         await $_getPrefetchedData<
                           Turn,
@@ -7502,7 +8412,753 @@ typedef $$TurnsTableProcessedTableManager =
       $$TurnsTableUpdateCompanionBuilder,
       (Turn, $$TurnsTableReferences),
       Turn,
-      PrefetchHooks Function({bool sessionId, bool approvalRequestsRefs})
+      PrefetchHooks Function({
+        bool sessionId,
+        bool turnAttachmentsRefs,
+        bool approvalRequestsRefs,
+      })
+    >;
+typedef $$AttachmentsTableCreateCompanionBuilder =
+    AttachmentsCompanion Function({
+      required String id,
+      required String fileName,
+      required String mimeType,
+      required int byteSize,
+      required String kind,
+      required String sha256,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$AttachmentsTableUpdateCompanionBuilder =
+    AttachmentsCompanion Function({
+      Value<String> id,
+      Value<String> fileName,
+      Value<String> mimeType,
+      Value<int> byteSize,
+      Value<String> kind,
+      Value<String> sha256,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$AttachmentsTableReferences
+    extends BaseReferences<_$CoderDatabase, $AttachmentsTable, Attachment> {
+  $$AttachmentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$TurnAttachmentsTable, List<TurnAttachment>>
+  _turnAttachmentsRefsTable(_$CoderDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.turnAttachments,
+        aliasName: 'attachments__id__turn_attachments__attachment_id',
+      );
+
+  $$TurnAttachmentsTableProcessedTableManager get turnAttachmentsRefs {
+    final manager = $$TurnAttachmentsTableTableManager(
+      $_db,
+      $_db.turnAttachments,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _turnAttachmentsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$AttachmentsTableFilterComposer
+    extends Composer<_$CoderDatabase, $AttachmentsTable> {
+  $$AttachmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get byteSize => $composableBuilder(
+    column: $table.byteSize,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> turnAttachmentsRefs(
+    Expression<bool> Function($$TurnAttachmentsTableFilterComposer f) f,
+  ) {
+    final $$TurnAttachmentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.turnAttachments,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnAttachmentsTableFilterComposer(
+            $db: $db,
+            $table: $db.turnAttachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AttachmentsTableOrderingComposer
+    extends Composer<_$CoderDatabase, $AttachmentsTable> {
+  $$AttachmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get byteSize => $composableBuilder(
+    column: $table.byteSize,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AttachmentsTableAnnotationComposer
+    extends Composer<_$CoderDatabase, $AttachmentsTable> {
+  $$AttachmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<String> get mimeType =>
+      $composableBuilder(column: $table.mimeType, builder: (column) => column);
+
+  GeneratedColumn<int> get byteSize =>
+      $composableBuilder(column: $table.byteSize, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get sha256 =>
+      $composableBuilder(column: $table.sha256, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> turnAttachmentsRefs<T extends Object>(
+    Expression<T> Function($$TurnAttachmentsTableAnnotationComposer a) f,
+  ) {
+    final $$TurnAttachmentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.turnAttachments,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnAttachmentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.turnAttachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AttachmentsTableTableManager
+    extends
+        RootTableManager<
+          _$CoderDatabase,
+          $AttachmentsTable,
+          Attachment,
+          $$AttachmentsTableFilterComposer,
+          $$AttachmentsTableOrderingComposer,
+          $$AttachmentsTableAnnotationComposer,
+          $$AttachmentsTableCreateCompanionBuilder,
+          $$AttachmentsTableUpdateCompanionBuilder,
+          (Attachment, $$AttachmentsTableReferences),
+          Attachment,
+          PrefetchHooks Function({bool turnAttachmentsRefs})
+        > {
+  $$AttachmentsTableTableManager(_$CoderDatabase db, $AttachmentsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AttachmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AttachmentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AttachmentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<String> mimeType = const Value.absent(),
+                Value<int> byteSize = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> sha256 = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AttachmentsCompanion(
+                id: id,
+                fileName: fileName,
+                mimeType: mimeType,
+                byteSize: byteSize,
+                kind: kind,
+                sha256: sha256,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String fileName,
+                required String mimeType,
+                required int byteSize,
+                required String kind,
+                required String sha256,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => AttachmentsCompanion.insert(
+                id: id,
+                fileName: fileName,
+                mimeType: mimeType,
+                byteSize: byteSize,
+                kind: kind,
+                sha256: sha256,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AttachmentsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({turnAttachmentsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (turnAttachmentsRefs) db.turnAttachments,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (turnAttachmentsRefs)
+                    await $_getPrefetchedData<
+                      Attachment,
+                      $AttachmentsTable,
+                      TurnAttachment
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentsTableReferences
+                          ._turnAttachmentsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$AttachmentsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).turnAttachmentsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AttachmentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$CoderDatabase,
+      $AttachmentsTable,
+      Attachment,
+      $$AttachmentsTableFilterComposer,
+      $$AttachmentsTableOrderingComposer,
+      $$AttachmentsTableAnnotationComposer,
+      $$AttachmentsTableCreateCompanionBuilder,
+      $$AttachmentsTableUpdateCompanionBuilder,
+      (Attachment, $$AttachmentsTableReferences),
+      Attachment,
+      PrefetchHooks Function({bool turnAttachmentsRefs})
+    >;
+typedef $$TurnAttachmentsTableCreateCompanionBuilder =
+    TurnAttachmentsCompanion Function({
+      required String turnId,
+      required String attachmentId,
+      required String direction,
+      required int ordinal,
+      Value<int> rowid,
+    });
+typedef $$TurnAttachmentsTableUpdateCompanionBuilder =
+    TurnAttachmentsCompanion Function({
+      Value<String> turnId,
+      Value<String> attachmentId,
+      Value<String> direction,
+      Value<int> ordinal,
+      Value<int> rowid,
+    });
+
+final class $$TurnAttachmentsTableReferences
+    extends
+        BaseReferences<_$CoderDatabase, $TurnAttachmentsTable, TurnAttachment> {
+  $$TurnAttachmentsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TurnsTable _turnIdTable(_$CoderDatabase db) =>
+      db.turns.createAlias('turn_attachments__turn_id__turns__id');
+
+  $$TurnsTableProcessedTableManager get turnId {
+    final $_column = $_itemColumn<String>('turn_id')!;
+
+    final manager = $$TurnsTableTableManager(
+      $_db,
+      $_db.turns,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_turnIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AttachmentsTable _attachmentIdTable(_$CoderDatabase db) => db
+      .attachments
+      .createAlias('turn_attachments__attachment_id__attachments__id');
+
+  $$AttachmentsTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentsTableTableManager(
+      $_db,
+      $_db.attachments,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TurnAttachmentsTableFilterComposer
+    extends Composer<_$CoderDatabase, $TurnAttachmentsTable> {
+  $$TurnAttachmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get direction => $composableBuilder(
+    column: $table.direction,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TurnsTableFilterComposer get turnId {
+    final $$TurnsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.turnId,
+      referencedTable: $db.turns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnsTableFilterComposer(
+            $db: $db,
+            $table: $db.turns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AttachmentsTableFilterComposer get attachmentId {
+    final $$AttachmentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachments,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentsTableFilterComposer(
+            $db: $db,
+            $table: $db.attachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TurnAttachmentsTableOrderingComposer
+    extends Composer<_$CoderDatabase, $TurnAttachmentsTable> {
+  $$TurnAttachmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get direction => $composableBuilder(
+    column: $table.direction,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TurnsTableOrderingComposer get turnId {
+    final $$TurnsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.turnId,
+      referencedTable: $db.turns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnsTableOrderingComposer(
+            $db: $db,
+            $table: $db.turns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AttachmentsTableOrderingComposer get attachmentId {
+    final $$AttachmentsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachments,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentsTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TurnAttachmentsTableAnnotationComposer
+    extends Composer<_$CoderDatabase, $TurnAttachmentsTable> {
+  $$TurnAttachmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get direction =>
+      $composableBuilder(column: $table.direction, builder: (column) => column);
+
+  GeneratedColumn<int> get ordinal =>
+      $composableBuilder(column: $table.ordinal, builder: (column) => column);
+
+  $$TurnsTableAnnotationComposer get turnId {
+    final $$TurnsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.turnId,
+      referencedTable: $db.turns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.turns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AttachmentsTableAnnotationComposer get attachmentId {
+    final $$AttachmentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachments,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TurnAttachmentsTableTableManager
+    extends
+        RootTableManager<
+          _$CoderDatabase,
+          $TurnAttachmentsTable,
+          TurnAttachment,
+          $$TurnAttachmentsTableFilterComposer,
+          $$TurnAttachmentsTableOrderingComposer,
+          $$TurnAttachmentsTableAnnotationComposer,
+          $$TurnAttachmentsTableCreateCompanionBuilder,
+          $$TurnAttachmentsTableUpdateCompanionBuilder,
+          (TurnAttachment, $$TurnAttachmentsTableReferences),
+          TurnAttachment,
+          PrefetchHooks Function({bool turnId, bool attachmentId})
+        > {
+  $$TurnAttachmentsTableTableManager(
+    _$CoderDatabase db,
+    $TurnAttachmentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TurnAttachmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TurnAttachmentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TurnAttachmentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> turnId = const Value.absent(),
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> direction = const Value.absent(),
+                Value<int> ordinal = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TurnAttachmentsCompanion(
+                turnId: turnId,
+                attachmentId: attachmentId,
+                direction: direction,
+                ordinal: ordinal,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String turnId,
+                required String attachmentId,
+                required String direction,
+                required int ordinal,
+                Value<int> rowid = const Value.absent(),
+              }) => TurnAttachmentsCompanion.insert(
+                turnId: turnId,
+                attachmentId: attachmentId,
+                direction: direction,
+                ordinal: ordinal,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TurnAttachmentsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({turnId = false, attachmentId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (turnId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.turnId,
+                                referencedTable:
+                                    $$TurnAttachmentsTableReferences
+                                        ._turnIdTable(db),
+                                referencedColumn:
+                                    $$TurnAttachmentsTableReferences
+                                        ._turnIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (attachmentId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.attachmentId,
+                                referencedTable:
+                                    $$TurnAttachmentsTableReferences
+                                        ._attachmentIdTable(db),
+                                referencedColumn:
+                                    $$TurnAttachmentsTableReferences
+                                        ._attachmentIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TurnAttachmentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$CoderDatabase,
+      $TurnAttachmentsTable,
+      TurnAttachment,
+      $$TurnAttachmentsTableFilterComposer,
+      $$TurnAttachmentsTableOrderingComposer,
+      $$TurnAttachmentsTableAnnotationComposer,
+      $$TurnAttachmentsTableCreateCompanionBuilder,
+      $$TurnAttachmentsTableUpdateCompanionBuilder,
+      (TurnAttachment, $$TurnAttachmentsTableReferences),
+      TurnAttachment,
+      PrefetchHooks Function({bool turnId, bool attachmentId})
     >;
 typedef $$TimelineEventsTableCreateCompanionBuilder =
     TimelineEventsCompanion Function({
@@ -9676,6 +11332,10 @@ class $CoderDatabaseManager {
       $$SessionsTableTableManager(_db, _db.sessions);
   $$TurnsTableTableManager get turns =>
       $$TurnsTableTableManager(_db, _db.turns);
+  $$AttachmentsTableTableManager get attachments =>
+      $$AttachmentsTableTableManager(_db, _db.attachments);
+  $$TurnAttachmentsTableTableManager get turnAttachments =>
+      $$TurnAttachmentsTableTableManager(_db, _db.turnAttachments);
   $$TimelineEventsTableTableManager get timelineEvents =>
       $$TimelineEventsTableTableManager(_db, _db.timelineEvents);
   $$ApprovalRequestsTableTableManager get approvalRequests =>

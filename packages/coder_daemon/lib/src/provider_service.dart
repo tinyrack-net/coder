@@ -412,6 +412,10 @@ final class ProviderService implements ProviderOAuthConnector {
       credential: credential,
       supportsReasoningEffort:
           model?.capabilities.reasoningEffort == CapabilitySupport.supported,
+      supportsImageInput:
+          model?.capabilities.imageInput == CapabilitySupport.supported,
+      supportsFileInput:
+          model?.capabilities.fileInput == CapabilitySupport.supported,
     );
   }
 

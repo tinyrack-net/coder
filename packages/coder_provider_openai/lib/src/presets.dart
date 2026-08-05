@@ -87,6 +87,23 @@ const ModelCapabilitiesDto _reasoning = ModelCapabilitiesDto(
   source: CapabilitySource.bundled,
 );
 
+const ModelCapabilitiesDto _openAiReasoning = ModelCapabilitiesDto(
+  streaming: CapabilitySupport.supported,
+  toolCalling: CapabilitySupport.supported,
+  reasoningEffort: CapabilitySupport.supported,
+  imageInput: CapabilitySupport.supported,
+  fileInput: CapabilitySupport.supported,
+  supportedReasoningEfforts: <String>[
+    'none',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+  ],
+  source: CapabilitySource.bundled,
+);
+
 const ModelCapabilitiesDto _tools = ModelCapabilitiesDto(
   streaming: CapabilitySupport.supported,
   toolCalling: CapabilitySupport.supported,
@@ -134,17 +151,17 @@ const List<ProviderRuntimePreset> builtInProviderPresets =
           ProviderCatalogModel(
             id: 'gpt-5.6-sol',
             label: 'GPT-5.6 Sol',
-            capabilities: _reasoning,
+            capabilities: _openAiReasoning,
           ),
           ProviderCatalogModel(
             id: 'gpt-5.6-terra',
             label: 'GPT-5.6 Terra',
-            capabilities: _reasoning,
+            capabilities: _openAiReasoning,
           ),
           ProviderCatalogModel(
             id: 'gpt-5.6-luna',
             label: 'GPT-5.6 Luna',
-            capabilities: _reasoning,
+            capabilities: _openAiReasoning,
           ),
         ],
       ),

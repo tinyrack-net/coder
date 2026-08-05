@@ -7909,7 +7909,7 @@ $CustomProviderConfigDtoCopyWith<$Res> get config {
 /// @nodoc
 mixin _$TurnStartParamsDto {
 
- String get sessionId; String get turnId; String get prompt;
+ String get sessionId; String get turnId; String get prompt; List<String> get attachmentIds;
 /// Create a copy of TurnStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -7922,16 +7922,16 @@ $TurnStartParamsDtoCopyWith<TurnStartParamsDto> get copyWith => _$TurnStartParam
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TurnStartParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.turnId, turnId) || other.turnId == turnId)&&(identical(other.prompt, prompt) || other.prompt == prompt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TurnStartParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.turnId, turnId) || other.turnId == turnId)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&const DeepCollectionEquality().equals(other.attachmentIds, attachmentIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,turnId,prompt);
+int get hashCode => Object.hash(runtimeType,sessionId,turnId,prompt,const DeepCollectionEquality().hash(attachmentIds));
 
 @override
 String toString() {
-  return 'TurnStartParamsDto(sessionId: $sessionId, turnId: $turnId, prompt: $prompt)';
+  return 'TurnStartParamsDto(sessionId: $sessionId, turnId: $turnId, prompt: $prompt, attachmentIds: $attachmentIds)';
 }
 
 
@@ -7942,7 +7942,7 @@ abstract mixin class $TurnStartParamsDtoCopyWith<$Res>  {
   factory $TurnStartParamsDtoCopyWith(TurnStartParamsDto value, $Res Function(TurnStartParamsDto) _then) = _$TurnStartParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String sessionId, String turnId, String prompt
+ String sessionId, String turnId, String prompt, List<String> attachmentIds
 });
 
 
@@ -7959,12 +7959,13 @@ class _$TurnStartParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TurnStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? turnId = null,Object? prompt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? turnId = null,Object? prompt = null,Object? attachmentIds = null,}) {
   return _then(_self.copyWith(
 sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,turnId: null == turnId ? _self.turnId : turnId // ignore: cast_nullable_to_non_nullable
 as String,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
-as String,
+as String,attachmentIds: null == attachmentIds ? _self.attachmentIds : attachmentIds // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 
@@ -8049,10 +8050,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String turnId,  String prompt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String turnId,  String prompt,  List<String> attachmentIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TurnStartParamsDto() when $default != null:
-return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
+return $default(_that.sessionId,_that.turnId,_that.prompt,_that.attachmentIds);case _:
   return orElse();
 
 }
@@ -8070,10 +8071,10 @@ return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String turnId,  String prompt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String turnId,  String prompt,  List<String> attachmentIds)  $default,) {final _that = this;
 switch (_that) {
 case _TurnStartParamsDto():
-return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
+return $default(_that.sessionId,_that.turnId,_that.prompt,_that.attachmentIds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -8090,10 +8091,10 @@ return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String turnId,  String prompt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String turnId,  String prompt,  List<String> attachmentIds)?  $default,) {final _that = this;
 switch (_that) {
 case _TurnStartParamsDto() when $default != null:
-return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
+return $default(_that.sessionId,_that.turnId,_that.prompt,_that.attachmentIds);case _:
   return null;
 
 }
@@ -8105,12 +8106,19 @@ return $default(_that.sessionId,_that.turnId,_that.prompt);case _:
 @JsonSerializable()
 
 class _TurnStartParamsDto implements TurnStartParamsDto {
-  const _TurnStartParamsDto({required this.sessionId, required this.turnId, required this.prompt});
+  const _TurnStartParamsDto({required this.sessionId, required this.turnId, required this.prompt, final  List<String> attachmentIds = const <String>[]}): _attachmentIds = attachmentIds;
   factory _TurnStartParamsDto.fromJson(Map<String, dynamic> json) => _$TurnStartParamsDtoFromJson(json);
 
 @override final  String sessionId;
 @override final  String turnId;
 @override final  String prompt;
+ final  List<String> _attachmentIds;
+@override@JsonKey() List<String> get attachmentIds {
+  if (_attachmentIds is EqualUnmodifiableListView) return _attachmentIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_attachmentIds);
+}
+
 
 /// Create a copy of TurnStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -8125,16 +8133,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TurnStartParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.turnId, turnId) || other.turnId == turnId)&&(identical(other.prompt, prompt) || other.prompt == prompt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TurnStartParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.turnId, turnId) || other.turnId == turnId)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&const DeepCollectionEquality().equals(other._attachmentIds, _attachmentIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,turnId,prompt);
+int get hashCode => Object.hash(runtimeType,sessionId,turnId,prompt,const DeepCollectionEquality().hash(_attachmentIds));
 
 @override
 String toString() {
-  return 'TurnStartParamsDto(sessionId: $sessionId, turnId: $turnId, prompt: $prompt)';
+  return 'TurnStartParamsDto(sessionId: $sessionId, turnId: $turnId, prompt: $prompt, attachmentIds: $attachmentIds)';
 }
 
 
@@ -8145,7 +8153,7 @@ abstract mixin class _$TurnStartParamsDtoCopyWith<$Res> implements $TurnStartPar
   factory _$TurnStartParamsDtoCopyWith(_TurnStartParamsDto value, $Res Function(_TurnStartParamsDto) _then) = __$TurnStartParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String sessionId, String turnId, String prompt
+ String sessionId, String turnId, String prompt, List<String> attachmentIds
 });
 
 
@@ -8162,12 +8170,13 @@ class __$TurnStartParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TurnStartParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? turnId = null,Object? prompt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? turnId = null,Object? prompt = null,Object? attachmentIds = null,}) {
   return _then(_TurnStartParamsDto(
 sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,turnId: null == turnId ? _self.turnId : turnId // ignore: cast_nullable_to_non_nullable
 as String,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
-as String,
+as String,attachmentIds: null == attachmentIds ? _self._attachmentIds : attachmentIds // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 

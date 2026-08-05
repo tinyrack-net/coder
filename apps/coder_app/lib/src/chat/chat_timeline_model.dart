@@ -1,5 +1,19 @@
+import 'dart:typed_data';
+
 import 'package:coder_app/src/chat/chat_plan.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+
+/// Loads authenticated attachment bytes for preview.
+typedef ChatAttachmentLoader =
+    Future<Uint8List> Function(
+      ChatAttachment attachment,
+    );
+
+/// Exports an authenticated attachment through the platform adapter.
+typedef ChatAttachmentExporter =
+    Future<void> Function(
+      ChatAttachment attachment,
+    );
 
 /// One renderable entry of a session conversation.
 ///
@@ -31,10 +45,59 @@ final class ChatUserMessage extends ChatItem {
     required super.turnId,
     required super.createdAt,
     required this.text,
+    this.attachments = const <ChatAttachment>[],
   });
 
   /// The prompt text.
   final String text;
+
+  /// Ordered files submitted with the prompt.
+  final List<ChatAttachment> attachments;
+}
+
+/// Renderable attachment metadata copied into the timeline.
+final class ChatAttachment {
+  /// Creates attachment presentation metadata.
+  const ChatAttachment({
+    required this.id,
+    required this.fileName,
+    required this.mimeType,
+    required this.byteSize,
+  });
+
+  /// Stable daemon identifier.
+  final String id;
+
+  /// Display filename.
+  final String fileName;
+
+  /// Validated media type.
+  final String mimeType;
+
+  /// Exact payload length.
+  final int byteSize;
+
+  /// Whether the attachment can be previewed as an image.
+  bool get isImage => <String>{
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+    'image/gif',
+  }.contains(mimeType);
+}
+
+/// One file explicitly attached by the assistant.
+final class ChatAttachmentMessage extends ChatItem {
+  /// Creates an assistant attachment row.
+  const ChatAttachmentMessage({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+    required this.attachment,
+  });
+
+  /// Published attachment.
+  final ChatAttachment attachment;
 }
 
 /// Assistant prose merged from every delta of one uninterrupted block.
@@ -219,9 +282,25 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
               turnId: turnId,
               createdAt: event.createdAt,
               text: _string(event.data['text']) ?? '',
+              attachments: _attachments(event.data['attachments']),
             ),
           ),
         );
+      case 'assistant.attachment':
+        closeAssistant(turnId);
+        final attachment = _attachment(event.data);
+        if (attachment != null) {
+          builders.add(
+            _StaticBuilder(
+              ChatAttachmentMessage(
+                key: 'attachment-${event.sequence}',
+                turnId: turnId,
+                createdAt: event.createdAt,
+                attachment: attachment,
+              ),
+            ),
+          );
+        }
       case 'assistant.delta':
         final text = _string(event.data['text']) ?? '';
         final open = openAssistant[turnId];
@@ -238,6 +317,7 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
         }
       case 'tool.requested':
         closeAssistant(turnId);
+        if (_string(event.data['name']) == 'attach_file') continue;
         final callId = _string(event.data['callId']) ?? '';
         final existing = openTools['$turnId/$callId'];
         if (existing != null && existing.status == ChatToolStatus.running) {
@@ -263,6 +343,11 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
       case 'tool.failed':
       case 'tool.denied':
         closeAssistant(turnId);
+        if (event.type == 'tool.completed' &&
+            _string(event.data['name']) == 'attach_file' &&
+            event.data['isError'] != true) {
+          continue;
+        }
         final callId = _string(event.data['callId']) ?? '';
         final status = switch (event.type) {
           'tool.completed' => ChatToolStatus.succeeded,
@@ -376,6 +461,33 @@ String? _string(Object? value) => value is String ? value : null;
 Map<String, dynamic> _map(Object? value) => value is Map<String, dynamic>
     ? Map<String, dynamic>.unmodifiable(value)
     : const <String, dynamic>{};
+
+List<ChatAttachment> _attachments(Object? value) => value is List
+    ? value
+          .whereType<Map<dynamic, dynamic>>()
+          .map((item) => _attachment(Map<String, dynamic>.from(item)))
+          .whereType<ChatAttachment>()
+          .toList(growable: false)
+    : const <ChatAttachment>[];
+
+ChatAttachment? _attachment(Map<dynamic, dynamic> data) {
+  final id = data['id'];
+  final fileName = data['fileName'];
+  final mimeType = data['mimeType'];
+  final byteSize = data['byteSize'];
+  if (id is! String ||
+      fileName is! String ||
+      mimeType is! String ||
+      byteSize is! int) {
+    return null;
+  }
+  return ChatAttachment(
+    id: id,
+    fileName: fileName,
+    mimeType: mimeType,
+    byteSize: byteSize,
+  );
+}
 
 sealed class _ChatItemBuilder {
   const _ChatItemBuilder();

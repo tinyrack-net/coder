@@ -1,5 +1,6 @@
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/desktop_bootstrap.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/desktop_startup.dart';
@@ -26,6 +27,7 @@ Future<void> runDesktopApp({
   runApp(
     CoderApp(
       services: resolved,
+      attachmentInput: const NativeAttachmentInput(),
       desktopWindow: desktopWindow,
       trayIcon: tray ?? PluginTrayIcon(),
       autostart: autostart ?? const LaunchAtStartupRegistration(),

@@ -60,6 +60,27 @@ void main() {
       () => turns.primaryKey,
     ]);
 
+    final attachments = Attachments();
+    _expectGeneratedDsl(<Object? Function()>[
+      () => attachments.id,
+      () => attachments.fileName,
+      () => attachments.mimeType,
+      () => attachments.byteSize,
+      () => attachments.kind,
+      () => attachments.sha256,
+      () => attachments.createdAt,
+      () => attachments.primaryKey,
+    ]);
+
+    final turnAttachments = TurnAttachments();
+    _expectGeneratedDsl(<Object? Function()>[
+      () => turnAttachments.turnId,
+      () => turnAttachments.attachmentId,
+      () => turnAttachments.direction,
+      () => turnAttachments.ordinal,
+      () => turnAttachments.primaryKey,
+    ]);
+
     final timeline = TimelineEvents();
     _expectGeneratedDsl(<Object? Function()>[
       () => timeline.sessionId,
@@ -137,7 +158,7 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 9);
+      expect(database.schemaVersion, 10);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

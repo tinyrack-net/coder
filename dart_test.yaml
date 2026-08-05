@@ -1,4 +1,10 @@
 tags:
+  feature_test__conversation_attachments__unit:
+  feature_test__conversation_attachments__contract:
+  feature_test__conversation_attachments__verticalSlice:
+  feature_test__conversation_attachments__widget:
+  feature_test__conversation_attachments__e2e:
+  feature_test__conversation_attachments__platformSmoke:
   feature_test__daemon_management__unit:
   feature_test__daemon_management__contract:
   feature_test__daemon_management__widget:

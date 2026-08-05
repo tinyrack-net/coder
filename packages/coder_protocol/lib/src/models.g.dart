@@ -6,6 +6,33 @@ part of 'models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_AttachmentDto _$AttachmentDtoFromJson(Map<String, dynamic> json) =>
+    _AttachmentDto(
+      id: json['id'] as String,
+      fileName: json['fileName'] as String,
+      mimeType: json['mimeType'] as String,
+      byteSize: (json['byteSize'] as num).toInt(),
+      kind: $enumDecode(_$AttachmentKindEnumMap, json['kind']),
+      sha256: json['sha256'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+
+Map<String, dynamic> _$AttachmentDtoToJson(_AttachmentDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'fileName': instance.fileName,
+      'mimeType': instance.mimeType,
+      'byteSize': instance.byteSize,
+      'kind': _$AttachmentKindEnumMap[instance.kind]!,
+      'sha256': instance.sha256,
+      'createdAt': instance.createdAt.toIso8601String(),
+    };
+
+const _$AttachmentKindEnumMap = {
+  AttachmentKind.image: 'image',
+  AttachmentKind.file: 'file',
+};
+
 _WorkspaceDto _$WorkspaceDtoFromJson(Map<String, dynamic> json) =>
     _WorkspaceDto(
       id: json['id'] as String,
@@ -574,6 +601,12 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
         json['reasoningEffort'],
       ) ??
       CapabilitySupport.unknown,
+  imageInput:
+      $enumDecodeNullable(_$CapabilitySupportEnumMap, json['imageInput']) ??
+      CapabilitySupport.unknown,
+  fileInput:
+      $enumDecodeNullable(_$CapabilitySupportEnumMap, json['fileInput']) ??
+      CapabilitySupport.unknown,
   supportedReasoningEfforts:
       (json['supportedReasoningEfforts'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -590,6 +623,8 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
   'streaming': _$CapabilitySupportEnumMap[instance.streaming]!,
   'toolCalling': _$CapabilitySupportEnumMap[instance.toolCalling]!,
   'reasoningEffort': _$CapabilitySupportEnumMap[instance.reasoningEffort]!,
+  'imageInput': _$CapabilitySupportEnumMap[instance.imageInput]!,
+  'fileInput': _$CapabilitySupportEnumMap[instance.fileInput]!,
   'supportedReasoningEfforts': instance.supportedReasoningEfforts,
   'source': _$CapabilitySourceEnumMap[instance.source]!,
 };

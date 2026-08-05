@@ -153,6 +153,9 @@ class WorkspaceSidebar extends StatelessWidget {
       children: <Widget>[
         for (final entry in entries)
           _WorkspaceTreeNode(
+            key: ValueKey<String>(
+              'workspace-tree-${entry.hostId}-${entry.workspace.id}',
+            ),
             onSelect: onSelect,
             onArchivedSelection: onArchivedSelection,
             hostId: entry.hostId,
@@ -181,6 +184,7 @@ class _WorkspaceTreeNode extends ConsumerWidget {
     required this.worktrees,
     required this.selected,
     required this.expandedByDefault,
+    super.key,
   });
 
   final ValueChanged<WorkspaceSelection> onSelect;
