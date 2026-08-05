@@ -51,10 +51,12 @@ class ChatUserLine extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 if (message.text.isNotEmpty)
-                  SelectableText(
-                    message.text,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  SelectionArea(
+                    child: Text(
+                      message.text,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 if (message.attachments.isNotEmpty) ...<Widget>[

@@ -134,7 +134,10 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             SizedBox(width: 300, child: list),
-            const VerticalDivider(width: 1),
+            const TRSeparator(
+              orientation: TRSeparatorOrientation.vertical,
+              variant: TRSeparatorVariant.muted,
+            ),
             Expanded(child: detail),
           ],
         );

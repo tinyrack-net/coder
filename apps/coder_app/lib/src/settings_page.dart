@@ -543,11 +543,14 @@ class _AuthAttemptBar extends StatelessWidget {
     child: CoderListRow(
       leading: const TRSpinner(),
       title: Text(AppLocalizations.of(context).providerSettingsOAuthPending),
-      subtitle: SelectableText(
-        <String?>[
-          attempt.authorizationUrl,
-          attempt.userCode,
-        ].whereType<String>().join(' · '),
+      // The device code has to be copyable for the user to complete the flow.
+      subtitle: SelectionArea(
+        child: Text(
+          <String?>[
+            attempt.authorizationUrl,
+            attempt.userCode,
+          ].whereType<String>().join(' · '),
+        ),
       ),
       trailing: TRButton(
         key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),

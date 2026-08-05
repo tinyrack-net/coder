@@ -15,7 +15,8 @@ void main() {
         'Checkbox|Switch|Radio|SegmentedButton|Tooltip|ActionChip|ChoiceChip|'
         'FilterChip|InputChip|ExpansionTile|LinearProgressIndicator|'
         'FloatingActionButton|BottomNavigationBar|NavigationRail|Drawer|'
-        r'TabBar|Material|InkWell|InkResponse)(?:\.|\s*\()',
+        'TabBar|Material|InkWell|InkResponse|VerticalDivider|Scrollbar|'
+        r'SelectableText)(?:\.|\s*\()',
       ): 'direct Material component',
       RegExp(
         r'\b(?:showAboutDialog|showDialog|showModalBottomSheet|showMenu)\s*<?',

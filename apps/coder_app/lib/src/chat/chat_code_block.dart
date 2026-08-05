@@ -58,7 +58,9 @@ class ChatCodeBlock extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    SelectableText(visible, style: chatMonospaceStyle(context)),
+                    SelectionArea(
+                      child: Text(visible, style: chatMonospaceStyle(context)),
+                    ),
                     if (hidden > 0)
                       Text(
                         AppLocalizations.of(context).chatMoreLines(hidden),

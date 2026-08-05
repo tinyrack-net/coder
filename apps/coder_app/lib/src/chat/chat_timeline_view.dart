@@ -5,6 +5,7 @@ import 'package:coder_app/src/chat/chat_plan_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_tool_card.dart';
 import 'package:flutter/material.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Scrolling conversation body rendered from projected chat items.
 class ChatTimelineView extends StatefulWidget {
@@ -54,7 +55,8 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     // The list is reversed so new items pin to the bottom; every row carries a
     // stable key so expanding a tool card cannot leak into its neighbour when
     // indices shift.
-    return Scrollbar(
+    // The list owns its own viewport, so the scroll area may only theme it.
+    return TRScrollArea.forScrollable(
       child: ListView.separated(
         reverse: true,
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),

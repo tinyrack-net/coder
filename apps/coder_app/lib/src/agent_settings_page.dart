@@ -74,7 +74,10 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             return Row(
               children: <Widget>[
                 SizedBox(width: 280, child: list),
-                const VerticalDivider(width: 1),
+                const TRSeparator(
+                  orientation: TRSeparatorOrientation.vertical,
+                  variant: TRSeparatorVariant.muted,
+                ),
                 Expanded(
                   child: selected == null
                       ? Center(

@@ -54,10 +54,13 @@ Future<void> _showHookOutput(
       description: Text(
         l10n.hookFailureMessage(phase, failure.exitCode, failure.command),
       ),
+      // The failing command and its output have to be copyable.
       content: SingleChildScrollView(
-        child: SelectableText(
-          '${failure.command}\n\nexit ${failure.exitCode}\n'
-          '${output.isEmpty ? l10n.hookFailureNoOutput : output}',
+        child: SelectionArea(
+          child: Text(
+            '${failure.command}\n\nexit ${failure.exitCode}\n'
+            '${output.isEmpty ? l10n.hookFailureNoOutput : output}',
+          ),
         ),
       ),
       actions: <TRButton>[

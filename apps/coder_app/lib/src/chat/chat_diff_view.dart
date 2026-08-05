@@ -61,10 +61,14 @@ class ChatDiffView extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: rows,
+        // Selection spans the whole hunk rather than a single row, so a user
+        // can copy a run of diff lines in one drag.
+        child: SelectionArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: rows,
+          ),
         ),
       ),
     );
@@ -124,9 +128,7 @@ class _DiffLineRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: SelectableText('$marker${line.text}', style: style),
-          ),
+          Expanded(child: Text('$marker${line.text}', style: style)),
         ],
       ),
     );
