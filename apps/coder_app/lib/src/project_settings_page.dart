@@ -330,7 +330,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   const SizedBox(height: 16),
                   TRTextField(
                     key: const ValueKey<String>('project-shell-executable'),
-                    uiSize: TRUiSize.sm,
                     controller: _shellExecutable,
                     enabled: !_saving,
                     label: l10n.projectSettingsShellExecutable,
@@ -339,7 +338,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   const SizedBox(height: 16),
                   TRTextField(
                     key: const ValueKey<String>('project-shell-arguments'),
-                    uiSize: TRUiSize.sm,
                     controller: _shellArguments,
                     enabled: !_saving,
                     minLines: 2,
@@ -360,7 +358,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   const SizedBox(height: 16),
                   TRTextField(
                     key: const ValueKey<String>('host-shell-executable'),
-                    uiSize: TRUiSize.sm,
                     controller: _hostShellExecutable,
                     enabled: !_saving,
                     label: l10n.projectSettingsShellExecutable,
@@ -369,7 +366,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   const SizedBox(height: 16),
                   TRTextField(
                     key: const ValueKey<String>('host-shell-arguments'),
-                    uiSize: TRUiSize.sm,
                     controller: _hostShellArguments,
                     enabled: !_saving,
                     minLines: 2,

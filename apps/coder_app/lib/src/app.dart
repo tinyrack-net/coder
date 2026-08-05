@@ -1357,7 +1357,6 @@ class _TerminalTab extends StatelessWidget {
       trailing: TRIconButton(
         key: ValueKey<String>('terminal-tab-close-${terminal.id}'),
         appearance: TRAppearance.ghost,
-        uiSize: TRUiSize.sm,
         label: AppLocalizations.of(context).workspaceCloseTab,
         onPressed: onClose,
         icon: const Icon(CoderIcons.close),
