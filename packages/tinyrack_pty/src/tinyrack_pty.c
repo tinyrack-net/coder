@@ -44,7 +44,7 @@ typedef struct tr_write_chunk {
   struct tr_write_chunk *next;
 } tr_write_chunk;
 
-#define TR_WRITE_QUEUE_CAPACITY (1024u * 1024u)
+#define TR_WRITE_QUEUE_CAPACITY (2u * 1024u * 1024u)
 
 static DWORD WINAPI tr_writer(void *context) {
   tr_pty *pty = (tr_pty *)context;
@@ -588,7 +588,8 @@ int tr_pty_pid(const tr_pty *pty) { return pty == NULL ? -1 : (int)pty->pid; }
 int tr_pty_read(tr_pty *pty, uint8_t *buffer, int capacity) {
   if (pty == NULL) return -1;
   ssize_t result = read(pty->master, buffer, (size_t)capacity);
-  if (result >= 0) return (int)result;
+  if (result > 0) return (int)result;
+  if (result == 0) return -2;
   if (errno == EAGAIN || errno == EWOULDBLOCK) return 0;
   if (errno == EIO) return -2;
   pty->last_error = errno;

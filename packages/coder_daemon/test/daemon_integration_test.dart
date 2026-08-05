@@ -144,7 +144,9 @@ void main() {
       expect((await client.getWorkspaceCatalog()).workspaces, hasLength(1));
       final checkout = registered.worktrees.single;
 
-      const projectShell = ShellSpecDto(executable: '/bin/sh');
+      final projectShell = ShellSpecDto(
+        executable: Platform.isWindows ? 'cmd.exe' : '/bin/sh',
+      );
       await client.setTerminalShell(
         const ShellSpecDto(executable: '/definitely/missing-shell'),
       );
@@ -154,7 +156,7 @@ void main() {
       );
       await client.saveProjectSettings(
         registered.workspace.id,
-        const ProjectSettingsDto(shell: projectShell),
+        ProjectSettingsDto(shell: projectShell),
       );
       final terminal = await client.createTerminal(
         id: 'terminal-1',
@@ -179,7 +181,10 @@ void main() {
           .firstWhere((data) => data.contains(marker))
           .timeout(_eventTimeout);
       await client.resizeTerminal(terminal.id, columns: 100, rows: 30);
-      await client.writeTerminal(terminal.id, "printf '$marker\\n'\r");
+      await client.writeTerminal(
+        terminal.id,
+        Platform.isWindows ? 'echo $marker\r\n' : "printf '$marker\\n'\r",
+      );
       expect(await output, contains(marker));
       await client.terminateTerminal(terminal.id);
 

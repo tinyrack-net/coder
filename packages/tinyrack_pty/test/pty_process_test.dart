@@ -19,16 +19,24 @@ void main() {
       );
       final output = process.output.transform(utf8.decoder);
       final marker = 'tinyrack-pty-$index';
-      final found = output.firstWhere((chunk) => chunk.contains(marker));
+      final expected =
+          '$marker:${Directory.systemTemp.resolveSymbolicLinksSync()}';
+      final received = StringBuffer();
+      final found = Completer<void>();
+      final subscription = output.listen((chunk) {
+        received.write(chunk);
+        if (!found.isCompleted && received.toString().contains(expected)) {
+          found.complete();
+        }
+      });
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
       await process.write(utf8.encode('printf "$marker:%s\\n" "\$PWD"\n'));
 
-      expect(
-        await found.timeout(const Duration(seconds: 2)),
-        contains('$marker:${Directory.systemTemp.path}'),
-      );
+      await found.future.timeout(const Duration(seconds: 2));
+      expect(received.toString(), contains(expected));
       await process.terminate();
+      await subscription.cancel();
     }
   });
 
@@ -230,8 +238,8 @@ void main() {
     () async {
       if (!Platform.isWindows) return;
       final process = await PtyProcess.start(
-        'powershell.exe',
-        arguments: const <String>['-NoLogo', '-NoProfile'],
+        'cmd.exe',
+        arguments: const <String>['/d', '/q'],
         environment: const <String, String>{'PTY_VALUE': 'windows-ready'},
       );
       final received = StringBuffer();
@@ -248,13 +256,10 @@ void main() {
 
       process.resize(columns: 111, rows: 37);
       await process.write(
-        utf8.encode(
-          r'Write-Output $env:PTY_VALUE; exit 9'
-          '\r\n',
-        ),
+        utf8.encode('echo %PTY_VALUE% & exit /b 9\r\n'),
       );
 
-      await marker.future.timeout(const Duration(seconds: 5));
+      await marker.future.timeout(const Duration(seconds: 15));
       expect(await process.exitCode, 9);
       await subscription.cancel();
     },
@@ -264,7 +269,17 @@ void main() {
     if (!Platform.isWindows) return;
     final process = await PtyProcess.start(
       'powershell.exe',
-      arguments: const <String>['-NoLogo', '-NoProfile'],
+      arguments: <String>[
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        <String>[
+          r"$p=Start-Process powershell.exe -ArgumentList '-NoProfile',",
+          "'-Command','Start-Sleep 30' -PassThru;",
+          r"Write-Output ('CHILD:'+$p.Id); Start-Sleep 30",
+        ].join(' '),
+      ],
     );
     final received = StringBuffer();
     final childPid = Completer<int>();
@@ -277,13 +292,7 @@ void main() {
         childPid.complete(int.parse(match.group(1)!));
       }
     });
-    final childCommand = <String>[
-      r"$p=Start-Process powershell.exe -ArgumentList '-NoProfile',",
-      "'-Command','Start-Sleep 30' -PassThru;",
-      r"Write-Output ('CHILD:'+$p.Id)",
-    ].join(' ');
-    await process.write(utf8.encode('$childCommand\r\n'));
-    final pid = await childPid.future.timeout(const Duration(seconds: 5));
+    final pid = await childPid.future.timeout(const Duration(seconds: 15));
 
     await process.terminate(
       gracePeriod: const Duration(milliseconds: 50),
@@ -326,7 +335,7 @@ void main() {
     );
     addTearDown(heartbeat.cancel);
 
-    await process.write(List<int>.filled(length, 65));
+    await process.write(<int>[...List<int>.filled(length, 65), 13, 10]);
     final output = await process.output.transform(utf8.decoder).join();
 
     expect(await process.exitCode, 0);

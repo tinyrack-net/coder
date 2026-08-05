@@ -106,6 +106,7 @@ final class PtyProcess implements Finalizable {
   final ListQueue<_PendingWrite> _writes = ListQueue<_PendingWrite>();
   late final Timer _timer;
   int? _observedExitCode;
+  int _exitDrainPolls = 0;
   bool _outputEnded = false;
 
   /// Operating-system process identifier of the terminal child.
@@ -126,10 +127,22 @@ final class PtyProcess implements Finalizable {
     if (_status == PtyStatus.exited) return;
     try {
       _flushWrites();
+    } on PtyException catch (error, stackTrace) {
+      _finish(-1, error: error, stackTrace: stackTrace);
+      return;
+    }
+    try {
       _readAvailable();
       _checkExit();
-      if (_observedExitCode != null && _outputEnded) {
-        _finish(_observedExitCode!);
+      // A separate pipe EOF cannot be required because ConPTY keeps its output
+      // pipe open until ClosePseudoConsole during _finish. Give the terminal a
+      // short bounded window to publish bytes queued concurrently with exit.
+      if (_observedExitCode != null) {
+        if (_exitDrainPolls >= 5) {
+          _finish(_observedExitCode!);
+        } else {
+          _exitDrainPolls += 1;
+        }
       }
     } on PtyException catch (error, stackTrace) {
       _output.addError(error, stackTrace);
@@ -182,7 +195,6 @@ final class PtyProcess implements Finalizable {
     if (data.isEmpty) return Future<void>.value();
     final pending = _PendingWrite(Uint8List.fromList(data));
     _writes.add(pending);
-    _flushWrites();
     return pending.done.future;
   }
 
