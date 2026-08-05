@@ -455,6 +455,48 @@ Map<String, dynamic> _$McpToolSummaryDtoToJson(_McpToolSummaryDto instance) =>
       'title': instance.title,
     };
 
+_McpResourceSummaryDto _$McpResourceSummaryDtoFromJson(
+  Map<String, dynamic> json,
+) => _McpResourceSummaryDto(
+  uri: json['uri'] as String,
+  name: json['name'] as String?,
+  title: json['title'] as String?,
+  description: json['description'] as String?,
+  mimeType: json['mimeType'] as String?,
+  sizeBytes: (json['sizeBytes'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$McpResourceSummaryDtoToJson(
+  _McpResourceSummaryDto instance,
+) => <String, dynamic>{
+  'uri': instance.uri,
+  'name': instance.name,
+  'title': instance.title,
+  'description': instance.description,
+  'mimeType': instance.mimeType,
+  'sizeBytes': instance.sizeBytes,
+};
+
+_McpResourceTemplateSummaryDto _$McpResourceTemplateSummaryDtoFromJson(
+  Map<String, dynamic> json,
+) => _McpResourceTemplateSummaryDto(
+  uriTemplate: json['uriTemplate'] as String,
+  name: json['name'] as String?,
+  title: json['title'] as String?,
+  description: json['description'] as String?,
+  mimeType: json['mimeType'] as String?,
+);
+
+Map<String, dynamic> _$McpResourceTemplateSummaryDtoToJson(
+  _McpResourceTemplateSummaryDto instance,
+) => <String, dynamic>{
+  'uriTemplate': instance.uriTemplate,
+  'name': instance.name,
+  'title': instance.title,
+  'description': instance.description,
+  'mimeType': instance.mimeType,
+};
+
 _McpServerStateDto _$McpServerStateDtoFromJson(
   Map<String, dynamic> json,
 ) => _McpServerStateDto(
@@ -471,6 +513,22 @@ _McpServerStateDto _$McpServerStateDtoFromJson(
           ?.map((e) => McpToolSummaryDto.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <McpToolSummaryDto>[],
+  resources:
+      (json['resources'] as List<dynamic>?)
+          ?.map(
+            (e) => McpResourceSummaryDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const <McpResourceSummaryDto>[],
+  resourceTemplates:
+      (json['resourceTemplates'] as List<dynamic>?)
+          ?.map(
+            (e) => McpResourceTemplateSummaryDto.fromJson(
+              e as Map<String, dynamic>,
+            ),
+          )
+          .toList() ??
+      const <McpResourceTemplateSummaryDto>[],
   error: json['error'] as String?,
   diagnostics:
       (json['diagnostics'] as List<dynamic>?)
@@ -497,6 +555,8 @@ Map<String, dynamic> _$McpServerStateDtoToJson(_McpServerStateDto instance) =>
       'serverName': instance.serverName,
       'serverVersion': instance.serverVersion,
       'tools': instance.tools,
+      'resources': instance.resources,
+      'resourceTemplates': instance.resourceTemplates,
       'error': instance.error,
       'diagnostics': instance.diagnostics,
       'lastConnectedAt': instance.lastConnectedAt?.toIso8601String(),
@@ -623,6 +683,8 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   parentSessionId: json['parentSessionId'] as String?,
   activeTurnId: json['activeTurnId'] as String?,
   lastError: json['lastError'] as String?,
+  contextTokens: (json['contextTokens'] as num?)?.toInt() ?? 0,
+  contextWindow: (json['contextWindow'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
@@ -643,6 +705,8 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'parentSessionId': instance.parentSessionId,
       'activeTurnId': instance.activeTurnId,
       'lastError': instance.lastError,
+      'contextTokens': instance.contextTokens,
+      'contextWindow': instance.contextWindow,
     };
 
 const _$SessionOriginEnumMap = {

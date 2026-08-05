@@ -1706,11 +1706,95 @@ abstract class AppLocalizations {
   /// **'Plan'**
   String get chatPlanTitle;
 
+  /// Prompt token count in the usage summary line.
+  ///
+  /// In en, this message translates to:
+  /// **'in {tokens}'**
+  String usageInput(int tokens);
+
+  /// Prompt tokens with the cached portion called out.
+  ///
+  /// In en, this message translates to:
+  /// **'in {tokens} ({cached} cached)'**
+  String usageInputCached(int tokens, int cached);
+
+  /// Completion token count in the usage summary line.
+  ///
+  /// In en, this message translates to:
+  /// **'out {tokens}'**
+  String usageOutput(int tokens);
+
+  /// Completion tokens with the hidden reasoning portion called out.
+  ///
+  /// In en, this message translates to:
+  /// **'out {tokens} ({reasoning} reasoning)'**
+  String usageOutputReasoning(int tokens, int reasoning);
+
+  /// Total token count in the usage summary line.
+  ///
+  /// In en, this message translates to:
+  /// **'total {tokens}'**
+  String usageTotal(int tokens);
+
   /// Result line while a pseudo-terminal session is still running.
   ///
   /// In en, this message translates to:
   /// **'running · {lines} lines'**
   String toolExecRunning(int lines);
+
+  /// A free-form answer the user typed instead of choosing.
+  ///
+  /// In en, this message translates to:
+  /// **'{answer} (typed)'**
+  String chatAnswerTyped(String answer);
+
+  /// Label of the sleep countdown card.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get chatSleepWaiting;
+
+  /// Remaining time on the sleep countdown.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s left'**
+  String chatSleepRemaining(int seconds);
+
+  /// Shown once a sleep has finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Waited {seconds}s'**
+  String chatSleepDone(int seconds);
+
+  /// Result line of a tool_search call.
+  ///
+  /// In en, this message translates to:
+  /// **'{found} loaded · {remaining} still hidden'**
+  String toolSearchFound(int found, int remaining);
+
+  /// Notice that some tools were not advertised up front.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tools are available through search'**
+  String chatDeferredTools(int count);
+
+  /// Result line of a list_mcp_resources tool call.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} resources'**
+  String toolMcpResources(int count);
+
+  /// Result line of a list_mcp_resource_templates tool call.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} templates'**
+  String toolMcpResourceTemplates(int count);
+
+  /// Result line of a read_mcp_resource tool call.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} blocks'**
+  String toolMcpResourceRead(int count);
 
   /// Result line of a view_image tool call.
   ///
@@ -2288,6 +2372,36 @@ abstract class AppLocalizations {
   /// **'Failed'**
   String get mcpSettingsStatusFailed;
 
+  /// Label for the resource count in the MCP server list row.
+  ///
+  /// In en, this message translates to:
+  /// **'resources'**
+  String get mcpSettingsDiscoveredResources;
+
+  /// Heading of the collapsible MCP resource list.
+  ///
+  /// In en, this message translates to:
+  /// **'Published resources'**
+  String get mcpSettingsResources;
+
+  /// Empty state of the MCP resource list.
+  ///
+  /// In en, this message translates to:
+  /// **'This server publishes no resources.'**
+  String get mcpSettingsNoResources;
+
+  /// Heading of the collapsible MCP resource template list.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource templates'**
+  String get mcpSettingsResourceTemplates;
+
+  /// Empty state of the MCP resource template list.
+  ///
+  /// In en, this message translates to:
+  /// **'This server publishes no resource templates.'**
+  String get mcpSettingsNoResourceTemplates;
+
   /// Heading of the discovered tool list.
   ///
   /// In en, this message translates to:
@@ -2329,6 +2443,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Always available'**
   String get agentSettingsToolAlwaysOn;
+
+  /// Result line of a get_context_remaining call.
+  ///
+  /// In en, this message translates to:
+  /// **'{remaining} of {window} tokens left'**
+  String toolContextRemaining(int remaining, int window);
+
+  /// Result line when the provider never advertised a window.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} tokens used'**
+  String toolContextRemainingUnknown(int used);
+
+  /// Divider marking where the model's history was discarded.
+  ///
+  /// In en, this message translates to:
+  /// **'New context window'**
+  String get chatContextReset;
+
+  /// Label of the composer context budget meter.
+  ///
+  /// In en, this message translates to:
+  /// **'Context'**
+  String get sessionContextMeter;
+
+  /// Accessible value of the context budget meter.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of the context window used'**
+  String sessionContextMeterValue(int percent);
 }
 
 class _AppLocalizationsDelegate

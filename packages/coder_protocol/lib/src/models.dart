@@ -701,6 +701,42 @@ abstract class McpToolSummaryDto with _$McpToolSummaryDto {
       _$McpToolSummaryDtoFromJson(json);
 }
 
+/// One resource an MCP server publishes.
+@freezed
+abstract class McpResourceSummaryDto with _$McpResourceSummaryDto {
+  /// Creates an MCP resource summary.
+  const factory McpResourceSummaryDto({
+    required String uri,
+    String? name,
+    String? title,
+    String? description,
+    String? mimeType,
+    int? sizeBytes,
+  }) = _McpResourceSummaryDto;
+
+  /// Decodes an MCP resource summary.
+  factory McpResourceSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$McpResourceSummaryDtoFromJson(json);
+}
+
+/// One parameterized resource template an MCP server publishes.
+@freezed
+abstract class McpResourceTemplateSummaryDto
+    with _$McpResourceTemplateSummaryDto {
+  /// Creates an MCP resource template summary.
+  const factory McpResourceTemplateSummaryDto({
+    required String uriTemplate,
+    String? name,
+    String? title,
+    String? description,
+    String? mimeType,
+  }) = _McpResourceTemplateSummaryDto;
+
+  /// Decodes an MCP resource template summary.
+  factory McpResourceTemplateSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$McpResourceTemplateSummaryDtoFromJson(json);
+}
+
 /// One configured MCP server and its live connection state.
 @freezed
 abstract class McpServerStateDto with _$McpServerStateDto {
@@ -715,6 +751,9 @@ abstract class McpServerStateDto with _$McpServerStateDto {
     String? serverName,
     String? serverVersion,
     @Default(<McpToolSummaryDto>[]) List<McpToolSummaryDto> tools,
+    @Default(<McpResourceSummaryDto>[]) List<McpResourceSummaryDto> resources,
+    @Default(<McpResourceTemplateSummaryDto>[])
+    List<McpResourceTemplateSummaryDto> resourceTemplates,
     String? error,
     @Default(<String>[]) List<String> diagnostics,
     DateTime? lastConnectedAt,
@@ -850,6 +889,12 @@ abstract class SessionDto with _$SessionDto {
     String? parentSessionId,
     String? activeTurnId,
     String? lastError,
+
+    /// Tokens the last response reported for the live context window.
+    @Default(0) int contextTokens,
+
+    /// Context window of the resolved model; null when it is not advertised.
+    int? contextWindow,
   }) = _SessionDto;
 
   /// Decodes a session descriptor.

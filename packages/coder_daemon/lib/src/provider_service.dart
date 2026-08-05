@@ -14,6 +14,7 @@ final class ResolvedAgentModel {
     required this.connectionId,
     required this.modelId,
     required this.provider,
+    this.limits,
   });
 
   /// Selected provider connection.
@@ -24,6 +25,9 @@ final class ResolvedAgentModel {
 
   /// Executable provider adapter.
   final ModelProvider provider;
+
+  /// Advertised limits of the model, when the catalog knows them.
+  final ModelLimitsDto? limits;
 }
 
 /// Stable provider connection failure translated to a protocol error code.
@@ -202,11 +206,12 @@ final class ProviderService implements ProviderOAuthConnector {
     String connectionId,
     String modelId,
   ) async {
-    await validateAgentModel(connectionId, modelId);
+    final model = await validateAgentModel(connectionId, modelId);
     return ResolvedAgentModel(
       connectionId: connectionId,
       modelId: modelId,
       provider: await resolve(connectionId, modelId: modelId),
+      limits: model.limits,
     );
   }
 
@@ -453,7 +458,10 @@ final class ProviderService implements ProviderOAuthConnector {
   }
 
   /// Verifies that a connected model can stream and call coding tools.
-  Future<void> validateAgentModel(
+  ///
+  /// Returns the validated model so a caller that needs its metadata, such as
+  /// the context window, does not have to read it a second time.
+  Future<ProviderModelDto> validateAgentModel(
     String connectionId,
     String modelId,
   ) async {
@@ -472,6 +480,7 @@ final class ProviderService implements ProviderOAuthConnector {
         'Model streaming and tool calling capabilities must be supported.',
       );
     }
+    return model;
   }
 
   Future<ProviderConnectionDto> _connectBuiltIn(

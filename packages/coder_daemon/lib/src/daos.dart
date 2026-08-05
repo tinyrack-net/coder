@@ -310,6 +310,24 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
   }
 
   @override
+  Future<SessionDto> recordContextTokens(String id, int tokens) async {
+    // Usage is not a user edit, so `updatedAt` deliberately stays put: a token
+    // counter must not reorder a list sorted by recency.
+    await (update(sessions)..where((row) => row.id.equals(id))).write(
+      SessionsCompanion(contextTokensUsed: Value<int>(tokens)),
+    );
+    return (await getById(id))!;
+  }
+
+  @override
+  Future<SessionDto> recordContextWindow(String id, int? window) async {
+    await (update(sessions)..where((row) => row.id.equals(id))).write(
+      SessionsCompanion(contextWindowTokens: Value<int?>(window)),
+    );
+    return (await getById(id))!;
+  }
+
+  @override
   Future<SessionDto> updateStatus(
     String id,
     SessionStatus status, {
@@ -415,6 +433,8 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
               modelId: modelId,
             ),
       reasoningEffort: row.reasoningEffort,
+      contextTokens: row.contextTokensUsed,
+      contextWindow: row.contextWindowTokens,
       // A row written by a newer build must still render as a session.
       permissionMode: PermissionMode.values
           .where((value) => value.name == row.permissionMode)
@@ -614,39 +634,85 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
   ) async {
     if (items.isEmpty) return;
     await transaction(() async {
-      final maxOrdinal = providerStates.ordinal.max();
-      final query = selectOnly(providerStates)
-        ..addColumns(<Expression<Object>>[maxOrdinal])
-        ..where(providerStates.sessionId.equals(sessionId));
-      var ordinal = (await query.getSingle()).read(maxOrdinal) ?? 0;
-      for (final item in items) {
-        ordinal += 1;
-        await into(providerStates).insert(
-          ProviderStatesCompanion.insert(
-            sessionId: sessionId,
-            ordinal: ordinal,
-            itemJson: jsonEncode(item.toJson()),
-            createdAt: attachedDatabase.clock.nowUtc(),
-          ),
-        );
-      }
+      await _appendToWindow(sessionId, items, await _liveEpoch(sessionId));
     });
   }
 
   @override
-  Future<List<ConversationItem>> providerHistory(String sessionId) async =>
-      (await (select(providerStates)
-                ..where((row) => row.sessionId.equals(sessionId))
-                ..orderBy(<OrderClauseGenerator<$ProviderStatesTable>>[
-                  (row) => OrderingTerm.asc(row.ordinal),
-                ]))
-              .get())
-          .map(
-            (row) => ConversationItem.fromJson(
-              Map<String, dynamic>.from(jsonDecode(row.itemJson) as Map),
-            ),
-          )
-          .toList(growable: false);
+  Future<List<ConversationItem>> providerHistory(String sessionId) async {
+    final epoch = await _liveEpoch(sessionId);
+    final rows =
+        await (select(providerStates)
+              ..where((row) => row.sessionId.equals(sessionId))
+              ..where((row) => row.contextEpoch.equals(epoch))
+              ..orderBy(<OrderClauseGenerator<$ProviderStatesTable>>[
+                (row) => OrderingTerm.asc(row.ordinal),
+              ]))
+            .get();
+    return rows
+        .map(
+          (row) => ConversationItem.fromJson(
+            Map<String, dynamic>.from(jsonDecode(row.itemJson) as Map),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> resetContextWindow(
+    String sessionId,
+    List<ConversationItem> retain,
+  ) => transaction(() async {
+    final epoch = await _liveEpoch(sessionId) + 1;
+    await (update(sessions)..where((row) => row.id.equals(sessionId))).write(
+      SessionsCompanion(
+        currentContextEpoch: Value<int>(epoch),
+        // The retained items are re-sent, so the next response reports them
+        // again; starting from zero would double-count them.
+        contextTokensUsed: const Value<int>(0),
+        updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
+      ),
+    );
+    await _appendToWindow(sessionId, retain, epoch);
+  });
+
+  /// The context window every new provider item belongs to.
+  Future<int> _liveEpoch(String sessionId) async {
+    final query = selectOnly(sessions)
+      ..addColumns(<Expression<Object>>[sessions.currentContextEpoch])
+      ..where(sessions.id.equals(sessionId));
+    final row = await query.getSingleOrNull();
+    return row?.read(sessions.currentContextEpoch) ?? 0;
+  }
+
+  /// Appends [items] after the last ordinal, tagged with [epoch].
+  ///
+  /// Ordinals stay session-global rather than per-epoch so replay order is
+  /// still a single ascending scan after any number of resets.
+  Future<void> _appendToWindow(
+    String sessionId,
+    List<ConversationItem> items,
+    int epoch,
+  ) async {
+    if (items.isEmpty) return;
+    final maxOrdinal = providerStates.ordinal.max();
+    final query = selectOnly(providerStates)
+      ..addColumns(<Expression<Object>>[maxOrdinal])
+      ..where(providerStates.sessionId.equals(sessionId));
+    var ordinal = (await query.getSingle()).read(maxOrdinal) ?? 0;
+    for (final item in items) {
+      ordinal += 1;
+      await into(providerStates).insert(
+        ProviderStatesCompanion.insert(
+          sessionId: sessionId,
+          ordinal: ordinal,
+          itemJson: jsonEncode(item.toJson()),
+          contextEpoch: Value<int>(epoch),
+          createdAt: attachedDatabase.clock.nowUtc(),
+        ),
+      );
+    }
+  }
 
   @override
   Future<void> createApproval(ApprovalRequestDto approval) =>

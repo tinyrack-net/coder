@@ -877,8 +877,76 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatPlanTitle => '계획';
 
   @override
+  String usageInput(int tokens) {
+    return '입력 $tokens';
+  }
+
+  @override
+  String usageInputCached(int tokens, int cached) {
+    return '입력 $tokens(캐시 $cached)';
+  }
+
+  @override
+  String usageOutput(int tokens) {
+    return '출력 $tokens';
+  }
+
+  @override
+  String usageOutputReasoning(int tokens, int reasoning) {
+    return '출력 $tokens(추론 $reasoning)';
+  }
+
+  @override
+  String usageTotal(int tokens) {
+    return '합계 $tokens';
+  }
+
+  @override
   String toolExecRunning(int lines) {
     return '실행 중 · $lines줄';
+  }
+
+  @override
+  String chatAnswerTyped(String answer) {
+    return '$answer (직접 입력)';
+  }
+
+  @override
+  String get chatSleepWaiting => '대기 중';
+
+  @override
+  String chatSleepRemaining(int seconds) {
+    return '$seconds초 남음';
+  }
+
+  @override
+  String chatSleepDone(int seconds) {
+    return '$seconds초 대기함';
+  }
+
+  @override
+  String toolSearchFound(int found, int remaining) {
+    return '$found개 로드 · $remaining개 남음';
+  }
+
+  @override
+  String chatDeferredTools(int count) {
+    return '검색으로 사용할 수 있는 도구 $count개';
+  }
+
+  @override
+  String toolMcpResources(int count) {
+    return '리소스 $count개';
+  }
+
+  @override
+  String toolMcpResourceTemplates(int count) {
+    return '템플릿 $count개';
+  }
+
+  @override
+  String toolMcpResourceRead(int count) {
+    return '블록 $count개';
   }
 
   @override
@@ -1203,6 +1271,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get mcpSettingsStatusFailed => '실패';
 
   @override
+  String get mcpSettingsDiscoveredResources => '리소스';
+
+  @override
+  String get mcpSettingsResources => '게시된 리소스';
+
+  @override
+  String get mcpSettingsNoResources => '게시된 리소스가 없습니다.';
+
+  @override
+  String get mcpSettingsResourceTemplates => '리소스 템플릿';
+
+  @override
+  String get mcpSettingsNoResourceTemplates => '게시된 리소스 템플릿이 없습니다.';
+
+  @override
   String get mcpSettingsDiscoveredTools => '도구';
 
   @override
@@ -1222,4 +1305,25 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get agentSettingsToolAlwaysOn => '항상 사용 가능';
+
+  @override
+  String toolContextRemaining(int remaining, int window) {
+    return '토큰 $remaining/$window 남음';
+  }
+
+  @override
+  String toolContextRemainingUnknown(int used) {
+    return '토큰 $used개 사용';
+  }
+
+  @override
+  String get chatContextReset => '새 컨텍스트 창';
+
+  @override
+  String get sessionContextMeter => '컨텍스트';
+
+  @override
+  String sessionContextMeterValue(int percent) {
+    return '컨텍스트 창의 $percent% 사용';
+  }
 }

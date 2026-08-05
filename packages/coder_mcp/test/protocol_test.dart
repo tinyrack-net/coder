@@ -169,6 +169,105 @@ void main() {
     expect(image.byteLength, isNull);
   });
 
+  test(
+    'resource descriptors decode the fields a server publishes',
+    tags: const <String>['feature_test__mcp_resource_access__unit'],
+    () {
+      final resource = McpResourceDescriptor.fromJson(<String, dynamic>{
+        'uri': 'file:///repo/README.md',
+        'name': 'README',
+        'title': 'Project readme',
+        'description': 'How to build the project.',
+        'mimeType': 'text/markdown',
+        'size': 4096,
+      });
+      expect(resource.uri, 'file:///repo/README.md');
+      expect(resource.name, 'README');
+      expect(resource.title, 'Project readme');
+      expect(resource.mimeType, 'text/markdown');
+      expect(resource.sizeBytes, 4096);
+
+      // Only the URI is required; everything else is optional per spec.
+      final bare = McpResourceDescriptor.fromJson(<String, dynamic>{
+        'uri': 'db://schema',
+      });
+      expect(bare.name, isNull);
+      expect(bare.sizeBytes, isNull);
+
+      for (final invalid in <Map<String, dynamic>>[
+        <String, dynamic>{},
+        <String, dynamic>{'uri': ''},
+        <String, dynamic>{'uri': 7},
+      ]) {
+        expect(
+          () => McpResourceDescriptor.fromJson(invalid),
+          throwsA(isA<McpProtocolException>()),
+          reason: '$invalid',
+        );
+      }
+    },
+  );
+
+  test(
+    'resource template descriptors require a URI template',
+    tags: const <String>['feature_test__mcp_resource_access__unit'],
+    () {
+      final template = McpResourceTemplateDescriptor.fromJson(
+        <String, dynamic>{
+          'uriTemplate': 'file:///repo/{path}',
+          'name': 'Repository file',
+          'mimeType': 'text/plain',
+        },
+      );
+      expect(template.uriTemplate, 'file:///repo/{path}');
+      expect(template.name, 'Repository file');
+
+      expect(
+        () => McpResourceTemplateDescriptor.fromJson(
+          const <String, dynamic>{'name': 'no template'},
+        ),
+        throwsA(isA<McpProtocolException>()),
+      );
+    },
+  );
+
+  test(
+    'read results decode text and blob contents and drop unusable entries',
+    tags: const <String>['feature_test__mcp_resource_access__unit'],
+    () {
+      final result = McpReadResourceResult.fromJson(<String, dynamic>{
+        'contents': <dynamic>[
+          <String, dynamic>{
+            'uri': 'file:///a.txt',
+            'mimeType': 'text/plain',
+            'text': 'hello',
+          },
+          <String, dynamic>{
+            'uri': 'file:///b.png',
+            'mimeType': 'image/png',
+            'blob': 'AQID',
+          },
+          // A server that sends neither text nor blob contributes nothing.
+          <String, dynamic>{'uri': 'file:///c.bin'},
+          'not an object',
+        ],
+      });
+
+      expect(result.contents, hasLength(2));
+      final text = result.contents.first as McpTextResourceContents;
+      expect(text.uri, 'file:///a.txt');
+      expect(text.text, 'hello');
+      final blob = result.contents.last as McpBlobResourceContents;
+      expect(blob.mimeType, 'image/png');
+      expect(blob.byteLength, 3);
+
+      expect(
+        McpReadResourceResult.fromJson(const <String, dynamic>{}).contents,
+        isEmpty,
+      );
+    },
+  );
+
   test('protocol exceptions expose a stable diagnostic message', () {
     expect(
       const McpProtocolException('bad tool').toString(),

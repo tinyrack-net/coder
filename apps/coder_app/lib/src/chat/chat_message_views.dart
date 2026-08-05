@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
+import 'package:coder_app/src/chat/chat_tool_presentation.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:flutter/material.dart';
@@ -318,19 +319,152 @@ class ChatUsageLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (usage.tokens.isEmpty) return const SizedBox.shrink();
-    final summary = usage.tokens.entries
-        .map((entry) => '${entry.key} ${entry.value}')
-        .join(' · ');
+    final l10n = AppLocalizations.of(context);
+    final summary = describeTokenUsage(l10n, usage.tokens);
+    if (summary == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
       child: TRText(
         summary,
+        key: const ValueKey<String>('chat-usage-line'),
         variant: TRTextVariant.bodySm,
         color: TRTextColor.muted,
       ),
     );
   }
+}
+
+/// Renders an answered agent question as question-and-answer prose.
+///
+/// The pending question is a card the user acts on; once answered it belongs
+/// in the transcript as conversation, not as a tool row full of JSON.
+class ChatUserAnswerLine extends StatelessWidget {
+  /// Creates an answered-question line.
+  const ChatUserAnswerLine({required this.answer, super.key});
+
+  /// The answered questions to render.
+  final ChatUserAnswer answer;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: TRSpacing.extraSmall,
+        horizontal: TRSpacing.extraSmall,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (final entry in answer.entries)
+            Padding(
+              key: ValueKey<String>('chat-answer-${entry.header}'),
+              padding: const EdgeInsets.only(bottom: TRSpacing.threeExtraSmall),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: TRSpacing.threeExtraSmall,
+                    ),
+                    child: Icon(
+                      CoderIcons.chat,
+                      size: TRTypography.bodySm.fontSize,
+                      color: context.tinyrackTheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: TRSpacing.small),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        TRText(
+                          entry.question,
+                          variant: TRTextVariant.bodySm,
+                          color: TRTextColor.muted,
+                        ),
+                        TRText(
+                          entry.isFreeForm
+                              ? l10n.chatAnswerTyped(entry.answer)
+                              : entry.answer,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Marks where the model's history was discarded.
+///
+/// The conversation above stays readable, so the divider is what tells the
+/// user why the agent no longer remembers any of it.
+class ChatContextResetLine extends StatelessWidget {
+  /// Creates a context reset divider.
+  const ChatContextResetLine({required this.reset, super.key});
+
+  /// The reset to render.
+  final ChatContextReset reset;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: TRSpacing.small),
+    child: Row(
+      children: <Widget>[
+        const Expanded(child: TRSeparator(variant: TRSeparatorVariant.muted)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: TRSpacing.small),
+          child: TRText(
+            AppLocalizations.of(context).chatContextReset,
+            key: const ValueKey<String>('chat-context-reset'),
+            variant: TRTextVariant.bodySm,
+            color: TRTextColor.muted,
+          ),
+        ),
+        const Expanded(child: TRSeparator(variant: TRSeparatorVariant.muted)),
+      ],
+    ),
+  );
+}
+
+/// Tells the user that tools exist beyond the ones the model was handed.
+class ChatDeferredToolsLine extends StatelessWidget {
+  /// Creates a deferred-tools line.
+  const ChatDeferredToolsLine({required this.notice, super.key});
+
+  /// The notice to render.
+  final ChatDeferredTools notice;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(
+      vertical: TRSpacing.threeExtraSmall,
+      horizontal: TRSpacing.extraSmall,
+    ),
+    child: Row(
+      children: <Widget>[
+        Icon(
+          CoderIcons.tool,
+          size: TRTypography.bodySm.fontSize,
+          color: context.tinyrackTheme.textMuted,
+        ),
+        const SizedBox(width: TRSpacing.small),
+        TRText(
+          AppLocalizations.of(context).chatDeferredTools(notice.count),
+          key: const ValueKey<String>('chat-deferred-tools'),
+          variant: TRTextVariant.bodySm,
+          color: TRTextColor.muted,
+        ),
+      ],
+    ),
+  );
 }
 
 /// An event this build cannot render, shown as a collapsible row.

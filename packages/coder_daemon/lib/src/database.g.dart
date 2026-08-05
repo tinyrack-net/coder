@@ -1169,6 +1169,39 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _currentContextEpochMeta =
+      const VerificationMeta('currentContextEpoch');
+  @override
+  late final GeneratedColumn<int> currentContextEpoch = GeneratedColumn<int>(
+    'current_context_epoch',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _contextTokensUsedMeta = const VerificationMeta(
+    'contextTokensUsed',
+  );
+  @override
+  late final GeneratedColumn<int> contextTokensUsed = GeneratedColumn<int>(
+    'context_tokens_used',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _contextWindowTokensMeta =
+      const VerificationMeta('contextWindowTokens');
+  @override
+  late final GeneratedColumn<int> contextWindowTokens = GeneratedColumn<int>(
+    'context_window_tokens',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1208,6 +1241,9 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     reasoningEffort,
     permissionMode,
     serviceTier,
+    currentContextEpoch,
+    contextTokensUsed,
+    contextWindowTokens,
     createdAt,
     updatedAt,
   ];
@@ -1343,6 +1379,33 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         ),
       );
     }
+    if (data.containsKey('current_context_epoch')) {
+      context.handle(
+        _currentContextEpochMeta,
+        currentContextEpoch.isAcceptableOrUnknown(
+          data['current_context_epoch']!,
+          _currentContextEpochMeta,
+        ),
+      );
+    }
+    if (data.containsKey('context_tokens_used')) {
+      context.handle(
+        _contextTokensUsedMeta,
+        contextTokensUsed.isAcceptableOrUnknown(
+          data['context_tokens_used']!,
+          _contextTokensUsedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('context_window_tokens')) {
+      context.handle(
+        _contextWindowTokensMeta,
+        contextWindowTokens.isAcceptableOrUnknown(
+          data['context_window_tokens']!,
+          _contextWindowTokensMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1428,6 +1491,18 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}service_tier'],
       ),
+      currentContextEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_context_epoch'],
+      )!,
+      contextTokensUsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}context_tokens_used'],
+      )!,
+      contextWindowTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}context_window_tokens'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1491,6 +1566,18 @@ class Session extends DataClass implements Insertable<Session> {
   /// Provider service tier for this session; null uses the provider default.
   final String? serviceTier;
 
+  /// Live context window; `new_context` bumps it to hide older history.
+  final int currentContextEpoch;
+
+  /// Tokens the last response reported for the live window.
+  final int contextTokensUsed;
+
+  /// Context window of the model last resolved for this session.
+  ///
+  /// Cached on the row rather than looked up per read, so every session read
+  /// path reports the same number as the turn that produced the usage.
+  final int? contextWindowTokens;
+
   /// The createdAt public API member.
   final DateTime createdAt;
 
@@ -1512,6 +1599,9 @@ class Session extends DataClass implements Insertable<Session> {
     this.reasoningEffort,
     this.permissionMode,
     this.serviceTier,
+    required this.currentContextEpoch,
+    required this.contextTokensUsed,
+    this.contextWindowTokens,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1548,6 +1638,11 @@ class Session extends DataClass implements Insertable<Session> {
     }
     if (!nullToAbsent || serviceTier != null) {
       map['service_tier'] = Variable<String>(serviceTier);
+    }
+    map['current_context_epoch'] = Variable<int>(currentContextEpoch);
+    map['context_tokens_used'] = Variable<int>(contextTokensUsed);
+    if (!nullToAbsent || contextWindowTokens != null) {
+      map['context_window_tokens'] = Variable<int>(contextWindowTokens);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1587,6 +1682,11 @@ class Session extends DataClass implements Insertable<Session> {
       serviceTier: serviceTier == null && nullToAbsent
           ? const Value.absent()
           : Value(serviceTier),
+      currentContextEpoch: Value(currentContextEpoch),
+      contextTokensUsed: Value(contextTokensUsed),
+      contextWindowTokens: contextWindowTokens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contextWindowTokens),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1615,6 +1715,13 @@ class Session extends DataClass implements Insertable<Session> {
       reasoningEffort: serializer.fromJson<String?>(json['reasoningEffort']),
       permissionMode: serializer.fromJson<String?>(json['permissionMode']),
       serviceTier: serializer.fromJson<String?>(json['serviceTier']),
+      currentContextEpoch: serializer.fromJson<int>(
+        json['currentContextEpoch'],
+      ),
+      contextTokensUsed: serializer.fromJson<int>(json['contextTokensUsed']),
+      contextWindowTokens: serializer.fromJson<int?>(
+        json['contextWindowTokens'],
+      ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1638,6 +1745,9 @@ class Session extends DataClass implements Insertable<Session> {
       'reasoningEffort': serializer.toJson<String?>(reasoningEffort),
       'permissionMode': serializer.toJson<String?>(permissionMode),
       'serviceTier': serializer.toJson<String?>(serviceTier),
+      'currentContextEpoch': serializer.toJson<int>(currentContextEpoch),
+      'contextTokensUsed': serializer.toJson<int>(contextTokensUsed),
+      'contextWindowTokens': serializer.toJson<int?>(contextWindowTokens),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1659,6 +1769,9 @@ class Session extends DataClass implements Insertable<Session> {
     Value<String?> reasoningEffort = const Value.absent(),
     Value<String?> permissionMode = const Value.absent(),
     Value<String?> serviceTier = const Value.absent(),
+    int? currentContextEpoch,
+    int? contextTokensUsed,
+    Value<int?> contextWindowTokens = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Session(
@@ -1685,6 +1798,11 @@ class Session extends DataClass implements Insertable<Session> {
         ? permissionMode.value
         : this.permissionMode,
     serviceTier: serviceTier.present ? serviceTier.value : this.serviceTier,
+    currentContextEpoch: currentContextEpoch ?? this.currentContextEpoch,
+    contextTokensUsed: contextTokensUsed ?? this.contextTokensUsed,
+    contextWindowTokens: contextWindowTokens.present
+        ? contextWindowTokens.value
+        : this.contextWindowTokens,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1721,6 +1839,15 @@ class Session extends DataClass implements Insertable<Session> {
       serviceTier: data.serviceTier.present
           ? data.serviceTier.value
           : this.serviceTier,
+      currentContextEpoch: data.currentContextEpoch.present
+          ? data.currentContextEpoch.value
+          : this.currentContextEpoch,
+      contextTokensUsed: data.contextTokensUsed.present
+          ? data.contextTokensUsed.value
+          : this.contextTokensUsed,
+      contextWindowTokens: data.contextWindowTokens.present
+          ? data.contextWindowTokens.value
+          : this.contextWindowTokens,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1744,6 +1871,9 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('reasoningEffort: $reasoningEffort, ')
           ..write('permissionMode: $permissionMode, ')
           ..write('serviceTier: $serviceTier, ')
+          ..write('currentContextEpoch: $currentContextEpoch, ')
+          ..write('contextTokensUsed: $contextTokensUsed, ')
+          ..write('contextWindowTokens: $contextWindowTokens, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1767,6 +1897,9 @@ class Session extends DataClass implements Insertable<Session> {
     reasoningEffort,
     permissionMode,
     serviceTier,
+    currentContextEpoch,
+    contextTokensUsed,
+    contextWindowTokens,
     createdAt,
     updatedAt,
   );
@@ -1789,6 +1922,9 @@ class Session extends DataClass implements Insertable<Session> {
           other.reasoningEffort == this.reasoningEffort &&
           other.permissionMode == this.permissionMode &&
           other.serviceTier == this.serviceTier &&
+          other.currentContextEpoch == this.currentContextEpoch &&
+          other.contextTokensUsed == this.contextTokensUsed &&
+          other.contextWindowTokens == this.contextWindowTokens &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1809,6 +1945,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String?> reasoningEffort;
   final Value<String?> permissionMode;
   final Value<String?> serviceTier;
+  final Value<int> currentContextEpoch;
+  final Value<int> contextTokensUsed;
+  final Value<int?> contextWindowTokens;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1828,6 +1967,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.reasoningEffort = const Value.absent(),
     this.permissionMode = const Value.absent(),
     this.serviceTier = const Value.absent(),
+    this.currentContextEpoch = const Value.absent(),
+    this.contextTokensUsed = const Value.absent(),
+    this.contextWindowTokens = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1848,6 +1990,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.reasoningEffort = const Value.absent(),
     this.permissionMode = const Value.absent(),
     this.serviceTier = const Value.absent(),
+    this.currentContextEpoch = const Value.absent(),
+    this.contextTokensUsed = const Value.absent(),
+    this.contextWindowTokens = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1875,6 +2020,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? reasoningEffort,
     Expression<String>? permissionMode,
     Expression<String>? serviceTier,
+    Expression<int>? currentContextEpoch,
+    Expression<int>? contextTokensUsed,
+    Expression<int>? contextWindowTokens,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1895,6 +2043,11 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (reasoningEffort != null) 'reasoning_effort': reasoningEffort,
       if (permissionMode != null) 'permission_mode': permissionMode,
       if (serviceTier != null) 'service_tier': serviceTier,
+      if (currentContextEpoch != null)
+        'current_context_epoch': currentContextEpoch,
+      if (contextTokensUsed != null) 'context_tokens_used': contextTokensUsed,
+      if (contextWindowTokens != null)
+        'context_window_tokens': contextWindowTokens,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1917,6 +2070,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String?>? reasoningEffort,
     Value<String?>? permissionMode,
     Value<String?>? serviceTier,
+    Value<int>? currentContextEpoch,
+    Value<int>? contextTokensUsed,
+    Value<int?>? contextWindowTokens,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1937,6 +2093,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       reasoningEffort: reasoningEffort ?? this.reasoningEffort,
       permissionMode: permissionMode ?? this.permissionMode,
       serviceTier: serviceTier ?? this.serviceTier,
+      currentContextEpoch: currentContextEpoch ?? this.currentContextEpoch,
+      contextTokensUsed: contextTokensUsed ?? this.contextTokensUsed,
+      contextWindowTokens: contextWindowTokens ?? this.contextWindowTokens,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1991,6 +2150,15 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (serviceTier.present) {
       map['service_tier'] = Variable<String>(serviceTier.value);
     }
+    if (currentContextEpoch.present) {
+      map['current_context_epoch'] = Variable<int>(currentContextEpoch.value);
+    }
+    if (contextTokensUsed.present) {
+      map['context_tokens_used'] = Variable<int>(contextTokensUsed.value);
+    }
+    if (contextWindowTokens.present) {
+      map['context_window_tokens'] = Variable<int>(contextWindowTokens.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2021,6 +2189,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('reasoningEffort: $reasoningEffort, ')
           ..write('permissionMode: $permissionMode, ')
           ..write('serviceTier: $serviceTier, ')
+          ..write('currentContextEpoch: $currentContextEpoch, ')
+          ..write('contextTokensUsed: $contextTokensUsed, ')
+          ..write('contextWindowTokens: $contextWindowTokens, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -4948,6 +5119,18 @@ class $ProviderStatesTable extends ProviderStates
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _contextEpochMeta = const VerificationMeta(
+    'contextEpoch',
+  );
+  @override
+  late final GeneratedColumn<int> contextEpoch = GeneratedColumn<int>(
+    'context_epoch',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4964,6 +5147,7 @@ class $ProviderStatesTable extends ProviderStates
     sessionId,
     ordinal,
     itemJson,
+    contextEpoch,
     createdAt,
   ];
   @override
@@ -5002,6 +5186,15 @@ class $ProviderStatesTable extends ProviderStates
     } else if (isInserting) {
       context.missing(_itemJsonMeta);
     }
+    if (data.containsKey('context_epoch')) {
+      context.handle(
+        _contextEpochMeta,
+        contextEpoch.isAcceptableOrUnknown(
+          data['context_epoch']!,
+          _contextEpochMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -5031,6 +5224,10 @@ class $ProviderStatesTable extends ProviderStates
         DriftSqlType.string,
         data['${effectivePrefix}item_json'],
       )!,
+      contextEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}context_epoch'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -5054,12 +5251,16 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
   /// The itemJson public API member.
   final String itemJson;
 
+  /// Context window this item belongs to; older windows are never replayed.
+  final int contextEpoch;
+
   /// The createdAt public API member.
   final DateTime createdAt;
   const ProviderState({
     required this.sessionId,
     required this.ordinal,
     required this.itemJson,
+    required this.contextEpoch,
     required this.createdAt,
   });
   @override
@@ -5068,6 +5269,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
     map['session_id'] = Variable<String>(sessionId);
     map['ordinal'] = Variable<int>(ordinal);
     map['item_json'] = Variable<String>(itemJson);
+    map['context_epoch'] = Variable<int>(contextEpoch);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -5077,6 +5279,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
       sessionId: Value(sessionId),
       ordinal: Value(ordinal),
       itemJson: Value(itemJson),
+      contextEpoch: Value(contextEpoch),
       createdAt: Value(createdAt),
     );
   }
@@ -5090,6 +5293,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
       sessionId: serializer.fromJson<String>(json['sessionId']),
       ordinal: serializer.fromJson<int>(json['ordinal']),
       itemJson: serializer.fromJson<String>(json['itemJson']),
+      contextEpoch: serializer.fromJson<int>(json['contextEpoch']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -5100,6 +5304,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
       'sessionId': serializer.toJson<String>(sessionId),
       'ordinal': serializer.toJson<int>(ordinal),
       'itemJson': serializer.toJson<String>(itemJson),
+      'contextEpoch': serializer.toJson<int>(contextEpoch),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -5108,11 +5313,13 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
     String? sessionId,
     int? ordinal,
     String? itemJson,
+    int? contextEpoch,
     DateTime? createdAt,
   }) => ProviderState(
     sessionId: sessionId ?? this.sessionId,
     ordinal: ordinal ?? this.ordinal,
     itemJson: itemJson ?? this.itemJson,
+    contextEpoch: contextEpoch ?? this.contextEpoch,
     createdAt: createdAt ?? this.createdAt,
   );
   ProviderState copyWithCompanion(ProviderStatesCompanion data) {
@@ -5120,6 +5327,9 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
       itemJson: data.itemJson.present ? data.itemJson.value : this.itemJson,
+      contextEpoch: data.contextEpoch.present
+          ? data.contextEpoch.value
+          : this.contextEpoch,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -5130,13 +5340,15 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
           ..write('sessionId: $sessionId, ')
           ..write('ordinal: $ordinal, ')
           ..write('itemJson: $itemJson, ')
+          ..write('contextEpoch: $contextEpoch, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(sessionId, ordinal, itemJson, createdAt);
+  int get hashCode =>
+      Object.hash(sessionId, ordinal, itemJson, contextEpoch, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5144,6 +5356,7 @@ class ProviderState extends DataClass implements Insertable<ProviderState> {
           other.sessionId == this.sessionId &&
           other.ordinal == this.ordinal &&
           other.itemJson == this.itemJson &&
+          other.contextEpoch == this.contextEpoch &&
           other.createdAt == this.createdAt);
 }
 
@@ -5151,12 +5364,14 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
   final Value<String> sessionId;
   final Value<int> ordinal;
   final Value<String> itemJson;
+  final Value<int> contextEpoch;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ProviderStatesCompanion({
     this.sessionId = const Value.absent(),
     this.ordinal = const Value.absent(),
     this.itemJson = const Value.absent(),
+    this.contextEpoch = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -5164,6 +5379,7 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
     required String sessionId,
     required int ordinal,
     required String itemJson,
+    this.contextEpoch = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : sessionId = Value(sessionId),
@@ -5174,6 +5390,7 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
     Expression<String>? sessionId,
     Expression<int>? ordinal,
     Expression<String>? itemJson,
+    Expression<int>? contextEpoch,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -5181,6 +5398,7 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
       if (sessionId != null) 'session_id': sessionId,
       if (ordinal != null) 'ordinal': ordinal,
       if (itemJson != null) 'item_json': itemJson,
+      if (contextEpoch != null) 'context_epoch': contextEpoch,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -5190,6 +5408,7 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
     Value<String>? sessionId,
     Value<int>? ordinal,
     Value<String>? itemJson,
+    Value<int>? contextEpoch,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -5197,6 +5416,7 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
       sessionId: sessionId ?? this.sessionId,
       ordinal: ordinal ?? this.ordinal,
       itemJson: itemJson ?? this.itemJson,
+      contextEpoch: contextEpoch ?? this.contextEpoch,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -5214,6 +5434,9 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
     if (itemJson.present) {
       map['item_json'] = Variable<String>(itemJson.value);
     }
+    if (contextEpoch.present) {
+      map['context_epoch'] = Variable<int>(contextEpoch.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -5229,6 +5452,7 @@ class ProviderStatesCompanion extends UpdateCompanion<ProviderState> {
           ..write('sessionId: $sessionId, ')
           ..write('ordinal: $ordinal, ')
           ..write('itemJson: $itemJson, ')
+          ..write('contextEpoch: $contextEpoch, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -7631,6 +7855,9 @@ typedef $$SessionsTableCreateCompanionBuilder =
       Value<String?> reasoningEffort,
       Value<String?> permissionMode,
       Value<String?> serviceTier,
+      Value<int> currentContextEpoch,
+      Value<int> contextTokensUsed,
+      Value<int?> contextWindowTokens,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -7652,6 +7879,9 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String?> reasoningEffort,
       Value<String?> permissionMode,
       Value<String?> serviceTier,
+      Value<int> currentContextEpoch,
+      Value<int> contextTokensUsed,
+      Value<int?> contextWindowTokens,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -7861,6 +8091,21 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get serviceTier => $composableBuilder(
     column: $table.serviceTier,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get currentContextEpoch => $composableBuilder(
+    column: $table.currentContextEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get contextTokensUsed => $composableBuilder(
+    column: $table.contextTokensUsed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get contextWindowTokens => $composableBuilder(
+    column: $table.contextWindowTokens,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8120,6 +8365,21 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get currentContextEpoch => $composableBuilder(
+    column: $table.currentContextEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get contextTokensUsed => $composableBuilder(
+    column: $table.contextTokensUsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get contextWindowTokens => $composableBuilder(
+    column: $table.contextWindowTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -8234,6 +8494,21 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<String> get serviceTier => $composableBuilder(
     column: $table.serviceTier,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get currentContextEpoch => $composableBuilder(
+    column: $table.currentContextEpoch,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get contextTokensUsed => $composableBuilder(
+    column: $table.contextTokensUsed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get contextWindowTokens => $composableBuilder(
+    column: $table.contextWindowTokens,
     builder: (column) => column,
   );
 
@@ -8466,6 +8741,9 @@ class $$SessionsTableTableManager
                 Value<String?> reasoningEffort = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
                 Value<String?> serviceTier = const Value.absent(),
+                Value<int> currentContextEpoch = const Value.absent(),
+                Value<int> contextTokensUsed = const Value.absent(),
+                Value<int?> contextWindowTokens = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -8485,6 +8763,9 @@ class $$SessionsTableTableManager
                 reasoningEffort: reasoningEffort,
                 permissionMode: permissionMode,
                 serviceTier: serviceTier,
+                currentContextEpoch: currentContextEpoch,
+                contextTokensUsed: contextTokensUsed,
+                contextWindowTokens: contextWindowTokens,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -8506,6 +8787,9 @@ class $$SessionsTableTableManager
                 Value<String?> reasoningEffort = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
                 Value<String?> serviceTier = const Value.absent(),
+                Value<int> currentContextEpoch = const Value.absent(),
+                Value<int> contextTokensUsed = const Value.absent(),
+                Value<int?> contextWindowTokens = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -8525,6 +8809,9 @@ class $$SessionsTableTableManager
                 reasoningEffort: reasoningEffort,
                 permissionMode: permissionMode,
                 serviceTier: serviceTier,
+                currentContextEpoch: currentContextEpoch,
+                contextTokensUsed: contextTokensUsed,
+                contextWindowTokens: contextWindowTokens,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -11466,6 +11753,7 @@ typedef $$ProviderStatesTableCreateCompanionBuilder =
       required String sessionId,
       required int ordinal,
       required String itemJson,
+      Value<int> contextEpoch,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -11474,6 +11762,7 @@ typedef $$ProviderStatesTableUpdateCompanionBuilder =
       Value<String> sessionId,
       Value<int> ordinal,
       Value<String> itemJson,
+      Value<int> contextEpoch,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -11521,6 +11810,11 @@ class $$ProviderStatesTableFilterComposer
 
   ColumnFilters<String> get itemJson => $composableBuilder(
     column: $table.itemJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get contextEpoch => $composableBuilder(
+    column: $table.contextEpoch,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11572,6 +11866,11 @@ class $$ProviderStatesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get contextEpoch => $composableBuilder(
+    column: $table.contextEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -11615,6 +11914,11 @@ class $$ProviderStatesTableAnnotationComposer
 
   GeneratedColumn<String> get itemJson =>
       $composableBuilder(column: $table.itemJson, builder: (column) => column);
+
+  GeneratedColumn<int> get contextEpoch => $composableBuilder(
+    column: $table.contextEpoch,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -11676,12 +11980,14 @@ class $$ProviderStatesTableTableManager
                 Value<String> sessionId = const Value.absent(),
                 Value<int> ordinal = const Value.absent(),
                 Value<String> itemJson = const Value.absent(),
+                Value<int> contextEpoch = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProviderStatesCompanion(
                 sessionId: sessionId,
                 ordinal: ordinal,
                 itemJson: itemJson,
+                contextEpoch: contextEpoch,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -11690,12 +11996,14 @@ class $$ProviderStatesTableTableManager
                 required String sessionId,
                 required int ordinal,
                 required String itemJson,
+                Value<int> contextEpoch = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => ProviderStatesCompanion.insert(
                 sessionId: sessionId,
                 ordinal: ordinal,
                 itemJson: itemJson,
+                contextEpoch: contextEpoch,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

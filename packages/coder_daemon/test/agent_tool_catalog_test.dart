@@ -39,6 +39,8 @@ void main() {
       'update_plan',
       'ask_user',
       'view_image',
+      'current_time',
+      'sleep',
     });
   });
 
@@ -54,6 +56,8 @@ void main() {
         'update_plan',
         'ask_user',
         'view_image',
+        'current_time',
+        'sleep',
         'exec_command',
       ],
     );
@@ -69,6 +73,8 @@ void main() {
         'update_plan',
         'ask_user',
         'view_image',
+        'current_time',
+        'sleep',
         'mcp__repo__lint',
       ],
     );
@@ -83,6 +89,8 @@ void main() {
         'update_plan',
         'ask_user',
         'view_image',
+        'current_time',
+        'sleep',
       ],
     );
   });
@@ -251,6 +259,8 @@ void main() {
             'update_plan',
             'ask_user',
             'view_image',
+            'current_time',
+            'sleep',
             'apply_patch',
             'exec_command',
           ],

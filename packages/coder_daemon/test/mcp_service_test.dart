@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/ports.dart';
@@ -78,6 +79,113 @@ void main() {
     expect(state.error, isNull);
     expect(state.lastConnectedAt, isNotNull);
   });
+
+  test(
+    'an MCP tool is advertised or withheld as the caller asks',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      store.user = <McpServerConfigDto>[stdioServer];
+      final service = build();
+      addTearDown(service.close);
+      await service.initialize();
+      await pumpEventQueue();
+
+      expect(
+        service.tool('mcp__github__echo')!.exposure,
+        ToolExposure.advertised,
+      );
+      expect(
+        service
+            .tool('mcp__github__echo', exposure: ToolExposure.deferred)!
+            .exposure,
+        ToolExposure.deferred,
+      );
+    },
+  );
+
+  test(
+    'a ready server publishes its resources, scoped and sorted',
+    tags: const <String>['feature_test__mcp_resource_access__verticalSlice'],
+    () async {
+      transports.nextServer = ScriptedMcpServer(
+        publishesResources: true,
+        resourcePages: <List<Map<String, dynamic>>>[
+          <Map<String, dynamic>>[
+            <String, dynamic>{'uri': 'file:///b.txt', 'name': 'b'},
+            <String, dynamic>{'uri': 'file:///a.txt', 'name': 'a'},
+          ],
+        ],
+        resourceTemplates: <Map<String, dynamic>>[
+          <String, dynamic>{'uriTemplate': 'file:///{path}'},
+        ],
+      );
+      store.user = <McpServerConfigDto>[stdioServer];
+      final service = build();
+      addTearDown(service.close);
+
+      await service.initialize();
+      await pumpEventQueue();
+
+      // The state DTO carries them, so the settings UI needs no new RPC.
+      final state = service.states().single;
+      expect(state.resources.map((item) => item.uri), <String>[
+        'file:///b.txt',
+        'file:///a.txt',
+      ]);
+      expect(state.resourceTemplates.single.uriTemplate, 'file:///{path}');
+
+      expect(
+        service.resources().map((item) => item.descriptor.uri),
+        <String>['file:///b.txt', 'file:///a.txt'],
+      );
+      expect(
+        service.resources().every((item) => item.server == 'github'),
+        isTrue,
+      );
+      expect(service.resourceTemplates(), hasLength(1));
+      expect(service.isReady('github'), isTrue);
+      expect(service.isReady('absent'), isFalse);
+
+      final read = await service.readResource(
+        server: 'github',
+        uri: 'file:///a.txt',
+      );
+      expect((read.contents.single as McpTextResourceContents).text, 'body');
+
+      await expectLater(
+        service.readResource(server: 'absent', uri: 'file:///a.txt'),
+        throwsA(isA<McpServerUnavailable>()),
+      );
+    },
+  );
+
+  test(
+    'a server that is still connecting publishes no resources',
+    tags: const <String>['feature_test__mcp_resource_access__verticalSlice'],
+    () async {
+      transports.nextServer = ScriptedMcpServer(
+        publishesResources: true,
+        resourcePages: <List<Map<String, dynamic>>>[
+          <Map<String, dynamic>>[
+            <String, dynamic>{'uri': 'file:///a.txt'},
+          ],
+        ],
+      );
+      store.user = <McpServerConfigDto>[stdioServer];
+      transports.stall = true;
+      final service = build();
+      addTearDown(service.close);
+
+      await service.initialize();
+
+      expect(service.states().single.resources, isEmpty);
+      expect(service.resources(), isEmpty);
+      await expectLater(
+        service.readResource(server: 'github', uri: 'file:///a.txt'),
+        throwsA(isA<McpServerUnavailable>()),
+      );
+    },
+  );
 
   test('initialization returns before any handshake completes', () async {
     store.user = <McpServerConfigDto>[stdioServer];
@@ -428,13 +536,17 @@ final class _FakeTransports implements McpTransportFactory {
   final Set<String> failFor = <String>{};
   bool stall = false;
 
+  /// Answers the next connection with this server instead of a default one.
+  ScriptedMcpServer? nextServer;
+
   @override
   McpTransport create(McpTransportSpec spec) {
     specs.add(spec);
     final command = spec is McpStdioSpec ? spec.command : '';
     if (failFor.contains(command)) return _UnstartableTransport();
     if (stall) return _StalledTransport();
-    final server = ScriptedMcpServer();
+    final server = nextServer ?? ScriptedMcpServer();
+    nextServer = null;
     servers.add(server);
     return server.transport;
   }

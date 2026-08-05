@@ -97,6 +97,30 @@ The settings screen always shows the file that declares a server, so what is
 running is at least visible. If you work in repositories you do not trust,
 review `.mcp.json` before opening a session in them.
 
+## Resources
+
+Servers may publish *resources* — data they share for context, such as files,
+database schemas, or application state — and *resource templates*, which take
+parameters. A server advertises them through the `resources` capability, and
+the client drains every page at connect time, refreshing on
+`notifications/resources/list_changed`.
+
+Three opt-in tools expose them to an agent:
+
+| Tool | What it does |
+| --- | --- |
+| `list_mcp_resources` | Lists resources. Omit `server` to fan out across every visible server, unpaginated and sorted by server name; name one to page its resources with `cursor`. |
+| `list_mcp_resource_templates` | The same, for parameterized templates. |
+| `read_mcp_resource` | Reads one resource by `server` and `uri`. |
+
+All three are `ToolRisk.read`, unlike MCP *tools*. `resources/read` is defined
+by the specification as a side-effect-free fetch, whereas `tools/call` runs
+whatever the server decided a tool should do.
+
+A server's resources and templates are listed under its entry in MCP settings,
+collapsed so a server publishing hundreds of them does not bury its errors and
+diagnostics.
+
 ## Approval and risk
 
 Every MCP tool carries `ToolRisk.dangerous`: what an external tool does cannot

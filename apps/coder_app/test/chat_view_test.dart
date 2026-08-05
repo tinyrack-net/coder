@@ -285,6 +285,259 @@ void main() {
     },
     tags: const <String>['feature_test__turn_execution__widget'],
   );
+
+  testWidgets(
+    'an answered question renders as prose, marking typed answers',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'arguments': <String, dynamic>{
+            'questions': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'store',
+                'header': 'Storage',
+                'question': 'Which store should the cache use?',
+                'options': <Map<String, dynamic>>[],
+              },
+              <String, dynamic>{
+                'id': 'ttl',
+                'header': 'TTL',
+                'question': 'How long should entries live?',
+                'options': <Map<String, dynamic>>[],
+              },
+            ],
+          },
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'output':
+              '[{"questionId":"store","answer":"SQLite","isFreeForm":false},'
+              '{"questionId":"ttl","answer":"A week","isFreeForm":true}]',
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Which store should the cache use?'), findsOneWidget);
+      expect(find.text('SQLite'), findsOneWidget);
+      // A typed answer is marked so it is not mistaken for an offered option.
+      expect(find.text('A week (직접 입력)'), findsOneWidget);
+      // No JSON tool row duplicates it.
+      expect(find.textContaining('questionId'), findsNothing);
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
+  );
+
+  testWidgets(
+    'a running sleep counts down and settles when it ends',
+    (tester) async {
+      // A sleep is projected from its request, which carries createdAt, so
+      // the countdown is recomputed rather than counted — correct on replay.
+      final started = event('tool.requested', <String, dynamic>{
+        'callId': 'call-sleep',
+        'name': 'sleep',
+        'arguments': <String, dynamic>{
+          'duration_ms': 4000,
+          'reason': 'waiting for CI',
+        },
+      });
+      await pump(tester, <TimelineEventDto>[started]);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey<String>('chat-sleep-card')), findsOne);
+      expect(find.text('waiting for CI'), findsOneWidget);
+      // No generic tool row duplicates the card.
+      expect(find.text('sleep'), findsNothing);
+
+      // The card animates, so the tree never settles while it runs.
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        tester
+            .widget<TRText>(
+              find.byKey(const ValueKey<String>('chat-sleep-status')),
+            )
+            .data,
+        contains('초'),
+      );
+
+      await pump(tester, <TimelineEventDto>[
+        started,
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-sleep',
+          'name': 'sleep',
+          'output': '{"sleptMs":4000,"outcome":"elapsed"}',
+        }),
+      ]);
+      // Finished, so the ticker stops and the tree can settle.
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TRText>(
+              find.byKey(const ValueKey<String>('chat-sleep-status')),
+            )
+            .data,
+        '4초 대기함',
+      );
+    },
+    tags: const <String>['feature_test__tool_clock__widget'],
+  );
+
+  testWidgets(
+    'a sleep without a usable duration stays an ordinary tool row',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-sleep',
+          'name': 'sleep',
+          'arguments': <String, dynamic>{'duration_ms': 'soon'},
+        }),
+      ]);
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-sleep-card')),
+        findsNothing,
+      );
+      // It falls back to the ordinary tool row so the mistake stays visible.
+      expect(find.text('Sleep()'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__tool_clock__widget'],
+  );
+
+  testWidgets(
+    'a context reset draws a divider instead of a tool row',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-reset',
+          'name': 'new_context',
+          'arguments': <String, dynamic>{},
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-reset',
+          'name': 'new_context',
+          'output': '{"started":true}',
+        }),
+        event('context.reset', <String, dynamic>{'retained': 2}),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-context-reset')),
+        findsOne,
+      );
+      // The divider already says it, so no tool row repeats it.
+      expect(find.text('NewContext()'), findsNothing);
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
+    'a rejected context reset stays visible as a tool row',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-reset',
+          'name': 'new_context',
+          'arguments': <String, dynamic>{},
+        }),
+        event('tool.denied', <String, dynamic>{
+          'callId': 'call-reset',
+          'name': 'new_context',
+          'error': 'Denied.',
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('NewContext()'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('chat-context-reset')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
+    'withheld tools are announced so the user knows they exist',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tools.deferred', <String, dynamic>{
+          'count': 12,
+          'surfaced': 0,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      final line = tester.widget<TRText>(
+        find.byKey(const ValueKey<String>('chat-deferred-tools')),
+      );
+      expect(line.data, contains('12'));
+    },
+    tags: const <String>['feature_test__tool_search_deferred__widget'],
+  );
+
+  testWidgets(
+    'nothing withheld shows no notice',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tools.deferred', <String, dynamic>{'count': 0}),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-deferred-tools')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__tool_search_deferred__widget'],
+  );
+
+  testWidgets(
+    'token usage reads as labelled counters, not raw provider keys',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('model.usage', <String, dynamic>{
+          'inputTokens': 1200,
+          'cachedInputTokens': 800,
+          'outputTokens': 340,
+          'reasoningTokens': 120,
+          'totalTokens': 1540,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      final line = tester.widget<TRText>(
+        find.byKey(const ValueKey<String>('chat-usage-line')),
+      );
+      // Cached and reasoning are subsets, so they read as qualifiers.
+      expect(line.data, contains('1200'));
+      expect(line.data, contains('800'));
+      expect(line.data, contains('340'));
+      expect(line.data, contains('120'));
+      expect(line.data, contains('1540'));
+      expect(line.data, isNot(contains('inputTokens')));
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
+    'a usage event with nothing to report renders nothing',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('model.usage', const <String, dynamic>{}),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-usage-line')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
 }
 
 final class _RecordingUrlOpener implements ExternalUrlOpener {

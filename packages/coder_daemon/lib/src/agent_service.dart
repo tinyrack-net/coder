@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/agent_clock.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
 import 'package:coder_daemon/src/ports.dart';
@@ -63,6 +64,9 @@ class SessionService {
       <String, Completer<ApprovalDecision>>{};
   final Map<String, Completer<List<UserAnswer>>> _pendingQuestions =
       <String, Completer<List<UserAnswer>>>{};
+  final Map<String, Completer<void>> _pendingInput =
+      <String, Completer<void>>{};
+  final Set<String> _notedInput = <String>{};
   final Map<String, Completer<AgentRunResult>> _turnCompletions =
       <String, Completer<AgentRunResult>>{};
 
@@ -101,6 +105,9 @@ class SessionService {
     if (!created) return false;
 
     final cancellation = CancellationToken();
+    // Starting a turn consumes whatever the client had queued, so a stale
+    // notice cannot shorten a later wait.
+    _notedInput.remove(sessionId);
     _activeTurns[sessionId] = cancellation;
     if (trackCompletion) {
       _turnCompletions[turnId] = Completer<AgentRunResult>();
@@ -110,7 +117,14 @@ class SessionService {
       SessionStatus.running,
       activeTurnId: turnId,
     );
-    _emitSession(await _sessions.getById(sessionId));
+    // Cached on the row so the context meter reads the same window the turn
+    // runs against, without a catalog lookup on every session read.
+    _emitSession(
+      await _sessions.recordContextWindow(
+        sessionId,
+        resolvedModel.limits?.context,
+      ),
+    );
 
     Future<void> reportStatus(SessionStatus status, {String? error}) async {
       final turnStatus = switch (status) {
@@ -139,6 +153,11 @@ class SessionService {
       _emitSession(updated);
     }
 
+    final agentClock = SessionAgentClock(
+      clock: _clock,
+      sessionId: sessionId,
+      pendingInput: pendingInput,
+    );
     final permissionMode = await _effectivePermission(session, definition);
     // Skills resolve against the worktree, so a branch carries the project
     // skills that were committed to it.
@@ -146,6 +165,10 @@ class SessionService {
     final skillSummaries = skills.summaries();
     final tools = <AgentTool>[
       ..._toolsFactory(definition.toolIds, worktree.path, sessionId, turnId),
+      CurrentTimeTool(clock: agentClock),
+      SleepTool(clock: agentClock),
+      GetContextRemainingTool(),
+      NewContextTool(),
       AskUserTool(
         coordinator: _DatabaseUserQuestionCoordinator(
           timeline: _timeline,
@@ -180,15 +203,35 @@ class SessionService {
         sessionId: sessionId,
         turnId: turnId,
       ),
-      onEvent: (type, data) => _appendEvent(
-        sessionId: sessionId,
-        turnId: turnId,
-        type: type,
-        data: data,
-      ),
+      onEvent: (type, data) async {
+        await _appendEvent(
+          sessionId: sessionId,
+          turnId: turnId,
+          type: type,
+          data: data,
+        );
+        // The context meter rides the session stream, so every reported usage
+        // updates the row the clients already watch.
+        if (type == 'model.usage') {
+          _emitSession(
+            await _sessions.recordContextTokens(
+              sessionId,
+              ModelUsage.fromJson(data).contextTokens,
+            ),
+          );
+        }
+      },
       onStatus: reportStatus,
       onProviderItems: (items) =>
           _timeline.appendProviderItems(sessionId, items),
+      // The runner emits `context.reset` itself; this only makes the discard
+      // durable so a reconnect does not replay the retired window.
+      contextResets: _DatabaseContextResetCoordinator(
+        timeline: _timeline,
+        sessions: _sessions,
+        emitSession: _emitSession,
+        sessionId: sessionId,
+      ),
       // A shell the user allowed stays writable, so an interactive session
       // does not raise a dialog for every keystroke.
       policyFactory: (mode) => ExecSessionApprovalPolicy(
@@ -225,6 +268,7 @@ class SessionService {
               ? definition.systemPrompt
               : null,
           skills: skillSummaries,
+          contextWindowTokens: resolvedModel.limits?.context,
         ),
         cancellation,
       ),
@@ -410,6 +454,28 @@ class SessionService {
       data: <String, dynamic>{'approvalId': approval.id, 'status': status.name},
     );
     return approval;
+  }
+
+  /// Completes once the client queues input for [sessionId].
+  ///
+  /// Waiters share one completer, so a single notice wakes every sleeping
+  /// tool in that session and a fresh completer takes its place.
+  /// The notice is sticky: a client that queues something before the agent
+  /// starts waiting would otherwise have its signal dropped, and the next
+  /// sleep would run its full duration.
+  Future<void> pendingInput(String sessionId) {
+    if (_notedInput.remove(sessionId)) return Future<void>.value();
+    return _pendingInput.putIfAbsent(sessionId, Completer<void>.new).future;
+  }
+
+  /// Reports that the client has something queued for [sessionId].
+  ///
+  /// Best-effort: it only shortens a wait, so a lost notice costs a longer
+  /// sleep and nothing else.
+  void notePendingInput(String sessionId) {
+    _notedInput.add(sessionId);
+    final waiting = _pendingInput.remove(sessionId);
+    if (waiting != null && !waiting.isCompleted) waiting.complete();
   }
 
   /// Answers a pending agent question and lets its turn continue.
@@ -679,6 +745,31 @@ final class _DelegateAgentTool extends AgentTool {
     prompt: arguments['prompt'] as String,
     cancellation: context.cancellation,
   );
+}
+
+/// Makes a `new_context` reset durable.
+///
+/// The runner has already trimmed its in-memory conversation; this retires the
+/// stored window so a reconnect or a daemon restart replays exactly the same
+/// items, and clears the token counter the meter reads.
+class _DatabaseContextResetCoordinator implements ContextResetCoordinator {
+  _DatabaseContextResetCoordinator({
+    required this.timeline,
+    required this.sessions,
+    required this.emitSession,
+    required this.sessionId,
+  });
+
+  final TimelineRepository timeline;
+  final SessionRepository sessions;
+  final void Function(SessionDto?) emitSession;
+  final String sessionId;
+
+  @override
+  Future<void> reset(List<ConversationItem> retain) async {
+    await timeline.resetContextWindow(sessionId, retain);
+    emitSession(await sessions.getById(sessionId));
+  }
 }
 
 class _DatabaseUserQuestionCoordinator implements UserQuestionCoordinator {

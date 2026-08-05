@@ -618,7 +618,17 @@ const Set<String> alwaysOnBuiltInToolIds = <String>{
   'update_plan',
   'ask_user',
   'view_image',
+  'current_time',
+  'sleep',
 };
+
+/// How many MCP tools a turn tolerates before they are withheld.
+///
+/// Below this the model is told about every one, so a user with a couple of
+/// servers sees no behaviour change and pays no search round trip. Above it,
+/// the schemas alone would crowd the context, so they move behind
+/// `tool_search` instead.
+const int mcpDeferralThreshold = 8;
 
 /// Returns the tool ids a turn runs with, always-on tools first.
 List<String> resolveAgentToolIds(Iterable<String> chosen) =>

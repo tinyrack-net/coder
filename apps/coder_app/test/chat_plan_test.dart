@@ -159,6 +159,115 @@ void main() {
   );
 
   test(
+    'an answered question reads as a conversation, not a tool row',
+    () {
+      const arguments = <String, dynamic>{
+        'questions': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'store',
+            'header': 'Storage',
+            'question': 'Which store should the cache use?',
+            'options': <Map<String, dynamic>>[
+              <String, dynamic>{'label': 'SQLite', 'description': 'Durable.'},
+              <String, dynamic>{'label': 'Memory', 'description': 'Fast.'},
+            ],
+          },
+          <String, dynamic>{
+            'id': 'ttl',
+            'header': 'TTL',
+            'question': 'How long should entries live?',
+            'options': <Map<String, dynamic>>[
+              <String, dynamic>{'label': 'An hour', 'description': 'Short.'},
+              <String, dynamic>{'label': 'A day', 'description': 'Long.'},
+            ],
+          },
+        ],
+      };
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'arguments': arguments,
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'output':
+              '[{"questionId":"store","answer":"SQLite","isFreeForm":false},'
+              '{"questionId":"ttl","answer":"Evicted","isFreeForm":true}]',
+        }),
+      ]);
+
+      final answer = items.single as ChatUserAnswer;
+      expect(answer.entries.map((entry) => entry.header), <String>[
+        'Storage',
+        'TTL',
+      ]);
+      expect(
+        answer.entries.first.question,
+        'Which store should the cache use?',
+      );
+      expect(answer.entries.first.answer, 'SQLite');
+      expect(answer.entries.first.isFreeForm, isFalse);
+      // A typed answer is marked so the transcript shows it was not offered.
+      expect(answer.entries.last.answer, 'Evicted');
+      expect(answer.entries.last.isFreeForm, isTrue);
+      expect(items.whereType<ChatToolActivity>(), isEmpty);
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
+  );
+
+  test(
+    'a pending question shows nothing until it is answered',
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'arguments': <String, dynamic>{
+            'questions': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'store',
+                'header': 'Storage',
+                'question': 'Which store?',
+                'options': <Map<String, dynamic>>[],
+              },
+            ],
+          },
+        }),
+      ]);
+
+      // The question card renders from conversation state while it is
+      // pending, so a spinning tool row beside it would only duplicate it.
+      expect(items, isEmpty);
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
+  );
+
+  test(
+    'a rejected question stays visible as a failed tool activity',
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'arguments': <String, dynamic>{'questions': <Map<String, dynamic>>[]},
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'output': '{"error":"Ask between 1 and 3 questions."}',
+          'isError': true,
+        }),
+      ]);
+
+      expect(items.whereType<ChatUserAnswer>(), isEmpty);
+      expect((items.single as ChatToolActivity).isError, isTrue);
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
+  );
+
+  test(
     'only the newest plan of a turn survives repeated update_plan calls',
     () {
       final items = projectChatTimeline(<TimelineEventDto>[

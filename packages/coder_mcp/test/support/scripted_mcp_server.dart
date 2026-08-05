@@ -12,6 +12,11 @@ final class ScriptedMcpServer {
     this.serverVersion = '1.0.0',
     this.publishesTools = true,
     this.emitsToolListChanged = true,
+    this.publishesResources = false,
+    this.emitsResourceListChanged = true,
+    this.resourcePages = const <List<Map<String, dynamic>>>[],
+    this.resourceTemplates = const <Map<String, dynamic>>[],
+    this.readResult,
     List<List<Map<String, dynamic>>>? toolPages,
     this.callResult,
     this.callError,
@@ -49,6 +54,21 @@ final class ScriptedMcpServer {
   /// Whether `initialize` advertises `tools.listChanged`.
   bool emitsToolListChanged;
 
+  /// Whether `initialize` advertises the `resources` capability.
+  bool publishesResources;
+
+  /// Whether `initialize` advertises `resources.listChanged`.
+  bool emitsResourceListChanged;
+
+  /// Pages returned from successive `resources/list` calls.
+  List<List<Map<String, dynamic>>> resourcePages;
+
+  /// The single page returned from `resources/templates/list`.
+  List<Map<String, dynamic>> resourceTemplates;
+
+  /// The `resources/read` result, when the read succeeds.
+  Map<String, dynamic>? readResult;
+
   /// Pages returned from successive `tools/list` calls.
   List<List<Map<String, dynamic>>> toolPages;
 
@@ -77,6 +97,12 @@ final class ScriptedMcpServer {
       .map((request) => request['method'] as String)
       .toList(growable: false);
 
+  /// Pushes a `notifications/resources/list_changed` to the client.
+  void announceResourceListChanged() => _transport.deliver(<String, dynamic>{
+    'jsonrpc': '2.0',
+    'method': McpMethod.resourcesListChanged,
+  });
+
   /// Pushes a `notifications/tools/list_changed` to the client.
   void announceToolListChanged() => _transport.deliver(<String, dynamic>{
     'jsonrpc': '2.0',
@@ -103,6 +129,10 @@ final class ScriptedMcpServer {
           'capabilities': <String, dynamic>{
             if (publishesTools)
               'tools': <String, dynamic>{'listChanged': emitsToolListChanged},
+            if (publishesResources)
+              'resources': <String, dynamic>{
+                'listChanged': emitsResourceListChanged,
+              },
           },
         });
       case McpMethod.toolsList:
@@ -116,6 +146,34 @@ final class ScriptedMcpServer {
           'tools': page,
           if (index + 1 < toolPages.length) 'nextCursor': '${index + 1}',
         });
+      case McpMethod.resourcesList:
+        final cursor = (message['params'] as Map?)?['cursor'];
+        final index = cursor is String ? int.parse(cursor) : 0;
+        final page = index < resourcePages.length
+            ? resourcePages[index]
+            : <Map<String, dynamic>>[];
+        _respond(id, <String, dynamic>{
+          'resources': page,
+          if (index + 1 < resourcePages.length) 'nextCursor': '${index + 1}',
+        });
+      case McpMethod.resourceTemplatesList:
+        _respond(id, <String, dynamic>{
+          'resourceTemplates': resourceTemplates,
+        });
+      case McpMethod.resourcesRead:
+        _respond(
+          id,
+          readResult ??
+              <String, dynamic>{
+                'contents': <dynamic>[
+                  <String, dynamic>{
+                    'uri': (message['params'] as Map?)?['uri'],
+                    'mimeType': 'text/plain',
+                    'text': 'body',
+                  },
+                ],
+              },
+        );
       case McpMethod.toolsCall:
         if (callError != null) {
           _transport.deliver(<String, dynamic>{

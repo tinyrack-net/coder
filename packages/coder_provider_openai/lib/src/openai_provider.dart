@@ -400,14 +400,28 @@ class OpenAIResponsesProvider implements ModelProvider {
     );
   }
 
-  Map<String, int> _usage(Object? value) {
-    if (value is! Map) return const <String, int>{};
+  ModelUsage _usage(Object? value) {
+    if (value is! Map) return const ModelUsage();
     final usage = Map<String, dynamic>.from(value);
-    return <String, int>{
-      for (final entry in usage.entries)
-        if (entry.value is int) entry.key: entry.value as int,
-    };
+    return ModelUsage(
+      inputTokens: _count(usage['input_tokens']),
+      cachedInputTokens: _nestedCount(
+        usage['input_tokens_details'],
+        'cached_tokens',
+      ),
+      outputTokens: _count(usage['output_tokens']),
+      reasoningTokens: _nestedCount(
+        usage['output_tokens_details'],
+        'reasoning_tokens',
+      ),
+      totalTokens: _count(usage['total_tokens']),
+    );
   }
+
+  static int _count(Object? value) => value is int ? value : 0;
+
+  static int _nestedCount(Object? details, String key) =>
+      details is Map ? _count(details[key]) : 0;
 
   String _errorMessage(Map<String, dynamic> event) {
     final error = event['error'];

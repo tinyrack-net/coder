@@ -30,6 +30,19 @@ abstract final class McpMethod {
   /// Announces that a server's tool list changed.
   static const String toolsListChanged = 'notifications/tools/list_changed';
 
+  /// Lists the resources a server publishes.
+  static const String resourcesList = 'resources/list';
+
+  /// Lists the parameterized resource templates a server publishes.
+  static const String resourceTemplatesList = 'resources/templates/list';
+
+  /// Reads one published resource.
+  static const String resourcesRead = 'resources/read';
+
+  /// Announces that a server's resource list changed.
+  static const String resourcesListChanged =
+      'notifications/resources/list_changed';
+
   /// Checks that the peer is still responsive.
   static const String ping = 'ping';
 
@@ -87,6 +100,8 @@ class McpServerIdentity {
     this.version,
     this.publishesTools = false,
     this.emitsToolListChanged = false,
+    this.publishesResources = false,
+    this.emitsResourceListChanged = false,
   });
 
   /// The negotiated protocol revision.
@@ -103,7 +118,207 @@ class McpServerIdentity {
 
   /// Whether the server advertised `tools.listChanged`.
   final bool emitsToolListChanged;
+
+  /// Whether the server advertised the `resources` capability.
+  final bool publishesResources;
+
+  /// Whether the server advertised `resources.listChanged`.
+  final bool emitsResourceListChanged;
 }
+
+/// One resource a server publishes through `resources/list`.
+class McpResourceDescriptor {
+  /// Creates a [McpResourceDescriptor].
+  const McpResourceDescriptor({
+    required this.uri,
+    this.name,
+    this.title,
+    this.description,
+    this.mimeType,
+    this.sizeBytes,
+  });
+
+  /// Decodes one entry of a `resources/list` result.
+  factory McpResourceDescriptor.fromJson(Map<String, dynamic> json) {
+    final uri = json['uri'];
+    if (uri is! String || uri.isEmpty) {
+      throw const McpProtocolException('A resource descriptor needs a uri.');
+    }
+    return McpResourceDescriptor(
+      uri: uri,
+      name: _optionalString(json['name']),
+      title: _optionalString(json['title']),
+      description: _optionalString(json['description']),
+      mimeType: _optionalString(json['mimeType']),
+      sizeBytes: json['size'] is int ? json['size'] as int : null,
+    );
+  }
+
+  /// Where the resource lives; unique within its server.
+  final String uri;
+
+  /// A programmatic name, when the server supplies one.
+  final String? name;
+
+  /// A display title, when the server supplies one.
+  final String? title;
+
+  /// What the resource holds, when the server supplies it.
+  final String? description;
+
+  /// The declared media type, when present.
+  final String? mimeType;
+
+  /// The declared size in bytes, when present.
+  final int? sizeBytes;
+}
+
+/// One parameterized resource template a server publishes.
+class McpResourceTemplateDescriptor {
+  /// Creates a [McpResourceTemplateDescriptor].
+  const McpResourceTemplateDescriptor({
+    required this.uriTemplate,
+    this.name,
+    this.title,
+    this.description,
+    this.mimeType,
+  });
+
+  /// Decodes one entry of a `resources/templates/list` result.
+  factory McpResourceTemplateDescriptor.fromJson(Map<String, dynamic> json) {
+    final uriTemplate = json['uriTemplate'];
+    if (uriTemplate is! String || uriTemplate.isEmpty) {
+      throw const McpProtocolException(
+        'A resource template needs a uriTemplate.',
+      );
+    }
+    return McpResourceTemplateDescriptor(
+      uriTemplate: uriTemplate,
+      name: _optionalString(json['name']),
+      title: _optionalString(json['title']),
+      description: _optionalString(json['description']),
+      mimeType: _optionalString(json['mimeType']),
+    );
+  }
+
+  /// The RFC 6570 template a client expands to reach a resource.
+  final String uriTemplate;
+
+  /// A programmatic name, when the server supplies one.
+  final String? name;
+
+  /// A display title, when the server supplies one.
+  final String? title;
+
+  /// What the template addresses, when the server supplies it.
+  final String? description;
+
+  /// The declared media type of expansions, when present.
+  final String? mimeType;
+}
+
+/// One entry of a `resources/read` result.
+sealed class McpResourceContents {
+  const McpResourceContents();
+
+  /// Where the content came from.
+  String get uri;
+
+  /// The declared media type.
+  String get mimeType;
+}
+
+/// Textual resource content returned inline.
+final class McpTextResourceContents extends McpResourceContents {
+  /// Creates a [McpTextResourceContents].
+  const McpTextResourceContents({
+    required this.uri,
+    required this.mimeType,
+    required this.text,
+  });
+
+  @override
+  final String uri;
+
+  @override
+  final String mimeType;
+
+  /// The resource body.
+  final String text;
+}
+
+/// Binary resource content returned inline as base64.
+final class McpBlobResourceContents extends McpResourceContents {
+  /// Creates a [McpBlobResourceContents].
+  const McpBlobResourceContents({
+    required this.uri,
+    required this.mimeType,
+    required this.byteLength,
+  });
+
+  @override
+  final String uri;
+
+  @override
+  final String mimeType;
+
+  /// Decoded size in bytes, or null when the payload would not decode.
+  final int? byteLength;
+}
+
+/// The decoded result of one `resources/read` call.
+class McpReadResourceResult {
+  /// Creates a [McpReadResourceResult].
+  const McpReadResourceResult({required this.contents});
+
+  /// Decodes a `resources/read` result, dropping entries it cannot use.
+  ///
+  /// A server that returns an entry with neither `text` nor `blob` has told us
+  /// nothing, so it contributes nothing rather than failing the whole read.
+  factory McpReadResourceResult.fromJson(Map<String, dynamic> json) {
+    final raw = json['contents'];
+    if (raw is! List) {
+      return const McpReadResourceResult(
+        contents: <McpResourceContents>[],
+      );
+    }
+    final contents = <McpResourceContents>[];
+    for (final entry in raw.whereType<Map<dynamic, dynamic>>()) {
+      final item = Map<String, dynamic>.from(entry);
+      final uri = item['uri'];
+      if (uri is! String || uri.isEmpty) continue;
+      final text = item['text'];
+      if (text is String) {
+        contents.add(
+          McpTextResourceContents(
+            uri: uri,
+            mimeType: _mimeType(item),
+            text: text,
+          ),
+        );
+        continue;
+      }
+      if (item['blob'] != null) {
+        contents.add(
+          McpBlobResourceContents(
+            uri: uri,
+            mimeType: _mimeType(item),
+            byteLength: _base64Length(item['blob']),
+          ),
+        );
+      }
+    }
+    return McpReadResourceResult(
+      contents: List<McpResourceContents>.unmodifiable(contents),
+    );
+  }
+
+  /// The decoded contents, in server order.
+  final List<McpResourceContents> contents;
+}
+
+String? _optionalString(Object? value) =>
+    value is String && value.isNotEmpty ? value : null;
 
 /// One tool a server publishes through `tools/list`.
 class McpToolDescriptor {

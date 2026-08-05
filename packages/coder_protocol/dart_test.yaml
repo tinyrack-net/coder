@@ -3,4 +3,6 @@ tags:
   feature_test__terminal_settings__contract:
   feature_test__conversation_attachments__contract:
   feature_test__skill_management__contract:
+  feature_test__tool_context_budget__contract:
   feature_test__turn_question__contract:
+  feature_test__mcp_resource_access__contract:

@@ -451,6 +451,11 @@ abstract interface class CoderApi {
     required bool approved,
   });
 
+  /// Tells the daemon a prompt is queued, so a sleeping agent wakes early.
+  ///
+  /// Best-effort: a lost notice only means a longer wait.
+  Future<void> notePendingInput(String sessionId);
+
   /// Answers a pending agent question and lets its turn continue.
   Future<UserQuestionRequestDto> answerUserQuestion({
     required String requestId,

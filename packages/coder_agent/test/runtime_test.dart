@@ -357,6 +357,236 @@ void main() {
   );
 
   test(
+    'a context reset keeps the round it happened in well formed',
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+    () async {
+      // Both provider APIs reject a function_call_output whose function_call
+      // is missing, so the reset has to keep the assistant item that issued
+      // new_context together with every tool result of that same round.
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _twoToolResponse('new_context', 'echo'),
+        _textResponse('done'),
+      ]);
+      final resets = <List<ConversationItem>>[];
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_EchoTool(), _NewContextTool()],
+        contextResets: resets.add,
+      );
+
+      await harness.runner.startTurn(
+        _request(
+          history: const <ConversationItem>[
+            UserConversationItem('an old turn nobody needs'),
+          ],
+        ),
+        CancellationToken(),
+      );
+
+      // The stale history is gone from the request that follows the reset.
+      final after = provider.requests.last.history;
+      expect(
+        after.whereType<UserConversationItem>().map((item) => item.text),
+        isNot(contains('an old turn nobody needs')),
+      );
+
+      // Every function_call in what survives still has its output.
+      final calls = after
+          .whereType<AssistantConversationItem>()
+          .expand((item) => item.toolCalls)
+          .map((call) => call.callId)
+          .toSet();
+      final outputs = after
+          .whereType<ToolResultConversationItem>()
+          .map((item) => item.callId)
+          .toSet();
+      expect(calls, isNotEmpty);
+      expect(outputs, calls);
+
+      // The coordinator is handed exactly what the live input kept, so the
+      // database and the in-memory conversation cannot drift apart.
+      expect(resets, hasLength(1));
+      expect(
+        resets.single.whereType<ToolResultConversationItem>().length,
+        2,
+      );
+      expect(harness.events, contains('context.reset'));
+    },
+  );
+
+  test(
+    'a context reset happens once the whole round is done',
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+    () async {
+      // Resetting inside the loop would strand the tool call that follows.
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _twoToolResponse('new_context', 'echo'),
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_EchoTool(), _NewContextTool()],
+        contextResets: (_) {},
+      );
+
+      final result = await harness.runner.startTurn(
+        _request(),
+        CancellationToken(),
+      );
+
+      // Both tools ran, in order, before anything was discarded.
+      expect(
+        result.conversationItems.whereType<ToolResultConversationItem>().map(
+          (item) => item.callId,
+        ),
+        <String>['call-new_context', 'call-echo'],
+      );
+    },
+  );
+
+  test(
+    'the context budget reaches a tool from the turn request',
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+    () async {
+      final probe = _ContextProbeTool();
+      final harness = _RunnerHarness(
+        _FakeProvider(<List<ModelEvent>>[
+          _toolResponse('probe'),
+          _textResponse('done'),
+        ]),
+        tools: <AgentTool>[probe],
+      );
+
+      await harness.runner.startTurn(
+        _request(contextWindowTokens: 200000),
+        CancellationToken(),
+      );
+
+      expect(probe.seenWindow, 200000);
+      // Usage from the round that requested the call is already visible.
+      expect(probe.seenUsage.inputTokens, 10);
+    },
+  );
+
+  test(
+    'a deferred tool is withheld until a search surfaces it',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _toolResponseWith('tool_search', <String, dynamic>{
+          'query': 'echo the value',
+          'limit': null,
+        }),
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_EchoTool(), _DeferredTool()],
+      );
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      // Round one advertises the always-on tool and the search tool, but not
+      // the deferred one.
+      final first = provider.requests.first.tools.map((tool) => tool.name);
+      expect(first, containsAll(<String>['echo', 'tool_search']));
+      expect(first, isNot(contains('hidden')));
+
+      // Round two advertises what the search surfaced.
+      final second = provider.requests.last.tools.map((tool) => tool.name);
+      expect(second, contains('hidden'));
+
+      expect(harness.events, contains('tools.deferred'));
+    },
+  );
+
+  test(
+    'a deferred tool called without searching still dispatches',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      final harness = _RunnerHarness(
+        _FakeProvider(<List<ModelEvent>>[
+          _toolResponse('hidden'),
+          _textResponse('done'),
+        ]),
+        tools: <AgentTool>[_DeferredTool()],
+      );
+
+      final result = await harness.runner.startTurn(
+        _request(),
+        CancellationToken(),
+      );
+
+      // Withholding changes advertisement, never dispatchability.
+      final toolResult = result.conversationItems
+          .whereType<ToolResultConversationItem>()
+          .single;
+      expect(toolResult.isError, isFalse);
+      expect(toolResult.output, 'hello');
+    },
+  );
+
+  test(
+    'a session that already searched keeps its tools advertised',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      // The specs live in history from the previous turn, but this provider
+      // sends a tools array per request, so the runner has to restore them.
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_DeferredTool()],
+      );
+
+      await harness.runner.startTurn(
+        _request(
+          history: <ConversationItem>[
+            const AssistantConversationItem(
+              text: '',
+              toolCalls: <ConversationToolCall>[
+                ConversationToolCall(
+                  callId: 'call-search',
+                  name: 'tool_search',
+                  arguments: <String, dynamic>{'query': 'hidden'},
+                ),
+              ],
+            ),
+            const ToolResultConversationItem(
+              callId: 'call-search',
+              output: '{"tools":[{"name":"hidden"}],"remaining":0}',
+            ),
+          ],
+        ),
+        CancellationToken(),
+      );
+
+      expect(
+        provider.requests.single.tools.map((tool) => tool.name),
+        contains('hidden'),
+      );
+    },
+  );
+
+  test(
+    'nothing deferred means no search tool and no notice',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
+      final harness = _RunnerHarness(provider, tools: <AgentTool>[_EchoTool()]);
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      expect(
+        provider.requests.single.tools.map((tool) => tool.name),
+        <String>['echo'],
+      );
+      expect(harness.events, isNot(contains('tools.deferred')));
+    },
+  );
+
+  test(
     'unknown and failing tools are persisted without aborting the turn',
     () async {
       final unknown = _RunnerHarness(
@@ -521,14 +751,19 @@ AgentRunRequest _request({
   SessionMode sessionMode = SessionMode.normal,
   String? customSystemPrompt,
   List<SkillSummary> skills = const <SkillSummary>[],
+  List<ConversationItem> history = const <ConversationItem>[
+    UserConversationItem('history'),
+  ],
+  int? contextWindowTokens,
 }) => AgentRunRequest(
+  contextWindowTokens: contextWindowTokens,
   sessionId: 'agent-1',
   turnId: 'turn-1',
   workspaceRoot: Directory.current.path,
   prompt: 'test',
   model: 'test-model',
   permissionMode: permissionMode,
-  history: const <ConversationItem>[UserConversationItem('history')],
+  history: history,
   safetyIdentifier: 'safe-id',
   maxToolRounds: maxToolRounds,
   sessionMode: sessionMode,
@@ -553,7 +788,57 @@ List<ModelEvent> _toolResponse(String name) => <ModelEvent>[
         ),
       ],
     ),
-    usage: const <String, int>{'inputTokens': 10},
+    usage: const ModelUsage(inputTokens: 10, totalTokens: 10),
+  ),
+];
+
+List<ModelEvent> _twoToolResponse(String first, String second) => <ModelEvent>[
+  ModelFunctionCall(
+    callId: 'call-$first',
+    name: first,
+    arguments: const <String, dynamic>{'value': 'hello'},
+  ),
+  ModelFunctionCall(
+    callId: 'call-$second',
+    name: second,
+    arguments: const <String, dynamic>{'value': 'hello'},
+  ),
+  ModelResponseCompleted(
+    assistant: AssistantConversationItem(
+      text: '',
+      toolCalls: <ConversationToolCall>[
+        ConversationToolCall(
+          callId: 'call-$first',
+          name: first,
+          arguments: const <String, dynamic>{'value': 'hello'},
+        ),
+        ConversationToolCall(
+          callId: 'call-$second',
+          name: second,
+          arguments: const <String, dynamic>{'value': 'hello'},
+        ),
+      ],
+    ),
+    usage: const ModelUsage(inputTokens: 10, totalTokens: 10),
+  ),
+];
+
+List<ModelEvent> _toolResponseWith(
+  String name,
+  Map<String, dynamic> arguments,
+) => <ModelEvent>[
+  ModelFunctionCall(callId: 'call-$name', name: name, arguments: arguments),
+  ModelResponseCompleted(
+    assistant: AssistantConversationItem(
+      text: '',
+      toolCalls: <ConversationToolCall>[
+        ConversationToolCall(
+          callId: 'call-$name',
+          name: name,
+          arguments: arguments,
+        ),
+      ],
+    ),
   ),
 ];
 
@@ -569,11 +854,15 @@ final class _RunnerHarness {
     ApprovalCoordinator approvals = const _Approval(
       ApprovalDecision.approved,
     ),
+    void Function(List<ConversationItem> retain)? contextResets,
   }) {
     runner = AgentRunner(
       provider: provider,
       tools: tools,
       approvals: approvals,
+      contextResets: contextResets == null
+          ? null
+          : _RecordingContextReset(contextResets),
       onEvent: (type, _) => events.add(type),
       onStatus: (status, {error}) {
         statuses.add(status);
@@ -588,6 +877,15 @@ final class _RunnerHarness {
   final List<SessionStatus> statuses = <SessionStatus>[];
   final List<String> statusErrors = <String>[];
   final List<ConversationItem> items = <ConversationItem>[];
+}
+
+final class _RecordingContextReset implements ContextResetCoordinator {
+  const _RecordingContextReset(this._onReset);
+
+  final void Function(List<ConversationItem> retain) _onReset;
+
+  @override
+  Future<void> reset(List<ConversationItem> retain) async => _onReset(retain);
 }
 
 final class _FakeProvider implements ModelProvider {
@@ -672,6 +970,58 @@ final class _ContextImageTool extends _EchoTool {
       contextImages: <ConversationAttachment>[attachment],
     );
   }
+}
+
+final class _NewContextTool extends _EchoTool {
+  @override
+  String get name => 'new_context';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    context.requestContextReset();
+    return const ToolResult(output: '{"started":true}');
+  }
+}
+
+final class _ContextProbeTool extends _EchoTool {
+  int? seenWindow;
+  ModelUsage seenUsage = const ModelUsage();
+
+  @override
+  String get name => 'probe';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    seenWindow = context.contextWindowTokens;
+    seenUsage = context.turnUsage;
+    return const ToolResult(output: '{}');
+  }
+}
+
+final class _DeferredTool extends _EchoTool {
+  @override
+  String get name => 'hidden';
+
+  @override
+  String get description => 'Echoes the value it is given.';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  ToolExposure get exposure => ToolExposure.deferred;
 }
 
 final class _FailingTool extends _EchoTool {

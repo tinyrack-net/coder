@@ -893,8 +893,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatPlanTitle => 'Plan';
 
   @override
+  String usageInput(int tokens) {
+    return 'in $tokens';
+  }
+
+  @override
+  String usageInputCached(int tokens, int cached) {
+    return 'in $tokens ($cached cached)';
+  }
+
+  @override
+  String usageOutput(int tokens) {
+    return 'out $tokens';
+  }
+
+  @override
+  String usageOutputReasoning(int tokens, int reasoning) {
+    return 'out $tokens ($reasoning reasoning)';
+  }
+
+  @override
+  String usageTotal(int tokens) {
+    return 'total $tokens';
+  }
+
+  @override
   String toolExecRunning(int lines) {
     return 'running · $lines lines';
+  }
+
+  @override
+  String chatAnswerTyped(String answer) {
+    return '$answer (typed)';
+  }
+
+  @override
+  String get chatSleepWaiting => 'Waiting';
+
+  @override
+  String chatSleepRemaining(int seconds) {
+    return '${seconds}s left';
+  }
+
+  @override
+  String chatSleepDone(int seconds) {
+    return 'Waited ${seconds}s';
+  }
+
+  @override
+  String toolSearchFound(int found, int remaining) {
+    return '$found loaded · $remaining still hidden';
+  }
+
+  @override
+  String chatDeferredTools(int count) {
+    return '$count tools are available through search';
+  }
+
+  @override
+  String toolMcpResources(int count) {
+    return '$count resources';
+  }
+
+  @override
+  String toolMcpResourceTemplates(int count) {
+    return '$count templates';
+  }
+
+  @override
+  String toolMcpResourceRead(int count) {
+    return '$count blocks';
   }
 
   @override
@@ -1227,6 +1295,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcpSettingsStatusFailed => 'Failed';
 
   @override
+  String get mcpSettingsDiscoveredResources => 'resources';
+
+  @override
+  String get mcpSettingsResources => 'Published resources';
+
+  @override
+  String get mcpSettingsNoResources => 'This server publishes no resources.';
+
+  @override
+  String get mcpSettingsResourceTemplates => 'Resource templates';
+
+  @override
+  String get mcpSettingsNoResourceTemplates =>
+      'This server publishes no resource templates.';
+
+  @override
   String get mcpSettingsDiscoveredTools => 'Tools';
 
   @override
@@ -1246,4 +1330,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSettingsToolAlwaysOn => 'Always available';
+
+  @override
+  String toolContextRemaining(int remaining, int window) {
+    return '$remaining of $window tokens left';
+  }
+
+  @override
+  String toolContextRemainingUnknown(int used) {
+    return '$used tokens used';
+  }
+
+  @override
+  String get chatContextReset => 'New context window';
+
+  @override
+  String get sessionContextMeter => 'Context';
+
+  @override
+  String sessionContextMeterValue(int percent) {
+    return '$percent% of the context window used';
+  }
 }

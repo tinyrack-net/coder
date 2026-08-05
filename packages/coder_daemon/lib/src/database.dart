@@ -112,6 +112,19 @@ class Sessions extends Table {
   /// Provider service tier for this session; null uses the provider default.
   TextColumn get serviceTier => text().nullable()();
 
+  /// Live context window; `new_context` bumps it to hide older history.
+  IntColumn get currentContextEpoch =>
+      integer().withDefault(const Constant(0))();
+
+  /// Tokens the last response reported for the live window.
+  IntColumn get contextTokensUsed => integer().withDefault(const Constant(0))();
+
+  /// Context window of the model last resolved for this session.
+  ///
+  /// Cached on the row rather than looked up per read, so every session read
+  /// path reports the same number as the turn that produced the usage.
+  IntColumn get contextWindowTokens => integer().nullable()();
+
   /// The createdAt public API member.
   DateTimeColumn get createdAt => dateTime()();
 
@@ -303,6 +316,9 @@ class ProviderStates extends Table {
   /// The itemJson public API member.
   TextColumn get itemJson => text()();
 
+  /// Context window this item belongs to; older windows are never replayed.
+  IntColumn get contextEpoch => integer().withDefault(const Constant(0))();
+
   /// The createdAt public API member.
   DateTimeColumn get createdAt => dateTime()();
 
@@ -440,7 +456,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

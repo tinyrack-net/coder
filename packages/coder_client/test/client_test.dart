@@ -592,6 +592,7 @@ void main() {
       );
       await client.cancelTurn(agent.id);
       await client.resolveApproval(approvalId: approval.id, approved: true);
+      await client.notePendingInput(agent.id);
       expect(
         await client.answerUserQuestion(
           requestId: userQuestion.id,
@@ -736,6 +737,7 @@ void main() {
           RpcMethod.turnCancel,
           RpcMethod.approvalResolve,
           RpcMethod.userQuestionAnswer,
+          RpcMethod.sessionPendingInput,
           RpcMethod.timelineSubscribe,
         ]),
       );
@@ -751,6 +753,7 @@ void main() {
       'feature_test__session_lifecycle__contract',
       'feature_test__turn_execution__contract',
       'feature_test__turn_question__contract',
+      'feature_test__conversation_turn_queue__contract',
       'feature_test__agent_definition_management__contract',
       'feature_test__mcp_server_management__contract',
       'feature_test__skill_management__contract',
@@ -1196,6 +1199,7 @@ void _registerFixtureMethods(
     RpcMethod.turnStart: const TurnStartResultDto(created: true).toJson(),
     RpcMethod.turnCancel: const <String, dynamic>{},
     RpcMethod.approvalResolve: ApprovalResultDto(approval: approval).toJson(),
+    RpcMethod.sessionPendingInput: const <String, dynamic>{},
     RpcMethod.userQuestionAnswer: UserQuestionResultDto(
       request: userQuestion,
     ).toJson(),

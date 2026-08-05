@@ -1112,6 +1112,14 @@ class CoderClient implements CoderApi {
   }
 
   @override
+  Future<void> notePendingInput(String sessionId) async {
+    await _request(
+      RpcMethod.sessionPendingInput,
+      SessionPendingInputParamsDto(sessionId: sessionId).toJson(),
+    );
+  }
+
+  @override
   Future<UserQuestionRequestDto> answerUserQuestion({
     required String requestId,
     required List<UserQuestionAnswerDto> answers,

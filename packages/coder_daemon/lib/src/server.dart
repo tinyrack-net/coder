@@ -475,6 +475,7 @@ class _ClientSession {
       RpcMethod.turnCancel,
       RpcMethod.approvalResolve,
       RpcMethod.userQuestionAnswer,
+      RpcMethod.sessionPendingInput,
       RpcMethod.timelineSubscribe,
     ]) {
       _peer.registerMethod(
@@ -999,6 +1000,11 @@ class _ClientSession {
           approved: request.approved,
         );
         return ApprovalResultDto(approval: approval).toJson();
+      case RpcMethod.sessionPendingInput:
+        agents.notePendingInput(
+          SessionPendingInputParamsDto.fromJson(payload).sessionId,
+        );
+        return const <String, dynamic>{};
       case RpcMethod.userQuestionAnswer:
         final request = UserQuestionAnswerParamsDto.fromJson(payload);
         final answered = await agents.answerUserQuestion(

@@ -1,7 +1,11 @@
+export 'src/clock_tools.dart';
+export 'src/context_tools.dart';
 export 'src/exec_sessions.dart';
 export 'src/exec_tools.dart';
 export 'src/model.dart';
 export 'src/plan_mode_prompt.dart';
 export 'src/runtime.dart';
 export 'src/skills.dart';
+export 'src/tool_search.dart';
 export 'src/tools.dart';
+export 'src/usage.dart';

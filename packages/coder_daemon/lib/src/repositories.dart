@@ -78,6 +78,12 @@ abstract interface class SessionRepository {
   /// Sets or clears the provider service tier of one session.
   Future<SessionDto> updateServiceTier(String id, String? serviceTier);
 
+  /// Records what the last response reported for the live context window.
+  Future<SessionDto> recordContextTokens(String id, int tokens);
+
+  /// Caches the context window of the model last resolved for this session.
+  Future<SessionDto> recordContextWindow(String id, int? window);
+
   /// The updateStatus public API member.
   Future<SessionDto> updateStatus(
     String id,
@@ -138,8 +144,21 @@ abstract interface class TimelineRepository {
     List<ConversationItem> items,
   );
 
-  /// The providerHistory public API member.
+  /// Replays only the live context window of one session.
+  ///
+  /// Items from a window that `new_context` retired stay on disk for the
+  /// timeline but are never sent to a provider again.
   Future<List<ConversationItem>> providerHistory(String sessionId);
+
+  /// Retires the current context window and starts the next one.
+  ///
+  /// [retain] is appended to the new window, so the assistant item that called
+  /// `new_context` keeps the tool results of its own round: both provider APIs
+  /// reject a `function_call_output` whose `function_call` is missing.
+  Future<void> resetContextWindow(
+    String sessionId,
+    List<ConversationItem> retain,
+  );
 
   /// The createApproval public API member.
   Future<void> createApproval(ApprovalRequestDto approval);

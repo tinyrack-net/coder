@@ -272,7 +272,9 @@ class _ServerTile extends StatelessWidget {
             ? l10n.mcpSettingsShadowed
             : '${mcpStatusLabel(l10n, server.status)} · '
                   '${l10n.mcpSettingsDiscoveredTools} '
-                  '${server.tools.length}',
+                  '${server.tools.length} · '
+                  '${l10n.mcpSettingsDiscoveredResources} '
+                  '${server.resources.length}',
       ),
       trailing: server.scope == McpConfigScope.project
           ? const Icon(CoderIcons.lock)
@@ -574,6 +576,57 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                 title: TRText.inherit(tool.toolId),
                 subtitle: TRText.inherit(tool.description),
               ),
+          const SizedBox(height: TRSpacing.large),
+          TRCollapsible(
+            key: const ValueKey<String>('mcp-server-resources'),
+            trigger: TRText(
+              '${l10n.mcpSettingsResources} ${server.resources.length}',
+            ),
+            content: Column(
+              children: <Widget>[
+                if (server.resources.isEmpty)
+                  TRText(l10n.mcpSettingsNoResources)
+                else
+                  for (final resource in server.resources)
+                    CoderListRow(
+                      key: ValueKey<String>(
+                        'mcp-resource-tile-${resource.uri}',
+                      ),
+                      dense: true,
+                      title: TRText.inherit(resource.uri),
+                      subtitle: TRText.inherit(
+                        resource.description ?? resource.name ?? '',
+                      ),
+                    ),
+              ],
+            ),
+          ),
+          const SizedBox(height: TRSpacing.large),
+          TRCollapsible(
+            key: const ValueKey<String>('mcp-server-resource-templates'),
+            trigger: TRText(
+              '${l10n.mcpSettingsResourceTemplates} '
+              '${server.resourceTemplates.length}',
+            ),
+            content: Column(
+              children: <Widget>[
+                if (server.resourceTemplates.isEmpty)
+                  TRText(l10n.mcpSettingsNoResourceTemplates)
+                else
+                  for (final template in server.resourceTemplates)
+                    CoderListRow(
+                      key: ValueKey<String>(
+                        'mcp-resource-template-tile-${template.uriTemplate}',
+                      ),
+                      dense: true,
+                      title: TRText.inherit(template.uriTemplate),
+                      subtitle: TRText.inherit(
+                        template.description ?? template.name ?? '',
+                      ),
+                    ),
+              ],
+            ),
+          ),
           if (server.error case final error?) ...<Widget>[
             const SizedBox(height: TRSpacing.large),
             TRText(

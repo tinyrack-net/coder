@@ -442,6 +442,210 @@ void main() {
   );
 
   test(
+    'the clock tools read as time, and a finished sleep as a duration',
+    tags: const <String>['feature_test__tool_clock__widget'],
+    () {
+      final now = describeToolActivity(
+        testL10n,
+        activity(
+          'current_time',
+          output: '{"utc":"2026-08-05T14:23:01.000Z","unixSeconds":1785508981}',
+        ),
+      );
+      expect(now.glyph, ChatToolGlyph.clock);
+      expect(chatToolIcon(now.glyph), CoderIcons.time);
+      expect(now.title, 'Now()');
+      expect(now.resultLine, '2026-08-05T14:23:01.000Z');
+
+      // A running sleep is its own card; this spec only draws the leftovers.
+      final slept = describeToolActivity(
+        testL10n,
+        activity(
+          'sleep',
+          arguments: const <String, dynamic>{'duration_ms': 2500},
+          output: '{"sleptMs":2500,"outcome":"elapsed"}',
+        ),
+      );
+      expect(slept.title, 'Sleep(2500ms)');
+      expect(slept.resultLine, '3초 대기함');
+
+      final rejected = describeToolActivity(
+        testL10n,
+        activity(
+          'sleep',
+          output: '{"error":"duration_ms must be an integer."}',
+          isError: true,
+        ),
+      );
+      expect(rejected.title, 'Sleep()');
+      expect(rejected.isFailure, isTrue);
+    },
+  );
+
+  test(
+    'the context budget reads as tokens, not raw counters',
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+    () {
+      final remaining = describeToolActivity(
+        testL10n,
+        activity(
+          'get_context_remaining',
+          output:
+              '{"usedTokens":32000,"contextWindowTokens":200000,'
+              '"remainingTokens":168000}',
+        ),
+      );
+      expect(remaining.glyph, ChatToolGlyph.context);
+      expect(chatToolIcon(remaining.glyph), CoderIcons.gauge);
+      expect(remaining.title, 'Context()');
+      expect(remaining.resultLine, '토큰 168000/200000 남음');
+
+      // Without an advertised window there is no fraction to report, so the
+      // row falls back to what was actually spent.
+      final unknown = describeToolActivity(
+        testL10n,
+        activity(
+          'get_context_remaining',
+          output:
+              '{"usedTokens":900,"contextWindowTokens":null,'
+              '"remainingTokens":null}',
+        ),
+      );
+      expect(unknown.resultLine, '토큰 900개 사용');
+
+      // A successful reset is the timeline divider; only a refusal draws here.
+      final denied = describeToolActivity(
+        testL10n,
+        activity(
+          'new_context',
+          output: '{"error":"Denied."}',
+          isError: true,
+        ),
+      );
+      expect(denied.glyph, ChatToolGlyph.context);
+      expect(denied.title, 'NewContext()');
+      expect(denied.resultLine, 'Denied.');
+      expect(denied.isFailure, isTrue);
+    },
+  );
+
+  test(
+    'tool_search reports what it loaded and what stays hidden',
+    tags: const <String>['feature_test__tool_search_deferred__widget'],
+    () {
+      final searched = describeToolActivity(
+        testL10n,
+        activity(
+          'tool_search',
+          arguments: const <String, dynamic>{'query': 'open a pull request'},
+          output:
+              '{"tools":[{"name":"mcp__github__create_pull_request",'
+              '"description":"Opens a PR.","parameters":{}}],"remaining":11}',
+        ),
+      );
+
+      expect(searched.glyph, ChatToolGlyph.tools);
+      expect(chatToolIcon(searched.glyph), CoderIcons.tool);
+      expect(searched.title, 'Tools(open a pull request)');
+      expect(searched.resultLine, contains('11'));
+      // The body lists names, not the schemas the model needs.
+      expect(
+        (searched.body as ChatToolTextBody).text,
+        'mcp__github__create_pull_request',
+      );
+      expect(searched.isFailure, isFalse);
+
+      final empty = describeToolActivity(
+        testL10n,
+        activity(
+          'tool_search',
+          arguments: const <String, dynamic>{'query': 'nothing'},
+          output: '{"tools":[],"remaining":12}',
+        ),
+      );
+      expect(empty.body, isA<ChatToolEmptyBody>());
+    },
+  );
+
+  test(
+    'MCP resource tools read as discovery, not raw JSON',
+    tags: const <String>['feature_test__mcp_resource_access__widget'],
+    () {
+      final listed = describeToolActivity(
+        testL10n,
+        activity(
+          'list_mcp_resources',
+          arguments: const <String, dynamic>{'server': 'github'},
+          output:
+              '{"server":"github","resources":[{"uri":"file:///a.txt"}],'
+              '"truncated":false}',
+        ),
+      );
+      expect(listed.glyph, ChatToolGlyph.resource);
+      expect(chatToolIcon(listed.glyph), CoderIcons.extension);
+      expect(listed.title, 'Resources(github)');
+      expect(listed.resultLine, contains('1'));
+      expect(listed.isFailure, isFalse);
+
+      // Fanning out over every server says so in the title.
+      final fanned = describeToolActivity(
+        testL10n,
+        activity(
+          'list_mcp_resources',
+          output: '{"resources":[],"truncated":false}',
+        ),
+      );
+      expect(fanned.title, 'Resources(all)');
+
+      // A truncated page is marked so the model knows to page again.
+      final truncated = describeToolActivity(
+        testL10n,
+        activity(
+          'list_mcp_resource_templates',
+          arguments: const <String, dynamic>{'server': 'github'},
+          output:
+              '{"resourceTemplates":[{"uriTemplate":"a"}],"truncated":true}',
+        ),
+      );
+      expect(truncated.title, 'ResourceTemplates(github)');
+      expect(truncated.resultLine, endsWith('…'));
+
+      final read = describeToolActivity(
+        testL10n,
+        activity(
+          'read_mcp_resource',
+          arguments: const <String, dynamic>{
+            'server': 'github',
+            'uri': 'file:///a.txt',
+          },
+          output:
+              '{"server":"github","uri":"file:///a.txt","contents":'
+              '[{"uri":"file:///a.txt","mimeType":"text/plain",'
+              '"text":"file body"}]}',
+        ),
+      );
+      expect(read.title, 'Resource(github: file:///a.txt)');
+      // The expanded body shows the text, not the JSON envelope.
+      expect((read.body as ChatToolTextBody).text, 'file body');
+
+      final offline = describeToolActivity(
+        testL10n,
+        activity(
+          'read_mcp_resource',
+          arguments: const <String, dynamic>{
+            'server': 'gone',
+            'uri': 'file:///a.txt',
+          },
+          output: '{"error":"MCP server gone is not connected."}',
+          isError: true,
+        ),
+      );
+      expect(offline.resultLine, contains('gone'));
+      expect(offline.isFailure, isTrue);
+    },
+  );
+
+  test(
     'long titles and summaries are truncated',
     () {
       final long = 'x' * 200;

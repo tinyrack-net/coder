@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:coder_agent/src/tool_search.dart';
+import 'package:coder_agent/src/usage.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// CancellationToken defines a public contract.
@@ -381,14 +383,14 @@ class ModelResponseCompleted extends ModelEvent {
   /// Creates a [ModelResponseCompleted].
   const ModelResponseCompleted({
     required this.assistant,
-    this.usage = const <String, int>{},
+    this.usage = const ModelUsage(),
   });
 
   /// The assistant public API member.
   final AssistantConversationItem assistant;
 
-  /// The usage public API member.
-  final Map<String, int> usage;
+  /// Token counters the provider reported, normalized across APIs.
+  final ModelUsage usage;
 }
 
 /// Public API exposed by this library.
@@ -567,6 +569,15 @@ abstract interface class UserQuestionCoordinator {
   );
 }
 
+/// Discards the persisted conversation and starts a fresh context window.
+///
+/// The retained items are re-appended under a new epoch so the database and
+/// the runner's in-memory conversation cannot drift apart.
+abstract interface class ContextResetCoordinator {
+  /// Keeps only [retain], under a new context epoch.
+  Future<void> reset(List<ConversationItem> retain);
+}
+
 /// ToolExecutionContext defines a public contract.
 class ToolExecutionContext {
   /// Creates a [ToolExecutionContext].
@@ -574,6 +585,9 @@ class ToolExecutionContext {
     required this.workspaceRoot,
     required this.cancellation,
     this.callId = '',
+    this.contextWindowTokens,
+    this.turnUsage = const ModelUsage(),
+    this.requestContextReset = _ignoreContextReset,
   });
 
   /// The workspaceRoot public API member.
@@ -588,7 +602,21 @@ class ToolExecutionContext {
   /// answer, for instance — keys that state by this so the client can tie it
   /// back to the call that produced it.
   final String callId;
+
+  /// Tokens this model's context window holds, when the provider reports one.
+  final int? contextWindowTokens;
+
+  /// What the last response in this turn consumed.
+  final ModelUsage turnUsage;
+
+  /// Asks the runner to start a fresh context window after this round.
+  ///
+  /// Deliberately deferred: resetting inside the tool would strand any call
+  /// that follows it in the same round.
+  final void Function() requestContextReset;
 }
+
+void _ignoreContextReset() {}
 
 /// ToolResult defines a public contract.
 class ToolResult {
@@ -637,6 +665,12 @@ abstract class AgentTool {
   /// server, for instance — cannot guarantee that every property is required
   /// and that every object forbids additional properties, so they opt out.
   bool get strict => true;
+
+  /// Whether the model is told about this tool up front.
+  ///
+  /// A deferred tool stays dispatchable; only its advertisement is withheld
+  /// until [ToolSearchTool] surfaces it.
+  ToolExposure get exposure => ToolExposure.advertised;
 
   /// The preview public API member.
   Future<String?> preview(

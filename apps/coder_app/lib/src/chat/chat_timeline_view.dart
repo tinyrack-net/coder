@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:coder_app/src/chat/chat_message_views.dart';
 import 'package:coder_app/src/chat/chat_plan_card.dart';
+import 'package:coder_app/src/chat/chat_sleep_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_tool_card.dart';
 import 'package:flutter/material.dart';
@@ -146,6 +147,10 @@ class ChatItemView extends StatelessWidget {
         onToggle: onToggle,
       ),
       ChatNotice() => ChatNoticeLine(notice: value),
+      ChatUserAnswer() => ChatUserAnswerLine(answer: value),
+      ChatSleep() => ChatSleepCard(sleep: value),
+      ChatDeferredTools() => ChatDeferredToolsLine(notice: value),
+      ChatContextReset() => ChatContextResetLine(reset: value),
       ChatUsage() => ChatUsageLine(usage: value),
       ChatUnknownEvent() => ChatUnknownEventLine(event: value),
     };

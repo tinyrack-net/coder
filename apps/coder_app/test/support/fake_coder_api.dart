@@ -1299,6 +1299,14 @@ final class FakeCoderApi implements CoderApi {
     approvalDecisions.add((id: approvalId, approved: approved));
   }
 
+  /// Sessions the app told the daemon had queued input, in order.
+  final List<String> notedPendingInput = <String>[];
+
+  @override
+  Future<void> notePendingInput(String sessionId) async {
+    notedPendingInput.add(sessionId);
+  }
+
   @override
   Future<UserQuestionRequestDto> answerUserQuestion({
     required String requestId,

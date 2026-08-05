@@ -4,6 +4,39 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_diff.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 
+/// Renders normalized token counters as one muted summary line.
+///
+/// The counters arrive under the stable names `ModelUsage` writes, so this is a
+/// fixed set rather than a walk over whatever keys a provider happened to send.
+/// Cached input and hidden reasoning are subsets of their parents, so they read
+/// as parenthesised qualifiers. Returns null when there is nothing to report.
+String? describeTokenUsage(AppLocalizations l10n, Map<String, num> tokens) {
+  int count(String key) {
+    final value = tokens[key];
+    return value is num ? value.round() : 0;
+  }
+
+  final input = count('inputTokens');
+  final cached = count('cachedInputTokens');
+  final output = count('outputTokens');
+  final reasoning = count('reasoningTokens');
+  final total = count('totalTokens');
+  if (input == 0 && output == 0 && total == 0) return null;
+
+  final parts = <String>[
+    if (input > 0)
+      cached > 0
+          ? l10n.usageInputCached(input, cached)
+          : l10n.usageInput(input),
+    if (output > 0)
+      reasoning > 0
+          ? l10n.usageOutputReasoning(output, reasoning)
+          : l10n.usageOutput(output),
+    if (total > 0) l10n.usageTotal(total),
+  ];
+  return parts.join(' · ');
+}
+
 /// Decoded shape of `tool.completed.output`, which some tools double-encode.
 sealed class ChatToolOutput {
   const ChatToolOutput();
@@ -106,6 +139,18 @@ enum ChatToolGlyph {
 
   /// Questions put to the user.
   ask,
+
+  /// MCP resource discovery and reads.
+  resource,
+
+  /// Tool discovery.
+  tools,
+
+  /// Time and waiting.
+  clock,
+
+  /// The model's own context window.
+  context,
 
   /// Images loaded into the model context.
   image,
@@ -241,6 +286,25 @@ ChatToolBody _prettyArgumentBody(ChatToolActivity activity) =>
 
 bool _neverFails(ChatToolOutput output) => false;
 
+bool _hasErrorKey(ChatToolOutput output) =>
+    output is ChatToolJsonObject && output.value['error'] != null;
+
+/// Summarizes an MCP listing, noting when a page was truncated.
+String _mcpListResult(
+  AppLocalizations l10n,
+  ChatToolOutput output,
+  String key,
+  String Function(int count) label,
+) {
+  if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+  final error = output.value['error'];
+  if (error is String) return error;
+  final entries = output.value[key];
+  final count = entries is List ? entries.length : 0;
+  final summary = label(count);
+  return output.value['truncated'] == true ? '$summary…' : summary;
+}
+
 /// Summarizes a pseudo-terminal chunk from `exec_command` or `write_stdin`.
 String _execResult(
   AppLocalizations l10n,
@@ -368,6 +432,146 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
           ? _genericResult(l10n, output)
           : answers.join(', ');
     },
+  ),
+  'current_time': _ToolSpec(
+    glyph: ChatToolGlyph.clock,
+    title: (l10n, activity) => 'Now()',
+    result: (l10n, activity, output) =>
+        output is ChatToolJsonObject && output.value['utc'] is String
+        ? output.value['utc']! as String
+        : _genericResult(l10n, output),
+  ),
+  // A running sleep renders as its own countdown card; this only draws one
+  // that failed or was denied.
+  'sleep': _ToolSpec(
+    glyph: ChatToolGlyph.clock,
+    title: (l10n, activity) {
+      final milliseconds = activity.arguments['duration_ms'];
+      return milliseconds is int ? 'Sleep(${milliseconds}ms)' : 'Sleep()';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final slept = output.value['sleptMs'];
+      return slept is int
+          ? l10n.chatSleepDone((slept / 1000).ceil())
+          : _genericResult(l10n, output);
+    },
+    isFailure: _hasErrorKey,
+  ),
+  'get_context_remaining': _ToolSpec(
+    glyph: ChatToolGlyph.context,
+    title: (l10n, activity) => 'Context()',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final remaining = output.value['remainingTokens'];
+      final window = output.value['contextWindowTokens'];
+      final used = output.value['usedTokens'];
+      // A provider that never advertised a window has no denominator, so the
+      // row reports what was spent instead of inventing a percentage.
+      if (remaining is! int || window is! int) {
+        return l10n.toolContextRemainingUnknown(used is int ? used : 0);
+      }
+      return l10n.toolContextRemaining(remaining, window);
+    },
+  ),
+  // A successful reset renders as its own divider; this only draws one that
+  // failed or was denied.
+  'new_context': _ToolSpec(
+    glyph: ChatToolGlyph.context,
+    title: (l10n, activity) => 'NewContext()',
+    result: (l10n, activity, output) =>
+        output is ChatToolJsonObject && output.value['error'] is String
+        ? output.value['error']! as String
+        : l10n.chatContextReset,
+    isFailure: _hasErrorKey,
+  ),
+  'tool_search': _ToolSpec(
+    glyph: ChatToolGlyph.tools,
+    title: (l10n, activity) =>
+        'Tools(${_truncate(_stringArg(activity, 'query') ?? '', 40)})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final found = output.value['tools'];
+      final remaining = output.value['remaining'];
+      return l10n.toolSearchFound(
+        found is List ? found.length : 0,
+        remaining is int ? remaining : 0,
+      );
+    },
+    body: (activity, output) {
+      // The names are the useful part; the schemas are for the model.
+      if (output is! ChatToolJsonObject) return _plainBody(activity, output);
+      final found = output.value['tools'];
+      if (found is! List) return _plainBody(activity, output);
+      final names = found
+          .whereType<Map<dynamic, dynamic>>()
+          .map((tool) => tool['name'])
+          .whereType<String>()
+          .join('\n');
+      return names.isEmpty
+          ? const ChatToolEmptyBody()
+          : ChatToolTextBody(names);
+    },
+    isFailure: _hasErrorKey,
+  ),
+  'list_mcp_resources': _ToolSpec(
+    glyph: ChatToolGlyph.resource,
+    title: (l10n, activity) =>
+        'Resources(${_stringArg(activity, 'server') ?? 'all'})',
+    result: (l10n, activity, output) => _mcpListResult(
+      l10n,
+      output,
+      'resources',
+      l10n.toolMcpResources,
+    ),
+    isFailure: _hasErrorKey,
+  ),
+  'list_mcp_resource_templates': _ToolSpec(
+    glyph: ChatToolGlyph.resource,
+    title: (l10n, activity) =>
+        'ResourceTemplates(${_stringArg(activity, 'server') ?? 'all'})',
+    result: (l10n, activity, output) => _mcpListResult(
+      l10n,
+      output,
+      'resourceTemplates',
+      l10n.toolMcpResourceTemplates,
+    ),
+    isFailure: _hasErrorKey,
+  ),
+  'read_mcp_resource': _ToolSpec(
+    glyph: ChatToolGlyph.resource,
+    title: (l10n, activity) {
+      final server = _stringArg(activity, 'server') ?? '?';
+      final uri = _truncate(_stringArg(activity, 'uri') ?? '?', 48);
+      return 'Resource($server: $uri)';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final contents = output.value['contents'];
+      final blocks = contents is List ? contents.length : 0;
+      return l10n.toolMcpResourceRead(blocks);
+    },
+    body: (activity, output) {
+      // Text contents are what the user actually wants to inspect.
+      if (output is! ChatToolJsonObject) return _plainBody(activity, output);
+      final contents = output.value['contents'];
+      if (contents is! List) return _plainBody(activity, output);
+      final text = contents
+          .whereType<Map<dynamic, dynamic>>()
+          .map((block) => block['text'])
+          .whereType<String>()
+          .join('\n');
+      return text.isEmpty
+          ? _plainBody(activity, output)
+          : ChatToolTextBody(text);
+    },
+    isFailure: _hasErrorKey,
   ),
   'view_image': _ToolSpec(
     glyph: ChatToolGlyph.image,

@@ -956,6 +956,184 @@ void main() {
   );
 
   test(
+    'a sleeping agent wakes early when the client queues input',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-sleep-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-sleep-workspace-',
+      );
+      const bearerToken = 'sleep-tool-token-0123456789abcdef01234';
+      final provider = _SleepProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'sleep-tool-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final session = await client.createSession(
+        id: 'sleep-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Sleep',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'sleep-turn',
+        prompt: 'Wait for the build',
+      );
+
+      // The agent asked to wait five minutes; the queued prompt must cut it
+      // short, so the turn finishing at all proves the signal arrived.
+      await provider.sleeping.future.timeout(_eventTimeout);
+      await client.notePendingInput(session.id);
+
+      final outcome = await provider.outcome.future.timeout(_eventTimeout);
+      expect(outcome, 'interrupted');
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+    },
+    tags: const <String>['feature_test__tool_clock__verticalSlice'],
+  );
+
+  test(
+    'new_context discards the stored history but keeps the timeline',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-reset-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-reset-workspace-',
+      );
+      const bearerToken = 'reset-tool-token-0123456789abcdef01234';
+      final provider = _ContextResetProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'reset-tool-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final worktreeId = registered.worktrees.single.id;
+      final session = await client.createSession(
+        id: 'reset-session',
+        worktreeId: worktreeId,
+        title: 'Reset',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'reset-turn-one',
+        prompt: 'Remember the release date.',
+      );
+      await _waitForIdleSession(client, worktreeId, session.id);
+
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'reset-turn-two',
+        prompt: 'Start fresh.',
+      );
+      await _waitForIdleSession(client, worktreeId, session.id);
+
+      // The request made after the reset is the whole point: it must carry the
+      // assistant item that called new_context and that call's own output, and
+      // nothing from the retired window.
+      expect(provider.requests, hasLength(3));
+      final afterReset = provider.requests[2];
+      expect(
+        afterReset.whereType<UserConversationItem>(),
+        isEmpty,
+        reason: 'the retired window must not be replayed',
+      );
+      final calls = afterReset
+          .whereType<AssistantConversationItem>()
+          .expand((item) => item.toolCalls)
+          .map((call) => call.callId)
+          .toList();
+      final outputs = afterReset
+          .whereType<ToolResultConversationItem>()
+          .map((item) => item.callId)
+          .toList();
+      expect(calls, <String>['reset-call']);
+      expect(
+        outputs,
+        calls,
+        reason: 'both provider APIs reject an orphaned function_call_output',
+      );
+
+      // The user still sees everything; only the model forgot.
+      final timeline = await client.subscribeTimeline(session.id);
+      expect(
+        timeline.map((event) => event.turnId).toSet(),
+        containsAll(<String>['reset-turn-one', 'reset-turn-two']),
+      );
+      expect(timeline.map((event) => event.type), contains('context.reset'));
+
+      // The meter is back to zero even though the first turn reported usage.
+      final refreshed = await client.listSessions(worktreeId: worktreeId);
+      expect(
+        refreshed.firstWhere((item) => item.id == session.id).contextTokens,
+        0,
+      );
+    },
+    tags: const <String>['feature_test__tool_context_budget__verticalSlice'],
+  );
+
+  test(
     'an agent question blocks the turn until the user answers it',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-ask-home-');
@@ -2287,6 +2465,122 @@ class _PatchProvider implements ModelProvider {
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'Created result.txt'),
     );
+  }
+}
+
+class _SleepProvider implements ModelProvider {
+  /// Completes once the sleep call has been issued.
+  final Completer<void> sleeping = Completer<void>();
+
+  /// Completes with the outcome the sleep tool reported.
+  final Completer<String> outcome = Completer<String>();
+
+  var _round = 0;
+
+  @override
+  String get id => 'sleep-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    if (_round++ == 0) {
+      const arguments = <String, dynamic>{
+        'duration_ms': 300000,
+        'reason': 'the build',
+      };
+      yield const ModelFunctionCall(
+        callId: 'sleep-call',
+        name: 'sleep',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'sleep-call',
+              name: 'sleep',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      if (!sleeping.isCompleted) sleeping.complete();
+      return;
+    }
+    if (!outcome.isCompleted) {
+      final result = jsonDecode(
+        request.history
+            .whereType<ToolResultConversationItem>()
+            .firstWhere((item) => item.callId == 'sleep-call')
+            .output,
+      );
+      outcome.complete((result as Map<String, dynamic>)['outcome'] as String);
+    }
+    yield const ModelTextDelta('Done.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Done.'),
+    );
+  }
+}
+
+/// Calls `new_context` in the first turn, then reports what survived.
+///
+/// Round 1 answers the first prompt plainly, round 2 resets, and round 3 (the
+/// second turn) records the history the provider was actually given.
+class _ContextResetProvider implements ModelProvider {
+  /// History of every request, so the test can assert on the one after a reset.
+  final List<List<ConversationItem>> requests = <List<ConversationItem>>[];
+
+  var _round = 0;
+
+  @override
+  String get id => 'context-reset-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    requests.add(request.history);
+    switch (_round++) {
+      case 0:
+        yield const ModelTextDelta('Noted.');
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(text: 'Noted.'),
+          usage: ModelUsage(
+            inputTokens: 900,
+            outputTokens: 100,
+            totalTokens: 1000,
+          ),
+        );
+      case 1:
+        const arguments = <String, dynamic>{};
+        yield const ModelFunctionCall(
+          callId: 'reset-call',
+          name: 'new_context',
+          arguments: arguments,
+        );
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: 'Starting over.',
+            toolCalls: <ConversationToolCall>[
+              ConversationToolCall(
+                callId: 'reset-call',
+                name: 'new_context',
+                arguments: arguments,
+              ),
+            ],
+          ),
+        );
+      default:
+        yield const ModelTextDelta('Fresh.');
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(text: 'Fresh.'),
+        );
+    }
   }
 }
 

@@ -1092,10 +1092,79 @@
   "@chatPlanTitle": {
     "description": "Title of the plan card."
   },
+  "usageInput": "in {tokens}",
+  "@usageInput": {
+    "description": "Prompt token count in the usage summary line.",
+    "placeholders": {"tokens": {"type": "int"}}
+  },
+  "usageInputCached": "in {tokens} ({cached} cached)",
+  "@usageInputCached": {
+    "description": "Prompt tokens with the cached portion called out.",
+    "placeholders": {"tokens": {"type": "int"}, "cached": {"type": "int"}}
+  },
+  "usageOutput": "out {tokens}",
+  "@usageOutput": {
+    "description": "Completion token count in the usage summary line.",
+    "placeholders": {"tokens": {"type": "int"}}
+  },
+  "usageOutputReasoning": "out {tokens} ({reasoning} reasoning)",
+  "@usageOutputReasoning": {
+    "description": "Completion tokens with the hidden reasoning portion called out.",
+    "placeholders": {"tokens": {"type": "int"}, "reasoning": {"type": "int"}}
+  },
+  "usageTotal": "total {tokens}",
+  "@usageTotal": {
+    "description": "Total token count in the usage summary line.",
+    "placeholders": {"tokens": {"type": "int"}}
+  },
   "toolExecRunning": "running · {lines} lines",
   "@toolExecRunning": {
     "description": "Result line while a pseudo-terminal session is still running.",
     "placeholders": {"lines": {"type": "int"}}
+  },
+  "chatAnswerTyped": "{answer} (typed)",
+  "@chatAnswerTyped": {
+    "description": "A free-form answer the user typed instead of choosing.",
+    "placeholders": {"answer": {"type": "String"}}
+  },
+  "chatSleepWaiting": "Waiting",
+  "@chatSleepWaiting": {
+    "description": "Label of the sleep countdown card."
+  },
+  "chatSleepRemaining": "{seconds}s left",
+  "@chatSleepRemaining": {
+    "description": "Remaining time on the sleep countdown.",
+    "placeholders": {"seconds": {"type": "int"}}
+  },
+  "chatSleepDone": "Waited {seconds}s",
+  "@chatSleepDone": {
+    "description": "Shown once a sleep has finished.",
+    "placeholders": {"seconds": {"type": "int"}}
+  },
+  "toolSearchFound": "{found} loaded · {remaining} still hidden",
+  "@toolSearchFound": {
+    "description": "Result line of a tool_search call.",
+    "placeholders": {"found": {"type": "int"}, "remaining": {"type": "int"}}
+  },
+  "chatDeferredTools": "{count} tools are available through search",
+  "@chatDeferredTools": {
+    "description": "Notice that some tools were not advertised up front.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "toolMcpResources": "{count} resources",
+  "@toolMcpResources": {
+    "description": "Result line of a list_mcp_resources tool call.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "toolMcpResourceTemplates": "{count} templates",
+  "@toolMcpResourceTemplates": {
+    "description": "Result line of a list_mcp_resource_templates tool call.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "toolMcpResourceRead": "{count} blocks",
+  "@toolMcpResourceRead": {
+    "description": "Result line of a read_mcp_resource tool call.",
+    "placeholders": {"count": {"type": "int"}}
   },
   "toolImageLoaded": "{bytes} bytes viewed",
   "@toolImageLoaded": {
@@ -1578,6 +1647,26 @@
   "@mcpSettingsStatusFailed": {
     "description": "Server status label."
   },
+  "mcpSettingsDiscoveredResources": "resources",
+  "@mcpSettingsDiscoveredResources": {
+    "description": "Label for the resource count in the MCP server list row."
+  },
+  "mcpSettingsResources": "Published resources",
+  "@mcpSettingsResources": {
+    "description": "Heading of the collapsible MCP resource list."
+  },
+  "mcpSettingsNoResources": "This server publishes no resources.",
+  "@mcpSettingsNoResources": {
+    "description": "Empty state of the MCP resource list."
+  },
+  "mcpSettingsResourceTemplates": "Resource templates",
+  "@mcpSettingsResourceTemplates": {
+    "description": "Heading of the collapsible MCP resource template list."
+  },
+  "mcpSettingsNoResourceTemplates": "This server publishes no resource templates.",
+  "@mcpSettingsNoResourceTemplates": {
+    "description": "Empty state of the MCP resource template list."
+  },
   "mcpSettingsDiscoveredTools": "Tools",
   "@mcpSettingsDiscoveredTools": {
     "description": "Heading of the discovered tool list."
@@ -1605,5 +1694,28 @@
   "agentSettingsToolAlwaysOn": "Always available",
   "@agentSettingsToolAlwaysOn": {
     "description": "Subtitle marking a tool every agent gets."
+  },
+  "toolContextRemaining": "{remaining} of {window} tokens left",
+  "@toolContextRemaining": {
+    "description": "Result line of a get_context_remaining call.",
+    "placeholders": {"remaining": {"type": "int"}, "window": {"type": "int"}}
+  },
+  "toolContextRemainingUnknown": "{used} tokens used",
+  "@toolContextRemainingUnknown": {
+    "description": "Result line when the provider never advertised a window.",
+    "placeholders": {"used": {"type": "int"}}
+  },
+  "chatContextReset": "New context window",
+  "@chatContextReset": {
+    "description": "Divider marking where the model's history was discarded."
+  },
+  "sessionContextMeter": "Context",
+  "@sessionContextMeter": {
+    "description": "Label of the composer context budget meter."
+  },
+  "sessionContextMeterValue": "{percent}% of the context window used",
+  "@sessionContextMeterValue": {
+    "description": "Accessible value of the context budget meter.",
+    "placeholders": {"percent": {"type": "int"}}
   }
 }

@@ -43,6 +43,9 @@ void main() {
       () => sessions.mode,
       () => sessions.modelConnectionId,
       () => sessions.modelId,
+      () => sessions.currentContextEpoch,
+      () => sessions.contextTokensUsed,
+      () => sessions.contextWindowTokens,
       () => sessions.createdAt,
       () => sessions.updatedAt,
       () => sessions.primaryKey,
@@ -171,7 +174,7 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 12);
+      expect(database.schemaVersion, 13);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

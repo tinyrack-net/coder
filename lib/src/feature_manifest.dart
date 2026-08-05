@@ -518,9 +518,12 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'conversation.turn.queue',
     description:
-        'Queues prompts typed during a turn and starts them as it finishes.',
+        'Queues prompts typed during a turn, starts them as it finishes, and '
+        'tells the daemon so a sleeping agent wakes early.',
+    apiMethods: <String>['notePendingInput'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
       FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
     },
@@ -553,6 +556,51 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'with scoped session lifetime and per-session approval.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'tool.clock',
+    description:
+        'Reports the current UTC time and pauses a turn, ending the pause '
+        'early when the user queues new input.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'tool.search.deferred',
+    description:
+        'Withholds bulk tools from the model tool list and makes them '
+        'callable through a search that persists across a session.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'mcp.resource.access',
+    description:
+        'Discovers MCP resources and templates, shows them per server, and '
+        'reads one resource inside a turn.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'tool.context.budget',
+    description:
+        'Normalizes provider token counters, reports the tokens left in the '
+        'model context window, and starts a fresh window on request.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
       FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
     },

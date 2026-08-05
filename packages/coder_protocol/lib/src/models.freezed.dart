@@ -5125,9 +5125,562 @@ as String?,
 
 
 /// @nodoc
+mixin _$McpResourceSummaryDto {
+
+ String get uri; String? get name; String? get title; String? get description; String? get mimeType; int? get sizeBytes;
+/// Create a copy of McpResourceSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpResourceSummaryDtoCopyWith<McpResourceSummaryDto> get copyWith => _$McpResourceSummaryDtoCopyWithImpl<McpResourceSummaryDto>(this as McpResourceSummaryDto, _$identity);
+
+  /// Serializes this McpResourceSummaryDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpResourceSummaryDto&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.name, name) || other.name == name)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,uri,name,title,description,mimeType,sizeBytes);
+
+@override
+String toString() {
+  return 'McpResourceSummaryDto(uri: $uri, name: $name, title: $title, description: $description, mimeType: $mimeType, sizeBytes: $sizeBytes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpResourceSummaryDtoCopyWith<$Res>  {
+  factory $McpResourceSummaryDtoCopyWith(McpResourceSummaryDto value, $Res Function(McpResourceSummaryDto) _then) = _$McpResourceSummaryDtoCopyWithImpl;
+@useResult
+$Res call({
+ String uri, String? name, String? title, String? description, String? mimeType, int? sizeBytes
+});
+
+
+
+
+}
+/// @nodoc
+class _$McpResourceSummaryDtoCopyWithImpl<$Res>
+    implements $McpResourceSummaryDtoCopyWith<$Res> {
+  _$McpResourceSummaryDtoCopyWithImpl(this._self, this._then);
+
+  final McpResourceSummaryDto _self;
+  final $Res Function(McpResourceSummaryDto) _then;
+
+/// Create a copy of McpResourceSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? uri = null,Object? name = freezed,Object? title = freezed,Object? description = freezed,Object? mimeType = freezed,Object? sizeBytes = freezed,}) {
+  return _then(_self.copyWith(
+uri: null == uri ? _self.uri : uri // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String?,sizeBytes: freezed == sizeBytes ? _self.sizeBytes : sizeBytes // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [McpResourceSummaryDto].
+extension McpResourceSummaryDtoPatterns on McpResourceSummaryDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpResourceSummaryDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpResourceSummaryDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpResourceSummaryDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpResourceSummaryDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpResourceSummaryDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpResourceSummaryDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uri,  String? name,  String? title,  String? description,  String? mimeType,  int? sizeBytes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpResourceSummaryDto() when $default != null:
+return $default(_that.uri,_that.name,_that.title,_that.description,_that.mimeType,_that.sizeBytes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uri,  String? name,  String? title,  String? description,  String? mimeType,  int? sizeBytes)  $default,) {final _that = this;
+switch (_that) {
+case _McpResourceSummaryDto():
+return $default(_that.uri,_that.name,_that.title,_that.description,_that.mimeType,_that.sizeBytes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uri,  String? name,  String? title,  String? description,  String? mimeType,  int? sizeBytes)?  $default,) {final _that = this;
+switch (_that) {
+case _McpResourceSummaryDto() when $default != null:
+return $default(_that.uri,_that.name,_that.title,_that.description,_that.mimeType,_that.sizeBytes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpResourceSummaryDto implements McpResourceSummaryDto {
+  const _McpResourceSummaryDto({required this.uri, this.name, this.title, this.description, this.mimeType, this.sizeBytes});
+  factory _McpResourceSummaryDto.fromJson(Map<String, dynamic> json) => _$McpResourceSummaryDtoFromJson(json);
+
+@override final  String uri;
+@override final  String? name;
+@override final  String? title;
+@override final  String? description;
+@override final  String? mimeType;
+@override final  int? sizeBytes;
+
+/// Create a copy of McpResourceSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpResourceSummaryDtoCopyWith<_McpResourceSummaryDto> get copyWith => __$McpResourceSummaryDtoCopyWithImpl<_McpResourceSummaryDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpResourceSummaryDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpResourceSummaryDto&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.name, name) || other.name == name)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,uri,name,title,description,mimeType,sizeBytes);
+
+@override
+String toString() {
+  return 'McpResourceSummaryDto(uri: $uri, name: $name, title: $title, description: $description, mimeType: $mimeType, sizeBytes: $sizeBytes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpResourceSummaryDtoCopyWith<$Res> implements $McpResourceSummaryDtoCopyWith<$Res> {
+  factory _$McpResourceSummaryDtoCopyWith(_McpResourceSummaryDto value, $Res Function(_McpResourceSummaryDto) _then) = __$McpResourceSummaryDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String uri, String? name, String? title, String? description, String? mimeType, int? sizeBytes
+});
+
+
+
+
+}
+/// @nodoc
+class __$McpResourceSummaryDtoCopyWithImpl<$Res>
+    implements _$McpResourceSummaryDtoCopyWith<$Res> {
+  __$McpResourceSummaryDtoCopyWithImpl(this._self, this._then);
+
+  final _McpResourceSummaryDto _self;
+  final $Res Function(_McpResourceSummaryDto) _then;
+
+/// Create a copy of McpResourceSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? uri = null,Object? name = freezed,Object? title = freezed,Object? description = freezed,Object? mimeType = freezed,Object? sizeBytes = freezed,}) {
+  return _then(_McpResourceSummaryDto(
+uri: null == uri ? _self.uri : uri // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String?,sizeBytes: freezed == sizeBytes ? _self.sizeBytes : sizeBytes // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$McpResourceTemplateSummaryDto {
+
+ String get uriTemplate; String? get name; String? get title; String? get description; String? get mimeType;
+/// Create a copy of McpResourceTemplateSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$McpResourceTemplateSummaryDtoCopyWith<McpResourceTemplateSummaryDto> get copyWith => _$McpResourceTemplateSummaryDtoCopyWithImpl<McpResourceTemplateSummaryDto>(this as McpResourceTemplateSummaryDto, _$identity);
+
+  /// Serializes this McpResourceTemplateSummaryDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpResourceTemplateSummaryDto&&(identical(other.uriTemplate, uriTemplate) || other.uriTemplate == uriTemplate)&&(identical(other.name, name) || other.name == name)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,uriTemplate,name,title,description,mimeType);
+
+@override
+String toString() {
+  return 'McpResourceTemplateSummaryDto(uriTemplate: $uriTemplate, name: $name, title: $title, description: $description, mimeType: $mimeType)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $McpResourceTemplateSummaryDtoCopyWith<$Res>  {
+  factory $McpResourceTemplateSummaryDtoCopyWith(McpResourceTemplateSummaryDto value, $Res Function(McpResourceTemplateSummaryDto) _then) = _$McpResourceTemplateSummaryDtoCopyWithImpl;
+@useResult
+$Res call({
+ String uriTemplate, String? name, String? title, String? description, String? mimeType
+});
+
+
+
+
+}
+/// @nodoc
+class _$McpResourceTemplateSummaryDtoCopyWithImpl<$Res>
+    implements $McpResourceTemplateSummaryDtoCopyWith<$Res> {
+  _$McpResourceTemplateSummaryDtoCopyWithImpl(this._self, this._then);
+
+  final McpResourceTemplateSummaryDto _self;
+  final $Res Function(McpResourceTemplateSummaryDto) _then;
+
+/// Create a copy of McpResourceTemplateSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? uriTemplate = null,Object? name = freezed,Object? title = freezed,Object? description = freezed,Object? mimeType = freezed,}) {
+  return _then(_self.copyWith(
+uriTemplate: null == uriTemplate ? _self.uriTemplate : uriTemplate // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [McpResourceTemplateSummaryDto].
+extension McpResourceTemplateSummaryDtoPatterns on McpResourceTemplateSummaryDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _McpResourceTemplateSummaryDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _McpResourceTemplateSummaryDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _McpResourceTemplateSummaryDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _McpResourceTemplateSummaryDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _McpResourceTemplateSummaryDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _McpResourceTemplateSummaryDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uriTemplate,  String? name,  String? title,  String? description,  String? mimeType)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _McpResourceTemplateSummaryDto() when $default != null:
+return $default(_that.uriTemplate,_that.name,_that.title,_that.description,_that.mimeType);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uriTemplate,  String? name,  String? title,  String? description,  String? mimeType)  $default,) {final _that = this;
+switch (_that) {
+case _McpResourceTemplateSummaryDto():
+return $default(_that.uriTemplate,_that.name,_that.title,_that.description,_that.mimeType);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uriTemplate,  String? name,  String? title,  String? description,  String? mimeType)?  $default,) {final _that = this;
+switch (_that) {
+case _McpResourceTemplateSummaryDto() when $default != null:
+return $default(_that.uriTemplate,_that.name,_that.title,_that.description,_that.mimeType);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _McpResourceTemplateSummaryDto implements McpResourceTemplateSummaryDto {
+  const _McpResourceTemplateSummaryDto({required this.uriTemplate, this.name, this.title, this.description, this.mimeType});
+  factory _McpResourceTemplateSummaryDto.fromJson(Map<String, dynamic> json) => _$McpResourceTemplateSummaryDtoFromJson(json);
+
+@override final  String uriTemplate;
+@override final  String? name;
+@override final  String? title;
+@override final  String? description;
+@override final  String? mimeType;
+
+/// Create a copy of McpResourceTemplateSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$McpResourceTemplateSummaryDtoCopyWith<_McpResourceTemplateSummaryDto> get copyWith => __$McpResourceTemplateSummaryDtoCopyWithImpl<_McpResourceTemplateSummaryDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$McpResourceTemplateSummaryDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpResourceTemplateSummaryDto&&(identical(other.uriTemplate, uriTemplate) || other.uriTemplate == uriTemplate)&&(identical(other.name, name) || other.name == name)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,uriTemplate,name,title,description,mimeType);
+
+@override
+String toString() {
+  return 'McpResourceTemplateSummaryDto(uriTemplate: $uriTemplate, name: $name, title: $title, description: $description, mimeType: $mimeType)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$McpResourceTemplateSummaryDtoCopyWith<$Res> implements $McpResourceTemplateSummaryDtoCopyWith<$Res> {
+  factory _$McpResourceTemplateSummaryDtoCopyWith(_McpResourceTemplateSummaryDto value, $Res Function(_McpResourceTemplateSummaryDto) _then) = __$McpResourceTemplateSummaryDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String uriTemplate, String? name, String? title, String? description, String? mimeType
+});
+
+
+
+
+}
+/// @nodoc
+class __$McpResourceTemplateSummaryDtoCopyWithImpl<$Res>
+    implements _$McpResourceTemplateSummaryDtoCopyWith<$Res> {
+  __$McpResourceTemplateSummaryDtoCopyWithImpl(this._self, this._then);
+
+  final _McpResourceTemplateSummaryDto _self;
+  final $Res Function(_McpResourceTemplateSummaryDto) _then;
+
+/// Create a copy of McpResourceTemplateSummaryDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? uriTemplate = null,Object? name = freezed,Object? title = freezed,Object? description = freezed,Object? mimeType = freezed,}) {
+  return _then(_McpResourceTemplateSummaryDto(
+uriTemplate: null == uriTemplate ? _self.uriTemplate : uriTemplate // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$McpServerStateDto {
 
- McpServerConfigDto get config; McpServerStatus get status; McpConfigScope get scope; String get sourcePath; bool get shadowed; String? get protocolVersion; String? get serverName; String? get serverVersion; List<McpToolSummaryDto> get tools; String? get error; List<String> get diagnostics; DateTime? get lastConnectedAt; DateTime? get nextRetryAt; int get attempt;
+ McpServerConfigDto get config; McpServerStatus get status; McpConfigScope get scope; String get sourcePath; bool get shadowed; String? get protocolVersion; String? get serverName; String? get serverVersion; List<McpToolSummaryDto> get tools; List<McpResourceSummaryDto> get resources; List<McpResourceTemplateSummaryDto> get resourceTemplates; String? get error; List<String> get diagnostics; DateTime? get lastConnectedAt; DateTime? get nextRetryAt; int get attempt;
 /// Create a copy of McpServerStateDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -5140,16 +5693,16 @@ $McpServerStateDtoCopyWith<McpServerStateDto> get copyWith => _$McpServerStateDt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServerStateDto&&(identical(other.config, config) || other.config == config)&&(identical(other.status, status) || other.status == status)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.shadowed, shadowed) || other.shadowed == shadowed)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&(identical(other.serverName, serverName) || other.serverName == serverName)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&const DeepCollectionEquality().equals(other.tools, tools)&&(identical(other.error, error) || other.error == error)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics)&&(identical(other.lastConnectedAt, lastConnectedAt) || other.lastConnectedAt == lastConnectedAt)&&(identical(other.nextRetryAt, nextRetryAt) || other.nextRetryAt == nextRetryAt)&&(identical(other.attempt, attempt) || other.attempt == attempt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is McpServerStateDto&&(identical(other.config, config) || other.config == config)&&(identical(other.status, status) || other.status == status)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.shadowed, shadowed) || other.shadowed == shadowed)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&(identical(other.serverName, serverName) || other.serverName == serverName)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&const DeepCollectionEquality().equals(other.tools, tools)&&const DeepCollectionEquality().equals(other.resources, resources)&&const DeepCollectionEquality().equals(other.resourceTemplates, resourceTemplates)&&(identical(other.error, error) || other.error == error)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics)&&(identical(other.lastConnectedAt, lastConnectedAt) || other.lastConnectedAt == lastConnectedAt)&&(identical(other.nextRetryAt, nextRetryAt) || other.nextRetryAt == nextRetryAt)&&(identical(other.attempt, attempt) || other.attempt == attempt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,config,status,scope,sourcePath,shadowed,protocolVersion,serverName,serverVersion,const DeepCollectionEquality().hash(tools),error,const DeepCollectionEquality().hash(diagnostics),lastConnectedAt,nextRetryAt,attempt);
+int get hashCode => Object.hash(runtimeType,config,status,scope,sourcePath,shadowed,protocolVersion,serverName,serverVersion,const DeepCollectionEquality().hash(tools),const DeepCollectionEquality().hash(resources),const DeepCollectionEquality().hash(resourceTemplates),error,const DeepCollectionEquality().hash(diagnostics),lastConnectedAt,nextRetryAt,attempt);
 
 @override
 String toString() {
-  return 'McpServerStateDto(config: $config, status: $status, scope: $scope, sourcePath: $sourcePath, shadowed: $shadowed, protocolVersion: $protocolVersion, serverName: $serverName, serverVersion: $serverVersion, tools: $tools, error: $error, diagnostics: $diagnostics, lastConnectedAt: $lastConnectedAt, nextRetryAt: $nextRetryAt, attempt: $attempt)';
+  return 'McpServerStateDto(config: $config, status: $status, scope: $scope, sourcePath: $sourcePath, shadowed: $shadowed, protocolVersion: $protocolVersion, serverName: $serverName, serverVersion: $serverVersion, tools: $tools, resources: $resources, resourceTemplates: $resourceTemplates, error: $error, diagnostics: $diagnostics, lastConnectedAt: $lastConnectedAt, nextRetryAt: $nextRetryAt, attempt: $attempt)';
 }
 
 
@@ -5160,7 +5713,7 @@ abstract mixin class $McpServerStateDtoCopyWith<$Res>  {
   factory $McpServerStateDtoCopyWith(McpServerStateDto value, $Res Function(McpServerStateDto) _then) = _$McpServerStateDtoCopyWithImpl;
 @useResult
 $Res call({
- McpServerConfigDto config, McpServerStatus status, McpConfigScope scope, String sourcePath, bool shadowed, String? protocolVersion, String? serverName, String? serverVersion, List<McpToolSummaryDto> tools, String? error, List<String> diagnostics, DateTime? lastConnectedAt, DateTime? nextRetryAt, int attempt
+ McpServerConfigDto config, McpServerStatus status, McpConfigScope scope, String sourcePath, bool shadowed, String? protocolVersion, String? serverName, String? serverVersion, List<McpToolSummaryDto> tools, List<McpResourceSummaryDto> resources, List<McpResourceTemplateSummaryDto> resourceTemplates, String? error, List<String> diagnostics, DateTime? lastConnectedAt, DateTime? nextRetryAt, int attempt
 });
 
 
@@ -5177,7 +5730,7 @@ class _$McpServerStateDtoCopyWithImpl<$Res>
 
 /// Create a copy of McpServerStateDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? config = null,Object? status = null,Object? scope = null,Object? sourcePath = null,Object? shadowed = null,Object? protocolVersion = freezed,Object? serverName = freezed,Object? serverVersion = freezed,Object? tools = null,Object? error = freezed,Object? diagnostics = null,Object? lastConnectedAt = freezed,Object? nextRetryAt = freezed,Object? attempt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? config = null,Object? status = null,Object? scope = null,Object? sourcePath = null,Object? shadowed = null,Object? protocolVersion = freezed,Object? serverName = freezed,Object? serverVersion = freezed,Object? tools = null,Object? resources = null,Object? resourceTemplates = null,Object? error = freezed,Object? diagnostics = null,Object? lastConnectedAt = freezed,Object? nextRetryAt = freezed,Object? attempt = null,}) {
   return _then(_self.copyWith(
 config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
 as McpServerConfigDto,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -5188,7 +5741,9 @@ as bool,protocolVersion: freezed == protocolVersion ? _self.protocolVersion : pr
 as String?,serverName: freezed == serverName ? _self.serverName : serverName // ignore: cast_nullable_to_non_nullable
 as String?,serverVersion: freezed == serverVersion ? _self.serverVersion : serverVersion // ignore: cast_nullable_to_non_nullable
 as String?,tools: null == tools ? _self.tools : tools // ignore: cast_nullable_to_non_nullable
-as List<McpToolSummaryDto>,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as List<McpToolSummaryDto>,resources: null == resources ? _self.resources : resources // ignore: cast_nullable_to_non_nullable
+as List<McpResourceSummaryDto>,resourceTemplates: null == resourceTemplates ? _self.resourceTemplates : resourceTemplates // ignore: cast_nullable_to_non_nullable
+as List<McpResourceTemplateSummaryDto>,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,diagnostics: null == diagnostics ? _self.diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
 as List<String>,lastConnectedAt: freezed == lastConnectedAt ? _self.lastConnectedAt : lastConnectedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,nextRetryAt: freezed == nextRetryAt ? _self.nextRetryAt : nextRetryAt // ignore: cast_nullable_to_non_nullable
@@ -5287,10 +5842,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  List<McpResourceSummaryDto> resources,  List<McpResourceTemplateSummaryDto> resourceTemplates,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _McpServerStateDto() when $default != null:
-return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
+return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.resources,_that.resourceTemplates,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
   return orElse();
 
 }
@@ -5308,10 +5863,10 @@ return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.sha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  List<McpResourceSummaryDto> resources,  List<McpResourceTemplateSummaryDto> resourceTemplates,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)  $default,) {final _that = this;
 switch (_that) {
 case _McpServerStateDto():
-return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
+return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.resources,_that.resourceTemplates,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -5328,10 +5883,10 @@ return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.sha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( McpServerConfigDto config,  McpServerStatus status,  McpConfigScope scope,  String sourcePath,  bool shadowed,  String? protocolVersion,  String? serverName,  String? serverVersion,  List<McpToolSummaryDto> tools,  List<McpResourceSummaryDto> resources,  List<McpResourceTemplateSummaryDto> resourceTemplates,  String? error,  List<String> diagnostics,  DateTime? lastConnectedAt,  DateTime? nextRetryAt,  int attempt)?  $default,) {final _that = this;
 switch (_that) {
 case _McpServerStateDto() when $default != null:
-return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
+return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.shadowed,_that.protocolVersion,_that.serverName,_that.serverVersion,_that.tools,_that.resources,_that.resourceTemplates,_that.error,_that.diagnostics,_that.lastConnectedAt,_that.nextRetryAt,_that.attempt);case _:
   return null;
 
 }
@@ -5343,7 +5898,7 @@ return $default(_that.config,_that.status,_that.scope,_that.sourcePath,_that.sha
 @JsonSerializable()
 
 class _McpServerStateDto implements McpServerStateDto {
-  const _McpServerStateDto({required this.config, required this.status, required this.scope, required this.sourcePath, this.shadowed = false, this.protocolVersion, this.serverName, this.serverVersion, final  List<McpToolSummaryDto> tools = const <McpToolSummaryDto>[], this.error, final  List<String> diagnostics = const <String>[], this.lastConnectedAt, this.nextRetryAt, this.attempt = 0}): _tools = tools,_diagnostics = diagnostics;
+  const _McpServerStateDto({required this.config, required this.status, required this.scope, required this.sourcePath, this.shadowed = false, this.protocolVersion, this.serverName, this.serverVersion, final  List<McpToolSummaryDto> tools = const <McpToolSummaryDto>[], final  List<McpResourceSummaryDto> resources = const <McpResourceSummaryDto>[], final  List<McpResourceTemplateSummaryDto> resourceTemplates = const <McpResourceTemplateSummaryDto>[], this.error, final  List<String> diagnostics = const <String>[], this.lastConnectedAt, this.nextRetryAt, this.attempt = 0}): _tools = tools,_resources = resources,_resourceTemplates = resourceTemplates,_diagnostics = diagnostics;
   factory _McpServerStateDto.fromJson(Map<String, dynamic> json) => _$McpServerStateDtoFromJson(json);
 
 @override final  McpServerConfigDto config;
@@ -5359,6 +5914,20 @@ class _McpServerStateDto implements McpServerStateDto {
   if (_tools is EqualUnmodifiableListView) return _tools;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_tools);
+}
+
+ final  List<McpResourceSummaryDto> _resources;
+@override@JsonKey() List<McpResourceSummaryDto> get resources {
+  if (_resources is EqualUnmodifiableListView) return _resources;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_resources);
+}
+
+ final  List<McpResourceTemplateSummaryDto> _resourceTemplates;
+@override@JsonKey() List<McpResourceTemplateSummaryDto> get resourceTemplates {
+  if (_resourceTemplates is EqualUnmodifiableListView) return _resourceTemplates;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_resourceTemplates);
 }
 
 @override final  String? error;
@@ -5386,16 +5955,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServerStateDto&&(identical(other.config, config) || other.config == config)&&(identical(other.status, status) || other.status == status)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.shadowed, shadowed) || other.shadowed == shadowed)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&(identical(other.serverName, serverName) || other.serverName == serverName)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&const DeepCollectionEquality().equals(other._tools, _tools)&&(identical(other.error, error) || other.error == error)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics)&&(identical(other.lastConnectedAt, lastConnectedAt) || other.lastConnectedAt == lastConnectedAt)&&(identical(other.nextRetryAt, nextRetryAt) || other.nextRetryAt == nextRetryAt)&&(identical(other.attempt, attempt) || other.attempt == attempt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _McpServerStateDto&&(identical(other.config, config) || other.config == config)&&(identical(other.status, status) || other.status == status)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.shadowed, shadowed) || other.shadowed == shadowed)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&(identical(other.serverName, serverName) || other.serverName == serverName)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&const DeepCollectionEquality().equals(other._tools, _tools)&&const DeepCollectionEquality().equals(other._resources, _resources)&&const DeepCollectionEquality().equals(other._resourceTemplates, _resourceTemplates)&&(identical(other.error, error) || other.error == error)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics)&&(identical(other.lastConnectedAt, lastConnectedAt) || other.lastConnectedAt == lastConnectedAt)&&(identical(other.nextRetryAt, nextRetryAt) || other.nextRetryAt == nextRetryAt)&&(identical(other.attempt, attempt) || other.attempt == attempt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,config,status,scope,sourcePath,shadowed,protocolVersion,serverName,serverVersion,const DeepCollectionEquality().hash(_tools),error,const DeepCollectionEquality().hash(_diagnostics),lastConnectedAt,nextRetryAt,attempt);
+int get hashCode => Object.hash(runtimeType,config,status,scope,sourcePath,shadowed,protocolVersion,serverName,serverVersion,const DeepCollectionEquality().hash(_tools),const DeepCollectionEquality().hash(_resources),const DeepCollectionEquality().hash(_resourceTemplates),error,const DeepCollectionEquality().hash(_diagnostics),lastConnectedAt,nextRetryAt,attempt);
 
 @override
 String toString() {
-  return 'McpServerStateDto(config: $config, status: $status, scope: $scope, sourcePath: $sourcePath, shadowed: $shadowed, protocolVersion: $protocolVersion, serverName: $serverName, serverVersion: $serverVersion, tools: $tools, error: $error, diagnostics: $diagnostics, lastConnectedAt: $lastConnectedAt, nextRetryAt: $nextRetryAt, attempt: $attempt)';
+  return 'McpServerStateDto(config: $config, status: $status, scope: $scope, sourcePath: $sourcePath, shadowed: $shadowed, protocolVersion: $protocolVersion, serverName: $serverName, serverVersion: $serverVersion, tools: $tools, resources: $resources, resourceTemplates: $resourceTemplates, error: $error, diagnostics: $diagnostics, lastConnectedAt: $lastConnectedAt, nextRetryAt: $nextRetryAt, attempt: $attempt)';
 }
 
 
@@ -5406,7 +5975,7 @@ abstract mixin class _$McpServerStateDtoCopyWith<$Res> implements $McpServerStat
   factory _$McpServerStateDtoCopyWith(_McpServerStateDto value, $Res Function(_McpServerStateDto) _then) = __$McpServerStateDtoCopyWithImpl;
 @override @useResult
 $Res call({
- McpServerConfigDto config, McpServerStatus status, McpConfigScope scope, String sourcePath, bool shadowed, String? protocolVersion, String? serverName, String? serverVersion, List<McpToolSummaryDto> tools, String? error, List<String> diagnostics, DateTime? lastConnectedAt, DateTime? nextRetryAt, int attempt
+ McpServerConfigDto config, McpServerStatus status, McpConfigScope scope, String sourcePath, bool shadowed, String? protocolVersion, String? serverName, String? serverVersion, List<McpToolSummaryDto> tools, List<McpResourceSummaryDto> resources, List<McpResourceTemplateSummaryDto> resourceTemplates, String? error, List<String> diagnostics, DateTime? lastConnectedAt, DateTime? nextRetryAt, int attempt
 });
 
 
@@ -5423,7 +5992,7 @@ class __$McpServerStateDtoCopyWithImpl<$Res>
 
 /// Create a copy of McpServerStateDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? config = null,Object? status = null,Object? scope = null,Object? sourcePath = null,Object? shadowed = null,Object? protocolVersion = freezed,Object? serverName = freezed,Object? serverVersion = freezed,Object? tools = null,Object? error = freezed,Object? diagnostics = null,Object? lastConnectedAt = freezed,Object? nextRetryAt = freezed,Object? attempt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? config = null,Object? status = null,Object? scope = null,Object? sourcePath = null,Object? shadowed = null,Object? protocolVersion = freezed,Object? serverName = freezed,Object? serverVersion = freezed,Object? tools = null,Object? resources = null,Object? resourceTemplates = null,Object? error = freezed,Object? diagnostics = null,Object? lastConnectedAt = freezed,Object? nextRetryAt = freezed,Object? attempt = null,}) {
   return _then(_McpServerStateDto(
 config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
 as McpServerConfigDto,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -5434,7 +6003,9 @@ as bool,protocolVersion: freezed == protocolVersion ? _self.protocolVersion : pr
 as String?,serverName: freezed == serverName ? _self.serverName : serverName // ignore: cast_nullable_to_non_nullable
 as String?,serverVersion: freezed == serverVersion ? _self.serverVersion : serverVersion // ignore: cast_nullable_to_non_nullable
 as String?,tools: null == tools ? _self._tools : tools // ignore: cast_nullable_to_non_nullable
-as List<McpToolSummaryDto>,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as List<McpToolSummaryDto>,resources: null == resources ? _self._resources : resources // ignore: cast_nullable_to_non_nullable
+as List<McpResourceSummaryDto>,resourceTemplates: null == resourceTemplates ? _self._resourceTemplates : resourceTemplates // ignore: cast_nullable_to_non_nullable
+as List<McpResourceTemplateSummaryDto>,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,diagnostics: null == diagnostics ? _self._diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
 as List<String>,lastConnectedAt: freezed == lastConnectedAt ? _self.lastConnectedAt : lastConnectedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,nextRetryAt: freezed == nextRetryAt ? _self.nextRetryAt : nextRetryAt // ignore: cast_nullable_to_non_nullable
@@ -6574,7 +7145,9 @@ mixin _$SessionDto {
  String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; SessionMode get mode; SessionModelSelectionDto? get model;/// Overrides the reasoning effort of the agent definition; null inherits.
  String? get reasoningEffort;/// Overrides the permission mode of the agent definition; null inherits.
  PermissionMode? get permissionMode;/// Provider service tier for this session; null uses the provider default.
- String? get serviceTier; String? get parentSessionId; String? get activeTurnId; String? get lastError;
+ String? get serviceTier; String? get parentSessionId; String? get activeTurnId; String? get lastError;/// Tokens the last response reported for the live context window.
+ int get contextTokens;/// Context window of the resolved model; null when it is not advertised.
+ int? get contextWindow;
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -6587,16 +7160,16 @@ $SessionDtoCopyWith<SessionDto> get copyWith => _$SessionDtoCopyWithImpl<Session
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError,contextTokens,contextWindow);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
 }
 
 
@@ -6607,7 +7180,7 @@ abstract mixin class $SessionDtoCopyWith<$Res>  {
   factory $SessionDtoCopyWith(SessionDto value, $Res Function(SessionDto) _then) = _$SessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
 });
 
 
@@ -6624,7 +7197,7 @@ class _$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -6642,7 +7215,9 @@ as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : ser
 as String?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,contextTokens: null == contextTokens ? _self.contextTokens : contextTokens // ignore: cast_nullable_to_non_nullable
+as int,contextWindow: freezed == contextWindow ? _self.contextWindow : contextWindow // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 /// Create a copy of SessionDto
@@ -6739,10 +7314,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   return orElse();
 
 }
@@ -6760,10 +7335,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -6780,10 +7355,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   return null;
 
 }
@@ -6795,7 +7370,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionDto implements SessionDto {
-  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier, this.parentSessionId, this.activeTurnId, this.lastError});
+  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier, this.parentSessionId, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow});
   factory _SessionDto.fromJson(Map<String, dynamic> json) => _$SessionDtoFromJson(json);
 
 @override final  String id;
@@ -6817,6 +7392,10 @@ class _SessionDto implements SessionDto {
 @override final  String? parentSessionId;
 @override final  String? activeTurnId;
 @override final  String? lastError;
+/// Tokens the last response reported for the live context window.
+@override@JsonKey() final  int contextTokens;
+/// Context window of the resolved model; null when it is not advertised.
+@override final  int? contextWindow;
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
@@ -6831,16 +7410,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError,contextTokens,contextWindow);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
 }
 
 
@@ -6851,7 +7430,7 @@ abstract mixin class _$SessionDtoCopyWith<$Res> implements $SessionDtoCopyWith<$
   factory _$SessionDtoCopyWith(_SessionDto value, $Res Function(_SessionDto) _then) = __$SessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
 });
 
 
@@ -6868,7 +7447,7 @@ class __$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
   return _then(_SessionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -6886,7 +7465,9 @@ as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : ser
 as String?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,contextTokens: null == contextTokens ? _self.contextTokens : contextTokens // ignore: cast_nullable_to_non_nullable
+as int,contextWindow: freezed == contextWindow ? _self.contextWindow : contextWindow // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

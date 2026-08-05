@@ -17,3 +17,4 @@ tags:
   feature_test__provider_connection_management__contract:
   feature_test__provider_oauth__contract:
   feature_test__provider_custom__contract:
+  feature_test__conversation_turn_queue__contract:

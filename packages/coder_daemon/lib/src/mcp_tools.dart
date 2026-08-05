@@ -96,6 +96,7 @@ final class McpAgentTool extends AgentTool {
     required this.serverId,
     required this.descriptor,
     required this._lookup,
+    this.exposure = ToolExposure.advertised,
   });
 
   /// Which configured server publishes this tool.
@@ -121,6 +122,10 @@ final class McpAgentTool extends AgentTool {
 
   @override
   bool get strict => false;
+
+  /// Whether this tool is advertised up front or found through a search.
+  @override
+  final ToolExposure exposure;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>

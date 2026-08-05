@@ -4,3 +4,5 @@ tags:
   feature_test__turn_execution__unit:
   feature_test__turn_question__unit:
   feature_test__tool_exec_session__unit:
+  feature_test__tool_search_deferred__unit:
+  feature_test__tool_clock__unit:

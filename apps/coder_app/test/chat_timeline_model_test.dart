@@ -269,8 +269,11 @@ void main() {
           'status': 'approved',
         }),
         event('model.usage', <String, dynamic>{
-          'input_tokens': 12,
-          'output_tokens': 3,
+          'inputTokens': 12,
+          'cachedInputTokens': 8,
+          'outputTokens': 3,
+          'reasoningTokens': 1,
+          'totalTokens': 15,
         }),
         event('turn.failed', <String, dynamic>{'error': 'provider down'}),
         event('turn.cancelled', const <String, dynamic>{}, turnId: 'turn-2'),
@@ -278,8 +281,11 @@ void main() {
       ]);
 
       expect(items.whereType<ChatUsage>().single.tokens, <String, num>{
-        'input_tokens': 12,
-        'output_tokens': 3,
+        'inputTokens': 12,
+        'cachedInputTokens': 8,
+        'outputTokens': 3,
+        'reasoningTokens': 1,
+        'totalTokens': 15,
       });
       final notices = items.whereType<ChatNotice>().toList(growable: false);
       expect(notices.map((notice) => notice.kind), <ChatNoticeKind>[
