@@ -1,6 +1,7 @@
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/attachment_web.dart';
+import 'package:coder_app/src/boot/bootstrap_gate.dart';
 import 'package:coder_app/src/remote_bootstrap.dart';
 import 'package:flutter/material.dart';
 
@@ -11,9 +12,13 @@ import 'package:flutter/material.dart';
 Future<void> runWebApp({AppServices? services}) async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    CoderApp(
-      services: services ?? await createRemoteServices(clientKind: 'web'),
-      attachmentInput: const WebAttachmentInput(),
+    BootstrapGate<AppServices>(
+      bootstrap: () async =>
+          services ?? await createRemoteServices(clientKind: 'web'),
+      builder: (context, resolved) => CoderApp(
+        services: resolved,
+        attachmentInput: const WebAttachmentInput(),
+      ),
     ),
   );
 }

@@ -70,13 +70,15 @@ void main() {
     await mobile_entry.runMobileApp(
       services: fakeAppServices(mobileApi),
     );
-    await tester.pump();
+    // The gate paints its splash first, so the app arrives a frame after the
+    // bootstrap future resolves rather than in the first pump.
+    await tester.pumpAndSettle();
     expect(find.byType(CoderApp), findsOneWidget);
   });
 
   testWidgets('the web runner starts remote-only', (tester) async {
     await web_entry.runWebApp(services: fakeAppServices(FakeCoderApi()));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.byType(CoderApp), findsOneWidget);
   });
