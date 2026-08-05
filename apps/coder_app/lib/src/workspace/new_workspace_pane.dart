@@ -196,7 +196,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                   Padding(
                     padding: const EdgeInsets.only(left: 20, bottom: 4),
                     child: Text(
-                      'New workspace',
+                      AppLocalizations.of(context).workspaceNewWorkspace,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
