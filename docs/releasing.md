@@ -40,6 +40,25 @@ because WinGet consumes a nested portable executable.
 The Cask (`coder`) and the Formula (`coder-cli`) land in the same
 `tinyrack-net/homebrew-tap` commit.
 
+### Web client
+
+| Artifact | Channel |
+| --- | --- |
+| `flutter build web` output | Cloudflare Workers static assets |
+
+The web build is a static client with no server of its own; it connects to a
+daemon the user runs. It is **not** tied to a version tag: `deploy-web`
+publishes on every push to `main` as well as on tags, because there is nothing
+to install and no version for a user to be stranded on.
+
+`web-build` runs on every pull request and is part of the quality gate. That
+is deliberate: a `dart:io` import reaching the web entrypoint compiles fine
+everywhere else and only fails there, so without it the breakage would surface
+at release time.
+
+See [`remote-daemon.md`](remote-daemon.md) for the origin allowlist a daemon
+needs before a browser can reach it.
+
 WinGet consumes the Inno Setup `setup.exe`; the MSIX exists for the Microsoft
 Store path and is not yet submitted. There is no `.msixbundle` because there is
 only one Windows architecture to bundle.
@@ -91,6 +110,8 @@ All are repository secrets on `tinyrack-net/coder`.
 | `APPLE_NOTARY_KEY_P8_BASE64` | notarization | yes |
 | `HOMEBREW_TAP_TOKEN` | pushing the Cask to the tap | yes |
 | `WINGET_TOKEN` | the winget-pkgs pull requests | yes |
+| `CLOUDFLARE_API_TOKEN` | the web deployment | no |
+| `CLOUDFLARE_ACCOUNT_ID` | the web deployment | no |
 | `MSIX_IDENTITY_NAME` | MSIX identity, optional | no, `tinyrack.coder` |
 | `MSIX_PUBLISHER` | MSIX identity, optional | yes, matches the signing certificate |
 | `MSIX_PUBLISHER_DISPLAY_NAME` | MSIX identity, optional | yes |

@@ -3,9 +3,12 @@ import 'package:coder_workspace/src/feature_verifier.dart';
 const Set<FeatureSurface> _desktop = <FeatureSurface>{
   FeatureSurface.desktop,
 };
+// Web reaches a daemon exactly the way mobile does, through the shared
+// remote-only bootstrap, so every scenario mobile supports it supports too.
 const Set<FeatureSurface> _allSurfaces = <FeatureSurface>{
   FeatureSurface.desktop,
   FeatureSurface.mobile,
+  FeatureSurface.web,
 };
 
 /// Complete traceability manifest for user-visible Coder capabilities.

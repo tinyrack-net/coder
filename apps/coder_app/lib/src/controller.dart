@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/attachment_io.dart';
+import 'package:coder_app/src/attachment_ports.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/host_registry.dart';

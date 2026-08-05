@@ -251,6 +251,28 @@ jobs:
       - run: ${{ matrix.command }}
         working-directory: apps/coder_app
 
+  web-build:
+    name: Web Build
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub get --enforce-lockfile
+      # A dart:io import reaching the web entrypoint only fails here, so this
+      # runs on every pull request rather than at release time.
+      - run: dart run melos build:web:release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coder-web
+          retention-days: 7
+          path: apps/coder_app/build/web
+          if-no-files-found: error
+
   quality-gate:
     name: Quality Gate
     if: always() && github.event_name != 'schedule'
@@ -265,6 +287,7 @@ jobs:
       - debug-e2e-linux
       - mobile-debug-build
       - desktop-debug-build
+      - web-build
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -433,6 +456,31 @@ jobs:
             dist/*.exe
             dist/*.msix
           if-no-files-found: error
+
+  deploy-web:
+    name: Deploy Web
+    needs:
+      - quality-gate
+      - web-build
+    # Only main and tags publish; a pull request stops at web-build.
+    if: github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: coder-web
+          path: apps/coder_app/build/web
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/coder_app
+          command: deploy
 
   build-cli:
     name: Build CLI (${{ matrix.target }})

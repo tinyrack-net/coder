@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
-import 'package:coder_app/src/attachment_io.dart';
+import 'package:coder_app/src/attachment_ports.dart';
 import 'package:coder_app/src/branch_defaults.dart';
 import 'package:coder_app/src/branch_name.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';

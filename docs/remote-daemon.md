@@ -1,4 +1,4 @@
-# Remote daemon and TLS proxy
+# Remote daemon, browsers, and TLS proxy
 
 Tinyrack Coder's daemon serves plain HTTP/WebSocket only. For a remote host,
 keep the daemon on loopback and let an operator-managed reverse proxy provide
@@ -25,6 +25,53 @@ The desktop app exposes the same choice for its embedded daemon as a
 restarts only the app-owned daemon. Keep it off for a reverse proxy running on
 the same machine. If it is on, use an operating-system or network firewall to
 prevent clients from bypassing the TLS proxy through the plain daemon port.
+
+## Browser clients
+
+The web build at `https://coder.tinyrack.net` is a static client with no
+server of its own: it connects to a daemon the user runs, exactly as the
+desktop and mobile apps do.
+
+Two things differ from a native client, and both are daemon-side.
+
+A browser's `WebSocket` API cannot set request headers, so a web client cannot
+send `Authorization`. It presents the same bearer token as a subprotocol
+instead, base64url encoded because a subprotocol may only contain RFC 7230
+token characters:
+
+```
+Sec-WebSocket-Protocol: tinyrack.coder.v2, tinyrack.coder.token.<base64url>
+```
+
+The daemon accepts either credential and echoes back only `tinyrack.coder.v2`,
+so the token never appears in a response. This is the same secret with the
+same complete access; a subprotocol is a transport detail, not a weaker
+credential.
+
+Because a browser can now present a credential at all, any web page could
+otherwise probe a daemon running on a visitor's own machine. The daemon
+therefore checks `Origin` against an allowlist before authenticating:
+
+```sh
+TINYRACK_CODER_ALLOWED_ORIGINS='https://coder.tinyrack.net,http://localhost:8080' \
+  dart run packages/coder_daemon/bin/coder_daemon.dart
+# or: coder_daemon --allowed-origin https://coder.tinyrack.net
+```
+
+The default allows the official web app only. Setting the variable to `none`
+turns browser access off entirely. **Requests without an `Origin` header are
+unaffected**, which is every native client and `coder-cli`, so this gate never
+changes their behaviour. The same allowlist drives the CORS headers on
+`/health` and `/attachments`.
+
+### Mixed content
+
+The web app is served over HTTPS while a local daemon speaks plain `ws://`.
+Loopback addresses are "potentially trustworthy" in the mixed-content spec, so
+`ws://127.0.0.1:7337` is not supposed to be blocked, but browsers differ in how
+completely they implement that. If a browser refuses the connection, either run
+the desktop app or put the daemon behind a `wss://` reverse proxy as below and
+register that address instead.
 
 ## Caddy
 

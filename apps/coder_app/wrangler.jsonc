@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tinyrack-coder-web",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "build/web",
+    // The app routes with go_router, so every unknown path has to reach
+    // index.html rather than 404.
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
