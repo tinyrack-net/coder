@@ -1708,10 +1708,16 @@ Future<void> _selectDaemon(
   String label, {
   bool settleAfterSelection = true,
 }) async {
+  // The picker now lives in the sidebar, so a settings route still animating
+  // out carries its own copy. Settle it away where the caller allows it, and
+  // target the incoming route otherwise.
+  if (settleAfterSelection) {
+    await tester.pumpAndSettle();
+  }
   final dropdown = find.byKey(
     const ValueKey<String>('settings-daemon-select'),
   );
-  await tester.tap(dropdown);
+  await tester.tap(dropdown.last);
   await tester.pumpAndSettle();
   await tester.tap(find.text(label).last);
   if (settleAfterSelection) {
