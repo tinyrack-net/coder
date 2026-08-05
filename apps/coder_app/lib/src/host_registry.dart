@@ -116,7 +116,10 @@ final class HostRegistry {
       if (settings.embeddedDaemonEnabled && _embeddedLauncher != null) {
         unawaited(
           _serializeEmbedded(
-            () => _startEmbedded(settings.embeddedDaemonExposure),
+            () => _startEmbedded(
+              settings.embeddedDaemonExposure,
+              settings.embeddedDaemonPort,
+            ),
           ),
         );
       }
@@ -247,7 +250,10 @@ final class HostRegistry {
             status: HostRuntimeStatus.connecting,
           ),
         );
-        await _startEmbedded(value.settings.embeddedDaemonExposure);
+        await _startEmbedded(
+          value.settings.embeddedDaemonExposure,
+          value.settings.embeddedDaemonPort,
+        );
       });
       return;
     }
@@ -397,7 +403,10 @@ final class HostRegistry {
           ),
         ),
       );
-      await _startEmbedded(settings.embeddedDaemonExposure);
+      await _startEmbedded(
+        settings.embeddedDaemonExposure,
+        settings.embeddedDaemonPort,
+      );
     });
   }
 
@@ -432,15 +441,53 @@ final class HostRegistry {
           ),
         ),
       );
-      await _startEmbedded(exposure);
+      await _startEmbedded(exposure, settings.embeddedDaemonPort);
     });
   }
 
-  Future<void> _startEmbedded(EmbeddedDaemonExposure exposure) async {
+  /// Persists and applies the app-owned daemon listener port.
+  Future<void> setEmbeddedDaemonPort(int port) async {
+    if (port < 1 || port > 65535) {
+      throw RangeError.range(port, 1, 65535, 'port');
+    }
+    if (_embeddedLauncher == null) return;
+    if (value.settings.embeddedDaemonPort == port) return;
+    await _serializeEmbedded(() async {
+      final settings = value.settings.copyWith(embeddedDaemonPort: port);
+      await _settings.saveSettings(settings);
+      if (!settings.embeddedDaemonEnabled) {
+        _emit(value.copyWith(settings: settings));
+        return;
+      }
+      await _stopEmbedded();
+      _emit(
+        value.copyWith(
+          settings: settings,
+          runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(
+            <String, HostRuntimeSnapshot>{
+              ...value.runtimes,
+              embeddedHostId: const HostRuntimeSnapshot(
+                id: embeddedHostId,
+                label: embeddedDaemonFallbackLabel,
+                kind: HostKind.embedded,
+                status: HostRuntimeStatus.connecting,
+              ),
+            },
+          ),
+        ),
+      );
+      await _startEmbedded(settings.embeddedDaemonExposure, port);
+    });
+  }
+
+  Future<void> _startEmbedded(
+    EmbeddedDaemonExposure exposure,
+    int port,
+  ) async {
     final launcher = _embeddedLauncher;
     if (launcher == null || _closed) return;
     try {
-      final session = await launcher.start(exposure: exposure);
+      final session = await launcher.start(exposure: exposure, port: port);
       if (_closed || !value.settings.embeddedDaemonEnabled) {
         await session.stop();
         return;

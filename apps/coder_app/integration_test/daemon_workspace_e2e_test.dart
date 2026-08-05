@@ -198,13 +198,36 @@ void main() {
       await tester.pumpAndSettle();
       await _pumpUntil(tester, find.textContaining('온라인'));
 
+      final available = await ServerSocket.bind(
+        InternetAddress.loopbackIPv4,
+        0,
+      );
+      final changedPort = available.port;
+      await available.close();
+      final portField = find.descendant(
+        of: find.byKey(const ValueKey<String>('embedded-daemon-port')),
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(portField, '$changedPort');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('embedded-daemon-port-apply')),
+      );
+      for (var attempt = 0; attempt < 100; attempt += 1) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (store.settings.embeddedDaemonPort == changedPort) break;
+      }
+      expect(store.settings.embeddedDaemonPort, changedPort);
+      await _pumpUntil(tester, find.textContaining('온라인'));
+
       final toggle = find.widgetWithText(CoderSwitchRow, '내장 daemon');
       await tester.tap(toggle);
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '중지'));
       await tester.pumpAndSettle();
       expect(store.settings.embeddedDaemonEnabled, isFalse);
-      expect(launcher.stops, 1);
+      expect(launcher.stops, 2);
 
       launcher.failNext = true;
       await tester.tap(toggle);
@@ -219,11 +242,12 @@ void main() {
       await tester.tap(toggle);
       await _pumpUntil(tester, find.textContaining('온라인'));
       expect(store.settings.embeddedDaemonEnabled, isTrue);
-      expect(launcher.starts, 3);
+      expect(launcher.starts, 4);
     },
     tags: const <String>[
       'feature_scenario__daemon_management__embedded_host_lifecycle__e2e',
       'feature_scenario__daemon_exposure__restart_failure_recovery__e2e',
+      'feature_scenario__daemon_exposure__port_change_restart__e2e',
     ],
   );
 }
@@ -275,6 +299,7 @@ final class _ControlledEmbeddedLauncher implements EmbeddedDaemonLauncher {
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   }) async {
     starts += 1;
     if (failNext) {
@@ -282,7 +307,7 @@ final class _ControlledEmbeddedLauncher implements EmbeddedDaemonLauncher {
       throw const HostConnectionFailure.network('planned restart failure');
     }
     return _CountingSession(
-      await delegate.start(exposure: exposure),
+      await delegate.start(exposure: exposure, port: port),
       onStop: () => stops += 1,
     );
   }

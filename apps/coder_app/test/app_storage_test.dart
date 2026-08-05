@@ -40,6 +40,7 @@ void main() {
         AppSettings(
           embeddedDaemonEnabled: false,
           embeddedDaemonExposure: EmbeddedDaemonExposure.allInterfaces,
+          embeddedDaemonPort: 8123,
           lastActiveHostId: 'host-id',
           lastWorktree: selection,
           sessionTabs: <String, SessionTabPreference>{
@@ -62,6 +63,7 @@ void main() {
         restored.embeddedDaemonExposure,
         EmbeddedDaemonExposure.allInterfaces,
       );
+      expect(restored.embeddedDaemonPort, 8123);
       expect(restored.lastWorktree, selection);
       expect(restored.sidebarCollapsed, isTrue);
       expect(restored.localeTag, 'en');
@@ -99,6 +101,7 @@ void main() {
       (await store.loadSettings()).embeddedDaemonExposure,
       EmbeddedDaemonExposure.loopback,
     );
+    expect((await store.loadSettings()).embeddedDaemonPort, 7337);
   });
 
   test('updates and removes profiles and their secure credentials', () async {
@@ -170,6 +173,7 @@ void main() {
       // same enabled defaults a fresh install gets.
       expect(restored.startAtBoot, isTrue);
       expect(restored.startMinimizedAtBoot, isTrue);
+      expect(restored.embeddedDaemonPort, defaultEmbeddedDaemonPort);
     },
     tags: const <String>[
       'feature_test__settings_language__unit',
@@ -196,6 +200,19 @@ void main() {
       <String, Object?>{
         'version': 3,
         'settings': <String, Object?>{},
+        'profiles': <Object>[],
+      },
+      <String, Object?>{
+        'version': 3,
+        'settings': <String, Object?>{
+          'embeddedDaemonEnabled': true,
+          'embeddedDaemonExposure': 'loopback',
+          'embeddedDaemonPort': 0,
+          'lastActiveHostId': null,
+          'lastWorktree': null,
+          'sessionTabs': <Object>[],
+          'sidebarCollapsed': false,
+        },
         'profiles': <Object>[],
       },
       <String, Object?>{

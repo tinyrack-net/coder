@@ -614,6 +614,12 @@ abstract class AppLocalizations {
   /// **'The daemon rejected the bearer token.'**
   String get hostErrorUnauthorized;
 
+  /// Embedded daemon startup failure when its listener port is occupied.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected port is already in use.'**
+  String get hostErrorEmbeddedPortInUse;
+
   /// Title of the standalone daemon settings page.
   ///
   /// In en, this message translates to:
@@ -643,6 +649,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Off accepts connections from this machine only; on accepts them on every IPv4 interface.'**
   String get appSettingsExposureSubtitle;
+
+  /// Numeric listener port for the embedded daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get appSettingsEmbeddedPort;
+
+  /// Explains the embedded daemon port setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a port from 1 to 65535. Applying restarts the embedded daemon when it is running.'**
+  String get appSettingsEmbeddedPortHelp;
+
+  /// Validation message for an invalid embedded daemon port.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number from 1 to 65535.'**
+  String get appSettingsEmbeddedPortInvalid;
+
+  /// Saves the embedded daemon port and restarts it when active.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get appSettingsEmbeddedPortApply;
+
+  /// Persistent alert title for an embedded daemon startup or connection failure.
+  ///
+  /// In en, this message translates to:
+  /// **'The embedded daemon could not start'**
+  String get appSettingsEmbeddedFailureTitle;
+
+  /// Resolution guidance for an occupied embedded daemon port.
+  ///
+  /// In en, this message translates to:
+  /// **'Port {port} is being used by another process. Choose another port and apply it, or retry after the port becomes available.'**
+  String appSettingsEmbeddedPortConflict(int port);
 
   /// Heading of the remote daemon list.
   ///

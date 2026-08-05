@@ -280,6 +280,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get hostErrorUnauthorized => 'Daemon이 bearer token을 거부했습니다.';
 
   @override
+  String get hostErrorEmbeddedPortInUse => '선택한 포트를 이미 사용 중입니다.';
+
+  @override
   String get appSettingsTitle => '앱 설정';
 
   @override
@@ -295,6 +298,27 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get appSettingsExposureSubtitle =>
       '끄면 이 기기에서만, 켜면 모든 IPv4 네트워크 인터페이스에서 연결할 수 있습니다.';
+
+  @override
+  String get appSettingsEmbeddedPort => '포트';
+
+  @override
+  String get appSettingsEmbeddedPortHelp =>
+      '1~65535 사이의 포트를 선택하세요. 적용하면 실행 중인 내장 daemon이 재시작됩니다.';
+
+  @override
+  String get appSettingsEmbeddedPortInvalid => '1~65535 사이의 정수를 입력하세요.';
+
+  @override
+  String get appSettingsEmbeddedPortApply => '적용';
+
+  @override
+  String get appSettingsEmbeddedFailureTitle => '내장 daemon을 시작할 수 없습니다';
+
+  @override
+  String appSettingsEmbeddedPortConflict(int port) {
+    return '포트 $port을(를) 다른 프로세스에서 사용 중입니다. 다른 포트를 입력해 적용하거나 포트가 비워진 후 다시 시도하세요.';
+  }
 
   @override
   String get appSettingsRemoteSection => '원격 daemons';

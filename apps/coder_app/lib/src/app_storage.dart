@@ -142,6 +142,7 @@ final class _AppDocument {
     'settings': <String, dynamic>{
       'embeddedDaemonEnabled': settings.embeddedDaemonEnabled,
       'embeddedDaemonExposure': settings.embeddedDaemonExposure.name,
+      'embeddedDaemonPort': settings.embeddedDaemonPort,
       'lastActiveHostId': settings.lastActiveHostId,
       'lastWorktree': _selectionToJson(settings.lastWorktree),
       'localeTag': settings.localeTag,
@@ -165,6 +166,7 @@ final class _AppDocument {
 AppSettings _settingsFromJson(Map<String, dynamic> json) {
   final embedded = json['embeddedDaemonEnabled'];
   final exposure = json['embeddedDaemonExposure'];
+  final port = json['embeddedDaemonPort'];
   final lastHost = json['lastActiveHostId'];
   final lastWorktree = json['lastWorktree'];
   // Absent in documents written before the language setting existed, which
@@ -181,6 +183,7 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
       (startAtBoot != null && startAtBoot is! bool) ||
       (startMinimized != null && startMinimized is! bool) ||
       (exposure != null && exposure is! String) ||
+      (port != null && (port is! int || port < 1 || port > 65535)) ||
       (lastHost != null && lastHost is! String) ||
       (lastWorktree != null && lastWorktree is! Map<String, dynamic>) ||
       (localeTag != null && localeTag is! String) ||
@@ -209,6 +212,7 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
   return AppSettings(
     embeddedDaemonEnabled: embedded,
     embeddedDaemonExposure: _exposureFromJson(exposure),
+    embeddedDaemonPort: port as int? ?? defaultEmbeddedDaemonPort,
     lastActiveHostId: lastHost as String?,
     lastWorktree: lastWorktree == null
         ? null

@@ -190,6 +190,31 @@ void main() {
       expect(toggle.value, isTrue);
       expect(tester.widget<CoderSwitchRow>(exposureToggle).value, isFalse);
 
+      await tester.enterText(_embeddedPortField(), '70000');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text('1~65535 사이의 정수를 입력하세요.'), findsOneWidget);
+      expect(
+        tester
+            .widget<TRButton>(
+              find.byKey(
+                const ValueKey<String>('embedded-daemon-port-apply'),
+              ),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      await tester.enterText(_embeddedPortField(), '8123');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('embedded-daemon-port-apply')),
+      );
+      await tester.pumpAndSettle();
+      expect(store.settings.embeddedDaemonPort, 8123);
+      expect(launcher.ports.last, 8123);
+
       await tester.tap(exposureToggle);
       await tester.pumpAndSettle();
       expect(
@@ -210,6 +235,47 @@ void main() {
       await tester.tap(embeddedToggle);
       await tester.pumpAndSettle();
       expect(store.settings.embeddedDaemonEnabled, isTrue);
+    },
+    tags: const <String>['feature_test__daemon_exposure__widget'],
+  );
+
+  testWidgets(
+    'an embedded port conflict shows guidance and can be retried',
+    (tester) async {
+      final store = MemoryAppStore();
+      final launcher = _FailingLauncher(
+        failure: const HostConnectionFailure.network(
+          'socket bind failed',
+          reason: HostFailureReason.embeddedPortInUse,
+        ),
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const _OfflineClients(),
+            clientKind: 'desktop',
+            embeddedLauncher: launcher,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(findAccessibleAction('설정'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('내장 daemon을 시작할 수 없습니다'), findsOneWidget);
+      expect(find.textContaining('포트 7337'), findsOneWidget);
+      expect(find.textContaining('다른 포트를 입력'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('embedded-daemon-error')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
+      await tester.pumpAndSettle();
+      expect(launcher.starts, 2);
     },
     tags: const <String>['feature_test__daemon_exposure__widget'],
   );
@@ -318,12 +384,23 @@ final class _OfflineClients implements HostClientFactory {
 }
 
 final class _FailingLauncher implements EmbeddedDaemonLauncher {
+  _FailingLauncher({
+    this.failure = const HostConnectionFailure.network('not running'),
+  });
+
+  final HostConnectionFailure failure;
+  final List<int> ports = <int>[];
+  int starts = 0;
+
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
-  }) => Future<EmbeddedDaemonSession>.error(
-    const HostConnectionFailure.network('not running'),
-  );
+    required int port,
+  }) {
+    starts += 1;
+    ports.add(port);
+    return Future<EmbeddedDaemonSession>.error(failure);
+  }
 }
 
 final class _ProfileClients implements HostClientFactory {
@@ -344,5 +421,10 @@ Finder _field(String label) => find.descendant(
   of: find.byWidgetPredicate(
     (widget) => widget is TRTextField && widget.label == label,
   ),
+  matching: find.byType(EditableText),
+);
+
+Finder _embeddedPortField() => find.descendant(
+  of: find.byKey(const ValueKey<String>('embedded-daemon-port')),
   matching: find.byType(EditableText),
 );

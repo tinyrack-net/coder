@@ -69,6 +69,35 @@ class AppSettingsPage extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
+          if (embeddedRuntime != null &&
+              embeddedRuntime.status == HostRuntimeStatus.error) ...<Widget>[
+            TRAlert(
+              key: const ValueKey<String>('embedded-daemon-error'),
+              title: Text(l10n.appSettingsEmbeddedFailureTitle),
+              description: Text(
+                embeddedRuntime.errorReason ==
+                        HostFailureReason.embeddedPortInUse
+                    ? l10n.appSettingsEmbeddedPortConflict(
+                        registry.settings.embeddedDaemonPort,
+                      )
+                    : hostErrorText(l10n, embeddedRuntime) ??
+                          l10n.hostStatusError,
+              ),
+              icon: const Icon(CoderIcons.error),
+              variant: TRStatusVariant.danger,
+              actions: <Widget>[
+                TRButton(
+                  appearance: TRAppearance.outline,
+                  uiSize: TRUiSize.sm,
+                  onPressed: () => ref
+                      .read(hostRegistryControllerProvider.notifier)
+                      .reconnect(embeddedHostId),
+                  child: Text(l10n.commonRetry),
+                ),
+              ],
+            ),
+            const SizedBox(height: TRSpacing.medium),
+          ],
           TRCard(
             padding: TRCardPadding.none,
             child: Column(
@@ -78,7 +107,8 @@ class AppSettingsPage extends ConsumerWidget {
                   subtitle: Text(
                     <String>[
                       l10n.appSettingsEmbeddedSubtitle,
-                      if (embeddedRuntime != null)
+                      if (embeddedRuntime != null &&
+                          embeddedRuntime.status != HostRuntimeStatus.error)
                         hostStatusText(l10n, embeddedRuntime),
                     ].join('\n'),
                   ),
@@ -107,6 +137,11 @@ class AppSettingsPage extends ConsumerWidget {
                                   ? EmbeddedDaemonExposure.allInterfaces
                                   : EmbeddedDaemonExposure.loopback,
                             ),
+                ),
+                const TRSeparator(),
+                _EmbeddedPortEditor(
+                  port: registry.settings.embeddedDaemonPort,
+                  restarting: _embeddedRestarting(registry),
                 ),
               ],
             ),
@@ -194,6 +229,95 @@ class AppSettingsPage extends ConsumerWidget {
     await ref
         .read(hostRegistryControllerProvider.notifier)
         .setEmbeddedDaemonEnabled(enabled: enabled);
+  }
+}
+
+class _EmbeddedPortEditor extends ConsumerStatefulWidget {
+  const _EmbeddedPortEditor({required this.port, required this.restarting});
+
+  final int port;
+  final bool restarting;
+
+  @override
+  ConsumerState<_EmbeddedPortEditor> createState() =>
+      _EmbeddedPortEditorState();
+}
+
+class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
+  double? _draftPort;
+  bool _applying = false;
+
+  int? get _validPort {
+    final value = _draftPort;
+    if (value == null || value != value.truncateToDouble()) return null;
+    final port = value.toInt();
+    return port >= 1 && port <= 65535 ? port : null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _draftPort = widget.port.toDouble();
+  }
+
+  @override
+  void didUpdateWidget(_EmbeddedPortEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.port != widget.port) {
+      _draftPort = widget.port.toDouble();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final port = _validPort;
+    final changed = port != null && port != widget.port;
+    return Padding(
+      padding: const EdgeInsets.all(TRSpacing.medium),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          Expanded(
+            child: TRNumberField.controlled(
+              key: const ValueKey<String>('embedded-daemon-port'),
+              value: _draftPort,
+              enabled: !_applying && !widget.restarting,
+              errorText: _draftPort != null && port == null
+                  ? l10n.appSettingsEmbeddedPortInvalid
+                  : null,
+              helperText: l10n.appSettingsEmbeddedPortHelp,
+              label: l10n.appSettingsEmbeddedPort,
+              smallStep: 1,
+              scrubbable: false,
+              uiSize: TRUiSize.sm,
+              onValueChange: (value) => setState(() => _draftPort = value),
+            ),
+          ),
+          const SizedBox(width: TRSpacing.small),
+          TRButton(
+            key: const ValueKey<String>('embedded-daemon-port-apply'),
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
+            onPressed: changed && !_applying && !widget.restarting
+                ? () => _apply(port)
+                : null,
+            child: Text(l10n.appSettingsEmbeddedPortApply),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _apply(int port) async {
+    setState(() => _applying = true);
+    try {
+      await ref
+          .read(hostRegistryControllerProvider.notifier)
+          .setEmbeddedDaemonPort(port);
+    } finally {
+      if (mounted) setState(() => _applying = false);
+    }
   }
 }
 

@@ -567,6 +567,7 @@ void main() {
       expect(launcher.exposures, <EmbeddedDaemonExposure>[
         EmbeddedDaemonExposure.loopback,
       ]);
+      expect(launcher.ports, <int>[7337]);
 
       await registry.setEmbeddedDaemonExposure(
         EmbeddedDaemonExposure.allInterfaces,
@@ -577,6 +578,7 @@ void main() {
         EmbeddedDaemonExposure.loopback,
         EmbeddedDaemonExposure.allInterfaces,
       ]);
+      expect(launcher.ports, <int>[7337, 7337]);
       expect(
         store.settings.embeddedDaemonExposure,
         EmbeddedDaemonExposure.allInterfaces,
@@ -601,6 +603,60 @@ void main() {
         store.settings.embeddedDaemonExposure,
         EmbeddedDaemonExposure.loopback,
       );
+    },
+    tags: const <String>['feature_test__daemon_exposure__unit'],
+  );
+
+  test(
+    'embedded port is persisted and restarts only an enabled daemon',
+    () async {
+      final store = MemoryAppStore();
+      final launcher = _EmbeddedLauncher();
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _SequenceClientFactory(
+          List<Future<CoderApi> Function()>.generate(
+            2,
+            (index) =>
+                () async => FakeCoderApi(
+                  serverInfo: _serverInfo('embedded-server'),
+                ),
+          ),
+        ),
+        embeddedLauncher: launcher,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'test',
+      );
+      addTearDown(registry.close);
+      await registry.load();
+      await _flush();
+
+      final firstSession = launcher.session;
+      await registry.setEmbeddedDaemonPort(8123);
+
+      expect(firstSession.stops, 1);
+      expect(store.settings.embeddedDaemonPort, 8123);
+      expect(launcher.ports, <int>[7337, 8123]);
+      expect(
+        registry.value.runtimes[embeddedHostId]?.status,
+        HostRuntimeStatus.online,
+      );
+
+      final startsAfterChange = launcher.starts;
+      await registry.setEmbeddedDaemonPort(8123);
+      expect(launcher.starts, startsAfterChange);
+      await expectLater(
+        registry.setEmbeddedDaemonPort(65536),
+        throwsRangeError,
+      );
+
+      await registry.setEmbeddedDaemonEnabled(enabled: false);
+      final starts = launcher.starts;
+      await registry.setEmbeddedDaemonPort(8124);
+      expect(launcher.starts, starts);
+      expect(store.settings.embeddedDaemonPort, 8124);
     },
     tags: const <String>['feature_test__daemon_exposure__unit'],
   );
@@ -883,6 +939,7 @@ final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
   final Completer<void>? firstStopGate;
   final Set<int> failingStarts;
   final List<EmbeddedDaemonExposure> exposures = <EmbeddedDaemonExposure>[];
+  final List<int> ports = <int>[];
   final List<_EmbeddedSession> sessions = <_EmbeddedSession>[];
   int starts = 0;
 
@@ -891,9 +948,11 @@ final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   }) async {
     starts += 1;
     exposures.add(exposure);
+    ports.add(port);
     if (failingStarts.contains(starts)) {
       throw const HostConnectionFailure.network('startup failed');
     }
@@ -986,6 +1045,7 @@ final class _FailingEmbeddedLauncher implements EmbeddedDaemonLauncher {
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   }) => Future<EmbeddedDaemonSession>.error(
     const HostConnectionFailure.network('startup failed'),
   );
