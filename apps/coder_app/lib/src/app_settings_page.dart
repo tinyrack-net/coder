@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+// The typed routes and the shared navigation verbs live beside the router.
+import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/coder_page_shell.dart';
@@ -8,7 +12,6 @@ import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Daemon-independent app settings and remote host management.
@@ -40,9 +43,11 @@ class AppSettingsPage extends ConsumerWidget {
     return CoderPageShell(
       appBar: CoderPageHeader(
         leading: TRIconButton(
+          key: const ValueKey<String>('app-settings-back-button'),
           appearance: TRAppearance.ghost,
           label: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () => context.go('/'),
+          onPressed: () =>
+              closeTask(context, () => const WorkspaceHomeRoute().go(context)),
           icon: const Icon(CoderIcons.back),
         ),
         title: Text(l10n.appSettingsTitle),
@@ -157,8 +162,10 @@ class AppSettingsPage extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             TRButton(
+              key: const ValueKey<String>('app-settings-add-remote'),
               intent: TRIntent.primary,
-              onPressed: () => context.go('/settings/daemons/new'),
+              onPressed: () =>
+                  unawaited(const NewHostRoute().push<void>(context)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -339,7 +346,9 @@ class _RemoteHostCard extends ConsumerWidget {
               trailing: TRIconButton(
                 appearance: TRAppearance.ghost,
                 label: l10n.appSettingsEditConnection,
-                onPressed: () => context.go('/settings/daemons/${profile.id}'),
+                onPressed: () => unawaited(
+                  EditHostRoute(hostId: profile.id).push<void>(context),
+                ),
                 icon: const Icon(CoderIcons.edit),
               ),
             ),
@@ -373,9 +382,9 @@ class _RemoteHostCard extends ConsumerWidget {
                 if (runtime?.connected == true)
                   TRButton(
                     appearance: TRAppearance.ghost,
-                    onPressed: () => context.go(
-                      '/settings/providers?hostId=${profile.id}',
-                    ),
+                    onPressed: () => ProviderSettingsRoute(
+                      hostId: profile.id,
+                    ).replace(context),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
@@ -452,9 +461,13 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
     return CoderPageShell(
       appBar: CoderPageHeader(
         leading: TRIconButton(
+          key: const ValueKey<String>('remote-host-back-button'),
           appearance: TRAppearance.ghost,
           label: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () => context.go('/settings/daemons'),
+          onPressed: () => closeTask(
+            context,
+            () => const DaemonSettingsRoute().go(context),
+          ),
           icon: const Icon(CoderIcons.back),
         ),
         title: Text(
@@ -554,7 +567,9 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               : _token.text,
         );
       }
-      if (mounted) context.go('/settings/daemons');
+      if (mounted) {
+        closeTask(context, () => const DaemonSettingsRoute().go(context));
+      }
     } on HostConnectionFailure catch (failure) {
       if (!mounted) return;
       final message = hostConnectionFailureText(
@@ -594,6 +609,8 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
     await ref
         .read(hostRegistryControllerProvider.notifier)
         .removeRemote(profile.id);
-    if (mounted) context.go('/');
+    // Deleting the daemon being edited invalidates the settings task that was
+    // opened for it, so this clears the stack rather than popping into it.
+    if (mounted) const WorkspaceHomeRoute().go(context);
   }
 }

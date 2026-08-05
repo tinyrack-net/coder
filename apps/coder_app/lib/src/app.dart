@@ -160,6 +160,48 @@ ThemeData coderTheme(Brightness brightness) => brightness == Brightness.light
     ? TinyrackTheme.light()
     : TinyrackTheme.dark();
 
+// The app moves in three different ways and each needs its own router verb.
+//
+// A modal task such as settings or daemon editing is pushed, so closing it can
+// pop back to whatever the user was doing and the exit transition is the
+// entry transition played in reverse. A lateral move inside one surface —
+// settings categories, workspace and session selection — uses `replace`, which
+// keeps the page key so no transition plays at all and the push depth beneath
+// it survives. `go` is reserved for entering a root destination or for
+// deliberately clearing the stack.
+
+/// Whether [uri] addresses any settings surface.
+bool _isSettingsLocation(Uri uri) => uri.path.startsWith('/settings');
+
+/// Closes a pushed task and returns to the screen it was opened from.
+///
+/// A task can also be entered directly, by deep link or by a tray activation
+/// into a hidden window, and then has nothing beneath it to return to.
+/// [fallback] names the destination for that case.
+void closeTask(BuildContext context, VoidCallback fallback) {
+  if (context.canPop()) {
+    context.pop();
+    return;
+  }
+  fallback();
+}
+
+/// Opens settings from outside the widget tree, such as the tray or menu bar.
+///
+/// Those entry points can fire repeatedly while settings is already open, and
+/// stacking a second copy would make the first Back press look like it did
+/// nothing, so an open settings task is replaced instead of pushed.
+void openSettingsTask(GoRouter router) {
+  const target = GeneralSettingsRoute();
+  // `state` is the top-most match; the route information provider only reports
+  // the base configuration, which a pushed task never moves.
+  if (_isSettingsLocation(router.state.uri)) {
+    unawaited(router.replace<void>(target.location));
+    return;
+  }
+  unawaited(router.push<void>(target.location));
+}
+
 @TypedGoRoute<WorkspaceHomeRoute>(path: '/')
 /// Unified workspace home shown before daemon connections complete.
 class WorkspaceHomeRoute extends GoRouteData with $WorkspaceHomeRoute {
@@ -497,7 +539,13 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
-  bool _adoptedRouteHost = false;
+  /// Daemon this page has already adopted from a route.
+  ///
+  /// Categories replace each other rather than pushing, so this state outlives
+  /// a location change and cannot latch on "have I ever adopted one": it has to
+  /// remember which daemon it adopted, or a later location naming a different
+  /// daemon would be ignored.
+  String? _adoptedRouteHost;
 
   @override
   void initState() {
@@ -508,12 +556,12 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   }
 
   void _adoptRouteHost() {
-    if (!mounted || _adoptedRouteHost) return;
+    if (!mounted) return;
     final requested = widget.hostId;
-    if (requested == null) return;
+    if (requested == null || requested == _adoptedRouteHost) return;
     final registry = ref.read(hostRegistryControllerProvider).asData?.value;
     if (registry == null) return;
-    _adoptedRouteHost = true;
+    _adoptedRouteHost = requested;
     if (!registry.runtimes.containsKey(requested)) return;
     if (registry.settings.lastActiveHostId == requested) return;
     unawaited(
@@ -523,7 +571,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_adoptedRouteHost) _adoptRouteHost();
+    _adoptRouteHost();
     final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
     final hosts =
         registry?.runtimes.values.toList(growable: false) ??
@@ -550,7 +598,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           hostId: hostId,
           workspaceId: widget.workspaceId,
           onWorkspaceChanged: (value) =>
-              SkillSettingsRoute(workspaceId: value).go(context),
+              SkillSettingsRoute(workspaceId: value).replace(context),
         ),
       ),
       SettingsCategory.provider => _HostScopedDetail(
@@ -563,9 +611,11 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     return CoderPageShell(
       appBar: CoderPageHeader(
         leading: TRIconButton(
+          key: const ValueKey<String>('settings-back-button'),
           appearance: TRAppearance.ghost,
           label: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () => const WorkspaceHomeRoute().go(context),
+          onPressed: () =>
+              closeTask(context, () => const WorkspaceHomeRoute().go(context)),
           icon: const Icon(CoderIcons.back),
         ),
         title: Text(AppLocalizations.of(context).settingsTitle),
@@ -813,24 +863,28 @@ String _settingsCategoryLabel(
 };
 
 /// Navigates to one settings category, keeping the persisted daemon choice.
+///
+/// Categories are siblings within the open settings task, so this replaces the
+/// current page instead of pushing: the screen settings was opened from stays
+/// beneath it however many categories the user visits.
 void _goToSettingsCategory(BuildContext context, SettingsCategory category) {
   switch (category) {
     case SettingsCategory.general:
-      const GeneralSettingsRoute().go(context);
+      const GeneralSettingsRoute().replace(context);
     case SettingsCategory.project:
-      const ProjectSettingsRoute().go(context);
+      const ProjectSettingsRoute().replace(context);
     case SettingsCategory.agent:
-      const AgentSettingsRoute().go(context);
+      const AgentSettingsRoute().replace(context);
     case SettingsCategory.mcp:
-      const McpSettingsRoute().go(context);
+      const McpSettingsRoute().replace(context);
     case SettingsCategory.skill:
-      const SkillSettingsRoute().go(context);
+      const SkillSettingsRoute().replace(context);
     case SettingsCategory.provider:
-      const ProviderSettingsRoute().go(context);
+      const ProviderSettingsRoute().replace(context);
     case SettingsCategory.daemon:
-      const DaemonSettingsRoute().go(context);
+      const DaemonSettingsRoute().replace(context);
     case SettingsCategory.advanced:
-      const AdvancedSettingsRoute().go(context);
+      const AdvancedSettingsRoute().replace(context);
   }
 }
 
@@ -933,11 +987,11 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
             label: AppLocalizations.of(context).settingsTitle,
             onPressed: () {
               final hostId = widget.selection?.hostId;
-              if (hostId == null) {
-                const DaemonSettingsRoute().go(context);
-              } else {
-                ProviderSettingsRoute(hostId: hostId).go(context);
-              }
+              unawaited(
+                hostId == null
+                    ? const DaemonSettingsRoute().push<void>(context)
+                    : ProviderSettingsRoute(hostId: hostId).push<void>(context),
+              );
             },
             icon: const Icon(CoderIcons.settings),
           ),
@@ -950,19 +1004,26 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
             catalog: catalog,
             selected: widget.selection,
             onNewWorkspace: () =>
-                const WorkspaceHomeRoute(compose: true).go(context),
+                const WorkspaceHomeRoute(compose: true).replace(context),
             onSelect: (selection) => _goWorktree(context, selection),
-            onOpenDaemonSettings: () => const DaemonSettingsRoute().go(context),
-            onArchivedSelection: () => const WorkspaceHomeRoute().go(context),
+            onOpenDaemonSettings: () =>
+                unawaited(const DaemonSettingsRoute().push<void>(context)),
+            onArchivedSelection: () =>
+                const WorkspaceHomeRoute().replace(context),
           );
           final detail = widget.selection == null
               ? NewWorkspacePane(
                   showBack: constraints.maxWidth < wideLayoutBreakpoint,
-                  onBack: () => const WorkspaceHomeRoute().go(context),
+                  onBack: () => const WorkspaceHomeRoute().replace(context),
                   onStarted: (selection, session) =>
                       _goSession(context, selection, session.id),
                 )
               : _SessionArea(
+                  // Selecting a checkout replaces the location rather than
+                  // pushing, so this page is not rebuilt from scratch. Key the
+                  // session area on the checkout so its tabs, conversation,
+                  // and terminals still start clean on a different one.
+                  key: ValueKey<WorkspaceSelection>(widget.selection!),
                   selection: widget.selection!,
                   requestedAgentId: widget.requestedAgentId,
                   requestedTerminalId: widget.requestedTerminalId,
@@ -1033,6 +1094,7 @@ class _SessionArea extends ConsumerStatefulWidget {
     this.requestedAgentId,
     this.requestedTerminalId,
     this.showBack = false,
+    super.key,
   });
 
   final WorkspaceSelection selection;
@@ -1045,19 +1107,23 @@ class _SessionArea extends ConsumerStatefulWidget {
 }
 
 class _SessionAreaState extends ConsumerState<_SessionArea> {
-  bool _requestedOpened = false;
-  bool _requestedTerminalOpened = false;
+  // Selecting a session or terminal replaces the location rather than pushing,
+  // so this state outlives the change. These remember which id was opened
+  // instead of latching on "have I opened one", or the second location to name
+  // a session would never open it.
+  String? _openedAgentId;
+  String? _openedTerminalId;
 
   @override
   Widget build(BuildContext context) {
     final provider = sessionTabsControllerProvider(widget.selection);
     final tabs = ref.watch(provider);
     final state = tabs.asData?.value;
-    if (!_requestedOpened &&
-        widget.requestedAgentId != null &&
+    if (widget.requestedAgentId != null &&
+        widget.requestedAgentId != _openedAgentId &&
         state != null &&
         state.sessions.any((item) => item.id == widget.requestedAgentId)) {
-      _requestedOpened = true;
+      _openedAgentId = widget.requestedAgentId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           unawaited(
@@ -1066,13 +1132,13 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         }
       });
     }
-    if (!_requestedTerminalOpened &&
-        widget.requestedTerminalId != null &&
+    if (widget.requestedTerminalId != null &&
+        widget.requestedTerminalId != _openedTerminalId &&
         state != null &&
         state.terminals.any(
           (item) => item.id == widget.requestedTerminalId,
         )) {
-      _requestedTerminalOpened = true;
+      _openedTerminalId = widget.requestedTerminalId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           unawaited(
@@ -1095,7 +1161,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                 TRIconButton(
                   appearance: TRAppearance.ghost,
                   label: MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () => const WorkspaceHomeRoute().go(context),
+                  onPressed: () => const WorkspaceHomeRoute().replace(context),
                   icon: const Icon(CoderIcons.back),
                 ),
               Expanded(
@@ -1781,12 +1847,17 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
   }
 }
 
+/// Selects [selection] within the workspace surface.
+///
+/// Every workspace location renders the same [WorkspacePage], so this replaces
+/// the current page: the page key survives, no transition plays, and the state
+/// of the open sessions is not rebuilt from scratch.
 void _goWorktree(BuildContext context, WorkspaceSelection selection) {
   WorktreeRoute(
     hostId: selection.hostId,
     workspaceId: selection.workspaceId,
     worktreeId: selection.worktreeId,
-  ).go(context);
+  ).replace(context);
 }
 
 void _goSession(
@@ -1799,5 +1870,5 @@ void _goSession(
     workspaceId: selection.workspaceId,
     worktreeId: selection.worktreeId,
     sessionId: sessionId,
-  ).go(context);
+  ).replace(context);
 }

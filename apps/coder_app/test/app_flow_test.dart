@@ -240,6 +240,32 @@ void main() {
       await tester.tap(find.text('Projects'));
       await tester.pumpAndSettle();
       expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'second');
+
+      // A daemon card's provider shortcut names its host in the location and
+      // replaces the settings page rather than pushing another one, so the
+      // page outlives the change and has to adopt each daemon a later location
+      // names, not only the first.
+      Future<void> openProviderShortcut(String address) async {
+        await tester.tap(find.text('Daemons'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(
+            of: find
+                .ancestor(
+                  of: find.textContaining(address),
+                  matching: find.byType(TRCard),
+                )
+                .first,
+            matching: find.widgetWithText(TRButton, 'Provider 설정'),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      await openProviderShortcut('ws://first.test/ws');
+      expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'first');
+      await openProviderShortcut('ws://second.test/ws');
+      expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'second');
     },
     tags: const <String>['feature_test__daemon_management__widget'],
   );
