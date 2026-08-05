@@ -120,7 +120,6 @@ class ChatToolCard extends StatelessWidget {
                             dimension: 12,
                             child: TRSpinner(
                               label: AppLocalizations.of(context).commonRunning,
-                              uiSize: TRUiSize.sm,
                             ),
                           ),
                         ),

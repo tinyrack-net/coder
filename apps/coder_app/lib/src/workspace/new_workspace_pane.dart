@@ -179,7 +179,6 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
             alignment: Alignment.centerLeft,
             child: TRIconButton(
               appearance: TRAppearance.ghost,
-              uiSize: TRUiSize.sm,
               label: MaterialLocalizations.of(context).backButtonTooltip,
               onPressed: widget.onBack,
               icon: const Icon(CoderIcons.back),

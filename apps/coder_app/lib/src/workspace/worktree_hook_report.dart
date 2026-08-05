@@ -63,7 +63,6 @@ Future<void> _showHookOutput(
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.commonConfirm),
         ),

@@ -269,7 +269,6 @@ class ComposerChip extends StatelessWidget {
             key: valueKey,
             appearance: selected ? TRAppearance.solid : TRAppearance.outline,
             intent: selected ? TRIntent.primary : TRIntent.neutral,
-            uiSize: TRUiSize.sm,
             onPressed: onPressed == null ? null : () => onPressed!(context),
             child: content,
           )
@@ -488,7 +487,6 @@ class _SessionComposerState extends State<SessionComposer> {
                 TRIconButton(
                   key: const ValueKey('session-composer-attach'),
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
                   onPressed:
                       widget.enabled &&
                           !_submitting &&
@@ -504,7 +502,6 @@ class _SessionComposerState extends State<SessionComposer> {
                   child: Focus(
                     onKeyEvent: _handleKey,
                     child: TRTextField(
-                      uiSize: TRUiSize.sm,
                       key: const ValueKey('session-composer-input'),
                       controller: _controller,
                       minLines: 1,
@@ -523,7 +520,6 @@ class _SessionComposerState extends State<SessionComposer> {
                 TRIconButton(
                   key: const ValueKey('session-composer-send'),
                   intent: TRIntent.primary,
-                  uiSize: TRUiSize.sm,
                   onPressed: widget.enabled && !_submitting
                       ? () => unawaited(_submit())
                       : null,
@@ -688,7 +684,7 @@ class _PendingAttachmentPill extends StatelessWidget {
         if (uploading)
           const SizedBox.square(
             dimension: 24,
-            child: Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+            child: Center(child: TRSpinner()),
           )
         else
           _PendingAttachmentPreview(attachment: attachment),
@@ -704,7 +700,6 @@ class _PendingAttachmentPill extends StatelessWidget {
         TRIconButton(
           key: ValueKey('remove-${attachment.fileName}'),
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
           onPressed: onRemove,
           icon: const Icon(CoderIcons.close),
           label: 'Remove ${attachment.fileName}',
@@ -761,7 +756,7 @@ class _PendingAttachmentPreviewState extends State<_PendingAttachmentPreview> {
             )
           : const SizedBox.square(
               dimension: 24,
-              child: Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+              child: Center(child: TRSpinner()),
             ),
     );
   }

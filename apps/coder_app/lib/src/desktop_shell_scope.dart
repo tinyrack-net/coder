@@ -111,7 +111,6 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
               title: const Text('Tinyrack Coder'),
               description: const Text(packageVersion),
               actions: TRButton(
-                uiSize: TRUiSize.sm,
                 onPressed: () => Navigator.pop(dialogContext),
                 child: Text(l10n.commonClose),
               ),

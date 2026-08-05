@@ -152,7 +152,6 @@ class _LanguageCard extends ConsumerWidget {
                   key: const ValueKey<String>('general-settings-language'),
                   initialValue: settings?.localeTag,
                   label: l10n.generalLanguageLabel,
-                  uiSize: TRUiSize.sm,
                   items: <TRSelectItem<String?>>[
                     // A null tag follows the system locale.
                     TRSelectItem<String?>(
