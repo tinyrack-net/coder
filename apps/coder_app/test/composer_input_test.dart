@@ -487,7 +487,7 @@ void main() {
   );
 
   testWidgets(
-    'an open list takes Shift+Tab from the mode toggle',
+    'an open list takes plain Tab but leaves the modified one alone',
     tags: const <String>['feature_test__composer_file_mention__widget'],
     (tester) async {
       var toggles = 0;
@@ -499,24 +499,68 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Closed, Shift+Tab still cycles the mode.
+      Future<void> shiftTab() async {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pumpAndSettle();
+      }
+
+      // Closed, Shift+Tab cycles the mode.
       await tester.enterText(find.byKey(inputKey), 'plain');
       await tester.pumpAndSettle();
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-      await tester.pumpAndSettle();
+      await shiftTab();
       expect(toggles, 1);
 
-      // Open, Tab commits the highlighted row rather than cycling.
+      // Open, it still does: a held modifier makes the key the host's, so the
+      // list never takes the mode shortcut away.
       await tester.enterText(find.byKey(inputKey), '@li');
       await tester.pumpAndSettle();
+      expect(find.text('lib/app.dart'), findsOneWidget);
+      await shiftTab();
+      expect(toggles, 2);
+      expect(
+        tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
+        '@li',
+      );
+
+      // Plain Tab is the list's, and commits the highlighted row.
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(toggles, 1);
+      expect(toggles, 2);
       expect(
         tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
         '@lib/app.dart ',
+      );
+    },
+  );
+
+  testWidgets(
+    'Shift+Enter opens a line even with the list open',
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(inputKey), 'read @li');
+      await tester.pumpAndSettle();
+      expect(find.text('lib/app.dart'), findsOneWidget);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+
+      // Neither committed nor sent: the newline belongs to the field.
+      expect(submitted, isEmpty);
+      expect(
+        tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
+        'read @li',
       );
     },
   );
