@@ -83,6 +83,22 @@ enum EmbeddedDaemonExposure {
   final String bindHost;
 }
 
+/// Theme the app paints itself with.
+///
+/// This is the app's own choice rather than the widget-layer `ThemeMode`, so
+/// the settings model stays independent of Flutter.
+enum AppThemeMode {
+  /// Follow the brightness the operating system reports, including changes
+  /// made while the app is running.
+  system,
+
+  /// Always paint the light theme.
+  light,
+
+  /// Always paint the dark theme.
+  dark,
+}
+
 /// Settings that are meaningful before any daemon connection exists.
 final class AppSettings {
   /// Creates application settings.
@@ -97,6 +113,7 @@ final class AppSettings {
     this.sidebarCollapsed = false,
     this.startAtBoot = true,
     this.startMinimizedAtBoot = true,
+    this.themeMode = AppThemeMode.system,
   }) : assert(
          embeddedDaemonPort >= 1 && embeddedDaemonPort <= 65535,
          'embeddedDaemonPort must be between 1 and 65535.',
@@ -135,6 +152,9 @@ final class AppSettings {
   /// applies to the registered login item.
   final bool startMinimizedAtBoot;
 
+  /// Theme the app paints itself with.
+  final AppThemeMode themeMode;
+
   /// Returns settings with selected fields replaced.
   AppSettings copyWith({
     bool? embeddedDaemonEnabled,
@@ -150,6 +170,7 @@ final class AppSettings {
     bool? sidebarCollapsed,
     bool? startAtBoot,
     bool? startMinimizedAtBoot,
+    AppThemeMode? themeMode,
   }) => AppSettings(
     embeddedDaemonEnabled: embeddedDaemonEnabled ?? this.embeddedDaemonEnabled,
     embeddedDaemonExposure:
@@ -164,6 +185,7 @@ final class AppSettings {
     sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
     startAtBoot: startAtBoot ?? this.startAtBoot,
     startMinimizedAtBoot: startMinimizedAtBoot ?? this.startMinimizedAtBoot,
+    themeMode: themeMode ?? this.themeMode,
   );
 }
 

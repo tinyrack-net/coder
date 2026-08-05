@@ -3,6 +3,7 @@ import 'package:coder_app/src/coder_page_shell.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/desktop_shell.dart';
+import 'package:coder_app/src/host_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -30,6 +31,8 @@ class GeneralSettingsPage extends ConsumerWidget {
     final body = ListView(
       padding: const EdgeInsets.all(TRSpacing.extraLarge),
       children: const <Widget>[
+        _AppearanceCard(),
+        SizedBox(height: TRSpacing.extraLarge),
         _LanguageCard(),
         SizedBox(height: TRSpacing.extraLarge),
         _StartupCard(),
@@ -125,6 +128,72 @@ class _StartupCard extends ConsumerWidget {
     );
   }
 }
+
+class _AppearanceCard extends ConsumerWidget {
+  const _AppearanceCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final settings = ref
+        .watch(hostRegistryControllerProvider)
+        .asData
+        ?.value
+        .settings;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        TRText(
+          l10n.generalAppearanceSection,
+          variant: TRTextVariant.headingLg,
+        ),
+        const SizedBox(height: TRSpacing.small),
+        TRCard(
+          padding: TRCardPadding.none,
+          child: Padding(
+            padding: const EdgeInsets.all(TRSpacing.large),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                TRSelectFormField<AppThemeMode>(
+                  key: const ValueKey<String>('general-settings-theme-mode'),
+                  initialValue: settings?.themeMode ?? AppThemeMode.system,
+                  label: l10n.generalAppearanceLabel,
+                  items: <TRSelectItem<AppThemeMode>>[
+                    for (final mode in AppThemeMode.values)
+                      TRSelectItem<AppThemeMode>(
+                        value: mode,
+                        label: _appearanceLabel(l10n, mode),
+                      ),
+                  ],
+                  onValueChange: settings == null
+                      ? null
+                      // Every item carries a mode, so a cleared field can only
+                      // mean the app should go back to following the system.
+                      : (mode) => ref
+                            .read(hostRegistryControllerProvider.notifier)
+                            .setThemeMode(mode ?? AppThemeMode.system),
+                ),
+                const SizedBox(height: TRSpacing.small),
+                TRText(
+                  l10n.generalAppearanceDescription,
+                  variant: TRTextVariant.bodySm,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _appearanceLabel(AppLocalizations l10n, AppThemeMode mode) =>
+    switch (mode) {
+      AppThemeMode.system => l10n.generalAppearanceSystem,
+      AppThemeMode.light => l10n.generalAppearanceLight,
+      AppThemeMode.dark => l10n.generalAppearanceDark,
+    };
 
 class _LanguageCard extends ConsumerWidget {
   const _LanguageCard();

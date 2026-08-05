@@ -118,17 +118,20 @@ class _CoderAppView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final localeTag = ref
+    final settings = ref
         .watch(hostRegistryControllerProvider)
         .asData
         ?.value
-        .settings
-        .localeTag;
+        .settings;
+    final localeTag = settings?.localeTag;
     return MaterialApp.router(
       title: 'Tinyrack Coder',
       debugShowCheckedModeBanner: false,
       theme: coderTheme(Brightness.light),
       darkTheme: coderTheme(Brightness.dark),
+      // Settings that have not loaded yet follow the platform, which is also
+      // the stored default, so the first frame never flips brightness.
+      themeMode: coderThemeMode(settings?.themeMode ?? AppThemeMode.system),
       // A null locale lets Flutter resolve the system locale against
       // [AppLocalizations.supportedLocales], which falls back to English.
       locale: localeTag == null ? null : Locale(localeTag),
@@ -160,6 +163,13 @@ const double settingsSidebarWidth = 230;
 ThemeData coderTheme(Brightness brightness) => brightness == Brightness.light
     ? TinyrackTheme.light()
     : TinyrackTheme.dark();
+
+/// Translates the stored appearance choice into the widget-layer mode.
+ThemeMode coderThemeMode(AppThemeMode mode) => switch (mode) {
+  AppThemeMode.system => ThemeMode.system,
+  AppThemeMode.light => ThemeMode.light,
+  AppThemeMode.dark => ThemeMode.dark,
+};
 
 // The app moves in three different ways and each needs its own router verb.
 //

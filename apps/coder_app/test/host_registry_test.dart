@@ -174,6 +174,7 @@ void main() {
           lastActiveHostId: 'remote',
           localeTag: 'ko',
           sidebarCollapsed: true,
+          themeMode: AppThemeMode.dark,
         ),
         profiles: <RemoteDaemonProfile>[profile],
         tokens: const <String, String>{'remote': 'token'},
@@ -214,6 +215,7 @@ void main() {
       expect(store.profiles, isEmpty);
       expect(registry.value.profiles, isEmpty);
       expect(registry.value.settings.localeTag, isNull);
+      expect(registry.value.settings.themeMode, AppThemeMode.system);
       expect(registry.value.settings.lastActiveHostId, isNull);
       expect(registry.value.settings.sidebarCollapsed, isFalse);
       expect(registry.value.settings.embeddedDaemonEnabled, isTrue);
@@ -1114,6 +1116,42 @@ void main() {
       expect(store.settings.startMinimizedAtBoot, isFalse);
     },
     tags: const <String>['feature_test__settings_startup__unit'],
+  );
+
+  test(
+    'the appearance choice is persisted through the settings store',
+    () async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'test',
+      );
+      addTearDown(registry.close);
+      await registry.load();
+
+      expect(registry.value.settings.themeMode, AppThemeMode.system);
+
+      await registry.setThemeMode(AppThemeMode.dark);
+      expect(store.settings.themeMode, AppThemeMode.dark);
+      expect(registry.value.settings.themeMode, AppThemeMode.dark);
+
+      await registry.setThemeMode(AppThemeMode.light);
+      expect(store.settings.themeMode, AppThemeMode.light);
+      expect(registry.value.settings.themeMode, AppThemeMode.light);
+
+      // Returning to the system choice is a real value rather than an absent
+      // one, so it has to be written back like any other selection.
+      await registry.setThemeMode(AppThemeMode.system);
+      expect(store.settings.themeMode, AppThemeMode.system);
+      expect(registry.value.settings.themeMode, AppThemeMode.system);
+    },
+    tags: const <String>['feature_test__settings_appearance__unit'],
   );
 
   test(

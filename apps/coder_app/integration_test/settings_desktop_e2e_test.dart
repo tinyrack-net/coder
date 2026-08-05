@@ -92,6 +92,69 @@ void main() {
   );
 
   testWidgets(
+    'the appearance choice survives a restart and otherwise follows the system',
+    (tester) async {
+      // The shared harness pins the canonical dark desktop brightness and the
+      // Korean locale, so the option labels below are Korean and the teardown
+      // restores that brightness instead of clearing it to the real platform.
+      addTearDown(
+        () => tester.binding.platformDispatcher.platformBrightnessTestValue =
+            Brightness.dark,
+      );
+      final fixture = await RealDaemonFixture.start(id: 'settings-appearance');
+      addTearDown(fixture.dispose);
+
+      await _pumpApp(tester, fixture);
+      await _openGeneralSettings(tester);
+
+      // Nothing is stored yet, so the pinned platform brightness decides.
+      expect(fixture.store.settings.themeMode, AppThemeMode.system);
+      expect(_renderedBrightness(tester), Brightness.dark);
+
+      await tester.tap(_selectTrigger('general-settings-theme-mode'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('라이트').last);
+      await tester.pumpAndSettle();
+
+      expect(fixture.store.settings.themeMode, AppThemeMode.light);
+      expect(_appThemeMode(tester), ThemeMode.light);
+      // A light choice has to win against the dark platform brightness.
+      expect(_renderedBrightness(tester), Brightness.light);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      await _pumpApp(tester, fixture);
+
+      expect(_appThemeMode(tester), ThemeMode.light);
+      expect(_renderedBrightness(tester), Brightness.light);
+
+      await _openGeneralSettings(tester);
+      await tester.tap(_selectTrigger('general-settings-theme-mode'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('시스템 테마 따름').last);
+      await tester.pumpAndSettle();
+
+      expect(fixture.store.settings.themeMode, AppThemeMode.system);
+      expect(_appThemeMode(tester), ThemeMode.system);
+
+      // Following the system means tracking it live, not just at startup.
+      tester.binding.platformDispatcher.platformBrightnessTestValue =
+          Brightness.light;
+      await tester.pumpAndSettle();
+      expect(_renderedBrightness(tester), Brightness.light);
+
+      tester.binding.platformDispatcher.platformBrightnessTestValue =
+          Brightness.dark;
+      await tester.pumpAndSettle();
+      expect(_renderedBrightness(tester), Brightness.dark);
+    },
+    tags: const <String>[
+      'feature_scenario__settings_appearance__restart_persistence__e2e',
+      'feature_scenario__settings_appearance__system_brightness_follow__e2e',
+    ],
+  );
+
+  testWidgets(
     'a login-time launch prepares the real desktop window hidden',
     (tester) async {
       await tester.pumpWidget(const SizedBox.shrink());
@@ -327,6 +390,13 @@ Finder _selectTrigger(String key) => find.descendant(
   of: find.byKey(ValueKey<String>(key)),
   matching: find.byType(TextButton),
 );
+
+ThemeMode? _appThemeMode(WidgetTester tester) =>
+    tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode;
+
+/// Brightness the running app actually resolved, not the one it was offered.
+Brightness _renderedBrightness(WidgetTester tester) =>
+    Theme.of(tester.element(find.byType(Navigator).last)).brightness;
 
 final class _RecordingAutostart implements AutostartRegistration {
   final List<({bool enabled, bool minimized})> applications =

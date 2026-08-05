@@ -204,6 +204,30 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'settings.appearance',
+    description:
+        'Selects the light or dark app theme or follows the system '
+        'brightness, and keeps the choice across restarts.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'restart_persistence',
+        description: 'Changes the theme and preserves it across app restart.',
+        surfaces: _allSurfaces,
+      ),
+      FeatureScenario(
+        id: 'system_brightness_follow',
+        description:
+            'Tracks the platform brightness while following the system.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
     id: 'app.navigation',
     description:
         'Opens settings and daemon editing as pushed tasks that close back to '

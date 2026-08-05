@@ -150,6 +150,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsRequiresOnlineDaemon => 'Connect an online daemon first.';
 
   @override
+  String get generalAppearanceSection => 'Appearance';
+
+  @override
+  String get generalAppearanceLabel => 'Theme';
+
+  @override
+  String get generalAppearanceDescription =>
+      'Applies to the whole app and is remembered the next time you start it.';
+
+  @override
+  String get generalAppearanceSystem => 'Follow system';
+
+  @override
+  String get generalAppearanceLight => 'Light';
+
+  @override
+  String get generalAppearanceDark => 'Dark';
+
+  @override
   String get generalLanguageSection => 'Language';
 
   @override

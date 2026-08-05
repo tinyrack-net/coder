@@ -150,6 +150,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsRequiresOnlineDaemon => '온라인 daemon 연결이 필요합니다.';
 
   @override
+  String get generalAppearanceSection => '외관';
+
+  @override
+  String get generalAppearanceLabel => '테마';
+
+  @override
+  String get generalAppearanceDescription => '앱 전체에 적용되며 다음 실행에도 유지됩니다.';
+
+  @override
+  String get generalAppearanceSystem => '시스템 테마 따름';
+
+  @override
+  String get generalAppearanceLight => '라이트';
+
+  @override
+  String get generalAppearanceDark => '다크';
+
+  @override
   String get generalLanguageSection => '언어';
 
   @override

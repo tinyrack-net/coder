@@ -75,6 +75,75 @@ void main() {
   );
 
   testWidgets(
+    'the appearance setting repaints the app and persists the choice',
+    (tester) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      await tester.pumpWidget(_app(store));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+
+      // Nothing is stored yet, so the app follows the platform brightness,
+      // which the widget test binding reports as light.
+      expect(store.settings.themeMode, AppThemeMode.system);
+      expect(_appThemeMode(tester), ThemeMode.system);
+      expect(_renderedBrightness(tester), Brightness.light);
+
+      await tester.tap(_selectTrigger('general-settings-theme-mode'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('다크').last);
+      await tester.pumpAndSettle();
+
+      expect(store.settings.themeMode, AppThemeMode.dark);
+      expect(_appThemeMode(tester), ThemeMode.dark);
+      expect(_renderedBrightness(tester), Brightness.dark);
+
+      await tester.tap(_selectTrigger('general-settings-theme-mode'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('라이트').last);
+      await tester.pumpAndSettle();
+
+      expect(store.settings.themeMode, AppThemeMode.light);
+      expect(_appThemeMode(tester), ThemeMode.light);
+      expect(_renderedBrightness(tester), Brightness.light);
+
+      // Following the system again is a stored choice of its own rather than
+      // an absent value, so it has to survive the same round trip.
+      await tester.tap(_selectTrigger('general-settings-theme-mode'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('시스템 테마 따름').last);
+      await tester.pumpAndSettle();
+
+      expect(store.settings.themeMode, AppThemeMode.system);
+      expect(_appThemeMode(tester), ThemeMode.system);
+    },
+    tags: const <String>['feature_test__settings_appearance__widget'],
+  );
+
+  testWidgets(
+    'a stored appearance choice is applied on the next start',
+    (tester) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(
+          embeddedDaemonEnabled: false,
+          themeMode: AppThemeMode.dark,
+        ),
+      );
+      await tester.pumpWidget(_app(store));
+      await tester.pumpAndSettle();
+
+      expect(_appThemeMode(tester), ThemeMode.dark);
+      expect(_renderedBrightness(tester), Brightness.dark);
+    },
+    tags: const <String>['feature_test__settings_appearance__widget'],
+  );
+
+  testWidgets(
     'the startup toggles persist and re-register the login item',
     (tester) async {
       final store = MemoryAppStore(
@@ -192,6 +261,13 @@ Finder _selectTrigger(String key) => find.descendant(
   of: find.byKey(ValueKey<String>(key)),
   matching: find.byType(TextButton),
 );
+
+ThemeMode? _appThemeMode(WidgetTester tester) =>
+    tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode;
+
+/// Brightness the running app actually resolved, not the one it was offered.
+Brightness _renderedBrightness(WidgetTester tester) =>
+    Theme.of(tester.element(find.byType(Navigator).last)).brightness;
 
 Widget _app(MemoryAppStore store, {AutostartRegistration? autostart}) =>
     CoderApp(

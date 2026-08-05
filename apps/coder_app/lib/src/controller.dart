@@ -141,6 +141,9 @@ class HostRegistryController extends _$HostRegistryController {
   /// Persists the app UI language, where null follows the system locale.
   Future<void> setLocaleTag(String? tag) => _registry.setLocaleTag(tag);
 
+  /// Persists the theme the app paints itself with.
+  Future<void> setThemeMode(AppThemeMode mode) => _registry.setThemeMode(mode);
+
   /// Persists whether the operating system launches the app at login.
   Future<void> setStartAtBoot({required bool enabled}) =>
       _registry.setStartAtBoot(enabled: enabled);

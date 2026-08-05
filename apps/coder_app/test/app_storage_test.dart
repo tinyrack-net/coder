@@ -53,6 +53,7 @@ void main() {
           localeTag: 'en',
           startAtBoot: false,
           startMinimizedAtBoot: false,
+          themeMode: AppThemeMode.dark,
         ),
       );
       await store.upsertProfile(profile);
@@ -69,6 +70,7 @@ void main() {
       expect(restored.localeTag, 'en');
       expect(restored.startAtBoot, isFalse);
       expect(restored.startMinimizedAtBoot, isFalse);
+      expect(restored.themeMode, AppThemeMode.dark);
       expect(
         restored.sessionTabs[selection.storageKey]?.openAgentIds,
         <String>['agent-1', 'agent-2'],
@@ -231,11 +233,32 @@ void main() {
       expect(restored.startAtBoot, isTrue);
       expect(restored.startMinimizedAtBoot, isTrue);
       expect(restored.embeddedDaemonPort, defaultEmbeddedDaemonPort);
+      // No stored appearance means the platform still decides the brightness.
+      expect(restored.themeMode, AppThemeMode.system);
     },
     tags: const <String>[
+      'feature_test__settings_appearance__unit',
       'feature_test__settings_language__unit',
       'feature_test__settings_startup__unit',
     ],
+  );
+
+  test(
+    'every appearance choice is written by name and read back',
+    () async {
+      final preferences = await SharedPreferences.getInstance();
+      final store = SharedPreferencesAppStore(preferences);
+
+      for (final mode in AppThemeMode.values) {
+        await store.saveSettings(AppSettings(themeMode: mode));
+        expect(
+          preferences.getString(SharedPreferencesAppStore.documentKey),
+          contains('"themeMode":"${mode.name}"'),
+        );
+        expect((await store.loadSettings()).themeMode, mode);
+      }
+    },
+    tags: const <String>['feature_test__settings_appearance__unit'],
   );
 
   test('rejects incompatible and malformed settings documents', () async {
@@ -308,6 +331,32 @@ void main() {
           'sessionTabs': <Object>[],
           'sidebarCollapsed': false,
           'startMinimizedAtBoot': 'yes',
+        },
+        'profiles': <Object>[],
+      },
+      <String, Object?>{
+        'version': 3,
+        'settings': <String, Object?>{
+          'embeddedDaemonEnabled': true,
+          'embeddedDaemonExposure': 'loopback',
+          'lastActiveHostId': null,
+          'lastWorktree': null,
+          'sessionTabs': <Object>[],
+          'sidebarCollapsed': false,
+          'themeMode': 7,
+        },
+        'profiles': <Object>[],
+      },
+      <String, Object?>{
+        'version': 3,
+        'settings': <String, Object?>{
+          'embeddedDaemonEnabled': true,
+          'embeddedDaemonExposure': 'loopback',
+          'lastActiveHostId': null,
+          'lastWorktree': null,
+          'sessionTabs': <Object>[],
+          'sidebarCollapsed': false,
+          'themeMode': 'sepia',
         },
         'profiles': <Object>[],
       },
