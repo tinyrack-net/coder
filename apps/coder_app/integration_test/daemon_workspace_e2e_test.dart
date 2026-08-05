@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
 
 void main() {
@@ -222,10 +223,11 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey<String>('embedded-daemon-port-apply')),
       );
-      for (var attempt = 0; attempt < 100; attempt += 1) {
-        await tester.pump(const Duration(milliseconds: 100));
-        if (store.settings.embeddedDaemonPort == changedPort) break;
-      }
+      await pumpUntilCondition(
+        tester,
+        () => store.settings.embeddedDaemonPort == changedPort,
+        'the embedded daemon port to persist',
+      );
       expect(store.settings.embeddedDaemonPort, changedPort);
       await _pumpUntil(tester, find.textContaining('온라인'));
 
@@ -279,21 +281,22 @@ Finder _action(String label) => find.byWidgetPredicate(
   description: 'Tinyrack action labelled "$label"',
 );
 
+/// Waits for [finder], naming everything on screen when it never arrives.
 Future<void> _pumpUntil(
   WidgetTester tester,
   Finder finder, {
-  int attempts = 100,
+  Duration budget = e2eWaitBudget,
 }) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    await tester.pump(const Duration(milliseconds: 100));
-    if (finder.evaluate().isNotEmpty) return;
+  try {
+    await pumpUntil(tester, finder, budget: budget);
+  } on TestFailure catch (failure) {
+    final visibleText = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((widget) => widget.data)
+        .whereType<String>()
+        .toList(growable: false);
+    throw TestFailure('${failure.message} Text: $visibleText');
   }
-  final visibleText = tester
-      .widgetList<Text>(find.byType(Text))
-      .map((widget) => widget.data)
-      .whereType<String>()
-      .toList(growable: false);
-  throw TestFailure('Timed out waiting for $finder. Text: $visibleText');
 }
 
 final class _ControlledEmbeddedLauncher implements EmbeddedDaemonLauncher {

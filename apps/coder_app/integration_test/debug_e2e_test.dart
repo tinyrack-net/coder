@@ -24,6 +24,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+import 'support/pump_until.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -227,9 +229,9 @@ void main() {
       addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
       // The sidebar has no daemon level; each daemon names the workspace rows
       // it serves, so a subtitle is the evidence that it connected.
-      await _pumpUntil(tester, find.text('E2E Workspace'));
-      await _pumpUntil(tester, find.text(remoteWorkspaceName));
-      await _pumpUntil(tester, find.textContaining('내장 daemon · '));
+      await pumpUntil(tester, find.text('E2E Workspace'));
+      await pumpUntil(tester, find.text(remoteWorkspaceName));
+      await pumpUntil(tester, find.textContaining('내장 daemon · '));
 
       // The global desktop menu reaches the same typed new-workspace route.
       expect(find.text('파일'), findsOneWidget);
@@ -272,14 +274,14 @@ void main() {
       final exposureToggle = find.byKey(
         const ValueKey<String>('embedded-daemon-exposure'),
       );
-      await _pumpUntil(tester, exposureToggle);
+      await pumpUntil(tester, exposureToggle);
       await tester.tap(exposureToggle);
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () => embeddedLauncher.exposures.length == 2,
         'embedded daemon to restart on all interfaces',
       );
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () => tester.widget<CoderSwitchRow>(exposureToggle).onChanged != null,
         'all-interface daemon to reconnect',
@@ -292,12 +294,12 @@ void main() {
         ],
       );
       await tester.tap(exposureToggle);
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () => embeddedLauncher.exposures.length == 3,
         'embedded daemon to return to loopback',
       );
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () => tester.widget<CoderSwitchRow>(exposureToggle).onChanged != null,
         'loopback daemon to reconnect',
@@ -315,10 +317,10 @@ void main() {
         clientKind: 'integration-test',
       );
       await tester.tap(find.text('Agent'));
-      await _pumpUntil(tester, find.text('Agents'));
+      await pumpUntil(tester, find.text('Agents'));
       await _selectDaemon(tester, 'Remote daemon');
       final addAgent = find.byKey(const ValueKey('agent-add-button'));
-      await _pumpUntil(tester, addAgent);
+      await pumpUntil(tester, addAgent);
       await tester.tap(addAgent);
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -334,14 +336,14 @@ void main() {
       await tester.ensureVisible(createRemoteAgent);
       await tester.pumpAndSettle();
       await tester.tap(createRemoteAgent);
-      await _pumpUntilGone(tester, find.text('Agent 추가'));
+      await pumpUntilGone(tester, find.text('Agent 추가'));
       final remoteAgent = await _waitForAgentDefinition(
         remoteClient,
         'remote-agent',
       );
       expect(remoteAgent.sourcePath, startsWith(remoteHome.path));
       await _selectDaemon(tester, '내장 daemon');
-      await _pumpUntil(tester, addAgent);
+      await pumpUntil(tester, addAgent);
       await tester.tap(addAgent);
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -363,7 +365,7 @@ void main() {
       await tester.ensureVisible(createAgent);
       await tester.pumpAndSettle();
       await tester.tap(createAgent);
-      await _pumpUntilGone(tester, find.text('Agent 추가'));
+      await pumpUntilGone(tester, find.text('Agent 추가'));
       final reviewer = await _waitForAgentDefinition(setupClient, 'reviewer');
       final reviewerFile = File(reviewer.sourcePath);
       expect(reviewerFile.existsSync(), isTrue);
@@ -403,7 +405,7 @@ void main() {
       );
       expect(await reviewerFile.readAsString(), validReviewerSource);
 
-      await _pumpUntil(tester, addAgent);
+      await pumpUntil(tester, addAgent);
       await tester.tap(addAgent);
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -419,7 +421,7 @@ void main() {
       await tester.ensureVisible(createTemporary);
       await tester.pumpAndSettle();
       await tester.tap(createTemporary);
-      await _pumpUntilGone(tester, find.text('Agent 추가'));
+      await pumpUntilGone(tester, find.text('Agent 추가'));
       await _waitForAgentDefinition(setupClient, 'temporary');
       await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
       await tester.pumpAndSettle();
@@ -450,12 +452,12 @@ void main() {
       );
 
       await tester.tap(find.text('Agent'));
-      await _pumpUntil(tester, find.text('Agents'));
+      await pumpUntil(tester, find.text('Agents'));
       await tester.tap(find.text('스킬'));
       final skillAddButton = find.byKey(
         const ValueKey<String>('skill-add-button'),
       );
-      await _pumpUntil(tester, skillAddButton);
+      await pumpUntil(tester, skillAddButton);
       await tester.tap(skillAddButton);
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -475,8 +477,8 @@ void main() {
       await tester.ensureVisible(createSkill);
       await tester.pumpAndSettle();
       await tester.tap(createSkill);
-      await _pumpUntilGone(tester, find.text('스킬 추가'));
-      await _pumpUntilCondition(
+      await pumpUntilGone(tester, find.text('스킬 추가'));
+      await pumpUntilCondition(
         tester,
         () async => (await setupClient.listSkills()).any(
           (skill) => skill.id == 'e2e-skill',
@@ -497,7 +499,7 @@ void main() {
       await tester.ensureVisible(commitSwitch);
       await tester.pumpAndSettle();
       await tester.tap(commitSwitch);
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async => !(await setupClient.getSkill('commit')).isEnabled,
         'the built-in skill to turn off',
@@ -510,7 +512,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '삭제'));
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async => (await setupClient.listSkills()).every(
           (skill) => skill.id != 'e2e-skill',
@@ -536,12 +538,12 @@ void main() {
       expect(await invokedSkillFile.readAsString(), validSkillSource);
 
       await tester.tap(find.text('Agent'));
-      await _pumpUntil(tester, find.text('Agents'));
+      await pumpUntil(tester, find.text('Agents'));
       await tester.pumpAndSettle();
       // MCP: expose a real child-process failure, repair its command and
       // secret through the UI, test discovery, then remove it again.
       await tester.tap(find.text('MCP').last);
-      await _pumpUntil(tester, find.text('MCP 서버'));
+      await pumpUntil(tester, find.text('MCP 서버'));
       await tester.pumpAndSettle();
       expect(
         tester
@@ -574,11 +576,11 @@ void main() {
       );
       await tester.ensureVisible(testServer);
       await tester.tap(testServer);
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.byKey(const ValueKey<String>('mcp-editor-error')),
       );
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () => tester.widget<TRButton>(testServer).onPressed != null,
         'the failed MCP probe to release the editor',
@@ -636,13 +638,12 @@ void main() {
         const ValueKey<String>('mcp-editor-error'),
       );
       expect(mcpTestError, findsNothing);
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () =>
             mcpTestNotice.evaluate().isNotEmpty ||
             mcpTestError.evaluate().isNotEmpty,
         'the repaired unsaved MCP test to finish',
-        attempts: 200,
       );
       if (mcpTestError.evaluate().isNotEmpty) {
         throw TestFailure(
@@ -652,7 +653,7 @@ void main() {
       }
       await tester.ensureVisible(saveServer);
       await tester.tap(saveServer);
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async {
           final servers = await setupClient.listMcpServers();
@@ -680,7 +681,7 @@ void main() {
       await tester.tap(deleteServer);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('mcp-delete-confirm')));
-      await _pumpUntilGone(
+      await pumpUntilGone(
         tester,
         find.byKey(const ValueKey('mcp-server-tile-e2e')),
       );
@@ -698,7 +699,7 @@ void main() {
           },
         ),
       );
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async =>
             (await setupClient.listMcpServers()).single.status ==
@@ -717,7 +718,7 @@ void main() {
       );
 
       await tester.tap(find.byIcon(CoderIcons.back).first);
-      await _pumpUntil(tester, find.text('E2E Workspace'));
+      await pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('E2E Workspace').last);
       await tester.pumpAndSettle();
@@ -745,16 +746,15 @@ void main() {
         'Feature e2e',
       );
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async => (await setupClient.getWorkspaceCatalog()).worktrees.any(
           (worktree) => worktree.branch == 'feature-e2e',
         ),
         'the composer to create a worktree',
-        attempts: 300,
       );
       // The session route keeps the sidebar, so the new worktree is listed.
-      await _pumpUntil(tester, find.text('feature-e2e'));
+      await pumpUntil(tester, find.text('feature-e2e'));
       await tester.pumpAndSettle();
       final managedWorktree = (await setupClient.getWorkspaceCatalog())
           .worktrees
@@ -766,13 +766,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(managedMenu);
       await tester.pumpAndSettle();
+      // The catalog is still streaming the new checkout in, so the sidebar can
+      // rebuild under the menu and the panel needs another frame to settle.
+      await pumpUntil(tester, find.text('Archive'));
       await tester.tap(find.text('Archive'));
       final archiveConfirm = find.byKey(
         const ValueKey<String>('worktree-archive-confirm'),
       );
-      await _pumpUntil(tester, archiveConfirm);
+      await pumpUntil(tester, archiveConfirm);
       await tester.tap(archiveConfirm);
-      await _pumpUntil(tester, find.text('E2E Workspace'));
+      await pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
       if (find.text('main').evaluate().isEmpty) {
         await tester.tap(find.text('E2E Workspace').last);
@@ -781,7 +784,7 @@ void main() {
       await tester.tap(find.text('main'));
       const composer = ValueKey<String>('session-composer-input');
       const send = ValueKey<String>('session-composer-send');
-      await _pumpUntil(tester, find.byKey(composer));
+      await pumpUntil(tester, find.byKey(composer));
       await tester.pumpAndSettle();
       final sessionModelSelector = find.byKey(
         const ValueKey('session-composer-model'),
@@ -818,14 +821,14 @@ void main() {
             .byKey(const ValueKey<String>('workspace-all-sessions-menu'))
             .hitTestable(),
       );
-      await _pumpUntil(tester, find.text('Reviewer'));
+      await pumpUntil(tester, find.text('Reviewer'));
       // The popup is still animating when its label first appears.
       await tester.pumpAndSettle();
       await tester.tap(find.text('Reviewer').last);
-      await _pumpUntil(tester, find.text('reviewer · delegated'));
+      await pumpUntil(tester, find.text('reviewer · delegated'));
       await tester.tap(find.text('Delegate review').first);
-      await _pumpUntil(tester, find.text('coder · manual'));
-      await _pumpUntil(tester, find.byKey(composer));
+      await pumpUntil(tester, find.text('coder · manual'));
+      await pumpUntil(tester, find.byKey(composer));
 
       await tester.enterText(
         find.byKey(composer),
@@ -850,16 +853,16 @@ void main() {
         ),
         setupClient,
       );
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () => tester.widget<TRIconButton>(find.byKey(send)).onPressed != null,
         'the failed delegation turn to release the composer',
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Create result.txt');
-      await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
+      await pumpUntil(tester, find.text('승인 필요 · apply_patch'));
       await tester.tap(find.text('승인'));
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('Created result.txt', findRichText: true),
       );
@@ -871,7 +874,7 @@ void main() {
       expect(find.textContaining('Edit('), findsWidgets);
       expect(find.textContaining('changedFiles'), findsNothing);
       expect(find.textContaining('"isError"'), findsNothing);
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async =>
             (await setupClient.listSessions(worktreeId: 'checkout-e2e'))
@@ -901,10 +904,10 @@ void main() {
       expect(find.textContaining('fixture.png'), findsNothing);
       expect(tester.widget<TRIconButton>(attachButton).onPressed, isNotNull);
       await tester.tap(attachButton);
-      await _pumpUntil(tester, find.textContaining('fixture.png'));
+      await pumpUntil(tester, find.textContaining('fixture.png'));
       expect(find.textContaining('fixture.txt'), findsOneWidget);
       await tester.tap(find.byKey(send));
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         attachmentCapture.exists,
         'the provider to receive hydrated attachments',
@@ -943,22 +946,20 @@ void main() {
               as List<dynamic>;
       final imageAttachmentId =
           (uploadedSnapshots.first! as Map<String, dynamic>)['id']! as String;
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.byKey(ValueKey('chat-attachment-$imageAttachmentId')),
-        attempts: 300,
       );
       await tester.tap(
         find.byKey(ValueKey('chat-attachment-$imageAttachmentId')),
       );
-      await _pumpUntil(tester, find.byType(InteractiveViewer));
+      await pumpUntil(tester, find.byType(InteractiveViewer));
       expect(find.byType(InteractiveViewer), findsOneWidget);
       Navigator.of(tester.element(find.byType(InteractiveViewer))).pop();
-      await _pumpUntilGone(tester, find.byType(InteractiveViewer));
-      await _pumpUntil(
+      await pumpUntilGone(tester, find.byType(InteractiveViewer));
+      await pumpUntil(
         tester,
         find.text('Attached fixtures.', findRichText: true),
-        attempts: 300,
       );
 
       await tester.enterText(
@@ -966,18 +967,16 @@ void main() {
         'Publish outbound attachment',
       );
       await tester.tap(find.byKey(send));
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async => (await setupClient.subscribeTimeline(
           attachmentSession.id,
         )).any((event) => event.type == 'assistant.attachment'),
         'the agent to publish its outbound attachment',
-        attempts: 300,
       );
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.textContaining('agent-output.txt'),
-        attempts: 300,
       );
       final outboundTimeline = await setupClient.subscribeTimeline(
         attachmentSession.id,
@@ -991,16 +990,15 @@ void main() {
         await outboundDownload.bytes.expand((chunk) => chunk).toList(),
         utf8.encode('agent attachment\n'),
       );
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('Published outbound attachment.', findRichText: true),
-        attempts: 300,
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Reject result.txt');
-      await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
+      await pumpUntil(tester, find.text('승인 필요 · apply_patch'));
       await tester.tap(find.widgetWithText(TRButton, '거부'));
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('Rejected safely', findRichText: true),
       );
@@ -1023,7 +1021,7 @@ void main() {
         setupClient,
       );
       await tester.tap(find.widgetWithText(TRButton, '승인'));
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('MCP completed', findRichText: true),
       );
@@ -1035,10 +1033,10 @@ void main() {
         setupClient,
       );
       await tester.tap(find.widgetWithText(TRButton, '거부'));
-      await _pumpUntil(tester, find.text('MCP rejected', findRichText: true));
+      await pumpUntil(tester, find.text('MCP rejected', findRichText: true));
 
       await setupClient.removeMcpServer('e2e');
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async => (await setupClient.listAgentTools()).every(
           (tool) => tool.id != 'mcp__e2e__echo',
@@ -1046,25 +1044,25 @@ void main() {
         'the offline MCP tool to leave the agent catalog',
       );
       await _submitComposerPrompt(tester, composer, send, 'Offline MCP');
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('MCP unavailable safely', findRichText: true),
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Use E2E skill');
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('Skill loaded', findRichText: true),
       );
       await setupClient.setSkillEnabled('invoke-e2e', enabled: false);
       await _submitComposerPrompt(tester, composer, send, 'Disabled E2E skill');
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('Disabled skill excluded', findRichText: true),
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Cancel streaming');
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('Streaming before cancel', findRichText: true),
       );
@@ -1073,12 +1071,12 @@ void main() {
         description: 'stop active turn button',
       );
       await tester.tap(stop);
-      await _pumpUntil(tester, find.text('중지됨'));
+      await pumpUntil(tester, find.text('중지됨'));
 
       await _submitComposerPrompt(tester, composer, send, 'Recover provider');
-      await _pumpUntil(tester, find.textContaining('planned provider outage'));
+      await pumpUntil(tester, find.textContaining('planned provider outage'));
       await _submitComposerPrompt(tester, composer, send, 'Recover provider');
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.text('Provider recovered', findRichText: true),
       );
@@ -1137,7 +1135,7 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey('session-composer-mode')).hitTestable(),
       );
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async =>
             (await setupClient.listSessions(
@@ -1157,11 +1155,10 @@ void main() {
         isNotNull,
       );
       await tester.tap(find.byKey(send));
-      await _pumpUntil(tester, find.text('제안된 계획'), attempts: 600);
-      await _pumpUntil(
+      await pumpUntil(tester, find.text('제안된 계획'));
+      await pumpUntil(
         tester,
         find.text('이 계획대로 진행할까요?'),
-        attempts: 600,
       );
       expect(find.textContaining('proposed_plan'), findsNothing);
       final implement = find.widgetWithText(TRButton, '계획대로 실행');
@@ -1170,8 +1167,8 @@ void main() {
       await tester.tap(implement);
       await tester.pump();
       // The chip returning to 실행 proves the session left plan mode.
-      await _pumpUntil(tester, find.text('실행'));
-      await _pumpUntilGone(tester, find.textContaining('Plan 모드'));
+      await pumpUntil(tester, find.text('실행'));
+      await pumpUntilGone(tester, find.textContaining('Plan 모드'));
 
       final reconnected = await CoderClient.connect(
         endpoint: endpoint,
@@ -1228,7 +1225,7 @@ void main() {
       await tester.tap(
         find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
       );
-      await _pumpUntilGone(
+      await pumpUntilGone(
         tester,
         find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
       );
@@ -1238,12 +1235,16 @@ void main() {
         )).map((session) => session.id),
         contains(parent.id),
       );
-      await tester.tap(
-        find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
+      // Closing the last tab returns to the checkout, and the tab strip shows
+      // a spinner in place of its menus until the tab state loads again.
+      final allSessionsMenu = find.byKey(
+        const ValueKey<String>('workspace-all-sessions-menu'),
       );
+      await pumpUntil(tester, allSessionsMenu);
+      await tester.tap(allSessionsMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delegate review').last);
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
       );
@@ -1251,13 +1252,13 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
-      await _pumpUntil(tester, find.text('Provider 추가'));
+      await pumpUntil(tester, find.text('Provider 추가'));
       await _selectDaemon(
         tester,
         'Remote daemon',
         settleAfterSelection: false,
       );
-      await _pumpUntil(tester, find.text('Provider 추가'));
+      await pumpUntil(tester, find.text('Provider 추가'));
       expect(find.text('OpenAI'), findsWidgets);
       expect(find.text('DeepSeek'), findsWidgets);
       final addCustom = find.byKey(const ValueKey('provider-add-custom'));
@@ -1280,9 +1281,9 @@ void main() {
       );
       await tester.tap(find.text('API key 필요'));
       await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await _pumpUntil(tester, find.text('Model 자동 조회 실패'));
+      await pumpUntil(tester, find.text('Model 자동 조회 실패'));
       await tester.tap(find.widgetWithText(TRButton, '나중에'));
-      await _pumpUntil(tester, find.text('E2E Provider'));
+      await pumpUntil(tester, find.text('E2E Provider'));
       final degradedProvider = (await remoteClient.listProviderConnections())
           .singleWhere((item) => item.displayName == 'E2E Provider');
       expect(degradedProvider.status, ProviderConnectionStatus.degraded);
@@ -1305,7 +1306,7 @@ void main() {
         'http://127.0.0.1:${modelServer.port}/v1',
       );
       await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await _pumpUntil(tester, find.text('E2E Provider Edited'));
+      await pumpUntil(tester, find.text('E2E Provider Edited'));
       final providerConnection = await _waitForProviderModels(
         remoteClient,
         'E2E Provider Edited',
@@ -1324,7 +1325,7 @@ void main() {
       );
       // The save dialog carries the same label, so wait for the settings list
       // itself before measuring section order.
-      await _pumpUntil(tester, connectedSection);
+      await pumpUntil(tester, connectedSection);
       await tester.pumpAndSettle();
       expect(
         tester.getBottomRight(connectedSection).dy,
@@ -1364,7 +1365,7 @@ void main() {
       await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '삭제'));
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async => (await remoteClient.listProviderConnections()).every(
           (item) => item.id != providerConnection.id,
@@ -1378,7 +1379,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(_trTextInput('API key'), 'invalid-key');
       await tester.tap(find.widgetWithText(TRButton, '연결'));
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async {
           final matches = (await remoteClient.listProviderConnections())
@@ -1391,7 +1392,7 @@ void main() {
       );
       expect(find.textContaining('credential rejected'), findsOneWidget);
       await _disconnectProviderCard(tester, 'DeepSeek');
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async =>
             (await remoteClient.listProviderConnections())
@@ -1406,7 +1407,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(_trTextInput('API key'), 'valid-key');
       await tester.tap(find.widgetWithText(TRButton, '연결'));
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async {
           final matches = (await remoteClient.listProviderConnections())
@@ -1422,7 +1423,7 @@ void main() {
       final addOllama = find.byKey(const ValueKey('provider-add-ollama'));
       await tester.ensureVisible(addOllama);
       await tester.tap(addOllama);
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async {
           final matches = (await remoteClient.listProviderConnections())
@@ -1435,7 +1436,7 @@ void main() {
         'no-auth provider to connect',
       );
       await _disconnectProviderCard(tester, 'Ollama');
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async => (await remoteClient.listProviderConnections())
             .where(
@@ -1483,7 +1484,7 @@ void main() {
         'Directory e2e',
       );
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
-      await _pumpUntilCondition(
+      await pumpUntilCondition(
         tester,
         () async => (await setupClient.listSessions(
           worktreeId: 'directory-checkout-e2e',
@@ -1626,15 +1627,10 @@ void main() {
 Future<void> _waitForWindowVisibility(
   DesktopWindow window, {
   required bool visible,
-}) async {
-  final deadline = DateTime.now().add(const Duration(seconds: 5));
-  while (await window.isVisible() != visible) {
-    if (DateTime.now().isAfter(deadline)) {
-      fail('window visibility did not become $visible');
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-  }
-}
+}) => awaitCondition(
+  () async => await window.isVisible() == visible,
+  'the window to become ${visible ? 'visible' : 'hidden'}',
+);
 
 final class _E2eAttachmentInput implements AttachmentInputPort {
   _E2eAttachmentInput({
@@ -1680,53 +1676,36 @@ final class _E2eAttachmentInput implements AttachmentInputPort {
 
 Future<ProviderConnectionDto> _waitForProviderModels(
   CoderApi api,
-  String displayName, {
-  int attempts = 50,
-}) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    final connection = (await api.listProviderConnections())
-        .where((item) => item.displayName == displayName)
-        .singleOrNull;
-    if (connection != null &&
-        (await api.listProviderModels(connection.id)).isNotEmpty) {
-      return connection;
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-  }
-  throw TestFailure(
-    'Timed out waiting for $displayName to discover models.',
-  );
-}
+  String displayName,
+) => awaitValue(() async {
+  final connection = (await api.listProviderConnections())
+      .where((item) => item.displayName == displayName)
+      .singleOrNull;
+  if (connection == null) return null;
+  final models = await api.listProviderModels(connection.id);
+  return models.isEmpty ? null : connection;
+}, '$displayName to discover models');
 
 Future<void> _waitForAgentPrompt(
   CoderApi api,
   String id,
-  String prompt, {
-  int attempts = 50,
-}) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    final definition = await api.getAgentDefinition(id);
-    if (definition.systemPrompt == prompt) return;
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-  }
-  throw TestFailure('Timed out waiting for external agent file reload.');
-}
+  String prompt,
+) => awaitCondition(
+  () async => (await api.getAgentDefinition(id)).systemPrompt == prompt,
+  'the external agent file to reload',
+);
 
 Future<AgentDefinitionDto> _waitForAgentDefinition(
   CoderApi api,
-  String id, {
-  int attempts = 50,
-}) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    try {
-      return await api.getAgentDefinition(id);
-    } on CoderClientException catch (error) {
-      if (error.code != 'request_failed') rethrow;
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+  String id,
+) => awaitValue(() async {
+  try {
+    return await api.getAgentDefinition(id);
+  } on CoderClientException catch (error) {
+    if (error.code != 'request_failed') rethrow;
+    return null;
   }
-  throw TestFailure('Timed out waiting for Agent definition $id.');
-}
+}, 'Agent definition $id');
 
 Future<void> _selectDaemon(
   WidgetTester tester,
@@ -1761,7 +1740,7 @@ Future<void> _disconnectProviderCard(
     matching: find.byType(TRCard),
   );
   final menu = find.descendant(of: card.first, matching: find.byType(TRMenu));
-  await _pumpUntil(tester, menu);
+  await pumpUntil(tester, menu);
   await Scrollable.ensureVisible(tester.element(menu), alignment: 0.3);
   await tester.pumpAndSettle();
   await tester.tap(menu);
@@ -1775,16 +1754,14 @@ Future<void> _disconnectProviderCard(
 Future<void> _pumpUntilTextFieldValue(
   WidgetTester tester,
   Finder finder,
-  String value, {
-  int attempts = 100,
-}) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    await tester.pump(const Duration(milliseconds: 100));
-    final fields = tester.widgetList<EditableText>(finder);
-    if (fields.any((field) => field.controller.text == value)) return;
-  }
-  throw TestFailure('Timed out waiting for text field value "$value".');
-}
+  String value,
+) => pumpUntilCondition(
+  tester,
+  () => tester
+      .widgetList<EditableText>(finder)
+      .any((field) => field.controller.text == value),
+  'the text field to hold "$value"',
+);
 
 Finder _trTextInput(String label) => find.descendant(
   of: find.byWidgetPredicate(
@@ -1868,47 +1845,10 @@ String _dartExecutable() {
   );
 }
 
-Future<void> _pumpUntil(
-  WidgetTester tester,
-  Finder finder, {
-  int attempts = 100,
-}) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    await tester.pump(const Duration(milliseconds: 100));
-    if (finder.evaluate().isNotEmpty) return;
-  }
-  throw TestFailure('Timed out waiting for $finder.');
-}
-
-Future<void> _pumpUntilGone(
-  WidgetTester tester,
-  Finder finder, {
-  int attempts = 100,
-}) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    await tester.pump(const Duration(milliseconds: 100));
-    if (finder.evaluate().isEmpty) return;
-  }
-  throw TestFailure('Timed out waiting for $finder to disappear.');
-}
-
-Future<void> _pumpUntilCondition(
-  WidgetTester tester,
-  FutureOr<bool> Function() condition,
-  String description, {
-  int attempts = 100,
-}) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    await tester.pump(const Duration(milliseconds: 100));
-    if (await condition()) return;
-  }
-  throw TestFailure('Timed out waiting for $description.');
-}
-
 Future<void> _waitForComposerReady(
   WidgetTester tester,
   ValueKey<String> sendKey,
-) => _pumpUntilCondition(
+) => pumpUntilCondition(
   tester,
   () => tester.widget<TRIconButton>(find.byKey(sendKey)).onPressed != null,
   'the composer to accept another turn',
@@ -1949,27 +1889,28 @@ Future<void> _replaceMcpFieldText(
   await tester.pump();
 }
 
+/// Waits for [finder], reporting every session's timeline when it never comes.
 Future<void> _pumpUntilWithSessionDiagnostics(
   WidgetTester tester,
   Finder finder,
   CoderApi api,
 ) async {
-  for (var attempt = 0; attempt < 100; attempt += 1) {
-    await tester.pump(const Duration(milliseconds: 100));
-    if (finder.evaluate().isNotEmpty) return;
+  try {
+    await pumpUntil(tester, finder, budget: e2eTurnBudget);
+  } on TestFailure catch (failure) {
+    final sessions = await api.listSessions(worktreeId: 'checkout-e2e');
+    final diagnostics = <String, Object?>{};
+    for (final session in sessions) {
+      diagnostics[session.id] = <String, Object?>{
+        'status': session.status.name,
+        'definition': session.agentDefinitionId,
+        'events': (await api.subscribeTimeline(
+          session.id,
+        )).map((event) => event.type).toList(growable: false),
+      };
+    }
+    throw TestFailure('${failure.message} Sessions: $diagnostics');
   }
-  final sessions = await api.listSessions(worktreeId: 'checkout-e2e');
-  final diagnostics = <String, Object?>{};
-  for (final session in sessions) {
-    diagnostics[session.id] = <String, Object?>{
-      'status': session.status.name,
-      'definition': session.agentDefinitionId,
-      'events': (await api.subscribeTimeline(
-        session.id,
-      )).map((event) => event.type).toList(growable: false),
-    };
-  }
-  throw TestFailure('Timed out waiting for $finder: $diagnostics');
 }
 
 final class _RestartableLauncher implements EmbeddedDaemonLauncher {

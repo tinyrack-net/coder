@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
 
 void main() {
@@ -150,7 +151,11 @@ void main() {
           autostart: _RecordingAutostart(),
         ),
       );
-      await _pumpUntil(tester, () => launcher.serverIds.isNotEmpty);
+      await pumpUntilCondition(
+        tester,
+        () => launcher.serverIds.isNotEmpty,
+        'the embedded daemon to start',
+      );
       await tester.pumpAndSettle();
 
       // Unpushed work in a managed checkout has to survive the reset.
@@ -179,7 +184,11 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey<String>('advanced-reset-confirm-accept')),
       );
-      await _pumpUntil(tester, () => launcher.serverIds.length == 2);
+      await pumpUntilCondition(
+        tester,
+        () => launcher.serverIds.length == 2,
+        'the embedded daemon to restart',
+      );
       await tester.pumpAndSettle();
 
       expect(
@@ -242,18 +251,27 @@ void main() {
           autostart: _RecordingAutostart(),
         ),
       );
-      await _pumpUntil(tester, () => launcher.session != null);
-      await _pumpUntil(
+      await pumpUntilCondition(
+        tester,
+        () => launcher.session != null,
+        'the embedded daemon session to exist',
+      );
+      await pumpUntilCondition(
         tester,
         () =>
             tray.menu?.entries.any((entry) => entry.key == trayItemQuit) ==
             true,
+        'the tray menu to offer Quit',
       );
 
       tray
         ..select(trayItemQuit)
         ..select(trayItemQuit);
-      await _pumpUntil(tester, () => window.destroys == 1);
+      await pumpUntilCondition(
+        tester,
+        () => window.destroys == 1,
+        'the window to be destroyed exactly once',
+      );
 
       expect(launcher.session!.stops, 1);
       expect(tray.destroys, 1);
@@ -279,13 +297,10 @@ String _join(List<String> segments) => segments.join(Platform.pathSeparator);
 Future<void> _waitForVisibility(
   DesktopWindow window, {
   required bool visible,
-}) async {
-  for (var attempt = 0; attempt < 100; attempt += 1) {
-    if (await window.isVisible() == visible) return;
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-  }
-  throw TestFailure('Window visibility did not become $visible.');
-}
+}) => awaitCondition(
+  () async => await window.isVisible() == visible,
+  'the window to become ${visible ? 'visible' : 'hidden'}',
+);
 
 Future<void> _pumpApp(
   WidgetTester tester,
@@ -312,17 +327,6 @@ Finder _selectTrigger(String key) => find.descendant(
   of: find.byKey(ValueKey<String>(key)),
   matching: find.byType(TextButton),
 );
-
-Future<void> _pumpUntil(
-  WidgetTester tester,
-  bool Function() condition,
-) async {
-  for (var attempt = 0; attempt < 200; attempt += 1) {
-    if (condition()) return;
-    await tester.pump(const Duration(milliseconds: 20));
-  }
-  throw TestFailure('Timed out waiting for the desktop E2E condition.');
-}
 
 final class _RecordingAutostart implements AutostartRegistration {
   final List<({bool enabled, bool minimized})> applications =
