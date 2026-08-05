@@ -76,6 +76,7 @@ class CoderClient implements CoderApi {
   final StreamController<ClientConnectionState> _states =
       StreamController<ClientConnectionState>.broadcast();
   final Map<String, int> _timelineSubscriptions = <String, int>{};
+  final Map<String, int> _terminalSubscriptions = <String, int>{};
   json_rpc.Peer? _peer;
   ServerInfoDto? _serverInfo;
   bool _closed = false;
@@ -116,6 +117,8 @@ class CoderClient implements CoderApi {
         RpcNotification.approvalRequested,
         RpcNotification.providerAuthUpdated,
         RpcNotification.mcpServersChanged,
+        RpcNotification.terminalOutput,
+        RpcNotification.terminalUpdated,
       ]) {
         peer.registerMethod(type, (json_rpc.Parameters parameters) {
           _handleNotification(
@@ -148,6 +151,18 @@ class CoderClient implements CoderApi {
           ) {
             for (final event in events) {
               _events.add(TimelineClientEvent(event));
+            }
+          }),
+        );
+      }
+      for (final entry in Map<String, int>.from(
+        _terminalSubscriptions,
+      ).entries) {
+        unawaited(
+          attachTerminal(entry.key, afterSequence: entry.value).then((result) {
+            _events.add(TerminalUpdatedClientEvent(result.terminal));
+            for (final output in result.replay) {
+              _events.add(TerminalOutputClientEvent(output));
             }
           }),
         );
@@ -191,6 +206,16 @@ class CoderClient implements CoderApi {
             ProviderAuthUpdatedClientEvent(
               ProviderAuthAttemptDto.fromJson(parameters),
             ),
+          );
+        case RpcNotification.terminalOutput:
+          final output = TerminalOutputDto.fromJson(parameters);
+          final current = _terminalSubscriptions[output.terminalId];
+          if (current == null || output.sequence <= current) return;
+          _terminalSubscriptions[output.terminalId] = output.sequence;
+          _events.add(TerminalOutputClientEvent(output));
+        case RpcNotification.terminalUpdated:
+          _events.add(
+            TerminalUpdatedClientEvent(TerminalDto.fromJson(parameters)),
           );
       }
     } on FormatException catch (error, stackTrace) {
@@ -435,6 +460,106 @@ class CoderClient implements CoderApi {
     );
     return SessionResultDto.fromJson(response).session;
   }
+
+  @override
+  Future<List<TerminalDto>> listTerminals(String worktreeId) async {
+    final response = await _request(
+      RpcMethod.terminalList,
+      TerminalListParamsDto(worktreeId: worktreeId).toJson(),
+    );
+    return TerminalListResultDto.fromJson(response).terminals;
+  }
+
+  @override
+  Future<TerminalDto> createTerminal({
+    required String id,
+    required String worktreeId,
+    required String title,
+    required int columns,
+    required int rows,
+  }) async {
+    final response = await _request(
+      RpcMethod.terminalCreate,
+      TerminalCreateParamsDto(
+        id: id,
+        worktreeId: worktreeId,
+        title: title,
+        columns: columns,
+        rows: rows,
+      ).toJson(),
+    );
+    return TerminalResultDto.fromJson(response).terminal;
+  }
+
+  @override
+  Future<TerminalAttachResultDto> attachTerminal(
+    String terminalId, {
+    int afterSequence = 0,
+  }) async {
+    _terminalSubscriptions[terminalId] = afterSequence;
+    final response = await _request(
+      RpcMethod.terminalAttach,
+      TerminalAttachParamsDto(
+        terminalId: terminalId,
+        afterSequence: afterSequence,
+      ).toJson(),
+    );
+    final result = TerminalAttachResultDto.fromJson(response);
+    for (final output in result.replay) {
+      final current = _terminalSubscriptions[terminalId] ?? 0;
+      if (output.sequence > current) {
+        _terminalSubscriptions[terminalId] = output.sequence;
+      }
+    }
+    return result;
+  }
+
+  @override
+  Future<void> writeTerminal(String terminalId, String data) => _request(
+    RpcMethod.terminalWrite,
+    TerminalWriteParamsDto(terminalId: terminalId, data: data).toJson(),
+  );
+
+  @override
+  Future<TerminalDto> resizeTerminal(
+    String terminalId, {
+    required int columns,
+    required int rows,
+  }) async {
+    final response = await _request(
+      RpcMethod.terminalResize,
+      TerminalResizeParamsDto(
+        terminalId: terminalId,
+        columns: columns,
+        rows: rows,
+      ).toJson(),
+    );
+    return TerminalResultDto.fromJson(response).terminal;
+  }
+
+  @override
+  Future<void> terminateTerminal(String terminalId) async {
+    await _request(
+      RpcMethod.terminalTerminate,
+      TerminalIdParamsDto(terminalId: terminalId).toJson(),
+    );
+    _terminalSubscriptions.remove(terminalId);
+  }
+
+  @override
+  Future<ShellSpecDto?> getTerminalShell() async {
+    final response = await _request(
+      RpcMethod.terminalShellGet,
+      const <String, dynamic>{},
+    );
+    return TerminalShellDto.fromJson(response).shell;
+  }
+
+  @override
+  Future<void> setTerminalShell(ShellSpecDto? shell) => _request(
+    RpcMethod.terminalShellSet,
+    TerminalShellDto(shell: shell).toJson(),
+  );
 
   @override
   Future<List<AgentDefinitionDto>> listAgentDefinitions() async {

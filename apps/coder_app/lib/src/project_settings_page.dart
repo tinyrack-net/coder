@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/coder_list_row.dart';
@@ -187,6 +189,10 @@ class _ProjectEditor extends ConsumerStatefulWidget {
 class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
   final TextEditingController _setup = TextEditingController();
   final TextEditingController _teardown = TextEditingController();
+  final TextEditingController _shellExecutable = TextEditingController();
+  final TextEditingController _shellArguments = TextEditingController();
+  final TextEditingController _hostShellExecutable = TextEditingController();
+  final TextEditingController _hostShellArguments = TextEditingController();
   bool _loaded = false;
   bool _saving = false;
   String? _error;
@@ -196,6 +202,10 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
   void dispose() {
     _setup.dispose();
     _teardown.dispose();
+    _shellExecutable.dispose();
+    _shellArguments.dispose();
+    _hostShellExecutable.dispose();
+    _hostShellArguments.dispose();
     super.dispose();
   }
 
@@ -218,6 +228,11 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
           _loaded = true;
           _setup.text = formatHookCommands(value.settings.setup);
           _teardown.text = formatHookCommands(value.settings.teardown);
+          _shellExecutable.text = value.settings.shell?.executable ?? '';
+          _shellArguments.text = formatHookCommands(
+            value.settings.shell?.arguments ?? const <String>[],
+          );
+          unawaited(_loadHostShell());
         }
         return Column(
           children: <Widget>[
@@ -302,6 +317,62 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsTeardown,
                     placeholder: 'docker compose down',
                   ),
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.projectSettingsShellHeading,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.projectSettingsShellHelp,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  TRTextField(
+                    key: const ValueKey<String>('project-shell-executable'),
+                    controller: _shellExecutable,
+                    enabled: !_saving,
+                    label: l10n.projectSettingsShellExecutable,
+                    placeholder: '/bin/zsh',
+                  ),
+                  const SizedBox(height: 16),
+                  TRTextField(
+                    key: const ValueKey<String>('project-shell-arguments'),
+                    controller: _shellArguments,
+                    enabled: !_saving,
+                    minLines: 2,
+                    maxLines: 4,
+                    label: l10n.projectSettingsShellArguments,
+                    placeholder: '-l',
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.projectSettingsHostShellHeading,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.projectSettingsHostShellHelp,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  TRTextField(
+                    key: const ValueKey<String>('host-shell-executable'),
+                    controller: _hostShellExecutable,
+                    enabled: !_saving,
+                    label: l10n.projectSettingsShellExecutable,
+                    placeholder: '/bin/zsh',
+                  ),
+                  const SizedBox(height: 16),
+                  TRTextField(
+                    key: const ValueKey<String>('host-shell-arguments'),
+                    controller: _hostShellArguments,
+                    enabled: !_saving,
+                    minLines: 2,
+                    maxLines: 4,
+                    label: l10n.projectSettingsShellArguments,
+                    placeholder: '-l',
+                  ),
                 ],
               ),
             ),
@@ -318,6 +389,14 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
       _saved = false;
     });
     try {
+      final registry = await ref.read(hostRegistryControllerProvider.future);
+      final hostShell = _hostShellExecutable.text.trim().isEmpty
+          ? null
+          : ShellSpecDto(
+              executable: _hostShellExecutable.text.trim(),
+              arguments: parseHookCommands(_hostShellArguments.text),
+            );
+      await registry.runtimes[widget.hostId]!.api!.setTerminalShell(hostShell);
       await ref
           .read(
             projectSettingsControllerProvider(
@@ -329,6 +408,12 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
             ProjectSettingsDto(
               setup: parseHookCommands(_setup.text),
               teardown: parseHookCommands(_teardown.text),
+              shell: _shellExecutable.text.trim().isEmpty
+                  ? null
+                  : ShellSpecDto(
+                      executable: _shellExecutable.text.trim(),
+                      arguments: parseHookCommands(_shellArguments.text),
+                    ),
             ),
           );
       if (!mounted) return;
@@ -342,6 +427,21 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
         _error = error.message;
         _saving = false;
       });
+    }
+  }
+
+  Future<void> _loadHostShell() async {
+    try {
+      final registry = await ref.read(hostRegistryControllerProvider.future);
+      final shell = await registry.runtimes[widget.hostId]!.api!
+          .getTerminalShell();
+      if (!mounted) return;
+      _hostShellExecutable.text = shell?.executable ?? '';
+      _hostShellArguments.text = formatHookCommands(
+        shell?.arguments ?? const <String>[],
+      );
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = '$error');
     }
   }
 }

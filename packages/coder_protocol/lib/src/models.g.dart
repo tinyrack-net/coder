@@ -6,6 +6,69 @@ part of 'models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_ShellSpecDto _$ShellSpecDtoFromJson(Map<String, dynamic> json) =>
+    _ShellSpecDto(
+      executable: json['executable'] as String,
+      arguments:
+          (json['arguments'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+    );
+
+Map<String, dynamic> _$ShellSpecDtoToJson(_ShellSpecDto instance) =>
+    <String, dynamic>{
+      'executable': instance.executable,
+      'arguments': instance.arguments,
+    };
+
+_TerminalDto _$TerminalDtoFromJson(Map<String, dynamic> json) => _TerminalDto(
+  id: json['id'] as String,
+  worktreeId: json['worktreeId'] as String,
+  title: json['title'] as String,
+  shell: ShellSpecDto.fromJson(json['shell'] as Map<String, dynamic>),
+  status: $enumDecode(_$TerminalStatusEnumMap, json['status']),
+  columns: (json['columns'] as num).toInt(),
+  rows: (json['rows'] as num).toInt(),
+  lastSequence: (json['lastSequence'] as num).toInt(),
+  exitCode: (json['exitCode'] as num?)?.toInt(),
+  error: json['error'] as String?,
+);
+
+Map<String, dynamic> _$TerminalDtoToJson(_TerminalDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'worktreeId': instance.worktreeId,
+      'title': instance.title,
+      'shell': instance.shell,
+      'status': _$TerminalStatusEnumMap[instance.status]!,
+      'columns': instance.columns,
+      'rows': instance.rows,
+      'lastSequence': instance.lastSequence,
+      'exitCode': instance.exitCode,
+      'error': instance.error,
+    };
+
+const _$TerminalStatusEnumMap = {
+  TerminalStatus.running: 'running',
+  TerminalStatus.exited: 'exited',
+  TerminalStatus.failed: 'failed',
+};
+
+_TerminalOutputDto _$TerminalOutputDtoFromJson(Map<String, dynamic> json) =>
+    _TerminalOutputDto(
+      terminalId: json['terminalId'] as String,
+      sequence: (json['sequence'] as num).toInt(),
+      data: json['data'] as String,
+    );
+
+Map<String, dynamic> _$TerminalOutputDtoToJson(_TerminalOutputDto instance) =>
+    <String, dynamic>{
+      'terminalId': instance.terminalId,
+      'sequence': instance.sequence,
+      'data': instance.data,
+    };
+
 _AttachmentDto _$AttachmentDtoFromJson(Map<String, dynamic> json) =>
     _AttachmentDto(
       id: json['id'] as String,
@@ -139,10 +202,17 @@ _ProjectSettingsDto _$ProjectSettingsDtoFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const <String>[],
+      shell: json['shell'] == null
+          ? null
+          : ShellSpecDto.fromJson(json['shell'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$ProjectSettingsDtoToJson(_ProjectSettingsDto instance) =>
-    <String, dynamic>{'setup': instance.setup, 'teardown': instance.teardown};
+    <String, dynamic>{
+      'setup': instance.setup,
+      'teardown': instance.teardown,
+      'shell': instance.shell,
+    };
 
 _WorktreeHookRunDto _$WorktreeHookRunDtoFromJson(Map<String, dynamic> json) =>
     _WorktreeHookRunDto(

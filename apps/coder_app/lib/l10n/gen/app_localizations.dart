@@ -524,6 +524,78 @@ abstract class AppLocalizations {
   /// **'New session'**
   String get workspaceNewSession;
 
+  /// No description provided for @workspaceNewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'New tab'**
+  String get workspaceNewTab;
+
+  /// No description provided for @workspaceNewTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'New terminal'**
+  String get workspaceNewTerminal;
+
+  /// No description provided for @terminalCloseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminate terminal?'**
+  String get terminalCloseTitle;
+
+  /// No description provided for @terminalCloseConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing this tab terminates its shell and child processes.'**
+  String get terminalCloseConfirm;
+
+  /// No description provided for @terminalTerminate.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminate'**
+  String get terminalTerminate;
+
+  /// No description provided for @terminalConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal connection failed'**
+  String get terminalConnectionFailed;
+
+  /// No description provided for @projectSettingsShellHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Project terminal shell'**
+  String get projectSettingsShellHeading;
+
+  /// No description provided for @projectSettingsShellHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Overrides the daemon host shell for terminals opened in this project. Leave the executable empty to inherit the host default.'**
+  String get projectSettingsShellHelp;
+
+  /// No description provided for @projectSettingsShellExecutable.
+  ///
+  /// In en, this message translates to:
+  /// **'Shell executable'**
+  String get projectSettingsShellExecutable;
+
+  /// No description provided for @projectSettingsShellArguments.
+  ///
+  /// In en, this message translates to:
+  /// **'Shell arguments (one per line)'**
+  String get projectSettingsShellArguments;
+
+  /// No description provided for @projectSettingsHostShellHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon host default shell'**
+  String get projectSettingsHostShellHeading;
+
+  /// No description provided for @projectSettingsHostShellHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by every project on this daemon host unless the project overrides it. Leave the executable empty to use the operating system default.'**
+  String get projectSettingsHostShellHelp;
+
   /// Tooltip that lists every session of the open checkout.
   ///
   /// In en, this message translates to:

@@ -624,6 +624,131 @@ _SessionResultDto _$SessionResultDtoFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$SessionResultDtoToJson(_SessionResultDto instance) =>
     <String, dynamic>{'session': instance.session};
 
+_TerminalListParamsDto _$TerminalListParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _TerminalListParamsDto(worktreeId: json['worktreeId'] as String);
+
+Map<String, dynamic> _$TerminalListParamsDtoToJson(
+  _TerminalListParamsDto instance,
+) => <String, dynamic>{'worktreeId': instance.worktreeId};
+
+_TerminalListResultDto _$TerminalListResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _TerminalListResultDto(
+  terminals: (json['terminals'] as List<dynamic>)
+      .map((e) => TerminalDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$TerminalListResultDtoToJson(
+  _TerminalListResultDto instance,
+) => <String, dynamic>{'terminals': instance.terminals};
+
+_TerminalCreateParamsDto _$TerminalCreateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _TerminalCreateParamsDto(
+  id: json['id'] as String,
+  worktreeId: json['worktreeId'] as String,
+  title: json['title'] as String,
+  columns: (json['columns'] as num).toInt(),
+  rows: (json['rows'] as num).toInt(),
+);
+
+Map<String, dynamic> _$TerminalCreateParamsDtoToJson(
+  _TerminalCreateParamsDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'worktreeId': instance.worktreeId,
+  'title': instance.title,
+  'columns': instance.columns,
+  'rows': instance.rows,
+};
+
+_TerminalIdParamsDto _$TerminalIdParamsDtoFromJson(Map<String, dynamic> json) =>
+    _TerminalIdParamsDto(terminalId: json['terminalId'] as String);
+
+Map<String, dynamic> _$TerminalIdParamsDtoToJson(
+  _TerminalIdParamsDto instance,
+) => <String, dynamic>{'terminalId': instance.terminalId};
+
+_TerminalAttachParamsDto _$TerminalAttachParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _TerminalAttachParamsDto(
+  terminalId: json['terminalId'] as String,
+  afterSequence: (json['afterSequence'] as num?)?.toInt() ?? 0,
+);
+
+Map<String, dynamic> _$TerminalAttachParamsDtoToJson(
+  _TerminalAttachParamsDto instance,
+) => <String, dynamic>{
+  'terminalId': instance.terminalId,
+  'afterSequence': instance.afterSequence,
+};
+
+_TerminalAttachResultDto _$TerminalAttachResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _TerminalAttachResultDto(
+  terminal: TerminalDto.fromJson(json['terminal'] as Map<String, dynamic>),
+  replay: (json['replay'] as List<dynamic>)
+      .map((e) => TerminalOutputDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$TerminalAttachResultDtoToJson(
+  _TerminalAttachResultDto instance,
+) => <String, dynamic>{
+  'terminal': instance.terminal,
+  'replay': instance.replay,
+};
+
+_TerminalResultDto _$TerminalResultDtoFromJson(Map<String, dynamic> json) =>
+    _TerminalResultDto(
+      terminal: TerminalDto.fromJson(json['terminal'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$TerminalResultDtoToJson(_TerminalResultDto instance) =>
+    <String, dynamic>{'terminal': instance.terminal};
+
+_TerminalWriteParamsDto _$TerminalWriteParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _TerminalWriteParamsDto(
+  terminalId: json['terminalId'] as String,
+  data: json['data'] as String,
+);
+
+Map<String, dynamic> _$TerminalWriteParamsDtoToJson(
+  _TerminalWriteParamsDto instance,
+) => <String, dynamic>{
+  'terminalId': instance.terminalId,
+  'data': instance.data,
+};
+
+_TerminalResizeParamsDto _$TerminalResizeParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _TerminalResizeParamsDto(
+  terminalId: json['terminalId'] as String,
+  columns: (json['columns'] as num).toInt(),
+  rows: (json['rows'] as num).toInt(),
+);
+
+Map<String, dynamic> _$TerminalResizeParamsDtoToJson(
+  _TerminalResizeParamsDto instance,
+) => <String, dynamic>{
+  'terminalId': instance.terminalId,
+  'columns': instance.columns,
+  'rows': instance.rows,
+};
+
+_TerminalShellDto _$TerminalShellDtoFromJson(Map<String, dynamic> json) =>
+    _TerminalShellDto(
+      shell: json['shell'] == null
+          ? null
+          : ShellSpecDto.fromJson(json['shell'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$TerminalShellDtoToJson(_TerminalShellDto instance) =>
+    <String, dynamic>{'shell': instance.shell};
+
 _AgentDefinitionListResultDto _$AgentDefinitionListResultDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentDefinitionListResultDto(

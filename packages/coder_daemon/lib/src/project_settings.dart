@@ -42,18 +42,23 @@ final class FileProjectSettingsStore implements ProjectSettingsStore {
     return ProjectSettingsDto(
       setup: _commands(worktree['setup'], 'setup', rootPath),
       teardown: _commands(worktree['teardown'], 'teardown', rootPath),
+      shell: _shell(worktree['shell'], rootPath),
     );
   }
 
   @override
   Future<void> save(String rootPath, ProjectSettingsDto settings) async {
     final document = await _read(rootPath);
-    final worktree = <String, dynamic>{
-      if (document['worktree'] case final Map<String, dynamic> existing)
-        ...existing,
-    }..removeWhere((key, _) => key == 'setup' || key == 'teardown');
+    final worktree =
+        <String, dynamic>{
+          if (document['worktree'] case final Map<String, dynamic> existing)
+            ...existing,
+        }..removeWhere(
+          (key, _) => key == 'setup' || key == 'teardown' || key == 'shell',
+        );
     if (settings.setup.isNotEmpty) worktree['setup'] = settings.setup;
     if (settings.teardown.isNotEmpty) worktree['teardown'] = settings.teardown;
+    if (settings.shell case final shell?) worktree['shell'] = shell.toJson();
     if (worktree.isEmpty) {
       document.remove('worktree');
     } else {
@@ -112,5 +117,23 @@ final class FileProjectSettingsStore implements ProjectSettingsStore {
       if (entry.trim().isNotEmpty) commands.add(entry.trim());
     }
     return commands;
+  }
+
+  static ShellSpecDto? _shell(Object? value, String rootPath) {
+    if (value == null) return null;
+    if (value is! Map<String, dynamic>) {
+      throw FormatException(
+        'invalid_project_settings: "worktree.shell" must be an object in '
+        '${p.join(rootPath, projectSettingsFileName)}.',
+      );
+    }
+    final shell = ShellSpecDto.fromJson(value);
+    if (shell.executable.trim().isEmpty) {
+      throw FormatException(
+        'invalid_project_settings: "worktree.shell.executable" must not be '
+        'empty in ${p.join(rootPath, projectSettingsFileName)}.',
+      );
+    }
+    return shell;
   }
 }

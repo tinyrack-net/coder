@@ -280,6 +280,152 @@ void main() {
   );
 
   testWidgets(
+    'new-tab menu creates a terminal and confirms termination on close',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-new-tab-menu')));
+      await tester.pumpAndSettle();
+      expect(find.text('새 session'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('workspace-new-terminal')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TRTerminalView), findsOneWidget);
+      expect(find.text('Terminal 1'), findsOneWidget);
+      final terminal = (await api.listTerminals(checkout.id)).single;
+      await tester.tap(
+        find.byKey(ValueKey<String>('terminal-tab-close-${terminal.id}')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('터미널을 종료할까요?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TRButton, '취소'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TRTerminalView), findsOneWidget);
+      await tester.tap(
+        find.byKey(ValueKey<String>('terminal-tab-close-${terminal.id}')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('terminal-close-confirm')));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.listTerminals(checkout.id)).single.status,
+        TerminalStatus.exited,
+      );
+      expect(find.byType(TRTerminalView), findsNothing);
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets('terminal tab shows attach failures and closes exited shells', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1100, 760));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const terminal = TerminalDto(
+      id: 'terminal-failed-attach',
+      worktreeId: 'checkout',
+      title: 'Exited terminal',
+      shell: ShellSpecDto(executable: '/bin/sh'),
+      status: TerminalStatus.exited,
+      columns: 80,
+      rows: 24,
+      lastSequence: 0,
+      exitCode: 0,
+    );
+    final router = await _pumpRoute(
+      tester,
+      FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        terminals: const <TerminalDto>[terminal],
+        terminalAttachError: Exception('host disconnected'),
+      ),
+      TerminalRoute(
+        hostId: 'server',
+        workspaceId: workspace.id,
+        worktreeId: checkout.id,
+        terminalId: terminal.id,
+      ).location,
+    );
+    addTearDown(router.dispose);
+
+    expect(find.text('터미널 연결에 실패했어요'), findsOneWidget);
+    expect(find.textContaining('host disconnected'), findsOneWidget);
+    await tester.tap(
+      find.byKey(ValueKey<String>('terminal-tab-close-${terminal.id}')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('terminal-close-dialog')), findsNothing);
+  });
+
+  testWidgets(
+    'terminal deep link restores the requested live terminal',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const terminal = TerminalDto(
+        id: 'terminal-deep-link',
+        worktreeId: 'checkout',
+        title: 'Remote terminal',
+        shell: ShellSpecDto(executable: '/bin/sh'),
+        status: TerminalStatus.running,
+        columns: 80,
+        rows: 24,
+        lastSequence: 0,
+      );
+      final router = await _pumpRoute(
+        tester,
+        FakeCoderApi(
+          workspaces: <WorkspaceDto>[workspace],
+          worktrees: <WorktreeDto>[checkout],
+          terminals: const <TerminalDto>[terminal],
+          terminalReplay: const <TerminalOutputDto>[
+            TerminalOutputDto(
+              terminalId: 'terminal-deep-link',
+              sequence: 1,
+              data: 'ready\r\n',
+            ),
+            TerminalOutputDto(
+              terminalId: 'terminal-deep-link',
+              sequence: 1,
+              data: 'duplicate',
+            ),
+          ],
+        ),
+        TerminalRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          terminalId: terminal.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      expect(find.byType(TRTerminalView), findsOneWidget);
+      expect(find.text('Remote terminal'), findsOneWidget);
+    },
+    tags: const <String>[
+      'feature_test__terminal_lifecycle__widget',
+      'route_test__terminal_route__widget',
+    ],
+  );
+
+  testWidgets(
     'archives a managed worktree from the sidebar',
     (
       tester,

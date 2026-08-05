@@ -177,6 +177,8 @@ final class _AppDocument {
               'key': entry.key,
               'openAgentIds': entry.value.openAgentIds,
               'selectedAgentId': entry.value.selectedAgentId,
+              'openTerminalIds': entry.value.openTerminalIds,
+              'selectedTerminalId': entry.value.selectedTerminalId,
             },
           )
           .toList(growable: false),
@@ -223,15 +225,22 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
     final key = item['key'];
     final openAgentIds = item['openAgentIds'];
     final selectedAgentId = item['selectedAgentId'];
+    final openTerminalIds = item['openTerminalIds'] ?? const <dynamic>[];
+    final selectedTerminalId = item['selectedTerminalId'];
     if (key is! String ||
         openAgentIds is! List ||
         openAgentIds.any((id) => id is! String) ||
-        (selectedAgentId != null && selectedAgentId is! String)) {
+        (selectedAgentId != null && selectedAgentId is! String) ||
+        openTerminalIds is! List ||
+        openTerminalIds.any((id) => id is! String) ||
+        (selectedTerminalId != null && selectedTerminalId is! String)) {
       throw const FormatException('Invalid session tab preference values.');
     }
     sessionTabs[key] = SessionTabPreference(
       openAgentIds: openAgentIds.cast<String>(),
       selectedAgentId: selectedAgentId as String?,
+      openTerminalIds: openTerminalIds.cast<String>(),
+      selectedTerminalId: selectedTerminalId as String?,
     );
   }
   return AppSettings(

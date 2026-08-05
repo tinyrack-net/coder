@@ -27,6 +27,69 @@ enum SessionStatus {
   closed,
 }
 
+/// Runtime lifecycle of a daemon-owned interactive terminal.
+enum TerminalStatus {
+  /// The shell process is accepting input.
+  running,
+
+  /// The shell process exited normally or was terminated.
+  exited,
+
+  /// The shell could not be started or failed unexpectedly.
+  failed,
+}
+
+@freezed
+/// Executable and arguments used to start an interactive shell.
+abstract class ShellSpecDto with _$ShellSpecDto {
+  /// Creates a shell specification.
+  const factory ShellSpecDto({
+    required String executable,
+    @Default(<String>[]) List<String> arguments,
+  }) = _ShellSpecDto;
+
+  /// Decodes a shell specification.
+  factory ShellSpecDto.fromJson(Map<String, dynamic> json) =>
+      _$ShellSpecDtoFromJson(json);
+}
+
+@freezed
+/// Current metadata for a daemon-owned interactive terminal.
+abstract class TerminalDto with _$TerminalDto {
+  /// Creates terminal metadata.
+  const factory TerminalDto({
+    required String id,
+    required String worktreeId,
+    required String title,
+    required ShellSpecDto shell,
+    required TerminalStatus status,
+    required int columns,
+    required int rows,
+    required int lastSequence,
+    int? exitCode,
+    String? error,
+  }) = _TerminalDto;
+
+  /// Decodes terminal metadata.
+  factory TerminalDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalDtoFromJson(json);
+}
+
+@freezed
+/// One ordered terminal output chunk retained for replay.
+abstract class TerminalOutputDto with _$TerminalOutputDto {
+  /// Creates an ordered terminal output chunk.
+  const factory TerminalOutputDto({
+    required String terminalId,
+    required int sequence,
+    required String data,
+  }) = _TerminalOutputDto;
+
+  /// Decodes an ordered terminal output chunk.
+  factory TerminalOutputDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalOutputDtoFromJson(json);
+}
+
 /// Determines how an agent definition can be used.
 enum AgentMode {
   /// May be selected when a user creates a session.
@@ -426,6 +489,7 @@ abstract class ProjectSettingsDto with _$ProjectSettingsDto {
   const factory ProjectSettingsDto({
     @Default(<String>[]) List<String> setup,
     @Default(<String>[]) List<String> teardown,
+    ShellSpecDto? shell,
   }) = _ProjectSettingsDto;
 
   /// Decodes project settings.

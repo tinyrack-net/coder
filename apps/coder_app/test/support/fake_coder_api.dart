@@ -17,6 +17,7 @@ final class FakeCoderApi implements CoderApi {
     List<WorkspaceDto>? workspaces,
     List<WorktreeDto>? worktrees,
     List<SessionDto>? agents,
+    List<TerminalDto>? terminals,
     List<AgentDefinitionDto>? agentDefinitions,
     List<SkillDto>? skills,
     List<SkillDto>? projectSkills,
@@ -35,6 +36,8 @@ final class FakeCoderApi implements CoderApi {
     this.suggestDirectoriesError,
     this.projectSettingsError,
     List<Future<List<McpServerStateDto>>>? mcpListResponses,
+    this.terminalAttachError,
+    this.terminalReplay = const <TerminalOutputDto>[],
     Map<String, List<String>>? directories,
   }) : mcpListResponses =
            mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
@@ -45,6 +48,7 @@ final class FakeCoderApi implements CoderApi {
        _workspaces = workspaces ?? <WorkspaceDto>[],
        _worktrees = worktrees ?? <WorktreeDto>[],
        _agents = agents ?? <SessionDto>[],
+       _terminals = terminals ?? <TerminalDto>[],
        _agentDefinitions = List<AgentDefinitionDto>.of(
          agentDefinitions ?? <AgentDefinitionDto>[_coder],
        ),
@@ -186,6 +190,11 @@ final class FakeCoderApi implements CoderApi {
   final List<WorkspaceDto> _workspaces;
   final List<WorktreeDto> _worktrees;
   final List<SessionDto> _agents;
+  final List<TerminalDto> _terminals;
+  ShellSpecDto? _terminalShell;
+
+  /// Host shell saved through the settings API.
+  ShellSpecDto? get terminalShell => _terminalShell;
   final List<AgentDefinitionDto> _agentDefinitions;
   final List<SkillDto> _skills;
   final List<SkillDto> _projectSkills;
@@ -200,6 +209,12 @@ final class FakeCoderApi implements CoderApi {
 
   /// Optional failure returned while loading the skill catalog.
   Exception? skillListError;
+
+  /// Optional attach failure used by terminal error-state tests.
+  final Exception? terminalAttachError;
+
+  /// Scrollback returned by terminal attach.
+  final List<TerminalOutputDto> terminalReplay;
 
   /// Whether the next guarded Markdown save should simulate a file race.
   bool failNextAgentUpdate;
@@ -579,6 +594,86 @@ final class FakeCoderApi implements CoderApi {
     _agents[index] = updated;
     emit(SessionUpdatedClientEvent(updated));
     return updated;
+  }
+
+  @override
+  Future<List<TerminalDto>> listTerminals(String worktreeId) async =>
+      _terminals.where((item) => item.worktreeId == worktreeId).toList();
+
+  @override
+  Future<TerminalDto> createTerminal({
+    required String id,
+    required String worktreeId,
+    required String title,
+    required int columns,
+    required int rows,
+  }) async {
+    final terminal = TerminalDto(
+      id: id,
+      worktreeId: worktreeId,
+      title: title,
+      shell: const ShellSpecDto(executable: '/bin/sh'),
+      status: TerminalStatus.running,
+      columns: columns,
+      rows: rows,
+      lastSequence: 0,
+    );
+    _terminals.add(terminal);
+    emit(TerminalUpdatedClientEvent(terminal));
+    return terminal;
+  }
+
+  @override
+  Future<TerminalAttachResultDto> attachTerminal(
+    String terminalId, {
+    int afterSequence = 0,
+  }) async {
+    final error = terminalAttachError;
+    if (error != null) throw error;
+    return TerminalAttachResultDto(
+      terminal: _terminals.firstWhere((item) => item.id == terminalId),
+      replay: terminalReplay,
+    );
+  }
+
+  /// Terminal input received by the fake.
+  final List<({String terminalId, String data})> terminalWrites =
+      <({String terminalId, String data})>[];
+
+  @override
+  Future<void> writeTerminal(String terminalId, String data) async {
+    terminalWrites.add((terminalId: terminalId, data: data));
+  }
+
+  @override
+  Future<TerminalDto> resizeTerminal(
+    String terminalId, {
+    required int columns,
+    required int rows,
+  }) async {
+    final index = _terminals.indexWhere((item) => item.id == terminalId);
+    final terminal = _terminals[index].copyWith(columns: columns, rows: rows);
+    _terminals[index] = terminal;
+    return terminal;
+  }
+
+  @override
+  Future<void> terminateTerminal(String terminalId) async {
+    final index = _terminals.indexWhere((item) => item.id == terminalId);
+    final terminal = _terminals[index].copyWith(
+      status: TerminalStatus.exited,
+      exitCode: 0,
+    );
+    _terminals[index] = terminal;
+    emit(TerminalUpdatedClientEvent(terminal));
+  }
+
+  @override
+  Future<ShellSpecDto?> getTerminalShell() async => _terminalShell;
+
+  @override
+  Future<void> setTerminalShell(ShellSpecDto? shell) async {
+    _terminalShell = shell;
   }
 
   @override

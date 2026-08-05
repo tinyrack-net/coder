@@ -10,6 +10,7 @@ List<RouteBase> get $appRoutes => [
   $workspaceHomeRoute,
   $worktreeRoute,
   $sessionRoute,
+  $terminalRoute,
   $generalSettingsRoute,
   $providerSettingsRoute,
   $projectSettingsRoute,
@@ -137,6 +138,41 @@ mixin $SessionRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/workspaces/${Uri.encodeComponent(_self.hostId)}/${Uri.encodeComponent(_self.workspaceId)}/${Uri.encodeComponent(_self.worktreeId)}/sessions/${Uri.encodeComponent(_self.sessionId)}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $terminalRoute => GoRouteData.$route(
+  path: '/workspaces/:hostId/:workspaceId/:worktreeId/terminals/:terminalId',
+  hasOverriddenOnExit: false,
+  factory: $TerminalRoute._fromState,
+);
+
+mixin $TerminalRoute on GoRouteData {
+  static TerminalRoute _fromState(GoRouterState state) => TerminalRoute(
+    hostId: state.pathParameters['hostId']!,
+    workspaceId: state.pathParameters['workspaceId']!,
+    worktreeId: state.pathParameters['worktreeId']!,
+    terminalId: state.pathParameters['terminalId']!,
+  );
+
+  TerminalRoute get _self => this as TerminalRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/workspaces/${Uri.encodeComponent(_self.hostId)}/${Uri.encodeComponent(_self.workspaceId)}/${Uri.encodeComponent(_self.worktreeId)}/terminals/${Uri.encodeComponent(_self.terminalId)}',
   );
 
   @override

@@ -12304,6 +12304,2735 @@ $SessionDtoCopyWith<$Res> get session {
 
 
 /// @nodoc
+mixin _$TerminalListParamsDto {
+
+ String get worktreeId;
+/// Create a copy of TerminalListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalListParamsDtoCopyWith<TerminalListParamsDto> get copyWith => _$TerminalListParamsDtoCopyWithImpl<TerminalListParamsDto>(this as TerminalListParamsDto, _$identity);
+
+  /// Serializes this TerminalListParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalListParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId);
+
+@override
+String toString() {
+  return 'TerminalListParamsDto(worktreeId: $worktreeId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalListParamsDtoCopyWith<$Res>  {
+  factory $TerminalListParamsDtoCopyWith(TerminalListParamsDto value, $Res Function(TerminalListParamsDto) _then) = _$TerminalListParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String worktreeId
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalListParamsDtoCopyWithImpl<$Res>
+    implements $TerminalListParamsDtoCopyWith<$Res> {
+  _$TerminalListParamsDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalListParamsDto _self;
+  final $Res Function(TerminalListParamsDto) _then;
+
+/// Create a copy of TerminalListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? worktreeId = null,}) {
+  return _then(_self.copyWith(
+worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalListParamsDto].
+extension TerminalListParamsDtoPatterns on TerminalListParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalListParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalListParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalListParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalListParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalListParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalListParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String worktreeId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalListParamsDto() when $default != null:
+return $default(_that.worktreeId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String worktreeId)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalListParamsDto():
+return $default(_that.worktreeId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String worktreeId)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalListParamsDto() when $default != null:
+return $default(_that.worktreeId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalListParamsDto implements TerminalListParamsDto {
+  const _TerminalListParamsDto({required this.worktreeId});
+  factory _TerminalListParamsDto.fromJson(Map<String, dynamic> json) => _$TerminalListParamsDtoFromJson(json);
+
+@override final  String worktreeId;
+
+/// Create a copy of TerminalListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalListParamsDtoCopyWith<_TerminalListParamsDto> get copyWith => __$TerminalListParamsDtoCopyWithImpl<_TerminalListParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalListParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalListParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId);
+
+@override
+String toString() {
+  return 'TerminalListParamsDto(worktreeId: $worktreeId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalListParamsDtoCopyWith<$Res> implements $TerminalListParamsDtoCopyWith<$Res> {
+  factory _$TerminalListParamsDtoCopyWith(_TerminalListParamsDto value, $Res Function(_TerminalListParamsDto) _then) = __$TerminalListParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String worktreeId
+});
+
+
+
+
+}
+/// @nodoc
+class __$TerminalListParamsDtoCopyWithImpl<$Res>
+    implements _$TerminalListParamsDtoCopyWith<$Res> {
+  __$TerminalListParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalListParamsDto _self;
+  final $Res Function(_TerminalListParamsDto) _then;
+
+/// Create a copy of TerminalListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? worktreeId = null,}) {
+  return _then(_TerminalListParamsDto(
+worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TerminalListResultDto {
+
+ List<TerminalDto> get terminals;
+/// Create a copy of TerminalListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalListResultDtoCopyWith<TerminalListResultDto> get copyWith => _$TerminalListResultDtoCopyWithImpl<TerminalListResultDto>(this as TerminalListResultDto, _$identity);
+
+  /// Serializes this TerminalListResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalListResultDto&&const DeepCollectionEquality().equals(other.terminals, terminals));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(terminals));
+
+@override
+String toString() {
+  return 'TerminalListResultDto(terminals: $terminals)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalListResultDtoCopyWith<$Res>  {
+  factory $TerminalListResultDtoCopyWith(TerminalListResultDto value, $Res Function(TerminalListResultDto) _then) = _$TerminalListResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<TerminalDto> terminals
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalListResultDtoCopyWithImpl<$Res>
+    implements $TerminalListResultDtoCopyWith<$Res> {
+  _$TerminalListResultDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalListResultDto _self;
+  final $Res Function(TerminalListResultDto) _then;
+
+/// Create a copy of TerminalListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? terminals = null,}) {
+  return _then(_self.copyWith(
+terminals: null == terminals ? _self.terminals : terminals // ignore: cast_nullable_to_non_nullable
+as List<TerminalDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalListResultDto].
+extension TerminalListResultDtoPatterns on TerminalListResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalListResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalListResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalListResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalListResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalListResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalListResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<TerminalDto> terminals)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalListResultDto() when $default != null:
+return $default(_that.terminals);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<TerminalDto> terminals)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalListResultDto():
+return $default(_that.terminals);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<TerminalDto> terminals)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalListResultDto() when $default != null:
+return $default(_that.terminals);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalListResultDto implements TerminalListResultDto {
+  const _TerminalListResultDto({required final  List<TerminalDto> terminals}): _terminals = terminals;
+  factory _TerminalListResultDto.fromJson(Map<String, dynamic> json) => _$TerminalListResultDtoFromJson(json);
+
+ final  List<TerminalDto> _terminals;
+@override List<TerminalDto> get terminals {
+  if (_terminals is EqualUnmodifiableListView) return _terminals;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_terminals);
+}
+
+
+/// Create a copy of TerminalListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalListResultDtoCopyWith<_TerminalListResultDto> get copyWith => __$TerminalListResultDtoCopyWithImpl<_TerminalListResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalListResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalListResultDto&&const DeepCollectionEquality().equals(other._terminals, _terminals));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_terminals));
+
+@override
+String toString() {
+  return 'TerminalListResultDto(terminals: $terminals)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalListResultDtoCopyWith<$Res> implements $TerminalListResultDtoCopyWith<$Res> {
+  factory _$TerminalListResultDtoCopyWith(_TerminalListResultDto value, $Res Function(_TerminalListResultDto) _then) = __$TerminalListResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<TerminalDto> terminals
+});
+
+
+
+
+}
+/// @nodoc
+class __$TerminalListResultDtoCopyWithImpl<$Res>
+    implements _$TerminalListResultDtoCopyWith<$Res> {
+  __$TerminalListResultDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalListResultDto _self;
+  final $Res Function(_TerminalListResultDto) _then;
+
+/// Create a copy of TerminalListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? terminals = null,}) {
+  return _then(_TerminalListResultDto(
+terminals: null == terminals ? _self._terminals : terminals // ignore: cast_nullable_to_non_nullable
+as List<TerminalDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TerminalCreateParamsDto {
+
+ String get id; String get worktreeId; String get title; int get columns; int get rows;
+/// Create a copy of TerminalCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalCreateParamsDtoCopyWith<TerminalCreateParamsDto> get copyWith => _$TerminalCreateParamsDtoCopyWithImpl<TerminalCreateParamsDto>(this as TerminalCreateParamsDto, _$identity);
+
+  /// Serializes this TerminalCreateParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.columns, columns) || other.columns == columns)&&(identical(other.rows, rows) || other.rows == rows));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,columns,rows);
+
+@override
+String toString() {
+  return 'TerminalCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, columns: $columns, rows: $rows)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalCreateParamsDtoCopyWith<$Res>  {
+  factory $TerminalCreateParamsDtoCopyWith(TerminalCreateParamsDto value, $Res Function(TerminalCreateParamsDto) _then) = _$TerminalCreateParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String worktreeId, String title, int columns, int rows
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalCreateParamsDtoCopyWithImpl<$Res>
+    implements $TerminalCreateParamsDtoCopyWith<$Res> {
+  _$TerminalCreateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalCreateParamsDto _self;
+  final $Res Function(TerminalCreateParamsDto) _then;
+
+/// Create a copy of TerminalCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? columns = null,Object? rows = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,columns: null == columns ? _self.columns : columns // ignore: cast_nullable_to_non_nullable
+as int,rows: null == rows ? _self.rows : rows // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalCreateParamsDto].
+extension TerminalCreateParamsDtoPatterns on TerminalCreateParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalCreateParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalCreateParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalCreateParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalCreateParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalCreateParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalCreateParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  int columns,  int rows)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalCreateParamsDto() when $default != null:
+return $default(_that.id,_that.worktreeId,_that.title,_that.columns,_that.rows);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  int columns,  int rows)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalCreateParamsDto():
+return $default(_that.id,_that.worktreeId,_that.title,_that.columns,_that.rows);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  int columns,  int rows)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalCreateParamsDto() when $default != null:
+return $default(_that.id,_that.worktreeId,_that.title,_that.columns,_that.rows);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalCreateParamsDto implements TerminalCreateParamsDto {
+  const _TerminalCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.columns, required this.rows});
+  factory _TerminalCreateParamsDto.fromJson(Map<String, dynamic> json) => _$TerminalCreateParamsDtoFromJson(json);
+
+@override final  String id;
+@override final  String worktreeId;
+@override final  String title;
+@override final  int columns;
+@override final  int rows;
+
+/// Create a copy of TerminalCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalCreateParamsDtoCopyWith<_TerminalCreateParamsDto> get copyWith => __$TerminalCreateParamsDtoCopyWithImpl<_TerminalCreateParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalCreateParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.columns, columns) || other.columns == columns)&&(identical(other.rows, rows) || other.rows == rows));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,columns,rows);
+
+@override
+String toString() {
+  return 'TerminalCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, columns: $columns, rows: $rows)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalCreateParamsDtoCopyWith<$Res> implements $TerminalCreateParamsDtoCopyWith<$Res> {
+  factory _$TerminalCreateParamsDtoCopyWith(_TerminalCreateParamsDto value, $Res Function(_TerminalCreateParamsDto) _then) = __$TerminalCreateParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String worktreeId, String title, int columns, int rows
+});
+
+
+
+
+}
+/// @nodoc
+class __$TerminalCreateParamsDtoCopyWithImpl<$Res>
+    implements _$TerminalCreateParamsDtoCopyWith<$Res> {
+  __$TerminalCreateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalCreateParamsDto _self;
+  final $Res Function(_TerminalCreateParamsDto) _then;
+
+/// Create a copy of TerminalCreateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? columns = null,Object? rows = null,}) {
+  return _then(_TerminalCreateParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,columns: null == columns ? _self.columns : columns // ignore: cast_nullable_to_non_nullable
+as int,rows: null == rows ? _self.rows : rows // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TerminalIdParamsDto {
+
+ String get terminalId;
+/// Create a copy of TerminalIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalIdParamsDtoCopyWith<TerminalIdParamsDto> get copyWith => _$TerminalIdParamsDtoCopyWithImpl<TerminalIdParamsDto>(this as TerminalIdParamsDto, _$identity);
+
+  /// Serializes this TerminalIdParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalIdParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminalId);
+
+@override
+String toString() {
+  return 'TerminalIdParamsDto(terminalId: $terminalId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalIdParamsDtoCopyWith<$Res>  {
+  factory $TerminalIdParamsDtoCopyWith(TerminalIdParamsDto value, $Res Function(TerminalIdParamsDto) _then) = _$TerminalIdParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String terminalId
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalIdParamsDtoCopyWithImpl<$Res>
+    implements $TerminalIdParamsDtoCopyWith<$Res> {
+  _$TerminalIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalIdParamsDto _self;
+  final $Res Function(TerminalIdParamsDto) _then;
+
+/// Create a copy of TerminalIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? terminalId = null,}) {
+  return _then(_self.copyWith(
+terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalIdParamsDto].
+extension TerminalIdParamsDtoPatterns on TerminalIdParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalIdParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalIdParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalIdParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalIdParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String terminalId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalIdParamsDto() when $default != null:
+return $default(_that.terminalId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String terminalId)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalIdParamsDto():
+return $default(_that.terminalId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String terminalId)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalIdParamsDto() when $default != null:
+return $default(_that.terminalId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalIdParamsDto implements TerminalIdParamsDto {
+  const _TerminalIdParamsDto({required this.terminalId});
+  factory _TerminalIdParamsDto.fromJson(Map<String, dynamic> json) => _$TerminalIdParamsDtoFromJson(json);
+
+@override final  String terminalId;
+
+/// Create a copy of TerminalIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalIdParamsDtoCopyWith<_TerminalIdParamsDto> get copyWith => __$TerminalIdParamsDtoCopyWithImpl<_TerminalIdParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalIdParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalIdParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminalId);
+
+@override
+String toString() {
+  return 'TerminalIdParamsDto(terminalId: $terminalId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalIdParamsDtoCopyWith<$Res> implements $TerminalIdParamsDtoCopyWith<$Res> {
+  factory _$TerminalIdParamsDtoCopyWith(_TerminalIdParamsDto value, $Res Function(_TerminalIdParamsDto) _then) = __$TerminalIdParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String terminalId
+});
+
+
+
+
+}
+/// @nodoc
+class __$TerminalIdParamsDtoCopyWithImpl<$Res>
+    implements _$TerminalIdParamsDtoCopyWith<$Res> {
+  __$TerminalIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalIdParamsDto _self;
+  final $Res Function(_TerminalIdParamsDto) _then;
+
+/// Create a copy of TerminalIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? terminalId = null,}) {
+  return _then(_TerminalIdParamsDto(
+terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TerminalAttachParamsDto {
+
+ String get terminalId; int get afterSequence;
+/// Create a copy of TerminalAttachParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalAttachParamsDtoCopyWith<TerminalAttachParamsDto> get copyWith => _$TerminalAttachParamsDtoCopyWithImpl<TerminalAttachParamsDto>(this as TerminalAttachParamsDto, _$identity);
+
+  /// Serializes this TerminalAttachParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalAttachParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminalId,afterSequence);
+
+@override
+String toString() {
+  return 'TerminalAttachParamsDto(terminalId: $terminalId, afterSequence: $afterSequence)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalAttachParamsDtoCopyWith<$Res>  {
+  factory $TerminalAttachParamsDtoCopyWith(TerminalAttachParamsDto value, $Res Function(TerminalAttachParamsDto) _then) = _$TerminalAttachParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String terminalId, int afterSequence
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalAttachParamsDtoCopyWithImpl<$Res>
+    implements $TerminalAttachParamsDtoCopyWith<$Res> {
+  _$TerminalAttachParamsDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalAttachParamsDto _self;
+  final $Res Function(TerminalAttachParamsDto) _then;
+
+/// Create a copy of TerminalAttachParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? terminalId = null,Object? afterSequence = null,}) {
+  return _then(_self.copyWith(
+terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
+as String,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalAttachParamsDto].
+extension TerminalAttachParamsDtoPatterns on TerminalAttachParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalAttachParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalAttachParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalAttachParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalAttachParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalAttachParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalAttachParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String terminalId,  int afterSequence)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalAttachParamsDto() when $default != null:
+return $default(_that.terminalId,_that.afterSequence);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String terminalId,  int afterSequence)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalAttachParamsDto():
+return $default(_that.terminalId,_that.afterSequence);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String terminalId,  int afterSequence)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalAttachParamsDto() when $default != null:
+return $default(_that.terminalId,_that.afterSequence);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalAttachParamsDto implements TerminalAttachParamsDto {
+  const _TerminalAttachParamsDto({required this.terminalId, this.afterSequence = 0});
+  factory _TerminalAttachParamsDto.fromJson(Map<String, dynamic> json) => _$TerminalAttachParamsDtoFromJson(json);
+
+@override final  String terminalId;
+@override@JsonKey() final  int afterSequence;
+
+/// Create a copy of TerminalAttachParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalAttachParamsDtoCopyWith<_TerminalAttachParamsDto> get copyWith => __$TerminalAttachParamsDtoCopyWithImpl<_TerminalAttachParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalAttachParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalAttachParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminalId,afterSequence);
+
+@override
+String toString() {
+  return 'TerminalAttachParamsDto(terminalId: $terminalId, afterSequence: $afterSequence)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalAttachParamsDtoCopyWith<$Res> implements $TerminalAttachParamsDtoCopyWith<$Res> {
+  factory _$TerminalAttachParamsDtoCopyWith(_TerminalAttachParamsDto value, $Res Function(_TerminalAttachParamsDto) _then) = __$TerminalAttachParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String terminalId, int afterSequence
+});
+
+
+
+
+}
+/// @nodoc
+class __$TerminalAttachParamsDtoCopyWithImpl<$Res>
+    implements _$TerminalAttachParamsDtoCopyWith<$Res> {
+  __$TerminalAttachParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalAttachParamsDto _self;
+  final $Res Function(_TerminalAttachParamsDto) _then;
+
+/// Create a copy of TerminalAttachParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? terminalId = null,Object? afterSequence = null,}) {
+  return _then(_TerminalAttachParamsDto(
+terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
+as String,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TerminalAttachResultDto {
+
+ TerminalDto get terminal; List<TerminalOutputDto> get replay;
+/// Create a copy of TerminalAttachResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalAttachResultDtoCopyWith<TerminalAttachResultDto> get copyWith => _$TerminalAttachResultDtoCopyWithImpl<TerminalAttachResultDto>(this as TerminalAttachResultDto, _$identity);
+
+  /// Serializes this TerminalAttachResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalAttachResultDto&&(identical(other.terminal, terminal) || other.terminal == terminal)&&const DeepCollectionEquality().equals(other.replay, replay));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminal,const DeepCollectionEquality().hash(replay));
+
+@override
+String toString() {
+  return 'TerminalAttachResultDto(terminal: $terminal, replay: $replay)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalAttachResultDtoCopyWith<$Res>  {
+  factory $TerminalAttachResultDtoCopyWith(TerminalAttachResultDto value, $Res Function(TerminalAttachResultDto) _then) = _$TerminalAttachResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ TerminalDto terminal, List<TerminalOutputDto> replay
+});
+
+
+$TerminalDtoCopyWith<$Res> get terminal;
+
+}
+/// @nodoc
+class _$TerminalAttachResultDtoCopyWithImpl<$Res>
+    implements $TerminalAttachResultDtoCopyWith<$Res> {
+  _$TerminalAttachResultDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalAttachResultDto _self;
+  final $Res Function(TerminalAttachResultDto) _then;
+
+/// Create a copy of TerminalAttachResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? terminal = null,Object? replay = null,}) {
+  return _then(_self.copyWith(
+terminal: null == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
+as TerminalDto,replay: null == replay ? _self.replay : replay // ignore: cast_nullable_to_non_nullable
+as List<TerminalOutputDto>,
+  ));
+}
+/// Create a copy of TerminalAttachResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TerminalDtoCopyWith<$Res> get terminal {
+  
+  return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
+    return _then(_self.copyWith(terminal: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalAttachResultDto].
+extension TerminalAttachResultDtoPatterns on TerminalAttachResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalAttachResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalAttachResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalAttachResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalAttachResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalAttachResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalAttachResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TerminalDto terminal,  List<TerminalOutputDto> replay)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalAttachResultDto() when $default != null:
+return $default(_that.terminal,_that.replay);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TerminalDto terminal,  List<TerminalOutputDto> replay)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalAttachResultDto():
+return $default(_that.terminal,_that.replay);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TerminalDto terminal,  List<TerminalOutputDto> replay)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalAttachResultDto() when $default != null:
+return $default(_that.terminal,_that.replay);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalAttachResultDto implements TerminalAttachResultDto {
+  const _TerminalAttachResultDto({required this.terminal, required final  List<TerminalOutputDto> replay}): _replay = replay;
+  factory _TerminalAttachResultDto.fromJson(Map<String, dynamic> json) => _$TerminalAttachResultDtoFromJson(json);
+
+@override final  TerminalDto terminal;
+ final  List<TerminalOutputDto> _replay;
+@override List<TerminalOutputDto> get replay {
+  if (_replay is EqualUnmodifiableListView) return _replay;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_replay);
+}
+
+
+/// Create a copy of TerminalAttachResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalAttachResultDtoCopyWith<_TerminalAttachResultDto> get copyWith => __$TerminalAttachResultDtoCopyWithImpl<_TerminalAttachResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalAttachResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalAttachResultDto&&(identical(other.terminal, terminal) || other.terminal == terminal)&&const DeepCollectionEquality().equals(other._replay, _replay));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminal,const DeepCollectionEquality().hash(_replay));
+
+@override
+String toString() {
+  return 'TerminalAttachResultDto(terminal: $terminal, replay: $replay)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalAttachResultDtoCopyWith<$Res> implements $TerminalAttachResultDtoCopyWith<$Res> {
+  factory _$TerminalAttachResultDtoCopyWith(_TerminalAttachResultDto value, $Res Function(_TerminalAttachResultDto) _then) = __$TerminalAttachResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ TerminalDto terminal, List<TerminalOutputDto> replay
+});
+
+
+@override $TerminalDtoCopyWith<$Res> get terminal;
+
+}
+/// @nodoc
+class __$TerminalAttachResultDtoCopyWithImpl<$Res>
+    implements _$TerminalAttachResultDtoCopyWith<$Res> {
+  __$TerminalAttachResultDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalAttachResultDto _self;
+  final $Res Function(_TerminalAttachResultDto) _then;
+
+/// Create a copy of TerminalAttachResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? terminal = null,Object? replay = null,}) {
+  return _then(_TerminalAttachResultDto(
+terminal: null == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
+as TerminalDto,replay: null == replay ? _self._replay : replay // ignore: cast_nullable_to_non_nullable
+as List<TerminalOutputDto>,
+  ));
+}
+
+/// Create a copy of TerminalAttachResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TerminalDtoCopyWith<$Res> get terminal {
+  
+  return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
+    return _then(_self.copyWith(terminal: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$TerminalResultDto {
+
+ TerminalDto get terminal;
+/// Create a copy of TerminalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalResultDtoCopyWith<TerminalResultDto> get copyWith => _$TerminalResultDtoCopyWithImpl<TerminalResultDto>(this as TerminalResultDto, _$identity);
+
+  /// Serializes this TerminalResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalResultDto&&(identical(other.terminal, terminal) || other.terminal == terminal));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminal);
+
+@override
+String toString() {
+  return 'TerminalResultDto(terminal: $terminal)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalResultDtoCopyWith<$Res>  {
+  factory $TerminalResultDtoCopyWith(TerminalResultDto value, $Res Function(TerminalResultDto) _then) = _$TerminalResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ TerminalDto terminal
+});
+
+
+$TerminalDtoCopyWith<$Res> get terminal;
+
+}
+/// @nodoc
+class _$TerminalResultDtoCopyWithImpl<$Res>
+    implements $TerminalResultDtoCopyWith<$Res> {
+  _$TerminalResultDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalResultDto _self;
+  final $Res Function(TerminalResultDto) _then;
+
+/// Create a copy of TerminalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? terminal = null,}) {
+  return _then(_self.copyWith(
+terminal: null == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
+as TerminalDto,
+  ));
+}
+/// Create a copy of TerminalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TerminalDtoCopyWith<$Res> get terminal {
+  
+  return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
+    return _then(_self.copyWith(terminal: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalResultDto].
+extension TerminalResultDtoPatterns on TerminalResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TerminalDto terminal)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalResultDto() when $default != null:
+return $default(_that.terminal);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TerminalDto terminal)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalResultDto():
+return $default(_that.terminal);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TerminalDto terminal)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalResultDto() when $default != null:
+return $default(_that.terminal);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalResultDto implements TerminalResultDto {
+  const _TerminalResultDto({required this.terminal});
+  factory _TerminalResultDto.fromJson(Map<String, dynamic> json) => _$TerminalResultDtoFromJson(json);
+
+@override final  TerminalDto terminal;
+
+/// Create a copy of TerminalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalResultDtoCopyWith<_TerminalResultDto> get copyWith => __$TerminalResultDtoCopyWithImpl<_TerminalResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalResultDto&&(identical(other.terminal, terminal) || other.terminal == terminal));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminal);
+
+@override
+String toString() {
+  return 'TerminalResultDto(terminal: $terminal)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalResultDtoCopyWith<$Res> implements $TerminalResultDtoCopyWith<$Res> {
+  factory _$TerminalResultDtoCopyWith(_TerminalResultDto value, $Res Function(_TerminalResultDto) _then) = __$TerminalResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ TerminalDto terminal
+});
+
+
+@override $TerminalDtoCopyWith<$Res> get terminal;
+
+}
+/// @nodoc
+class __$TerminalResultDtoCopyWithImpl<$Res>
+    implements _$TerminalResultDtoCopyWith<$Res> {
+  __$TerminalResultDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalResultDto _self;
+  final $Res Function(_TerminalResultDto) _then;
+
+/// Create a copy of TerminalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? terminal = null,}) {
+  return _then(_TerminalResultDto(
+terminal: null == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
+as TerminalDto,
+  ));
+}
+
+/// Create a copy of TerminalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TerminalDtoCopyWith<$Res> get terminal {
+  
+  return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
+    return _then(_self.copyWith(terminal: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$TerminalWriteParamsDto {
+
+ String get terminalId; String get data;
+/// Create a copy of TerminalWriteParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalWriteParamsDtoCopyWith<TerminalWriteParamsDto> get copyWith => _$TerminalWriteParamsDtoCopyWithImpl<TerminalWriteParamsDto>(this as TerminalWriteParamsDto, _$identity);
+
+  /// Serializes this TerminalWriteParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalWriteParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.data, data) || other.data == data));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminalId,data);
+
+@override
+String toString() {
+  return 'TerminalWriteParamsDto(terminalId: $terminalId, data: $data)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalWriteParamsDtoCopyWith<$Res>  {
+  factory $TerminalWriteParamsDtoCopyWith(TerminalWriteParamsDto value, $Res Function(TerminalWriteParamsDto) _then) = _$TerminalWriteParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String terminalId, String data
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalWriteParamsDtoCopyWithImpl<$Res>
+    implements $TerminalWriteParamsDtoCopyWith<$Res> {
+  _$TerminalWriteParamsDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalWriteParamsDto _self;
+  final $Res Function(TerminalWriteParamsDto) _then;
+
+/// Create a copy of TerminalWriteParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? terminalId = null,Object? data = null,}) {
+  return _then(_self.copyWith(
+terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
+as String,data: null == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalWriteParamsDto].
+extension TerminalWriteParamsDtoPatterns on TerminalWriteParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalWriteParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalWriteParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalWriteParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalWriteParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalWriteParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalWriteParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String terminalId,  String data)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalWriteParamsDto() when $default != null:
+return $default(_that.terminalId,_that.data);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String terminalId,  String data)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalWriteParamsDto():
+return $default(_that.terminalId,_that.data);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String terminalId,  String data)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalWriteParamsDto() when $default != null:
+return $default(_that.terminalId,_that.data);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalWriteParamsDto implements TerminalWriteParamsDto {
+  const _TerminalWriteParamsDto({required this.terminalId, required this.data});
+  factory _TerminalWriteParamsDto.fromJson(Map<String, dynamic> json) => _$TerminalWriteParamsDtoFromJson(json);
+
+@override final  String terminalId;
+@override final  String data;
+
+/// Create a copy of TerminalWriteParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalWriteParamsDtoCopyWith<_TerminalWriteParamsDto> get copyWith => __$TerminalWriteParamsDtoCopyWithImpl<_TerminalWriteParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalWriteParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalWriteParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.data, data) || other.data == data));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminalId,data);
+
+@override
+String toString() {
+  return 'TerminalWriteParamsDto(terminalId: $terminalId, data: $data)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalWriteParamsDtoCopyWith<$Res> implements $TerminalWriteParamsDtoCopyWith<$Res> {
+  factory _$TerminalWriteParamsDtoCopyWith(_TerminalWriteParamsDto value, $Res Function(_TerminalWriteParamsDto) _then) = __$TerminalWriteParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String terminalId, String data
+});
+
+
+
+
+}
+/// @nodoc
+class __$TerminalWriteParamsDtoCopyWithImpl<$Res>
+    implements _$TerminalWriteParamsDtoCopyWith<$Res> {
+  __$TerminalWriteParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalWriteParamsDto _self;
+  final $Res Function(_TerminalWriteParamsDto) _then;
+
+/// Create a copy of TerminalWriteParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? terminalId = null,Object? data = null,}) {
+  return _then(_TerminalWriteParamsDto(
+terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
+as String,data: null == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TerminalResizeParamsDto {
+
+ String get terminalId; int get columns; int get rows;
+/// Create a copy of TerminalResizeParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalResizeParamsDtoCopyWith<TerminalResizeParamsDto> get copyWith => _$TerminalResizeParamsDtoCopyWithImpl<TerminalResizeParamsDto>(this as TerminalResizeParamsDto, _$identity);
+
+  /// Serializes this TerminalResizeParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalResizeParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.columns, columns) || other.columns == columns)&&(identical(other.rows, rows) || other.rows == rows));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminalId,columns,rows);
+
+@override
+String toString() {
+  return 'TerminalResizeParamsDto(terminalId: $terminalId, columns: $columns, rows: $rows)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalResizeParamsDtoCopyWith<$Res>  {
+  factory $TerminalResizeParamsDtoCopyWith(TerminalResizeParamsDto value, $Res Function(TerminalResizeParamsDto) _then) = _$TerminalResizeParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String terminalId, int columns, int rows
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalResizeParamsDtoCopyWithImpl<$Res>
+    implements $TerminalResizeParamsDtoCopyWith<$Res> {
+  _$TerminalResizeParamsDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalResizeParamsDto _self;
+  final $Res Function(TerminalResizeParamsDto) _then;
+
+/// Create a copy of TerminalResizeParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? terminalId = null,Object? columns = null,Object? rows = null,}) {
+  return _then(_self.copyWith(
+terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
+as String,columns: null == columns ? _self.columns : columns // ignore: cast_nullable_to_non_nullable
+as int,rows: null == rows ? _self.rows : rows // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalResizeParamsDto].
+extension TerminalResizeParamsDtoPatterns on TerminalResizeParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalResizeParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalResizeParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalResizeParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalResizeParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalResizeParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalResizeParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String terminalId,  int columns,  int rows)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalResizeParamsDto() when $default != null:
+return $default(_that.terminalId,_that.columns,_that.rows);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String terminalId,  int columns,  int rows)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalResizeParamsDto():
+return $default(_that.terminalId,_that.columns,_that.rows);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String terminalId,  int columns,  int rows)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalResizeParamsDto() when $default != null:
+return $default(_that.terminalId,_that.columns,_that.rows);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalResizeParamsDto implements TerminalResizeParamsDto {
+  const _TerminalResizeParamsDto({required this.terminalId, required this.columns, required this.rows});
+  factory _TerminalResizeParamsDto.fromJson(Map<String, dynamic> json) => _$TerminalResizeParamsDtoFromJson(json);
+
+@override final  String terminalId;
+@override final  int columns;
+@override final  int rows;
+
+/// Create a copy of TerminalResizeParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalResizeParamsDtoCopyWith<_TerminalResizeParamsDto> get copyWith => __$TerminalResizeParamsDtoCopyWithImpl<_TerminalResizeParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalResizeParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalResizeParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.columns, columns) || other.columns == columns)&&(identical(other.rows, rows) || other.rows == rows));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,terminalId,columns,rows);
+
+@override
+String toString() {
+  return 'TerminalResizeParamsDto(terminalId: $terminalId, columns: $columns, rows: $rows)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalResizeParamsDtoCopyWith<$Res> implements $TerminalResizeParamsDtoCopyWith<$Res> {
+  factory _$TerminalResizeParamsDtoCopyWith(_TerminalResizeParamsDto value, $Res Function(_TerminalResizeParamsDto) _then) = __$TerminalResizeParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String terminalId, int columns, int rows
+});
+
+
+
+
+}
+/// @nodoc
+class __$TerminalResizeParamsDtoCopyWithImpl<$Res>
+    implements _$TerminalResizeParamsDtoCopyWith<$Res> {
+  __$TerminalResizeParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalResizeParamsDto _self;
+  final $Res Function(_TerminalResizeParamsDto) _then;
+
+/// Create a copy of TerminalResizeParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? terminalId = null,Object? columns = null,Object? rows = null,}) {
+  return _then(_TerminalResizeParamsDto(
+terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
+as String,columns: null == columns ? _self.columns : columns // ignore: cast_nullable_to_non_nullable
+as int,rows: null == rows ? _self.rows : rows // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TerminalShellDto {
+
+ ShellSpecDto? get shell;
+/// Create a copy of TerminalShellDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalShellDtoCopyWith<TerminalShellDto> get copyWith => _$TerminalShellDtoCopyWithImpl<TerminalShellDto>(this as TerminalShellDto, _$identity);
+
+  /// Serializes this TerminalShellDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalShellDto&&(identical(other.shell, shell) || other.shell == shell));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,shell);
+
+@override
+String toString() {
+  return 'TerminalShellDto(shell: $shell)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalShellDtoCopyWith<$Res>  {
+  factory $TerminalShellDtoCopyWith(TerminalShellDto value, $Res Function(TerminalShellDto) _then) = _$TerminalShellDtoCopyWithImpl;
+@useResult
+$Res call({
+ ShellSpecDto? shell
+});
+
+
+$ShellSpecDtoCopyWith<$Res>? get shell;
+
+}
+/// @nodoc
+class _$TerminalShellDtoCopyWithImpl<$Res>
+    implements $TerminalShellDtoCopyWith<$Res> {
+  _$TerminalShellDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalShellDto _self;
+  final $Res Function(TerminalShellDto) _then;
+
+/// Create a copy of TerminalShellDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? shell = freezed,}) {
+  return _then(_self.copyWith(
+shell: freezed == shell ? _self.shell : shell // ignore: cast_nullable_to_non_nullable
+as ShellSpecDto?,
+  ));
+}
+/// Create a copy of TerminalShellDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ShellSpecDtoCopyWith<$Res>? get shell {
+    if (_self.shell == null) {
+    return null;
+  }
+
+  return $ShellSpecDtoCopyWith<$Res>(_self.shell!, (value) {
+    return _then(_self.copyWith(shell: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalShellDto].
+extension TerminalShellDtoPatterns on TerminalShellDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalShellDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalShellDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalShellDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalShellDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalShellDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalShellDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ShellSpecDto? shell)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalShellDto() when $default != null:
+return $default(_that.shell);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ShellSpecDto? shell)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalShellDto():
+return $default(_that.shell);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ShellSpecDto? shell)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalShellDto() when $default != null:
+return $default(_that.shell);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalShellDto implements TerminalShellDto {
+  const _TerminalShellDto({this.shell});
+  factory _TerminalShellDto.fromJson(Map<String, dynamic> json) => _$TerminalShellDtoFromJson(json);
+
+@override final  ShellSpecDto? shell;
+
+/// Create a copy of TerminalShellDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalShellDtoCopyWith<_TerminalShellDto> get copyWith => __$TerminalShellDtoCopyWithImpl<_TerminalShellDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalShellDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalShellDto&&(identical(other.shell, shell) || other.shell == shell));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,shell);
+
+@override
+String toString() {
+  return 'TerminalShellDto(shell: $shell)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalShellDtoCopyWith<$Res> implements $TerminalShellDtoCopyWith<$Res> {
+  factory _$TerminalShellDtoCopyWith(_TerminalShellDto value, $Res Function(_TerminalShellDto) _then) = __$TerminalShellDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ ShellSpecDto? shell
+});
+
+
+@override $ShellSpecDtoCopyWith<$Res>? get shell;
+
+}
+/// @nodoc
+class __$TerminalShellDtoCopyWithImpl<$Res>
+    implements _$TerminalShellDtoCopyWith<$Res> {
+  __$TerminalShellDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalShellDto _self;
+  final $Res Function(_TerminalShellDto) _then;
+
+/// Create a copy of TerminalShellDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? shell = freezed,}) {
+  return _then(_TerminalShellDto(
+shell: freezed == shell ? _self.shell : shell // ignore: cast_nullable_to_non_nullable
+as ShellSpecDto?,
+  ));
+}
+
+/// Create a copy of TerminalShellDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ShellSpecDtoCopyWith<$Res>? get shell {
+    if (_self.shell == null) {
+    return null;
+  }
+
+  return $ShellSpecDtoCopyWith<$Res>(_self.shell!, (value) {
+    return _then(_self.copyWith(shell: value));
+  });
+}
+}
+
+
+/// @nodoc
 mixin _$AgentDefinitionListResultDto {
 
  List<AgentDefinitionDto> get definitions;

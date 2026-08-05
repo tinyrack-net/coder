@@ -661,13 +661,59 @@ class SkillsController extends _$SkillsController {
   }
 }
 
+@riverpod
+/// Owns the live terminal catalog for one connected worktree.
+class TerminalsController extends _$TerminalsController {
+  StreamSubscription<ClientEvent>? _events;
+
+  @override
+  Future<List<TerminalDto>> build(String hostId, String worktreeId) async {
+    final runtime = (await ref.watch(
+      hostRegistryControllerProvider.future,
+    )).runtimes[hostId];
+    if (runtime?.connected != true) return const <TerminalDto>[];
+    final api = runtime!.api!;
+    _events = api.events.listen((event) {
+      if (event case TerminalUpdatedClientEvent(
+        :final terminal,
+      ) when terminal.worktreeId == worktreeId) {
+        final current = state.asData?.value ?? const <TerminalDto>[];
+        state = AsyncData<List<TerminalDto>>(<TerminalDto>[
+          terminal,
+          ...current.where((item) => item.id != terminal.id),
+        ]);
+      }
+    });
+    ref.onDispose(() => unawaited(_events?.cancel()));
+    return api.listTerminals(worktreeId);
+  }
+
+  /// Creates a terminal with a standard initial character grid.
+  Future<TerminalDto> create() async {
+    final api = await _requireHostApi(ref, hostId);
+    final current = state.asData?.value ?? const <TerminalDto>[];
+    final terminal = await api.createTerminal(
+      id: ref.read(appIdGeneratorProvider).generate(),
+      worktreeId: worktreeId,
+      title: 'Terminal ${current.length + 1}',
+      columns: 80,
+      rows: 24,
+    );
+    state = AsyncData<List<TerminalDto>>(<TerminalDto>[terminal, ...current]);
+    return terminal;
+  }
+}
+
 /// Visible and selected session tabs for one worktree.
 final class SessionTabsState {
   /// Creates immutable tab state.
   const SessionTabsState({
     required this.sessions,
     required this.openAgentIds,
+    required this.terminals,
+    required this.openTerminalIds,
     this.selectedAgentId,
+    this.selectedTerminalId,
   });
 
   /// All daemon sessions available to the overflow picker.
@@ -678,6 +724,15 @@ final class SessionTabsState {
 
   /// Currently active tab.
   final String? selectedAgentId;
+
+  /// Daemon-owned terminals available to the tab strip.
+  final List<TerminalDto> terminals;
+
+  /// Terminal IDs visible in the tab strip.
+  final List<String> openTerminalIds;
+
+  /// Currently active terminal tab.
+  final String? selectedTerminalId;
 }
 
 @riverpod
@@ -688,14 +743,28 @@ class SessionTabsController extends _$SessionTabsController {
   @override
   Future<SessionTabsState> build(WorkspaceSelection selection) async {
     _selection = selection;
-    final sessions = await ref.watch(
-      sessionsControllerProvider(selection.hostId, selection.worktreeId).future,
-    );
+    final values = await Future.wait<Object>(<Future<Object>>[
+      ref.watch(
+        sessionsControllerProvider(
+          selection.hostId,
+          selection.worktreeId,
+        ).future,
+      ),
+      ref.watch(
+        terminalsControllerProvider(
+          selection.hostId,
+          selection.worktreeId,
+        ).future,
+      ),
+    ]);
+    final sessions = values[0] as List<SessionDto>;
+    final terminals = values[1] as List<TerminalDto>;
     final settings = (await ref.watch(
       hostRegistryControllerProvider.future,
     )).settings;
     final saved = settings.sessionTabs[selection.storageKey];
     final existingIds = sessions.map((item) => item.id).toSet();
+    final existingTerminalIds = terminals.map((item) => item.id).toSet();
     final open =
         saved?.openAgentIds
             .where(existingIds.contains)
@@ -706,10 +775,22 @@ class SessionTabsController extends _$SessionTabsController {
     final selected = saved == null
         ? open.firstOrNull
         : (open.contains(saved.selectedAgentId) ? saved.selectedAgentId : null);
+    final openTerminals =
+        saved?.openTerminalIds
+            .where(existingTerminalIds.contains)
+            .toList(growable: false) ??
+        const <String>[];
+    final selectedTerminal =
+        selected == null && openTerminals.contains(saved?.selectedTerminalId)
+        ? saved?.selectedTerminalId
+        : null;
     return SessionTabsState(
       sessions: sessions,
       openAgentIds: open,
       selectedAgentId: selected,
+      terminals: terminals,
+      openTerminalIds: openTerminals,
+      selectedTerminalId: selectedTerminal,
     );
   }
 
@@ -720,16 +801,26 @@ class SessionTabsController extends _$SessionTabsController {
       ...current.openAgentIds.where((id) => id != sessionId),
       sessionId,
     ];
-    await _set(current, open, sessionId);
+    await _set(current, open, sessionId, current.openTerminalIds, null);
   }
 
   /// Selects an already-open session.
-  Future<void> select(String sessionId) =>
-      _set(state.requireValue, state.requireValue.openAgentIds, sessionId);
+  Future<void> select(String sessionId) => _set(
+    state.requireValue,
+    state.requireValue.openAgentIds,
+    sessionId,
+    state.requireValue.openTerminalIds,
+    null,
+  );
 
   /// Clears the selection so the composer starts a new session draft.
-  Future<void> startDraft() =>
-      _set(state.requireValue, state.requireValue.openAgentIds, null);
+  Future<void> startDraft() => _set(
+    state.requireValue,
+    state.requireValue.openAgentIds,
+    null,
+    state.requireValue.openTerminalIds,
+    null,
+  );
 
   /// Hides a tab without deleting its daemon session or history.
   Future<void> close(String sessionId) async {
@@ -740,7 +831,7 @@ class SessionTabsController extends _$SessionTabsController {
     final selected = current.selectedAgentId == sessionId
         ? open.lastOrNull
         : current.selectedAgentId;
-    await _set(current, open, selected);
+    await _set(current, open, selected, current.openTerminalIds, null);
   }
 
   /// Adds a newly-created daemon session to the tab strip.
@@ -751,9 +842,69 @@ class SessionTabsController extends _$SessionTabsController {
         sessions: <SessionDto>[agent, ...current.sessions],
         openAgentIds: current.openAgentIds,
         selectedAgentId: current.selectedAgentId,
+        terminals: current.terminals,
+        openTerminalIds: current.openTerminalIds,
+        selectedTerminalId: current.selectedTerminalId,
       ),
       <String>[...current.openAgentIds, agent.id],
       agent.id,
+      current.openTerminalIds,
+      null,
+    );
+  }
+
+  /// Adds and selects a newly-created terminal tab.
+  Future<void> addTerminal(TerminalDto terminal) async {
+    final current = state.requireValue;
+    await _set(
+      SessionTabsState(
+        sessions: current.sessions,
+        openAgentIds: current.openAgentIds,
+        selectedAgentId: current.selectedAgentId,
+        terminals: <TerminalDto>[terminal, ...current.terminals],
+        openTerminalIds: current.openTerminalIds,
+        selectedTerminalId: current.selectedTerminalId,
+      ),
+      current.openAgentIds,
+      null,
+      <String>[...current.openTerminalIds, terminal.id],
+      terminal.id,
+    );
+  }
+
+  /// Selects a visible terminal tab.
+  Future<void> selectTerminal(String id) => _set(
+    state.requireValue,
+    state.requireValue.openAgentIds,
+    null,
+    state.requireValue.openTerminalIds,
+    id,
+  );
+
+  /// Opens and selects a terminal from the overflow picker.
+  Future<void> openTerminal(String id) {
+    final current = state.requireValue;
+    return _set(
+      current,
+      current.openAgentIds,
+      null,
+      <String>[...current.openTerminalIds.where((item) => item != id), id],
+      id,
+    );
+  }
+
+  /// Removes a terminated terminal from the visible strip.
+  Future<void> closeTerminal(String id) async {
+    final current = state.requireValue;
+    final open = current.openTerminalIds.where((item) => item != id).toList();
+    await _set(
+      current,
+      current.openAgentIds,
+      current.selectedAgentId,
+      open,
+      current.selectedTerminalId == id
+          ? open.lastOrNull
+          : current.selectedTerminalId,
     );
   }
 
@@ -761,11 +912,16 @@ class SessionTabsController extends _$SessionTabsController {
     SessionTabsState current,
     List<String> open,
     String? selected,
+    List<String> openTerminals,
+    String? selectedTerminal,
   ) async {
     final next = SessionTabsState(
       sessions: current.sessions,
       openAgentIds: List<String>.unmodifiable(open),
       selectedAgentId: selected,
+      terminals: current.terminals,
+      openTerminalIds: List<String>.unmodifiable(openTerminals),
+      selectedTerminalId: selectedTerminal,
     );
     state = AsyncData<SessionTabsState>(next);
     await ref
@@ -775,6 +931,8 @@ class SessionTabsController extends _$SessionTabsController {
           tabs: SessionTabPreference(
             openAgentIds: next.openAgentIds,
             selectedAgentId: next.selectedAgentId,
+            openTerminalIds: next.openTerminalIds,
+            selectedTerminalId: next.selectedTerminalId,
           ),
         );
   }
@@ -974,6 +1132,8 @@ class ConversationController extends _$ConversationController {
       case AgentDefinitionsChangedClientEvent():
       case McpServersChangedClientEvent():
       case SkillsChangedClientEvent():
+      case TerminalOutputClientEvent():
+      case TerminalUpdatedClientEvent():
         break;
     }
   }

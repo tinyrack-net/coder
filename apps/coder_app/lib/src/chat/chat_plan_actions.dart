@@ -162,7 +162,10 @@ Future<SessionDto> startSessionWithPrompt(
     (previous, next) {},
   );
   try {
-    await ref.read(sessions.future);
+    await Future.wait(<Future<Object?>>[
+      ref.read(sessions.future),
+      ref.read(sessionTabsControllerProvider(selection).future),
+    ]);
     final session = await ref
         .read(sessions.notifier)
         .create(

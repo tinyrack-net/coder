@@ -1,0 +1,50 @@
+import 'dart:convert';
+
+import 'package:coder_daemon/src/terminal_service.dart';
+import 'package:coder_protocol/coder_protocol.dart';
+import 'package:tinyrack_pty/tinyrack_pty.dart';
+
+/// Production cross-platform PTY adapter.
+final class TinyrackTerminalGateway implements TerminalGateway {
+  /// Creates the production PTY adapter.
+  const TinyrackTerminalGateway();
+
+  @override
+  Future<TerminalProcess> start({
+    required ShellSpecDto shell,
+    required String workingDirectory,
+    required int columns,
+    required int rows,
+  }) async {
+    final process = await PtyProcess.start(
+      shell.executable,
+      arguments: shell.arguments,
+      workingDirectory: workingDirectory,
+      columns: columns,
+      rows: rows,
+    );
+    return _TinyrackTerminalProcess(process);
+  }
+}
+
+final class _TinyrackTerminalProcess implements TerminalProcess {
+  const _TinyrackTerminalProcess(this._process);
+
+  final PtyProcess _process;
+
+  @override
+  Stream<String> get outputs => _process.output.transform(utf8.decoder);
+
+  @override
+  Future<int> get exitCode => _process.exitCode;
+
+  @override
+  Future<void> write(String data) => _process.write(utf8.encode(data));
+
+  @override
+  Future<void> resize(int columns, int rows) async =>
+      _process.resize(columns: columns, rows: rows);
+
+  @override
+  Future<void> terminate() => _process.terminate();
+}

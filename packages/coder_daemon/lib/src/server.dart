@@ -12,6 +12,7 @@ import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_daemon/src/skills.dart';
+import 'package:coder_daemon/src/terminal_service.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
@@ -34,6 +35,8 @@ class DaemonRpcServer {
     required this.skills,
     required this.providers,
     required this.providerAuth,
+    required this.terminals,
+    required this.settings,
     required this.clock,
     required this.serverInfo,
     required this.token,
@@ -73,6 +76,24 @@ class DaemonRpcServer {
         ),
       ),
     );
+    _terminalSubscription = terminals.events.listen((event) {
+      switch (event) {
+        case final TerminalOutputDto output:
+          _broadcast(
+            WireEnvelope(
+              type: RpcNotification.terminalOutput,
+              payload: output.toJson(),
+            ),
+          );
+        case final TerminalDto terminal:
+          _broadcast(
+            WireEnvelope(
+              type: RpcNotification.terminalUpdated,
+              payload: terminal.toJson(),
+            ),
+          );
+      }
+    });
   }
 
   /// The workspaces public API member.
@@ -108,6 +129,12 @@ class DaemonRpcServer {
   /// Transient provider authorization coordinator.
   final ProviderAuthCoordinator providerAuth;
 
+  /// Owns daemon-lifetime interactive terminals.
+  final TerminalService terminals;
+
+  /// Persists daemon-host settings.
+  final SettingsRepository settings;
+
   /// The clock public API member.
   final Clock clock;
 
@@ -126,6 +153,7 @@ class DaemonRpcServer {
   late final StreamSubscription<void> _agentDefinitionSubscription;
   late final StreamSubscription<void> _mcpSubscription;
   late final StreamSubscription<void> _skillSubscription;
+  late final StreamSubscription<Object> _terminalSubscription;
 
   /// The call public API member.
   FutureOr<Response> call(Request request) {
@@ -282,6 +310,8 @@ class DaemonRpcServer {
       skills: skills,
       providers: providers,
       providerAuth: providerAuth,
+      terminals: terminals,
+      settings: settings,
       clock: clock,
       serverInfo: serverInfo,
       onClosed: () {},
@@ -311,6 +341,8 @@ class DaemonRpcServer {
     await _agentDefinitionSubscription.cancel();
     await _mcpSubscription.cancel();
     await _skillSubscription.cancel();
+    await _terminalSubscription.cancel();
+    await terminals.close();
     await providerAuth.close();
     for (final session in List<_ClientSession>.of(_sessions)) {
       await session.close();
@@ -347,6 +379,8 @@ class _ClientSession {
     required this.skills,
     required this.providers,
     required this.providerAuth,
+    required this.terminals,
+    required this.settings,
     required this.clock,
     required this.serverInfo,
     required this.onClosed,
@@ -363,6 +397,8 @@ class _ClientSession {
   final SkillService skills;
   final ProviderService providers;
   final ProviderAuthCoordinator providerAuth;
+  final TerminalService terminals;
+  final SettingsRepository settings;
   final Clock clock;
   final ServerInfoDto serverInfo;
   void Function() onClosed;
@@ -409,6 +445,14 @@ class _ClientSession {
       RpcMethod.sessionCreate,
       RpcMethod.sessionModelSet,
       RpcMethod.sessionModeSet,
+      RpcMethod.terminalList,
+      RpcMethod.terminalCreate,
+      RpcMethod.terminalAttach,
+      RpcMethod.terminalWrite,
+      RpcMethod.terminalResize,
+      RpcMethod.terminalTerminate,
+      RpcMethod.terminalShellGet,
+      RpcMethod.terminalShellSet,
       RpcMethod.providerCatalog,
       RpcMethod.providerConnectionsList,
       RpcMethod.providerConnectApiKey,
@@ -778,6 +822,64 @@ class _ClientSession {
         final request = SessionModelSetParamsDto.fromJson(payload);
         final session = await agents.setModel(request.sessionId, request.model);
         return SessionResultDto(session: session).toJson();
+      case RpcMethod.terminalList:
+        final request = TerminalListParamsDto.fromJson(payload);
+        return TerminalListResultDto(
+          terminals: terminals.list(request.worktreeId),
+        ).toJson();
+      case RpcMethod.terminalCreate:
+        final request = TerminalCreateParamsDto.fromJson(payload);
+        return TerminalResultDto(
+          terminal: await terminals.create(
+            id: request.id,
+            worktreeId: request.worktreeId,
+            title: request.title,
+            columns: request.columns,
+            rows: request.rows,
+          ),
+        ).toJson();
+      case RpcMethod.terminalAttach:
+        final request = TerminalAttachParamsDto.fromJson(payload);
+        return terminals
+            .attach(request.terminalId, afterSequence: request.afterSequence)
+            .toJson();
+      case RpcMethod.terminalWrite:
+        final request = TerminalWriteParamsDto.fromJson(payload);
+        await terminals.write(request.terminalId, request.data);
+        return const <String, dynamic>{};
+      case RpcMethod.terminalResize:
+        final request = TerminalResizeParamsDto.fromJson(payload);
+        return TerminalResultDto(
+          terminal: await terminals.resize(
+            request.terminalId,
+            columns: request.columns,
+            rows: request.rows,
+          ),
+        ).toJson();
+      case RpcMethod.terminalTerminate:
+        final request = TerminalIdParamsDto.fromJson(payload);
+        await terminals.terminate(request.terminalId);
+        return const <String, dynamic>{};
+      case RpcMethod.terminalShellGet:
+        final stored = await settings.getValue('terminal.shell');
+        return TerminalShellDto(
+          shell: stored == null || stored.isEmpty
+              ? null
+              : ShellSpecDto.fromJson(
+                  Map<String, dynamic>.from(jsonDecode(stored) as Map),
+                ),
+        ).toJson();
+      case RpcMethod.terminalShellSet:
+        final request = TerminalShellDto.fromJson(payload);
+        if (request.shell case final shell?
+            when shell.executable.trim().isEmpty) {
+          throw const FormatException('Shell executable must not be empty.');
+        }
+        await settings.setValue(
+          'terminal.shell',
+          request.shell == null ? '' : jsonEncode(request.shell!.toJson()),
+        );
+        return const <String, dynamic>{};
       case RpcMethod.providerCatalog:
         final catalog = await providers.catalog();
         return ProviderCatalogResultDto(catalog: catalog).toJson();
