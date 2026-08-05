@@ -4,6 +4,12 @@ import 'package:test/test.dart';
 
 void main() {
   final workflow = File('.github/workflows/pipeline.yml').readAsStringSync();
+  final androidBuild = File(
+    'apps/coder_app/android/build.gradle.kts',
+  ).readAsStringSync();
+  final cargoKitCompat = File(
+    'apps/coder_app/android/cargokit-gradle9-compat.gradle',
+  );
 
   test('normal quality jobs do not run in the nightly workflow', () {
     for (final job in <String>[
@@ -16,6 +22,7 @@ void main() {
       'golden-linux',
       'debug-e2e-linux',
       'mobile-debug-build',
+      'desktop-debug-build',
     ]) {
       expect(
         _job(workflow, job),
@@ -68,6 +75,7 @@ void main() {
       'golden-linux',
       'debug-e2e-linux',
       'mobile-debug-build',
+      'desktop-debug-build',
     ]) {
       expect(gate, contains('- $dependency'));
     }
@@ -85,6 +93,31 @@ void main() {
     expect(mobileBuild, contains('if: matrix.gradle_cache'));
     expect(mobileBuild, contains('uses: gradle/actions/setup-gradle@v6'));
     expect(mobileBuild, contains('cache-provider: enhanced'));
+  });
+
+  test('native attachment plugins receive macOS and Windows debug builds', () {
+    final desktopBuild = _job(workflow, 'desktop-debug-build');
+    expect(
+      _matrixEntry(desktopBuild, 'macos-26'),
+      contains('flutter build macos --debug -t lib/main_desktop.dart'),
+    );
+    expect(
+      _matrixEntry(desktopBuild, 'windows-2025'),
+      contains('flutter build windows --debug -t lib/main_desktop.dart'),
+    );
+    expect(_job(workflow, 'quality-gate'), contains('- desktop-debug-build'));
+  });
+
+  test('Android supplies the CargoKit Gradle 9 exec compatibility service', () {
+    expect(
+      androidBuild,
+      contains('apply(from = "cargokit-gradle9-compat.gradle")'),
+    );
+    expect(cargoKitCompat.existsSync(), isTrue);
+    final script = cargoKitCompat.readAsStringSync();
+    expect(script, contains('ExecOperations'));
+    expect(script, isNot(contains('project.exec')));
+    expect(script, contains('android.compileSdk = 36'));
   });
 }
 

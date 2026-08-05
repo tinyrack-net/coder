@@ -35,6 +35,8 @@ void main() {
           accountId: 'account-id',
         ),
         supportsReasoningEffort: true,
+        supportsImageInput: true,
+        supportsFileInput: true,
       );
 
       await provider
@@ -179,6 +181,8 @@ void main() {
           config: config,
           credential: null,
           supportsReasoningEffort: false,
+          supportsImageInput: false,
+          supportsFileInput: false,
         );
 
     expect(provider, isA<OpenAIChatCompletionsProvider>());

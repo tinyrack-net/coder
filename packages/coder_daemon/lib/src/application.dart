@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
+import 'package:coder_daemon/src/attachment_service.dart';
 import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
 import 'package:coder_daemon/src/database.dart';
@@ -130,6 +131,13 @@ abstract final class DaemonApplication {
         connector: providers,
         ids: ids,
       );
+      final attachments = AttachmentService(
+        repository: database.attachmentDao,
+        blobs: NativeAttachmentBlobStore(p.join(home.path, 'attachments')),
+        clock: clock,
+        ids: ids,
+      );
+      await attachments.cleanupOrphans();
       final builtInTools = <AgentTool>[
         ListDirectoryTool(),
         ReadFileTool(),
@@ -141,17 +149,34 @@ abstract final class DaemonApplication {
         for (final tool in builtInTools) tool.name: tool,
       };
       final builtInCatalog = StaticAgentToolCatalog(
-        builtInTools
-            .map(
-              (tool) => AgentToolDefinitionDto(
-                id: tool.name,
-                name: tool.name,
-                description: tool.description,
-                risk: tool.risk,
-                alwaysOn: alwaysOnBuiltInToolIds.contains(tool.name),
-              ),
-            )
-            .toList(growable: false),
+        <AgentToolDefinitionDto>[
+          ...builtInTools.map(
+            (tool) => AgentToolDefinitionDto(
+              id: tool.name,
+              name: tool.name,
+              description: tool.description,
+              risk: tool.risk,
+              alwaysOn: alwaysOnBuiltInToolIds.contains(tool.name),
+            ),
+          ),
+          const AgentToolDefinitionDto(
+            id: 'attach_file',
+            name: 'attach_file',
+            description:
+                'Attach a regular file from the workspace to the conversation.',
+            risk: ToolRisk.read,
+            alwaysOn: true,
+          ),
+          const AgentToolDefinitionDto(
+            id: 'read_attachment',
+            name: 'read_attachment',
+            description:
+                'Resolve an attachment ID to validated metadata and a '
+                'readable path.',
+            risk: ToolRisk.read,
+            alwaysOn: true,
+          ),
+        ],
       );
       final mcp = McpService(
         store: FileMcpConfigStore(config.configDirectory),
@@ -205,7 +230,8 @@ abstract final class DaemonApplication {
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: clock,
         ids: ids,
-        toolsFactory: (ids, workspaceRoot) {
+        attachments: attachments,
+        toolsFactory: (ids, workspaceRoot, sessionId, turnId) {
           // Starting a turn is what marks a worktree as in use: its project
           // servers connect in the background and join from the next turn,
           // and worktrees nothing has touched lately are released.
@@ -213,8 +239,16 @@ abstract final class DaemonApplication {
           mcp.releaseIdleProjects();
           return resolveAgentToolIds(ids)
               .map(
-                (id) =>
+                (id) => switch (id) {
+                  'attach_file' => AttachFileTool(
+                    publisher: TurnAttachmentPublisher(attachments, turnId),
+                  ),
+                  'read_attachment' => ReadAttachmentTool(
+                    reader: SessionAttachmentReader(attachments, sessionId),
+                  ),
+                  _ =>
                     toolById[id] ?? mcp.tool(id, workspaceRoot: workspaceRoot),
+                },
               )
               .whereType<AgentTool>();
         },
@@ -244,6 +278,7 @@ abstract final class DaemonApplication {
           'subagents': true,
           'mcp': true,
           'skills': true,
+          'attachments': true,
         },
       );
       final rpc = DaemonRpcServer(
@@ -251,6 +286,7 @@ abstract final class DaemonApplication {
         sessionRepository: database.sessionDao,
         timeline: database.timelineDao,
         agents: service,
+        attachments: attachments,
         agentDefinitions: agentDefinitions,
         mcp: mcp,
         worktrees: database.worktreeDao,
@@ -270,6 +306,10 @@ abstract final class DaemonApplication {
       final presentationHost = config.host == '0.0.0.0'
           ? '127.0.0.1'
           : config.host;
+      final attachmentCleanup = Timer.periodic(
+        const Duration(hours: 1),
+        (_) => unawaited(attachments.cleanupOrphans()),
+      );
       return _LocalDaemonHandle(
         endpoint: Uri(
           scheme: 'ws',
@@ -287,6 +327,7 @@ abstract final class DaemonApplication {
         mcp: mcp,
         skills: skills,
         lock: lock,
+        attachmentCleanup: attachmentCleanup,
       );
     } catch (_) {
       await database.close();
@@ -310,6 +351,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._mcp,
     required this._skills,
     required this._lock,
+    required this._attachmentCleanup,
   }) : _serverId = serverIdValue;
 
   final Uri _endpoint;
@@ -323,6 +365,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final McpService _mcp;
   final SkillService _skills;
   final RandomAccessFile _lock;
+  final Timer _attachmentCleanup;
   bool _stopped = false;
 
   @override
@@ -338,6 +381,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   Future<void> stop() async {
     if (_stopped) return;
     _stopped = true;
+    _attachmentCleanup.cancel();
     await _http.close(force: true);
     await _rpc.close();
     await _mcp.close();

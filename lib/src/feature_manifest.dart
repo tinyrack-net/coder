@@ -195,6 +195,20 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'conversation.attachments',
+    description:
+        'Uploads, sends, previews, exports, and restores user and agent files.',
+    apiMethods: <String>['uploadAttachment', 'downloadAttachment'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+      FeatureVerificationLayer.platformSmoke,
+    },
+  ),
+  FeatureContract(
     id: 'agent.definition.management',
     description:
         'Creates, validates, edits, archives, and resets Markdown Agents.',

@@ -151,6 +151,15 @@ abstract final class CoderIcons {
   static const IconData file = LucideIcons.file;
 
   /// Semantic Lucide glyph.
+  static const IconData image = LucideIcons.image;
+
+  /// Semantic Lucide glyph.
+  static const IconData paperclip = LucideIcons.paperclip;
+
+  /// Semantic Lucide glyph.
+  static const IconData download = LucideIcons.download;
+
+  /// Semantic Lucide glyph.
   static const IconData cloud = LucideIcons.cloud;
 
   /// Semantic Lucide glyph.

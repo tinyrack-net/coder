@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/host_registry.dart';
@@ -849,14 +850,31 @@ class ConversationController extends _$ConversationController {
   }
 
   /// The startTurn public API member.
-  Future<void> startTurn(String prompt) async {
+  Future<void> startTurn(
+    String prompt, {
+    List<PendingAttachment> attachments = const <PendingAttachment>[],
+  }) async {
     final sessionId = _sessionId;
-    if (sessionId == null || prompt.trim().isEmpty) return;
+    if (sessionId == null || (prompt.trim().isEmpty && attachments.isEmpty)) {
+      return;
+    }
     final api = await _requireHostApi(ref, hostId);
+    final uploaded = <AttachmentDto>[];
+    for (final attachment in attachments) {
+      uploaded.add(
+        await api.uploadAttachment(
+          fileName: attachment.fileName,
+          mimeType: attachment.mimeType,
+          byteSize: attachment.byteSize,
+          bytes: attachment.openRead(),
+        ),
+      );
+    }
     await api.startTurn(
       sessionId: sessionId,
       turnId: ref.read(appIdGeneratorProvider).generate(),
       prompt: prompt.trim(),
+      attachmentIds: uploaded.map((item) => item.id).toList(growable: false),
     );
   }
 

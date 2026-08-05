@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
@@ -12,10 +14,21 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 /// A user prompt rendered as a CLI-style `>` line.
 class ChatUserLine extends StatelessWidget {
   /// Creates a user line.
-  const ChatUserLine({required this.message, super.key});
+  const ChatUserLine({
+    required this.message,
+    this.loadAttachment,
+    this.exportAttachment,
+    super.key,
+  });
 
   /// The prompt to render.
   final ChatUserMessage message;
+
+  /// Authenticated attachment byte loader.
+  final ChatAttachmentLoader? loadAttachment;
+
+  /// Platform file exporter.
+  final ChatAttachmentExporter? exportAttachment;
 
   @override
   Widget build(BuildContext context) {
@@ -34,17 +47,185 @@ class ChatUserLine extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: SelectableText(
-              message.text,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                if (message.text.isNotEmpty)
+                  SelectableText(
+                    message.text,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                if (message.attachments.isNotEmpty) ...<Widget>[
+                  if (message.text.isNotEmpty) const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: <Widget>[
+                      for (final attachment in message.attachments)
+                        ChatAttachmentTile(
+                          attachment: attachment,
+                          loadAttachment: loadAttachment,
+                          exportAttachment: exportAttachment,
+                        ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
+
+/// An assistant-published file row.
+class ChatAttachmentLine extends StatelessWidget {
+  /// Creates an assistant attachment line.
+  const ChatAttachmentLine({
+    required this.message,
+    this.loadAttachment,
+    this.exportAttachment,
+    super.key,
+  });
+
+  /// Attachment timeline item.
+  final ChatAttachmentMessage message;
+
+  /// Authenticated attachment byte loader.
+  final ChatAttachmentLoader? loadAttachment;
+
+  /// Platform file exporter.
+  final ChatAttachmentExporter? exportAttachment;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 18),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: ChatAttachmentTile(
+        attachment: message.attachment,
+        loadAttachment: loadAttachment,
+        exportAttachment: exportAttachment,
+      ),
+    ),
+  );
+}
+
+/// Thumbnail or file pill shared by inbound and outbound attachments.
+class ChatAttachmentTile extends StatelessWidget {
+  /// Creates an attachment tile.
+  const ChatAttachmentTile({
+    required this.attachment,
+    this.loadAttachment,
+    this.exportAttachment,
+    super.key,
+  });
+
+  /// Attachment metadata.
+  final ChatAttachment attachment;
+
+  /// Authenticated byte loader.
+  final ChatAttachmentLoader? loadAttachment;
+
+  /// Platform exporter.
+  final ChatAttachmentExporter? exportAttachment;
+
+  @override
+  Widget build(BuildContext context) {
+    final loader = loadAttachment;
+    final preview = attachment.isImage && loader != null
+        ? SizedBox.square(
+            dimension: 56,
+            child: FutureBuilder<Uint8List>(
+              future: loader(attachment),
+              builder: (context, snapshot) => snapshot.hasData
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.memory(
+                        snapshot.data!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(
+                          CoderIcons.image,
+                        ),
+                      ),
+                    )
+                  : const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+            ),
+          )
+        : Icon(attachment.isImage ? CoderIcons.image : CoderIcons.file);
+    final onTap = loader == null
+        ? null
+        : () => attachment.isImage
+              ? _showImage(context, loader)
+              : exportAttachment?.call(attachment);
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      onTap: onTap,
+      child: GestureDetector(
+        key: ValueKey('chat-attachment-${attachment.id}'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 280),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              preview,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  '${attachment.fileName}\n'
+                  '${_attachmentSize(attachment.byteSize)}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (!attachment.isImage) ...<Widget>[
+                const SizedBox(width: 6),
+                const Icon(CoderIcons.download, size: 16),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showImage(
+    BuildContext context,
+    ChatAttachmentLoader loader,
+  ) async {
+    final bytes = await loader(attachment);
+    if (!context.mounted) return;
+    await showTRDialog<void>(
+      context: context,
+      builder: (context) => TRDialog(
+        semanticLabel: attachment.fileName,
+        content: InteractiveViewer(
+          child: Image.memory(bytes, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+}
+
+String _attachmentSize(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
 /// Assistant prose rendered as Markdown with a leading accent dot.

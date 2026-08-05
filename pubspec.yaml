@@ -84,6 +84,10 @@ melos:
       run: dart run melos exec --scope=coder_app -- flutter build linux --debug -t lib/main_desktop.dart
     build:android:
       run: dart run melos exec --scope=coder_app -- flutter build apk --debug -t lib/main_mobile.dart
+    build:macos:
+      run: dart run melos exec --scope=coder_app -- flutter build macos --debug -t lib/main_desktop.dart
+    build:windows:
+      run: dart run melos exec --scope=coder_app -- flutter build windows --debug -t lib/main_desktop.dart
     build:linux:release:
       run: dart run melos exec --scope=coder_app -- flutter build linux --release -t lib/main_desktop.dart
     build:macos:release:

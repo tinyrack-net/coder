@@ -77,6 +77,8 @@ void main() {
         streaming: CapabilitySupport.supported,
         toolCalling: CapabilitySupport.supported,
         reasoningEffort: CapabilitySupport.supported,
+        imageInput: CapabilitySupport.supported,
+        fileInput: CapabilitySupport.supported,
         supportedReasoningEfforts: <String>[
           'none',
           'low',

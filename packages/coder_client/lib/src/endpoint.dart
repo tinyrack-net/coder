@@ -39,6 +39,12 @@ class HostEndpoint {
 
   /// The websocketUri public API member.
   final Uri websocketUri;
+
+  /// HTTP origin used for authenticated streaming attachment transfers.
+  Uri get httpBaseUri => websocketUri.replace(
+    scheme: websocketUri.scheme == 'wss' ? 'https' : 'http',
+    path: '/',
+  );
 }
 
 /// Secret credentials sent while opening a daemon transport.

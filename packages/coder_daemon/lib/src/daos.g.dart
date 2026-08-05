@@ -50,6 +50,8 @@ mixin _$SessionDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $SessionsTable get sessions => attachedDatabase.sessions;
   $TurnsTable get turns => attachedDatabase.turns;
+  $AttachmentsTable get attachments => attachedDatabase.attachments;
+  $TurnAttachmentsTable get turnAttachments => attachedDatabase.turnAttachments;
   SessionDaoManager get managers => SessionDaoManager(this);
 }
 
@@ -64,6 +66,43 @@ class SessionDaoManager {
       $$SessionsTableTableManager(_db.attachedDatabase, _db.sessions);
   $$TurnsTableTableManager get turns =>
       $$TurnsTableTableManager(_db.attachedDatabase, _db.turns);
+  $$AttachmentsTableTableManager get attachments =>
+      $$AttachmentsTableTableManager(_db.attachedDatabase, _db.attachments);
+  $$TurnAttachmentsTableTableManager get turnAttachments =>
+      $$TurnAttachmentsTableTableManager(
+        _db.attachedDatabase,
+        _db.turnAttachments,
+      );
+}
+
+mixin _$AttachmentDaoMixin on DatabaseAccessor<CoderDatabase> {
+  $AttachmentsTable get attachments => attachedDatabase.attachments;
+  $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
+  $SessionsTable get sessions => attachedDatabase.sessions;
+  $TurnsTable get turns => attachedDatabase.turns;
+  $TurnAttachmentsTable get turnAttachments => attachedDatabase.turnAttachments;
+  AttachmentDaoManager get managers => AttachmentDaoManager(this);
+}
+
+class AttachmentDaoManager {
+  final _$AttachmentDaoMixin _db;
+  AttachmentDaoManager(this._db);
+  $$AttachmentsTableTableManager get attachments =>
+      $$AttachmentsTableTableManager(_db.attachedDatabase, _db.attachments);
+  $$WorkspacesTableTableManager get workspaces =>
+      $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
+  $$SessionsTableTableManager get sessions =>
+      $$SessionsTableTableManager(_db.attachedDatabase, _db.sessions);
+  $$TurnsTableTableManager get turns =>
+      $$TurnsTableTableManager(_db.attachedDatabase, _db.turns);
+  $$TurnAttachmentsTableTableManager get turnAttachments =>
+      $$TurnAttachmentsTableTableManager(
+        _db.attachedDatabase,
+        _db.turnAttachments,
+      );
 }
 
 mixin _$TimelineDaoMixin on DatabaseAccessor<CoderDatabase> {

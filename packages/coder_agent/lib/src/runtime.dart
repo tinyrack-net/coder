@@ -30,6 +30,7 @@ class AgentRunRequest {
     required this.permissionMode,
     required this.history,
     required this.safetyIdentifier,
+    this.attachments = const <ConversationAttachment>[],
     this.reasoningEffort = 'medium',
     this.maxToolRounds = 64,
     this.sessionMode = SessionMode.normal,
@@ -63,6 +64,9 @@ class AgentRunRequest {
 
   /// The safetyIdentifier public API member.
   final String safetyIdentifier;
+
+  /// Ordered user attachments, hydrated for this provider invocation.
+  final List<ConversationAttachment> attachments;
 
   /// The maxToolRounds public API member.
   final int maxToolRounds;
@@ -116,12 +120,20 @@ class AgentRunner {
     AgentRunRequest request,
     CancellationToken cancellation,
   ) async {
-    final userItem = UserConversationItem(request.prompt);
+    final userItem = UserConversationItem(
+      request.prompt,
+      attachments: request.attachments,
+    );
     final input = <ConversationItem>[...request.history, userItem];
     final persisted = <ConversationItem>[userItem];
     var toolRounds = 0;
     await _onStatus(SessionStatus.running);
-    await _onEvent('user.message', <String, dynamic>{'text': request.prompt});
+    await _onEvent('user.message', <String, dynamic>{
+      'text': request.prompt,
+      'attachments': request.attachments
+          .map(_attachmentSnapshot)
+          .toList(growable: false),
+    });
     await _onProviderItems(<ConversationItem>[userItem]);
 
     try {
@@ -271,6 +283,12 @@ class AgentRunner {
               'output': result.output,
               'isError': result.isError,
             });
+            for (final attachment in result.attachments) {
+              await _onEvent(
+                'assistant.attachment',
+                _attachmentSnapshot(attachment),
+              );
+            }
           } on AgentCancelledException {
             rethrow;
           } on Exception catch (error) {
@@ -331,3 +349,15 @@ $entries
 ''';
   }
 }
+
+Map<String, dynamic> _attachmentSnapshot(ConversationAttachment attachment) =>
+    <String, dynamic>{
+      'id': attachment.id,
+      'fileName': attachment.fileName,
+      'mimeType': attachment.mimeType,
+      'byteSize': attachment.byteSize,
+      if (attachment.kind != null) 'kind': attachment.kind!.name,
+      if (attachment.sha256 != null) 'sha256': attachment.sha256,
+      if (attachment.createdAt != null)
+        'createdAt': attachment.createdAt!.toIso8601String(),
+    };

@@ -1,3 +1,7 @@
+// CargoKit 0.5.5 still calls Project.exec, which Gradle 9 removed. Install a
+// typed ExecOperations-backed bridge before Flutter evaluates plugin projects.
+apply(from = "cargokit-gradle9-compat.gradle")
+
 allprojects {
     repositories {
         google()

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -255,6 +256,12 @@ final class FakeCoderApi implements CoderApi {
 
   /// Turn identifiers received by the fake.
   final List<String> startedTurnIds = <String>[];
+
+  /// Ordered attachment IDs received by each started turn.
+  final List<List<String>> startedAttachmentIds = <List<String>>[];
+
+  final Map<String, ({AttachmentDto metadata, Uint8List bytes})> _attachments =
+      <String, ({AttachmentDto metadata, Uint8List bytes})>{};
 
   /// Agent identifiers cancelled through the fake.
   final List<String> cancelledAgents = <String>[];
@@ -990,9 +997,52 @@ final class FakeCoderApi implements CoderApi {
     required String sessionId,
     required String turnId,
     required String prompt,
+    List<String> attachmentIds = const <String>[],
   }) async {
     startedPrompts.add(prompt);
     startedTurnIds.add(turnId);
+    startedAttachmentIds.add(List<String>.of(attachmentIds));
+  }
+
+  @override
+  Future<AttachmentDto> uploadAttachment({
+    required String fileName,
+    required String mimeType,
+    required int byteSize,
+    required Stream<List<int>> bytes,
+  }) async {
+    final builder = BytesBuilder(copy: false);
+    await bytes.forEach(builder.add);
+    final payload = builder.takeBytes();
+    if (payload.length != byteSize) {
+      throw const FormatException('Attachment size mismatch.');
+    }
+    final id = 'attachment-${_attachments.length + 1}';
+    final metadata = AttachmentDto(
+      id: id,
+      fileName: fileName,
+      mimeType: mimeType,
+      byteSize: byteSize,
+      kind: mimeType.startsWith('image/')
+          ? AttachmentKind.image
+          : AttachmentKind.file,
+      sha256: 'fake-sha256-$id',
+      createdAt: _now,
+    );
+    _attachments[id] = (metadata: metadata, bytes: payload);
+    return metadata;
+  }
+
+  @override
+  Future<AttachmentDownload> downloadAttachment(String id) async {
+    final attachment = _attachments[id];
+    if (attachment == null) throw StateError('Attachment not found: $id');
+    return AttachmentDownload(
+      fileName: attachment.metadata.fileName,
+      mimeType: attachment.metadata.mimeType,
+      byteSize: attachment.metadata.byteSize,
+      bytes: Stream<List<int>>.value(attachment.bytes),
+    );
   }
 
   @override

@@ -1117,7 +1117,7 @@ final class ConversationControllerProvider
 }
 
 String _$conversationControllerHash() =>
-    r'1c96692930bc4da7e732de15592eb7e63d247a35';
+    r'3d08aa46b69ba54adbe0b47a79807df3996d15a6';
 
 /// ConversationController defines a public contract.
 

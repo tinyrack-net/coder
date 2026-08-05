@@ -1,4 +1,6 @@
 tags:
+  feature_test__conversation_attachments__unit:
+  feature_test__conversation_attachments__verticalSlice:
   feature_test__daemon_authentication__verticalSlice:
   feature_test__workspace_catalog__unit:
   feature_test__workspace_catalog__verticalSlice:

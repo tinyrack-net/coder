@@ -79,10 +79,32 @@ abstract interface class SessionRepository {
     required String id,
     required String sessionId,
     required String prompt,
+    List<String> attachmentIds = const <String>[],
   });
 
   /// The updateTurn public API member.
   Future<void> updateTurn(String id, TurnStatus status, {String? error});
+}
+
+/// Persistence boundary for attachment metadata and turn relationships.
+abstract interface class AttachmentRepository {
+  /// Persists one completed immutable upload.
+  Future<void> insert(AttachmentDto attachment);
+
+  /// Returns one attachment metadata record.
+  Future<AttachmentDto?> getById(String id);
+
+  /// Returns records in the same order as [ids], rejecting unknown IDs.
+  Future<List<AttachmentDto>> getByIds(List<String> ids);
+
+  /// Whether an attachment is linked to a turn in [sessionId].
+  Future<bool> isLinkedToSession(String id, String sessionId);
+
+  /// Links an agent-produced attachment to a turn.
+  Future<void> bindAssistant(String turnId, String attachmentId);
+
+  /// Deletes and returns unbound uploads older than [cutoff].
+  Future<List<String>> deleteOrphansBefore(DateTime cutoff);
 }
 
 /// Public API exposed by this library.

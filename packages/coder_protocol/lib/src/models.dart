@@ -126,6 +126,34 @@ enum WorkspaceKind {
   directory,
 }
 
+/// Broad rendering category of an attachment.
+enum AttachmentKind {
+  /// An image that can be previewed directly by clients.
+  image,
+
+  /// Any other file.
+  file,
+}
+
+@freezed
+/// Immutable metadata for bytes owned by the daemon attachment store.
+abstract class AttachmentDto with _$AttachmentDto {
+  /// Creates attachment metadata.
+  const factory AttachmentDto({
+    required String id,
+    required String fileName,
+    required String mimeType,
+    required int byteSize,
+    required AttachmentKind kind,
+    required String sha256,
+    required DateTime createdAt,
+  }) = _AttachmentDto;
+
+  /// Decodes attachment metadata.
+  factory AttachmentDto.fromJson(Map<String, dynamic> json) =>
+      _$AttachmentDtoFromJson(json);
+}
+
 /// Filesystem placement backing an agent session.
 enum WorktreeKind {
   /// The workspace's original checkout.
@@ -758,6 +786,8 @@ abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
     @Default(CapabilitySupport.unknown) CapabilitySupport streaming,
     @Default(CapabilitySupport.unknown) CapabilitySupport toolCalling,
     @Default(CapabilitySupport.unknown) CapabilitySupport reasoningEffort,
+    @Default(CapabilitySupport.unknown) CapabilitySupport imageInput,
+    @Default(CapabilitySupport.unknown) CapabilitySupport fileInput,
     @Default(<String>[]) List<String> supportedReasoningEfforts,
     @Default(CapabilitySource.unknown) CapabilitySource source,
   }) = _ModelCapabilitiesDto;

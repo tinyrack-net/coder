@@ -171,7 +171,7 @@ class WorktreeDao extends DatabaseAccessor<CoderDatabase>
   );
 }
 
-@DriftAccessor(tables: <Type>[Sessions, Turns])
+@DriftAccessor(tables: <Type>[Sessions, Turns, Attachments, TurnAttachments])
 /// SessionDao defines a public contract.
 class SessionDao extends DatabaseAccessor<CoderDatabase>
     with _$SessionDaoMixin
@@ -290,22 +290,49 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
     required String id,
     required String sessionId,
     required String prompt,
+    List<String> attachmentIds = const <String>[],
   }) async {
+    if (attachmentIds.length > 10) {
+      throw const FormatException('A turn accepts at most 10 attachments.');
+    }
+    if (attachmentIds.toSet().length != attachmentIds.length) {
+      throw const FormatException('Attachment IDs must be unique.');
+    }
     final exists = await (select(
       turns,
     )..where((row) => row.id.equals(id))).getSingleOrNull();
     if (exists != null) return false;
     final now = attachedDatabase.clock.nowUtc();
-    await into(turns).insert(
-      TurnsCompanion.insert(
-        id: id,
-        sessionId: sessionId,
-        prompt: prompt,
-        status: TurnStatus.running.name,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
+    await transaction(() async {
+      if (attachmentIds.isNotEmpty) {
+        final rows = await (select(
+          attachments,
+        )..where((row) => row.id.isIn(attachmentIds))).get();
+        if (rows.length != attachmentIds.length) {
+          throw const FormatException('Unknown attachment ID.');
+        }
+      }
+      await into(turns).insert(
+        TurnsCompanion.insert(
+          id: id,
+          sessionId: sessionId,
+          prompt: prompt,
+          status: TurnStatus.running.name,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      for (var ordinal = 0; ordinal < attachmentIds.length; ordinal += 1) {
+        await into(turnAttachments).insert(
+          TurnAttachmentsCompanion.insert(
+            turnId: id,
+            attachmentId: attachmentIds[ordinal],
+            direction: 'user',
+            ordinal: ordinal,
+          ),
+        );
+      }
+    });
     return true;
   }
 
@@ -349,6 +376,115 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
       updatedAt: row.updatedAt,
     );
   }
+}
+
+@DriftAccessor(tables: <Type>[Attachments, TurnAttachments, Turns])
+/// Drift attachment metadata repository.
+class AttachmentDao extends DatabaseAccessor<CoderDatabase>
+    with _$AttachmentDaoMixin
+    implements AttachmentRepository {
+  /// Creates an attachment DAO.
+  AttachmentDao(super.attachedDatabase);
+
+  @override
+  Future<void> insert(AttachmentDto attachment) => into(attachments).insert(
+    AttachmentsCompanion.insert(
+      id: attachment.id,
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+      byteSize: attachment.byteSize,
+      kind: attachment.kind.name,
+      sha256: attachment.sha256,
+      createdAt: attachment.createdAt,
+    ),
+  );
+
+  @override
+  Future<AttachmentDto?> getById(String id) async {
+    final row = await (select(
+      attachments,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+    return row == null ? null : _toDto(row);
+  }
+
+  @override
+  Future<List<AttachmentDto>> getByIds(List<String> ids) async {
+    if (ids.isEmpty) return const <AttachmentDto>[];
+    final rows = await (select(
+      attachments,
+    )..where((row) => row.id.isIn(ids))).get();
+    final byId = <String, Attachment>{for (final row in rows) row.id: row};
+    return ids
+        .map((id) {
+          final row = byId[id];
+          if (row == null) {
+            throw const FormatException('Unknown attachment ID.');
+          }
+          return _toDto(row);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  Future<bool> isLinkedToSession(String id, String sessionId) async {
+    final query =
+        select(turnAttachments).join(<Join<HasResultSet, dynamic>>[
+          innerJoin(turns, turns.id.equalsExp(turnAttachments.turnId)),
+        ])..where(
+          turnAttachments.attachmentId.equals(id) &
+              turns.sessionId.equals(sessionId),
+        );
+    return await query.getSingleOrNull() != null;
+  }
+
+  @override
+  Future<void> bindAssistant(String turnId, String attachmentId) async {
+    final ordinalExpression = turnAttachments.ordinal.max();
+    final maximum =
+        await (selectOnly(turnAttachments)
+              ..addColumns(<Expression<Object>>[ordinalExpression])
+              ..where(
+                turnAttachments.turnId.equals(turnId) &
+                    turnAttachments.direction.equals('assistant'),
+              ))
+            .getSingle();
+    final ordinal = (maximum.read(ordinalExpression) ?? -1) + 1;
+    await into(turnAttachments).insert(
+      TurnAttachmentsCompanion.insert(
+        turnId: turnId,
+        attachmentId: attachmentId,
+        direction: 'assistant',
+        ordinal: ordinal,
+      ),
+    );
+  }
+
+  @override
+  Future<List<String>> deleteOrphansBefore(DateTime cutoff) async {
+    final linked = selectOnly(turnAttachments)
+      ..addColumns(<Expression<Object>>[turnAttachments.attachmentId]);
+    final candidates =
+        await (select(attachments)..where(
+              (row) =>
+                  row.createdAt.isSmallerThanValue(cutoff) &
+                  row.id.isNotInQuery(linked),
+            ))
+            .get();
+    if (candidates.isEmpty) return const <String>[];
+    final ids = candidates.map((row) => row.id).toList(growable: false);
+    await (delete(attachments)..where((row) => row.id.isIn(ids))).go();
+    return ids;
+  }
+
+  AttachmentDto _toDto(Attachment row) => AttachmentDto(
+    id: row.id,
+    fileName: row.fileName,
+    mimeType: row.mimeType,
+    byteSize: row.byteSize,
+    kind: AttachmentKind.values.byName(row.kind),
+    sha256: row.sha256,
+    createdAt: row.createdAt,
+  );
 }
 
 @DriftAccessor(tables: <Type>[TimelineEvents, ApprovalRequests, ProviderStates])

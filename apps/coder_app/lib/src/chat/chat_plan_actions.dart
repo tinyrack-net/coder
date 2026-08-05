@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -147,6 +148,7 @@ Future<SessionDto> startSessionWithPrompt(
   required String agentDefinitionId,
   required String title,
   required String prompt,
+  List<PendingAttachment> attachments = const <PendingAttachment>[],
   SessionMode mode = SessionMode.normal,
   SessionModelSelectionDto? model,
 }) async {
@@ -184,7 +186,9 @@ Future<SessionDto> startSessionWithPrompt(
       (previous, next) {},
     );
     try {
-      await ref.read(conversation.notifier).startTurn(prompt);
+      await ref
+          .read(conversation.notifier)
+          .startTurn(prompt, attachments: attachments);
     } finally {
       conversationHandle.close();
     }

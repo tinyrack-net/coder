@@ -433,6 +433,7 @@ abstract class TurnStartParamsDto with _$TurnStartParamsDto {
     required String sessionId,
     required String turnId,
     required String prompt,
+    @Default(<String>[]) List<String> attachmentIds,
   }) = _TurnStartParamsDto;
 
   /// Creates a [TurnStartParamsDto].

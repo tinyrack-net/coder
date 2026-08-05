@@ -684,6 +684,8 @@ final class _Factory implements ModelProviderFactory {
     required ProviderRuntimeConfig config,
     required ProviderCredential? credential,
     required bool supportsReasoningEffort,
+    required bool supportsImageInput,
+    required bool supportsFileInput,
   }) {
     lastConfig = config;
     lastCredential = credential;

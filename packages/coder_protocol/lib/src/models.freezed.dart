@@ -13,6 +13,287 @@ part of 'models.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
+mixin _$AttachmentDto {
+
+ String get id; String get fileName; String get mimeType; int get byteSize; AttachmentKind get kind; String get sha256; DateTime get createdAt;
+/// Create a copy of AttachmentDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AttachmentDtoCopyWith<AttachmentDto> get copyWith => _$AttachmentDtoCopyWithImpl<AttachmentDto>(this as AttachmentDto, _$identity);
+
+  /// Serializes this AttachmentDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.byteSize, byteSize) || other.byteSize == byteSize)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.sha256, sha256) || other.sha256 == sha256)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fileName,mimeType,byteSize,kind,sha256,createdAt);
+
+@override
+String toString() {
+  return 'AttachmentDto(id: $id, fileName: $fileName, mimeType: $mimeType, byteSize: $byteSize, kind: $kind, sha256: $sha256, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AttachmentDtoCopyWith<$Res>  {
+  factory $AttachmentDtoCopyWith(AttachmentDto value, $Res Function(AttachmentDto) _then) = _$AttachmentDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String fileName, String mimeType, int byteSize, AttachmentKind kind, String sha256, DateTime createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$AttachmentDtoCopyWithImpl<$Res>
+    implements $AttachmentDtoCopyWith<$Res> {
+  _$AttachmentDtoCopyWithImpl(this._self, this._then);
+
+  final AttachmentDto _self;
+  final $Res Function(AttachmentDto) _then;
+
+/// Create a copy of AttachmentDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fileName = null,Object? mimeType = null,Object? byteSize = null,Object? kind = null,Object? sha256 = null,Object? createdAt = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fileName: null == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
+as String,mimeType: null == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String,byteSize: null == byteSize ? _self.byteSize : byteSize // ignore: cast_nullable_to_non_nullable
+as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as AttachmentKind,sha256: null == sha256 ? _self.sha256 : sha256 // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AttachmentDto].
+extension AttachmentDtoPatterns on AttachmentDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AttachmentDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AttachmentDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AttachmentDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AttachmentDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AttachmentDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AttachmentDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String fileName,  String mimeType,  int byteSize,  AttachmentKind kind,  String sha256,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AttachmentDto() when $default != null:
+return $default(_that.id,_that.fileName,_that.mimeType,_that.byteSize,_that.kind,_that.sha256,_that.createdAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String fileName,  String mimeType,  int byteSize,  AttachmentKind kind,  String sha256,  DateTime createdAt)  $default,) {final _that = this;
+switch (_that) {
+case _AttachmentDto():
+return $default(_that.id,_that.fileName,_that.mimeType,_that.byteSize,_that.kind,_that.sha256,_that.createdAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String fileName,  String mimeType,  int byteSize,  AttachmentKind kind,  String sha256,  DateTime createdAt)?  $default,) {final _that = this;
+switch (_that) {
+case _AttachmentDto() when $default != null:
+return $default(_that.id,_that.fileName,_that.mimeType,_that.byteSize,_that.kind,_that.sha256,_that.createdAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AttachmentDto implements AttachmentDto {
+  const _AttachmentDto({required this.id, required this.fileName, required this.mimeType, required this.byteSize, required this.kind, required this.sha256, required this.createdAt});
+  factory _AttachmentDto.fromJson(Map<String, dynamic> json) => _$AttachmentDtoFromJson(json);
+
+@override final  String id;
+@override final  String fileName;
+@override final  String mimeType;
+@override final  int byteSize;
+@override final  AttachmentKind kind;
+@override final  String sha256;
+@override final  DateTime createdAt;
+
+/// Create a copy of AttachmentDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AttachmentDtoCopyWith<_AttachmentDto> get copyWith => __$AttachmentDtoCopyWithImpl<_AttachmentDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AttachmentDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AttachmentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.byteSize, byteSize) || other.byteSize == byteSize)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.sha256, sha256) || other.sha256 == sha256)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fileName,mimeType,byteSize,kind,sha256,createdAt);
+
+@override
+String toString() {
+  return 'AttachmentDto(id: $id, fileName: $fileName, mimeType: $mimeType, byteSize: $byteSize, kind: $kind, sha256: $sha256, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AttachmentDtoCopyWith<$Res> implements $AttachmentDtoCopyWith<$Res> {
+  factory _$AttachmentDtoCopyWith(_AttachmentDto value, $Res Function(_AttachmentDto) _then) = __$AttachmentDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String fileName, String mimeType, int byteSize, AttachmentKind kind, String sha256, DateTime createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$AttachmentDtoCopyWithImpl<$Res>
+    implements _$AttachmentDtoCopyWith<$Res> {
+  __$AttachmentDtoCopyWithImpl(this._self, this._then);
+
+  final _AttachmentDto _self;
+  final $Res Function(_AttachmentDto) _then;
+
+/// Create a copy of AttachmentDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fileName = null,Object? mimeType = null,Object? byteSize = null,Object? kind = null,Object? sha256 = null,Object? createdAt = null,}) {
+  return _then(_AttachmentDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fileName: null == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
+as String,mimeType: null == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String,byteSize: null == byteSize ? _self.byteSize : byteSize // ignore: cast_nullable_to_non_nullable
+as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as AttachmentKind,sha256: null == sha256 ? _self.sha256 : sha256 // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$WorkspaceDto {
 
  String get id; String get name; String get rootPath; WorkspaceKind get kind; DateTime get createdAt;
@@ -5737,7 +6018,7 @@ $SessionModelSelectionDtoCopyWith<$Res>? get model {
 /// @nodoc
 mixin _$ModelCapabilitiesDto {
 
- CapabilitySupport get streaming; CapabilitySupport get toolCalling; CapabilitySupport get reasoningEffort; List<String> get supportedReasoningEfforts; CapabilitySource get source;
+ CapabilitySupport get streaming; CapabilitySupport get toolCalling; CapabilitySupport get reasoningEffort; CapabilitySupport get imageInput; CapabilitySupport get fileInput; List<String> get supportedReasoningEfforts; CapabilitySource get source;
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -5750,16 +6031,16 @@ $ModelCapabilitiesDtoCopyWith<ModelCapabilitiesDto> get copyWith => _$ModelCapab
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&const DeepCollectionEquality().equals(other.supportedReasoningEfforts, supportedReasoningEfforts)&&(identical(other.source, source) || other.source == source));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other.supportedReasoningEfforts, supportedReasoningEfforts)&&(identical(other.source, source) || other.source == source));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,streaming,toolCalling,reasoningEffort,const DeepCollectionEquality().hash(supportedReasoningEfforts),source);
+int get hashCode => Object.hash(runtimeType,streaming,toolCalling,reasoningEffort,imageInput,fileInput,const DeepCollectionEquality().hash(supportedReasoningEfforts),source);
 
 @override
 String toString() {
-  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, reasoningEffort: $reasoningEffort, supportedReasoningEfforts: $supportedReasoningEfforts, source: $source)';
+  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, reasoningEffort: $reasoningEffort, imageInput: $imageInput, fileInput: $fileInput, supportedReasoningEfforts: $supportedReasoningEfforts, source: $source)';
 }
 
 
@@ -5770,7 +6051,7 @@ abstract mixin class $ModelCapabilitiesDtoCopyWith<$Res>  {
   factory $ModelCapabilitiesDtoCopyWith(ModelCapabilitiesDto value, $Res Function(ModelCapabilitiesDto) _then) = _$ModelCapabilitiesDtoCopyWithImpl;
 @useResult
 $Res call({
- CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport reasoningEffort, List<String> supportedReasoningEfforts, CapabilitySource source
+ CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport reasoningEffort, CapabilitySupport imageInput, CapabilitySupport fileInput, List<String> supportedReasoningEfforts, CapabilitySource source
 });
 
 
@@ -5787,11 +6068,13 @@ class _$ModelCapabilitiesDtoCopyWithImpl<$Res>
 
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? streaming = null,Object? toolCalling = null,Object? reasoningEffort = null,Object? supportedReasoningEfforts = null,Object? source = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? streaming = null,Object? toolCalling = null,Object? reasoningEffort = null,Object? imageInput = null,Object? fileInput = null,Object? supportedReasoningEfforts = null,Object? source = null,}) {
   return _then(_self.copyWith(
 streaming: null == streaming ? _self.streaming : streaming // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,toolCalling: null == toolCalling ? _self.toolCalling : toolCalling // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,imageInput: null == imageInput ? _self.imageInput : imageInput // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,fileInput: null == fileInput ? _self.fileInput : fileInput // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,supportedReasoningEfforts: null == supportedReasoningEfforts ? _self.supportedReasoningEfforts : supportedReasoningEfforts // ignore: cast_nullable_to_non_nullable
 as List<String>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as CapabilitySource,
@@ -5879,10 +6162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport reasoningEffort,  List<String> supportedReasoningEfforts,  CapabilitySource source)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport reasoningEffort,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<String> supportedReasoningEfforts,  CapabilitySource source)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto() when $default != null:
-return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.supportedReasoningEfforts,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.imageInput,_that.fileInput,_that.supportedReasoningEfforts,_that.source);case _:
   return orElse();
 
 }
@@ -5900,10 +6183,10 @@ return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.su
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport reasoningEffort,  List<String> supportedReasoningEfforts,  CapabilitySource source)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport reasoningEffort,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<String> supportedReasoningEfforts,  CapabilitySource source)  $default,) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto():
-return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.supportedReasoningEfforts,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.imageInput,_that.fileInput,_that.supportedReasoningEfforts,_that.source);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -5920,10 +6203,10 @@ return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.su
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport reasoningEffort,  List<String> supportedReasoningEfforts,  CapabilitySource source)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport reasoningEffort,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<String> supportedReasoningEfforts,  CapabilitySource source)?  $default,) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto() when $default != null:
-return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.supportedReasoningEfforts,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.imageInput,_that.fileInput,_that.supportedReasoningEfforts,_that.source);case _:
   return null;
 
 }
@@ -5935,12 +6218,14 @@ return $default(_that.streaming,_that.toolCalling,_that.reasoningEffort,_that.su
 @JsonSerializable()
 
 class _ModelCapabilitiesDto implements ModelCapabilitiesDto {
-  const _ModelCapabilitiesDto({this.streaming = CapabilitySupport.unknown, this.toolCalling = CapabilitySupport.unknown, this.reasoningEffort = CapabilitySupport.unknown, final  List<String> supportedReasoningEfforts = const <String>[], this.source = CapabilitySource.unknown}): _supportedReasoningEfforts = supportedReasoningEfforts;
+  const _ModelCapabilitiesDto({this.streaming = CapabilitySupport.unknown, this.toolCalling = CapabilitySupport.unknown, this.reasoningEffort = CapabilitySupport.unknown, this.imageInput = CapabilitySupport.unknown, this.fileInput = CapabilitySupport.unknown, final  List<String> supportedReasoningEfforts = const <String>[], this.source = CapabilitySource.unknown}): _supportedReasoningEfforts = supportedReasoningEfforts;
   factory _ModelCapabilitiesDto.fromJson(Map<String, dynamic> json) => _$ModelCapabilitiesDtoFromJson(json);
 
 @override@JsonKey() final  CapabilitySupport streaming;
 @override@JsonKey() final  CapabilitySupport toolCalling;
 @override@JsonKey() final  CapabilitySupport reasoningEffort;
+@override@JsonKey() final  CapabilitySupport imageInput;
+@override@JsonKey() final  CapabilitySupport fileInput;
  final  List<String> _supportedReasoningEfforts;
 @override@JsonKey() List<String> get supportedReasoningEfforts {
   if (_supportedReasoningEfforts is EqualUnmodifiableListView) return _supportedReasoningEfforts;
@@ -5963,16 +6248,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&const DeepCollectionEquality().equals(other._supportedReasoningEfforts, _supportedReasoningEfforts)&&(identical(other.source, source) || other.source == source));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other._supportedReasoningEfforts, _supportedReasoningEfforts)&&(identical(other.source, source) || other.source == source));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,streaming,toolCalling,reasoningEffort,const DeepCollectionEquality().hash(_supportedReasoningEfforts),source);
+int get hashCode => Object.hash(runtimeType,streaming,toolCalling,reasoningEffort,imageInput,fileInput,const DeepCollectionEquality().hash(_supportedReasoningEfforts),source);
 
 @override
 String toString() {
-  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, reasoningEffort: $reasoningEffort, supportedReasoningEfforts: $supportedReasoningEfforts, source: $source)';
+  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, reasoningEffort: $reasoningEffort, imageInput: $imageInput, fileInput: $fileInput, supportedReasoningEfforts: $supportedReasoningEfforts, source: $source)';
 }
 
 
@@ -5983,7 +6268,7 @@ abstract mixin class _$ModelCapabilitiesDtoCopyWith<$Res> implements $ModelCapab
   factory _$ModelCapabilitiesDtoCopyWith(_ModelCapabilitiesDto value, $Res Function(_ModelCapabilitiesDto) _then) = __$ModelCapabilitiesDtoCopyWithImpl;
 @override @useResult
 $Res call({
- CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport reasoningEffort, List<String> supportedReasoningEfforts, CapabilitySource source
+ CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport reasoningEffort, CapabilitySupport imageInput, CapabilitySupport fileInput, List<String> supportedReasoningEfforts, CapabilitySource source
 });
 
 
@@ -6000,11 +6285,13 @@ class __$ModelCapabilitiesDtoCopyWithImpl<$Res>
 
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? streaming = null,Object? toolCalling = null,Object? reasoningEffort = null,Object? supportedReasoningEfforts = null,Object? source = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? streaming = null,Object? toolCalling = null,Object? reasoningEffort = null,Object? imageInput = null,Object? fileInput = null,Object? supportedReasoningEfforts = null,Object? source = null,}) {
   return _then(_ModelCapabilitiesDto(
 streaming: null == streaming ? _self.streaming : streaming // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,toolCalling: null == toolCalling ? _self.toolCalling : toolCalling // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,imageInput: null == imageInput ? _self.imageInput : imageInput // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,fileInput: null == fileInput ? _self.fileInput : fileInput // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,supportedReasoningEfforts: null == supportedReasoningEfforts ? _self._supportedReasoningEfforts : supportedReasoningEfforts // ignore: cast_nullable_to_non_nullable
 as List<String>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as CapabilitySource,

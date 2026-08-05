@@ -612,6 +612,8 @@ const Set<String> alwaysOnBuiltInToolIds = <String>{
   'list_directory',
   'read_file',
   'search_text',
+  'attach_file',
+  'read_attachment',
 };
 
 /// Returns the tool ids a turn runs with, always-on tools first.

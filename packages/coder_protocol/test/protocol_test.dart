@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v14 exposes MCP, skills, agent definitions, and sessions', () {
-    expect(coderProtocolVersion, 14);
+  test('protocol v15 exposes attachments and existing typed contracts', () {
+    expect(coderProtocolVersion, 15);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -550,7 +550,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 14);
+    expect(coderProtocolVersion, 15);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -910,6 +910,7 @@ void main() {
         sessionId: 'agent',
         turnId: 'turn',
         prompt: 'hello',
+        attachmentIds: <String>['attachment-1'],
       ),
       (value) => value.toJson(),
       TurnStartParamsDto.fromJson,
@@ -936,6 +937,35 @@ void main() {
       TimelineSubscribeParamsDto.fromJson,
     );
   });
+
+  test(
+    'attachment contracts round-trip',
+    tags: const <String>['feature_test__conversation_attachments__contract'],
+    () {
+      final attachment = AttachmentDto(
+        id: 'attachment-1',
+        fileName: 'diagram.png',
+        mimeType: 'image/png',
+        byteSize: 4,
+        kind: AttachmentKind.image,
+        sha256: 'hash',
+        createdAt: now,
+      );
+      _roundTrip(
+        attachment,
+        (value) => value.toJson(),
+        AttachmentDto.fromJson,
+      );
+      expect(
+        TurnStartParamsDto.fromJson(<String, dynamic>{
+          'sessionId': 'agent',
+          'turnId': 'turn',
+          'prompt': '',
+        }).attachmentIds,
+        isEmpty,
+      );
+    },
+  );
 
   test('all result DTOs round-trip', () {
     _roundTrip(

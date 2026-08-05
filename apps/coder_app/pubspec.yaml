@@ -11,6 +11,7 @@ dependencies:
   coder_client: ^0.1.0
   coder_daemon: ^0.1.0
   coder_protocol: ^0.1.0
+  file_selector: ^1.0.3
   flutter:
     sdk: flutter
   flutter_localizations:
@@ -24,7 +25,10 @@ dependencies:
   lucide_flutter: ^1.25.0
   meta: ^1.17.0
   riverpod_annotation: 4.0.3
+  share_plus: ^11.0.0
   shared_preferences: ^2.5.4
+  super_clipboard: ^0.9.1
+  super_drag_and_drop: ^0.9.1
   tinyrack_ui: ^0.4.6
   tray_manager: ^0.5.3
   url_launcher: ^6.3.2
