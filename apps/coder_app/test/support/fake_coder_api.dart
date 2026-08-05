@@ -32,6 +32,8 @@ final class FakeCoderApi implements CoderApi {
     this.catalogRefreshError,
     this.modelListGate,
     this.suggestDirectoriesGate,
+    this.workspaceCatalogGate,
+    this.agentDefinitionsGate,
     this.createWorktreeError,
     this.suggestDirectoriesError,
     this.projectSettingsError,
@@ -228,6 +230,13 @@ final class FakeCoderApi implements CoderApi {
   /// Optional gate used to keep model discovery in its loading state.
   final Future<void>? modelListGate;
 
+  /// Optional gate used to keep the workspace catalog in its loading state.
+  final Future<void>? workspaceCatalogGate;
+
+  /// Optional gate used to keep agent definition discovery in its loading
+  /// state.
+  final Future<void>? agentDefinitionsGate;
+
   /// Daemon-side directory tree keyed by parent path.
   final Map<String, List<String>> directories;
 
@@ -374,11 +383,13 @@ final class FakeCoderApi implements CoderApi {
   ServerInfoDto get serverInfo => _serverInfo;
 
   @override
-  Future<WorkspaceCatalogDto> getWorkspaceCatalog() async =>
-      WorkspaceCatalogDto(
-        workspaces: List<WorkspaceDto>.unmodifiable(_workspaces),
-        worktrees: List<WorktreeDto>.unmodifiable(_worktrees),
-      );
+  Future<WorkspaceCatalogDto> getWorkspaceCatalog() async {
+    await workspaceCatalogGate;
+    return WorkspaceCatalogDto(
+      workspaces: List<WorkspaceDto>.unmodifiable(_workspaces),
+      worktrees: List<WorktreeDto>.unmodifiable(_worktrees),
+    );
+  }
 
   @override
   Future<WorkspaceRegisterResultDto> registerWorkspace({
@@ -779,6 +790,7 @@ final class FakeCoderApi implements CoderApi {
 
   @override
   Future<List<AgentDefinitionDto>> listAgentDefinitions() async {
+    await agentDefinitionsGate;
     final error = agentListError;
     if (error != null) throw error;
     return List<AgentDefinitionDto>.unmodifiable(_agentDefinitions);

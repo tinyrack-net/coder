@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
@@ -278,6 +280,42 @@ void main() {
       expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'second');
     },
     tags: const <String>['feature_test__daemon_management__widget'],
+  );
+
+  testWidgets(
+    'the draft composer stays quiet while agent discovery is still loading',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final gate = Completer<void>();
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agentDefinitions: const <AgentDefinitionDto>[],
+        agentDefinitionsGate: gate.future,
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+        settle: false,
+      );
+      addTearDown(router.dispose);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('사용 가능한 primary Agent가 없습니다.'), findsNothing);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('사용 가능한 primary Agent가 없습니다.'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
   );
 
   testWidgets(
@@ -2149,6 +2187,7 @@ Future<GoRouter> _pumpRoute(
   String location, {
   MemoryAppStore? store,
   bool disableAnimations = false,
+  bool settle = true,
 }) async {
   final router = GoRouter(initialLocation: location, routes: $appRoutes);
   final app = MaterialApp.router(
@@ -2177,7 +2216,11 @@ Future<GoRouter> _pumpRoute(
           : app,
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
   return router;
 }
 

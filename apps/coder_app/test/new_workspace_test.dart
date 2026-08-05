@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -481,6 +483,28 @@ void main() {
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
   );
+
+  testWidgets(
+    'the composer stays quiet while the catalog is still loading',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final gate = Completer<void>();
+      final api = FakeCoderApi(workspaceCatalogGate: gate.future);
+      final router = await _pump(tester, api, settle: false);
+      addTearDown(router.dispose);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('먼저 프로젝트를 추가하세요.'), findsNothing);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('먼저 프로젝트를 추가하세요.'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
 }
 
 HostRuntimeSnapshot _host(String id, String label) => HostRuntimeSnapshot(
@@ -494,6 +518,7 @@ Future<GoRouter> _pump(
   WidgetTester tester,
   FakeCoderApi api, {
   bool connected = true,
+  bool settle = true,
 }) async {
   final router = GoRouter(
     initialLocation: const WorkspaceHomeRoute(compose: true).location,
@@ -517,7 +542,11 @@ Future<GoRouter> _pump(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
   return router;
 }
 

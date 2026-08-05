@@ -120,7 +120,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     final anyDaemonConnected =
         registryAsync.value?.runtimes.values.any((item) => item.connected) ??
         false;
-    final catalog = ref.watch(workspaceCatalogControllerProvider).value;
+    final catalogAsync = ref.watch(workspaceCatalogControllerProvider);
+    final catalog = catalogAsync.value;
+    final catalogLoading = catalogAsync.isLoading && !catalogAsync.hasValue;
     final projects = catalog == null
         ? const <NewWorkspaceProject>[]
         : collectProjects(AppLocalizations.of(context), catalog);
@@ -144,9 +146,12 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         : isGitProject
         ? project.worktrees.where((item) => item.id == _worktreeId).firstOrNull
         : _directoryCheckout(project);
-    final agents = project == null
+    final agentsAsync = project == null
         ? null
-        : ref.watch(agentDefinitionsControllerProvider(project.hostId)).value;
+        : ref.watch(agentDefinitionsControllerProvider(project.hostId));
+    final agents = agentsAsync?.value;
+    final agentsLoading =
+        agentsAsync != null && agentsAsync.isLoading && !agentsAsync.hasValue;
     final definitions = selectableAgentDefinitions(
       agents?.definitions ?? const <AgentDefinitionDto>[],
     );
@@ -155,12 +160,14 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
             .where((item) => item.id == _draft(project)?.agentDefinitionId)
             .firstOrNull ??
         definitions.firstOrNull;
-    final connections = project == null
+    final connectionsAsync = project == null
         ? null
-        : ref
-              .watch(providerSettingsControllerProvider(project.hostId))
-              .value
-              ?.connections;
+        : ref.watch(providerSettingsControllerProvider(project.hostId));
+    final connections = connectionsAsync?.value?.connections;
+    final connectionsLoading =
+        connectionsAsync != null &&
+        connectionsAsync.isLoading &&
+        !connectionsAsync.hasValue;
     final draft = _draft(project);
     final effective =
         draft?.model ??
@@ -213,6 +220,8 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       agent,
                       effective,
                       anyDaemonConnected: anyDaemonConnected,
+                      loading:
+                          catalogLoading || agentsLoading || connectionsLoading,
                     ),
                     header: _targets(
                       projects: projects,
@@ -285,9 +294,11 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     AgentDefinitionDto? agent,
     SessionModelSelectionDto? model, {
     required bool anyDaemonConnected,
+    required bool loading,
   }) {
     if (_error != null) return _error;
     if (!anyDaemonConnected) return '연결된 Daemon이 없습니다.';
+    if (loading) return null;
     if (projects.isEmpty) return '먼저 프로젝트를 추가하세요.';
     if (project == null) return '프로젝트를 선택하세요.';
     if (project.workspace.kind == WorkspaceKind.directory && worktree == null) {
