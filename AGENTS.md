@@ -5,6 +5,26 @@ Flutter design over compatibility with development data, deprecated APIs, or an
 older internal protocol. Do not add compatibility shims or legacy adapters unless
 the user explicitly requests them.
 
+## UI design system
+
+For every Flutter UI implementation, modification, refactor, review, styling,
+layout, component-selection, theme, or pixel-changing test task, use
+`$tinyrack-coder-design-guidelines` and follow
+`.agents/skills/tinyrack-coder-design-guidelines/SKILL.md`.
+
+All controls and surfaces must use the public `tinyrack_ui` component when one
+exists. Every visual design value, including color, spacing, dimensions,
+typography, radius, elevation, opacity, icon size, and motion, must come from a
+public Tinyrack token. Product-specific composites may remain in this repository
+only when they are composed entirely from public TR components and tokens.
+
+When a reusable primitive, interaction contract, component variant, or token is
+missing, stop the consumer implementation and use the skill's authorized
+upstream workflow to add it in `~/Workspaces/tinyrack/design`, merge and release
+it, upgrade the published dependency, and then resume the original work. Do not
+substitute a private clone, hardcoded design value, pub-cache edit, path or git
+dependency, or `dependency_overrides`.
+
 ## Required workflow
 
 1. Write a test that fails for the intended reason before changing production
