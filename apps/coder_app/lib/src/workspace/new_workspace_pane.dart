@@ -116,6 +116,10 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
   Widget build(BuildContext context) {
     // `valueOrNull` keeps the last catalog while the provider refreshes, so a
     // host-registry change never flashes the empty state.
+    final registryAsync = ref.watch(hostRegistryControllerProvider);
+    final anyDaemonConnected =
+        registryAsync.value?.runtimes.values.any((item) => item.connected) ??
+        false;
     final catalog = ref.watch(workspaceCatalogControllerProvider).value;
     final projects = catalog == null
         ? const <NewWorkspaceProject>[]
@@ -202,7 +206,14 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                   ),
                   SessionComposer(
                     enabled: ready,
-                    hint: _hint(projects, project, worktree, agent, effective),
+                    hint: _hint(
+                      projects,
+                      project,
+                      worktree,
+                      agent,
+                      effective,
+                      anyDaemonConnected: anyDaemonConnected,
+                    ),
                     header: _targets(
                       projects: projects,
                       project: project,
@@ -210,6 +221,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       branches: branches,
                       showGitTargets: showGitTargets,
                       baseBranch: baseBranch,
+                      anyDaemonConnected: anyDaemonConnected,
                     ),
                     bar: SessionComposerBar(
                       hostId: project?.hostId ?? '',
@@ -271,9 +283,11 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     NewWorkspaceProject? project,
     WorktreeDto? worktree,
     AgentDefinitionDto? agent,
-    SessionModelSelectionDto? model,
-  ) {
+    SessionModelSelectionDto? model, {
+    required bool anyDaemonConnected,
+  }) {
     if (_error != null) return _error;
+    if (!anyDaemonConnected) return '연결된 Daemon이 없습니다.';
     if (projects.isEmpty) return '먼저 프로젝트를 추가하세요.';
     if (project == null) return '프로젝트를 선택하세요.';
     if (project.workspace.kind == WorkspaceKind.directory && worktree == null) {
@@ -291,6 +305,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     required List<GitBranchDto> branches,
     required bool showGitTargets,
     required String? baseBranch,
+    required bool anyDaemonConnected,
   }) => SingleChildScrollView(
     scrollDirection: Axis.horizontal,
     child: Row(
@@ -300,7 +315,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           icon: CoderIcons.folder,
           label: project?.workspace.name ?? '프로젝트',
           tooltip: '프로젝트 선택',
-          menuChildren: _submitting
+          menuChildren: _submitting || !anyDaemonConnected
               ? null
               : <Widget>[
                   for (final item in projects)

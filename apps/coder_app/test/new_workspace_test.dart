@@ -460,6 +460,27 @@ void main() {
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
   );
+
+  testWidgets(
+    'the project selector is disabled while no daemon is connected',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pump(tester, api, connected: false);
+      addTearDown(router.dispose);
+
+      expect(find.text('연결된 Daemon이 없습니다.'), findsOneWidget);
+      final control = tester.widget<TRButton>(
+        find.byKey(const ValueKey('new-workspace-project')),
+      );
+      expect(control.onPressed, isNull);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
 }
 
 HostRuntimeSnapshot _host(String id, String label) => HostRuntimeSnapshot(
@@ -469,14 +490,22 @@ HostRuntimeSnapshot _host(String id, String label) => HostRuntimeSnapshot(
   status: HostRuntimeStatus.online,
 );
 
-Future<GoRouter> _pump(WidgetTester tester, FakeCoderApi api) async {
+Future<GoRouter> _pump(
+  WidgetTester tester,
+  FakeCoderApi api, {
+  bool connected = true,
+}) async {
   final router = GoRouter(
     initialLocation: const WorkspaceHomeRoute(compose: true).location,
     routes: $appRoutes,
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
+      overrides: [
+        appServicesProvider.overrideWithValue(
+          fakeAppServices(api, connected: connected),
+        ),
+      ],
       child: MaterialApp.router(
         theme: testLightTheme,
         darkTheme: testDarkTheme,
