@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:coder_agent/src/tool_search.dart';
 import 'package:coder_agent/src/usage.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -638,6 +639,12 @@ abstract class AgentTool {
   /// server, for instance — cannot guarantee that every property is required
   /// and that every object forbids additional properties, so they opt out.
   bool get strict => true;
+
+  /// Whether the model is told about this tool up front.
+  ///
+  /// A deferred tool stays dispatchable; only its advertisement is withheld
+  /// until [ToolSearchTool] surfaces it.
+  ToolExposure get exposure => ToolExposure.advertised;
 
   /// The preview public API member.
   Future<String?> preview(

@@ -223,6 +223,20 @@ final class ChatNotice extends ChatItem {
   final int? toolRounds;
 }
 
+/// A notice that some tools were withheld from the model's tool list.
+final class ChatDeferredTools extends ChatItem {
+  /// Creates a deferred-tools notice.
+  const ChatDeferredTools({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+    required this.count,
+  });
+
+  /// How many tools are reachable only through a search.
+  final int count;
+}
+
 /// Token accounting reported by the provider.
 final class ChatUsage extends ChatItem {
   /// Creates a usage item.
@@ -415,6 +429,21 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           error: _string(event.data['error']),
           isError: event.data['isError'] == true,
         );
+      case 'tools.deferred':
+        closeAssistant(turnId);
+        final count = event.data['count'];
+        if (count is int && count > 0) {
+          builders.add(
+            _StaticBuilder(
+              ChatDeferredTools(
+                key: 'deferred-${event.sequence}',
+                turnId: turnId,
+                createdAt: event.createdAt,
+                count: count,
+              ),
+            ),
+          );
+        }
       case 'model.usage':
         closeAssistant(turnId);
         builders.add(

@@ -923,6 +923,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String toolSearchFound(int found, int remaining) {
+    return '$found loaded · $remaining still hidden';
+  }
+
+  @override
+  String chatDeferredTools(int count) {
+    return '$count tools are available through search';
+  }
+
+  @override
   String toolMcpResources(int count) {
     return '$count resources';
   }

@@ -558,6 +558,16 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'tool.search.deferred',
+    description:
+        'Withholds bulk tools from the model tool list and makes them '
+        'callable through a search that persists across a session.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'mcp.resource.access',
     description:
         'Discovers MCP resources and templates, shows them per server, and '

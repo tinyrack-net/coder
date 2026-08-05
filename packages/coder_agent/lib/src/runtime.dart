@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/plan_mode_prompt.dart';
 import 'package:coder_agent/src/skills.dart';
+import 'package:coder_agent/src/tool_search.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Signature used by AgentEventCallback.
@@ -112,7 +113,20 @@ class AgentRunner {
     required this._onProviderItems,
     ApprovalPolicy Function(PermissionMode mode)? policyFactory,
   }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool},
-       _policyFactory = policyFactory ?? DefaultApprovalPolicy.new;
+       _policyFactory = policyFactory ?? DefaultApprovalPolicy.new {
+    final deferred = _tools.values
+        .where((tool) => tool.exposure == ToolExposure.deferred)
+        .toList(growable: false);
+    if (deferred.isEmpty) return;
+    // The runner owns the search tool because it owns both the registry and
+    // the advertised list. Nothing is built when nothing is deferred.
+    final search = ToolSearchTool(
+      deferred: deferred,
+      onSurfaced: _surfaced.addAll,
+    );
+    _tools[search.name] = search;
+    _deferredCount = deferred.length;
+  }
 
   final ModelProvider _provider;
   final Map<String, AgentTool> _tools;
@@ -123,6 +137,52 @@ class AgentRunner {
 
   /// Builds the approval policy for a turn's permission mode.
   final ApprovalPolicy Function(PermissionMode mode) _policyFactory;
+
+  /// Deferred tools a search has made visible to the model.
+  final Set<String> _surfaced = <String>{};
+
+  /// How many tools were withheld from the initial advertisement.
+  int _deferredCount = 0;
+
+  /// Tools the model is told about: everything advertised, plus what a search
+  /// surfaced.
+  List<ModelToolDefinition> _advertisedTools() => <ModelToolDefinition>[
+    for (final tool in _tools.values)
+      if (tool.exposure == ToolExposure.advertised ||
+          _surfaced.contains(tool.name))
+        ModelToolDefinition(
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.strictJsonSchema,
+          strict: tool.strict,
+        ),
+  ];
+
+  /// Restores the tools an earlier turn in this session already surfaced.
+  ///
+  /// Unlike the Responses API, the providers here take a tools array per
+  /// request, so a tool that only lives in a past `tool_search` result would
+  /// silently stop being callable. The names are read back out of history so
+  /// no extra state has to be stored or kept in sync.
+  void _restoreSurfaced(List<ConversationItem> history) {
+    if (_deferredCount == 0) return;
+    for (final item in history) {
+      if (item is! ToolResultConversationItem) continue;
+      final Object? decoded;
+      try {
+        decoded = jsonDecode(item.output);
+      } on FormatException {
+        continue;
+      }
+      if (decoded is! Map) continue;
+      final tools = decoded['tools'];
+      if (tools is! List) continue;
+      for (final entry in tools.whereType<Map<dynamic, dynamic>>()) {
+        final name = entry['name'];
+        if (name is String && _tools.containsKey(name)) _surfaced.add(name);
+      }
+    }
+  }
 
   /// The startTurn public API member.
   Future<AgentRunResult> startTurn(
@@ -136,7 +196,14 @@ class AgentRunner {
     final input = <ConversationItem>[...request.history, userItem];
     final persisted = <ConversationItem>[userItem];
     var toolRounds = 0;
+    _restoreSurfaced(request.history);
     await _onStatus(SessionStatus.running);
+    if (_deferredCount > 0) {
+      await _onEvent('tools.deferred', <String, dynamic>{
+        'count': _deferredCount,
+        'surfaced': _surfaced.length,
+      });
+    }
     await _onEvent('user.message', <String, dynamic>{
       'text': request.prompt,
       'attachments': request.attachments
@@ -158,16 +225,7 @@ class AgentRunner {
           instructions: _instructions(request),
           history: input,
           safetyIdentifier: request.safetyIdentifier,
-          tools: _tools.values
-              .map(
-                (tool) => ModelToolDefinition(
-                  name: tool.name,
-                  description: tool.description,
-                  parameters: tool.strictJsonSchema,
-                  strict: tool.strict,
-                ),
-              )
-              .toList(growable: false),
+          tools: _advertisedTools(),
         );
 
         await for (final event in _provider.stream(

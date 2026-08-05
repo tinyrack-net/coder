@@ -907,6 +907,16 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String toolSearchFound(int found, int remaining) {
+    return '$found개 로드 · $remaining개 남음';
+  }
+
+  @override
+  String chatDeferredTools(int count) {
+    return '검색으로 사용할 수 있는 도구 $count개';
+  }
+
+  @override
   String toolMcpResources(int count) {
     return '리소스 $count개';
   }

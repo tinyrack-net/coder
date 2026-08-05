@@ -334,6 +334,39 @@ class ChatUsageLine extends StatelessWidget {
   }
 }
 
+/// Tells the user that tools exist beyond the ones the model was handed.
+class ChatDeferredToolsLine extends StatelessWidget {
+  /// Creates a deferred-tools line.
+  const ChatDeferredToolsLine({required this.notice, super.key});
+
+  /// The notice to render.
+  final ChatDeferredTools notice;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(
+      vertical: TRSpacing.threeExtraSmall,
+      horizontal: TRSpacing.extraSmall,
+    ),
+    child: Row(
+      children: <Widget>[
+        Icon(
+          CoderIcons.tool,
+          size: TRTypography.bodySm.fontSize,
+          color: context.tinyrackTheme.textMuted,
+        ),
+        const SizedBox(width: TRSpacing.small),
+        TRText(
+          AppLocalizations.of(context).chatDeferredTools(notice.count),
+          key: const ValueKey<String>('chat-deferred-tools'),
+          variant: TRTextVariant.bodySm,
+          color: TRTextColor.muted,
+        ),
+      ],
+    ),
+  );
+}
+
 /// An event this build cannot render, shown as a collapsible row.
 class ChatUnknownEventLine extends StatelessWidget {
   /// Creates an unknown-event line.

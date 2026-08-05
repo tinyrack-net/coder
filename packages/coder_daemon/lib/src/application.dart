@@ -302,6 +302,13 @@ abstract final class DaemonApplication {
           unawaited(mcp.ensureProject(workspaceRoot));
           mcp.releaseIdleProjects();
           final execHost = SessionExecHost(execSessions, sessionId);
+          // Withhold MCP tools only once there are enough of them to crowd
+          // the context; below the threshold nothing changes for the user.
+          final mcpExposure =
+              mcp.tools(workspaceRoot: workspaceRoot).length >
+                  mcpDeferralThreshold
+              ? ToolExposure.deferred
+              : ToolExposure.advertised;
           return resolveAgentToolIds(ids)
               .expand<AgentTool?>(
                 (id) => switch (id) {
@@ -342,7 +349,12 @@ abstract final class DaemonApplication {
                     WriteStdinTool(host: execHost),
                   ],
                   _ => <AgentTool?>[
-                    toolById[id] ?? mcp.tool(id, workspaceRoot: workspaceRoot),
+                    toolById[id] ??
+                        mcp.tool(
+                          id,
+                          workspaceRoot: workspaceRoot,
+                          exposure: mcpExposure,
+                        ),
                   ],
                 },
               )

@@ -357,6 +357,124 @@ void main() {
   );
 
   test(
+    'a deferred tool is withheld until a search surfaces it',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _toolResponseWith('tool_search', <String, dynamic>{
+          'query': 'echo the value',
+          'limit': null,
+        }),
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_EchoTool(), _DeferredTool()],
+      );
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      // Round one advertises the always-on tool and the search tool, but not
+      // the deferred one.
+      final first = provider.requests.first.tools.map((tool) => tool.name);
+      expect(first, containsAll(<String>['echo', 'tool_search']));
+      expect(first, isNot(contains('hidden')));
+
+      // Round two advertises what the search surfaced.
+      final second = provider.requests.last.tools.map((tool) => tool.name);
+      expect(second, contains('hidden'));
+
+      expect(harness.events, contains('tools.deferred'));
+    },
+  );
+
+  test(
+    'a deferred tool called without searching still dispatches',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      final harness = _RunnerHarness(
+        _FakeProvider(<List<ModelEvent>>[
+          _toolResponse('hidden'),
+          _textResponse('done'),
+        ]),
+        tools: <AgentTool>[_DeferredTool()],
+      );
+
+      final result = await harness.runner.startTurn(
+        _request(),
+        CancellationToken(),
+      );
+
+      // Withholding changes advertisement, never dispatchability.
+      final toolResult = result.conversationItems
+          .whereType<ToolResultConversationItem>()
+          .single;
+      expect(toolResult.isError, isFalse);
+      expect(toolResult.output, 'hello');
+    },
+  );
+
+  test(
+    'a session that already searched keeps its tools advertised',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      // The specs live in history from the previous turn, but this provider
+      // sends a tools array per request, so the runner has to restore them.
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_DeferredTool()],
+      );
+
+      await harness.runner.startTurn(
+        _request(
+          history: <ConversationItem>[
+            const AssistantConversationItem(
+              text: '',
+              toolCalls: <ConversationToolCall>[
+                ConversationToolCall(
+                  callId: 'call-search',
+                  name: 'tool_search',
+                  arguments: <String, dynamic>{'query': 'hidden'},
+                ),
+              ],
+            ),
+            const ToolResultConversationItem(
+              callId: 'call-search',
+              output: '{"tools":[{"name":"hidden"}],"remaining":0}',
+            ),
+          ],
+        ),
+        CancellationToken(),
+      );
+
+      expect(
+        provider.requests.single.tools.map((tool) => tool.name),
+        contains('hidden'),
+      );
+    },
+  );
+
+  test(
+    'nothing deferred means no search tool and no notice',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
+      final harness = _RunnerHarness(provider, tools: <AgentTool>[_EchoTool()]);
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      expect(
+        provider.requests.single.tools.map((tool) => tool.name),
+        <String>['echo'],
+      );
+      expect(harness.events, isNot(contains('tools.deferred')));
+    },
+  );
+
+  test(
     'unknown and failing tools are persisted without aborting the turn',
     () async {
       final unknown = _RunnerHarness(
@@ -521,6 +639,9 @@ AgentRunRequest _request({
   SessionMode sessionMode = SessionMode.normal,
   String? customSystemPrompt,
   List<SkillSummary> skills = const <SkillSummary>[],
+  List<ConversationItem> history = const <ConversationItem>[
+    UserConversationItem('history'),
+  ],
 }) => AgentRunRequest(
   sessionId: 'agent-1',
   turnId: 'turn-1',
@@ -528,7 +649,7 @@ AgentRunRequest _request({
   prompt: 'test',
   model: 'test-model',
   permissionMode: permissionMode,
-  history: const <ConversationItem>[UserConversationItem('history')],
+  history: history,
   safetyIdentifier: 'safe-id',
   maxToolRounds: maxToolRounds,
   sessionMode: sessionMode,
@@ -554,6 +675,25 @@ List<ModelEvent> _toolResponse(String name) => <ModelEvent>[
       ],
     ),
     usage: const ModelUsage(inputTokens: 10, totalTokens: 10),
+  ),
+];
+
+List<ModelEvent> _toolResponseWith(
+  String name,
+  Map<String, dynamic> arguments,
+) => <ModelEvent>[
+  ModelFunctionCall(callId: 'call-$name', name: name, arguments: arguments),
+  ModelResponseCompleted(
+    assistant: AssistantConversationItem(
+      text: '',
+      toolCalls: <ConversationToolCall>[
+        ConversationToolCall(
+          callId: 'call-$name',
+          name: name,
+          arguments: arguments,
+        ),
+      ],
+    ),
   ),
 ];
 
@@ -672,6 +812,20 @@ final class _ContextImageTool extends _EchoTool {
       contextImages: <ConversationAttachment>[attachment],
     );
   }
+}
+
+final class _DeferredTool extends _EchoTool {
+  @override
+  String get name => 'hidden';
+
+  @override
+  String get description => 'Echoes the value it is given.';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  ToolExposure get exposure => ToolExposure.deferred;
 }
 
 final class _FailingTool extends _EchoTool {

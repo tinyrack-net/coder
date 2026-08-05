@@ -1122,6 +1122,16 @@
     "description": "Result line while a pseudo-terminal session is still running.",
     "placeholders": {"lines": {"type": "int"}}
   },
+  "toolSearchFound": "{found} loaded · {remaining} still hidden",
+  "@toolSearchFound": {
+    "description": "Result line of a tool_search call.",
+    "placeholders": {"found": {"type": "int"}, "remaining": {"type": "int"}}
+  },
+  "chatDeferredTools": "{count} tools are available through search",
+  "@chatDeferredTools": {
+    "description": "Notice that some tools were not advertised up front.",
+    "placeholders": {"count": {"type": "int"}}
+  },
   "toolMcpResources": "{count} resources",
   "@toolMcpResources": {
     "description": "Result line of a list_mcp_resources tool call.",

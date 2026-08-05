@@ -1742,6 +1742,18 @@ abstract class AppLocalizations {
   /// **'running · {lines} lines'**
   String toolExecRunning(int lines);
 
+  /// Result line of a tool_search call.
+  ///
+  /// In en, this message translates to:
+  /// **'{found} loaded · {remaining} still hidden'**
+  String toolSearchFound(int found, int remaining);
+
+  /// Notice that some tools were not advertised up front.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tools are available through search'**
+  String chatDeferredTools(int count);
+
   /// Result line of a list_mcp_resources tool call.
   ///
   /// In en, this message translates to:

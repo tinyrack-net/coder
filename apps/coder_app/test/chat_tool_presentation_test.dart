@@ -442,6 +442,44 @@ void main() {
   );
 
   test(
+    'tool_search reports what it loaded and what stays hidden',
+    tags: const <String>['feature_test__tool_search_deferred__widget'],
+    () {
+      final searched = describeToolActivity(
+        testL10n,
+        activity(
+          'tool_search',
+          arguments: const <String, dynamic>{'query': 'open a pull request'},
+          output:
+              '{"tools":[{"name":"mcp__github__create_pull_request",'
+              '"description":"Opens a PR.","parameters":{}}],"remaining":11}',
+        ),
+      );
+
+      expect(searched.glyph, ChatToolGlyph.tools);
+      expect(chatToolIcon(searched.glyph), CoderIcons.tool);
+      expect(searched.title, 'Tools(open a pull request)');
+      expect(searched.resultLine, contains('11'));
+      // The body lists names, not the schemas the model needs.
+      expect(
+        (searched.body as ChatToolTextBody).text,
+        'mcp__github__create_pull_request',
+      );
+      expect(searched.isFailure, isFalse);
+
+      final empty = describeToolActivity(
+        testL10n,
+        activity(
+          'tool_search',
+          arguments: const <String, dynamic>{'query': 'nothing'},
+          output: '{"tools":[],"remaining":12}',
+        ),
+      );
+      expect(empty.body, isA<ChatToolEmptyBody>());
+    },
+  );
+
+  test(
     'MCP resource tools read as discovery, not raw JSON',
     tags: const <String>['feature_test__mcp_resource_access__widget'],
     () {

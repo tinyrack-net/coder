@@ -287,6 +287,41 @@ void main() {
   );
 
   testWidgets(
+    'withheld tools are announced so the user knows they exist',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tools.deferred', <String, dynamic>{
+          'count': 12,
+          'surfaced': 0,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      final line = tester.widget<TRText>(
+        find.byKey(const ValueKey<String>('chat-deferred-tools')),
+      );
+      expect(line.data, contains('12'));
+    },
+    tags: const <String>['feature_test__tool_search_deferred__widget'],
+  );
+
+  testWidgets(
+    'nothing withheld shows no notice',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tools.deferred', <String, dynamic>{'count': 0}),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-deferred-tools')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__tool_search_deferred__widget'],
+  );
+
+  testWidgets(
     'token usage reads as labelled counters, not raw provider keys',
     (tester) async {
       await pump(tester, <TimelineEventDto>[

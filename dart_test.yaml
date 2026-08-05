@@ -62,6 +62,8 @@ tags:
   feature_test__tool_exec_session__unit:
   feature_test__tool_exec_session__verticalSlice:
   feature_test__tool_exec_session__widget:
+  feature_test__tool_search_deferred__unit:
+  feature_test__tool_search_deferred__widget:
   feature_test__mcp_resource_access__unit:
   feature_test__mcp_resource_access__contract:
   feature_test__mcp_resource_access__verticalSlice:

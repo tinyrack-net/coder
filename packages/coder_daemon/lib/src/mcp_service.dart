@@ -209,13 +209,20 @@ final class McpService implements AgentToolCatalog {
   ///
   /// A user server always wins over a project server of the same id, so a
   /// repository cannot redirect a tool the user configured for themselves.
-  AgentTool? tool(String id, {String? workspaceRoot}) {
+  AgentTool? tool(
+    String id, {
+    String? workspaceRoot,
+    ToolExposure exposure = ToolExposure.advertised,
+  }) {
     final parsed = parseMcpToolId(id);
     if (parsed == null) return null;
-    final user = _user[parsed.server]?.toolNamed(id);
+    final user = _user[parsed.server]?.toolNamed(id, exposure);
     if (user != null) return user;
     if (workspaceRoot == null) return null;
-    return _projects[workspaceRoot]?.connections[parsed.server]?.toolNamed(id);
+    return _projects[workspaceRoot]?.connections[parsed.server]?.toolNamed(
+      id,
+      exposure,
+    );
   }
 
   /// Connects the servers declared by [workspaceRoot], if any.
@@ -624,7 +631,7 @@ final class _Connection {
       ? client?.resourceTemplates ?? const <McpResourceTemplateDescriptor>[]
       : const <McpResourceTemplateDescriptor>[];
 
-  AgentTool? toolNamed(String id) {
+  AgentTool? toolNamed(String id, ToolExposure exposure) {
     final connected = client;
     if (status != McpServerStatus.ready || connected == null) return null;
     for (final descriptor in connected.tools) {
@@ -633,6 +640,7 @@ final class _Connection {
         serverId: config.id,
         descriptor: descriptor,
         lookup: (_) => client,
+        exposure: exposure,
       );
     }
     return null;

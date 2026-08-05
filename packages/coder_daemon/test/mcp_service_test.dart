@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/ports.dart';
@@ -78,6 +79,29 @@ void main() {
     expect(state.error, isNull);
     expect(state.lastConnectedAt, isNotNull);
   });
+
+  test(
+    'an MCP tool is advertised or withheld as the caller asks',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      store.user = <McpServerConfigDto>[stdioServer];
+      final service = build();
+      addTearDown(service.close);
+      await service.initialize();
+      await pumpEventQueue();
+
+      expect(
+        service.tool('mcp__github__echo')!.exposure,
+        ToolExposure.advertised,
+      );
+      expect(
+        service
+            .tool('mcp__github__echo', exposure: ToolExposure.deferred)!
+            .exposure,
+        ToolExposure.deferred,
+      );
+    },
+  );
 
   test(
     'a ready server publishes its resources, scoped and sorted',

@@ -143,6 +143,9 @@ enum ChatToolGlyph {
   /// MCP resource discovery and reads.
   resource,
 
+  /// Tool discovery.
+  tools,
+
   /// Images loaded into the model context.
   image,
 
@@ -423,6 +426,37 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
           ? _genericResult(l10n, output)
           : answers.join(', ');
     },
+  ),
+  'tool_search': _ToolSpec(
+    glyph: ChatToolGlyph.tools,
+    title: (l10n, activity) =>
+        'Tools(${_truncate(_stringArg(activity, 'query') ?? '', 40)})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final found = output.value['tools'];
+      final remaining = output.value['remaining'];
+      return l10n.toolSearchFound(
+        found is List ? found.length : 0,
+        remaining is int ? remaining : 0,
+      );
+    },
+    body: (activity, output) {
+      // The names are the useful part; the schemas are for the model.
+      if (output is! ChatToolJsonObject) return _plainBody(activity, output);
+      final found = output.value['tools'];
+      if (found is! List) return _plainBody(activity, output);
+      final names = found
+          .whereType<Map<dynamic, dynamic>>()
+          .map((tool) => tool['name'])
+          .whereType<String>()
+          .join('\n');
+      return names.isEmpty
+          ? const ChatToolEmptyBody()
+          : ChatToolTextBody(names);
+    },
+    isFailure: _hasErrorKey,
   ),
   'list_mcp_resources': _ToolSpec(
     glyph: ChatToolGlyph.resource,
