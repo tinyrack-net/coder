@@ -5,12 +5,14 @@ import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/composer_suggestions.dart';
 import 'package:coder_app/src/composer_suggestions_overlay.dart';
 import 'package:coder_app/src/composer_trigger.dart';
+import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/model_picker.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -236,32 +238,37 @@ class _ComposerSuggestionsGoldenHost extends StatelessWidget {
   final ComposerTriggerKind kind;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    debugShowCheckedModeBanner: false,
-    locale: testLocale,
-    localizationsDelegates: testLocalizationsDelegates,
-    supportedLocales: testSupportedLocales,
-    theme: testLightTheme,
-    darkTheme: testDarkTheme,
-    themeMode: kind == ComposerTriggerKind.command
-        ? ThemeMode.light
-        : ThemeMode.dark,
-    home: Scaffold(
-      body: Align(
-        alignment: Alignment.bottomCenter,
-        child: SessionComposer(
-          enabled: true,
-          onSubmit: (_) {},
-          suggestions: _state(kind),
-          bar: SessionComposerBar(
-            hostId: 'server',
-            definitions: const <AgentDefinitionDto>[],
-            agentDefinitionId: null,
-            selection: null,
-            onAgentChanged: (_) {},
-            onModelChanged: (_) {},
-            mode: SessionMode.normal,
-            onModeChanged: (_) {},
+  Widget build(BuildContext context) => ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+    ],
+    child: MaterialApp(
+      debugShowCheckedModeBanner: false,
+      locale: testLocale,
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      theme: testLightTheme,
+      darkTheme: testDarkTheme,
+      themeMode: kind == ComposerTriggerKind.command
+          ? ThemeMode.light
+          : ThemeMode.dark,
+      home: Scaffold(
+        body: Align(
+          alignment: Alignment.bottomCenter,
+          child: SessionComposer(
+            enabled: true,
+            onSubmit: (_) {},
+            suggestions: _state(kind),
+            bar: SessionComposerBar(
+              hostId: 'server',
+              definitions: const <AgentDefinitionDto>[],
+              agentDefinitionId: null,
+              selection: null,
+              onAgentChanged: (_) {},
+              onModelChanged: (_) {},
+              mode: SessionMode.normal,
+              onModeChanged: (_) {},
+            ),
           ),
         ),
       ),
