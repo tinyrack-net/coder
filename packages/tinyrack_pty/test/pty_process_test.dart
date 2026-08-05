@@ -297,9 +297,7 @@ void main() {
     final childPid = Completer<int>();
     final subscription = process.output.transform(utf8.decoder).listen((chunk) {
       received.write(chunk);
-      final match = RegExp(r'^CHILD:(\d+)\r?$', multiLine: true).firstMatch(
-        received.toString(),
-      );
+      final match = RegExp(r'CHILD:(\d+)').firstMatch(received.toString());
       if (match != null && !childPid.isCompleted) {
         childPid.complete(int.parse(match.group(1)!));
       }

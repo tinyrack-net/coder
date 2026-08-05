@@ -260,6 +260,13 @@ tr_pty *tr_pty_spawn(const char *executable,
       !SetInformationJobObject(job, JobObjectExtendedLimitInformation,
           &limits, sizeof(limits)) ||
       !AssignProcessToJobObject(job, process.hProcess)) goto fail;
+  // The pseudoconsole owns the opposing ends after CreateProcess. Releasing
+  // our copies before the client resumes matches the documented ConPTY handle
+  // lifecycle and prevents its synchronous input channel from remaining idle.
+  tr_close(input_read);
+  input_read = NULL;
+  tr_close(output_write);
+  output_write = NULL;
   if (ResumeThread(process.hThread) == (DWORD)-1) goto fail;
 
   result = (tr_pty *)calloc(1, sizeof(tr_pty));
@@ -279,8 +286,6 @@ tr_pty *tr_pty_spawn(const char *executable,
   result->writer_thread = CreateThread(NULL, 0, tr_writer, result, 0, NULL);
   if (result->writer_thread == NULL) goto fail;
   CloseHandle(process.hThread);
-  tr_close(input_read);
-  tr_close(output_write);
   DeleteProcThreadAttributeList(attributes);
   free(attributes);
   free(command);
