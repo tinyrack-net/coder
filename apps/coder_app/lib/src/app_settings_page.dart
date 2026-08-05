@@ -337,7 +337,7 @@ class _RemoteHostCard extends ConsumerWidget {
         child: Column(
           children: <Widget>[
             CoderListRow(
-              leading: Icon(_statusIcon(runtime?.status)),
+              leading: Icon(hostStatusIcon(runtime?.status)),
               title: Text(profile.label),
               subtitle: Text(
                 '${profile.websocketUri}\n${hostStatusText(l10n, runtime)}',
@@ -615,13 +615,3 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
     if (mounted) context.go('/');
   }
 }
-
-IconData _statusIcon(HostRuntimeStatus? status) => switch (status) {
-  HostRuntimeStatus.online => CoderIcons.success,
-  HostRuntimeStatus.connecting ||
-  HostRuntimeStatus.reconnecting => CoderIcons.sync,
-  HostRuntimeStatus.offline => CoderIcons.offline,
-  HostRuntimeStatus.conflict => CoderIcons.branch,
-  HostRuntimeStatus.error => CoderIcons.error,
-  HostRuntimeStatus.idle || null => CoderIcons.paused,
-};

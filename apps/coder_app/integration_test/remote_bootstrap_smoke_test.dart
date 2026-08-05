@@ -40,7 +40,7 @@ void main() {
         find.byKey(const ValueKey<String>('settings-category-select')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemon').last);
+      await tester.tap(find.text('Daemons').last);
       await tester.pumpAndSettle();
       expect(find.text('내장 daemon'), findsNothing);
       expect(find.text('원격 daemon 추가'), findsOneWidget);

@@ -61,6 +61,64 @@ abstract class _$HostRegistryController
   }
 }
 
+/// The daemon that host-scoped screens read and write.
+///
+/// The saved [AppSettings.lastActiveHostId] wins so the choice survives a
+/// restart and stays in step with the workspace window. It is allowed to name
+/// an offline daemon, so the fallbacks only run when it names no daemon at all.
+
+@ProviderFor(activeHostId)
+final activeHostIdProvider = ActiveHostIdProvider._();
+
+/// The daemon that host-scoped screens read and write.
+///
+/// The saved [AppSettings.lastActiveHostId] wins so the choice survives a
+/// restart and stays in step with the workspace window. It is allowed to name
+/// an offline daemon, so the fallbacks only run when it names no daemon at all.
+
+final class ActiveHostIdProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  /// The daemon that host-scoped screens read and write.
+  ///
+  /// The saved [AppSettings.lastActiveHostId] wins so the choice survives a
+  /// restart and stays in step with the workspace window. It is allowed to name
+  /// an offline daemon, so the fallbacks only run when it names no daemon at all.
+  ActiveHostIdProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'activeHostIdProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$activeHostIdHash();
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    return activeHostId(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$activeHostIdHash() => r'bd97f7052a03788a600dc17ce51a2db1b3956cb5';
+
 /// Tracks whether the saved worktree was already restored this run.
 ///
 /// The workspace page is rebuilt whenever the route changes, so the guard has

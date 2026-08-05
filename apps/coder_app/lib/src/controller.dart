@@ -165,6 +165,22 @@ class HostRegistryController extends _$HostRegistryController {
 }
 
 @Riverpod(keepAlive: true)
+/// The daemon that host-scoped screens read and write.
+///
+/// The saved [AppSettings.lastActiveHostId] wins so the choice survives a
+/// restart and stays in step with the workspace window. It is allowed to name
+/// an offline daemon, so the fallbacks only run when it names no daemon at all.
+String? activeHostId(Ref ref) {
+  final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
+  if (registry == null) return null;
+  final runtimes = registry.runtimes;
+  final saved = registry.settings.lastActiveHostId;
+  if (saved != null && runtimes.containsKey(saved)) return saved;
+  return runtimes.values.where((item) => item.connected).firstOrNull?.id ??
+      runtimes.values.firstOrNull?.id;
+}
+
+@Riverpod(keepAlive: true)
 /// Tracks whether the saved worktree was already restored this run.
 ///
 /// The workspace page is rebuilt whenever the route changes, so the guard has

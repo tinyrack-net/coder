@@ -41,7 +41,7 @@ void main() {
 
       await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemon'));
+      await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '원격 daemon 추가'));
       await tester.pumpAndSettle();
@@ -134,7 +134,7 @@ void main() {
 
       await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemon'));
+      await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();
       await tester.tap(_action('연결 편집'));
       await tester.pumpAndSettle();
@@ -194,7 +194,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemon'));
+      await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();
       await _pumpUntil(tester, find.textContaining('온라인'));
 

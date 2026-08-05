@@ -76,6 +76,31 @@
   "@settingsTitle": {
     "description": "Title of the settings shell."
   },
+  "settingsSectionApp": "App",
+  "@settingsSectionApp": {
+    "description": "Settings sidebar heading over the app-wide categories."
+  },
+  "settingsSectionDaemon": "Daemon",
+  "@settingsSectionDaemon": {
+    "description": "Settings sidebar heading over the categories owned by one daemon."
+  },
+  "settingsDaemonSelectLabel": "Daemon",
+  "@settingsDaemonSelectLabel": {
+    "description": "Label of the sidebar picker choosing which daemon to edit."
+  },
+  "settingsDaemonSelectEmpty": "No daemons",
+  "@settingsDaemonSelectEmpty": {
+    "description": "Placeholder in the daemon picker when no daemon is configured."
+  },
+  "settingsDaemonOffline": "{label} is not connected.",
+  "@settingsDaemonOffline": {
+    "description": "Shown when the selected daemon cannot serve its settings.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "settingsCategoryGeneral": "General",
   "@settingsCategoryGeneral": {
     "description": "Settings sidebar entry for app-wide preferences."
@@ -92,7 +117,7 @@
   "@settingsCategoryProvider": {
     "description": "Settings sidebar entry for provider connections."
   },
-  "settingsCategoryDaemon": "Daemon",
+  "settingsCategoryDaemon": "Daemons",
   "@settingsCategoryDaemon": {
     "description": "Settings sidebar entry for daemon connections."
   },
