@@ -413,7 +413,8 @@ extension SettingsCategoryScopeX on SettingsCategory {
   /// daemons, so it sits with General rather than under the daemon picker.
   SettingsCategoryScope get scope => switch (this) {
     SettingsCategory.general ||
-    SettingsCategory.daemon => SettingsCategoryScope.app,
+    SettingsCategory.daemon ||
+    SettingsCategory.advanced => SettingsCategoryScope.app,
     SettingsCategory.project ||
     SettingsCategory.agent ||
     SettingsCategory.mcp ||

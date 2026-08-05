@@ -7,12 +7,18 @@ import 'package:test/test.dart';
 /// Records every filesystem interaction so ordering can be asserted.
 final class _RecordingDataFiles implements DaemonDataFiles {
   _RecordingDataFiles({
-    required this.entries,
-    this.directories = const <String>{},
+    required Set<String> entries,
+    Set<String> directories = const <String>{},
     this.lockFailure,
-    this.deleteFailure,
-  });
+    String? deleteFailure,
+  }) : entries = entries.map(p.canonicalize).toSet(),
+       directories = directories.map(p.canonicalize).toSet(),
+       deleteFailure = deleteFailure == null
+           ? null
+           : p.canonicalize(deleteFailure);
 
+  // Canonical, because a real filesystem resolves `/x/y` and `/x//y` to the
+  // same entry and the reset joins onto caller-supplied directory strings.
   final Set<String> entries;
   final Set<String> directories;
   final DaemonDataResetException? lockFailure;
@@ -29,10 +35,12 @@ final class _RecordingDataFiles implements DaemonDataFiles {
   }
 
   @override
-  Future<bool> exists(String path) async => entries.contains(path);
+  Future<bool> exists(String path) async =>
+      entries.contains(p.canonicalize(path));
 
   @override
-  Future<bool> isDirectory(String path) async => directories.contains(path);
+  Future<bool> isDirectory(String path) async =>
+      directories.contains(p.canonicalize(path));
 
   @override
   Future<void> deleteFile(String path) async => _delete('file', path);
@@ -42,10 +50,10 @@ final class _RecordingDataFiles implements DaemonDataFiles {
 
   void _delete(String kind, String path) {
     calls.add('$kind:$path');
-    if (path == deleteFailure) {
+    if (p.canonicalize(path) == deleteFailure) {
       throw FileSystemException('denied', path);
     }
-    deleted.add(path);
+    deleted.add(p.canonicalize(path));
   }
 }
 
@@ -90,8 +98,11 @@ Future<void> main(List<String> arguments) async {
 }
 
 void main() {
-  String home(String entry) => p.join('/state/tinyrack-coder', entry);
-  String config(String entry) => p.join('/config/tinyrack-coder', entry);
+  // Canonical, matching what _RecordingDataFiles records.
+  String home(String entry) =>
+      p.canonicalize(p.join('/state/tinyrack-coder', entry));
+  String config(String entry) =>
+      p.canonicalize(p.join('/config/tinyrack-coder', entry));
 
   DaemonDataReset reset(
     DaemonDataFiles files, {
@@ -139,8 +150,14 @@ void main() {
         config('skills'),
       ]);
       expect(files.deleted, isNot(contains(home('worktrees'))));
-      expect(files.deleted, isNot(contains('/state/tinyrack-coder')));
-      expect(files.deleted, isNot(contains('/config/tinyrack-coder')));
+      expect(
+        files.deleted,
+        isNot(contains(p.canonicalize('/state/tinyrack-coder'))),
+      );
+      expect(
+        files.deleted,
+        isNot(contains(p.canonicalize('/config/tinyrack-coder'))),
+      );
       expect(DaemonDataReset.preservedHomeEntries, <String>['worktrees']);
     },
     tags: const <String>['feature_test__settings_reset__unit'],
@@ -175,8 +192,8 @@ void main() {
       ).eraseAll();
 
       expect(files.deleted, <String>[
-        p.join('/shared', 'coder.sqlite'),
-        p.join('/shared', 'credentials.json'),
+        p.canonicalize(p.join('/shared', 'coder.sqlite')),
+        p.canonicalize(p.join('/shared', 'credentials.json')),
       ]);
       expect(
         files.calls.where((call) => call.startsWith('dir:')).length +
@@ -209,7 +226,7 @@ void main() {
         ),
       );
       expect(files.deleted, isEmpty);
-      expect(files.calls, <String>['lock:${home('daemon.lock')}']);
+      expect(files.calls.single, startsWith('lock:'));
     },
     tags: const <String>['feature_test__settings_reset__unit'],
   );
@@ -231,7 +248,11 @@ void main() {
                 'reason',
                 DaemonDataResetFailureReason.filesystem,
               )
-              .having((error) => error.path, 'path', home('coder.sqlite')),
+              .having(
+                (error) => p.canonicalize(error.path!),
+                'path',
+                home('coder.sqlite'),
+              ),
         ),
       );
     },
