@@ -4,6 +4,39 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_diff.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 
+/// Renders normalized token counters as one muted summary line.
+///
+/// The counters arrive under the stable names `ModelUsage` writes, so this is a
+/// fixed set rather than a walk over whatever keys a provider happened to send.
+/// Cached input and hidden reasoning are subsets of their parents, so they read
+/// as parenthesised qualifiers. Returns null when there is nothing to report.
+String? describeTokenUsage(AppLocalizations l10n, Map<String, num> tokens) {
+  int count(String key) {
+    final value = tokens[key];
+    return value is num ? value.round() : 0;
+  }
+
+  final input = count('inputTokens');
+  final cached = count('cachedInputTokens');
+  final output = count('outputTokens');
+  final reasoning = count('reasoningTokens');
+  final total = count('totalTokens');
+  if (input == 0 && output == 0 && total == 0) return null;
+
+  final parts = <String>[
+    if (input > 0)
+      cached > 0
+          ? l10n.usageInputCached(input, cached)
+          : l10n.usageInput(input),
+    if (output > 0)
+      reasoning > 0
+          ? l10n.usageOutputReasoning(output, reasoning)
+          : l10n.usageOutput(output),
+    if (total > 0) l10n.usageTotal(total),
+  ];
+  return parts.join(' · ');
+}
+
 /// Decoded shape of `tool.completed.output`, which some tools double-encode.
 sealed class ChatToolOutput {
   const ChatToolOutput();

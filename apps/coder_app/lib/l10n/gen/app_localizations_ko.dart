@@ -877,6 +877,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatPlanTitle => '계획';
 
   @override
+  String usageInput(int tokens) {
+    return '입력 $tokens';
+  }
+
+  @override
+  String usageInputCached(int tokens, int cached) {
+    return '입력 $tokens(캐시 $cached)';
+  }
+
+  @override
+  String usageOutput(int tokens) {
+    return '출력 $tokens';
+  }
+
+  @override
+  String usageOutputReasoning(int tokens, int reasoning) {
+    return '출력 $tokens(추론 $reasoning)';
+  }
+
+  @override
+  String usageTotal(int tokens) {
+    return '합계 $tokens';
+  }
+
+  @override
   String toolExecRunning(int lines) {
     return '실행 중 · $lines줄';
   }

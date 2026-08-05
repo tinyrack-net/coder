@@ -1706,6 +1706,36 @@ abstract class AppLocalizations {
   /// **'Plan'**
   String get chatPlanTitle;
 
+  /// Prompt token count in the usage summary line.
+  ///
+  /// In en, this message translates to:
+  /// **'in {tokens}'**
+  String usageInput(int tokens);
+
+  /// Prompt tokens with the cached portion called out.
+  ///
+  /// In en, this message translates to:
+  /// **'in {tokens} ({cached} cached)'**
+  String usageInputCached(int tokens, int cached);
+
+  /// Completion token count in the usage summary line.
+  ///
+  /// In en, this message translates to:
+  /// **'out {tokens}'**
+  String usageOutput(int tokens);
+
+  /// Completion tokens with the hidden reasoning portion called out.
+  ///
+  /// In en, this message translates to:
+  /// **'out {tokens} ({reasoning} reasoning)'**
+  String usageOutputReasoning(int tokens, int reasoning);
+
+  /// Total token count in the usage summary line.
+  ///
+  /// In en, this message translates to:
+  /// **'total {tokens}'**
+  String usageTotal(int tokens);
+
   /// Result line while a pseudo-terminal session is still running.
   ///
   /// In en, this message translates to:

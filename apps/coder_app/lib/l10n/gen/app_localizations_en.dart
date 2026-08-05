@@ -893,6 +893,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatPlanTitle => 'Plan';
 
   @override
+  String usageInput(int tokens) {
+    return 'in $tokens';
+  }
+
+  @override
+  String usageInputCached(int tokens, int cached) {
+    return 'in $tokens ($cached cached)';
+  }
+
+  @override
+  String usageOutput(int tokens) {
+    return 'out $tokens';
+  }
+
+  @override
+  String usageOutputReasoning(int tokens, int reasoning) {
+    return 'out $tokens ($reasoning reasoning)';
+  }
+
+  @override
+  String usageTotal(int tokens) {
+    return 'total $tokens';
+  }
+
+  @override
   String toolExecRunning(int lines) {
     return 'running · $lines lines';
   }

@@ -272,7 +272,70 @@ data: [DONE]
         completed.assistant.opaqueItems.first['encrypted_content'],
         'opaque',
       );
-      expect(completed.usage['output_tokens'], 1);
+      expect(completed.usage.outputTokens, 1);
+    },
+  );
+
+  test(
+    'both APIs normalize usage, including the nested detail counters',
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+    () async {
+      final responsesAdapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[],"usage":{"input_tokens":120,"output_tokens":30,"total_tokens":150,"input_tokens_details":{"cached_tokens":80},"output_tokens_details":{"reasoning_tokens":12}}}}
+
+data: [DONE]
+
+''');
+      final responses = await OpenAIResponsesProvider(
+        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        dio: Dio()..httpClientAdapter = responsesAdapter,
+      ).stream(_request(), CancellationToken()).toList();
+      final responsesUsage = responses
+          .whereType<ModelResponseCompleted>()
+          .single
+          .usage;
+
+      expect(responsesUsage.inputTokens, 120);
+      expect(responsesUsage.outputTokens, 30);
+      expect(responsesUsage.totalTokens, 150);
+      // The nested detail maps were silently dropped before normalization.
+      expect(responsesUsage.cachedInputTokens, 80);
+      expect(responsesUsage.reasoningTokens, 12);
+      expect(responsesUsage.contextTokens, 150);
+
+      final chatAdapter = _RecordingAdapter('''
+data: {"choices":[],"usage":{"prompt_tokens":90,"completion_tokens":10,"total_tokens":100,"prompt_tokens_details":{"cached_tokens":40},"completion_tokens_details":{"reasoning_tokens":6}}}
+
+data: [DONE]
+
+''');
+      final chat = await OpenAIChatCompletionsProvider(
+        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        dio: Dio()..httpClientAdapter = chatAdapter,
+      ).stream(_request(), CancellationToken()).toList();
+      final chatUsage = chat.whereType<ModelResponseCompleted>().single.usage;
+
+      // The two APIs spell every counter differently; the agent sees one shape.
+      expect(chatUsage.inputTokens, 90);
+      expect(chatUsage.outputTokens, 10);
+      expect(chatUsage.totalTokens, 100);
+      expect(chatUsage.cachedInputTokens, 40);
+      expect(chatUsage.reasoningTokens, 6);
+
+      // A response without usage reports zeroes, never null.
+      final emptyAdapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''');
+      final empty = await OpenAIResponsesProvider(
+        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        dio: Dio()..httpClientAdapter = emptyAdapter,
+      ).stream(_request(), CancellationToken()).toList();
+      final emptyUsage = empty.whereType<ModelResponseCompleted>().single.usage;
+      expect(emptyUsage.contextTokens, 0);
+      expect(emptyUsage.isEmpty, isTrue);
     },
   );
 
@@ -415,7 +478,7 @@ data: [DONE]
     expect(call.arguments, <String, dynamic>{'path': 'README.md'});
     final completed = events.whereType<ModelResponseCompleted>().single;
     expect(completed.assistant.toolCalls.single.callId, 'call-1');
-    expect(completed.usage['total_tokens'], 7);
+    expect(completed.usage.totalTokens, 7);
   });
 
   test('a tool opting out of strict schemas is never sent as strict', () async {
@@ -582,7 +645,9 @@ data: [DONE]
       expect(completed.assistant.text, 'done');
       expect(completed.assistant.toolCalls.single.name, 'write_file');
       expect(completed.assistant.opaqueItems.single['opaque'], 'value');
-      expect(completed.usage, <String, int>{'input_tokens': 3});
+      // A non-numeric counter the provider slipped in is ignored, not copied.
+      expect(completed.usage.inputTokens, 3);
+      expect(completed.usage.outputTokens, 0);
       expect(provider.id, 'compatible-responses');
     },
   );

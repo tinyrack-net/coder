@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:coder_agent/src/usage.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// CancellationToken defines a public contract.
@@ -381,14 +382,14 @@ class ModelResponseCompleted extends ModelEvent {
   /// Creates a [ModelResponseCompleted].
   const ModelResponseCompleted({
     required this.assistant,
-    this.usage = const <String, int>{},
+    this.usage = const ModelUsage(),
   });
 
   /// The assistant public API member.
   final AssistantConversationItem assistant;
 
-  /// The usage public API member.
-  final Map<String, int> usage;
+  /// Token counters the provider reported, normalized across APIs.
+  final ModelUsage usage;
 }
 
 /// Public API exposed by this library.

@@ -1092,6 +1092,31 @@
   "@chatPlanTitle": {
     "description": "Title of the plan card."
   },
+  "usageInput": "in {tokens}",
+  "@usageInput": {
+    "description": "Prompt token count in the usage summary line.",
+    "placeholders": {"tokens": {"type": "int"}}
+  },
+  "usageInputCached": "in {tokens} ({cached} cached)",
+  "@usageInputCached": {
+    "description": "Prompt tokens with the cached portion called out.",
+    "placeholders": {"tokens": {"type": "int"}, "cached": {"type": "int"}}
+  },
+  "usageOutput": "out {tokens}",
+  "@usageOutput": {
+    "description": "Completion token count in the usage summary line.",
+    "placeholders": {"tokens": {"type": "int"}}
+  },
+  "usageOutputReasoning": "out {tokens} ({reasoning} reasoning)",
+  "@usageOutputReasoning": {
+    "description": "Completion tokens with the hidden reasoning portion called out.",
+    "placeholders": {"tokens": {"type": "int"}, "reasoning": {"type": "int"}}
+  },
+  "usageTotal": "total {tokens}",
+  "@usageTotal": {
+    "description": "Total token count in the usage summary line.",
+    "placeholders": {"tokens": {"type": "int"}}
+  },
   "toolExecRunning": "running · {lines} lines",
   "@toolExecRunning": {
     "description": "Result line while a pseudo-terminal session is still running.",

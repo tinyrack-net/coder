@@ -558,6 +558,16 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'tool.context.budget',
+    description:
+        'Normalizes provider token counters, reports the tokens left in the '
+        'model context window, and starts a fresh window on request.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'tool.image.context',
     description:
         'Loads a workspace image into the model conversation context and '

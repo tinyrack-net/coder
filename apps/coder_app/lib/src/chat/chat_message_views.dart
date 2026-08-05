@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
+import 'package:coder_app/src/chat/chat_tool_presentation.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:flutter/material.dart';
@@ -318,14 +319,14 @@ class ChatUsageLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (usage.tokens.isEmpty) return const SizedBox.shrink();
-    final summary = usage.tokens.entries
-        .map((entry) => '${entry.key} ${entry.value}')
-        .join(' · ');
+    final l10n = AppLocalizations.of(context);
+    final summary = describeTokenUsage(l10n, usage.tokens);
+    if (summary == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
       child: TRText(
         summary,
+        key: const ValueKey<String>('chat-usage-line'),
         variant: TRTextVariant.bodySm,
         color: TRTextColor.muted,
       ),

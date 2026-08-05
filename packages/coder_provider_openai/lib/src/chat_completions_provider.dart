@@ -176,7 +176,7 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
   ) async* {
     final text = StringBuffer();
     final calls = <int, _ChatToolCallBuilder>{};
-    var usage = const <String, int>{};
+    var usage = const ModelUsage();
     var receivedDone = false;
     await for (final sse in decodeServerSentEvents(bytes)) {
       cancellation.throwIfCancelled();
@@ -187,7 +187,9 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
       final decoded = jsonDecode(sse.data);
       if (decoded is! Map) continue;
       final event = Map<String, dynamic>.from(decoded);
-      usage = _usage(event['usage']).isEmpty ? usage : _usage(event['usage']);
+      // Usage arrives in its own trailing chunk; keep the last non-empty one.
+      final chunkUsage = _usage(event['usage']);
+      if (!chunkUsage.isEmpty) usage = chunkUsage;
       final choices = event['choices'];
       if (choices is! List) continue;
       for (final choice in choices.whereType<Map<dynamic, dynamic>>()) {
@@ -241,13 +243,27 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
     );
   }
 
-  Map<String, int> _usage(Object? value) {
-    if (value is! Map) return const <String, int>{};
-    return <String, int>{
-      for (final entry in value.entries)
-        if (entry.value is int) '${entry.key}': entry.value as int,
-    };
+  ModelUsage _usage(Object? value) {
+    if (value is! Map) return const ModelUsage();
+    return ModelUsage(
+      inputTokens: _count(value['prompt_tokens']),
+      cachedInputTokens: _nestedCount(
+        value['prompt_tokens_details'],
+        'cached_tokens',
+      ),
+      outputTokens: _count(value['completion_tokens']),
+      reasoningTokens: _nestedCount(
+        value['completion_tokens_details'],
+        'reasoning_tokens',
+      ),
+      totalTokens: _count(value['total_tokens']),
+    );
   }
+
+  static int _count(Object? value) => value is int ? value : 0;
+
+  static int _nestedCount(Object? details, String key) =>
+      details is Map ? _count(details[key]) : 0;
 
   bool _isRetryable(DioException error) {
     final status = error.response?.statusCode;

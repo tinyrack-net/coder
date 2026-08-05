@@ -553,7 +553,7 @@ List<ModelEvent> _toolResponse(String name) => <ModelEvent>[
         ),
       ],
     ),
-    usage: const <String, int>{'inputTokens': 10},
+    usage: const ModelUsage(inputTokens: 10, totalTokens: 10),
   ),
 ];
 

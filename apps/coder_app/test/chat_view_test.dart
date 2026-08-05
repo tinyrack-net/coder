@@ -285,6 +285,50 @@ void main() {
     },
     tags: const <String>['feature_test__turn_execution__widget'],
   );
+
+  testWidgets(
+    'token usage reads as labelled counters, not raw provider keys',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('model.usage', <String, dynamic>{
+          'inputTokens': 1200,
+          'cachedInputTokens': 800,
+          'outputTokens': 340,
+          'reasoningTokens': 120,
+          'totalTokens': 1540,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      final line = tester.widget<TRText>(
+        find.byKey(const ValueKey<String>('chat-usage-line')),
+      );
+      // Cached and reasoning are subsets, so they read as qualifiers.
+      expect(line.data, contains('1200'));
+      expect(line.data, contains('800'));
+      expect(line.data, contains('340'));
+      expect(line.data, contains('120'));
+      expect(line.data, contains('1540'));
+      expect(line.data, isNot(contains('inputTokens')));
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
+    'a usage event with nothing to report renders nothing',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('model.usage', const <String, dynamic>{}),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-usage-line')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
 }
 
 final class _RecordingUrlOpener implements ExternalUrlOpener {

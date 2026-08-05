@@ -198,7 +198,7 @@ class AgentRunner {
         input.add(assistant);
         persisted.add(assistant);
         await _onProviderItems(<ConversationItem>[assistant]);
-        await _onEvent('model.usage', <String, dynamic>{...completed.usage});
+        await _onEvent('model.usage', completed.usage.toJson());
 
         if (functionCalls.isEmpty) {
           await _onEvent('turn.completed', <String, dynamic>{
