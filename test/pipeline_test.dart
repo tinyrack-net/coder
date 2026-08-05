@@ -23,6 +23,8 @@ void main() {
       'debug-e2e-linux',
       'mobile-debug-build',
       'desktop-debug-build',
+      'web-build',
+      'cli-verify',
     ]) {
       expect(
         _job(workflow, job),
@@ -63,6 +65,34 @@ void main() {
     },
   );
 
+  test('both CLI jobs build and smoke the bundle through one definition', () {
+    final verify = _job(workflow, 'cli-verify');
+    final release = _job(workflow, 'build-cli');
+
+    // Sharing the steps is what keeps the pull-request job honest: a smoke
+    // test duplicated into two copies is one that stops matching the CLI.
+    for (final job in <String>[verify, release]) {
+      expect(job, contains('./.github/actions/build-cli-bundle'));
+      expect(job, contains('./.github/actions/smoke-cli-bundle'));
+    }
+    for (final target in <String>[
+      'linux-x64',
+      'macos-x64',
+      'macos-arm64',
+      'windows-x64',
+    ]) {
+      expect(verify, contains('target: $target'));
+      expect(release, contains('target: $target'));
+    }
+    // Linux arm64 has no Flutter SDK, so it is not a release target and must
+    // not reappear here; `shipworld.yaml` omits it too.
+    expect(verify, isNot(contains('linux-arm64')));
+    expect(release, isNot(contains('linux-arm64')));
+    // A fork pull request has no signing secrets and no release to upload to.
+    expect(verify, isNot(contains('APPLE_CERTIFICATE')));
+    expect(verify, isNot(contains('upload-artifact')));
+  });
+
   test('the aggregate gate requires every quality job', () {
     final gate = _job(workflow, 'quality-gate');
     for (final dependency in <String>[
@@ -76,6 +106,10 @@ void main() {
       'debug-e2e-linux',
       'mobile-debug-build',
       'desktop-debug-build',
+      'web-build',
+      // The CLI is only built here on a pull request; `build-cli` waits for a
+      // tag, which is how two release-path breakages reached main.
+      'cli-verify',
     ]) {
       expect(gate, contains('- $dependency'));
     }

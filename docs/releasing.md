@@ -82,6 +82,16 @@ is deliberate: a `dart:io` import reaching the web entrypoint compiles fine
 everywhere else and only fails there, so without it the breakage would surface
 at release time.
 
+`cli-verify` exists for the same reason and is also in the gate. It builds the
+CLI bundle on all four release platforms and hosts a daemon from it, sharing
+the `build-cli-bundle` and `smoke-cli-bundle` composite actions with
+`build-cli` so the two cannot drift. Before it existed, nothing built the CLI
+outside a tag, and two release-path breakages reached `main` that way: a
+workspace resolution failure that broke every target, and a smoke test left on
+a stale flag order. Signing, notarization, archiving, and Formula generation
+still happen only in `build-cli`, because they need secrets a fork pull request
+never receives.
+
 See [`remote-daemon.md`](remote-daemon.md) for the origin allowlist a daemon
 needs before a browser can reach it.
 

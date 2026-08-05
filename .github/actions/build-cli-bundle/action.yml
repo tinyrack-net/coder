@@ -1,0 +1,39 @@
+name: Build the CLI bundle
+description: >-
+  Build `coder-cli` for the current runner and lay it out as the directory
+  bundle every channel ships. `dart build cli` rather than `dart compile exe`,
+  because hosting the daemon links the sqlite3 and PTY code assets: the
+  executable loads them from a sibling `lib/` at run time.
+
+inputs:
+  target:
+    description: Release target name, such as linux-x64
+    required: true
+  platform:
+    description: linux, macos, or windows
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Build the CLI
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        PLATFORM: ${{ inputs.platform }}
+      # The sqlite3 build hook downloads a precompiled library, so this needs
+      # network access rather than only a warm pub cache.
+      run: |
+        set -euo pipefail
+        dart build cli -t packages/coder_cli/bin/coder_cli.dart -o dist
+        mkdir -p "dist/coder-cli-$TARGET"
+        cp -R dist/bundle/. "dist/coder-cli-$TARGET/"
+        # `dart build cli` names the launcher after the entrypoint file; every
+        # channel installs it as `coder-cli`.
+        if [ "$PLATFORM" = "windows" ]; then
+          mv "dist/coder-cli-$TARGET/bin/coder_cli.exe" \
+            "dist/coder-cli-$TARGET/bin/coder-cli.exe"
+        else
+          mv "dist/coder-cli-$TARGET/bin/coder_cli" \
+            "dist/coder-cli-$TARGET/bin/coder-cli"
+        fi
