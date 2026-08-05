@@ -183,7 +183,7 @@ void main() {
       await client.resizeTerminal(terminal.id, columns: 100, rows: 30);
       await client.writeTerminal(
         terminal.id,
-        Platform.isWindows ? 'echo $marker\r\n' : "printf '$marker\\n'\r",
+        Platform.isWindows ? 'echo $marker\r' : "printf '$marker\\n'\r",
       );
       expect(await output, contains(marker));
       await client.terminateTerminal(terminal.id);

@@ -242,6 +242,7 @@ void main() {
         arguments: const <String>['/d', '/q'],
         environment: const <String, String>{'PTY_VALUE': 'windows-ready'},
       );
+      addTearDown(process.terminate);
       final received = StringBuffer();
       final marker = Completer<void>();
       final subscription = process.output.transform(utf8.decoder).listen((
@@ -256,7 +257,7 @@ void main() {
 
       process.resize(columns: 111, rows: 37);
       await process.write(
-        utf8.encode('echo %PTY_VALUE% & exit /b 9\r\n'),
+        utf8.encode('echo %PTY_VALUE% & exit /b 9\r'),
       );
 
       await marker.future.timeout(const Duration(seconds: 15));
@@ -267,20 +268,31 @@ void main() {
 
   test('Windows Job Object terminates child processes', () async {
     if (!Platform.isWindows) return;
+    final directory = await Directory.systemTemp.createTemp(
+      'tinyrack-pty-job-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final script = File('${directory.path}\\job.ps1');
+    await script.writeAsString(
+      <String>[
+        r'$p=Start-Process -FilePath powershell.exe `',
+        "  -ArgumentList @('-NoProfile','-Command','Start-Sleep 30') `",
+        '  -PassThru',
+        r"Write-Output ('CHILD:'+$p.Id)",
+        'Start-Sleep 30',
+      ].join('\r\n'),
+    );
     final process = await PtyProcess.start(
       'powershell.exe',
       arguments: <String>[
         '-NoLogo',
         '-NoProfile',
         '-NonInteractive',
-        '-Command',
-        <String>[
-          r"$p=Start-Process powershell.exe -ArgumentList '-NoProfile',",
-          "'-Command','Start-Sleep 30' -PassThru;",
-          r"Write-Output ('CHILD:'+$p.Id); Start-Sleep 30",
-        ].join(' '),
+        '-File',
+        script.path,
       ],
     );
+    addTearDown(process.terminate);
     final received = StringBuffer();
     final childPid = Completer<int>();
     final subscription = process.output.transform(utf8.decoder).listen((chunk) {
@@ -328,6 +340,7 @@ void main() {
         ].join(),
       ],
     );
+    addTearDown(process.terminate);
     var isolateWasResponsive = false;
     final heartbeat = Timer(
       const Duration(milliseconds: 10),
@@ -335,7 +348,7 @@ void main() {
     );
     addTearDown(heartbeat.cancel);
 
-    await process.write(<int>[...List<int>.filled(length, 65), 13, 10]);
+    await process.write(<int>[...List<int>.filled(length, 65), 13]);
     final output = await process.output.transform(utf8.decoder).join();
 
     expect(await process.exitCode, 0);
