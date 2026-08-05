@@ -222,14 +222,28 @@ final class WorkspaceService {
         createdAt: _clock.nowUtc(),
       ),
     );
-    return WorktreeResultDto(
+    final hookRuns = await _runHooks(
+      WorktreeHookPhase.setup,
+      workspace: workspace,
       worktree: worktree,
-      hookRuns: await _runHooks(
-        WorktreeHookPhase.setup,
-        workspace: workspace,
-        worktree: worktree,
-      ),
     );
+    if (hookRuns.any((run) => run.exitCode != 0)) {
+      // A setup failure means the checkout is not safe to use. Remove the
+      // Coder-owned path before hiding it from the active catalog so a failed
+      // bootstrap cannot leave an apparently usable worktree behind.
+      await _git.removeWorktree(
+        workspace.rootPath,
+        worktree.path,
+        force: true,
+      );
+      final archivedAt = _clock.nowUtc();
+      await _worktrees.archive(worktree.id, archivedAt);
+      return WorktreeResultDto(
+        worktree: worktree.copyWith(archivedAt: archivedAt),
+        hookRuns: hookRuns,
+      );
+    }
+    return WorktreeResultDto(worktree: worktree, hookRuns: hookRuns);
   }
 
   /// Returns current archive safety conditions.

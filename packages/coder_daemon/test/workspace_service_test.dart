@@ -474,7 +474,7 @@ branch refs/heads/feature/settings
     );
 
     test(
-      'keeps the worktree and stops after a failing setup hook',
+      'removes and archives the worktree after a failing setup hook',
       () async {
         projectSettings.settings = const ProjectSettingsDto(
           setup: <String>['npm ci', 'npm run build'],
@@ -490,10 +490,13 @@ branch refs/heads/feature/settings
         expect(created.hookRuns, hasLength(1));
         expect(created.hookRuns.single.exitCode, 2);
         expect(created.hookRuns.single.stderr, 'network down');
+        expect(created.worktree.archivedAt?.toUtc(), _FixedClock.now);
+        expect(git.removed, <String>[created.worktree.path]);
         expect(
-          await database.worktreeDao.getById('managed-1'),
-          isNotNull,
+          (await service.catalog()).worktrees.map((item) => item.id),
+          isNot(contains('managed-1')),
         );
+        expect(log, <String>['hook:npm ci', 'git:remove:force']);
       },
       tags: const <String>['feature_test__worktree_lifecycle__unit'],
     );

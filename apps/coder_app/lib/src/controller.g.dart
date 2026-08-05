@@ -407,7 +407,7 @@ final class ProjectSettingsControllerProvider
     required ProjectSettingsControllerFamily super.from,
     required (String, String) super.argument,
   }) : super(
-         retry: null,
+         retry: _noAutomaticRetry,
          name: r'projectSettingsControllerProvider',
          isAutoDispose: true,
          dependencies: null,
@@ -441,7 +441,7 @@ final class ProjectSettingsControllerProvider
 }
 
 String _$projectSettingsControllerHash() =>
-    r'14470492bc6382696ec61623410e8599adbd2a40';
+    r'71d385e3d211e618a4ac9cd8b761599b0c6b2798';
 
 /// Loads and edits the `coder.json` worktree hooks of one project.
 
@@ -456,7 +456,7 @@ final class ProjectSettingsControllerFamily extends $Family
         > {
   ProjectSettingsControllerFamily._()
     : super(
-        retry: null,
+        retry: _noAutomaticRetry,
         name: r'projectSettingsControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
@@ -554,7 +554,7 @@ final class McpServersControllerProvider
 }
 
 String _$mcpServersControllerHash() =>
-    r'995d0b4199c7c1be673b0edc83135f38aa0146e4';
+    r'3b690549082a6543aca42e1e99bb4ad8354e0704';
 
 /// Loads and edits one daemon's MCP server configuration.
 

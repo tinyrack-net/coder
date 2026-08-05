@@ -22,6 +22,7 @@ void main() {
               hidden.add(enabled);
             },
             readyToShow: (onReady) => onReady(),
+            hideWindow: () async {},
           );
           await window.prepare(startHidden: true);
           return (window, hidden);
@@ -84,10 +85,12 @@ void main() {
       () async {
         var initialized = 0;
         var shown = 0;
+        var hidden = 0;
         final window = PluginDesktopWindow(
           initialize: () async => initialized += 1,
           readyToShow: (onReady) => onReady(),
           showWindow: () async => shown += 1,
+          hideWindow: () async => hidden += 1,
         );
 
         await window.prepare(startHidden: false);
@@ -97,6 +100,7 @@ void main() {
         await window.prepare(startHidden: true);
         expect(initialized, 2);
         expect(shown, 1);
+        expect(hidden, 1);
       },
       tags: const <String>['feature_test__desktop_residency__unit'],
     );

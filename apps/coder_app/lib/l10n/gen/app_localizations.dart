@@ -434,6 +434,30 @@ abstract class AppLocalizations {
   /// **'Worktree menu'**
   String get workspaceWorktreeMenu;
 
+  /// Accessible label for a registered project's action menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Project menu'**
+  String get workspaceProjectMenu;
+
+  /// Removes a project registration without deleting its files.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove project'**
+  String get workspaceUnregister;
+
+  /// Confirmation title for removing a project registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String workspaceUnregisterTitle(String name);
+
+  /// Explains that unregistering a project is non-destructive.
+  ///
+  /// In en, this message translates to:
+  /// **'The project disappears from Coder, but its repository and files stay on disk.'**
+  String get workspaceUnregisterBody;
+
   /// Menu entry and button that archives a checkout.
   ///
   /// In en, this message translates to:
@@ -943,6 +967,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disconnect'**
   String get providerSettingsDisconnect;
+
+  /// Title of the custom provider deletion confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete custom provider'**
+  String get providerSettingsDeleteCustomTitle;
+
+  /// Explains what deleting a custom provider removes and keeps.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name} and its stored credentials? Existing session history is kept.'**
+  String providerSettingsDeleteCustomBody(String name);
 
   /// Heading of the connected provider list.
   ///

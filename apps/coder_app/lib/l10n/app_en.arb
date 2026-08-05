@@ -221,6 +221,23 @@
     "description": "Opens the new-workspace composer."
   },
   "workspaceWorktreeMenu": "Worktree menu",
+  "workspaceProjectMenu": "Project menu",
+  "@workspaceProjectMenu": {
+    "description": "Accessible label for a registered project's action menu."
+  },
+  "workspaceUnregister": "Remove project",
+  "@workspaceUnregister": {
+    "description": "Removes a project registration without deleting its files."
+  },
+  "workspaceUnregisterTitle": "Remove {name}?",
+  "@workspaceUnregisterTitle": {
+    "description": "Confirmation title for removing a project registration.",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "workspaceUnregisterBody": "The project disappears from Coder, but its repository and files stay on disk.",
+  "@workspaceUnregisterBody": {
+    "description": "Explains that unregistering a project is non-destructive."
+  },
   "@workspaceWorktreeMenu": {
     "description": "Tooltip of the per-worktree overflow menu."
   },
@@ -598,6 +615,19 @@
   "providerSettingsDisconnect": "Disconnect",
   "@providerSettingsDisconnect": {
     "description": "Confirms disconnecting a provider."
+  },
+  "providerSettingsDeleteCustomTitle": "Delete custom provider",
+  "@providerSettingsDeleteCustomTitle": {
+    "description": "Title of the custom provider deletion confirmation."
+  },
+  "providerSettingsDeleteCustomBody": "Delete {name} and its stored credentials? Existing session history is kept.",
+  "@providerSettingsDeleteCustomBody": {
+    "description": "Explains what deleting a custom provider removes and keeps.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "providerSettingsConnected": "Connected",
   "@providerSettingsConnected": {

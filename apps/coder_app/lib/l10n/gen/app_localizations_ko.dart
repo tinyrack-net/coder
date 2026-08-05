@@ -180,6 +180,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceWorktreeMenu => 'Worktree 메뉴';
 
   @override
+  String get workspaceProjectMenu => 'Project 메뉴';
+
+  @override
+  String get workspaceUnregister => 'Project 제거';
+
+  @override
+  String workspaceUnregisterTitle(String name) {
+    return '$name을 제거할까요?';
+  }
+
+  @override
+  String get workspaceUnregisterBody =>
+      'Coder 목록에서만 제거하며 repository와 파일은 디스크에 그대로 둡니다.';
+
+  @override
   String get workspaceArchive => 'Archive';
 
   @override
@@ -453,6 +468,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerSettingsDisconnect => '연결 해제';
+
+  @override
+  String get providerSettingsDeleteCustomTitle => 'Custom Provider 삭제';
+
+  @override
+  String providerSettingsDeleteCustomBody(String name) {
+    return '$name 및 저장된 credential을 삭제할까요? 기존 session 이력은 유지됩니다.';
+  }
 
   @override
   String get providerSettingsConnected => '연결됨';

@@ -471,12 +471,46 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth < 760) return detail;
+          if (constraints.maxWidth < 760) {
+            final l10n = AppLocalizations.of(context);
+            return Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: TRSelectFormField<SettingsCategory>(
+                    key: const ValueKey<String>('settings-category-select'),
+                    initialValue: widget.category,
+                    label: l10n.settingsTitle,
+                    uiSize: TRUiSize.sm,
+                    items: <TRSelectItem<SettingsCategory>>[
+                      for (final category in SettingsCategory.values)
+                        TRSelectItem<SettingsCategory>(
+                          value: category,
+                          label: _settingsCategoryLabel(l10n, category),
+                        ),
+                    ],
+                    onValueChange: (category) {
+                      if (category == null) return;
+                      _goToSettingsCategory(
+                        context,
+                        category,
+                        hostId: _hostId,
+                      );
+                    },
+                  ),
+                ),
+                Expanded(child: detail),
+              ],
+            );
+          }
           return Row(
             children: <Widget>[
               SizedBox(
                 width: 230,
-                child: _SettingsSidebar(selected: widget.category),
+                child: _SettingsSidebar(
+                  selected: widget.category,
+                  hostId: _hostId,
+                ),
               ),
               const VerticalDivider(width: 1),
               Expanded(child: detail),
@@ -489,9 +523,10 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
 }
 
 class _SettingsSidebar extends StatelessWidget {
-  const _SettingsSidebar({required this.selected});
+  const _SettingsSidebar({required this.selected, required this.hostId});
 
   final SettingsCategory selected;
+  final String? hostId;
 
   @override
   Widget build(BuildContext context) {
@@ -503,46 +538,110 @@ class _SettingsSidebar extends StatelessWidget {
           selected: selected == SettingsCategory.general,
           leading: const Icon(CoderIcons.tune),
           title: Text(l10n.settingsCategoryGeneral),
-          onTap: () => const GeneralSettingsRoute().go(context),
+          onTap: () => _goToSettingsCategory(
+            context,
+            SettingsCategory.general,
+            hostId: hostId,
+          ),
         ),
         CoderListRow(
           selected: selected == SettingsCategory.project,
           leading: const Icon(CoderIcons.projects),
           title: Text(l10n.settingsCategoryProjects),
-          onTap: () => const ProjectSettingsRoute().go(context),
+          onTap: () => _goToSettingsCategory(
+            context,
+            SettingsCategory.project,
+            hostId: hostId,
+          ),
         ),
         CoderListRow(
           selected: selected == SettingsCategory.agent,
           leading: const Icon(CoderIcons.agent),
           title: Text(l10n.settingsCategoryAgent),
-          onTap: () => const AgentSettingsRoute().go(context),
+          onTap: () => _goToSettingsCategory(
+            context,
+            SettingsCategory.agent,
+            hostId: hostId,
+          ),
         ),
         CoderListRow(
           selected: selected == SettingsCategory.mcp,
           leading: const Icon(CoderIcons.extension),
           title: Text(l10n.settingsCategoryMcp),
-          onTap: () => const McpSettingsRoute().go(context),
+          onTap: () => _goToSettingsCategory(
+            context,
+            SettingsCategory.mcp,
+            hostId: hostId,
+          ),
         ),
         CoderListRow(
           selected: selected == SettingsCategory.skill,
           leading: const Icon(CoderIcons.sparkle),
           title: Text(l10n.settingsCategorySkill),
-          onTap: () => const SkillSettingsRoute().go(context),
+          onTap: () => _goToSettingsCategory(
+            context,
+            SettingsCategory.skill,
+            hostId: hostId,
+          ),
         ),
         CoderListRow(
           selected: selected == SettingsCategory.provider,
           leading: const Icon(CoderIcons.network),
           title: Text(l10n.settingsCategoryProvider),
-          onTap: () => const ProviderSettingsRoute().go(context),
+          onTap: () => _goToSettingsCategory(
+            context,
+            SettingsCategory.provider,
+            hostId: hostId,
+          ),
         ),
         CoderListRow(
           selected: selected == SettingsCategory.daemon,
           leading: const Icon(CoderIcons.daemon),
           title: Text(l10n.settingsCategoryDaemon),
-          onTap: () => const DaemonSettingsRoute().go(context),
+          onTap: () => _goToSettingsCategory(
+            context,
+            SettingsCategory.daemon,
+            hostId: hostId,
+          ),
         ),
       ],
     );
+  }
+}
+
+String _settingsCategoryLabel(
+  AppLocalizations l10n,
+  SettingsCategory category,
+) => switch (category) {
+  SettingsCategory.general => l10n.settingsCategoryGeneral,
+  SettingsCategory.project => l10n.settingsCategoryProjects,
+  SettingsCategory.agent => l10n.settingsCategoryAgent,
+  SettingsCategory.mcp => l10n.settingsCategoryMcp,
+  SettingsCategory.skill => l10n.settingsCategorySkill,
+  SettingsCategory.provider => l10n.settingsCategoryProvider,
+  SettingsCategory.daemon => l10n.settingsCategoryDaemon,
+};
+
+void _goToSettingsCategory(
+  BuildContext context,
+  SettingsCategory category, {
+  required String? hostId,
+}) {
+  switch (category) {
+    case SettingsCategory.general:
+      const GeneralSettingsRoute().go(context);
+    case SettingsCategory.project:
+      ProjectSettingsRoute(hostId: hostId).go(context);
+    case SettingsCategory.agent:
+      AgentSettingsRoute(hostId: hostId).go(context);
+    case SettingsCategory.mcp:
+      McpSettingsRoute(hostId: hostId).go(context);
+    case SettingsCategory.skill:
+      SkillSettingsRoute(hostId: hostId).go(context);
+    case SettingsCategory.provider:
+      ProviderSettingsRoute(hostId: hostId).go(context);
+    case SettingsCategory.daemon:
+      const DaemonSettingsRoute().go(context);
   }
 }
 

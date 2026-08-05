@@ -197,6 +197,47 @@ void main() {
   );
 
   testWidgets(
+    'a failed setup hook reports output without starting a session',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api =
+          FakeCoderApi(
+              workspaces: <WorkspaceDto>[workspace],
+              worktrees: <WorktreeDto>[checkout],
+            )
+            ..createWorktreeHookRuns = const <WorktreeHookRunDto>[
+              WorktreeHookRunDto(
+                phase: WorktreeHookPhase.setup,
+                command: 'dart pub get',
+                exitCode: 69,
+                stdout: '',
+                stderr: 'dependency unavailable',
+              ),
+            ];
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Fix setup cleanup',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Setup 실패'), findsOneWidget);
+      expect(find.textContaining('dependency unavailable'), findsOneWidget);
+      expect(api.createdSessions, isEmpty);
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        isNot(contains('/sessions/')),
+      );
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__widget'],
+  );
+
+  testWidgets(
     'the base branch defaults to the latest remote and lists both scopes',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));

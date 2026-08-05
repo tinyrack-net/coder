@@ -63,7 +63,7 @@ melos:
     test:coverage:
       run: dart run tool/verify_workspace.dart coverage
     test:e2e:linux:
-      run: dart run melos exec --flutter --scope=coder_app -c 1 -- flutter test integration_test/debug_e2e_test.dart -d linux
+      run: dart run melos exec --flutter --scope=coder_app -c 1 -- dart run ../../tool/run_linux_e2e.dart
     verify:fast:
       run: dart run tool/verify_workspace.dart fast
     verify:

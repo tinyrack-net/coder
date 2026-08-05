@@ -11,15 +11,22 @@ void main() {
     const routeMarkerPrefix =
         'route_'
         'test__';
+    const scenarioMarkerPrefix =
+        'feature_'
+        'scenario__';
     final fixture = _fixture(
       api:
           'abstract interface class CoderApi {'
           ' Future<void> createThing(); }',
       routes: '@TypedGoRoute<HomeRoute>(path: "/")',
       tests: <String>[
-        "test('works', () {}, tags: <String>[",
+        "testWidgets('works', (tester) async {",
+        'await tester.pump();',
+        'expect(true, isTrue);',
+        '}, tags: <String>[',
         "'${markerPrefix}thing_create__contract', ",
         "'${markerPrefix}thing_create__e2e', ",
+        "'${scenarioMarkerPrefix}thing_create__success__e2e', ",
         "'${routeMarkerPrefix}home_route__widget']);",
       ].join(),
     );
@@ -37,6 +44,13 @@ void main() {
             FeatureVerificationLayer.contract,
             FeatureVerificationLayer.e2e,
           },
+          e2eScenarios: <FeatureScenario>[
+            FeatureScenario(
+              id: 'success',
+              description: 'Creates a thing.',
+              surfaces: <FeatureSurface>{FeatureSurface.desktop},
+            ),
+          ],
         ),
       ],
       apiPath: 'lib/api.dart',
@@ -44,6 +58,147 @@ void main() {
     ).verify();
 
     expect(violations, isEmpty);
+  });
+
+  test('feature verifier accepts executable typed E2E scenarios', () {
+    const markerPrefix =
+        'feature_'
+        'scenario__';
+    final fixture = _fixture(
+      api: 'abstract interface class CoderApi {}',
+      routes: '',
+      tests: <String>[
+        "testWidgets('creates a thing', (tester) async {",
+        'await tester.pump();',
+        "expect(find.text('created'), findsOneWidget);",
+        "}, tags: <String>['${markerPrefix}thing_create__success__e2e']);",
+      ].join(),
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[
+        FeatureContract(
+          id: 'thing.create',
+          description: 'Creates a thing.',
+          requiredLayers: <FeatureVerificationLayer>{
+            FeatureVerificationLayer.e2e,
+          },
+          e2eScenarios: <FeatureScenario>[
+            FeatureScenario(
+              id: 'success',
+              description: 'Creates and persists a valid thing.',
+              surfaces: <FeatureSurface>{
+                FeatureSurface.desktop,
+                FeatureSurface.mobile,
+              },
+            ),
+          ],
+        ),
+      ],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+
+    expect(violations, isEmpty);
+  });
+
+  test('feature verifier rejects incomplete E2E scenario contracts', () {
+    const markerPrefix =
+        'feature_'
+        'scenario__';
+    final fixture = _fixture(
+      api: 'abstract interface class CoderApi {}',
+      routes: '',
+      tests: <String>[
+        "test('marker only', () {}, tags: <String>[",
+        "'${markerPrefix}thing_create__marker_only__e2e',",
+        "'${markerPrefix}thing_create__unknown__e2e']);",
+      ].join(),
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[
+        FeatureContract(
+          id: 'thing.create',
+          description: 'Creates a thing.',
+          requiredLayers: <FeatureVerificationLayer>{
+            FeatureVerificationLayer.e2e,
+          },
+          e2eScenarios: <FeatureScenario>[
+            FeatureScenario(
+              id: 'marker_only',
+              description: 'Exercises a real runner.',
+              surfaces: <FeatureSurface>{FeatureSurface.desktop},
+            ),
+            FeatureScenario(
+              id: 'marker_only',
+              description: 'Duplicate scenario.',
+              surfaces: <FeatureSurface>{FeatureSurface.desktop},
+            ),
+            FeatureScenario(
+              id: 'no_surface',
+              description: 'Has no supported surface.',
+              surfaces: <FeatureSurface>{},
+            ),
+            FeatureScenario(
+              id: 'missing',
+              description: 'Has no executable evidence.',
+              surfaces: <FeatureSurface>{FeatureSurface.mobile},
+            ),
+          ],
+        ),
+      ],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+    final messages = violations.map((item) => item.message).join('\n');
+
+    expect(messages, contains('Duplicate E2E scenario marker_only'));
+    expect(messages, contains('no_surface has no supported surface'));
+    expect(
+      messages,
+      contains('Unknown E2E scenario tag: thing.create/unknown'),
+    );
+    expect(messages, contains('marker_only has no executable testWidgets'));
+    expect(messages, contains('missing is missing E2E evidence'));
+  });
+
+  test('feature verifier requires scenarios for every E2E feature', () {
+    const markerPrefix =
+        'feature_'
+        'test__';
+    final fixture = _fixture(
+      api: 'abstract interface class CoderApi {}',
+      routes: '',
+      tests:
+          "test('layer', () {}, "
+          "tags: <String>['${markerPrefix}thing_create__e2e']);",
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[
+        FeatureContract(
+          id: 'thing.create',
+          description: 'Creates a thing.',
+          requiredLayers: <FeatureVerificationLayer>{
+            FeatureVerificationLayer.e2e,
+          },
+        ),
+      ],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+
+    expect(
+      violations.map((item) => item.message),
+      contains(contains('Feature thing.create has no E2E scenarios')),
+    );
   });
 
   test('feature verifier reports every missing or unsafe registration', () {

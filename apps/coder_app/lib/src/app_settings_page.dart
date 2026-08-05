@@ -59,6 +59,7 @@ class AppSettingsPage extends ConsumerWidget {
     required bool supportsEmbedded,
   }) {
     final l10n = AppLocalizations.of(context);
+    final embeddedRuntime = registry.runtimes[embeddedHostId];
     return ListView(
       padding: const EdgeInsets.all(24),
       children: <Widget>[
@@ -74,7 +75,13 @@ class AppSettingsPage extends ConsumerWidget {
               children: <Widget>[
                 CoderSwitchRow(
                   title: Text(l10n.embeddedDaemonName),
-                  subtitle: Text(l10n.appSettingsEmbeddedSubtitle),
+                  subtitle: Text(
+                    <String>[
+                      l10n.appSettingsEmbeddedSubtitle,
+                      if (embeddedRuntime != null)
+                        hostStatusText(l10n, embeddedRuntime),
+                    ].join('\n'),
+                  ),
                   value: registry.settings.embeddedDaemonEnabled,
                   onChanged: (enabled) => _toggleEmbedded(
                     context,

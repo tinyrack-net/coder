@@ -39,6 +39,7 @@ void main() {
     String id,
     String label, {
     HostRuntimeStatus status = HostRuntimeStatus.online,
+    CoderApi? api,
   }) => HostRuntimeSnapshot(
     id: id,
     label: label,
@@ -48,7 +49,7 @@ void main() {
       websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
     ),
     // `connected` requires an API, so only online hosts get one.
-    api: status == HostRuntimeStatus.online ? FakeCoderApi() : null,
+    api: status == HostRuntimeStatus.online ? api ?? FakeCoderApi() : null,
   );
 
   Future<void> pump(
@@ -136,6 +137,49 @@ void main() {
       expect(names, <String>['Alpha', 'Zed']);
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
+    'workspace menu confirms and unregisters the repository',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final project = workspace('project', 'Project');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[project],
+        worktrees: <WorktreeDto>[
+          worktree('project-main', project.id, 'main'),
+        ],
+      );
+      await pump(
+        tester,
+        hosts: <HostRuntimeSnapshot>[host('up', 'Up daemon', api: api)],
+        catalogs: <String, WorkspaceCatalogDto>{
+          'up': WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[project],
+            worktrees: <WorktreeDto>[
+              worktree('project-main', project.id, 'main'),
+            ],
+          ),
+        },
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-menu-project')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-unregister-project')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-unregister-confirm')),
+      );
+      await tester.pumpAndSettle();
+
+      expect((await api.getWorkspaceCatalog()).workspaces, isEmpty);
+    },
+    tags: const <String>['feature_test__workspace_registration__widget'],
   );
 
   testWidgets(

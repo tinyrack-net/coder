@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/controller.dart';
@@ -103,10 +105,52 @@ void main() {
       expect(find.text('ChatGPT 로그인 대기 중'), findsOneWidget);
       expect(find.textContaining('auth.example'), findsOneWidget);
       expect(opener.opened.single.host, 'auth.example');
+      expect(
+        find.byKey(const ValueKey<String>('provider-auth-cancel-attempt')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pump();
       expect(api.cancelledAuthAttempts, <String>['attempt']);
+    },
+    tags: const <String>['feature_test__provider_oauth__widget'],
+  );
+
+  testWidgets(
+    'failed OAuth remains visible so the user can recover',
+    (
+      tester,
+    ) async {
+      final events = StreamController<ClientEvent>.broadcast(sync: true);
+      addTearDown(events.close);
+      final api = FakeCoderApi(
+        connections: <ProviderConnectionDto>[],
+        eventStream: events.stream,
+      );
+      await _pumpSettings(tester, api);
+      await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sign in with ChatGPT'));
+      await tester.pump();
+      events.add(
+        const ProviderAuthUpdatedClientEvent(
+          ProviderAuthAttemptDto(
+            id: 'attempt',
+            definitionId: 'openai',
+            methodId: 'chatgpt-browser',
+            status: ProviderAuthAttemptStatus.failed,
+            error: 'planned authorization failure',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('planned authorization failure'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('provider-add-openai')), findsOneWidget);
     },
     tags: const <String>['feature_test__provider_oauth__widget'],
   );
@@ -145,7 +189,11 @@ void main() {
       );
       expect(ollama.credentialOrigin, ProviderCredentialOrigin.none);
 
-      await tester.tap(findAccessibleAction('Catalog 갱신'));
+      final refresh = find.byKey(
+        const ValueKey<String>('provider-catalog-refresh'),
+      );
+      await _pumpUntilPresent(tester, refresh);
+      await tester.tap(refresh);
       await tester.pumpAndSettle();
       expect(
         (await api.listProviderCatalog()).source,
@@ -155,6 +203,37 @@ void main() {
     tags: const <String>[
       'feature_test__provider_connection_management__widget',
     ],
+  );
+
+  testWidgets(
+    'catalog refresh shows a transient failure and retries',
+    (
+      tester,
+    ) async {
+      final api = FakeCoderApi(
+        catalogRefreshError: const CoderClientException(
+          'planned catalog outage',
+          code: 'provider_unavailable',
+        ),
+      );
+      await _pumpSettings(tester, api);
+
+      final refresh = find.byKey(
+        const ValueKey<String>('provider-catalog-refresh'),
+      );
+      await tester.tap(refresh);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('planned catalog outage'), findsOneWidget);
+
+      await tester.tap(refresh);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('planned catalog outage'), findsNothing);
+      expect(
+        (await api.listProviderCatalog()).source,
+        ProviderCatalogSource.refreshed,
+      );
+    },
+    tags: const <String>['feature_test__provider_catalog__widget'],
   );
 
   testWidgets(
@@ -258,6 +337,28 @@ void main() {
           .authenticationRequired,
       isFalse,
     );
+
+    await tester.tap(findAccessibleAction('연결 작업'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TRButton, '취소'));
+    await tester.pumpAndSettle();
+    expect(await api.listProviderConnections(), hasLength(1));
+
+    await tester.tap(findAccessibleAction('연결 작업'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TRButton, '삭제'));
+    await tester.pumpAndSettle();
+    expect(await api.listProviderConnections(), isEmpty);
+
+    // Re-add it to cover the softer disconnect lifecycle independently.
+    await api.createCustomProvider('custom-one', custom.customConfig!);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await _pumpSettings(tester, api);
 
     await tester.tap(findAccessibleAction('연결 작업'));
     await tester.pumpAndSettle();
@@ -468,6 +569,14 @@ Future<void> _pumpSettings(
     await tester.pump();
     await tester.pump();
   }
+}
+
+Future<void> _pumpUntilPresent(WidgetTester tester, Finder finder) async {
+  for (var attempt = 0; attempt < 50; attempt += 1) {
+    await tester.pump(const Duration(milliseconds: 20));
+    if (finder.evaluate().isNotEmpty) return;
+  }
+  fail('Timed out waiting for $finder.');
 }
 
 final class _ExternalUrlOpener implements ExternalUrlOpener {
