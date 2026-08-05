@@ -86,6 +86,63 @@ void main() {
     tags: const <String>['feature_test__daemon_exposure__contract'],
   );
 
+  test(
+    'clearing drops the document after every queued write settles',
+    () async {
+      final preferences = await SharedPreferences.getInstance();
+      final store = SharedPreferencesAppStore(preferences);
+      final now = DateTime.utc(2026, 8, 3);
+
+      await store.saveSettings(const AppSettings(embeddedDaemonPort: 8123));
+      // Queued behind the clear, so it must not resurrect the document.
+      final queued = store.upsertProfile(
+        RemoteDaemonProfile(
+          id: 'host-id',
+          label: 'Production',
+          websocketUri: Uri.parse('wss://coder.example.com/ws'),
+          autoConnect: true,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      final cleared = store.clear();
+      await queued;
+      await cleared;
+
+      expect(
+        preferences.getString(SharedPreferencesAppStore.documentKey),
+        isNull,
+      );
+      expect(await store.listProfiles(), isEmpty);
+      expect((await store.loadSettings()).embeddedDaemonPort, 7337);
+    },
+    tags: const <String>['feature_test__settings_reset__unit'],
+  );
+
+  test(
+    'clearing bearer tokens removes only remote host entries',
+    () async {
+      FlutterSecureStorage.setMockInitialValues(<String, String>{
+        'unrelated.plugin.key': 'keep-me',
+      });
+      const credentials = SecureRemoteHostCredentialStore(
+        FlutterSecureStorage(),
+      );
+      await credentials.writeBearerToken('first', 'one');
+      await credentials.writeBearerToken('second', 'two');
+
+      await credentials.deleteAllBearerTokens();
+
+      expect(await credentials.readBearerToken('first'), isNull);
+      expect(await credentials.readBearerToken('second'), isNull);
+      expect(
+        await const FlutterSecureStorage().read(key: 'unrelated.plugin.key'),
+        'keep-me',
+      );
+    },
+    tags: const <String>['feature_test__settings_reset__unit'],
+  );
+
   test('fresh storage ignores legacy singleton host keys', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'tinyrack_coder.host_address': 'ws://legacy.test/ws',

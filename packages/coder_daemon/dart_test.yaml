@@ -33,3 +33,5 @@ tags:
   feature_test__provider_oauth__verticalSlice:
   feature_test__provider_custom__unit:
   feature_test__provider_custom__verticalSlice:
+  feature_test__settings_reset__unit:
+  feature_test__settings_reset__verticalSlice:

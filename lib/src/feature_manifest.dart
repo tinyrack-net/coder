@@ -96,6 +96,34 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'settings.reset',
+    description:
+        'Erases embedded daemon data and every device-local app setting '
+        'while preserving managed Git checkouts, then restarts the '
+        'app-owned daemon.',
+    routes: <String>['AdvancedSettingsRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'full_reset_restart',
+        description:
+            'Erases daemon data and app settings, then reconnects a daemon '
+            'with a new server identity.',
+        surfaces: _desktop,
+      ),
+      FeatureScenario(
+        id: 'preserves_checkouts',
+        description: 'Keeps managed Git checkouts after a full reset.',
+        surfaces: _desktop,
+      ),
+    ],
+  ),
+  FeatureContract(
     id: 'workspace.catalog',
     description: 'Merges repositories and worktrees from every online host.',
     apiMethods: <String>['getWorkspaceCatalog', 'refreshWorkspace'],

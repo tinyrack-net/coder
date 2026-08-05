@@ -35,6 +35,33 @@ enum HostFailureReason {
   embeddedPortInUse,
 }
 
+/// Why a factory reset could not finish.
+enum FactoryResetFailureReason {
+  /// Another process still owns the daemon data directory.
+  daemonStillRunning,
+
+  /// The operating system refused to delete stored daemon data.
+  filesystem,
+
+  /// Daemon data was erased but device-local settings were not.
+  incomplete,
+}
+
+/// Typed failure raised while erasing daemon data and app settings.
+final class FactoryResetFailure implements Exception {
+  /// Creates a factory reset failure.
+  const FactoryResetFailure(this.message, {required this.reason});
+
+  /// Safe display message; the UI localizes [reason] instead.
+  final String message;
+
+  /// App-authored cause the UI localizes.
+  final FactoryResetFailureReason reason;
+
+  @override
+  String toString() => message;
+}
+
 /// Network interfaces exposed by the app-owned desktop daemon.
 enum EmbeddedDaemonExposure {
   /// Accept connections only from this machine.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/advanced_settings_page.dart';
 import 'package:coder_app/src/agent_settings_page.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/app_settings_page.dart';
@@ -332,6 +333,17 @@ class DaemonSettingsRoute extends GoRouteData with $DaemonSettingsRoute {
       const UnifiedSettingsPage(category: SettingsCategory.daemon);
 }
 
+@TypedGoRoute<AdvancedSettingsRoute>(path: '/settings/advanced')
+/// Unified settings route with Advanced selected.
+class AdvancedSettingsRoute extends GoRouteData with $AdvancedSettingsRoute {
+  /// Creates the advanced settings route.
+  const AdvancedSettingsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const UnifiedSettingsPage(category: SettingsCategory.advanced);
+}
+
 @TypedGoRoute<NewHostRoute>(path: '/settings/daemons/new')
 /// Adds a remote daemon profile.
 class NewHostRoute extends GoRouteData with $NewHostRoute {
@@ -379,6 +391,9 @@ enum SettingsCategory {
 
   /// Embedded and remote daemon connections.
   daemon,
+
+  /// Developer maintenance, including erasing every stored value.
+  advanced,
 }
 
 /// Whether a settings category belongs to the app or to one daemon.
@@ -398,7 +413,8 @@ extension SettingsCategoryScopeX on SettingsCategory {
   /// daemons, so it sits with General rather than under the daemon picker.
   SettingsCategoryScope get scope => switch (this) {
     SettingsCategory.general ||
-    SettingsCategory.daemon => SettingsCategoryScope.app,
+    SettingsCategory.daemon ||
+    SettingsCategory.advanced => SettingsCategoryScope.app,
     SettingsCategory.project ||
     SettingsCategory.agent ||
     SettingsCategory.mcp ||
@@ -499,6 +515,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         builder: (hostId) => SettingsPage(hostId: hostId, embedded: true),
       ),
       SettingsCategory.daemon => const AppSettingsPage(embedded: true),
+      SettingsCategory.advanced => const AdvancedSettingsPage(embedded: true),
     };
     return CoderPageShell(
       appBar: CoderPageHeader(
@@ -738,6 +755,7 @@ IconData _settingsCategoryIcon(SettingsCategory category) => switch (category) {
   SettingsCategory.skill => CoderIcons.sparkle,
   SettingsCategory.provider => CoderIcons.network,
   SettingsCategory.daemon => CoderIcons.daemon,
+  SettingsCategory.advanced => CoderIcons.tool,
 };
 
 String _settingsCategoryLabel(
@@ -751,6 +769,7 @@ String _settingsCategoryLabel(
   SettingsCategory.skill => l10n.settingsCategorySkill,
   SettingsCategory.provider => l10n.settingsCategoryProvider,
   SettingsCategory.daemon => l10n.settingsCategoryDaemon,
+  SettingsCategory.advanced => l10n.settingsCategoryAdvanced,
 };
 
 /// Navigates to one settings category, keeping the persisted daemon choice.
@@ -770,6 +789,8 @@ void _goToSettingsCategory(BuildContext context, SettingsCategory category) {
       const ProviderSettingsRoute().go(context);
     case SettingsCategory.daemon:
       const DaemonSettingsRoute().go(context);
+    case SettingsCategory.advanced:
+      const AdvancedSettingsRoute().go(context);
   }
 }
 

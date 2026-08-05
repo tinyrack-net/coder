@@ -65,6 +65,7 @@ class HostRegistryController extends _$HostRegistryController {
       credentials: services.credentials,
       clientFactory: services.clients,
       embeddedLauncher: services.embeddedLauncher,
+      embeddedDataEraser: services.embeddedDataEraser,
       ids: ref.watch(appIdGeneratorProvider),
       clock: ref.watch(appClockProvider),
       delay: services.delay,
@@ -133,6 +134,9 @@ class HostRegistryController extends _$HostRegistryController {
   /// Changes the app-owned daemon port and restarts it when active.
   Future<void> setEmbeddedDaemonPort(int port) =>
       _registry.setEmbeddedDaemonPort(port);
+
+  /// Erases stored daemon data and every device-local app setting.
+  Future<void> resetToFactoryDefaults() => _registry.resetToFactoryDefaults();
 
   /// Persists the app UI language, where null follows the system locale.
   Future<void> setLocaleTag(String? tag) => _registry.setLocaleTag(tag);

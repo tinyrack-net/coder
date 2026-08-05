@@ -51,6 +51,17 @@ final class SharedPreferencesAppStore
     ),
   );
 
+  @override
+  Future<void> clear() {
+    // Joins the write chain so a queued update cannot rewrite the document
+    // after it is removed.
+    final completer = _writes.then((_) async {
+      await _preferences.remove(documentKey);
+    });
+    _writes = completer;
+    return completer;
+  }
+
   Future<void> _enqueue(
     _AppDocument Function(_AppDocument current) update,
   ) {
@@ -81,6 +92,20 @@ final class SecureRemoteHostCredentialStore
 
   static const String _prefix = 'tinyrack_coder.remote_host_token.';
   final FlutterSecureStorage _storage;
+
+  @override
+  Future<void> deleteAllBearerTokens() async {
+    // Deletes by prefix rather than clearing the whole store, which other
+    // plugins share, and also collects tokens orphaned by an earlier crash.
+    final stored = await _storage.readAll();
+    // Materialized first: deleting while iterating a live keystore view fails.
+    final keys = stored.keys
+        .where((key) => key.startsWith(_prefix))
+        .toList(growable: false);
+    for (final key in keys) {
+      await _storage.delete(key: key);
+    }
+  }
 
   @override
   Future<void> deleteBearerToken(String profileId) =>

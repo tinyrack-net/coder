@@ -21,6 +21,7 @@ final class AppServices {
     required this.clients,
     required this.clientKind,
     this.embeddedLauncher,
+    this.embeddedDataEraser,
     this.delay = const SystemAppDelay(),
   });
 
@@ -42,11 +43,17 @@ final class AppServices {
   /// Desktop-only app-owned daemon launcher.
   final EmbeddedDaemonLauncher? embeddedLauncher;
 
+  /// Desktop-only eraser for the app-owned daemon's stored data.
+  final EmbeddedDaemonDataEraser? embeddedDataEraser;
+
   /// Delay adapter used by independent initial reconnect loops.
   final AppDelay delay;
 
   /// Whether this platform can own an embedded daemon.
   bool get supportsEmbeddedDaemon => embeddedLauncher != null;
+
+  /// Whether a reset also erases stored daemon data on this platform.
+  bool get erasesEmbeddedDaemonData => embeddedDataEraser != null;
 }
 
 /// Production WebSocket implementation of [HostClientFactory].

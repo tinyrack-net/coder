@@ -85,6 +85,10 @@ void main() {
       location: const SkillSettingsRoute(hostId: 'server').location,
     ),
     (name: 'daemon_settings', location: const DaemonSettingsRoute().location),
+    (
+      name: 'advanced_settings',
+      location: const AdvancedSettingsRoute().location,
+    ),
     (name: 'new_host', location: const NewHostRoute().location),
     (
       name: 'edit_host',

@@ -17,6 +17,7 @@ List<RouteBase> get $appRoutes => [
   $mcpSettingsRoute,
   $skillSettingsRoute,
   $daemonSettingsRoute,
+  $advancedSettingsRoute,
   $newHostRoute,
   $editHostRoute,
 ];
@@ -357,6 +358,33 @@ mixin $DaemonSettingsRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/settings/daemons');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $advancedSettingsRoute => GoRouteData.$route(
+  path: '/settings/advanced',
+  hasOverriddenOnExit: false,
+  factory: $AdvancedSettingsRoute._fromState,
+);
+
+mixin $AdvancedSettingsRoute on GoRouteData {
+  static AdvancedSettingsRoute _fromState(GoRouterState state) =>
+      const AdvancedSettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings/advanced');
 
   @override
   void go(BuildContext context) => context.go(location);

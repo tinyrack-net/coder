@@ -53,7 +53,7 @@ void main() {
         useEnvironmentCredentials: false,
       );
       final launcher = IsolateEmbeddedDaemonLauncher(
-        config: config,
+        resolveConfig: () => config,
         startDaemon: (value) async {
           startedConfig = value;
           return handle;
@@ -81,7 +81,7 @@ void main() {
 
   test('isolate launcher preserves a typed port conflict', () async {
     final launcher = IsolateEmbeddedDaemonLauncher(
-      config: const DaemonConfig(homeDirectory: '/test-home'),
+      resolveConfig: () => const DaemonConfig(homeDirectory: '/test-home'),
       startDaemon: (value) => Future<DaemonHandle>.error(
         const EmbeddedDaemonStartupException(
           'address already in use',
@@ -112,7 +112,7 @@ void main() {
         if (home.existsSync()) home.deleteSync(recursive: true);
       });
       final launcher = IsolateEmbeddedDaemonLauncher(
-        config: DaemonConfig(
+        resolveConfig: () => DaemonConfig(
           homeDirectory: home.path,
           port: 0,
           bearerToken: 'exposure-token-0123456789abcdef012345',

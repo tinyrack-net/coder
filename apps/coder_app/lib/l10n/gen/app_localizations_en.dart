@@ -98,6 +98,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoryDaemon => 'Daemons';
 
   @override
+  String get settingsCategoryAdvanced => 'Advanced';
+
+  @override
+  String get advancedResetSection => 'Reset';
+
+  @override
+  String get advancedResetTitle => 'Reset all data';
+
+  @override
+  String get advancedResetDescription =>
+      'Deletes the embedded daemon\'s database, credentials, MCP and agent configuration, skills, and attachments, and clears every app setting and stored remote daemon token. Git checkouts under the worktrees folder stay on disk.';
+
+  @override
+  String get advancedResetDescriptionAppOnly =>
+      'Clears every app setting and stored remote daemon token on this device. Remote daemons keep their own data.';
+
+  @override
+  String get advancedResetAction => 'Reset all data';
+
+  @override
+  String get advancedResetRunning => 'Resetting…';
+
+  @override
+  String get advancedResetConfirmTitle => 'Reset all data?';
+
+  @override
+  String get advancedResetConfirmBody =>
+      'Every session, workspace registration, provider connection, agent, skill, and MCP server on the embedded daemon is deleted, together with every app setting and remote daemon profile and token. The daemon returns to its default port. Git checkouts stay on disk but have to be added again. This cannot be undone.';
+
+  @override
+  String get advancedResetConfirmAccept => 'Reset';
+
+  @override
+  String get advancedResetFailedTitle => 'Reset failed';
+
+  @override
+  String get advancedResetFailedDaemonRunning =>
+      'Another Tinyrack Coder daemon is using the data directory. Quit it and try again. Nothing was deleted.';
+
+  @override
+  String advancedResetFailedFilesystem(String error) {
+    return 'Some daemon files could not be deleted: $error';
+  }
+
+  @override
+  String get advancedResetFailedIncomplete =>
+      'Daemon data was removed but the app settings could not be cleared. Restart Tinyrack Coder.';
+
+  @override
   String get settingsRequiresOnlineDaemon => 'Connect an online daemon first.';
 
   @override
