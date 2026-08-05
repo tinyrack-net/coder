@@ -127,7 +127,10 @@ class WorkspaceSidebar extends ConsumerWidget {
             ),
           ),
         ),
-        const TRSeparator(),
+        const TRSeparator(
+          key: ValueKey<String>('workspace-sidebar-separator'),
+          variant: TRSeparatorVariant.muted,
+        ),
         Expanded(
           child: _body(context, ref, l10n, runtimes, connected, entries),
         ),

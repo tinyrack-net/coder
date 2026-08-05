@@ -142,6 +142,10 @@ abstract final class WorkspaceVerificationPlans {
     VerificationTask(name: 'format', script: 'format:check'),
     VerificationTask(name: 'analysis', script: 'analyze'),
     VerificationTask(name: 'dependencies', script: 'dependencies:check'),
+    VerificationTask(
+      name: 'Tinyrack dependency sources',
+      script: 'tinyrack-sources:check',
+    ),
     VerificationTask(name: 'architecture', script: 'architecture:check'),
     VerificationTask(name: 'features', script: 'features:check'),
   ];
