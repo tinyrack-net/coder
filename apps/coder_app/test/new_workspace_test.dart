@@ -4,6 +4,7 @@ import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/workspace/new_workspace_pane.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -265,6 +266,42 @@ void main() {
   );
 
   testWidgets(
+    'activating a hovered project chip dismisses its tooltip',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      final chip = find.byKey(const ValueKey('new-workspace-project'));
+      final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(pointer.removePointer);
+      await pointer.addPointer(location: Offset.zero);
+      await pointer.moveTo(tester.getCenter(chip));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+      expect(find.text('프로젝트 선택'), findsOneWidget);
+
+      final chipCenter = tester.getCenter(chip);
+      await pointer.down(chipCenter);
+      await pointer.up();
+      await tester.pump();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('new-workspace-project-add')),
+        findsOneWidget,
+      );
+      expect(find.text('프로젝트 선택'), findsNothing);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
     'without a project the composer explains what to do first',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
@@ -314,6 +351,7 @@ Future<GoRouter> _pump(WidgetTester tester, FakeCoderApi api) async {
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         routerConfig: router,
+        builder: (context, child) => TRTooltipProvider(child: child!),
       ),
     ),
   );

@@ -16,6 +16,7 @@ import 'package:coder_app/src/workspace/directory_browser.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -174,9 +175,30 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('New workspace').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+      final projectChip = find.byKey(
+        const ValueKey('new-workspace-project'),
+      );
+      final pointer = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      await pointer.addPointer(location: Offset.zero);
+      await pointer.moveTo(tester.getCenter(projectChip));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+      expect(find.text('프로젝트 선택'), findsOneWidget);
+
+      final projectChipCenter = tester.getCenter(projectChip);
+      await pointer.down(projectChipCenter);
+      await pointer.up();
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('new-workspace-project-add')));
+      final addProject = find.byKey(
+        const ValueKey('new-workspace-project-add'),
+      );
+      expect(addProject, findsOneWidget);
+      expect(find.text('프로젝트 선택'), findsNothing);
+      await pointer.removePointer();
+
+      await tester.tap(addProject);
       await tester.pumpAndSettle();
       final remoteOption = find.descendant(
         of: find.byType(DaemonPickerDialog),

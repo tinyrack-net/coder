@@ -5,6 +5,7 @@ import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/model_picker.dart';
+import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,6 +43,23 @@ void main() {
         await tester.pumpAndSettle();
       },
       builder: _desktopApp,
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'composer chip menu is open without a tooltip',
+      fileName: 'composer_chip_menu_without_tooltip',
+      constraints: const BoxConstraints.tightFor(width: 720, height: 480),
+      whilePerforming: (tester) async {
+        final chip = find.byKey(const ValueKey('golden-project-chip'));
+        await tester.tap(chip);
+        await tester.pumpAndSettle();
+        expect(find.text('프로젝트 선택'), findsNothing);
+        expect(find.text('추가'), findsOneWidget);
+        return null;
+      },
+      builder: _composerChipApp,
     ),
   );
 
@@ -85,6 +103,32 @@ Widget _desktopApp() => CoderApp(
   desktopWindow: FakeDesktopWindow(supportsCustomTitleBar: true),
   trayIcon: FakeTrayIcon(),
   autostart: FakeAutostartRegistration(),
+);
+
+Widget _composerChipApp() => MaterialApp(
+  debugShowCheckedModeBanner: false,
+  locale: testLocale,
+  localizationsDelegates: testLocalizationsDelegates,
+  supportedLocales: testSupportedLocales,
+  theme: testLightTheme,
+  darkTheme: testDarkTheme,
+  themeMode: ThemeMode.dark,
+  home: Scaffold(
+    body: Center(
+      child: TRTooltipProvider(
+        child: ComposerChip(
+          valueKey: const ValueKey('golden-project-chip'),
+          icon: Icons.folder_outlined,
+          label: 'Coder',
+          tooltip: '프로젝트 선택',
+          menuChildren: <Widget>[
+            TRMenuItem(onPressed: () {}, child: const Text('Coder · test')),
+            TRMenuItem(onPressed: () {}, child: const Text('추가')),
+          ],
+        ),
+      ),
+    ),
+  ),
 );
 
 class _ModelPickerGoldenHost extends StatelessWidget {
