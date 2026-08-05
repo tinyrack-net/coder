@@ -91,9 +91,40 @@ Future<void> main(List<String> arguments) async {
     return _LockHolder._(process);
   }
 
+  /// Releases the lock and waits for the holder to exit.
+  ///
+  /// The holder unlocks and closes its handle when stdin delivers a line.
+  /// Killing it skipped that protocol, and on Windows the file was still open
+  /// when the temporary directory was deleted, failing the test in teardown
+  /// with "the process cannot access the file because it is being used by
+  /// another process".
   Future<void> stop() async {
-    _process.kill();
-    await _process.exitCode;
+    _process.stdin.writeln();
+    await _process.stdin.flush();
+    await _process.stdin.close();
+    await _process.exitCode.timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        _process.kill();
+        return _process.exitCode;
+      },
+    );
+  }
+}
+
+/// Deletes [directory], retrying briefly while the platform still holds it.
+///
+/// Windows can report a just-closed file as in use for a moment, and a
+/// teardown that trips over it fails a test that already passed.
+Future<void> _deleteWithRetry(Directory directory) async {
+  for (var attempt = 0; ; attempt += 1) {
+    try {
+      await directory.delete(recursive: true);
+      return;
+    } on FileSystemException {
+      if (attempt >= 10) rethrow;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
   }
 }
 
@@ -266,7 +297,7 @@ void main() {
       root = await Directory.systemTemp.createTemp('coder-data-reset-');
     });
 
-    tearDown(() => root.delete(recursive: true));
+    tearDown(() => _deleteWithRetry(root));
 
     test(
       'erases daemon files on disk and keeps the worktrees checkout',
