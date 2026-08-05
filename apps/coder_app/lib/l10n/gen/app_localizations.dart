@@ -1478,12 +1478,6 @@ abstract class AppLocalizations {
   /// **'Select a model first.'**
   String get composerSelectModelFirst;
 
-  /// Banner shown while the composer is in plan mode.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan mode · drafts a plan without carrying it out'**
-  String get composerPlanBanner;
-
   /// Hint of the composer text field.
   ///
   /// In en, this message translates to:

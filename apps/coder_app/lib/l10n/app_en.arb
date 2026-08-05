@@ -919,10 +919,6 @@
   "@composerSelectModelFirst": {
     "description": "Explains why the composer is disabled."
   },
-  "composerPlanBanner": "Plan mode · drafts a plan without carrying it out",
-  "@composerPlanBanner": {
-    "description": "Banner shown while the composer is in plan mode."
-  },
   "composerInputHint": "Type a coding request…",
   "@composerInputHint": {
     "description": "Hint of the composer text field."

@@ -756,10 +756,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerSelectModelFirst => 'Select a model first.';
 
   @override
-  String get composerPlanBanner =>
-      'Plan mode · drafts a plan without carrying it out';
-
-  @override
   String get composerInputHint => 'Type a coding request…';
 
   @override

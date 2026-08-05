@@ -1658,18 +1658,21 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final items = projectChatTimeline(
       value?.timeline ?? const <TimelineEventDto>[],
     );
-    final agents = ref
-        .watch(agentDefinitionsControllerProvider(widget.selection.hostId))
-        .value;
+    final agentsAsync = ref.watch(
+      agentDefinitionsControllerProvider(widget.selection.hostId),
+    );
+    final agents = agentsAsync.value;
+    final agentsLoading = agentsAsync.isLoading && !agentsAsync.hasValue;
+    final providersAsync = ref.watch(
+      providerSettingsControllerProvider(widget.selection.hostId),
+    );
+    final connections =
+        providersAsync.value?.connections ?? const <ProviderConnectionDto>[];
+    final providersLoading =
+        providersAsync.isLoading && !providersAsync.hasValue;
     final definitions = selectableAgentDefinitions(
       agents?.definitions ?? const <AgentDefinitionDto>[],
     );
-    final connections =
-        ref
-            .watch(providerSettingsControllerProvider(widget.selection.hostId))
-            .value
-            ?.connections ??
-        const <ProviderConnectionDto>[];
     final definition = definitions
         .where((item) => item.id == current.agentDefinitionId)
         .firstOrNull;
@@ -1786,9 +1789,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                     await _conversation(ref, current.id).cancelTurn();
                     await _send(current.id, submission);
                   },
-                  hint: effective == null
-                      ? AppLocalizations.of(context).composerSelectModelFirst
-                      : null,
+                  hint: (agentsLoading || providersLoading || effective != null)
+                      ? null
+                      : AppLocalizations.of(context).composerSelectModelFirst,
                   bar: SessionComposerBar(
                     hostId: widget.selection.hostId,
                     definitions: definitions,

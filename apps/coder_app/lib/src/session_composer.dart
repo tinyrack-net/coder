@@ -653,12 +653,17 @@ class DraftSessionPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final agents = ref
-        .watch(agentDefinitionsControllerProvider(selection.hostId))
-        .value;
-    final providers = ref
-        .watch(providerSettingsControllerProvider(selection.hostId))
-        .value;
+    final agentsAsync = ref.watch(
+      agentDefinitionsControllerProvider(selection.hostId),
+    );
+    final agents = agentsAsync.value;
+    final agentsLoading = agentsAsync.isLoading && !agentsAsync.hasValue;
+    final providersAsync = ref.watch(
+      providerSettingsControllerProvider(selection.hostId),
+    );
+    final providers = providersAsync.value;
+    final providersLoading =
+        providersAsync.isLoading && !providersAsync.hasValue;
     final draft = ref.watch(
       sessionComposerDraftControllerProvider(
         selection.hostId,
@@ -690,9 +695,13 @@ class DraftSessionPane extends ConsumerWidget {
         Expanded(child: Center(child: TRText.inherit(l10n.composerStartHint))),
         SessionComposer(
           enabled: agent != null && effective != null,
-          hint: agent == null
-              ? l10n.composerNoPrimaryAgent
-              : (effective == null ? l10n.composerSelectModelFirst : null),
+          hint: (agentsLoading || providersLoading)
+              ? null
+              : (agent == null
+                    ? l10n.composerNoPrimaryAgent
+                    : (effective == null
+                          ? l10n.composerSelectModelFirst
+                          : null)),
           bar: SessionComposerBar(
             hostId: selection.hostId,
             definitions: definitions,
@@ -971,12 +980,6 @@ class _SessionComposerState extends State<SessionComposer> {
                 ],
               ),
             ),
-            if (widget.bar.mode == SessionMode.plan)
-              TRText(
-                l10n.composerPlanBanner,
-                variant: TRTextVariant.bodySm,
-                color: TRTextColor.primary,
-              ),
             if (widget.hint != null)
               TRText(
                 widget.hint!,

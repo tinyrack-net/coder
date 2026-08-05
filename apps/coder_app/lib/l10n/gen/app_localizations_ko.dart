@@ -744,9 +744,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerSelectModelFirst => '사용할 모델을 먼저 선택하세요.';
 
   @override
-  String get composerPlanBanner => 'Plan 모드 · 계획만 세우고 실행하지 않습니다';
-
-  @override
   String get composerInputHint => '코딩 요청을 입력하세요…';
 
   @override
