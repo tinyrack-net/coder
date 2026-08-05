@@ -72,7 +72,7 @@ Future<int> runAgentCommand(
   Future<String> Function(String path)? readFile,
 }) async {
   if (arguments.isEmpty || arguments.first == 'help') {
-    output.writeln(_agentUsage);
+    output.writeln(agentUsage);
     return 0;
   }
   switch (arguments.first) {
@@ -138,7 +138,11 @@ Future<String> _read(
   return reader(path);
 }
 
-const String _agentUsage = '''
+/// Usage text for the `agent` commands.
+///
+/// Public so the entrypoint can answer `help` without first connecting to a
+/// daemon that may not be running.
+const String agentUsage = '''
 agent list
 agent validate <file>
 agent apply <id> --file <path>

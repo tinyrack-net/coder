@@ -72,6 +72,12 @@ melos:
       run: dart run melos test:e2e:linux
     run:daemon:
       run: dart run packages/coder_daemon/bin/coder_daemon.dart
+    run:cli:
+      run: dart run packages/coder_cli/bin/coder_cli.dart
+      stdio: inherit
+    build:cli:
+      # `dart compile exe` does not create its output directory.
+      run: mkdir -p dist && dart compile exe packages/coder_cli/bin/coder_cli.dart -o dist/coder-cli
     run:desktop:
       # `stdio: inherit` gives flutter run a real terminal so r/R/q work; it is
       # incompatible with melos exec, hence the explicit package directory.

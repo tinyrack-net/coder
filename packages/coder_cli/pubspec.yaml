@@ -12,6 +12,7 @@ dependencies:
   coder_client: ^0.1.0
   coder_protocol: ^0.1.0
   path: ^1.9.1
+  web_socket_channel: ^3.0.3
 
 dev_dependencies:
   test: ^1.26.3

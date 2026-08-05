@@ -4,6 +4,7 @@ import 'package:args/args.dart';
 import 'package:coder_cli/coder_cli.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_client/local_daemon.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
@@ -42,25 +43,44 @@ Future<void> main(List<String> arguments) async {
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     exitCode = 64;
+  } on WebSocketChannelException catch (error) {
+    // The transport wraps the SocketException, so catching only the latter
+    // would let "daemon is not running" escape as an unhandled exception.
+    stderr.writeln('Cannot connect to the daemon: ${error.message}');
+    exitCode = 69;
   } on SocketException catch (error) {
-    stderr.writeln('Cannot reach the daemon: ${error.message}');
+    stderr.writeln('Cannot connect to the daemon: ${error.message}');
+    exitCode = 69;
+  } on CoderClientException catch (error) {
+    stderr.writeln(error.message);
     exitCode = 69;
   }
 }
 
 Future<int> _run(List<String> command, ArgResults options) async {
+  // Usage is answered before connecting, because asking how a command works
+  // must not require a running daemon.
+  final rest = command.skip(1).toList(growable: false);
+  if (rest.isEmpty || rest.first == 'help') {
+    stdout.writeln(switch (command.first) {
+      'provider' => providerUsage,
+      'agent' => agentUsage,
+      _ => throw FormatException('Unknown command: ${command.first}'),
+    });
+    return 0;
+  }
   final client = await _connect(options, clientId: 'coder-cli');
   if (client == null) return 69;
   try {
     return switch (command.first) {
       'provider' => await runProviderCommand(
-        command.skip(1).toList(growable: false),
+        rest,
         backend: CoderApiProviderCliBackend(client),
         output: stdout,
         readSecret: _readSecret,
       ),
       'agent' => await runAgentCommand(
-        command.skip(1).toList(growable: false),
+        rest,
         backend: CoderApiAgentCliBackend(client),
         output: stdout,
         readFile: (path) => File(path).readAsString(),
