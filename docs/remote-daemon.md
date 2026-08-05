@@ -64,14 +64,45 @@ unaffected**, which is every native client and `coder-cli`, so this gate never
 changes their behaviour. The same allowlist drives the CORS headers on
 `/health` and `/attachments`.
 
-### Mixed content
+### Reaching a daemon on your own machine
 
-The web app is served over HTTPS while a local daemon speaks plain `ws://`.
-Loopback addresses are "potentially trustworthy" in the mixed-content spec, so
-`ws://127.0.0.1:7337` is not supposed to be blocked, but browsers differ in how
-completely they implement that. If a browser refuses the connection, either run
-the desktop app or put the daemon behind a `wss://` reverse proxy as below and
-register that address instead.
+**The hosted web app cannot connect to a loopback daemon without the browser's
+Local Network Access permission.** This is the one case where the web build is
+strictly less capable than the desktop app, and it is worth understanding
+before choosing between them.
+
+The obstacle is not mixed content. Loopback is a potentially trustworthy
+origin, so `ws://127.0.0.1:7337` from an HTTPS page is not blocked as insecure.
+What blocks it is Local Network Access: a public page reaching a private
+address needs the user's permission. Measured against the deployed app in
+Chrome 151:
+
+```
+fetch  → blocked by CORS policy: Permission was denied for this request to
+         access the `loopback` address space
+         (corsError: LocalNetworkAccessPermissionDenied)
+ws     → net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS
+```
+
+The daemon cannot fix this from its side. The permission is evaluated before
+any request is made — with the checks active the daemon receives nothing, not
+even a preflight, so no response header changes the outcome. Running the same
+probe with `--disable-features=LocalNetworkAccessChecks` connects and completes
+the handshake normally, which confirms nothing else is wrong.
+
+Whether accepting the browser's permission prompt is sufficient has not been
+verified here: a headless browser denies the prompt automatically, and
+granting the permission over the DevTools protocol did not substitute for it.
+
+Three arrangements avoid the problem entirely:
+
+- **Use the desktop app** for a daemon on the same machine. It is the intended
+  tool for that case and has no browser in the path.
+- **Put the daemon behind a `wss://` reverse proxy** on a routable host, as
+  below, and register that address. This is a public-to-public connection, so
+  Local Network Access does not apply.
+- **Serve the web build from the daemon's own origin** if you are hosting it
+  yourself, which makes the request same-origin.
 
 ## Caddy
 
