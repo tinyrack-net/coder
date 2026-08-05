@@ -1,4 +1,7 @@
 tags:
+  feature_test__conversation_turn_queue__unit:
+  feature_test__conversation_turn_queue__verticalSlice:
+  feature_test__conversation_turn_queue__widget:
   feature_test__conversation_attachments__unit:
   feature_test__conversation_attachments__contract:
   feature_test__conversation_attachments__verticalSlice:
