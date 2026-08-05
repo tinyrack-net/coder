@@ -914,7 +914,7 @@ class _SessionComposerState extends State<SessionComposer> {
                       key: const ValueKey('session-composer-input'),
                       controller: _controller,
                       focusNode: _inputFocus,
-                      variant: TRTextInputVariant.plain,
+                      appearance: TRFieldAppearance.ghost,
                       minLines: 1,
                       maxLines: 8,
                       enabled: widget.enabled,

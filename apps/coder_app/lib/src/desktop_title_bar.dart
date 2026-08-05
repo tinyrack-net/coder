@@ -14,6 +14,21 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 final double desktopTitleBarHeight =
     TRControlMetrics.heightOf(TRUiSize.sm) + TRSpacing.extraSmall * 2;
 
+/// Window command a title-bar caption button issues.
+enum DesktopCaptionAction {
+  /// Hides the window to the taskbar.
+  minimize,
+
+  /// Grows the window to fill the work area.
+  maximize,
+
+  /// Returns a maximized window to its previous bounds.
+  restore,
+
+  /// Hides the window to the tray.
+  close,
+}
+
 /// Flutter-owned title bar for Windows and Linux desktop runners.
 class DesktopTitleBar extends StatelessWidget {
   /// Creates a title bar connected to typed application and window commands.
@@ -89,7 +104,7 @@ class DesktopTitleBar extends StatelessWidget {
               _CaptionButton(
                 key: const ValueKey<String>('desktop-title-bar-minimize'),
                 tooltip: l10n.desktopWindowMinimize,
-                action: TRWindowCaptionAction.minimize,
+                action: DesktopCaptionAction.minimize,
                 onPressed: () => unawaited(window.minimize()),
               ),
               ValueListenableBuilder<bool>(
@@ -104,15 +119,15 @@ class DesktopTitleBar extends StatelessWidget {
                       ? l10n.desktopWindowRestore
                       : l10n.desktopWindowMaximize,
                   action: maximized
-                      ? TRWindowCaptionAction.restore
-                      : TRWindowCaptionAction.maximize,
+                      ? DesktopCaptionAction.restore
+                      : DesktopCaptionAction.maximize,
                   onPressed: () => unawaited(window.toggleMaximized()),
                 ),
               ),
               _CaptionButton(
                 key: const ValueKey<String>('desktop-title-bar-close'),
                 tooltip: l10n.desktopWindowClose,
-                action: TRWindowCaptionAction.close,
+                action: DesktopCaptionAction.close,
                 onPressed: onClose,
               ),
             ],
@@ -214,20 +229,19 @@ class _CaptionButton extends StatelessWidget {
   });
 
   final String tooltip;
-  final TRWindowCaptionAction action;
+  final DesktopCaptionAction action;
   final VoidCallback onPressed;
 
-  /// Built from [TRIconButton] rather than [TRWindowCaptionButton] so the whole
-  /// caption group stays one neutral color. That component reads closing a
-  /// window as destructive and colors it with [TRIntent.danger], which is right
-  /// for a prominent frame but too loud for this quiet chrome row.
+  /// Ghost [TRIconButton]s in one neutral intent, so the group reads as quiet
+  /// chrome rather than three competing controls. Tinting close alone would
+  /// make it the loudest thing in a row the user is not meant to look at.
   @override
   Widget build(BuildContext context) => TRIconButton(
     icon: Icon(switch (action) {
-      TRWindowCaptionAction.minimize => CoderIcons.minimize,
-      TRWindowCaptionAction.maximize => CoderIcons.maximize,
-      TRWindowCaptionAction.restore => CoderIcons.restoreWindow,
-      TRWindowCaptionAction.close => CoderIcons.close,
+      DesktopCaptionAction.minimize => CoderIcons.minimize,
+      DesktopCaptionAction.maximize => CoderIcons.maximize,
+      DesktopCaptionAction.restore => CoderIcons.restoreWindow,
+      DesktopCaptionAction.close => CoderIcons.close,
     }),
     label: tooltip,
     onPressed: onPressed,
