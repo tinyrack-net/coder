@@ -66,6 +66,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsTitle => '설정';
 
   @override
+  String get settingsSectionApp => 'App';
+
+  @override
+  String get settingsSectionDaemon => 'Daemon';
+
+  @override
+  String get settingsDaemonSelectLabel => 'Daemon';
+
+  @override
+  String get settingsDaemonSelectEmpty => 'Daemon 없음';
+
+  @override
+  String settingsDaemonOffline(String label) {
+    return '$label이(가) 연결되어 있지 않습니다.';
+  }
+
+  @override
   String get settingsCategoryGeneral => 'General';
 
   @override
@@ -78,7 +95,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsCategoryProvider => 'Provider';
 
   @override
-  String get settingsCategoryDaemon => 'Daemon';
+  String get settingsCategoryDaemon => 'Daemons';
 
   @override
   String get settingsRequiresOnlineDaemon => '온라인 daemon 연결이 필요합니다.';

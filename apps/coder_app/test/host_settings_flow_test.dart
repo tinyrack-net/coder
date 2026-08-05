@@ -56,6 +56,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Offline daemon'), findsWidgets);
     expect(find.textContaining('자동 연결 꺼짐'), findsWidgets);
+
+    // A daemon-scoped category explains the missing connection rather than
+    // failing to build its page.
+    await tester.tap(find.text('Agent'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('settings-daemon-offline')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Offline daemon이(가) 연결되어 있지 않습니다.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -175,7 +188,8 @@ void main() {
       await tester.tap(findAccessibleAction('설정'));
       await tester.pumpAndSettle();
 
-      expect(find.text('내장 daemon'), findsOneWidget);
+      // The sidebar daemon picker names it too, so this is not unique.
+      expect(find.text('내장 daemon'), findsWidgets);
       expect(find.text('네트워크 접근 허용'), findsOneWidget);
       expect(find.textContaining('not running'), findsOneWidget);
       final embeddedToggle = find.widgetWithText(

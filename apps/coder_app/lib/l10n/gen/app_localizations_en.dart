@@ -66,6 +66,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTitle => 'Settings';
 
   @override
+  String get settingsSectionApp => 'App';
+
+  @override
+  String get settingsSectionDaemon => 'Daemon';
+
+  @override
+  String get settingsDaemonSelectLabel => 'Daemon';
+
+  @override
+  String get settingsDaemonSelectEmpty => 'No daemons';
+
+  @override
+  String settingsDaemonOffline(String label) {
+    return '$label is not connected.';
+  }
+
+  @override
   String get settingsCategoryGeneral => 'General';
 
   @override
@@ -78,7 +95,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoryProvider => 'Provider';
 
   @override
-  String get settingsCategoryDaemon => 'Daemon';
+  String get settingsCategoryDaemon => 'Daemons';
 
   @override
   String get settingsRequiresOnlineDaemon => 'Connect an online daemon first.';

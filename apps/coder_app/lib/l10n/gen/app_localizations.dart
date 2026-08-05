@@ -212,6 +212,36 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settingsTitle;
 
+  /// Settings sidebar heading over the app-wide categories.
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get settingsSectionApp;
+
+  /// Settings sidebar heading over the categories owned by one daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon'**
+  String get settingsSectionDaemon;
+
+  /// Label of the sidebar picker choosing which daemon to edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon'**
+  String get settingsDaemonSelectLabel;
+
+  /// Placeholder in the daemon picker when no daemon is configured.
+  ///
+  /// In en, this message translates to:
+  /// **'No daemons'**
+  String get settingsDaemonSelectEmpty;
+
+  /// Shown when the selected daemon cannot serve its settings.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} is not connected.'**
+  String settingsDaemonOffline(String label);
+
   /// Settings sidebar entry for app-wide preferences.
   ///
   /// In en, this message translates to:
@@ -239,7 +269,7 @@ abstract class AppLocalizations {
   /// Settings sidebar entry for daemon connections.
   ///
   /// In en, this message translates to:
-  /// **'Daemon'**
+  /// **'Daemons'**
   String get settingsCategoryDaemon;
 
   /// Shown when a host-scoped settings page has no online daemon.

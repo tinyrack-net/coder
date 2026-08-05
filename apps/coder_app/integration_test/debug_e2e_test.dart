@@ -246,7 +246,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemon').last);
+      await tester.tap(find.text('Daemons').last);
       final exposureToggle = find.byKey(
         const ValueKey<String>('embedded-daemon-exposure'),
       );
@@ -523,14 +523,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<TRSelectFormField<String>>(
+            .widget<TRSelect<String>>(
               find
                   .byKey(
                     const ValueKey<String>('settings-daemon-select'),
                   )
                   .last,
             )
-            .initialValue,
+            .value,
         embeddedHostId,
       );
       await tester.tap(find.byKey(const ValueKey('mcp-server-add')));

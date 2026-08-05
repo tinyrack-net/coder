@@ -217,10 +217,16 @@ void main() {
       await tester.tap(find.text('MCP'));
       await tester.pumpAndSettle();
 
-      expect(
-        tester.widget<TRSelectFormField<String>>(daemonSelect).initialValue,
-        'second',
-      );
+      expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'second');
+      expect(store.settings.lastActiveHostId, 'second');
+
+      // App-wide categories carry no daemon, so passing through one used to
+      // drop the selection back to the first online daemon.
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Projects'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'second');
     },
     tags: const <String>['feature_test__daemon_management__widget'],
   );
@@ -904,21 +910,25 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey<String>('settings-sidebar-tree')),
+      find.byKey(const ValueKey<String>('settings-sidebar-tree-app')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('settings-sidebar-tree-daemon')),
       findsOneWidget,
     );
     expect(find.text('Projects'), findsOneWidget);
     expect(find.text('Agent'), findsOneWidget);
     expect(find.text('Provider'), findsOneWidget);
-    expect(find.text('Daemon'), findsWidgets);
-    expect(find.text('Test daemon'), findsOneWidget);
+    expect(find.text('Daemons'), findsOneWidget);
+    expect(find.text('Test daemon'), findsWidgets);
     await tester.tap(find.text('Projects'));
     await tester.pumpAndSettle();
     expect(
       router.routeInformationProvider.value.uri.toString(),
-      const ProjectSettingsRoute(hostId: 'server').location,
+      const ProjectSettingsRoute().location,
     );
-    await tester.tap(find.text('Daemon').first);
+    await tester.tap(find.text('Daemons'));
     await tester.pumpAndSettle();
     expect(find.text('원격 daemons'), findsOneWidget);
   });
@@ -941,7 +951,7 @@ void main() {
     expect(selector, findsOneWidget);
     await tester.tap(selector);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Daemon').last);
+    await tester.tap(find.text('Daemons').last);
     await tester.pumpAndSettle();
 
     expect(find.text('원격 daemons'), findsOneWidget);

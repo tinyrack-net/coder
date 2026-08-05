@@ -144,6 +144,9 @@ class _CoderAppView extends ConsumerWidget {
 /// Width at which the workspace and settings shells show both panes.
 const double wideLayoutBreakpoint = 760;
 
+/// Width of the settings navigation pane.
+const double settingsSidebarWidth = 230;
+
 /// Builds the shared Material theme for one brightness.
 ThemeData coderTheme(Brightness brightness) => brightness == Brightness.light
     ? TinyrackTheme.light()
@@ -378,6 +381,38 @@ enum SettingsCategory {
   daemon,
 }
 
+/// Whether a settings category belongs to the app or to one daemon.
+enum SettingsCategoryScope {
+  /// Applies to the whole app regardless of which daemon is active.
+  app,
+
+  /// Reads and writes state owned by the selected daemon.
+  daemon,
+}
+
+/// Groups settings categories into the sidebar sections that carry them.
+extension SettingsCategoryScopeX on SettingsCategory {
+  /// The sidebar section this category belongs to.
+  ///
+  /// Daemon connection management is app-wide even though it is about
+  /// daemons, so it sits with General rather than under the daemon picker.
+  SettingsCategoryScope get scope => switch (this) {
+    SettingsCategory.general ||
+    SettingsCategory.daemon => SettingsCategoryScope.app,
+    SettingsCategory.project ||
+    SettingsCategory.agent ||
+    SettingsCategory.mcp ||
+    SettingsCategory.skill ||
+    SettingsCategory.provider => SettingsCategoryScope.daemon,
+  };
+}
+
+/// The categories carried by one sidebar section, in display order.
+List<SettingsCategory> _categoriesInScope(SettingsCategoryScope scope) =>
+    SettingsCategory.values
+        .where((category) => category.scope == scope)
+        .toList(growable: false);
+
 /// Shared two-pane settings shell.
 class UnifiedSettingsPage extends ConsumerStatefulWidget {
   /// Creates a unified settings page.
@@ -403,57 +438,64 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
-  String? _hostId;
+  bool _adoptedRouteHost = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // A deep link naming a daemon wins once, then the persisted selection
+    // takes over so switching categories never resets it.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _adoptRouteHost());
+  }
+
+  void _adoptRouteHost() {
+    if (!mounted || _adoptedRouteHost) return;
+    final requested = widget.hostId;
+    if (requested == null) return;
+    final registry = ref.read(hostRegistryControllerProvider).asData?.value;
+    if (registry == null) return;
+    _adoptedRouteHost = true;
+    if (!registry.runtimes.containsKey(requested)) return;
+    if (registry.settings.lastActiveHostId == requested) return;
+    unawaited(
+      ref.read(hostRegistryControllerProvider.notifier).selectHost(requested),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!_adoptedRouteHost) _adoptRouteHost();
     final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
-    final online =
-        registry?.runtimes.values
-            .where((item) => item.connected)
-            .toList(growable: false) ??
+    final hosts =
+        registry?.runtimes.values.toList(growable: false) ??
         const <HostRuntimeSnapshot>[];
-    _hostId ??= online.any((item) => item.id == widget.hostId)
-        ? widget.hostId
-        : online.firstOrNull?.id;
-    void selectHost(String? value) => setState(() => _hostId = value);
+    final hostId = ref.watch(activeHostIdProvider);
+    final host = hostId == null ? null : registry?.runtimes[hostId];
     final detail = switch (widget.category) {
       SettingsCategory.general => const GeneralSettingsPage(embedded: true),
       SettingsCategory.project => _HostScopedDetail(
-        hosts: online,
-        hostId: _hostId,
-        onChanged: selectHost,
+        host: host,
         builder: (hostId) => ProjectSettingsPage(hostId: hostId),
       ),
       SettingsCategory.agent => _HostScopedDetail(
-        hosts: online,
-        hostId: _hostId,
-        onChanged: selectHost,
+        host: host,
         builder: (hostId) => AgentSettingsPage(hostId: hostId),
       ),
       SettingsCategory.mcp => _HostScopedDetail(
-        hosts: online,
-        hostId: _hostId,
-        onChanged: selectHost,
+        host: host,
         builder: (hostId) => McpSettingsPage(hostId: hostId),
       ),
       SettingsCategory.skill => _HostScopedDetail(
-        hosts: online,
-        hostId: _hostId,
-        onChanged: selectHost,
+        host: host,
         builder: (hostId) => SkillSettingsPage(
           hostId: hostId,
           workspaceId: widget.workspaceId,
-          onWorkspaceChanged: (value) => SkillSettingsRoute(
-            hostId: hostId,
-            workspaceId: value,
-          ).go(context),
+          onWorkspaceChanged: (value) =>
+              SkillSettingsRoute(workspaceId: value).go(context),
         ),
       ),
       SettingsCategory.provider => _HostScopedDetail(
-        hosts: online,
-        hostId: _hostId,
-        onChanged: selectHost,
+        host: host,
         builder: (hostId) => SettingsPage(hostId: hostId, embedded: true),
       ),
       SettingsCategory.daemon => const AppSettingsPage(embedded: true),
@@ -471,12 +513,17 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth < 760) {
+          if (constraints.maxWidth < wideLayoutBreakpoint) {
             final l10n = AppLocalizations.of(context);
             return Column(
               children: <Widget>[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  padding: const EdgeInsets.fromLTRB(
+                    TRSpacing.large,
+                    TRSpacing.medium,
+                    TRSpacing.large,
+                    TRSpacing.extraSmall,
+                  ),
                   child: TRSelectFormField<SettingsCategory>(
                     key: const ValueKey<String>('settings-category-select'),
                     initialValue: widget.category,
@@ -491,14 +538,24 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                     ],
                     onValueChange: (category) {
                       if (category == null) return;
-                      _goToSettingsCategory(
-                        context,
-                        category,
-                        hostId: _hostId,
-                      );
+                      _goToSettingsCategory(context, category);
                     },
                   ),
                 ),
+                if (widget.category.scope == SettingsCategoryScope.daemon)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      TRSpacing.large,
+                      TRSpacing.extraSmall,
+                      TRSpacing.large,
+                      TRSpacing.extraSmall,
+                    ),
+                    child: _DaemonSelect(
+                      hosts: hosts,
+                      hostId: hostId,
+                      showLabel: true,
+                    ),
+                  ),
                 Expanded(child: detail),
               ],
             );
@@ -506,13 +563,14 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           return Row(
             children: <Widget>[
               SizedBox(
-                width: 230,
+                width: settingsSidebarWidth,
                 child: TRAppShellSidebar(
                   key: const ValueKey<String>('settings-sidebar-surface'),
                   scroll: false,
                   child: _SettingsSidebar(
                     selected: widget.category,
-                    hostId: _hostId,
+                    hosts: hosts,
+                    hostId: hostId,
                   ),
                 ),
               ),
@@ -526,36 +584,148 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
 }
 
 class _SettingsSidebar extends StatelessWidget {
-  const _SettingsSidebar({required this.selected, required this.hostId});
+  const _SettingsSidebar({
+    required this.selected,
+    required this.hosts,
+    required this.hostId,
+  });
 
   final SettingsCategory selected;
+  final List<HostRuntimeSnapshot> hosts;
   final String? hostId;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return ListView(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(TRSpacing.medium),
       children: <Widget>[
-        TRTreeNav<SettingsCategory>.controlled(
-          key: const ValueKey<String>('settings-sidebar-tree'),
-          pageStorageId: 'settings-sidebar-tree',
-          semanticLabel: l10n.settingsTitle,
-          value: selected,
-          items: <TRTreeNavItem<SettingsCategory>>[
-            for (final category in SettingsCategory.values)
-              TRTreeNavLeaf<SettingsCategory>(
-                value: category,
-                leading: Icon(_settingsCategoryIcon(category)),
-                label: Text(_settingsCategoryLabel(l10n, category)),
-              ),
-          ],
-          onValueChange: (category) {
-            if (category == null) return;
-            _goToSettingsCategory(context, category, hostId: hostId);
+        _SettingsSectionLabel(text: l10n.settingsSectionApp),
+        _scopeNav(context, l10n, SettingsCategoryScope.app),
+        const SizedBox(height: TRSpacing.large),
+        _SettingsSectionLabel(text: l10n.settingsSectionDaemon),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: TRSpacing.extraSmall,
+            vertical: TRSpacing.extraSmall,
+          ),
+          child: _DaemonSelect(hosts: hosts, hostId: hostId),
+        ),
+        _scopeNav(context, l10n, SettingsCategoryScope.daemon),
+      ],
+    );
+  }
+
+  /// One nav per section, since [TRTreeNav] has no non-selectable header item.
+  ///
+  /// Only the nav owning the selected category carries a value, so exactly
+  /// one row stays highlighted across both sections.
+  Widget _scopeNav(
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingsCategoryScope scope,
+  ) {
+    final storageId = 'settings-sidebar-tree-${scope.name}';
+    return TRTreeNav<SettingsCategory>.controlled(
+      key: ValueKey<String>(storageId),
+      pageStorageId: storageId,
+      semanticLabel: scope == SettingsCategoryScope.app
+          ? l10n.settingsSectionApp
+          : l10n.settingsSectionDaemon,
+      value: selected.scope == scope ? selected : null,
+      items: <TRTreeNavItem<SettingsCategory>>[
+        for (final category in _categoriesInScope(scope))
+          TRTreeNavLeaf<SettingsCategory>(
+            value: category,
+            leading: Icon(_settingsCategoryIcon(category)),
+            label: Text(_settingsCategoryLabel(l10n, category)),
+          ),
+      ],
+      onValueChange: (category) {
+        if (category == null) return;
+        _goToSettingsCategory(context, category);
+      },
+    );
+  }
+}
+
+class _SettingsSectionLabel extends StatelessWidget {
+  const _SettingsSectionLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      TRSpacing.small,
+      TRSpacing.small,
+      TRSpacing.small,
+      TRSpacing.extraSmall,
+    ),
+    child: Text(
+      text,
+      style: TRTypography.label.copyWith(
+        color: context.tinyrackTheme.textMuted,
+      ),
+    ),
+  );
+}
+
+/// Picks the daemon that every host-scoped settings page edits.
+///
+/// Offline daemons stay listed so their settings can be reached as soon as
+/// they reconnect, and so a saved selection does not silently jump elsewhere.
+class _DaemonSelect extends ConsumerWidget {
+  const _DaemonSelect({
+    required this.hosts,
+    required this.hostId,
+    this.showLabel = false,
+  });
+
+  final List<HostRuntimeSnapshot> hosts;
+  final String? hostId;
+
+  /// Whether to draw the field label, for layouts without a section heading.
+  final bool showLabel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    // Where a section heading already names this control the field label is
+    // dropped, so the screen-reader name is carried here instead.
+    // The pane is narrower than a daemon label, so the trigger takes the
+    // full width and lets the label ellipsize instead of overflowing.
+    return Semantics(
+      label: showLabel ? null : l10n.settingsDaemonSelectLabel,
+      container: !showLabel,
+      child: LayoutBuilder(
+        builder: (context, constraints) => TRSelect<String>.controlled(
+          key: const ValueKey<String>('settings-daemon-select'),
+          value: hostId,
+          label: showLabel ? l10n.settingsDaemonSelectLabel : null,
+          placeholder: l10n.settingsDaemonSelectEmpty,
+          uiSize: TRUiSize.sm,
+          enabled: hosts.isNotEmpty,
+          width: constraints.maxWidth,
+          items: hosts
+              .map(
+                (host) => TRSelectItem<String>(
+                  value: host.id,
+                  label: hostLabel(l10n, host),
+                  leading: Icon(hostStatusIcon(host.status)),
+                ),
+              )
+              .toList(growable: false),
+          onValueChange: (value) {
+            if (value == null) return;
+            unawaited(
+              ref
+                  .read(hostRegistryControllerProvider.notifier)
+                  .selectHost(value),
+            );
           },
         ),
-      ],
+      ),
     );
   }
 }
@@ -583,72 +753,63 @@ String _settingsCategoryLabel(
   SettingsCategory.daemon => l10n.settingsCategoryDaemon,
 };
 
-void _goToSettingsCategory(
-  BuildContext context,
-  SettingsCategory category, {
-  required String? hostId,
-}) {
+/// Navigates to one settings category, keeping the persisted daemon choice.
+void _goToSettingsCategory(BuildContext context, SettingsCategory category) {
   switch (category) {
     case SettingsCategory.general:
       const GeneralSettingsRoute().go(context);
     case SettingsCategory.project:
-      ProjectSettingsRoute(hostId: hostId).go(context);
+      const ProjectSettingsRoute().go(context);
     case SettingsCategory.agent:
-      AgentSettingsRoute(hostId: hostId).go(context);
+      const AgentSettingsRoute().go(context);
     case SettingsCategory.mcp:
-      McpSettingsRoute(hostId: hostId).go(context);
+      const McpSettingsRoute().go(context);
     case SettingsCategory.skill:
-      SkillSettingsRoute(hostId: hostId).go(context);
+      const SkillSettingsRoute().go(context);
     case SettingsCategory.provider:
-      ProviderSettingsRoute(hostId: hostId).go(context);
+      const ProviderSettingsRoute().go(context);
     case SettingsCategory.daemon:
       const DaemonSettingsRoute().go(context);
   }
 }
 
+/// Guards a host-scoped settings page behind a usable daemon connection.
+///
+/// The daemon itself is chosen in the sidebar, so this only explains why a
+/// page cannot render yet.
 class _HostScopedDetail extends StatelessWidget {
-  const _HostScopedDetail({
-    required this.hosts,
-    required this.hostId,
-    required this.onChanged,
-    required this.builder,
-  });
+  const _HostScopedDetail({required this.host, required this.builder});
 
-  final List<HostRuntimeSnapshot> hosts;
-  final String? hostId;
-  final ValueChanged<String?> onChanged;
+  final HostRuntimeSnapshot? host;
   final Widget Function(String hostId) builder;
 
   @override
   Widget build(BuildContext context) {
-    if (hosts.isEmpty || hostId == null) {
-      return Center(
-        child: Text(AppLocalizations.of(context).settingsRequiresOnlineDaemon),
-      );
+    final l10n = AppLocalizations.of(context);
+    final host = this.host;
+    if (host == null) {
+      return Center(child: Text(l10n.settingsRequiresOnlineDaemon));
     }
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-          child: TRSelectFormField<String>(
-            key: const ValueKey<String>('settings-daemon-select'),
-            initialValue: hostId,
-            label: 'Daemon',
-            uiSize: TRUiSize.sm,
-            items: hosts
-                .map(
-                  (host) => TRSelectItem<String>(
-                    value: host.id,
-                    label: hostLabel(AppLocalizations.of(context), host),
-                  ),
-                )
-                .toList(growable: false),
-            onValueChange: onChanged,
+    if (!host.connected) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(TRSpacing.extraLarge),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: TRMeasurements.measureMd,
+            ),
+            child: TRAlert(
+              key: const ValueKey<String>('settings-daemon-offline'),
+              variant: TRStatusVariant.warning,
+              icon: Icon(hostStatusIcon(host.status)),
+              title: Text(l10n.settingsDaemonOffline(hostLabel(l10n, host))),
+              description: Text(hostStatusText(l10n, host)),
+            ),
           ),
         ),
-        Expanded(child: builder(hostId!)),
-      ],
-    );
+      );
+    }
+    return builder(host.id);
   }
 }
 
