@@ -19,6 +19,18 @@ abstract final class CoderIcons {
   static const IconData copy = LucideIcons.copy;
 
   /// Semantic Lucide glyph.
+  static const IconData paste = LucideIcons.clipboardPaste;
+
+  /// Semantic Lucide glyph.
+  static const IconData selectAll = LucideIcons.textSelect;
+
+  /// Semantic Lucide glyph.
+  static const IconData clearSelection = LucideIcons.squareDashed;
+
+  /// Semantic Lucide glyph.
+  static const IconData erase = LucideIcons.eraser;
+
+  /// Semantic Lucide glyph.
   static const IconData lock = LucideIcons.lock;
 
   /// Semantic Lucide glyph.

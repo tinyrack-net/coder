@@ -252,6 +252,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get terminalConnectionFailed => '터미널 연결에 실패했어요';
 
   @override
+  String get terminalMenuCopy => '복사';
+
+  @override
+  String get terminalMenuPaste => '붙여넣기';
+
+  @override
+  String get terminalMenuSelectAll => '전체 선택';
+
+  @override
+  String get terminalMenuClearSelection => '선택 해제';
+
+  @override
+  String get terminalMenuClearScreen => '화면 지우기';
+
+  @override
   String get projectSettingsShellHeading => '프로젝트 터미널 셸';
 
   @override

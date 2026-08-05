@@ -560,6 +560,36 @@ abstract class AppLocalizations {
   /// **'Terminal connection failed'**
   String get terminalConnectionFailed;
 
+  /// No description provided for @terminalMenuCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get terminalMenuCopy;
+
+  /// No description provided for @terminalMenuPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get terminalMenuPaste;
+
+  /// No description provided for @terminalMenuSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get terminalMenuSelectAll;
+
+  /// No description provided for @terminalMenuClearSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get terminalMenuClearSelection;
+
+  /// No description provided for @terminalMenuClearScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear screen'**
+  String get terminalMenuClearScreen;
+
   /// No description provided for @projectSettingsShellHeading.
   ///
   /// In en, this message translates to:
