@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:coder_daemon/src/terminal_service.dart';
@@ -49,6 +50,7 @@ final class PortableTerminalGateway implements TerminalGateway {
           ...shell.arguments,
         ],
       );
+      _setNonBlocking(pty.masterFd);
     }
     return _PortableTerminalProcess(pty);
   }
@@ -85,7 +87,7 @@ final class _PortableTerminalProcess implements TerminalProcess {
   void _poll() {
     if (_closed || _terminating) return;
     try {
-      final bytes = _pty.readSync(64 * 1024);
+      final bytes = _readAvailable();
       if (bytes.isNotEmpty) {
         _encodedOutput.add(bytes);
       }
@@ -94,6 +96,15 @@ final class _PortableTerminalProcess implements TerminalProcess {
     } on Object catch (error, stackTrace) {
       _outputs.addError(error, stackTrace);
       _finish(-1);
+    }
+  }
+
+  List<int> _readAvailable() {
+    try {
+      return _pty.readSync(64 * 1024);
+    } on Object catch (error, stackTrace) {
+      if (!Platform.isWindows && error is StateError) return const <int>[];
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
@@ -154,5 +165,20 @@ final class _PortableTerminalProcess implements TerminalProcess {
     await _encodedOutput.close();
     await _decodedOutput.cancel();
     await _outputs.close();
+  }
+}
+
+void _setNonBlocking(int fileDescriptor) {
+  final fcntl = DynamicLibrary.process()
+      .lookupFunction<
+        Int32 Function(Int32, Int32, Int32),
+        int Function(int, int, int)
+      >('fcntl');
+  const getFlags = 3;
+  const setFlags = 4;
+  final nonBlocking = Platform.isMacOS ? 0x4 : 0x800;
+  final flags = fcntl(fileDescriptor, getFlags, 0);
+  if (flags < 0 || fcntl(fileDescriptor, setFlags, flags | nonBlocking) < 0) {
+    throw StateError('Unable to configure non-blocking PTY output.');
   }
 }
