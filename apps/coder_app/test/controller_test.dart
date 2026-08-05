@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/composer_commands.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
@@ -851,7 +852,148 @@ void main() {
       unawaited(api.close());
     },
   );
+
+  test(
+    'agent commands load once and reload when the daemon reports a change',
+    () async {
+      final api = FakeCoderApi(
+        commands: <AgentCommandDto>[_agentCommand('review')],
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      final provider = agentCommandsControllerProvider('server', null);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+
+      expect(
+        (await container.read(provider.future)).map((item) => item.name),
+        <String>['review'],
+      );
+
+      api.commands.add(_agentCommand('ship'));
+      api.emit(const CommandsChangedClientEvent());
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container.read(provider).value!.map((item) => item.name),
+        <String>['review', 'ship'],
+      );
+      unawaited(api.close());
+    },
+    tags: const <String>['feature_test__composer_slash_command__unit'],
+  );
+
+  test(
+    'the composer catalog merges app, agent, and skill commands',
+    () async {
+      final api = FakeCoderApi(
+        commands: <AgentCommandDto>[_agentCommand('review')],
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      final commands = await container.read(
+        composerCommandsProvider('server', null).future,
+      );
+
+      expect(
+        commands.map((command) => command.kind).toSet(),
+        containsAll(<ComposerCommandKind>[
+          ComposerCommandKind.client,
+          ComposerCommandKind.agent,
+          ComposerCommandKind.skill,
+        ]),
+      );
+      expect(
+        commands.singleWhere((command) => command.name == 'review').kind,
+        ComposerCommandKind.agent,
+      );
+      unawaited(api.close());
+    },
+    tags: const <String>['feature_test__composer_slash_command__unit'],
+  );
+
+  test(
+    'a file search waits out its debounce and re-ranks what it receives',
+    () async {
+      final api = FakeCoderApi(
+        files: <String, List<String>>{
+          'worktree': <String>['docs/composer.md', 'lib/composer.dart'],
+        },
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      final provider = composerFileSearchProvider(
+        'server',
+        'worktree',
+        'composer',
+      );
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+
+      // Nothing reaches the daemon until the debounce elapses.
+      await Future<void>.delayed(Duration.zero);
+      expect(api.searchedQueries, isEmpty);
+
+      final matches = await container.read(provider.future);
+
+      expect(api.searchedQueries, <String>['composer']);
+      // The basename match outranks the one that only matches through a
+      // directory segment.
+      expect(matches.first.relativePath, 'lib/composer.dart');
+      unawaited(api.close());
+    },
+    tags: const <String>['feature_test__composer_file_mention__unit'],
+  );
+
+  test(
+    'a file search abandoned inside its debounce never reaches the daemon',
+    () async {
+      final api = FakeCoderApi(
+        files: <String, List<String>>{
+          'worktree': <String>['lib/composer.dart'],
+        },
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      // Each keystroke is its own provider, so an abandoned one disposes and
+      // cancels its timer before the daemon is ever asked.
+      for (final query in <String>['c', 'co', 'com']) {
+        final listener = container.listen(
+          composerFileSearchProvider('server', 'worktree', query),
+          (_, _) {},
+        );
+        await Future<void>.delayed(Duration.zero);
+        listener.close();
+      }
+      await Future<void>.delayed(composerFileSearchDebounce * 2);
+
+      expect(api.searchedQueries, isEmpty);
+      unawaited(api.close());
+    },
+    tags: const <String>['feature_test__composer_file_mention__unit'],
+  );
 }
+
+AgentCommandDto _agentCommand(String name) => AgentCommandDto(
+  id: name,
+  name: name,
+  description: 'Runs $name.',
+  source: AgentCommandSource.project,
+  sourcePath: '/workspace/.agents/commands/$name.md',
+  body: 'Run $name.',
+);
 
 ProviderContainer _container(FakeCoderApi api) => ProviderContainer(
   overrides: [

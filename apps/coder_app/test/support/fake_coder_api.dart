@@ -41,9 +41,17 @@ final class FakeCoderApi implements CoderApi {
     this.terminalAttachError,
     this.terminalReplay = const <TerminalOutputDto>[],
     Map<String, List<String>>? directories,
+    Map<String, List<String>>? files,
+    List<AgentCommandDto>? commands,
+    this.searchFilesGate,
+    this.searchFilesError,
   }) : mcpListResponses =
            mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
        directories = directories ?? const <String, List<String>>{},
+       files = files ?? const <String, List<String>>{},
+       commands = List<AgentCommandDto>.of(
+         commands ?? const <AgentCommandDto>[],
+       ),
        _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
        _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
@@ -251,6 +259,21 @@ final class FakeCoderApi implements CoderApi {
 
   /// Directory queries received by the fake, in call order.
   final List<String> suggestedQueries = <String>[];
+
+  /// Worktree-relative file paths keyed by worktree ID.
+  final Map<String, List<String>> files;
+
+  /// Agent commands the daemon offers.
+  final List<AgentCommandDto> commands;
+
+  /// Optional gate used to keep a file search in its loading state.
+  final Future<void>? searchFilesGate;
+
+  /// Optional daemon failure returned while searching files.
+  final CoderClientException? searchFilesError;
+
+  /// File search queries received by the fake, in call order.
+  final List<String> searchedQueries = <String>[];
 
   /// Worktree creations recorded by the fake.
   final List<({WorktreeCreateMode mode, String branchName, String? baseBranch})>
@@ -942,6 +965,51 @@ final class FakeCoderApi implements CoderApi {
 
   List<SkillDto> _skillStoreFor(SkillSource source) =>
       source == SkillSource.project ? _projectSkills : _skills;
+
+  @override
+  Future<FileSearchResultDto> searchFiles({
+    required String worktreeId,
+    required String query,
+    int limit = 50,
+  }) async {
+    searchedQueries.add(query);
+    await searchFilesGate;
+    final failure = searchFilesError;
+    if (failure != null) throw failure;
+    final paths = files[worktreeId] ?? const <String>[];
+    // Mirrors the daemon's coarse filter: a subsequence over the whole path.
+    final matched = paths
+        .where(
+          (path) => _isSubsequence(path.toLowerCase(), query.toLowerCase()),
+        )
+        .take(limit)
+        .map(
+          (path) => FileMatchDto(
+            relativePath: path,
+            absolutePath: '/worktree/$path',
+            name: path.split('/').last,
+            isDirectory: false,
+          ),
+        )
+        .toList(growable: false);
+    return FileSearchResultDto(matches: matched);
+  }
+
+  static bool _isSubsequence(String candidate, String query) {
+    var cursor = 0;
+    for (
+      var index = 0;
+      index < candidate.length && cursor < query.length;
+      index += 1
+    ) {
+      if (candidate.codeUnitAt(index) == query.codeUnitAt(cursor)) cursor += 1;
+    }
+    return cursor == query.length;
+  }
+
+  @override
+  Future<List<AgentCommandDto>> listCommands({String? workspaceId}) async =>
+      List<AgentCommandDto>.unmodifiable(commands);
 
   @override
   Future<List<SkillDto>> listSkills({String? workspaceId}) async {
