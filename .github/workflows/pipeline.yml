@@ -22,7 +22,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: 3.44.8
-  TINYRACK_DART_PACKAGES_REF: f4c874d8316d326d8dc71b811bc62f084825a0c0
+  TINYRACK_DART_PACKAGES_REF: 709ca65307ee1e4ff2918464d157a4057b49281e
   # wrangler-action defaults to 3.90.0, which predates Workers static assets
   # and rejects an `assets` config for having no script entry-point.
   WRANGLER_VERSION: 4.118.0
@@ -543,22 +543,25 @@ jobs:
         if: matrix.platform == 'macos'
         run: dart pub get --directory .dart_tool/tinyrack-dart-packages
 
-      - name: Compile the CLI
+      - name: Build the CLI
         shell: bash
-        # Homebrew installs the downloaded file directly as the binary, so the
-        # artifact is a bare executable named for its platform rather than an
-        # archive.
+        # `dart build cli`, not `dart compile exe`: the CLI hosts the daemon,
+        # so it links the sqlite3 and PTY code assets and ships as
+        # `bundle/bin/coder_cli` plus `bundle/lib/*`. The sqlite3 build hook
+        # downloads a precompiled library, so this step needs network access.
         run: |
-          mkdir -p dist
+          dart build cli -t packages/coder_cli/bin/coder_cli.dart -o dist
+          mkdir -p "dist/coder-cli-${{ matrix.target }}"
+          cp -R dist/bundle/. "dist/coder-cli-${{ matrix.target }}/"
           if [ "${{ matrix.platform }}" = "windows" ]; then
-            dart compile exe packages/coder_cli/bin/coder_cli.dart \
-              -o dist/coder-cli.exe
+            mv "dist/coder-cli-${{ matrix.target }}/bin/coder_cli.exe" \
+              "dist/coder-cli-${{ matrix.target }}/bin/coder-cli.exe"
           else
-            dart compile exe packages/coder_cli/bin/coder_cli.dart \
-              -o dist/coder-cli-${{ matrix.target }}
+            mv "dist/coder-cli-${{ matrix.target }}/bin/coder_cli" \
+              "dist/coder-cli-${{ matrix.target }}/bin/coder-cli"
           fi
 
-      - name: Sign and notarize the macOS binary
+      - name: Sign and notarize the macOS bundle
         if: matrix.platform == 'macos'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -567,29 +570,56 @@ jobs:
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
           APPLE_NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
+        # Every bundled dylib is signed before the executable that loads them;
+        # signing the executable first would invalidate it.
         run: |
+          bundle="dist/coder-cli-${{ matrix.target }}"
+          for library in "$bundle"/lib/*; do
+            dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder-cli \
+              --input "$library" --skip-notarize
+          done
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder-cli \
-            --input dist/coder-cli-${{ matrix.target }} \
+            --input "$bundle/bin/coder-cli" \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
-          codesign --verify --strict dist/coder-cli-${{ matrix.target }}
+          codesign --verify --strict "$bundle/bin/coder-cli"
 
-      - name: Archive the Windows CLI
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        # WinGet consumes a zip with a nested portable executable; the bare
-        # exe is not uploaded because no channel installs it directly.
-        run: Compress-Archive -Path dist/coder-cli.exe
-          -DestinationPath dist/coder-cli-${{ matrix.target }}.zip
-
-      - name: Smoke-test the binary
+      - name: Smoke-test the bundle
         # Cross-built arm64 would not run here, but every target in this matrix
-        # is built on its own architecture, so the binary has to work.
+        # is built on its own architecture, so the bundle has to work. Starting
+        # a daemon is what proves the sqlite3 and PTY libraries resolved; a
+        # bare `--version` would pass with either one missing.
         shell: bash
         run: |
+          bundle="dist/coder-cli-${{ matrix.target }}/bin"
           if [ "${{ matrix.platform }}" = "windows" ]; then
-            ./dist/coder-cli.exe --version
+            cli="$bundle/coder-cli.exe"
           else
-            ./dist/coder-cli-${{ matrix.target }} --version
+            cli="$bundle/coder-cli"
+          fi
+          "$cli" --version
+          TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke" "$cli" daemon start \
+            --listen 127.0.0.1:7399 &
+          daemon=$!
+          for _ in $(seq 1 30); do
+            "$cli" --listen 127.0.0.1:7399 provider list >/dev/null 2>&1 && break
+            sleep 1
+          done
+          TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke" \
+            "$cli" --listen 127.0.0.1:7399 provider list
+          kill "$daemon"
+
+      - name: Archive the CLI bundle
+        shell: bash
+        # Every channel now receives an archive, because the executable needs
+        # the sibling `lib/` directory that carries sqlite3 and the PTY library.
+        run: |
+          cd dist
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            7z a "coder-cli-${{ matrix.target }}.zip" \
+              "coder-cli-${{ matrix.target }}/*"
+          else
+            tar -czf "coder-cli-${{ matrix.target }}.tar.gz" \
+              "coder-cli-${{ matrix.target }}"
           fi
 
       - name: Upload artifacts
@@ -598,7 +628,7 @@ jobs:
           name: coder-cli-${{ matrix.target }}
           retention-days: 7
           path: |
-            dist/coder-cli-${{ matrix.target }}
+            dist/coder-cli-${{ matrix.target }}.tar.gz
             dist/coder-cli-${{ matrix.target }}.zip
           if-no-files-found: error
 
@@ -689,8 +719,9 @@ jobs:
             --output release-assets/coder.rb
 
       - name: Generate the Homebrew Formula
-        # The Formula points at the four bare executables already attached to
-        # this release, so it reads their checksums from the same artifacts.
+        # `coder-cli` declares a directory payload, so shipworld reads the four
+        # `.tar.gz` bundles already attached to this release and renders a
+        # Formula that installs them into `libexec` and symlinks the launcher.
         run: dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package homebrew formula
           coder-cli --artifacts-dir cli-assets
           --output release-assets/coder-cli.rb

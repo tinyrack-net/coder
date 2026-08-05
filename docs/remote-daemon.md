@@ -12,8 +12,12 @@ reproducible deployment credentials are required:
 ```sh
 TINYRACK_CODER_LISTEN=127.0.0.1:7337 \
 TINYRACK_CODER_TOKEN='<at-least-32-byte-bearer-secret>' \
-dart run packages/coder_daemon/bin/coder_daemon.dart
+coder-cli daemon start
 ```
+
+The same options are available as flags: `coder-cli daemon start --listen
+127.0.0.1:7337 --token '<secret>'`. From a checkout, `dart run melos
+run:daemon` runs the same command.
 
 The bearer token grants the complete daemon API, including Provider credentials
 and Markdown Agent settings. Tinyrack Coder does not implement user roles or
@@ -54,8 +58,8 @@ therefore checks `Origin` against an allowlist before authenticating:
 
 ```sh
 TINYRACK_CODER_ALLOWED_ORIGINS='https://coder.tinyrack.net,http://localhost:8080' \
-  dart run packages/coder_daemon/bin/coder_daemon.dart
-# or: coder_daemon --allowed-origin https://coder.tinyrack.net
+  coder-cli daemon start
+# or: coder-cli daemon start --allowed-origin https://coder.tinyrack.net
 ```
 
 The default allows the official web app only. Setting the variable to `none`

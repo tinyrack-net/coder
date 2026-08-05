@@ -38,15 +38,19 @@ profiles and the last selected host remain navigable.
 
 Provider and Markdown Agent setup belongs to a connected daemon. Every client
 uses one bearer token, which grants the complete daemon API for both local and
-remote connections. `coder-cli` drives the same setup from a terminal against
-an already running daemon, discovering its token from the same configuration
-directory:
+remote connections. `coder-cli` both hosts a daemon and drives the same
+setup from a terminal against an already running one, discovering its token
+from the same configuration directory:
 
 ```sh
 brew install tinyrack-net/tap/coder-cli   # or winget install tinyrack.coder-cli
+coder-cli daemon start
 coder-cli provider list
 coder-cli agent apply reviewer --file reviewer.md
 ```
+
+Run `coder-cli completion bash` (or `zsh`, `fish`, `powershell`) to install
+shell completion.
 
 From a checkout, `dart run melos run:cli -- provider list` runs the same
 commands without installing anything.

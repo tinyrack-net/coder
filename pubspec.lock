@@ -161,6 +161,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.2"
+  cliweave:
+    dependency: transitive
+    description:
+      path: "packages/cliweave"
+      ref: "709ca65307ee1e4ff2918464d157a4057b49281e"
+      resolved-ref: "709ca65307ee1e4ff2918464d157a4057b49281e"
+      url: "https://github.com/tinyrack-net/dart-packages.git"
+    source: git
+    version: "0.2.3"
   clock:
     dependency: transitive
     description:

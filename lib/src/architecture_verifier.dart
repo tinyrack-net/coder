@@ -42,7 +42,17 @@ final class ArchitectureVerifier {
         'coder_agent': <String>{'coder_protocol'},
         'coder_provider_openai': <String>{'coder_agent', 'coder_protocol'},
         'coder_client': <String>{'coder_protocol'},
-        'coder_cli': <String>{'coder_client', 'coder_protocol'},
+        // The CLI hosts the daemon through `coder-cli daemon start`, so it
+        // reaches the daemon's composition root and everything the daemon
+        // itself is allowed to use.
+        'coder_cli': <String>{
+          'coder_agent',
+          'coder_client',
+          'coder_daemon',
+          'coder_mcp',
+          'coder_protocol',
+          'coder_provider_openai',
+        },
         'coder_mcp': <String>{},
         'coder_daemon': <String>{
           'coder_agent',

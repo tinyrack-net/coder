@@ -7,98 +7,97 @@ void main() {
     final backend = _AgentBackend();
     final output = StringBuffer();
 
-    expect(
-      await runAgentCommand(<String>['list'], backend: backend, output: output),
-      0,
-    );
+    expect(await agentList(backend: backend, output: output), 0);
     expect(output.toString(), contains('coder'));
 
     expect(
-      await runAgentCommand(
-        <String>['validate', '/tmp/reviewer.md'],
+      await agentValidate(
         backend: backend,
         output: output,
+        path: '/tmp/reviewer.md',
         readFile: (_) async => 'markdown',
       ),
       0,
     );
     expect(
-      await runAgentCommand(
-        <String>['apply', 'reviewer', '--file', '/tmp/reviewer.md'],
+      await agentApply(
         backend: backend,
         output: output,
+        id: 'reviewer',
+        path: '/tmp/reviewer.md',
         readFile: (_) async => 'markdown',
       ),
       0,
     );
     expect(backend.applied, contains('reviewer'));
     expect(
-      await runAgentCommand(
-        <String>['archive', 'reviewer'],
-        backend: backend,
-        output: output,
-      ),
+      await agentArchive(backend: backend, output: output, id: 'reviewer'),
       0,
     );
-    expect(
-      await runAgentCommand(
-        <String>['reset', 'coder'],
-        backend: backend,
-        output: output,
-      ),
-      0,
+    expect(await agentReset(backend: backend, output: output, id: 'coder'), 0);
+  });
+
+  test('validate takes the agent ID from the file name', () async {
+    final backend = _AgentBackend();
+    final output = StringBuffer();
+
+    await agentValidate(
+      backend: backend,
+      output: output,
+      path: '/tmp/nested/reviewer.md',
+      readFile: (_) async => 'markdown',
     );
+
+    expect(backend.validated, <String>['reviewer']);
+  });
+
+  test('list marks a stale definition', () async {
+    final backend = _AgentBackend(includeStale: true);
+    final output = StringBuffer();
+
+    await agentList(backend: backend, output: output);
+
+    expect(output.toString(), contains('stale'));
+  });
+
+  test('reset refuses anything but the built-in definition', () async {
+    final backend = _AgentBackend();
+
+    await expectLater(
+      agentReset(
+        backend: backend,
+        output: StringBuffer(),
+        id: 'reviewer',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(backend.resetIds, isEmpty);
   });
 
   test(
-    'agent CLI reports help, stale state, and invalid command shapes',
+    'reading a file without a reader fails before the daemon call',
     () async {
-      final backend = _AgentBackend(includeStale: true);
-      final output = StringBuffer();
-      expect(
-        await runAgentCommand(
-          const <String>[],
-          backend: backend,
-          output: output,
-        ),
-        0,
-      );
-      expect(
-        await runAgentCommand(
-          const <String>['help'],
-          backend: backend,
-          output: output,
-        ),
-        0,
-      );
-      await runAgentCommand(
-        const <String>['list'],
-        backend: backend,
-        output: output,
-      );
-      expect(output.toString(), contains('stale'));
+      final backend = _AgentBackend();
 
-      final invalidCommands = <List<String>>[
-        <String>['validate'],
-        <String>['apply', '--file', '/tmp/reviewer.md'],
-        <String>['archive'],
-        <String>['reset', 'reviewer'],
-        <String>['unknown'],
-      ];
-      for (final command in invalidCommands) {
-        await expectLater(
-          runAgentCommand(command, backend: backend, output: output),
-          throwsA(isA<FormatException>()),
-        );
-      }
       await expectLater(
-        runAgentCommand(
-          const <String>['validate', '/tmp/reviewer.md'],
+        agentValidate(
           backend: backend,
-          output: output,
+          output: StringBuffer(),
+          path: '/tmp/reviewer.md',
         ),
         throwsA(isA<StateError>()),
       );
+      await expectLater(
+        agentApply(
+          backend: backend,
+          output: StringBuffer(),
+          id: 'reviewer',
+          path: '/tmp/reviewer.md',
+        ),
+        throwsA(isA<StateError>()),
+      );
+      expect(backend.validated, isEmpty);
+      expect(backend.applied, isEmpty);
     },
   );
 }
@@ -108,6 +107,8 @@ final class _AgentBackend implements AgentCliBackend {
 
   final bool includeStale;
   final List<String> applied = <String>[];
+  final List<String> validated = <String>[];
+  final List<String> resetIds = <String>[];
 
   AgentDefinitionDto definition(String id) => AgentDefinitionDto(
     id: id,
@@ -156,9 +157,14 @@ final class _AgentBackend implements AgentCliBackend {
   ];
 
   @override
-  Future<AgentDefinitionDto> reset(String id) async => definition(id);
+  Future<AgentDefinitionDto> reset(String id) async {
+    resetIds.add(id);
+    return definition(id);
+  }
 
   @override
-  Future<AgentDefinitionDto> validate(String id, String markdown) async =>
-      definition(id);
+  Future<AgentDefinitionDto> validate(String id, String markdown) async {
+    validated.add(id);
+    return definition(id);
+  }
 }

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:args/args.dart';
+import 'package:coder_cli/src/progress.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -79,104 +79,92 @@ final class CoderApiProviderCliBackend implements ProviderCliBackend {
   Future<ProviderCatalogDto> refreshCatalog() => _api.refreshProviderCatalog();
 }
 
-/// Executes one `coder-cli provider` subcommand.
-Future<int> runProviderCommand(
-  List<String> arguments, {
-  required ProviderCliBackend backend,
-  required StringSink output,
-  Future<String> Function()? readSecret,
-  Duration pollInterval = const Duration(seconds: 1),
-}) async {
-  if (arguments.isEmpty || arguments.first == 'help') {
-    output.writeln(providerUsage);
-    return 0;
-  }
-  switch (arguments.first) {
-    case 'list':
-      final catalog = await backend.catalog();
-      final definitions = <String, ProviderDefinitionDto>{
-        for (final definition in catalog.definitions) definition.id: definition,
-      };
-      final connections = await backend.connections();
-      if (connections.isEmpty) {
-        output.writeln('No provider connections.');
-      }
-      for (final connection in connections) {
-        final name =
-            definitions[connection.definitionId]?.name ??
-            connection.displayName;
-        output.writeln(
-          '${connection.id}\t$name\t${connection.status.name}',
-        );
-      }
-      return 0;
-    case 'connect':
-      return _connect(
-        arguments.skip(1).toList(growable: false),
-        backend: backend,
-        output: output,
-        readSecret: readSecret,
-        pollInterval: pollInterval,
-      );
-    case 'disconnect':
-      if (arguments.length != 2) {
-        throw const FormatException(
-          'provider disconnect requires a connection ID.',
-        );
-      }
-      await backend.disconnect(arguments[1]);
-      output.writeln('Disconnected ${arguments[1]}.');
-      return 0;
-    case 'catalog-refresh':
-      await backend.refreshCatalog();
-      output.writeln('Provider catalog refreshed.');
-      return 0;
-    default:
-      throw FormatException('Unknown provider command: ${arguments.first}');
-  }
+/// The authentication methods `provider connect` accepts.
+///
+/// The CLI surfaces these as a closed choice so that an unknown value is
+/// rejected by the argument scanner instead of by the daemon.
+enum ProviderConnectMethod {
+  /// Sends a secret the operator supplies.
+  apiKey('api-key'),
+
+  /// Connects a local provider that needs no credential.
+  none('none'),
+
+  /// Authorizes ChatGPT through a browser redirect.
+  chatgptBrowser('chatgpt-browser'),
+
+  /// Authorizes ChatGPT through a device code.
+  chatgptDevice('chatgpt-device');
+
+  const ProviderConnectMethod(this.id);
+
+  /// The wire identifier the daemon expects.
+  final String id;
 }
 
-Future<int> _connect(
-  List<String> arguments, {
+/// Lists configured provider connections with their catalog names.
+Future<int> providerList({
   required ProviderCliBackend backend,
   required StringSink output,
-  required Future<String> Function()? readSecret,
-  required Duration pollInterval,
 }) async {
-  final parser = ArgParser()
-    ..addOption('method')
-    ..addOption('api-key', hide: true);
-  final options = parser.parse(arguments);
-  if (options.rest.length != 1) {
-    throw const FormatException('provider connect requires a provider ID.');
+  final catalog = await backend.catalog();
+  final definitions = <String, ProviderDefinitionDto>{
+    for (final definition in catalog.definitions) definition.id: definition,
+  };
+  final connections = await backend.connections();
+  if (connections.isEmpty) {
+    output.writeln('No provider connections.');
   }
-  final definitionId = options.rest.single;
+  for (final connection in connections) {
+    final name =
+        definitions[connection.definitionId]?.name ?? connection.displayName;
+    output.writeln(
+      '${connection.id}\t$name\t${connection.status.name}',
+    );
+  }
+  return 0;
+}
+
+/// Connects the provider [definitionId] using [method].
+///
+/// When [method] is omitted the provider's own catalog entry decides: a local
+/// provider needs no credential, a hosted one takes an API key.
+Future<int> providerConnect({
+  required ProviderCliBackend backend,
+  required StringSink output,
+  required String definitionId,
+  ProviderConnectMethod? method,
+  String? apiKey,
+  Future<String> Function()? readSecret,
+  CliProgress progress = const SilentCliProgress(),
+  Duration pollInterval = const Duration(seconds: 1),
+}) async {
   final catalog = await backend.catalog();
   final definition = catalog.definitions.singleWhere(
     (item) => item.id == definitionId,
     orElse: () => throw StateError('Unknown provider: $definitionId'),
   );
-  final requestedMethod = options.option('method');
-  final method = requestedMethod ?? (definition.local ? 'none' : 'api-key');
-  switch (method) {
-    case 'api-key':
-      final inlineKey = options.option('api-key');
-      final key = inlineKey ?? await (readSecret?.call() ?? _missingSecret());
+  final resolved =
+      method ??
+      (definition.local
+          ? ProviderConnectMethod.none
+          : ProviderConnectMethod.apiKey);
+  switch (resolved) {
+    case ProviderConnectMethod.apiKey:
+      final key = apiKey ?? await (readSecret?.call() ?? _missingSecret());
       await backend.connectApiKey(definitionId, key);
       output.writeln('Connected ${definition.name}.');
       return 0;
-    case 'none':
+    case ProviderConnectMethod.none:
       await backend.connectNone(definitionId);
       output.writeln('Connected ${definition.name}.');
       return 0;
-    case 'chatgpt-browser':
-    case 'chatgpt-device':
-      final attempt = await backend.startAuth(
-        definitionId,
-        method,
-      );
+    case ProviderConnectMethod.chatgptBrowser:
+    case ProviderConnectMethod.chatgptDevice:
+      final attempt = await backend.startAuth(definitionId, resolved.id);
       output.writeln('Open ${attempt.authorizationUrl}');
       if (attempt.userCode case final code?) output.writeln('Code: $code');
+      progress.start('Waiting for authorization');
       var current = attempt;
       while (!_terminal(current.status)) {
         current = await backend.authStatus(current.id);
@@ -185,14 +173,39 @@ Future<int> _connect(
         }
       }
       if (current.status == ProviderAuthAttemptStatus.succeeded) {
+        progress.succeed('Authorized');
         output.writeln('Connected ${definition.name}.');
         return 0;
       }
-      output.writeln(current.error ?? 'Authorization did not complete.');
+      final failure = current.error ?? 'Authorization did not complete.';
+      progress.fail(failure);
+      output.writeln(failure);
       return 1;
-    default:
-      throw FormatException('Unknown provider authentication method: $method');
   }
+}
+
+/// Removes the provider connection [connectionId].
+Future<int> providerDisconnect({
+  required ProviderCliBackend backend,
+  required StringSink output,
+  required String connectionId,
+}) async {
+  await backend.disconnect(connectionId);
+  output.writeln('Disconnected $connectionId.');
+  return 0;
+}
+
+/// Refreshes public model metadata for every known provider.
+Future<int> providerCatalogRefresh({
+  required ProviderCliBackend backend,
+  required StringSink output,
+  CliProgress progress = const SilentCliProgress(),
+}) async {
+  progress.start('Refreshing the provider catalog');
+  await backend.refreshCatalog();
+  progress.succeed('Provider catalog refreshed');
+  output.writeln('Provider catalog refreshed.');
+  return 0;
 }
 
 Future<String> _missingSecret() => Future<String>.error(
@@ -204,13 +217,3 @@ bool _terminal(ProviderAuthAttemptStatus status) =>
     status == ProviderAuthAttemptStatus.failed ||
     status == ProviderAuthAttemptStatus.cancelled ||
     status == ProviderAuthAttemptStatus.expired;
-
-/// Usage text for the `provider` commands.
-///
-/// Public so the entrypoint can answer `help` without first connecting to a
-/// daemon that may not be running.
-const String providerUsage = '''
-provider list
-provider connect <id> [--method api-key|chatgpt-browser|chatgpt-device]
-provider disconnect <connection-id>
-provider catalog-refresh''';
