@@ -237,6 +237,13 @@ tr_pty *tr_pty_spawn(const char *executable,
 
   STARTUPINFOEXW startup = {0};
   startup.StartupInfo.cb = sizeof(startup);
+  // A CI runner and a GUI host commonly have redirected or invalid standard
+  // handles. Explicitly clearing them prevents the child from retaining the
+  // parent's pipes instead of using the pseudoconsole attached below.
+  startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+  startup.StartupInfo.hStdInput = NULL;
+  startup.StartupInfo.hStdOutput = NULL;
+  startup.StartupInfo.hStdError = NULL;
   startup.lpAttributeList = attributes;
   command = tr_command_line(arguments);
   directory = tr_wide(working_directory);
