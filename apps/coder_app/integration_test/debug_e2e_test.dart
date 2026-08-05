@@ -159,6 +159,28 @@ void main() {
         rootPath: remoteWorkspace.path,
         name: remoteWorkspaceName,
       );
+      final terminal = await setupClient.createTerminal(
+        id: 'terminal-e2e',
+        worktreeId: 'checkout-e2e',
+        title: 'E2E Terminal',
+        columns: 80,
+        rows: 24,
+      );
+      await setupClient.attachTerminal(terminal.id);
+      const terminalMarker = 'terminal-e2e-ready';
+      final terminalOutput = setupClient.events
+          .where((event) => event is TerminalOutputClientEvent)
+          .cast<TerminalOutputClientEvent>()
+          .where((event) => event.output.terminalId == terminal.id)
+          .map((event) => event.output.data)
+          .firstWhere((data) => data.contains(terminalMarker))
+          .timeout(const Duration(seconds: 30));
+      await setupClient.writeTerminal(
+        terminal.id,
+        "printf '$terminalMarker\\n'\r",
+      );
+      expect(await terminalOutput, contains(terminalMarker));
+      await setupClient.terminateTerminal(terminal.id);
 
       final now = DateTime.utc(2026, 8, 3);
       final appStore = MemoryAppStore(
@@ -1482,6 +1504,9 @@ void main() {
       'feature_test__worktree_lifecycle__e2e',
       'feature_test__session_lifecycle__e2e',
       'feature_test__session_tabs__e2e',
+      'feature_test__terminal_lifecycle__e2e',
+      'feature_test__terminal_lifecycle__platformSmoke',
+      'feature_scenario__terminal_lifecycle__create_write_terminate__e2e',
       'feature_test__turn_execution__e2e',
       'feature_test__agent_definition_management__e2e',
       'feature_test__mcp_server_management__e2e',

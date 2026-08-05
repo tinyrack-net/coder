@@ -36,6 +36,7 @@ tags:
   feature_scenario__session_lifecycle__update_model_and_mode__e2e:
   feature_scenario__session_lifecycle__reconnect_persistence__e2e:
   feature_scenario__session_tabs__open_switch_close_restore__e2e:
+  feature_scenario__terminal_lifecycle__create_write_terminate__e2e:
   feature_scenario__turn_execution__stream_and_restore__e2e:
   feature_scenario__turn_execution__cancel_stream__e2e:
   feature_scenario__turn_execution__approve_and_reject__e2e:
@@ -100,6 +101,10 @@ tags:
   feature_test__session_tabs__unit:
   feature_test__session_tabs__widget:
   feature_test__session_tabs__e2e:
+  feature_test__terminal_lifecycle__widget:
+  feature_test__terminal_lifecycle__e2e:
+  feature_test__terminal_lifecycle__platformSmoke:
+  feature_test__terminal_settings__widget:
   feature_test__turn_execution__unit:
   feature_test__turn_execution__widget:
   feature_test__turn_execution__e2e:
@@ -126,6 +131,7 @@ tags:
   route_test__workspace_home_route__widget:
   route_test__worktree_route__widget:
   route_test__session_route__widget:
+  route_test__terminal_route__widget:
   route_test__general_settings_route__widget:
   route_test__provider_settings_route__widget:
   route_test__project_settings_route__widget:

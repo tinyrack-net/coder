@@ -144,6 +144,45 @@ void main() {
       expect((await client.getWorkspaceCatalog()).workspaces, hasLength(1));
       final checkout = registered.worktrees.single;
 
+      const projectShell = ShellSpecDto(executable: '/bin/sh');
+      await client.setTerminalShell(
+        const ShellSpecDto(executable: '/definitely/missing-shell'),
+      );
+      expect(
+        await client.getTerminalShell(),
+        const ShellSpecDto(executable: '/definitely/missing-shell'),
+      );
+      await client.saveProjectSettings(
+        registered.workspace.id,
+        const ProjectSettingsDto(shell: projectShell),
+      );
+      final terminal = await client.createTerminal(
+        id: 'terminal-1',
+        worktreeId: checkout.id,
+        title: 'Terminal 1',
+        columns: 80,
+        rows: 24,
+      );
+      expect(terminal.shell, projectShell);
+      expect(
+        (await client.listTerminals(checkout.id)).map((item) => item.id),
+        contains(terminal.id),
+      );
+      final attached = await client.attachTerminal(terminal.id);
+      expect(attached.terminal.id, terminal.id);
+      const marker = 'coder-terminal-ready';
+      final output = client.events
+          .where((event) => event is TerminalOutputClientEvent)
+          .cast<TerminalOutputClientEvent>()
+          .where((event) => event.output.terminalId == terminal.id)
+          .map((event) => event.output.data)
+          .firstWhere((data) => data.contains(marker))
+          .timeout(_eventTimeout);
+      await client.resizeTerminal(terminal.id, columns: 100, rows: 30);
+      await client.writeTerminal(terminal.id, "printf '$marker\\n'\r");
+      expect(await output, contains(marker));
+      await client.terminateTerminal(terminal.id);
+
       await expectLater(
         client.createSession(
           id: 'model-required',
@@ -318,6 +357,8 @@ void main() {
       'feature_test__workspace_catalog__verticalSlice',
       'feature_test__workspace_registration__verticalSlice',
       'feature_test__session_lifecycle__verticalSlice',
+      'feature_test__terminal_lifecycle__verticalSlice',
+      'feature_test__terminal_settings__verticalSlice',
       'feature_test__turn_execution__verticalSlice',
       'feature_test__provider_catalog__verticalSlice',
       'feature_test__provider_connection_management__verticalSlice',

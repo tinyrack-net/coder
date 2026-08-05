@@ -414,6 +414,28 @@ void main() {
         await client.updateSessionMode(agent.id, SessionMode.plan),
         agent,
       );
+      expect(await client.listTerminals(worktree.id), hasLength(1));
+      final terminal = await client.createTerminal(
+        id: 'terminal',
+        worktreeId: worktree.id,
+        title: 'Terminal',
+        columns: 80,
+        rows: 24,
+      );
+      expect((await client.attachTerminal(terminal.id)).terminal, terminal);
+      await client.writeTerminal(terminal.id, 'echo ready\r');
+      expect(
+        await client.resizeTerminal(terminal.id, columns: 100, rows: 30),
+        terminal,
+      );
+      expect(
+        await client.getTerminalShell(),
+        const ShellSpecDto(executable: '/bin/sh'),
+      );
+      await client.setTerminalShell(
+        const ShellSpecDto(executable: '/bin/zsh'),
+      );
+      await client.setTerminalShell(null);
       expect(await client.listAgentDefinitions(), <AgentDefinitionDto>[
         agentDefinition,
       ]);
@@ -560,6 +582,18 @@ void main() {
         ..sendNotification(
           RpcNotification.providerAuthUpdated,
           attempt.toJson(),
+        )
+        ..sendNotification(
+          RpcNotification.terminalOutput,
+          const TerminalOutputDto(
+            terminalId: 'terminal',
+            sequence: 1,
+            data: 'ready',
+          ).toJson(),
+        )
+        ..sendNotification(
+          RpcNotification.terminalUpdated,
+          terminal.toJson(),
         );
       await Future<void>.delayed(Duration.zero);
 
@@ -581,6 +615,9 @@ void main() {
         events.whereType<ProviderAuthUpdatedClientEvent>().single.attempt,
         attempt,
       );
+      expect(events.whereType<TerminalOutputClientEvent>(), hasLength(1));
+      expect(events.whereType<TerminalUpdatedClientEvent>(), hasLength(1));
+      await client.terminateTerminal(terminal.id);
       expect(
         connector.requests.map((request) => request.method),
         containsAll(<String>[
@@ -916,6 +953,16 @@ void _registerFixtureMethods(
     runningSessionCount: 0,
     removesDirectory: false,
   );
+  const terminal = TerminalDto(
+    id: 'terminal',
+    worktreeId: 'worktree',
+    title: 'Terminal',
+    shell: ShellSpecDto(executable: '/bin/sh'),
+    status: TerminalStatus.running,
+    columns: 80,
+    rows: 24,
+    lastSequence: 0,
+  );
   final responses = <String, Map<String, dynamic>>{
     RpcMethod.workspaceCatalog: WorkspaceCatalogResultDto(
       catalog: workspaceCatalog,
@@ -970,6 +1017,27 @@ void _registerFixtureMethods(
     RpcMethod.sessionCreate: SessionResultDto(session: agent).toJson(),
     RpcMethod.sessionModelSet: SessionResultDto(session: agent).toJson(),
     RpcMethod.sessionModeSet: SessionResultDto(session: agent).toJson(),
+    RpcMethod.terminalList: const TerminalListResultDto(
+      terminals: <TerminalDto>[terminal],
+    ).toJson(),
+    RpcMethod.terminalCreate: const TerminalResultDto(
+      terminal: terminal,
+    ).toJson(),
+    RpcMethod.terminalAttach: const TerminalAttachResultDto(
+      terminal: terminal,
+      replay: <TerminalOutputDto>[],
+    ).toJson(),
+    RpcMethod.terminalWrite: const <String, dynamic>{},
+    RpcMethod.terminalResize: const TerminalResultDto(
+      terminal: terminal,
+    ).toJson(),
+    RpcMethod.terminalTerminate: const <String, dynamic>{},
+    RpcMethod.terminalShellGet: const TerminalShellDto(
+      shell: ShellSpecDto(executable: '/bin/sh'),
+    ).toJson(),
+    RpcMethod.terminalShellSet: const TerminalShellDto(
+      shell: ShellSpecDto(executable: '/bin/sh'),
+    ).toJson(),
     RpcMethod.agentDefinitionList: AgentDefinitionListResultDto(
       definitions: <AgentDefinitionDto>[agentDefinition],
     ).toJson(),

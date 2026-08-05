@@ -29,6 +29,7 @@ import 'package:coder_app/src/settings_page.dart';
 import 'package:coder_app/src/skill_settings_page.dart';
 import 'package:coder_app/src/workspace/new_workspace_pane.dart';
 import 'package:coder_app/src/workspace/workspace_sidebar.dart';
+import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -231,6 +232,42 @@ class SessionRoute extends GoRouteData with $SessionRoute {
       worktreeId: worktreeId,
     ),
     requestedAgentId: sessionId,
+  );
+}
+
+@TypedGoRoute<TerminalRoute>(
+  path: '/workspaces/:hostId/:workspaceId/:worktreeId/terminals/:terminalId',
+)
+/// Opens one daemon terminal in the checkout tab strip.
+class TerminalRoute extends GoRouteData with $TerminalRoute {
+  /// Creates a terminal route.
+  const TerminalRoute({
+    required this.hostId,
+    required this.workspaceId,
+    required this.worktreeId,
+    required this.terminalId,
+  });
+
+  /// App-local daemon ID.
+  final String hostId;
+
+  /// Daemon-local repository ID.
+  final String workspaceId;
+
+  /// Daemon-local checkout ID.
+  final String worktreeId;
+
+  /// Daemon-local terminal ID.
+  final String terminalId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => WorkspacePage(
+    selection: WorkspaceSelection(
+      hostId: hostId,
+      workspaceId: workspaceId,
+      worktreeId: worktreeId,
+    ),
+    requestedTerminalId: terminalId,
   );
 }
 
@@ -837,6 +874,7 @@ class WorkspacePage extends ConsumerStatefulWidget {
   const WorkspacePage({
     this.selection,
     this.requestedAgentId,
+    this.requestedTerminalId,
     this.compose = false,
     super.key,
   });
@@ -849,6 +887,9 @@ class WorkspacePage extends ConsumerStatefulWidget {
 
   /// Session requested by the route.
   final String? requestedAgentId;
+
+  /// Terminal requested by the route.
+  final String? requestedTerminalId;
 
   @override
   ConsumerState<WorkspacePage> createState() => _WorkspacePageState();
@@ -918,6 +959,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
               : _SessionArea(
                   selection: widget.selection!,
                   requestedAgentId: widget.requestedAgentId,
+                  requestedTerminalId: widget.requestedTerminalId,
                   showBack: constraints.maxWidth < wideLayoutBreakpoint,
                 );
           if (constraints.maxWidth < wideLayoutBreakpoint) {
@@ -983,11 +1025,13 @@ class _SessionArea extends ConsumerStatefulWidget {
   const _SessionArea({
     required this.selection,
     this.requestedAgentId,
+    this.requestedTerminalId,
     this.showBack = false,
   });
 
   final WorkspaceSelection selection;
   final String? requestedAgentId;
+  final String? requestedTerminalId;
   final bool showBack;
 
   @override
@@ -996,6 +1040,7 @@ class _SessionArea extends ConsumerStatefulWidget {
 
 class _SessionAreaState extends ConsumerState<_SessionArea> {
   bool _requestedOpened = false;
+  bool _requestedTerminalOpened = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1011,6 +1056,25 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         if (mounted) {
           unawaited(
             ref.read(provider.notifier).open(widget.requestedAgentId!),
+          );
+        }
+      });
+    }
+    if (!_requestedTerminalOpened &&
+        widget.requestedTerminalId != null &&
+        state != null &&
+        state.terminals.any(
+          (item) => item.id == widget.requestedTerminalId,
+        )) {
+      _requestedTerminalOpened = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(
+            ref
+                .read(provider.notifier)
+                .openTerminal(
+                  widget.requestedTerminalId!,
+                ),
           );
         }
       });
@@ -1043,14 +1107,42 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                               onSelect: () => _select(id),
                               onClose: () => _close(id),
                             ),
+                          for (final id in state.openTerminalIds)
+                            _TerminalTab(
+                              terminal: state.terminals
+                                  .where((item) => item.id == id)
+                                  .first,
+                              selected: state.selectedTerminalId == id,
+                              onSelect: () => _selectTerminal(id),
+                              onClose: () => _closeTerminal(id),
+                            ),
                         ],
                       ),
               ),
-              TRIconButton(
-                appearance: TRAppearance.ghost,
-                label: AppLocalizations.of(context).workspaceNewSession,
-                onPressed: state == null ? null : _startDraft,
-                icon: const Icon(CoderIcons.add),
+              TRMenu(
+                key: const ValueKey<String>('workspace-new-tab-menu'),
+                trigger: Icon(
+                  CoderIcons.add,
+                  semanticLabel: AppLocalizations.of(context).workspaceNewTab,
+                ),
+                menuChildren: <Widget>[
+                  TRMenuItem(
+                    key: const ValueKey<String>('workspace-new-session'),
+                    onPressed: _startDraft,
+                    leadingIcon: const Icon(CoderIcons.chat),
+                    child: Text(
+                      AppLocalizations.of(context).workspaceNewSession,
+                    ),
+                  ),
+                  TRMenuItem(
+                    key: const ValueKey<String>('workspace-new-terminal'),
+                    onPressed: _createTerminal,
+                    leadingIcon: const Icon(CoderIcons.terminal),
+                    child: Text(
+                      AppLocalizations.of(context).workspaceNewTerminal,
+                    ),
+                  ),
+                ],
               ),
               if (state != null)
                 TRMenu(
@@ -1067,6 +1159,12 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                         onPressed: () => _open(agent.id),
                         child: Text(agent.title),
                       ),
+                    for (final terminal in state.terminals)
+                      TRMenuItem(
+                        leadingIcon: const Icon(CoderIcons.terminal),
+                        onPressed: () => _openTerminal(terminal.id),
+                        child: Text(terminal.title),
+                      ),
                   ],
                 ),
             ],
@@ -1074,18 +1172,26 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         ),
         const TRSeparator(),
         Expanded(
-          child: state?.selectedAgentId == null
-              ? DraftSessionPane(
-                  selection: widget.selection,
-                  onCreated: (session) =>
-                      _goSession(context, widget.selection, session.id),
-                )
-              : _ConversationPane(
-                  selection: widget.selection,
-                  agent: state!.sessions
-                      .where((item) => item.id == state.selectedAgentId)
-                      .first,
-                ),
+          child: switch ((
+            state?.selectedTerminalId,
+            state?.selectedAgentId,
+          )) {
+            (final terminalId?, _) => _TerminalPane(
+              selection: widget.selection,
+              terminal: state!.terminals
+                  .where((item) => item.id == terminalId)
+                  .first,
+            ),
+            (_, null) => DraftSessionPane(
+              selection: widget.selection,
+              onCreated: (session) =>
+                  _goSession(context, widget.selection, session.id),
+            ),
+            (_, final agentId?) => _ConversationPane(
+              selection: widget.selection,
+              agent: state!.sessions.where((item) => item.id == agentId).first,
+            ),
+          },
         ),
       ],
     );
@@ -1128,6 +1234,66 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         .startDraft();
     if (mounted) _goWorktree(context, widget.selection);
   }
+
+  Future<void> _createTerminal() async {
+    final terminal = await ref
+        .read(
+          terminalsControllerProvider(
+            widget.selection.hostId,
+            widget.selection.worktreeId,
+          ).notifier,
+        )
+        .create();
+    await ref
+        .read(sessionTabsControllerProvider(widget.selection).notifier)
+        .addTerminal(terminal);
+  }
+
+  Future<void> _selectTerminal(String id) => ref
+      .read(sessionTabsControllerProvider(widget.selection).notifier)
+      .selectTerminal(id);
+
+  Future<void> _openTerminal(String id) => ref
+      .read(sessionTabsControllerProvider(widget.selection).notifier)
+      .openTerminal(id);
+
+  Future<void> _closeTerminal(String id) async {
+    final state = ref
+        .read(sessionTabsControllerProvider(widget.selection))
+        .requireValue;
+    final terminal = state.terminals.where((item) => item.id == id).first;
+    if (terminal.status == TerminalStatus.running) {
+      final confirmed = await showTRDialog<bool>(
+        context: context,
+        builder: (context) => TRAlertDialog(
+          key: const ValueKey<String>('terminal-close-dialog'),
+          title: Text(AppLocalizations.of(context).terminalCloseTitle),
+          content: Text(AppLocalizations.of(context).terminalCloseConfirm),
+          actions: <TRButton>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+            ),
+            TRButton(
+              intent: TRIntent.danger,
+              key: const ValueKey<String>('terminal-close-confirm'),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(AppLocalizations.of(context).terminalTerminate),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      final registry = await ref.read(hostRegistryControllerProvider.future);
+      await registry.runtimes[widget.selection.hostId]!.api!.terminateTerminal(
+        id,
+      );
+    }
+    await ref
+        .read(sessionTabsControllerProvider(widget.selection).notifier)
+        .closeTerminal(id);
+  }
 }
 
 class _SessionTab extends StatelessWidget {
@@ -1160,6 +1326,130 @@ class _SessionTab extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _TerminalTab extends StatelessWidget {
+  const _TerminalTab({
+    required this.terminal,
+    required this.selected,
+    required this.onSelect,
+    required this.onClose,
+  });
+
+  final TerminalDto terminal;
+  final bool selected;
+  final VoidCallback onSelect;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 180,
+    child: CoderListRow(
+      dense: true,
+      selected: selected,
+      onTap: onSelect,
+      leading: const Icon(CoderIcons.terminal),
+      title: Text(
+        terminal.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: TRIconButton(
+        key: ValueKey<String>('terminal-tab-close-${terminal.id}'),
+        appearance: TRAppearance.ghost,
+        uiSize: TRUiSize.sm,
+        label: AppLocalizations.of(context).workspaceCloseTab,
+        onPressed: onClose,
+        icon: const Icon(CoderIcons.close),
+      ),
+    ),
+  );
+}
+
+class _TerminalPane extends ConsumerStatefulWidget {
+  const _TerminalPane({required this.selection, required this.terminal});
+
+  final WorkspaceSelection selection;
+  final TerminalDto terminal;
+
+  @override
+  ConsumerState<_TerminalPane> createState() => _TerminalPaneState();
+}
+
+class _TerminalPaneState extends ConsumerState<_TerminalPane> {
+  final TRTerminalController _controller = TRTerminalController();
+  StreamSubscription<ClientEvent>? _events;
+  CoderApi? _api;
+  int _sequence = 0;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_attach());
+  }
+
+  Future<void> _attach() async {
+    try {
+      final registry = await ref.read(hostRegistryControllerProvider.future);
+      final api = registry.runtimes[widget.selection.hostId]!.api!;
+      _api = api;
+      final attached = await api.attachTerminal(widget.terminal.id);
+      attached.replay.forEach(_accept);
+      _events = api.events.listen((event) {
+        if (event case TerminalOutputClientEvent(
+          :final output,
+        ) when output.terminalId == widget.terminal.id) {
+          _accept(output);
+        }
+      });
+      if (mounted) setState(() {});
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
+  }
+
+  void _accept(TerminalOutputDto output) {
+    if (output.sequence <= _sequence) return;
+    _sequence = output.sequence;
+    _controller.write(output.data);
+  }
+
+  @override
+  void dispose() {
+    unawaited(_events?.cancel());
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error case final error?) {
+      return Center(
+        child: TRAlert(
+          variant: TRStatusVariant.danger,
+          title: Text(AppLocalizations.of(context).terminalConnectionFailed),
+          description: Text('$error'),
+        ),
+      );
+    }
+    return TRTerminalView(
+      key: ValueKey<String>('terminal-view-${widget.terminal.id}'),
+      controller: _controller,
+      autofocus: true,
+      onInput: (data) => unawaited(
+        _api?.writeTerminal(widget.terminal.id, data) ?? Future<void>.value(),
+      ),
+      onResize: (size) => unawaited(
+        _api?.resizeTerminal(
+              widget.terminal.id,
+              columns: size.columns,
+              rows: size.rows,
+            ) ??
+            Future<TerminalDto>.value(widget.terminal),
+      ),
+    );
+  }
 }
 
 class _ConversationPane extends ConsumerStatefulWidget {

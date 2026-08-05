@@ -234,6 +234,44 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceNewSession => '새 session';
 
   @override
+  String get workspaceNewTab => '새 탭';
+
+  @override
+  String get workspaceNewTerminal => '새 터미널';
+
+  @override
+  String get terminalCloseTitle => '터미널을 종료할까요?';
+
+  @override
+  String get terminalCloseConfirm => '이 탭을 닫으면 셸과 하위 프로세스가 종료돼요.';
+
+  @override
+  String get terminalTerminate => '종료';
+
+  @override
+  String get terminalConnectionFailed => '터미널 연결에 실패했어요';
+
+  @override
+  String get projectSettingsShellHeading => '프로젝트 터미널 셸';
+
+  @override
+  String get projectSettingsShellHelp =>
+      '이 프로젝트에서 여는 터미널의 데몬 호스트 셸을 덮어써요. 실행 파일을 비워 두면 호스트 기본값을 사용해요.';
+
+  @override
+  String get projectSettingsShellExecutable => '셸 실행 파일';
+
+  @override
+  String get projectSettingsShellArguments => '셸 인자 (한 줄에 하나)';
+
+  @override
+  String get projectSettingsHostShellHeading => '데몬 호스트 기본 셸';
+
+  @override
+  String get projectSettingsHostShellHelp =>
+      '프로젝트에서 별도로 지정하지 않으면 이 데몬 호스트의 모든 프로젝트에 사용해요. 실행 파일을 비워 두면 운영체제 기본값을 사용해요.';
+
+  @override
   String get workspaceAllSessions => '모든 session';
 
   @override

@@ -61,6 +61,24 @@ final class SessionUpdatedClientEvent extends ClientEvent {
   final SessionDto session;
 }
 
+/// Reports ordered output from a terminal.
+final class TerminalOutputClientEvent extends ClientEvent {
+  /// Creates a terminal output event.
+  const TerminalOutputClientEvent(this.output);
+
+  /// Ordered output received from the daemon.
+  final TerminalOutputDto output;
+}
+
+/// Reports terminal metadata changes.
+final class TerminalUpdatedClientEvent extends ClientEvent {
+  /// Creates a terminal metadata event.
+  const TerminalUpdatedClientEvent(this.terminal);
+
+  /// Updated daemon-owned terminal.
+  final TerminalDto terminal;
+}
+
 /// Signals that the daemon's Markdown agent files changed.
 final class AgentDefinitionsChangedClientEvent extends ClientEvent {
   /// Creates a catalog invalidation event.
@@ -187,6 +205,43 @@ abstract interface class CoderApi {
     String sessionId,
     SessionModelSelectionDto? model,
   );
+
+  /// Lists live terminals for a worktree.
+  Future<List<TerminalDto>> listTerminals(String worktreeId);
+
+  /// Creates and starts a terminal.
+  Future<TerminalDto> createTerminal({
+    required String id,
+    required String worktreeId,
+    required String title,
+    required int columns,
+    required int rows,
+  });
+
+  /// Attaches to a terminal and replays output after a sequence.
+  Future<TerminalAttachResultDto> attachTerminal(
+    String terminalId, {
+    int afterSequence = 0,
+  });
+
+  /// Writes user input to a terminal.
+  Future<void> writeTerminal(String terminalId, String data);
+
+  /// Changes terminal character-cell dimensions.
+  Future<TerminalDto> resizeTerminal(
+    String terminalId, {
+    required int columns,
+    required int rows,
+  });
+
+  /// Terminates a terminal and its shell process.
+  Future<void> terminateTerminal(String terminalId);
+
+  /// Reads the daemon host shell override, or null for the OS default.
+  Future<ShellSpecDto?> getTerminalShell();
+
+  /// Replaces or clears the daemon host shell override.
+  Future<void> setTerminalShell(ShellSpecDto? shell);
 
   /// Lists all visible Markdown-backed agent definitions.
   Future<List<AgentDefinitionDto>> listAgentDefinitions();

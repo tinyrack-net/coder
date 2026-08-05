@@ -394,6 +394,50 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'terminal.lifecycle',
+    description:
+        'Creates, attaches, resizes, restores, and terminates daemon-owned '
+        'interactive terminal tabs.',
+    apiMethods: <String>[
+      'listTerminals',
+      'createTerminal',
+      'attachTerminal',
+      'writeTerminal',
+      'resizeTerminal',
+      'terminateTerminal',
+    ],
+    routes: <String>['TerminalRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+      FeatureVerificationLayer.platformSmoke,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'create_write_terminate',
+        description:
+            'Creates a real PTY, writes and observes output, then terminates '
+            'it.',
+        surfaces: _desktop,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'terminal.settings',
+    description:
+        'Resolves and edits project and daemon-host shell configuration.',
+    apiMethods: <String>['getTerminalShell', 'setTerminalShell'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'turn.execution',
     description: 'Streams, cancels, approves, rejects, and restores turns.',
     apiMethods: <String>[

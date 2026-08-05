@@ -101,6 +101,26 @@ void main() {
         _textInput('Teardown (worktree 제거 전)'),
         'docker compose down',
       );
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('project-shell-executable')),
+      );
+      await tester.enterText(
+        _keyedTextInput('project-shell-executable'),
+        '/bin/zsh',
+      );
+      await tester.enterText(
+        _keyedTextInput('project-shell-arguments'),
+        '-l\n--no-rcs',
+      );
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('host-shell-executable')),
+      );
+      await tester.enterText(
+        _keyedTextInput('host-shell-executable'),
+        '/bin/bash',
+      );
+      await tester.enterText(_keyedTextInput('host-shell-arguments'), '-l');
+      await tester.ensureVisible(find.widgetWithText(TRButton, '저장'));
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
@@ -109,11 +129,32 @@ void main() {
         const ProjectSettingsDto(
           setup: <String>['npm ci', 'npm run build'],
           teardown: <String>['docker compose down'],
+          shell: ShellSpecDto(
+            executable: '/bin/zsh',
+            arguments: <String>['-l', '--no-rcs'],
+          ),
         ),
       );
-      expect(find.text('저장했습니다.'), findsOneWidget);
+      expect(
+        api.terminalShell,
+        const ShellSpecDto(
+          executable: '/bin/bash',
+          arguments: <String>['-l'],
+        ),
+      );
+
+      await tester.enterText(_keyedTextInput('project-shell-executable'), '');
+      await tester.enterText(_keyedTextInput('host-shell-executable'), '');
+      await tester.ensureVisible(find.widgetWithText(TRButton, '저장'));
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(api.projectSettings['workspace']?.shell, isNull);
+      expect(api.terminalShell, isNull);
     },
-    tags: const <String>['feature_test__project_settings__widget'],
+    tags: const <String>[
+      'feature_test__project_settings__widget',
+      'feature_test__terminal_settings__widget',
+    ],
   );
 
   testWidgets('project settings switches between projects', (tester) async {
@@ -213,6 +254,11 @@ Finder _textInput(String label) => find.descendant(
   of: find.byWidgetPredicate(
     (widget) => widget is TRTextField && widget.label == label,
   ),
+  matching: find.byType(EditableText),
+);
+
+Finder _keyedTextInput(String key) => find.descendant(
+  of: find.byKey(ValueKey<String>(key)),
   matching: find.byType(EditableText),
 );
 

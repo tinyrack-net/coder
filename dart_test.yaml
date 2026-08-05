@@ -44,6 +44,16 @@ tags:
   feature_test__session_tabs__unit:
   feature_test__session_tabs__widget:
   feature_test__session_tabs__e2e:
+  feature_test__terminal_lifecycle__unit:
+  feature_test__terminal_lifecycle__contract:
+  feature_test__terminal_lifecycle__verticalSlice:
+  feature_test__terminal_lifecycle__widget:
+  feature_test__terminal_lifecycle__e2e:
+  feature_test__terminal_lifecycle__platformSmoke:
+  feature_test__terminal_settings__unit:
+  feature_test__terminal_settings__contract:
+  feature_test__terminal_settings__verticalSlice:
+  feature_test__terminal_settings__widget:
   feature_test__turn_execution__unit:
   feature_test__turn_execution__contract:
   feature_test__turn_execution__verticalSlice:
@@ -96,6 +106,7 @@ tags:
   route_test__workspace_home_route__widget:
   route_test__worktree_route__widget:
   route_test__session_route__widget:
+  route_test__terminal_route__widget:
   route_test__provider_settings_route__widget:
   route_test__agent_settings_route__widget:
   route_test__skill_settings_route__widget:

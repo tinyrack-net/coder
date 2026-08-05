@@ -642,6 +642,139 @@ abstract class SessionResultDto with _$SessionResultDto {
 }
 
 @freezed
+/// Requests live terminals for a worktree.
+abstract class TerminalListParamsDto with _$TerminalListParamsDto {
+  /// Creates terminal-list parameters.
+  const factory TerminalListParamsDto({required String worktreeId}) =
+      _TerminalListParamsDto;
+
+  /// Decodes terminal-list parameters.
+  factory TerminalListParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalListParamsDtoFromJson(json);
+}
+
+@freezed
+/// Returns live terminals for a worktree.
+abstract class TerminalListResultDto with _$TerminalListResultDto {
+  /// Creates a terminal-list result.
+  const factory TerminalListResultDto({required List<TerminalDto> terminals}) =
+      _TerminalListResultDto;
+
+  /// Decodes a terminal-list result.
+  factory TerminalListResultDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalListResultDtoFromJson(json);
+}
+
+@freezed
+/// Parameters used to start a terminal.
+abstract class TerminalCreateParamsDto with _$TerminalCreateParamsDto {
+  /// Creates terminal-create parameters.
+  const factory TerminalCreateParamsDto({
+    required String id,
+    required String worktreeId,
+    required String title,
+    required int columns,
+    required int rows,
+  }) = _TerminalCreateParamsDto;
+
+  /// Decodes terminal-create parameters.
+  factory TerminalCreateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalCreateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Identifies one terminal.
+abstract class TerminalIdParamsDto with _$TerminalIdParamsDto {
+  /// Creates terminal identifier parameters.
+  const factory TerminalIdParamsDto({required String terminalId}) =
+      _TerminalIdParamsDto;
+
+  /// Decodes terminal identifier parameters.
+  factory TerminalIdParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalIdParamsDtoFromJson(json);
+}
+
+@freezed
+/// Requests replay output while attaching to a terminal.
+abstract class TerminalAttachParamsDto with _$TerminalAttachParamsDto {
+  /// Creates terminal-attach parameters.
+  const factory TerminalAttachParamsDto({
+    required String terminalId,
+    @Default(0) int afterSequence,
+  }) = _TerminalAttachParamsDto;
+
+  /// Decodes terminal-attach parameters.
+  factory TerminalAttachParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalAttachParamsDtoFromJson(json);
+}
+
+@freezed
+/// Terminal metadata and replay returned by attach.
+abstract class TerminalAttachResultDto with _$TerminalAttachResultDto {
+  /// Creates a terminal-attach result.
+  const factory TerminalAttachResultDto({
+    required TerminalDto terminal,
+    required List<TerminalOutputDto> replay,
+  }) = _TerminalAttachResultDto;
+
+  /// Decodes a terminal-attach result.
+  factory TerminalAttachResultDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalAttachResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns one terminal.
+abstract class TerminalResultDto with _$TerminalResultDto {
+  /// Creates a terminal result.
+  const factory TerminalResultDto({required TerminalDto terminal}) =
+      _TerminalResultDto;
+
+  /// Decodes a terminal result.
+  factory TerminalResultDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalResultDtoFromJson(json);
+}
+
+@freezed
+/// Terminal input parameters.
+abstract class TerminalWriteParamsDto with _$TerminalWriteParamsDto {
+  /// Creates terminal-write parameters.
+  const factory TerminalWriteParamsDto({
+    required String terminalId,
+    required String data,
+  }) = _TerminalWriteParamsDto;
+
+  /// Decodes terminal-write parameters.
+  factory TerminalWriteParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalWriteParamsDtoFromJson(json);
+}
+
+@freezed
+/// Terminal resize parameters.
+abstract class TerminalResizeParamsDto with _$TerminalResizeParamsDto {
+  /// Creates terminal-resize parameters.
+  const factory TerminalResizeParamsDto({
+    required String terminalId,
+    required int columns,
+    required int rows,
+  }) = _TerminalResizeParamsDto;
+
+  /// Decodes terminal-resize parameters.
+  factory TerminalResizeParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalResizeParamsDtoFromJson(json);
+}
+
+@freezed
+/// Reads or writes the optional daemon-host shell override.
+abstract class TerminalShellDto with _$TerminalShellDto {
+  /// Creates a terminal-shell payload.
+  const factory TerminalShellDto({ShellSpecDto? shell}) = _TerminalShellDto;
+
+  /// Decodes a terminal-shell payload.
+  factory TerminalShellDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalShellDtoFromJson(json);
+}
+
+@freezed
 /// Returns agent definitions and source diagnostics.
 abstract class AgentDefinitionListResultDto
     with _$AgentDefinitionListResultDto {

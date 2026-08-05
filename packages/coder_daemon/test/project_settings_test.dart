@@ -36,13 +36,17 @@ void main() {
   });
 
   test(
-    'reads worktree hooks and drops blank commands',
+    'reads worktree hooks and typed shell settings',
     () async {
       await settingsFile().writeAsString(
         jsonEncode(<String, dynamic>{
           'worktree': <String, dynamic>{
             'setup': <String>['npm ci', '  ', ' npm run build '],
             'teardown': <String>['docker compose down'],
+            'shell': <String, dynamic>{
+              'executable': '/bin/zsh',
+              'arguments': <String>['-l'],
+            },
           },
         }),
       );
@@ -52,10 +56,17 @@ void main() {
         const ProjectSettingsDto(
           setup: <String>['npm ci', 'npm run build'],
           teardown: <String>['docker compose down'],
+          shell: ShellSpecDto(
+            executable: '/bin/zsh',
+            arguments: <String>['-l'],
+          ),
         ),
       );
     },
-    tags: const <String>['feature_test__project_settings__unit'],
+    tags: const <String>[
+      'feature_test__project_settings__unit',
+      'feature_test__terminal_settings__unit',
+    ],
   );
 
   test('preserves unknown keys and drops empty hook lists on save', () async {

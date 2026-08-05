@@ -14,6 +14,7 @@ import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/mcp_transports.dart';
 import 'package:coder_daemon/src/openai_oauth_gateway.dart';
+import 'package:coder_daemon/src/portable_terminal.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/project_settings.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
@@ -22,6 +23,7 @@ import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/server.dart';
 import 'package:coder_daemon/src/skills.dart';
+import 'package:coder_daemon/src/terminal_service.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:crypto/crypto.dart';
@@ -269,6 +271,43 @@ abstract final class DaemonApplication {
         projectSettings,
         worktreeHooks,
       );
+      final terminals = TerminalService(
+        gateway: const PortableTerminalGateway(),
+        worktreePath: (worktreeId) async {
+          final worktree = await database.worktreeDao.getById(worktreeId);
+          if (worktree == null || worktree.archivedAt != null) {
+            throw const FormatException('Active worktree not found.');
+          }
+          return worktree.path;
+        },
+        shellFor: (worktreeId) async {
+          final worktree = await database.worktreeDao.getById(worktreeId);
+          if (worktree == null || worktree.archivedAt != null) {
+            throw const FormatException('Active worktree not found.');
+          }
+          final workspace = await database.workspaceDao.getById(
+            worktree.workspaceId,
+          );
+          if (workspace == null) {
+            throw const FormatException('Workspace not found.');
+          }
+          final project = await projectSettings.load(workspace.rootPath);
+          if (project.shell case final shell?) return shell;
+          final stored = await database.settingsDao.getValue('terminal.shell');
+          if (stored != null) {
+            return ShellSpecDto.fromJson(
+              Map<String, dynamic>.from(jsonDecode(stored) as Map),
+            );
+          }
+          if (Platform.isWindows) {
+            return const ShellSpecDto(executable: 'powershell.exe');
+          }
+          return ShellSpecDto(
+            executable: Platform.environment['SHELL'] ?? '/bin/sh',
+            arguments: const <String>['-l'],
+          );
+        },
+      );
       final info = ServerInfoDto(
         serverId: serverId,
         version: config.version,
@@ -283,6 +322,7 @@ abstract final class DaemonApplication {
           'mcp': true,
           'skills': true,
           'attachments': true,
+          'terminals': true,
         },
       );
       final rpc = DaemonRpcServer(
@@ -297,6 +337,8 @@ abstract final class DaemonApplication {
         skills: skills,
         providers: providers,
         providerAuth: providerAuth,
+        terminals: terminals,
+        settings: database.settingsDao,
         clock: clock,
         serverInfo: info,
         token: token,

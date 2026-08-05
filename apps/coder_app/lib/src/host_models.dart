@@ -199,6 +199,8 @@ final class SessionTabPreference {
   const SessionTabPreference({
     this.openAgentIds = const <String>[],
     this.selectedAgentId,
+    this.openTerminalIds = const <String>[],
+    this.selectedTerminalId,
   });
 
   /// Session IDs visible as tabs, in display order.
@@ -206,6 +208,12 @@ final class SessionTabPreference {
 
   /// Active session tab.
   final String? selectedAgentId;
+
+  /// Terminal IDs visible as tabs, in display order.
+  final List<String> openTerminalIds;
+
+  /// Active terminal tab, mutually exclusive with [selectedAgentId].
+  final String? selectedTerminalId;
 }
 
 /// Persisted, non-secret configuration for one remote daemon.

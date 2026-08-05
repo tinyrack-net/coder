@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 15;
+const int coderProtocolVersion = 16;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -113,6 +113,30 @@ abstract final class RpcMethod {
   /// Switches one session between planning and normal collaboration.
   static const String sessionModeSet = 'session.mode.set';
 
+  /// Lists live terminals in one worktree.
+  static const String terminalList = 'terminal.list';
+
+  /// Creates a daemon-owned terminal.
+  static const String terminalCreate = 'terminal.create';
+
+  /// Attaches to a terminal and returns replay output.
+  static const String terminalAttach = 'terminal.attach';
+
+  /// Writes terminal input.
+  static const String terminalWrite = 'terminal.write';
+
+  /// Resizes a terminal PTY.
+  static const String terminalResize = 'terminal.resize';
+
+  /// Terminates a terminal PTY.
+  static const String terminalTerminate = 'terminal.terminate';
+
+  /// Reads the daemon host's default terminal shell.
+  static const String terminalShellGet = 'terminal.shell.get';
+
+  /// Replaces or clears the daemon host's default terminal shell.
+  static const String terminalShellSet = 'terminal.shell.set';
+
   /// Returns immutable built-in provider definitions.
   static const String providerCatalog = 'provider.catalog';
 
@@ -172,6 +196,12 @@ abstract final class RpcNotification {
 
   /// Reports one session lifecycle change.
   static const String sessionUpdated = 'session.updated';
+
+  /// Streams one ordered terminal output chunk.
+  static const String terminalOutput = 'terminal.output';
+
+  /// Reports terminal lifecycle or size changes.
+  static const String terminalUpdated = 'terminal.updated';
 
   /// Reports a Markdown agent catalog change.
   static const String agentDefinitionsChanged = 'agentDefinitions.changed';

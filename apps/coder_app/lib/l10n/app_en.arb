@@ -287,6 +287,18 @@
     "description": "Tooltip that collapses the workspace sidebar."
   },
   "workspaceNewSession": "New session",
+  "workspaceNewTab": "New tab",
+  "workspaceNewTerminal": "New terminal",
+  "terminalCloseTitle": "Terminate terminal?",
+  "terminalCloseConfirm": "Closing this tab terminates its shell and child processes.",
+  "terminalTerminate": "Terminate",
+  "terminalConnectionFailed": "Terminal connection failed",
+  "projectSettingsShellHeading": "Project terminal shell",
+  "projectSettingsShellHelp": "Overrides the daemon host shell for terminals opened in this project. Leave the executable empty to inherit the host default.",
+  "projectSettingsShellExecutable": "Shell executable",
+  "projectSettingsShellArguments": "Shell arguments (one per line)",
+  "projectSettingsHostShellHeading": "Daemon host default shell",
+  "projectSettingsHostShellHelp": "Used by every project on this daemon host unless the project overrides it. Leave the executable empty to use the operating system default.",
   "@workspaceNewSession": {
     "description": "Tooltip that starts an AI session in the open checkout."
   },

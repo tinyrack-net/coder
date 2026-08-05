@@ -235,6 +235,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceNewSession => 'New session';
 
   @override
+  String get workspaceNewTab => 'New tab';
+
+  @override
+  String get workspaceNewTerminal => 'New terminal';
+
+  @override
+  String get terminalCloseTitle => 'Terminate terminal?';
+
+  @override
+  String get terminalCloseConfirm =>
+      'Closing this tab terminates its shell and child processes.';
+
+  @override
+  String get terminalTerminate => 'Terminate';
+
+  @override
+  String get terminalConnectionFailed => 'Terminal connection failed';
+
+  @override
+  String get projectSettingsShellHeading => 'Project terminal shell';
+
+  @override
+  String get projectSettingsShellHelp =>
+      'Overrides the daemon host shell for terminals opened in this project. Leave the executable empty to inherit the host default.';
+
+  @override
+  String get projectSettingsShellExecutable => 'Shell executable';
+
+  @override
+  String get projectSettingsShellArguments => 'Shell arguments (one per line)';
+
+  @override
+  String get projectSettingsHostShellHeading => 'Daemon host default shell';
+
+  @override
+  String get projectSettingsHostShellHelp =>
+      'Used by every project on this daemon host unless the project overrides it. Leave the executable empty to use the operating system default.';
+
+  @override
   String get workspaceAllSessions => 'All sessions';
 
   @override

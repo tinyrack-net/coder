@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v15 exposes attachments and existing typed contracts', () {
-    expect(coderProtocolVersion, 15);
+  test('protocol v16 exposes terminals and existing typed contracts', () {
+    expect(coderProtocolVersion, 16);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -550,7 +550,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 15);
+    expect(coderProtocolVersion, 16);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -1193,6 +1193,121 @@ void main() {
       AgentToolDefinitionDto.fromJson,
     );
   });
+
+  test(
+    'terminal lifecycle payloads preserve shell, size, and replay sequence',
+    () {
+      const shell = ShellSpecDto(
+        executable: '/bin/zsh',
+        arguments: <String>['-l'],
+      );
+      const terminal = TerminalDto(
+        id: 'terminal-1',
+        worktreeId: 'worktree-1',
+        title: 'Terminal 1',
+        shell: shell,
+        status: TerminalStatus.running,
+        columns: 120,
+        rows: 40,
+        lastSequence: 7,
+      );
+      _roundTrip(shell, (value) => value.toJson(), ShellSpecDto.fromJson);
+      _roundTrip(
+        const TerminalOutputDto(
+          terminalId: 'terminal-1',
+          sequence: 7,
+          data: 'ready',
+        ),
+        (value) => value.toJson(),
+        TerminalOutputDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalListParamsDto(worktreeId: 'worktree-1'),
+        (value) => value.toJson(),
+        TerminalListParamsDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalListResultDto(terminals: <TerminalDto>[terminal]),
+        (value) => value.toJson(),
+        TerminalListResultDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalCreateParamsDto(
+          id: 'terminal-1',
+          worktreeId: 'worktree-1',
+          title: 'Terminal 1',
+          columns: 120,
+          rows: 40,
+        ),
+        (value) => value.toJson(),
+        TerminalCreateParamsDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalIdParamsDto(terminalId: 'terminal-1'),
+        (value) => value.toJson(),
+        TerminalIdParamsDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalAttachParamsDto(
+          terminalId: 'terminal-1',
+          afterSequence: 3,
+        ),
+        (value) => value.toJson(),
+        TerminalAttachParamsDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalResultDto(terminal: terminal),
+        (value) => value.toJson(),
+        TerminalResultDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalWriteParamsDto(
+          terminalId: 'terminal-1',
+          data: 'echo ready\r',
+        ),
+        (value) => value.toJson(),
+        TerminalWriteParamsDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalResizeParamsDto(
+          terminalId: 'terminal-1',
+          columns: 100,
+          rows: 30,
+        ),
+        (value) => value.toJson(),
+        TerminalResizeParamsDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalShellDto(shell: shell),
+        (value) => value.toJson(),
+        TerminalShellDto.fromJson,
+      );
+      _roundTrip(
+        const TerminalShellDto(),
+        (value) => value.toJson(),
+        TerminalShellDto.fromJson,
+      );
+      _roundTrip(terminal, (value) => value.toJson(), TerminalDto.fromJson);
+      _roundTrip(
+        const TerminalAttachResultDto(
+          terminal: terminal,
+          replay: <TerminalOutputDto>[
+            TerminalOutputDto(
+              terminalId: 'terminal-1',
+              sequence: 7,
+              data: 'ready',
+            ),
+          ],
+        ),
+        (value) => value.toJson(),
+        TerminalAttachResultDto.fromJson,
+      );
+    },
+    tags: const <String>[
+      'feature_test__terminal_lifecycle__contract',
+      'feature_test__terminal_settings__contract',
+    ],
+  );
 }
 
 void _roundTrip<T>(
