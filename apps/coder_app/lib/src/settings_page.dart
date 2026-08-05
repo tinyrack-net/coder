@@ -44,7 +44,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final l10n = AppLocalizations.of(context);
     final asyncState = ref.watch(_provider);
     final body = asyncState.when(
-      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.md)),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (state) => state == null
           ? Center(child: Text(l10n.providerSettingsRequiresDaemon))
@@ -55,7 +55,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       appBar: CoderPageHeader(
         leading: TRIconButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: context.pop,
           icon: const Icon(CoderIcons.back),
@@ -114,7 +114,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               TRButton(
                 key: const ValueKey<String>('provider-catalog-refresh'),
                 appearance: TRAppearance.outline,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 onPressed: _refreshingCatalog
                     ? null
                     : () => unawaited(_refreshCatalog()),
@@ -304,13 +304,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
           TRButton(
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.commonDelete),
           ),
@@ -333,13 +333,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
           TRButton(
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.providerSettingsDisconnect),
           ),
@@ -547,7 +547,7 @@ class _AuthAttemptBar extends StatelessWidget {
       borderRadius: const BorderRadius.all(TRRadii.medium),
     ),
     child: CoderListRow(
-      leading: const TRSpinner(uiSize: TRUiSize.sm),
+      leading: const TRSpinner(uiSize: TRUiSize.md),
       title: Text(AppLocalizations.of(context).providerSettingsOAuthPending),
       subtitle: SelectableText(
         <String?>[
@@ -558,7 +558,7 @@ class _AuthAttemptBar extends StatelessWidget {
       trailing: TRButton(
         key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),
         appearance: TRAppearance.ghost,
-        uiSize: TRUiSize.sm,
+        uiSize: TRUiSize.md,
         onPressed: onCancel,
         child: Text(AppLocalizations.of(context).commonCancel),
       ),
@@ -590,7 +590,7 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
     return TRAlertDialog(
       title: Text(l10n.providerSettingsConnectTitle(widget.providerName)),
       content: TRTextField(
-        uiSize: TRUiSize.sm,
+        uiSize: TRUiSize.md,
         key: const ValueKey('provider-api-key'),
         controller: _controller,
         obscureText: true,
@@ -600,13 +600,13 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: () {
             final value = _controller.text.trim();
             if (value.isNotEmpty) Navigator.pop(context, value);
@@ -679,13 +679,13 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               TRTextField(
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 controller: _name,
                 label: l10n.commonName,
               ),
               const SizedBox(height: 12),
               TRTextField(
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 controller: _baseUrl,
                 label: 'Base URL',
               ),
@@ -693,7 +693,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
               TRSelectFormField<ProviderApiFormat>(
                 initialValue: _apiFormat,
                 label: l10n.providerSettingsApiFormat,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 items: ProviderApiFormat.values
                     .map(
                       (format) => TRSelectItem<ProviderApiFormat>(
@@ -715,7 +715,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
               ),
               if (_authenticationRequired)
                 TRTextField(
-                  uiSize: TRUiSize.sm,
+                  uiSize: TRUiSize.md,
                   controller: _apiKey,
                   obscureText: true,
                   label: 'API key',
@@ -723,7 +723,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
               const SizedBox(height: 12),
               if (widget.initial?.manualModelIds.isNotEmpty ?? false)
                 TRTextField(
-                  uiSize: TRUiSize.sm,
+                  uiSize: TRUiSize.md,
                   controller: _models,
                   label: l10n.providerSettingsManualModels,
                   placeholder: 'model-a, model-b',
@@ -735,13 +735,13 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: _submit,
           child: Text(l10n.commonSave),
         ),
@@ -808,7 +808,7 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
             Text(l10n.providerSettingsModelLookupFailedBody),
             const SizedBox(height: 12),
             TRTextField(
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               controller: _models,
               label: l10n.providerSettingsManualModels,
               placeholder: 'model-a, model-b',
@@ -819,13 +819,13 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.providerSettingsLater),
         ),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: () {
             final models = _models.text
                 .split(',')

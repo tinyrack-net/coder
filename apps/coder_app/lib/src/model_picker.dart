@@ -147,7 +147,7 @@ class _ModelPickerState extends State<ModelPicker> {
             ),
             TRIconButton(
               appearance: TRAppearance.ghost,
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               label: l10n.commonClose,
               onPressed: () => Navigator.pop(context),
               icon: const Icon(CoderIcons.close),
@@ -156,7 +156,7 @@ class _ModelPickerState extends State<ModelPicker> {
         ),
         const SizedBox(height: 8),
         TRTextField(
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           key: const ValueKey('model-search-field'),
           autofocus: true,
           label: l10n.modelPickerSearch,

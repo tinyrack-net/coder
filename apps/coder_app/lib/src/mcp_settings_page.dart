@@ -43,7 +43,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
         .watch(provider)
         .when(
           loading: () => const Center(
-            child: TRSpinner(uiSize: TRUiSize.sm, label: 'Loading MCP servers'),
+            child: TRSpinner(uiSize: TRUiSize.md, label: 'Loading MCP servers'),
           ),
           error: (error, _) => Center(
             key: const ValueKey<String>('mcp-settings-error'),
@@ -112,7 +112,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                       alignment: Alignment.centerLeft,
                       child: TRButton(
                         appearance: TRAppearance.ghost,
-                        uiSize: TRUiSize.sm,
+                        uiSize: TRUiSize.md,
                         onPressed: () => setState(() {
                           _creating = false;
                           _selectedId = null;
@@ -177,7 +177,7 @@ class _ServerList extends StatelessWidget {
               ),
               TRIconButton(
                 appearance: TRAppearance.ghost,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 key: const ValueKey<String>('mcp-server-add'),
                 label: l10n.mcpSettingsAdd,
                 onPressed: onAdd,
@@ -281,7 +281,7 @@ class _StatusDot extends StatelessWidget {
     if (server.status == McpServerStatus.connecting) {
       return TRSpinner(
         key: ValueKey<String>('mcp-server-status-${server.config.id}'),
-        uiSize: TRUiSize.sm,
+        uiSize: TRUiSize.md,
         label: 'Connecting MCP server',
       );
     }
@@ -408,7 +408,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             ),
           ),
         TRTextField(
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           key: const ValueKey<String>('mcp-field-id'),
           controller: _id,
           enabled: _isNew,
@@ -422,12 +422,12 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           children: <TRToggle>[
             TRToggle(
               value: McpTransportKind.stdio.name,
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               child: Text(l10n.mcpSettingsTransportStdio),
             ),
             TRToggle(
               value: McpTransportKind.http.name,
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               child: Text(l10n.mcpSettingsTransportHttp),
             ),
           ],
@@ -438,7 +438,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
         const SizedBox(height: 16),
         if (_transport == McpTransportKind.stdio) ...<Widget>[
           TRTextField(
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             key: const ValueKey<String>('mcp-field-command'),
             controller: _command,
             enabled: !_readOnly,
@@ -446,7 +446,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ),
           const SizedBox(height: 16),
           TRTextField(
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             key: const ValueKey<String>('mcp-field-args'),
             controller: _args,
             enabled: !_readOnly,
@@ -456,7 +456,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ),
           const SizedBox(height: 16),
           TRTextField(
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             key: const ValueKey<String>('mcp-field-cwd'),
             controller: _cwd,
             enabled: !_readOnly,
@@ -464,7 +464,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ),
           const SizedBox(height: 16),
           TRTextField(
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             key: const ValueKey<String>('mcp-field-env'),
             controller: _env,
             enabled: !_readOnly,
@@ -474,7 +474,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ),
         ] else ...<Widget>[
           TRTextField(
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             key: const ValueKey<String>('mcp-field-url'),
             controller: _url,
             enabled: !_readOnly,
@@ -482,7 +482,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ),
           const SizedBox(height: 16),
           TRTextField(
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             key: const ValueKey<String>('mcp-field-headers'),
             controller: _headers,
             enabled: !_readOnly,
@@ -531,7 +531,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             if (!_readOnly)
               TRButton(
                 intent: TRIntent.primary,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 key: const ValueKey<String>('mcp-server-save'),
                 onPressed: _busy ? null : _save,
                 child: Text(MaterialLocalizations.of(context).saveButtonLabel),
@@ -539,7 +539,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             if (!_readOnly)
               TRButton(
                 appearance: TRAppearance.outline,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 key: const ValueKey<String>('mcp-server-test'),
                 onPressed: _busy ? null : _test,
                 child: Text(l10n.mcpSettingsTest),
@@ -547,7 +547,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             if (!_readOnly)
               TRButton(
                 appearance: TRAppearance.ghost,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 key: const ValueKey<String>('mcp-secret-set'),
                 onPressed: _busy ? null : _promptForSecret,
                 child: Text(l10n.mcpSettingsSecretSet),
@@ -555,7 +555,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             if (!_readOnly && !_isNew)
               TRButton(
                 appearance: TRAppearance.ghost,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 key: const ValueKey<String>('mcp-server-delete'),
                 onPressed: _busy ? null : _delete,
                 child: Text(l10n.mcpSettingsDelete),
@@ -708,13 +708,13 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
           ),
           TRButton(
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             key: const ValueKey<String>('mcp-delete-confirm'),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(l10n.mcpSettingsDelete),
@@ -793,13 +793,13 @@ class _SecretDialogState extends State<_SecretDialog> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             TRTextField(
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               key: const ValueKey<String>('mcp-secret-key'),
               controller: _key,
               label: l10n.mcpSettingsSecretKey,
             ),
             TRTextField(
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               key: const ValueKey<String>('mcp-secret-value'),
               controller: _value,
               obscureText: true,
@@ -811,13 +811,13 @@ class _SecretDialogState extends State<_SecretDialog> {
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: () => Navigator.of(context).pop(),
           child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           key: const ValueKey<String>('mcp-secret-save'),
           onPressed: () {
             final key = _key.text.trim();

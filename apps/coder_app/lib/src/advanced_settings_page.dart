@@ -82,7 +82,7 @@ class _ResetCardState extends ConsumerState<_ResetCard> {
             trailing: TRButton(
               key: const ValueKey<String>('advanced-settings-reset-button'),
               appearance: TRAppearance.outline,
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               onPressed: _busy ? null : _confirmAndReset,
               child: Text(
                 _busy ? l10n.advancedResetRunning : l10n.advancedResetAction,
@@ -107,14 +107,14 @@ class _ResetCardState extends ConsumerState<_ResetCard> {
             TRButton(
               key: const ValueKey<String>('advanced-reset-confirm-cancel'),
               appearance: TRAppearance.ghost,
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               onPressed: () => Navigator.pop(context, false),
               child: Text(l10n.commonCancel),
             ),
             TRButton(
               key: const ValueKey<String>('advanced-reset-confirm-accept'),
               intent: TRIntent.primary,
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               onPressed: () => Navigator.pop(context, true),
               child: Text(l10n.advancedResetConfirmAccept),
             ),

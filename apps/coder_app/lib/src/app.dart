@@ -521,7 +521,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       appBar: CoderPageHeader(
         leading: TRIconButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => const WorkspaceHomeRoute().go(context),
           icon: const Icon(CoderIcons.back),
@@ -545,7 +545,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                     key: const ValueKey<String>('settings-category-select'),
                     initialValue: widget.category,
                     label: l10n.settingsTitle,
-                    uiSize: TRUiSize.sm,
+                    uiSize: TRUiSize.md,
                     items: <TRSelectItem<SettingsCategory>>[
                       for (final category in SettingsCategory.values)
                         TRSelectItem<SettingsCategory>(
@@ -721,7 +721,7 @@ class _DaemonSelect extends ConsumerWidget {
           value: hostId,
           label: showLabel ? l10n.settingsDaemonSelectLabel : null,
           placeholder: l10n.settingsDaemonSelectEmpty,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           enabled: hosts.isNotEmpty,
           width: constraints.maxWidth,
           items: hosts
@@ -874,7 +874,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
             ? null
             : TRIconButton(
                 appearance: TRAppearance.ghost,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 key: const ValueKey('workspace-sidebar-toggle'),
                 label: collapsed
                     ? AppLocalizations.of(context).workspaceSidebarExpand
@@ -887,7 +887,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
           TRIconButton(
             key: const ValueKey('workspace-settings-button'),
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
             label: AppLocalizations.of(context).settingsTitle,
             onPressed: () {
               final hostId = widget.selection?.hostId;
@@ -1029,14 +1029,14 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
               if (widget.showBack)
                 TRIconButton(
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
+                  uiSize: TRUiSize.md,
                   label: MaterialLocalizations.of(context).backButtonTooltip,
                   onPressed: () => const WorkspaceHomeRoute().go(context),
                   icon: const Icon(CoderIcons.back),
                 ),
               Expanded(
                 child: state == null
-                    ? const TRProgress(uiSize: TRUiSize.sm)
+                    ? const TRProgress(uiSize: TRUiSize.md)
                     : ListView(
                         scrollDirection: Axis.horizontal,
                         children: <Widget>[
@@ -1054,7 +1054,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
               ),
               TRIconButton(
                 appearance: TRAppearance.ghost,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 label: AppLocalizations.of(context).workspaceNewSession,
                 onPressed: state == null ? null : _startDraft,
                 icon: const Icon(CoderIcons.add),
@@ -1161,7 +1161,7 @@ class _SessionTab extends StatelessWidget {
       trailing: TRIconButton(
         key: ValueKey('session-tab-close-${agent.id}'),
         appearance: TRAppearance.ghost,
-        uiSize: TRUiSize.sm,
+        uiSize: TRUiSize.md,
         label: AppLocalizations.of(context).workspaceCloseTab,
         onPressed: onClose,
         icon: const Icon(CoderIcons.close, size: 16),
@@ -1248,7 +1248,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             trailing: busy
                 ? TRIconButton(
                     appearance: TRAppearance.ghost,
-                    uiSize: TRUiSize.sm,
+                    uiSize: TRUiSize.md,
                     label: AppLocalizations.of(context).commonStop,
                     onPressed: () => ref
                         .read(

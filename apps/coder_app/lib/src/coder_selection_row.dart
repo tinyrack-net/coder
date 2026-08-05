@@ -82,7 +82,7 @@ class CoderCheckboxRow extends StatelessWidget {
       checked: value,
       disabled: onChanged == null,
       onCheckedChange: (checked) => onChanged?.call(checked),
-      uiSize: TRUiSize.sm,
+      uiSize: TRUiSize.md,
     ),
   );
 }

@@ -47,14 +47,14 @@ class ApprovalCard extends ConsumerWidget {
                 children: <Widget>[
                   TRButton(
                     appearance: TRAppearance.ghost,
-                    uiSize: TRUiSize.sm,
+                    uiSize: TRUiSize.md,
                     onPressed: () => _resolve(ref, approved: false),
                     child: Text(l10n.chatApprovalDeny),
                   ),
                   const SizedBox(width: 8),
                   TRButton(
                     intent: TRIntent.primary,
-                    uiSize: TRUiSize.sm,
+                    uiSize: TRUiSize.md,
                     onPressed: () => _resolve(ref, approved: true),
                     child: Text(l10n.chatApprovalAllow),
                   ),

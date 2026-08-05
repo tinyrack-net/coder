@@ -154,7 +154,7 @@ class ChatAttachmentTile extends StatelessWidget {
                         ),
                       ),
                     )
-                  : const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+                  : const Center(child: TRSpinner(uiSize: TRUiSize.md)),
             ),
           )
         : Icon(attachment.isImage ? CoderIcons.image : CoderIcons.file);
@@ -419,7 +419,7 @@ class ChatRunningIndicator extends StatelessWidget {
           dimension: 12,
           child: TRSpinner(
             label: AppLocalizations.of(context).commonRunning,
-            uiSize: TRUiSize.sm,
+            uiSize: TRUiSize.md,
           ),
         ),
         const SizedBox(width: 10),

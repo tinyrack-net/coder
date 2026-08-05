@@ -79,19 +79,19 @@ class ChatPlanActions extends ConsumerWidget {
                 children: <Widget>[
                   TRButton(
                     appearance: TRAppearance.ghost,
-                    uiSize: TRUiSize.sm,
+                    uiSize: TRUiSize.md,
                     onPressed: onDismiss,
                     child: Text(l10n.chatPlanKeepPlanning),
                   ),
                   TRButton(
                     appearance: TRAppearance.ghost,
-                    uiSize: TRUiSize.sm,
+                    uiSize: TRUiSize.md,
                     onPressed: () => unawaited(_startFreshSession(ref)),
                     child: Text(l10n.chatPlanRunInNewSession),
                   ),
                   TRButton(
                     intent: TRIntent.primary,
-                    uiSize: TRUiSize.sm,
+                    uiSize: TRUiSize.md,
                     onPressed: () => unawaited(_implementHere(ref)),
                     child: Text(l10n.chatPlanRun),
                   ),

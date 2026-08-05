@@ -80,7 +80,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             TRTextField(
-              uiSize: TRUiSize.sm,
+              uiSize: TRUiSize.md,
               key: const ValueKey('directory-browser-path'),
               controller: _path,
               autofocus: true,
@@ -89,7 +89,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
               onChanged: _onPathTyped,
             ),
             const SizedBox(height: 8),
-            if (_loading) const TRProgress(uiSize: TRUiSize.sm),
+            if (_loading) const TRProgress(uiSize: TRUiSize.md),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -132,13 +132,13 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
+          uiSize: TRUiSize.md,
           onPressed: () => Navigator.pop(context, _path.text.trim()),
           child: Text(l10n.directoryBrowserSelect),
         ),

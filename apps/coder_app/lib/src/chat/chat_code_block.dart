@@ -73,7 +73,7 @@ class ChatCodeBlock extends StatelessWidget {
             if (showCopy)
               TRIconButton(
                 appearance: TRAppearance.ghost,
-                uiSize: TRUiSize.sm,
+                uiSize: TRUiSize.md,
                 label: AppLocalizations.of(context).commonCopy,
                 onPressed: () => Clipboard.setData(ClipboardData(text: text)),
                 icon: const Icon(CoderIcons.copy, size: 16),
