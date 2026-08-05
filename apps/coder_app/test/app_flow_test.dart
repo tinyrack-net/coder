@@ -1403,7 +1403,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
       await tester.pumpAndSettle();
       expect(find.text('Plan'), findsOneWidget);
-      expect(find.textContaining('Plan 모드'), findsOneWidget);
+      expect(find.textContaining('Plan 모드'), findsNothing);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -1414,7 +1414,7 @@ void main() {
 
       final created = api.createdSessions.single;
       expect(created.mode, SessionMode.plan);
-      expect(find.textContaining('Plan 모드'), findsOneWidget);
+      expect(find.textContaining('Plan 모드'), findsNothing);
 
       api
         ..emitTimeline(

@@ -971,12 +971,6 @@ class _SessionComposerState extends State<SessionComposer> {
                 ],
               ),
             ),
-            if (widget.bar.mode == SessionMode.plan)
-              TRText(
-                l10n.composerPlanBanner,
-                variant: TRTextVariant.bodySm,
-                color: TRTextColor.primary,
-              ),
             if (widget.hint != null)
               TRText(
                 widget.hint!,
