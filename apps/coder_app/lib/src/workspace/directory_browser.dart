@@ -72,7 +72,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
     final l10n = AppLocalizations.of(context);
     final parent = parentDirectoryPath(_path.text);
     return TRAlertDialog(
-      title: Text(l10n.directoryBrowserTitle),
+      title: TRText.inherit(l10n.directoryBrowserTitle),
       content: SizedBox(
         width: 560,
         height: 420,
@@ -92,9 +92,9 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
+                child: TRText(
                   _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  color: TRTextColor.danger,
                 ),
               ),
             Expanded(
@@ -105,7 +105,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
                       key: const ValueKey('directory-browser-parent'),
                       dense: true,
                       leading: const Icon(CoderIcons.uploadFolder),
-                      title: const Text('..'),
+                      title: const TRText.inherit('..'),
                       onTap: () => unawaited(_open(parent)),
                     ),
                   for (final entry in _entries)
@@ -113,14 +113,14 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
                       key: ValueKey('directory-browser-entry-${entry.path}'),
                       dense: true,
                       leading: const Icon(CoderIcons.folder),
-                      title: Text(entry.name),
-                      subtitle: Text(entry.path),
+                      title: TRText.inherit(entry.name),
+                      subtitle: TRText.inherit(entry.path),
                       onTap: () => unawaited(_open(entry.path)),
                     ),
                   if (!_loading && _entries.isEmpty && _error == null)
                     CoderListRow(
                       dense: true,
-                      title: Text(l10n.directoryBrowserEmpty),
+                      title: TRText.inherit(l10n.directoryBrowserEmpty),
                     ),
                 ],
               ),
@@ -132,12 +132,12 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n.commonCancel),
+          child: TRText.inherit(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
           onPressed: () => Navigator.pop(context, _path.text.trim()),
-          child: Text(l10n.directoryBrowserSelect),
+          child: TRText.inherit(l10n.directoryBrowserSelect),
         ),
       ],
     );
@@ -189,7 +189,9 @@ class DaemonPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TRDialog(
-    title: Text(AppLocalizations.of(context).directoryBrowserHostTitle),
+    title: TRText.inherit(
+      AppLocalizations.of(context).directoryBrowserHostTitle,
+    ),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -201,7 +203,9 @@ class DaemonPickerDialog extends StatelessWidget {
                   ? CoderIcons.computer
                   : CoderIcons.cloud,
             ),
-            title: Text(hostLabel(AppLocalizations.of(context), host)),
+            title: TRText.inherit(
+              hostLabel(AppLocalizations.of(context), host),
+            ),
           ),
       ],
     ),

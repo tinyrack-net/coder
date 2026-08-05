@@ -27,7 +27,9 @@ class AdvancedSettingsPage extends ConsumerWidget {
     );
     if (embedded) return body;
     return CoderPageShell(
-      appBar: CoderPageHeader(title: Text(l10n.settingsCategoryAdvanced)),
+      appBar: CoderPageHeader(
+        title: TRText.inherit(l10n.settingsCategoryAdvanced),
+      ),
       body: body,
     );
   }
@@ -54,16 +56,16 @@ class _ResetCardState extends ConsumerState<_ResetCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
+        TRText(
           l10n.advancedResetSection,
-          style: Theme.of(context).textTheme.titleLarge,
+          variant: TRTextVariant.headingLg,
         ),
         const SizedBox(height: 8),
         if (error != null) ...<Widget>[
           TRAlert(
             key: const ValueKey<String>('advanced-settings-reset-error'),
-            title: Text(l10n.advancedResetFailedTitle),
-            description: Text(error),
+            title: TRText.inherit(l10n.advancedResetFailedTitle),
+            description: TRText.inherit(error),
             icon: const Icon(CoderIcons.error),
             variant: TRStatusVariant.danger,
           ),
@@ -72,8 +74,8 @@ class _ResetCardState extends ConsumerState<_ResetCard> {
         TRCard(
           padding: TRCardPadding.none,
           child: CoderListRow(
-            title: Text(l10n.advancedResetTitle),
-            subtitle: Text(
+            title: TRText.inherit(l10n.advancedResetTitle),
+            subtitle: TRText.inherit(
               erasesDaemonData
                   ? l10n.advancedResetDescription
                   : l10n.advancedResetDescriptionAppOnly,
@@ -83,7 +85,7 @@ class _ResetCardState extends ConsumerState<_ResetCard> {
               key: const ValueKey<String>('advanced-settings-reset-button'),
               appearance: TRAppearance.outline,
               onPressed: _busy ? null : _confirmAndReset,
-              child: Text(
+              child: TRText.inherit(
                 _busy ? l10n.advancedResetRunning : l10n.advancedResetAction,
               ),
             ),
@@ -100,20 +102,20 @@ class _ResetCardState extends ConsumerState<_ResetCard> {
         final l10n = AppLocalizations.of(context);
         return TRAlertDialog(
           key: const ValueKey<String>('advanced-reset-confirm-dialog'),
-          title: Text(l10n.advancedResetConfirmTitle),
-          content: Text(l10n.advancedResetConfirmBody),
+          title: TRText.inherit(l10n.advancedResetConfirmTitle),
+          content: TRText.inherit(l10n.advancedResetConfirmBody),
           actions: <TRButton>[
             TRButton(
               key: const ValueKey<String>('advanced-reset-confirm-cancel'),
               appearance: TRAppearance.ghost,
               onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.commonCancel),
+              child: TRText.inherit(l10n.commonCancel),
             ),
             TRButton(
               key: const ValueKey<String>('advanced-reset-confirm-accept'),
               intent: TRIntent.primary,
               onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.advancedResetConfirmAccept),
+              child: TRText.inherit(l10n.advancedResetConfirmAccept),
             ),
           ],
         );

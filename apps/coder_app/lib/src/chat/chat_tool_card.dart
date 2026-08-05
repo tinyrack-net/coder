@@ -1,7 +1,6 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_code_block.dart';
 import 'package:coder_app/src/chat/chat_diff_view.dart';
-import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_tool_presentation.dart';
 import 'package:coder_app/src/coder_icons.dart';
@@ -101,14 +100,10 @@ class ChatToolCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Flexible(
-                      child: Text(
+                      child: TRText(
                         presentation.title,
-                        style: chatMonospaceStyle(
-                          context,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        variant: TRTextVariant.code,
+                        truncate: true,
                       ),
                     ),
                     if (presentation.resultLine != null) ...<Widget>[
@@ -124,15 +119,13 @@ class ChatToolCard extends StatelessWidget {
                           ),
                         ),
                       Flexible(
-                        child: Text(
+                        child: TRText(
                           presentation.resultLine!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: presentation.isFailure
-                                ? theme.colorScheme.error
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          variant: TRTextVariant.bodySm,
+                          color: presentation.isFailure
+                              ? TRTextColor.danger
+                              : TRTextColor.muted,
+                          truncate: true,
                         ),
                       ),
                     ],

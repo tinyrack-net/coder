@@ -35,9 +35,9 @@ class ApprovalCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
+              TRText(
                 l10n.chatApprovalRequired(approval.toolName),
-                style: Theme.of(context).textTheme.titleSmall,
+                variant: TRTextVariant.headingSm,
               ),
               const SizedBox(height: 8),
               _preview(),
@@ -48,13 +48,13 @@ class ApprovalCard extends ConsumerWidget {
                   TRButton(
                     appearance: TRAppearance.ghost,
                     onPressed: () => _resolve(ref, approved: false),
-                    child: Text(l10n.chatApprovalDeny),
+                    child: TRText.inherit(l10n.chatApprovalDeny),
                   ),
                   const SizedBox(width: 8),
                   TRButton(
                     intent: TRIntent.primary,
                     onPressed: () => _resolve(ref, approved: true),
-                    child: Text(l10n.chatApprovalAllow),
+                    child: TRText.inherit(l10n.chatApprovalAllow),
                   ),
                 ],
               ),

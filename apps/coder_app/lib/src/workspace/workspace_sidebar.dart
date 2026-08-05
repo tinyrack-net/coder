@@ -122,7 +122,7 @@ class WorkspaceSidebar extends ConsumerWidget {
               children: <Widget>[
                 const Icon(CoderIcons.add, size: 18),
                 const SizedBox(width: TRSpacing.extraSmall),
-                Text(l10n.workspaceNewWorkspace),
+                TRText(l10n.workspaceNewWorkspace),
               ],
             ),
           ),
@@ -218,7 +218,7 @@ class WorkspaceSidebar extends ConsumerWidget {
       ),
       label: Row(
         children: <Widget>[
-          Expanded(child: Text(workspace.name)),
+          Expanded(child: TRText.inherit(workspace.name)),
           TRMenu(
             key: ValueKey<String>('workspace-menu-${workspace.id}'),
             trigger: Icon(
@@ -233,13 +233,13 @@ class WorkspaceSidebar extends ConsumerWidget {
                 onPressed: () => unawaited(
                   _unregisterWorkspace(context, ref, entry),
                 ),
-                child: Text(l10n.workspaceUnregister),
+                child: TRText.inherit(l10n.workspaceUnregister),
               ),
             ],
           ),
         ],
       ),
-      description: Text(
+      description: TRText.inherit(
         '${entry.hostLabel} · ${workspace.rootPath}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -257,8 +257,8 @@ class WorkspaceSidebar extends ConsumerWidget {
                   ? CoderIcons.workspace
                   : CoderIcons.branch,
             ),
-            label: Text(worktree.branch ?? worktree.name),
-            description: Text(
+            label: TRText.inherit(worktree.branch ?? worktree.name),
+            description: TRText.inherit(
               worktree.path,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -274,7 +274,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                   onPressed: () => unawaited(
                     _archiveWorktree(context, ref, entry, worktree),
                   ),
-                  child: Text(l10n.workspaceArchive),
+                  child: TRText.inherit(l10n.workspaceArchive),
                 ),
               ],
             ),
@@ -296,15 +296,15 @@ class WorkspaceSidebar extends ConsumerWidget {
       await showTRDialog<void>(
         context: context,
         builder: (context) => TRAlertDialog(
-          title: Text(l10n.workspaceArchiveBlockedTitle),
-          content: Text(
+          title: TRText.inherit(l10n.workspaceArchiveBlockedTitle),
+          content: TRText.inherit(
             l10n.workspaceArchiveBlockedBody(preview.runningSessionCount),
           ),
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
               onPressed: () => Navigator.pop(context),
-              child: Text(l10n.commonConfirm),
+              child: TRText.inherit(l10n.commonConfirm),
             ),
           ],
         ),
@@ -322,19 +322,19 @@ class WorkspaceSidebar extends ConsumerWidget {
     final confirmed = await showTRDialog<bool>(
       context: context,
       builder: (context) => TRAlertDialog(
-        title: Text(l10n.workspaceArchiveTitle(worktree.name)),
-        content: Text('$dirtyWarning$unpushedWarning$removalWarning'),
+        title: TRText.inherit(l10n.workspaceArchiveTitle(worktree.name)),
+        content: TRText.inherit('$dirtyWarning$unpushedWarning$removalWarning'),
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
+            child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
             key: const ValueKey<String>('worktree-archive-confirm'),
             intent: TRIntent.primary,
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
+            child: TRText.inherit(
               risky ? l10n.workspaceArchiveRisky : l10n.workspaceArchive,
             ),
           ),
@@ -365,19 +365,19 @@ class WorkspaceSidebar extends ConsumerWidget {
     final confirmed = await showTRDialog<bool>(
       context: context,
       builder: (context) => TRAlertDialog(
-        title: Text(l10n.workspaceUnregisterTitle(workspace.name)),
-        content: Text(l10n.workspaceUnregisterBody),
+        title: TRText.inherit(l10n.workspaceUnregisterTitle(workspace.name)),
+        content: TRText.inherit(l10n.workspaceUnregisterBody),
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
+            child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
             key: const ValueKey<String>('workspace-unregister-confirm'),
             intent: TRIntent.primary,
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.workspaceUnregister),
+            child: TRText.inherit(l10n.workspaceUnregister),
           ),
         ],
       ),
@@ -406,13 +406,13 @@ class _SidebarEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Text(message, textAlign: TextAlign.center),
+            TRText(message, align: TRTextAlign.center),
             if (onSettings != null) ...<Widget>[
               const SizedBox(height: 12),
               TRButton(
                 appearance: TRAppearance.outline,
                 onPressed: onSettings,
-                child: Text(
+                child: TRText.inherit(
                   AppLocalizations.of(context).workspaceOpenDaemonSettings,
                 ),
               ),

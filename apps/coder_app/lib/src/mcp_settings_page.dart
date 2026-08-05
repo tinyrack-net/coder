@@ -47,7 +47,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
           ),
           error: (error, _) => Center(
             key: const ValueKey<String>('mcp-settings-error'),
-            child: Text('$error'),
+            child: TRText.inherit('$error'),
           ),
           data: (state) => _build(context, l10n, state),
         );
@@ -90,7 +90,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
             }),
           )
         : selected == null
-        ? Center(child: Text(l10n.mcpSettingsSelectServer))
+        ? Center(child: TRText.inherit(l10n.mcpSettingsSelectServer))
         : _ServerEditor(
             key: ValueKey<String>('mcp-server-editor-${selected.config.id}'),
             hostId: widget.hostId,
@@ -121,7 +121,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                           children: <Widget>[
                             const Icon(CoderIcons.back),
                             const SizedBox(width: TRSpacing.extraSmall),
-                            Text(l10n.mcpSettingsHeading),
+                            TRText(l10n.mcpSettingsHeading),
                           ],
                         ),
                       ),
@@ -172,9 +172,9 @@ class _ServerList extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Expanded(
-                child: Text(
+                child: TRText(
                   l10n.mcpSettingsHeading,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  variant: TRTextVariant.headingMd,
                 ),
               ),
               TRIconButton(
@@ -197,7 +197,7 @@ class _ServerList extends StatelessWidget {
               if (state.userServers.isEmpty)
                 CoderListRow(
                   key: const ValueKey<String>('mcp-server-list-empty'),
-                  title: Text(l10n.mcpSettingsEmpty),
+                  title: TRText.inherit(l10n.mcpSettingsEmpty),
                 ),
               for (final server in state.userServers)
                 _ServerTile(
@@ -233,7 +233,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-    child: Text(label, style: Theme.of(context).textTheme.labelMedium),
+    child: TRText(label, variant: TRTextVariant.label),
   );
 }
 
@@ -256,8 +256,8 @@ class _ServerTile extends StatelessWidget {
       selected: selected,
       onTap: onTap,
       leading: _StatusDot(server: server),
-      title: Text(server.config.id),
-      subtitle: Text(
+      title: TRText.inherit(server.config.id),
+      subtitle: TRText.inherit(
         server.shadowed
             ? l10n.mcpSettingsShadowed
             : '${mcpStatusLabel(l10n, server.status)} · '
@@ -390,8 +390,8 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             key: const ValueKey<String>('mcp-server-readonly'),
             child: CoderListRow(
               leading: const Icon(CoderIcons.lock),
-              title: Text(l10n.mcpSettingsProjectReadOnly),
-              subtitle: Text(
+              title: TRText.inherit(l10n.mcpSettingsProjectReadOnly),
+              subtitle: TRText.inherit(
                 l10n.mcpSettingsSource(server.sourcePath),
                 key: ValueKey<String>('mcp-server-source-${server.config.id}'),
               ),
@@ -404,7 +404,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             variant: TRCardVariant.elevated,
             child: CoderListRow(
               leading: const Icon(CoderIcons.warning),
-              title: Text(l10n.mcpSettingsShadowed),
+              title: TRText.inherit(l10n.mcpSettingsShadowed),
             ),
           ),
         TRTextField(
@@ -421,11 +421,11 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           children: <TRToggle>[
             TRToggle(
               value: McpTransportKind.stdio.name,
-              child: Text(l10n.mcpSettingsTransportStdio),
+              child: TRText.inherit(l10n.mcpSettingsTransportStdio),
             ),
             TRToggle(
               value: McpTransportKind.http.name,
-              child: Text(l10n.mcpSettingsTransportHttp),
+              child: TRText.inherit(l10n.mcpSettingsTransportHttp),
             ),
           ],
           onValueChange: (value) => setState(
@@ -483,16 +483,11 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ),
         ],
         const SizedBox(height: 8),
-        Text(
+        TRText(
           l10n.mcpSettingsSecretHint,
-          style: Theme.of(context).textTheme.bodySmall,
+          variant: TRTextVariant.bodySm,
         ),
-        Text(
-          mcpSecretSyntax,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-        ),
+        const TRText(mcpSecretSyntax, variant: TRTextVariant.code),
         const SizedBox(height: 16),
         CoderSwitchRow(
           key: const ValueKey<String>('mcp-field-enabled'),
@@ -500,19 +495,19 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           onChanged: _readOnly
               ? null
               : (value) => setState(() => _enabled = value),
-          title: Text(l10n.mcpSettingsEnabled),
+          title: TRText.inherit(l10n.mcpSettingsEnabled),
         ),
         if (_error case final error?) ...<Widget>[
           const SizedBox(height: 8),
-          Text(
+          TRText(
             error,
             key: const ValueKey<String>('mcp-editor-error'),
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+            color: TRTextColor.danger,
           ),
         ],
         if (_notice case final notice?) ...<Widget>[
           const SizedBox(height: 8),
-          Text(notice, key: const ValueKey<String>('mcp-editor-notice')),
+          TRText(notice, key: const ValueKey<String>('mcp-editor-notice')),
         ],
         const SizedBox(height: 16),
         Wrap(
@@ -524,64 +519,66 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                 intent: TRIntent.primary,
                 key: const ValueKey<String>('mcp-server-save'),
                 onPressed: _busy ? null : _save,
-                child: Text(MaterialLocalizations.of(context).saveButtonLabel),
+                child: TRText.inherit(
+                  MaterialLocalizations.of(context).saveButtonLabel,
+                ),
               ),
             if (!_readOnly)
               TRButton(
                 appearance: TRAppearance.outline,
                 key: const ValueKey<String>('mcp-server-test'),
                 onPressed: _busy ? null : _test,
-                child: Text(l10n.mcpSettingsTest),
+                child: TRText.inherit(l10n.mcpSettingsTest),
               ),
             if (!_readOnly)
               TRButton(
                 appearance: TRAppearance.ghost,
                 key: const ValueKey<String>('mcp-secret-set'),
                 onPressed: _busy ? null : _promptForSecret,
-                child: Text(l10n.mcpSettingsSecretSet),
+                child: TRText.inherit(l10n.mcpSettingsSecretSet),
               ),
             if (!_readOnly && !_isNew)
               TRButton(
                 appearance: TRAppearance.ghost,
                 key: const ValueKey<String>('mcp-server-delete'),
                 onPressed: _busy ? null : _delete,
-                child: Text(l10n.mcpSettingsDelete),
+                child: TRText.inherit(l10n.mcpSettingsDelete),
               ),
           ],
         ),
         if (server != null) ...<Widget>[
           const SizedBox(height: 24),
-          Text(
+          TRText(
             l10n.mcpSettingsDiscoveredTools,
-            style: Theme.of(context).textTheme.titleSmall,
+            variant: TRTextVariant.headingSm,
           ),
           if (server.tools.isEmpty)
-            Text(l10n.mcpSettingsNoTools)
+            TRText(l10n.mcpSettingsNoTools)
           else
             for (final tool in server.tools)
               CoderListRow(
                 key: ValueKey<String>('mcp-tool-tile-${tool.toolId}'),
                 dense: true,
-                title: Text(tool.toolId),
-                subtitle: Text(tool.description),
+                title: TRText.inherit(tool.toolId),
+                subtitle: TRText.inherit(tool.description),
               ),
           if (server.error case final error?) ...<Widget>[
             const SizedBox(height: 16),
-            Text(
+            TRText(
               error,
               key: ValueKey<String>('mcp-server-error-${server.config.id}'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              color: TRTextColor.danger,
             ),
           ],
           if (server.diagnostics.isNotEmpty) ...<Widget>[
             const SizedBox(height: 16),
             TRCollapsible(
               key: const ValueKey<String>('mcp-server-diagnostics'),
-              trigger: Text(l10n.mcpSettingsDiagnostics),
+              trigger: TRText(l10n.mcpSettingsDiagnostics),
               content: Column(
                 children: <Widget>[
                   for (final line in server.diagnostics)
-                    CoderListRow(dense: true, title: Text(line)),
+                    CoderListRow(dense: true, title: TRText.inherit(line)),
                 ],
               ),
             ),
@@ -690,19 +687,21 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
       context: context,
       builder: (context) => TRAlertDialog(
         key: const ValueKey<String>('mcp-delete-dialog'),
-        title: Text(l10n.mcpSettingsDelete),
-        content: Text(l10n.mcpSettingsDeleteConfirm(id)),
+        title: TRText.inherit(l10n.mcpSettingsDelete),
+        content: TRText.inherit(l10n.mcpSettingsDeleteConfirm(id)),
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+            child: TRText.inherit(
+              MaterialLocalizations.of(context).cancelButtonLabel,
+            ),
           ),
           TRButton(
             intent: TRIntent.primary,
             key: const ValueKey<String>('mcp-delete-confirm'),
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.mcpSettingsDelete),
+            child: TRText.inherit(l10n.mcpSettingsDelete),
           ),
         ],
       ),
@@ -771,7 +770,7 @@ class _SecretDialogState extends State<_SecretDialog> {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
       key: const ValueKey<String>('mcp-secret-dialog'),
-      title: Text(l10n.mcpSettingsSecretSet),
+      title: TRText.inherit(l10n.mcpSettingsSecretSet),
       content: SizedBox(
         width: 320,
         child: Column(
@@ -795,7 +794,9 @@ class _SecretDialogState extends State<_SecretDialog> {
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          child: TRText.inherit(
+            MaterialLocalizations.of(context).cancelButtonLabel,
+          ),
         ),
         TRButton(
           intent: TRIntent.primary,
@@ -807,7 +808,9 @@ class _SecretDialogState extends State<_SecretDialog> {
               context,
             ).pop((key: key, value: _value.text));
           },
-          child: Text(MaterialLocalizations.of(context).saveButtonLabel),
+          child: TRText.inherit(
+            MaterialLocalizations.of(context).saveButtonLabel,
+          ),
         ),
       ],
     );

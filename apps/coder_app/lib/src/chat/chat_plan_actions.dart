@@ -67,9 +67,9 @@ class ChatPlanActions extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
+              TRText(
                 l10n.chatPlanPrompt,
-                style: Theme.of(context).textTheme.titleSmall,
+                variant: TRTextVariant.headingSm,
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -80,17 +80,17 @@ class ChatPlanActions extends ConsumerWidget {
                   TRButton(
                     appearance: TRAppearance.ghost,
                     onPressed: onDismiss,
-                    child: Text(l10n.chatPlanKeepPlanning),
+                    child: TRText.inherit(l10n.chatPlanKeepPlanning),
                   ),
                   TRButton(
                     appearance: TRAppearance.ghost,
                     onPressed: () => unawaited(_startFreshSession(ref)),
-                    child: Text(l10n.chatPlanRunInNewSession),
+                    child: TRText.inherit(l10n.chatPlanRunInNewSession),
                   ),
                   TRButton(
                     intent: TRIntent.primary,
                     onPressed: () => unawaited(_implementHere(ref)),
-                    child: Text(l10n.chatPlanRun),
+                    child: TRText.inherit(l10n.chatPlanRun),
                   ),
                 ],
               ),

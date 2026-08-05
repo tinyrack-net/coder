@@ -149,7 +149,7 @@ class _ApplicationMenu extends StatelessWidget {
                 control: true,
               ),
               onPressed: onNewWorkspace,
-              child: Text(l10n.workspaceNewWorkspace),
+              child: TRText.inherit(l10n.workspaceNewWorkspace),
             ),
             TRMenuItem(
               shortcut: const SingleActivator(
@@ -157,7 +157,7 @@ class _ApplicationMenu extends StatelessWidget {
                 control: true,
               ),
               onPressed: onOpenSettings,
-              child: Text(l10n.settingsTitle),
+              child: TRText.inherit(l10n.settingsTitle),
             ),
             const TRSeparator(),
             TRMenuItem(
@@ -166,33 +166,33 @@ class _ApplicationMenu extends StatelessWidget {
                 control: true,
               ),
               onPressed: onQuit,
-              child: Text(l10n.trayQuit),
+              child: TRText.inherit(l10n.trayQuit),
             ),
           ],
-          trigger: Text(l10n.desktopMenuFile),
+          trigger: TRText(l10n.desktopMenuFile),
         ),
         TRMenubarMenu(
           menuChildren: <Widget>[
             TRMenuCheckboxItem(
               value: !sidebarCollapsed,
               onChanged: (_) => onToggleSidebar(),
-              child: Text(
+              child: TRText.inherit(
                 sidebarCollapsed
                     ? l10n.workspaceSidebarExpand
                     : l10n.workspaceSidebarCollapse,
               ),
             ),
           ],
-          trigger: Text(l10n.desktopMenuView),
+          trigger: TRText(l10n.desktopMenuView),
         ),
         TRMenubarMenu(
           menuChildren: <Widget>[
             TRMenuItem(
               onPressed: onShowAbout,
-              child: Text(l10n.desktopMenuAbout),
+              child: TRText.inherit(l10n.desktopMenuAbout),
             ),
           ],
-          trigger: Text(l10n.desktopMenuHelp),
+          trigger: TRText(l10n.desktopMenuHelp),
         ),
       ],
     );

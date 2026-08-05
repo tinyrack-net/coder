@@ -1,5 +1,4 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
-import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,14 +58,16 @@ class ChatCodeBlock extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     SelectionArea(
-                      child: Text(visible, style: chatMonospaceStyle(context)),
+                      child: TRText(
+                        visible,
+                        variant: TRTextVariant.code,
+                      ),
                     ),
                     if (hidden > 0)
-                      Text(
+                      TRText(
                         AppLocalizations.of(context).chatMoreLines(hidden),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                        variant: TRTextVariant.bodySm,
+                        color: TRTextColor.muted,
                       ),
                   ],
                 ),

@@ -81,7 +81,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
                 Expanded(
                   child: selected == null
                       ? Center(
-                          child: Text(
+                          child: TRText.inherit(
                             AppLocalizations.of(
                               context,
                             ).agentSettingsSelectAgent,
@@ -160,8 +160,10 @@ class _AgentDefinitionList extends StatelessWidget {
     return Column(
       children: <Widget>[
         CoderListRow(
-          title: Text(l10n.agentSettingsHeading),
-          subtitle: Text(l10n.agentSettingsCount(state.definitions.length)),
+          title: TRText.inherit(l10n.agentSettingsHeading),
+          subtitle: TRText.inherit(
+            l10n.agentSettingsCount(state.definitions.length),
+          ),
           trailing: TRIconButton(
             key: const ValueKey('agent-add-button'),
             appearance: TRAppearance.ghost,
@@ -182,8 +184,8 @@ class _AgentDefinitionList extends StatelessWidget {
                         ? CoderIcons.agent
                         : CoderIcons.branch,
                   ),
-                  title: Text(definition.name),
-                  subtitle: Text(
+                  title: TRText.inherit(definition.name),
+                  subtitle: TRText.inherit(
                     definition.isStale
                         ? '${definition.mode.name} · stale'
                         : definition.mode.name,
@@ -291,8 +293,8 @@ class _AgentEditorState extends State<_AgentEditor> {
                   onPressed: widget.onBack,
                   icon: const Icon(CoderIcons.back),
                 ),
-          title: Text(definition.name),
-          subtitle: Text(definition.sourcePath),
+          title: TRText.inherit(definition.name),
+          subtitle: TRText.inherit(definition.sourcePath),
           trailing: Wrap(
             children: <Widget>[
               TRIconButton(
@@ -323,7 +325,9 @@ class _AgentEditorState extends State<_AgentEditor> {
               TRButton(
                 intent: TRIntent.primary,
                 onPressed: editable ? () => _save(force: false) : null,
-                child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
+                child: TRText.inherit(
+                  _saving ? l10n.commonSaving : l10n.commonSave,
+                ),
               ),
             ],
           ),
@@ -340,8 +344,8 @@ class _AgentEditorState extends State<_AgentEditor> {
                     variant: TRCardVariant.elevated,
                     child: CoderListRow(
                       leading: const Icon(CoderIcons.warning),
-                      title: Text(diagnostic.code),
-                      subtitle: Text(diagnostic.message),
+                      title: TRText.inherit(diagnostic.code),
+                      subtitle: TRText.inherit(diagnostic.message),
                     ),
                   ),
                 ),
@@ -367,7 +371,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                 onChanged: editable
                     ? (value) => setState(() => _promptEnabled = value)
                     : null,
-                title: Text(l10n.agentSettingsCustomPrompt),
+                title: TRText.inherit(l10n.agentSettingsCustomPrompt),
               ),
               TRTextField(
                 controller: _prompt,
@@ -377,7 +381,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                 label: 'System prompt (Markdown)',
               ),
               const SizedBox(height: 20),
-              Text('Model', style: Theme.of(context).textTheme.titleMedium),
+              const TRText('Model', variant: TRTextVariant.headingMd),
               TRRadioGroup(
                 value: _modelSource.name,
                 disabled: !editable,
@@ -387,11 +391,11 @@ class _AgentEditorState extends State<_AgentEditor> {
                 children: [
                   TRRadio(
                     value: AgentModelSource.session.name,
-                    label: Text(l10n.agentSettingsSessionModel),
+                    label: TRText.inherit(l10n.agentSettingsSessionModel),
                   ),
                   TRRadio(
                     value: AgentModelSource.fixed.name,
-                    label: Text(l10n.agentSettingsPinnedModel),
+                    label: TRText.inherit(l10n.agentSettingsPinnedModel),
                   ),
                 ],
               ),
@@ -441,9 +445,9 @@ class _AgentEditorState extends State<_AgentEditor> {
                     : null,
               ),
               const SizedBox(height: 20),
-              Text(
+              TRText(
                 l10n.agentSettingsBuiltinTools,
-                style: Theme.of(context).textTheme.titleMedium,
+                variant: TRTextVariant.headingMd,
               ),
               for (final tool in _sortedTools)
                 CoderCheckboxRow(
@@ -464,8 +468,8 @@ class _AgentEditorState extends State<_AgentEditor> {
                           key: ValueKey<String>('agent-tool-lock-${tool.id}'),
                         )
                       : null,
-                  title: Text(tool.name),
-                  subtitle: Text(
+                  title: TRText.inherit(tool.name),
+                  subtitle: TRText.inherit(
                     tool.alwaysOn
                         ? '${tool.description} · '
                               '${l10n.agentSettingsToolAlwaysOn}'
@@ -474,12 +478,14 @@ class _AgentEditorState extends State<_AgentEditor> {
                 ),
               if (definition.mode == AgentMode.primary) ...<Widget>[
                 const SizedBox(height: 20),
-                Text(
+                TRText(
                   l10n.agentSettingsSubagents,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  variant: TRTextVariant.headingMd,
                 ),
                 if (subagents.isEmpty)
-                  CoderListRow(title: Text(l10n.agentSettingsNoSubagents)),
+                  CoderListRow(
+                    title: TRText.inherit(l10n.agentSettingsNoSubagents),
+                  ),
                 for (final subagent in subagents)
                   CoderCheckboxRow(
                     value: _callableAgents.contains(subagent.id),
@@ -490,8 +496,8 @@ class _AgentEditorState extends State<_AgentEditor> {
                                 : _callableAgents.remove(subagent.id);
                           })
                         : null,
-                    title: Text(subagent.name),
-                    subtitle: Text(subagent.description),
+                    title: TRText.inherit(subagent.name),
+                    subtitle: TRText.inherit(subagent.description),
                   ),
               ],
             ],
@@ -547,18 +553,18 @@ class _AgentEditorState extends State<_AgentEditor> {
       final retry = await showTRDialog<bool>(
         context: context,
         builder: (context) => TRAlertDialog(
-          title: Text(l10n.agentSettingsSaveFailedTitle),
-          content: Text('$error'),
+          title: TRText.inherit(l10n.agentSettingsSaveFailedTitle),
+          content: TRText.inherit('$error'),
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
               onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.agentSettingsReload),
+              child: TRText.inherit(l10n.agentSettingsReload),
             ),
             TRButton(
               intent: TRIntent.primary,
               onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.agentSettingsOverwrite),
+              child: TRText.inherit(l10n.agentSettingsOverwrite),
             ),
           ],
         ),
@@ -645,7 +651,7 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
-      title: Text(l10n.agentSettingsAddTitle),
+      title: TRText.inherit(l10n.agentSettingsAddTitle),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -686,9 +692,9 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
             ),
             if (_error case final error?) ...<Widget>[
               const SizedBox(height: 12),
-              Text(
+              TRText(
                 '$error',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                color: TRTextColor.danger,
               ),
             ],
           ],
@@ -698,12 +704,14 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: _saving ? null : () => Navigator.pop(context),
-          child: Text(l10n.commonCancel),
+          child: TRText.inherit(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
           onPressed: _valid && !_saving ? _submit : null,
-          child: Text(_saving ? l10n.commonCreating : l10n.commonCreate),
+          child: TRText.inherit(
+            _saving ? l10n.commonCreating : l10n.commonCreate,
+          ),
         ),
       ],
     );
@@ -745,12 +753,12 @@ class _AgentSettingsError extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text('$error'),
+        TRText('$error'),
         const SizedBox(height: 12),
         TRButton(
           intent: TRIntent.primary,
           onPressed: onRetry,
-          child: Text(AppLocalizations.of(context).commonRetry),
+          child: TRText.inherit(AppLocalizations.of(context).commonRetry),
         ),
       ],
     ),

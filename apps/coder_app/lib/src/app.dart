@@ -618,7 +618,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
               closeTask(context, () => const WorkspaceHomeRoute().go(context)),
           icon: const Icon(CoderIcons.back),
         ),
-        title: Text(AppLocalizations.of(context).settingsTitle),
+        title: TRText.inherit(AppLocalizations.of(context).settingsTitle),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -746,7 +746,7 @@ class _SettingsSidebar extends StatelessWidget {
           TRTreeNavLeaf<SettingsCategory>(
             value: category,
             leading: Icon(_settingsCategoryIcon(category)),
-            label: Text(_settingsCategoryLabel(l10n, category)),
+            label: TRText.inherit(_settingsCategoryLabel(l10n, category)),
           ),
       ],
       onValueChange: (category) {
@@ -770,11 +770,10 @@ class _SettingsSectionLabel extends StatelessWidget {
       TRSpacing.small,
       TRSpacing.extraSmall,
     ),
-    child: Text(
+    child: TRText(
       text,
-      style: TRTypography.label.copyWith(
-        color: context.tinyrackTheme.textMuted,
-      ),
+      variant: TRTextVariant.label,
+      color: TRTextColor.muted,
     ),
   );
 }
@@ -903,7 +902,7 @@ class _HostScopedDetail extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final host = this.host;
     if (host == null) {
-      return Center(child: Text(l10n.settingsRequiresOnlineDaemon));
+      return Center(child: TRText.inherit(l10n.settingsRequiresOnlineDaemon));
     }
     if (!host.connected) {
       return Center(
@@ -917,8 +916,10 @@ class _HostScopedDetail extends StatelessWidget {
               key: const ValueKey<String>('settings-daemon-offline'),
               variant: TRStatusVariant.warning,
               icon: Icon(hostStatusIcon(host.status)),
-              title: Text(l10n.settingsDaemonOffline(hostLabel(l10n, host))),
-              description: Text(hostStatusText(l10n, host)),
+              title: TRText.inherit(
+                l10n.settingsDaemonOffline(hostLabel(l10n, host)),
+              ),
+              description: TRText.inherit(hostStatusText(l10n, host)),
             ),
           ),
         ),
@@ -979,7 +980,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                 onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
                 icon: Icon(collapsed ? CoderIcons.menu : CoderIcons.menuOpen),
               ),
-        title: Text(AppLocalizations.of(context).workspacesTitle),
+        title: TRText.inherit(AppLocalizations.of(context).workspacesTitle),
         actions: <Widget>[
           TRIconButton(
             key: const ValueKey('workspace-settings-button'),
@@ -1200,7 +1201,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                     key: const ValueKey<String>('workspace-new-session'),
                     onPressed: _startDraft,
                     leadingIcon: const Icon(CoderIcons.chat),
-                    child: Text(
+                    child: TRText.inherit(
                       AppLocalizations.of(context).workspaceNewSession,
                     ),
                   ),
@@ -1208,7 +1209,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                     key: const ValueKey<String>('workspace-new-terminal'),
                     onPressed: _createTerminal,
                     leadingIcon: const Icon(CoderIcons.terminal),
-                    child: Text(
+                    child: TRText.inherit(
                       AppLocalizations.of(context).workspaceNewTerminal,
                     ),
                   ),
@@ -1227,13 +1228,13 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                     for (final agent in state.sessions)
                       TRMenuItem(
                         onPressed: () => _open(agent.id),
-                        child: Text(agent.title),
+                        child: TRText.inherit(agent.title),
                       ),
                     for (final terminal in state.terminals)
                       TRMenuItem(
                         leadingIcon: const Icon(CoderIcons.terminal),
                         onPressed: () => _openTerminal(terminal.id),
-                        child: Text(terminal.title),
+                        child: TRText.inherit(terminal.title),
                       ),
                   ],
                 ),
@@ -1337,19 +1338,27 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         context: context,
         builder: (context) => TRAlertDialog(
           key: const ValueKey<String>('terminal-close-dialog'),
-          title: Text(AppLocalizations.of(context).terminalCloseTitle),
-          content: Text(AppLocalizations.of(context).terminalCloseConfirm),
+          title: TRText.inherit(
+            AppLocalizations.of(context).terminalCloseTitle,
+          ),
+          content: TRText.inherit(
+            AppLocalizations.of(context).terminalCloseConfirm,
+          ),
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+              child: TRText.inherit(
+                MaterialLocalizations.of(context).cancelButtonLabel,
+              ),
             ),
             TRButton(
               intent: TRIntent.danger,
               key: const ValueKey<String>('terminal-close-confirm'),
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text(AppLocalizations.of(context).terminalTerminate),
+              child: TRText.inherit(
+                AppLocalizations.of(context).terminalTerminate,
+              ),
             ),
           ],
         ),
@@ -1386,7 +1395,11 @@ class _SessionTab extends StatelessWidget {
       dense: true,
       selected: selected,
       onTap: onSelect,
-      title: Text(agent.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: TRText.inherit(
+        agent.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: TRIconButton(
         key: ValueKey('session-tab-close-${agent.id}'),
         appearance: TRAppearance.ghost,
@@ -1419,7 +1432,7 @@ class _TerminalTab extends StatelessWidget {
       selected: selected,
       onTap: onSelect,
       leading: const Icon(CoderIcons.terminal),
-      title: Text(
+      title: TRText.inherit(
         terminal.title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -1497,8 +1510,10 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       return Center(
         child: TRAlert(
           variant: TRStatusVariant.danger,
-          title: Text(AppLocalizations.of(context).terminalConnectionFailed),
-          description: Text('$error'),
+          title: TRText.inherit(
+            AppLocalizations.of(context).terminalConnectionFailed,
+          ),
+          description: TRText.inherit('$error'),
         ),
       );
     }
@@ -1674,8 +1689,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
       builder: (context, constraints) => Column(
         children: <Widget>[
           CoderListRow(
-            title: Text(current.title),
-            subtitle: Text(
+            title: TRText.inherit(current.title),
+            subtitle: TRText.inherit(
               '${current.agentDefinitionId} · ${current.origin.name}',
             ),
             trailing: busy

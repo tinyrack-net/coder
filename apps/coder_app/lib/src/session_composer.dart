@@ -204,7 +204,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     TRMenuItem(
                       key: ValueKey('session-composer-agent-${definition.id}'),
                       onPressed: () => widget.onAgentChanged(definition.id),
-                      child: Text(definition.name),
+                      child: TRText.inherit(definition.name),
                     ),
                 ]
               : null,
@@ -227,14 +227,16 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     TRMenuItem(
                       key: const ValueKey('session-composer-effort-inherit'),
                       onPressed: () => widget.onReasoningEffortChanged!(null),
-                      child: Text(l10n.composerInheritReasoningEffort),
+                      child: TRText.inherit(
+                        l10n.composerInheritReasoningEffort,
+                      ),
                     ),
                     for (final effort in efforts)
                       TRMenuItem(
                         key: ValueKey('session-composer-effort-$effort'),
                         onPressed: () =>
                             widget.onReasoningEffortChanged!(effort),
-                        child: Text(effort),
+                        child: TRText.inherit(effort),
                       ),
                   ]
                 : null,
@@ -251,7 +253,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                   TRMenuItem(
                     key: const ValueKey('session-composer-permission-inherit'),
                     onPressed: () => widget.onPermissionModeChanged!(null),
-                    child: Text(l10n.composerInheritPermissionMode),
+                    child: TRText.inherit(l10n.composerInheritPermissionMode),
                   ),
                   for (final value in PermissionMode.values)
                     TRMenuItem(
@@ -259,7 +261,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                         'session-composer-permission-${value.name}',
                       ),
                       onPressed: () => widget.onPermissionModeChanged!(value),
-                      child: Text(_permissionLabel(l10n, value)),
+                      child: TRText.inherit(_permissionLabel(l10n, value)),
                     ),
                 ]
               : null,
@@ -603,11 +605,8 @@ class ComposerChip extends StatelessWidget {
         Icon(icon, size: TRControlMetrics.iconSizeOf(TRUiSize.md)),
         if (!compact) ...<Widget>[
           Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            // The chip caps and ellipsizes its own label.
+            child: TRText.inherit(label, truncate: true),
           ),
           if (menuChildren != null)
             Icon(
@@ -688,7 +687,7 @@ class DraftSessionPane extends ConsumerWidget {
     );
     return Column(
       children: <Widget>[
-        Expanded(child: Center(child: Text(l10n.composerStartHint))),
+        Expanded(child: Center(child: TRText.inherit(l10n.composerStartHint))),
         SessionComposer(
           enabled: agent != null && effective != null,
           hint: agent == null
@@ -849,7 +848,6 @@ class _SessionComposerState extends State<SessionComposer> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     // Attaching is about composing the next prompt, so it stays available
     // while a turn runs; only the upload of this prompt takes it away.
     final editable = widget.enabled && !_submitting;
@@ -974,26 +972,23 @@ class _SessionComposerState extends State<SessionComposer> {
               ),
             ),
             if (widget.bar.mode == SessionMode.plan)
-              Text(
+              TRText(
                 l10n.composerPlanBanner,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: context.tinyrackTheme.primary,
-                ),
+                variant: TRTextVariant.bodySm,
+                color: TRTextColor.primary,
               ),
             if (widget.hint != null)
-              Text(
+              TRText(
                 widget.hint!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: context.tinyrackTheme.danger,
-                ),
+                variant: TRTextVariant.bodySm,
+                color: TRTextColor.danger,
               ),
             if (_attachmentError != null)
-              Text(
+              TRText(
                 _attachmentError!,
                 key: const ValueKey('session-composer-attachment-error'),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: context.tinyrackTheme.danger,
-                ),
+                variant: TRTextVariant.bodySm,
+                color: TRTextColor.danger,
               ),
           ],
         ),
@@ -1264,7 +1259,7 @@ class _PendingAttachmentPill extends StatelessWidget {
           else
             _PendingAttachmentPreview(attachment: attachment),
           Flexible(
-            child: Text(
+            child: TRText.inherit(
               '${attachment.fileName} · ${_formatBytes(attachment.byteSize)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

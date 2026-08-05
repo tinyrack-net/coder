@@ -195,9 +195,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                 children: <Widget>[
                   Padding(
                     padding: const EdgeInsets.only(left: 20, bottom: 4),
-                    child: Text(
+                    child: TRText(
                       AppLocalizations.of(context).workspaceNewWorkspace,
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      variant: TRTextVariant.headingLg,
                     ),
                   ),
                   SessionComposer(
@@ -307,13 +307,15 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                     TRMenuItem(
                       key: ValueKey('new-workspace-project-${item.key}'),
                       onPressed: () => _selectProject(item.key),
-                      child: Text('${item.workspace.name} · ${item.hostLabel}'),
+                      child: TRText.inherit(
+                        '${item.workspace.name} · ${item.hostLabel}',
+                      ),
                     ),
                   TRMenuItem(
                     key: const ValueKey('new-workspace-project-add'),
                     leadingIcon: const Icon(CoderIcons.addCircle),
                     onPressed: () => unawaited(_addProject()),
-                    child: const Text('추가'),
+                    child: const TRText.inherit('추가'),
                   ),
                 ],
         ),
@@ -332,13 +334,13 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                     TRMenuItem(
                       key: const ValueKey('new-workspace-worktree-new'),
                       onPressed: () => _selectWorktree(null),
-                      child: const Text('New worktree'),
+                      child: const TRText.inherit('New worktree'),
                     ),
                     for (final item in project.worktrees)
                       TRMenuItem(
                         key: ValueKey('new-workspace-worktree-${item.id}'),
                         onPressed: () => _selectWorktree(item.id),
-                        child: Text(item.branch ?? item.name),
+                        child: TRText.inherit(item.branch ?? item.name),
                       ),
                   ],
           ),
@@ -357,7 +359,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       TRMenuItem(
                         key: ValueKey('new-workspace-branch-${branch.name}'),
                         onPressed: () => _selectBranch(branch.name),
-                        child: Text(branch.name),
+                        child: TRText.inherit(branch.name),
                       ),
                     for (final branch in branches.where(
                       (branch) => !branch.isRemote,
@@ -365,7 +367,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       TRMenuItem(
                         key: ValueKey('new-workspace-branch-${branch.name}'),
                         onPressed: () => _selectBranch(branch.name),
-                        child: Text(branch.name),
+                        child: TRText.inherit(branch.name),
                       ),
                   ],
           ),
