@@ -1,11 +1,39 @@
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/attachment_io.dart';
+import 'package:coder_app/src/boot/bootstrap_gate.dart';
 import 'package:coder_app/src/desktop_bootstrap.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/desktop_startup.dart';
 import 'package:coder_app/src/workspace/directory_picker_io.dart';
 import 'package:flutter/material.dart';
+
+/// Everything the desktop entrypoint resolves before it can build [CoderApp].
+class DesktopBoot {
+  /// Bundles one desktop startup result.
+  const DesktopBoot({
+    required this.services,
+    required this.window,
+    required this.tray,
+    required this.autostart,
+    required this.startHidden,
+  });
+
+  /// Platform services used by feature controllers.
+  final AppServices services;
+
+  /// Native window the app drives.
+  final DesktopWindow window;
+
+  /// Tray icon the resident app installs.
+  final TrayIcon tray;
+
+  /// Login-item registration port.
+  final AutostartRegistration autostart;
+
+  /// Whether the launch should stay in the tray.
+  final bool startHidden;
+}
 
 /// Starts the desktop widget tree with an injectable bootstrap.
 Future<void> runDesktopApp({
@@ -16,24 +44,35 @@ Future<void> runDesktopApp({
   AutostartRegistration? autostart,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
-  final desktopWindow = window ?? PluginDesktopWindow();
-  final resolved = services ?? await createDesktopServices();
-  // Visibility is decided before the first frame so a login launch never
-  // flashes a window on its way to the tray.
-  final startHidden = shouldStartHidden(
-    arguments: arguments,
-    settings: await resolved.settings.loadSettings(),
-  );
-  await desktopWindow.prepare(startHidden: startHidden);
   runApp(
-    CoderApp(
-      services: resolved,
-      attachmentInput: const NativeAttachmentInput(),
-      directoryPicker: const NativeDirectoryPicker(),
-      desktopWindow: desktopWindow,
-      trayIcon: tray ?? PluginTrayIcon(),
-      autostart: autostart ?? const LaunchAtStartupRegistration(),
-      startHidden: startHidden,
+    BootstrapGate<DesktopBoot>(
+      bootstrap: () async {
+        final desktopWindow = window ?? PluginDesktopWindow();
+        final resolved = services ?? await createDesktopServices();
+        // Visibility is decided before the window is prepared so a login
+        // launch never flashes a window on its way to the tray.
+        final startHidden = shouldStartHidden(
+          arguments: arguments,
+          settings: await resolved.settings.loadSettings(),
+        );
+        await desktopWindow.prepare(startHidden: startHidden);
+        return DesktopBoot(
+          services: resolved,
+          window: desktopWindow,
+          tray: tray ?? PluginTrayIcon(),
+          autostart: autostart ?? const LaunchAtStartupRegistration(),
+          startHidden: startHidden,
+        );
+      },
+      builder: (context, boot) => CoderApp(
+        services: boot.services,
+        attachmentInput: const NativeAttachmentInput(),
+        directoryPicker: const NativeDirectoryPicker(),
+        desktopWindow: boot.window,
+        trayIcon: boot.tray,
+        autostart: boot.autostart,
+        startHidden: boot.startHidden,
+      ),
     ),
   );
 }
