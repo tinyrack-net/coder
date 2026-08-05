@@ -112,7 +112,12 @@ class WorkspaceSidebar extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          padding: const EdgeInsets.fromLTRB(
+            TRSpacing.medium,
+            TRSpacing.small,
+            TRSpacing.medium,
+            TRSpacing.small,
+          ),
           child: TRButton(
             key: const ValueKey('workspace-new-button'),
             intent: TRIntent.primary,
@@ -402,13 +407,13 @@ class _SidebarEmptyState extends StatelessWidget {
     final onSettings = this.onSettings;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(TRSpacing.extraLarge),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             TRText(message, align: TRTextAlign.center),
             if (onSettings != null) ...<Widget>[
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRButton(
                 appearance: TRAppearance.outline,
                 onPressed: onSettings,

@@ -28,10 +28,10 @@ class GeneralSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final body = ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       children: const <Widget>[
         _LanguageCard(),
-        SizedBox(height: 24),
+        SizedBox(height: TRSpacing.extraLarge),
         _StartupCard(),
       ],
     );
@@ -69,7 +69,7 @@ class _StartupCard extends ConsumerWidget {
           l10n.generalStartupSection,
           variant: TRTextVariant.headingLg,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         TRCard(
           padding: TRCardPadding.none,
           child: Column(
@@ -116,7 +116,7 @@ class _StartupCard extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         TRText(
           l10n.generalStartupCloseNotice,
           variant: TRTextVariant.bodySm,
@@ -144,11 +144,11 @@ class _LanguageCard extends ConsumerWidget {
           l10n.generalLanguageSection,
           variant: TRTextVariant.headingLg,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         TRCard(
           padding: TRCardPadding.none,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(TRSpacing.large),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -174,7 +174,7 @@ class _LanguageCard extends ConsumerWidget {
                             .read(hostRegistryControllerProvider.notifier)
                             .setLocaleTag(tag),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: TRSpacing.small),
                 TRText(
                   l10n.generalLanguageDescription,
                   variant: TRTextVariant.bodySm,

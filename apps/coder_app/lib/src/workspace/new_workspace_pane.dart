@@ -320,7 +320,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                 ],
         ),
         if (showGitTargets) ...<Widget>[
-          const SizedBox(width: 8),
+          const SizedBox(width: TRSpacing.small),
           ComposerChip(
             valueKey: const ValueKey('new-workspace-worktree'),
             icon: CoderIcons.branch,
@@ -344,7 +344,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       ),
                   ],
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: TRSpacing.small),
           ComposerChip(
             valueKey: const ValueKey('new-workspace-branch'),
             icon: CoderIcons.check,

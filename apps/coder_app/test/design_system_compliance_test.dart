@@ -32,6 +32,21 @@ void main() {
       ): 'direct Material overlay',
       RegExp(r'\b(?:ScaffoldMessenger|SnackBar)(?:\.|\s*\()'):
           'direct Material transient feedback',
+      // Design values, which must name a token rather than a measurement
+      // someone picked by eye.
+      RegExp(r'\bColor\(0x'): 'color literal; use a Tinyrack color token',
+      RegExp(r'\bColors\.(?!transparent\b)\w'):
+          'Material palette color; use a Tinyrack color token',
+      RegExp(r'\bBorderRadius\.circular\(\s*[\d.]'):
+          'radius literal; use TRRadii',
+      RegExp(r'\bEdgeInsets\.\w+\(\s*[\d.]'): 'inset literal; use TRSpacing',
+      // Only a gap, which is spacing. A `SizedBox` that also takes a child is
+      // sizing that child, which is product layout rather than a design value,
+      // as are `ConstrainedBox` and `LayoutBuilder` bounds.
+      RegExp(r'\bSizedBox\((?:width|height): [\d.]+\s*\)'):
+          'gap literal; use TRSpacing',
+      RegExp(r'\bTheme\.of\(context\)\.(?:colorScheme|textTheme)\b'):
+          'Material theme read; use context.tinyrackTheme or TRTypography',
     };
     // The semantic icon map is where raw Lucide glyphs are allowed to appear;
     // naming them anywhere else is what the rule above forbids.

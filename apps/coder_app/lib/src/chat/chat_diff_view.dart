@@ -57,7 +57,7 @@ class ChatDiffView extends StatelessWidget {
         borderRadius: const BorderRadius.all(TRRadii.small),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(TRSpacing.small),
         // Selection spans the whole hunk rather than a single row, so a user
         // can copy a run of diff lines in one drag.
         child: SelectionArea(
@@ -90,7 +90,7 @@ class _DiffLineRow extends StatelessWidget {
         ? TRTextColor.primary
         : chatDiffForeground(added: added);
     return ColoredBox(
-      color: chatDiffSurface(context, added: added) ?? const Color(0x00000000),
+      color: chatDiffSurface(context, added: added) ?? Colors.transparent,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

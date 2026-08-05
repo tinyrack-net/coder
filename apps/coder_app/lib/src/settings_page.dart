@@ -92,7 +92,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Column(
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          padding: const EdgeInsets.fromLTRB(
+            TRSpacing.extraLarge,
+            TRSpacing.medium,
+            TRSpacing.extraLarge,
+            0,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: <Widget>[
@@ -106,7 +111,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     color: TRTextColor.danger,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: TRSpacing.medium),
               ],
               TRButton(
                 key: const ValueKey<String>('provider-catalog-refresh'),
@@ -361,7 +366,7 @@ class _ConnectedProviders extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Padding(
       key: const ValueKey('provider-settings-connected'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -369,12 +374,12 @@ class _ConnectedProviders extends StatelessWidget {
             l10n.providerSettingsConnected,
             variant: TRTextVariant.headingLg,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: TRSpacing.medium),
           if (connections.isEmpty)
             TRCard(
               padding: TRCardPadding.none,
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(TRSpacing.extraLarge),
                 child: TRText.inherit(l10n.providerSettingsNoConnections),
               ),
             ),
@@ -410,7 +415,7 @@ class _ProviderConnectionCard extends StatelessWidget {
     return TRCard(
       padding: TRCardPadding.none,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(TRSpacing.large),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -481,7 +486,7 @@ class _ProviderCatalog extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Padding(
       key: const ValueKey('provider-settings-add'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -489,12 +494,12 @@ class _ProviderCatalog extends StatelessWidget {
             l10n.providerSettingsAdd,
             variant: TRTextVariant.headingLg,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: TRSpacing.medium),
           if (definitions.isEmpty)
             TRCard(
               padding: TRCardPadding.none,
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(TRSpacing.extraLarge),
                 child: TRText.inherit(l10n.providerSettingsNoPresets),
               ),
             ),
@@ -678,12 +683,12 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                 controller: _name,
                 label: l10n.commonName,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _baseUrl,
                 label: 'Base URL',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRSelectFormField<ProviderApiFormat>(
                 initialValue: _apiFormat,
                 label: l10n.providerSettingsApiFormat,
@@ -712,7 +717,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                   obscureText: true,
                   label: 'API key',
                 ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               if (widget.initial?.manualModelIds.isNotEmpty ?? false)
                 TRTextField(
                   controller: _models,
@@ -795,7 +800,7 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             TRText(l10n.providerSettingsModelLookupFailedBody),
-            const SizedBox(height: 12),
+            const SizedBox(height: TRSpacing.medium),
             TRTextField(
               controller: _models,
               label: l10n.providerSettingsManualModels,

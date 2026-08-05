@@ -273,7 +273,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
             const TRSeparator(),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(TRSpacing.extraLarge),
                 children: <Widget>[
                   if (_saved) ...[
                     TRAlert(
@@ -281,7 +281,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                       variant: TRStatusVariant.success,
                       icon: const Icon(CoderIcons.success),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: TRSpacing.large),
                   ],
                   if (_error case final error?)
                     TRCard(
@@ -296,12 +296,12 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     'Worktree lifecycle hooks',
                     variant: TRTextVariant.headingMd,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: TRSpacing.extraSmall),
                   TRText(
                     l10n.projectSettingsHookHelp,
                     variant: TRTextVariant.bodySm,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     controller: _setup,
                     enabled: !_saving,
@@ -310,7 +310,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsSetup,
                     placeholder: 'npm install',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     controller: _teardown,
                     enabled: !_saving,
@@ -319,17 +319,17 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsTeardown,
                     placeholder: 'docker compose down',
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: TRSpacing.extraLarge),
                   TRText(
                     l10n.projectSettingsShellHeading,
                     variant: TRTextVariant.headingMd,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: TRSpacing.extraSmall),
                   TRText(
                     l10n.projectSettingsShellHelp,
                     variant: TRTextVariant.bodySm,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     key: const ValueKey<String>('project-shell-executable'),
                     controller: _shellExecutable,
@@ -337,7 +337,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsShellExecutable,
                     placeholder: '/bin/zsh',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     key: const ValueKey<String>('project-shell-arguments'),
                     controller: _shellArguments,
@@ -347,17 +347,17 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsShellArguments,
                     placeholder: '-l',
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: TRSpacing.extraLarge),
                   TRText(
                     l10n.projectSettingsHostShellHeading,
                     variant: TRTextVariant.headingMd,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: TRSpacing.extraSmall),
                   TRText(
                     l10n.projectSettingsHostShellHelp,
                     variant: TRTextVariant.bodySm,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     key: const ValueKey<String>('host-shell-executable'),
                     controller: _hostShellExecutable,
@@ -365,7 +365,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsShellExecutable,
                     placeholder: '/bin/zsh',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     key: const ValueKey<String>('host-shell-arguments'),
                     controller: _hostShellArguments,
@@ -460,7 +460,7 @@ class _ProjectSettingsError extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         TRText('$error'),
-        const SizedBox(height: 12),
+        const SizedBox(height: TRSpacing.medium),
         TRButton(
           intent: TRIntent.primary,
           onPressed: onRetry,

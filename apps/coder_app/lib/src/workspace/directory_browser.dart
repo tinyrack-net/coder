@@ -87,7 +87,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
               placeholder: '/home/you/repositories/project',
               onChanged: _onPathTyped,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: TRSpacing.small),
             if (_loading) const TRProgress(),
             if (_error != null)
               Padding(

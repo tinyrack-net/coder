@@ -168,7 +168,12 @@ class _ServerList extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+          padding: const EdgeInsets.fromLTRB(
+            TRSpacing.large,
+            TRSpacing.large,
+            TRSpacing.small,
+            TRSpacing.small,
+          ),
           child: Row(
             children: <Widget>[
               Expanded(
@@ -232,7 +237,12 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+    padding: const EdgeInsets.fromLTRB(
+      TRSpacing.large,
+      TRSpacing.medium,
+      TRSpacing.large,
+      TRSpacing.extraSmall,
+    ),
     child: TRText(label, variant: TRTextVariant.label),
   );
 }
@@ -278,7 +288,7 @@ class _StatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = context.tinyrackTheme;
     if (server.status == McpServerStatus.connecting) {
       return TRSpinner(
         key: ValueKey<String>('mcp-server-status-${server.config.id}'),
@@ -286,9 +296,10 @@ class _StatusDot extends StatelessWidget {
       );
     }
     final color = switch (server.status) {
-      McpServerStatus.ready => scheme.primary,
-      McpServerStatus.failed => scheme.error,
-      McpServerStatus.disabled || McpServerStatus.connecting => scheme.outline,
+      McpServerStatus.ready => colors.primary,
+      McpServerStatus.failed => colors.danger,
+      McpServerStatus.disabled ||
+      McpServerStatus.connecting => colors.textMuted,
     };
     return Icon(
       CoderIcons.status,
@@ -383,7 +394,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
     final l10n = AppLocalizations.of(context);
     final server = widget.server;
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       children: <Widget>[
         if (server != null && _readOnly)
           TRCard(
@@ -414,7 +425,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           enabled: _isNew,
           label: l10n.mcpSettingsServerId,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: TRSpacing.large),
         TRToggleGroup(
           key: const ValueKey<String>('mcp-transport-selector'),
           value: <String>[_transport.name],
@@ -433,7 +444,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             () => _transport = McpTransportKind.values.byName(value.first),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: TRSpacing.large),
         if (_transport == McpTransportKind.stdio) ...<Widget>[
           TRTextField(
             key: const ValueKey<String>('mcp-field-command'),
@@ -441,7 +452,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             enabled: !_readOnly,
             label: l10n.mcpSettingsCommand,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: TRSpacing.large),
           TRTextField(
             key: const ValueKey<String>('mcp-field-args'),
             controller: _args,
@@ -450,14 +461,14 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             maxLines: 6,
             label: l10n.mcpSettingsArgs,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: TRSpacing.large),
           TRTextField(
             key: const ValueKey<String>('mcp-field-cwd'),
             controller: _cwd,
             enabled: !_readOnly,
             label: l10n.mcpSettingsWorkingDirectory,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: TRSpacing.large),
           TRTextField(
             key: const ValueKey<String>('mcp-field-env'),
             controller: _env,
@@ -473,7 +484,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             enabled: !_readOnly,
             label: l10n.mcpSettingsUrl,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: TRSpacing.large),
           TRTextField(
             key: const ValueKey<String>('mcp-field-headers'),
             controller: _headers,
@@ -483,13 +494,13 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             label: l10n.mcpSettingsHeaders,
           ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         TRText(
           l10n.mcpSettingsSecretHint,
           variant: TRTextVariant.bodySm,
         ),
         const TRText(mcpSecretSyntax, variant: TRTextVariant.code),
-        const SizedBox(height: 16),
+        const SizedBox(height: TRSpacing.large),
         CoderSwitchRow(
           key: const ValueKey<String>('mcp-field-enabled'),
           value: _enabled,
@@ -499,7 +510,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           title: TRText.inherit(l10n.mcpSettingsEnabled),
         ),
         if (_error case final error?) ...<Widget>[
-          const SizedBox(height: 8),
+          const SizedBox(height: TRSpacing.small),
           TRText(
             error,
             key: const ValueKey<String>('mcp-editor-error'),
@@ -507,10 +518,10 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ),
         ],
         if (_notice case final notice?) ...<Widget>[
-          const SizedBox(height: 8),
+          const SizedBox(height: TRSpacing.small),
           TRText(notice, key: const ValueKey<String>('mcp-editor-notice')),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: TRSpacing.large),
         Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -548,7 +559,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           ],
         ),
         if (server != null) ...<Widget>[
-          const SizedBox(height: 24),
+          const SizedBox(height: TRSpacing.extraLarge),
           TRText(
             l10n.mcpSettingsDiscoveredTools,
             variant: TRTextVariant.headingSm,
@@ -564,7 +575,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                 subtitle: TRText.inherit(tool.description),
               ),
           if (server.error case final error?) ...<Widget>[
-            const SizedBox(height: 16),
+            const SizedBox(height: TRSpacing.large),
             TRText(
               error,
               key: ValueKey<String>('mcp-server-error-${server.config.id}'),
@@ -572,7 +583,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             ),
           ],
           if (server.diagnostics.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 16),
+            const SizedBox(height: TRSpacing.large),
             TRCollapsible(
               key: const ValueKey<String>('mcp-server-diagnostics'),
               trigger: TRText(l10n.mcpSettingsDiagnostics),

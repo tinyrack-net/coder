@@ -65,14 +65,14 @@ class AppSettingsPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final embeddedRuntime = registry.runtimes[embeddedHostId];
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       children: <Widget>[
         if (supportsEmbedded) ...<Widget>[
           TRText(
             l10n.appSettingsLocalSection,
             variant: TRTextVariant.headingLg,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: TRSpacing.small),
           if (embeddedRuntime != null &&
               embeddedRuntime.status == HostRuntimeStatus.error) ...<Widget>[
             TRAlert(
@@ -149,7 +149,7 @@ class AppSettingsPage extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: TRSpacing.extraLarge),
         ],
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -177,12 +177,12 @@ class AppSettingsPage extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         if (registry.profiles.isEmpty)
           TRCard(
             padding: TRCardPadding.none,
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(TRSpacing.extraLarge),
               child: TRText.inherit(l10n.appSettingsNoRemotes),
             ),
           ),
@@ -333,7 +333,7 @@ class _RemoteHostCard extends ConsumerWidget {
     return TRCard(
       padding: TRCardPadding.none,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(TRSpacing.medium),
         child: Column(
           children: <Widget>[
             CoderListRow(
@@ -480,7 +480,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 620),
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(TRSpacing.extraLarge),
             children: <Widget>[
               TRTextField(
                 key: const ValueKey<String>('remote-host-label'),
@@ -488,7 +488,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 label: l10n.commonName,
                 placeholder: 'Production daemon',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 key: const ValueKey<String>('remote-host-address'),
                 controller: _address,
@@ -496,7 +496,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 label: l10n.appSettingsAddress,
                 placeholder: 'wss://coder.example.com/ws',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 key: const ValueKey<String>('remote-host-token'),
                 controller: _token,
@@ -505,7 +505,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                     ? 'Bearer token'
                     : l10n.appSettingsNewToken,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: TRSpacing.small),
               CoderSwitchRow(
                 contentPadding: EdgeInsets.zero,
                 title: TRText.inherit(l10n.appSettingsAutoConnect),
@@ -517,7 +517,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                   error,
                   color: TRTextColor.danger,
                 ),
-              const SizedBox(height: 20),
+              const SizedBox(height: TRSpacing.extraLarge),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
@@ -527,7 +527,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                       onPressed: _saving ? null : () => _delete(existing),
                       child: TRText.inherit(l10n.commonDelete),
                     ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: TRSpacing.small),
                   TRButton(
                     intent: TRIntent.primary,
                     onPressed: _saving ? null : () => _save(existing),

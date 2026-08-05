@@ -22,7 +22,7 @@ class AdvancedSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final body = ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       children: const <Widget>[_ResetCard()],
     );
     if (embedded) return body;
@@ -60,7 +60,7 @@ class _ResetCardState extends ConsumerState<_ResetCard> {
           l10n.advancedResetSection,
           variant: TRTextVariant.headingLg,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         if (error != null) ...<Widget>[
           TRAlert(
             key: const ValueKey<String>('advanced-settings-reset-error'),

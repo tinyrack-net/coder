@@ -42,11 +42,16 @@ class ChatCodeBlock extends StatelessWidget {
     final hidden = lines.length > maxLines ? lines.length - maxLines : 0;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
+        color: context.tinyrackTheme.surfaceMuted,
+        borderRadius: const BorderRadius.all(TRRadii.medium),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+        padding: const EdgeInsets.fromLTRB(
+          TRSpacing.small,
+          TRSpacing.small,
+          TRSpacing.extraSmall,
+          TRSpacing.small,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[

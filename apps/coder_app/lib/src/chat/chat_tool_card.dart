@@ -94,7 +94,7 @@ class ChatToolCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Icon(chatToolIcon(presentation.glyph), color: statusColor),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: TRSpacing.small),
                     Flexible(
                       child: TRText(
                         presentation.title,
@@ -103,7 +103,7 @@ class ChatToolCard extends StatelessWidget {
                       ),
                     ),
                     if (presentation.resultLine != null) ...<Widget>[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: TRSpacing.small),
                       if (activity.status == ChatToolStatus.running)
                         Padding(
                           padding: const EdgeInsets.only(right: 6),
@@ -133,11 +133,11 @@ class ChatToolCard extends StatelessWidget {
                   ],
                 ),
                 if (expanded) ...<Widget>[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: TRSpacing.small),
                   _ChatToolBodyView(body: presentation.argumentBody),
                   if (presentation.argumentBody is! ChatToolEmptyBody &&
                       presentation.body is! ChatToolEmptyBody)
-                    const SizedBox(height: 8),
+                    const SizedBox(height: TRSpacing.small),
                   _ChatToolBodyView(body: presentation.body),
                 ],
               ],

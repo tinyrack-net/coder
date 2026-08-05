@@ -24,13 +24,18 @@ class ChatPlanCard extends ConsumerWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: const BorderRadius.all(TRRadii.large),
           border: Border(
             left: BorderSide(color: theme.colorScheme.primary, width: 3),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          padding: const EdgeInsets.fromLTRB(
+            TRSpacing.medium,
+            TRSpacing.medium,
+            TRSpacing.medium,
+            TRSpacing.medium,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -41,7 +46,7 @@ class ChatPlanCard extends ConsumerWidget {
                     CoderIcons.plan,
                     color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: TRSpacing.small),
                   TRText(
                     AppLocalizations.of(context).chatPlanTitle,
                     variant: TRTextVariant.headingSm,
@@ -49,7 +54,7 @@ class ChatPlanCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: TRSpacing.small),
               MarkdownBody(
                 data: proposal.markdown,
                 selectable: true,

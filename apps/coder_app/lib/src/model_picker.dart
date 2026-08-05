@@ -153,14 +153,14 @@ class _ModelPickerState extends State<ModelPicker> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         TRTextField(
           key: const ValueKey('model-search-field'),
           autofocus: true,
           label: l10n.modelPickerSearch,
           onChanged: (value) => setState(() => _query = value),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: TRSpacing.medium),
         if (inheritLabel != null && query.isEmpty)
           CoderListRow(
             key: const ValueKey('model-option-inherit'),

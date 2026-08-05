@@ -59,9 +59,14 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     return TRScrollArea.forScrollable(
       child: ListView.separated(
         reverse: true,
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        padding: const EdgeInsets.fromLTRB(
+          TRSpacing.extraLarge,
+          TRSpacing.large,
+          TRSpacing.extraLarge,
+          TRSpacing.large,
+        ),
         itemCount: items.length + (busy ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: 6),
+        separatorBuilder: (_, _) => const SizedBox(height: TRSpacing.small),
         // Every new event shifts the reversed indices, so keys are mapped back
         // to their slot; without this an expanded card would leak its state
         // into whichever item lands on its old index.

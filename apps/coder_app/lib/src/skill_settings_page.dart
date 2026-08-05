@@ -181,7 +181,12 @@ class _ProjectSelector extends ConsumerWidget {
         .where((workspace) => workspace.id == workspaceId)
         .firstOrNull;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        TRSpacing.large,
+        TRSpacing.large,
+        TRSpacing.large,
+        TRSpacing.small,
+      ),
       child: TRSelectFormField<String?>(
         initialValue: selected?.id,
         label: l10n.skillSettingsProject,
@@ -386,7 +391,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
         const TRSeparator(),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(TRSpacing.extraLarge),
             children: <Widget>[
               if (!skill.isEditable)
                 TRCard(
@@ -429,13 +434,13 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 enabled: false,
                 label: l10n.skillSettingsSource,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _name,
                 enabled: editable,
                 label: l10n.commonName,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _description,
                 enabled: editable,
@@ -443,7 +448,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 maxLines: 4,
                 label: l10n.commonDescription,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _body,
                 enabled: editable,
@@ -451,7 +456,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 maxLines: 18,
                 label: l10n.skillSettingsInstructions,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: TRSpacing.extraLarge),
               TRText(
                 l10n.skillSettingsResources,
                 variant: TRTextVariant.headingMd,
@@ -669,7 +674,7 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
                   : (value) => setState(() => _source = value!),
             ),
             if (_error case final error?) ...<Widget>[
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRText(
                 '$error',
                 color: TRTextColor.danger,
@@ -733,7 +738,7 @@ class _SkillSettingsError extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         TRText('$error'),
-        const SizedBox(height: 12),
+        const SizedBox(height: TRSpacing.medium),
         TRButton(
           intent: TRIntent.primary,
           onPressed: onRetry,

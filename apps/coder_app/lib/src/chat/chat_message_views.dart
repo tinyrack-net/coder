@@ -41,7 +41,7 @@ class ChatUserLine extends StatelessWidget {
             variant: TRTextVariant.code,
             color: TRTextColor.primary,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: TRSpacing.small),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +54,8 @@ class ChatUserLine extends StatelessWidget {
                     ),
                   ),
                 if (message.attachments.isNotEmpty) ...<Widget>[
-                  if (message.text.isNotEmpty) const SizedBox(height: 6),
+                  if (message.text.isNotEmpty)
+                    const SizedBox(height: TRSpacing.small),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
@@ -139,7 +140,7 @@ class ChatAttachmentTile extends StatelessWidget {
               future: loader(attachment),
               builder: (context, snapshot) => snapshot.hasData
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: const BorderRadius.all(TRRadii.medium),
                       child: Image.memory(
                         snapshot.data!,
                         width: 56,
@@ -169,18 +170,16 @@ class ChatAttachmentTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 280),
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(TRSpacing.small),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: context.tinyrackTheme.border),
+            borderRadius: const BorderRadius.all(TRRadii.large),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               preview,
-              const SizedBox(width: 8),
+              const SizedBox(width: TRSpacing.small),
               Flexible(
                 child: TRText.inherit(
                   '${attachment.fileName}\n'
@@ -190,7 +189,7 @@ class ChatAttachmentTile extends StatelessWidget {
                 ),
               ),
               if (!attachment.isImage) ...<Widget>[
-                const SizedBox(width: 6),
+                const SizedBox(width: TRSpacing.small),
                 const Icon(CoderIcons.download),
               ],
             ],
@@ -247,7 +246,7 @@ class ChatAssistantMessageView extends ConsumerWidget {
               color: context.tinyrackTheme.primary,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: TRSpacing.small),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,9 +370,9 @@ class ChatEmptyState extends StatelessWidget {
             size: TRSpacing.twoExtraLarge,
             color: context.tinyrackTheme.textMuted,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: TRSpacing.medium),
           TRText(AppLocalizations.of(context).chatEmptyTitle),
-          const SizedBox(height: 6),
+          const SizedBox(height: TRSpacing.small),
           TRText(
             AppLocalizations.of(context).chatEmptyExample,
             variant: TRTextVariant.bodySm,
@@ -401,7 +400,7 @@ class ChatRunningIndicator extends StatelessWidget {
             label: AppLocalizations.of(context).commonRunning,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: TRSpacing.small),
         TRText(
           AppLocalizations.of(context).commonRunning,
           variant: TRTextVariant.bodySm,

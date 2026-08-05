@@ -26,12 +26,17 @@ class ApprovalCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+        TRSpacing.large,
+        TRSpacing.small,
+        TRSpacing.large,
+        0,
+      ),
       child: TRCard(
         padding: TRCardPadding.none,
         variant: TRCardVariant.elevated,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(TRSpacing.medium),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -39,9 +44,9 @@ class ApprovalCard extends ConsumerWidget {
                 l10n.chatApprovalRequired(approval.toolName),
                 variant: TRTextVariant.headingSm,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: TRSpacing.small),
               _preview(),
-              const SizedBox(height: 10),
+              const SizedBox(height: TRSpacing.small),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
@@ -50,7 +55,7 @@ class ApprovalCard extends ConsumerWidget {
                     onPressed: () => _resolve(ref, approved: false),
                     child: TRText.inherit(l10n.chatApprovalDeny),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: TRSpacing.small),
                   TRButton(
                     intent: TRIntent.primary,
                     onPressed: () => _resolve(ref, approved: true),

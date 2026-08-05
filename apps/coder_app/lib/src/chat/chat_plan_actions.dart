@@ -57,13 +57,18 @@ class ChatPlanActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+        TRSpacing.large,
+        TRSpacing.small,
+        TRSpacing.large,
+        0,
+      ),
       child: TRCard(
         padding: TRCardPadding.none,
         key: const ValueKey('chat-plan-actions'),
         variant: TRCardVariant.elevated,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(TRSpacing.medium),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -71,7 +76,7 @@ class ChatPlanActions extends ConsumerWidget {
                 l10n.chatPlanPrompt,
                 variant: TRTextVariant.headingSm,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: TRSpacing.small),
               Wrap(
                 alignment: WrapAlignment.end,
                 spacing: 8,

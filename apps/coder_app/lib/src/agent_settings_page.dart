@@ -335,7 +335,7 @@ class _AgentEditorState extends State<_AgentEditor> {
         const TRSeparator(),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(TRSpacing.extraLarge),
             children: <Widget>[
               if (definition.diagnostics.isNotEmpty)
                 ...definition.diagnostics.map(
@@ -354,13 +354,13 @@ class _AgentEditorState extends State<_AgentEditor> {
                 enabled: editable,
                 label: l10n.commonName,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _description,
                 enabled: editable,
                 label: l10n.commonDescription,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 initialValue: definition.mode.name,
                 enabled: false,
@@ -380,7 +380,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                 maxLines: 18,
                 label: 'System prompt (Markdown)',
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: TRSpacing.extraLarge),
               const TRText('Model', variant: TRTextVariant.headingMd),
               TRRadioGroup(
                 value: _modelSource.name,
@@ -405,14 +405,14 @@ class _AgentEditorState extends State<_AgentEditor> {
                   enabled: editable,
                   label: 'Provider connection ID',
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: TRSpacing.medium),
                 TRTextField(
                   controller: _modelId,
                   enabled: editable,
                   label: 'Model ID',
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRSelectFormField<String>(
                 initialValue: _reasoningEffort,
                 label: 'Reasoning',
@@ -428,7 +428,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                     ? (value) => setState(() => _reasoningEffort = value!)
                     : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRSelectFormField<PermissionMode>(
                 initialValue: _permissionMode,
                 label: 'Permission',
@@ -444,7 +444,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                     ? (value) => setState(() => _permissionMode = value!)
                     : null,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: TRSpacing.extraLarge),
               TRText(
                 l10n.agentSettingsBuiltinTools,
                 variant: TRTextVariant.headingMd,
@@ -477,7 +477,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                   ),
                 ),
               if (definition.mode == AgentMode.primary) ...<Widget>[
-                const SizedBox(height: 20),
+                const SizedBox(height: TRSpacing.extraLarge),
                 TRText(
                   l10n.agentSettingsSubagents,
                   variant: TRTextVariant.headingMd,
@@ -691,7 +691,7 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
                   : (value) => setState(() => _mode = value!),
             ),
             if (_error case final error?) ...<Widget>[
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRText(
                 '$error',
                 color: TRTextColor.danger,
@@ -754,7 +754,7 @@ class _AgentSettingsError extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         TRText('$error'),
-        const SizedBox(height: 12),
+        const SizedBox(height: TRSpacing.medium),
         TRButton(
           intent: TRIntent.primary,
           onPressed: onRetry,
