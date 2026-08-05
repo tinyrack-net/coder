@@ -752,6 +752,7 @@ class _SettingsSidebar extends StatelessWidget {
           ? l10n.settingsSectionApp
           : l10n.settingsSectionDaemon,
       value: selected.scope == scope ? selected : null,
+      itemSpacing: TRSpacing.extraSmall,
       items: <TRTreeNavItem<SettingsCategory>>[
         for (final category in _categoriesInScope(scope))
           TRTreeNavLeaf<SettingsCategory>(
@@ -775,11 +776,14 @@ class _SettingsSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
+    // The nav rows below sit a single extraSmall step apart, so the label
+    // needs a wider step beneath it to read as their header rather than as
+    // another row.
     padding: const EdgeInsets.fromLTRB(
       TRSpacing.small,
       TRSpacing.small,
       TRSpacing.small,
-      TRSpacing.extraSmall,
+      TRSpacing.medium,
     ),
     child: TRText(
       text,
@@ -820,6 +824,11 @@ class _DaemonSelect extends ConsumerWidget {
         builder: (context, constraints) => TRSelect<String>.controlled(
           key: const ValueKey<String>('settings-daemon-select'),
           value: hostId,
+          // The sidebar is a flat list of borderless nav rows, so the trigger
+          // takes its frame from the sidebar rather than drawing its own.
+          appearance: showLabel
+              ? TRFieldAppearance.solid
+              : TRFieldAppearance.ghost,
           label: showLabel ? l10n.settingsDaemonSelectLabel : null,
           placeholder: l10n.settingsDaemonSelectEmpty,
           enabled: hosts.isNotEmpty,

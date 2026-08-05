@@ -283,6 +283,62 @@ void main() {
   );
 
   testWidgets(
+    'the settings sidebar daemon select is framed by the sidebar, not itself',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        serverInfo: const ServerInfoDto(
+          serverId: 'sidebar-server',
+          version: 'test',
+          protocolVersion: coderProtocolVersion,
+          features: <String, bool>{},
+        ),
+      );
+      addTearDown(api.close);
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[
+          RemoteDaemonProfile(
+            id: 'only',
+            label: 'Only daemon',
+            websocketUri: Uri.parse('ws://only.test/ws'),
+            autoConnect: true,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        tokens: const <String, String>{'only': 'only-token'},
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: _MappedClients(<String, CoderApi>{'only.test': api}),
+            clientKind: 'sidebar-daemon-select-test',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.pumpAndSettle();
+
+      // The sidebar is a flat list of borderless nav rows, so a boxed select
+      // trigger sitting among them reads as a foreign control.
+      final daemonSelect = find.byKey(
+        const ValueKey<String>('settings-daemon-select'),
+      );
+      expect(
+        tester.widget<TRSelect<String>>(daemonSelect).appearance,
+        TRFieldAppearance.ghost,
+      );
+    },
+    tags: const <String>['feature_test__daemon_management__widget'],
+  );
+
+  testWidgets(
     'the draft composer stays quiet while agent discovery is still loading',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));

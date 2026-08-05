@@ -887,8 +887,10 @@ class _SessionComposerState extends State<SessionComposer> {
             if (widget.header != null) widget.header!,
             TRCard(
               // A drop target reads the same way as focus: this card is where
-              // the content lands.
-              focused: _inputFocus.hasFocus || _dragging,
+              // the content lands. Typing focus is left to the ghost input,
+              // which paints its own emphasis; ringing the card as well would
+              // show two focus rings for one caret.
+              focused: _dragging,
               padding: TRCardPadding.sm,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
