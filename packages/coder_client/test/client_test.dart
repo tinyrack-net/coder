@@ -136,6 +136,25 @@ void main() {
     status: ApprovalStatus.pending,
     createdAt: now,
   );
+  final userQuestion = UserQuestionRequestDto(
+    id: 'question',
+    sessionId: agent.id,
+    turnId: 'turn',
+    toolCallId: 'ask-call',
+    questions: const <UserQuestionItemDto>[
+      UserQuestionItemDto(
+        id: 'q1',
+        header: 'Storage',
+        question: 'Which store should the cache use?',
+        options: <UserQuestionOptionDto>[
+          UserQuestionOptionDto(label: 'SQLite', description: 'Durable.'),
+          UserQuestionOptionDto(label: 'In memory', description: 'Fast.'),
+        ],
+      ),
+    ],
+    status: UserQuestionStatus.pending,
+    createdAt: now,
+  );
   final timeline = TimelineEventDto(
     sessionId: agent.id,
     sequence: 2,
@@ -288,6 +307,7 @@ void main() {
             connection: connection,
             model: model,
             approval: approval,
+            userQuestion: userQuestion,
             timeline: timeline,
           );
         },
@@ -572,6 +592,19 @@ void main() {
       );
       await client.cancelTurn(agent.id);
       await client.resolveApproval(approvalId: approval.id, approved: true);
+      expect(
+        await client.answerUserQuestion(
+          requestId: userQuestion.id,
+          answers: const <UserQuestionAnswerDto>[
+            UserQuestionAnswerDto(
+              questionId: 'q1',
+              answer: 'SQLite',
+              isFreeForm: false,
+            ),
+          ],
+        ),
+        userQuestion,
+      );
       expect(await client.subscribeTimeline(agent.id), <TimelineEventDto>[
         timeline,
       ]);
@@ -597,6 +630,10 @@ void main() {
         ..sendNotification(
           RpcNotification.approvalRequested,
           approval.toJson(),
+        )
+        ..sendNotification(
+          RpcNotification.userQuestionRequested,
+          userQuestion.toJson(),
         )
         ..sendNotification(
           RpcNotification.providerAuthUpdated,
@@ -629,6 +666,10 @@ void main() {
       expect(
         events.whereType<ApprovalRequestedClientEvent>().single.approval,
         approval,
+      );
+      expect(
+        events.whereType<UserQuestionRequestedClientEvent>().single.request,
+        userQuestion,
       );
       expect(
         events.whereType<ProviderAuthUpdatedClientEvent>().single.attempt,
@@ -694,6 +735,7 @@ void main() {
           RpcMethod.turnStart,
           RpcMethod.turnCancel,
           RpcMethod.approvalResolve,
+          RpcMethod.userQuestionAnswer,
           RpcMethod.timelineSubscribe,
         ]),
       );
@@ -708,6 +750,7 @@ void main() {
       'feature_test__project_settings__contract',
       'feature_test__session_lifecycle__contract',
       'feature_test__turn_execution__contract',
+      'feature_test__turn_question__contract',
       'feature_test__agent_definition_management__contract',
       'feature_test__mcp_server_management__contract',
       'feature_test__skill_management__contract',
@@ -954,6 +997,7 @@ void _registerFixtureMethods(
   required ProviderConnectionDto connection,
   required ProviderModelDto model,
   required ApprovalRequestDto approval,
+  required UserQuestionRequestDto userQuestion,
   required TimelineEventDto timeline,
 }) {
   _registerHello(peer, requests);
@@ -1152,6 +1196,9 @@ void _registerFixtureMethods(
     RpcMethod.turnStart: const TurnStartResultDto(created: true).toJson(),
     RpcMethod.turnCancel: const <String, dynamic>{},
     RpcMethod.approvalResolve: ApprovalResultDto(approval: approval).toJson(),
+    RpcMethod.userQuestionAnswer: UserQuestionResultDto(
+      request: userQuestion,
+    ).toJson(),
     RpcMethod.timelineSubscribe: TimelineResultDto(
       events: <TimelineEventDto>[timeline],
     ).toJson(),

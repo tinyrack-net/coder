@@ -4362,6 +4362,550 @@ class ApprovalRequestsCompanion extends UpdateCompanion<ApprovalRequest> {
   }
 }
 
+class $UserQuestionsTable extends UserQuestions
+    with TableInfo<$UserQuestionsTable, UserQuestionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserQuestionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sessions (id)',
+    ),
+  );
+  static const VerificationMeta _turnIdMeta = const VerificationMeta('turnId');
+  @override
+  late final GeneratedColumn<String> turnId = GeneratedColumn<String>(
+    'turn_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES turns (id)',
+    ),
+  );
+  static const VerificationMeta _toolCallIdMeta = const VerificationMeta(
+    'toolCallId',
+  );
+  @override
+  late final GeneratedColumn<String> toolCallId = GeneratedColumn<String>(
+    'tool_call_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _questionsJsonMeta = const VerificationMeta(
+    'questionsJson',
+  );
+  @override
+  late final GeneratedColumn<String> questionsJson = GeneratedColumn<String>(
+    'questions_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _answersJsonMeta = const VerificationMeta(
+    'answersJson',
+  );
+  @override
+  late final GeneratedColumn<String> answersJson = GeneratedColumn<String>(
+    'answers_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    turnId,
+    toolCallId,
+    questionsJson,
+    answersJson,
+    status,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_questions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UserQuestionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('turn_id')) {
+      context.handle(
+        _turnIdMeta,
+        turnId.isAcceptableOrUnknown(data['turn_id']!, _turnIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_turnIdMeta);
+    }
+    if (data.containsKey('tool_call_id')) {
+      context.handle(
+        _toolCallIdMeta,
+        toolCallId.isAcceptableOrUnknown(
+          data['tool_call_id']!,
+          _toolCallIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_toolCallIdMeta);
+    }
+    if (data.containsKey('questions_json')) {
+      context.handle(
+        _questionsJsonMeta,
+        questionsJson.isAcceptableOrUnknown(
+          data['questions_json']!,
+          _questionsJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_questionsJsonMeta);
+    }
+    if (data.containsKey('answers_json')) {
+      context.handle(
+        _answersJsonMeta,
+        answersJson.isAcceptableOrUnknown(
+          data['answers_json']!,
+          _answersJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_answersJsonMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UserQuestionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserQuestionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      turnId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}turn_id'],
+      )!,
+      toolCallId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tool_call_id'],
+      )!,
+      questionsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}questions_json'],
+      )!,
+      answersJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}answers_json'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $UserQuestionsTable createAlias(String alias) {
+    return $UserQuestionsTable(attachedDatabase, alias);
+  }
+}
+
+class UserQuestionRow extends DataClass implements Insertable<UserQuestionRow> {
+  /// The id public API member.
+  final String id;
+
+  /// The sessionId public API member.
+  final String sessionId;
+
+  /// The turnId public API member.
+  final String turnId;
+
+  /// The toolCallId public API member.
+  final String toolCallId;
+
+  /// The questions, serialized as a JSON array.
+  final String questionsJson;
+
+  /// The answers, serialized as a JSON array; empty while pending.
+  final String answersJson;
+
+  /// The status public API member.
+  final String status;
+
+  /// The createdAt public API member.
+  final DateTime createdAt;
+  const UserQuestionRow({
+    required this.id,
+    required this.sessionId,
+    required this.turnId,
+    required this.toolCallId,
+    required this.questionsJson,
+    required this.answersJson,
+    required this.status,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['turn_id'] = Variable<String>(turnId);
+    map['tool_call_id'] = Variable<String>(toolCallId);
+    map['questions_json'] = Variable<String>(questionsJson);
+    map['answers_json'] = Variable<String>(answersJson);
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  UserQuestionsCompanion toCompanion(bool nullToAbsent) {
+    return UserQuestionsCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      turnId: Value(turnId),
+      toolCallId: Value(toolCallId),
+      questionsJson: Value(questionsJson),
+      answersJson: Value(answersJson),
+      status: Value(status),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory UserQuestionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserQuestionRow(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      turnId: serializer.fromJson<String>(json['turnId']),
+      toolCallId: serializer.fromJson<String>(json['toolCallId']),
+      questionsJson: serializer.fromJson<String>(json['questionsJson']),
+      answersJson: serializer.fromJson<String>(json['answersJson']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'turnId': serializer.toJson<String>(turnId),
+      'toolCallId': serializer.toJson<String>(toolCallId),
+      'questionsJson': serializer.toJson<String>(questionsJson),
+      'answersJson': serializer.toJson<String>(answersJson),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  UserQuestionRow copyWith({
+    String? id,
+    String? sessionId,
+    String? turnId,
+    String? toolCallId,
+    String? questionsJson,
+    String? answersJson,
+    String? status,
+    DateTime? createdAt,
+  }) => UserQuestionRow(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    turnId: turnId ?? this.turnId,
+    toolCallId: toolCallId ?? this.toolCallId,
+    questionsJson: questionsJson ?? this.questionsJson,
+    answersJson: answersJson ?? this.answersJson,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  UserQuestionRow copyWithCompanion(UserQuestionsCompanion data) {
+    return UserQuestionRow(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      turnId: data.turnId.present ? data.turnId.value : this.turnId,
+      toolCallId: data.toolCallId.present
+          ? data.toolCallId.value
+          : this.toolCallId,
+      questionsJson: data.questionsJson.present
+          ? data.questionsJson.value
+          : this.questionsJson,
+      answersJson: data.answersJson.present
+          ? data.answersJson.value
+          : this.answersJson,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserQuestionRow(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('turnId: $turnId, ')
+          ..write('toolCallId: $toolCallId, ')
+          ..write('questionsJson: $questionsJson, ')
+          ..write('answersJson: $answersJson, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    turnId,
+    toolCallId,
+    questionsJson,
+    answersJson,
+    status,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserQuestionRow &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.turnId == this.turnId &&
+          other.toolCallId == this.toolCallId &&
+          other.questionsJson == this.questionsJson &&
+          other.answersJson == this.answersJson &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt);
+}
+
+class UserQuestionsCompanion extends UpdateCompanion<UserQuestionRow> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<String> turnId;
+  final Value<String> toolCallId;
+  final Value<String> questionsJson;
+  final Value<String> answersJson;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const UserQuestionsCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.turnId = const Value.absent(),
+    this.toolCallId = const Value.absent(),
+    this.questionsJson = const Value.absent(),
+    this.answersJson = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UserQuestionsCompanion.insert({
+    required String id,
+    required String sessionId,
+    required String turnId,
+    required String toolCallId,
+    required String questionsJson,
+    required String answersJson,
+    required String status,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       turnId = Value(turnId),
+       toolCallId = Value(toolCallId),
+       questionsJson = Value(questionsJson),
+       answersJson = Value(answersJson),
+       status = Value(status),
+       createdAt = Value(createdAt);
+  static Insertable<UserQuestionRow> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<String>? turnId,
+    Expression<String>? toolCallId,
+    Expression<String>? questionsJson,
+    Expression<String>? answersJson,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (turnId != null) 'turn_id': turnId,
+      if (toolCallId != null) 'tool_call_id': toolCallId,
+      if (questionsJson != null) 'questions_json': questionsJson,
+      if (answersJson != null) 'answers_json': answersJson,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UserQuestionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<String>? turnId,
+    Value<String>? toolCallId,
+    Value<String>? questionsJson,
+    Value<String>? answersJson,
+    Value<String>? status,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return UserQuestionsCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      turnId: turnId ?? this.turnId,
+      toolCallId: toolCallId ?? this.toolCallId,
+      questionsJson: questionsJson ?? this.questionsJson,
+      answersJson: answersJson ?? this.answersJson,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (turnId.present) {
+      map['turn_id'] = Variable<String>(turnId.value);
+    }
+    if (toolCallId.present) {
+      map['tool_call_id'] = Variable<String>(toolCallId.value);
+    }
+    if (questionsJson.present) {
+      map['questions_json'] = Variable<String>(questionsJson.value);
+    }
+    if (answersJson.present) {
+      map['answers_json'] = Variable<String>(answersJson.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserQuestionsCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('turnId: $turnId, ')
+          ..write('toolCallId: $toolCallId, ')
+          ..write('questionsJson: $questionsJson, ')
+          ..write('answersJson: $answersJson, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ProviderStatesTable extends ProviderStates
     with TableInfo<$ProviderStatesTable, ProviderState> {
   @override
@@ -6227,6 +6771,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final $ApprovalRequestsTable approvalRequests = $ApprovalRequestsTable(
     this,
   );
+  late final $UserQuestionsTable userQuestions = $UserQuestionsTable(this);
   late final $ProviderStatesTable providerStates = $ProviderStatesTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   late final $ProviderConnectionsTable providerConnections =
@@ -6253,6 +6798,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
     turnAttachments,
     timelineEvents,
     approvalRequests,
+    userQuestions,
     providerStates,
     settings,
     providerConnections,
@@ -7207,6 +7753,24 @@ final class $$SessionsTableReferences
     );
   }
 
+  static MultiTypedResultKey<$UserQuestionsTable, List<UserQuestionRow>>
+  _userQuestionsRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
+    db.userQuestions,
+    aliasName: 'sessions__id__user_questions__session_id',
+  );
+
+  $$UserQuestionsTableProcessedTableManager get userQuestionsRefs {
+    final manager = $$UserQuestionsTableTableManager(
+      $_db,
+      $_db.userQuestions,
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_userQuestionsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$ProviderStatesTable, List<ProviderState>>
   _providerStatesRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
     db.providerStates,
@@ -7422,6 +7986,31 @@ class $$SessionsTableFilterComposer
           }) => $$ApprovalRequestsTableFilterComposer(
             $db: $db,
             $table: $db.approvalRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> userQuestionsRefs(
+    Expression<bool> Function($$UserQuestionsTableFilterComposer f) f,
+  ) {
+    final $$UserQuestionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.userQuestions,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserQuestionsTableFilterComposer(
+            $db: $db,
+            $table: $db.userQuestions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7775,6 +8364,31 @@ class $$SessionsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> userQuestionsRefs<T extends Object>(
+    Expression<T> Function($$UserQuestionsTableAnnotationComposer a) f,
+  ) {
+    final $$UserQuestionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.userQuestions,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserQuestionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.userQuestions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> providerStatesRefs<T extends Object>(
     Expression<T> Function($$ProviderStatesTableAnnotationComposer a) f,
   ) {
@@ -7820,6 +8434,7 @@ class $$SessionsTableTableManager
             bool turnsRefs,
             bool timelineEventsRefs,
             bool approvalRequestsRefs,
+            bool userQuestionsRefs,
             bool providerStatesRefs,
           })
         > {
@@ -7929,6 +8544,7 @@ class $$SessionsTableTableManager
                 turnsRefs = false,
                 timelineEventsRefs = false,
                 approvalRequestsRefs = false,
+                userQuestionsRefs = false,
                 providerStatesRefs = false,
               }) {
                 return PrefetchHooks(
@@ -7937,6 +8553,7 @@ class $$SessionsTableTableManager
                     if (turnsRefs) db.turns,
                     if (timelineEventsRefs) db.timelineEvents,
                     if (approvalRequestsRefs) db.approvalRequests,
+                    if (userQuestionsRefs) db.userQuestions,
                     if (providerStatesRefs) db.providerStates,
                   ],
                   addJoins:
@@ -8049,6 +8666,27 @@ class $$SessionsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (userQuestionsRefs)
+                        await $_getPrefetchedData<
+                          Session,
+                          $SessionsTable,
+                          UserQuestionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SessionsTableReferences
+                              ._userQuestionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SessionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).userQuestionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sessionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (providerStatesRefs)
                         await $_getPrefetchedData<
                           Session,
@@ -8096,6 +8734,7 @@ typedef $$SessionsTableProcessedTableManager =
         bool turnsRefs,
         bool timelineEventsRefs,
         bool approvalRequestsRefs,
+        bool userQuestionsRefs,
         bool providerStatesRefs,
       })
     >;
@@ -8180,6 +8819,24 @@ final class $$TurnsTableReferences
     final cache = $_typedResult.readTableOrNull(
       _approvalRequestsRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$UserQuestionsTable, List<UserQuestionRow>>
+  _userQuestionsRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
+    db.userQuestions,
+    aliasName: 'turns__id__user_questions__turn_id',
+  );
+
+  $$UserQuestionsTableProcessedTableManager get userQuestionsRefs {
+    final manager = $$UserQuestionsTableTableManager(
+      $_db,
+      $_db.userQuestions,
+    ).filter((f) => f.turnId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_userQuestionsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -8289,6 +8946,31 @@ class $$TurnsTableFilterComposer
           }) => $$ApprovalRequestsTableFilterComposer(
             $db: $db,
             $table: $db.approvalRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> userQuestionsRefs(
+    Expression<bool> Function($$UserQuestionsTableFilterComposer f) f,
+  ) {
+    final $$UserQuestionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.userQuestions,
+      getReferencedColumn: (t) => t.turnId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserQuestionsTableFilterComposer(
+            $db: $db,
+            $table: $db.userQuestions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8461,6 +9143,31 @@ class $$TurnsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> userQuestionsRefs<T extends Object>(
+    Expression<T> Function($$UserQuestionsTableAnnotationComposer a) f,
+  ) {
+    final $$UserQuestionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.userQuestions,
+      getReferencedColumn: (t) => t.turnId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserQuestionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.userQuestions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TurnsTableTableManager
@@ -8480,6 +9187,7 @@ class $$TurnsTableTableManager
             bool sessionId,
             bool turnAttachmentsRefs,
             bool approvalRequestsRefs,
+            bool userQuestionsRefs,
           })
         > {
   $$TurnsTableTableManager(_$CoderDatabase db, $TurnsTable table)
@@ -8544,12 +9252,14 @@ class $$TurnsTableTableManager
                 sessionId = false,
                 turnAttachmentsRefs = false,
                 approvalRequestsRefs = false,
+                userQuestionsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (turnAttachmentsRefs) db.turnAttachments,
                     if (approvalRequestsRefs) db.approvalRequests,
+                    if (userQuestionsRefs) db.userQuestions,
                   ],
                   addJoins:
                       <
@@ -8627,6 +9337,27 @@ class $$TurnsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (userQuestionsRefs)
+                        await $_getPrefetchedData<
+                          Turn,
+                          $TurnsTable,
+                          UserQuestionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TurnsTableReferences
+                              ._userQuestionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TurnsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).userQuestionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.turnId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -8651,6 +9382,7 @@ typedef $$TurnsTableProcessedTableManager =
         bool sessionId,
         bool turnAttachmentsRefs,
         bool approvalRequestsRefs,
+        bool userQuestionsRefs,
       })
     >;
 typedef $$AttachmentsTableCreateCompanionBuilder =
@@ -10256,6 +10988,479 @@ typedef $$ApprovalRequestsTableProcessedTableManager =
       ApprovalRequest,
       PrefetchHooks Function({bool sessionId, bool turnId})
     >;
+typedef $$UserQuestionsTableCreateCompanionBuilder =
+    UserQuestionsCompanion Function({
+      required String id,
+      required String sessionId,
+      required String turnId,
+      required String toolCallId,
+      required String questionsJson,
+      required String answersJson,
+      required String status,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$UserQuestionsTableUpdateCompanionBuilder =
+    UserQuestionsCompanion Function({
+      Value<String> id,
+      Value<String> sessionId,
+      Value<String> turnId,
+      Value<String> toolCallId,
+      Value<String> questionsJson,
+      Value<String> answersJson,
+      Value<String> status,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$UserQuestionsTableReferences
+    extends
+        BaseReferences<_$CoderDatabase, $UserQuestionsTable, UserQuestionRow> {
+  $$UserQuestionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+      db.sessions.createAlias('user_questions__session_id__sessions__id');
+
+  $$SessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
+
+    final manager = $$SessionsTableTableManager(
+      $_db,
+      $_db.sessions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TurnsTable _turnIdTable(_$CoderDatabase db) =>
+      db.turns.createAlias('user_questions__turn_id__turns__id');
+
+  $$TurnsTableProcessedTableManager get turnId {
+    final $_column = $_itemColumn<String>('turn_id')!;
+
+    final manager = $$TurnsTableTableManager(
+      $_db,
+      $_db.turns,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_turnIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$UserQuestionsTableFilterComposer
+    extends Composer<_$CoderDatabase, $UserQuestionsTable> {
+  $$UserQuestionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questionsJson => $composableBuilder(
+    column: $table.questionsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get answersJson => $composableBuilder(
+    column: $table.answersJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TurnsTableFilterComposer get turnId {
+    final $$TurnsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.turnId,
+      referencedTable: $db.turns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnsTableFilterComposer(
+            $db: $db,
+            $table: $db.turns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UserQuestionsTableOrderingComposer
+    extends Composer<_$CoderDatabase, $UserQuestionsTable> {
+  $$UserQuestionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questionsJson => $composableBuilder(
+    column: $table.questionsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get answersJson => $composableBuilder(
+    column: $table.answersJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TurnsTableOrderingComposer get turnId {
+    final $$TurnsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.turnId,
+      referencedTable: $db.turns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnsTableOrderingComposer(
+            $db: $db,
+            $table: $db.turns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UserQuestionsTableAnnotationComposer
+    extends Composer<_$CoderDatabase, $UserQuestionsTable> {
+  $$UserQuestionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get questionsJson => $composableBuilder(
+    column: $table.questionsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get answersJson => $composableBuilder(
+    column: $table.answersJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$SessionsTableAnnotationComposer get sessionId {
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TurnsTableAnnotationComposer get turnId {
+    final $$TurnsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.turnId,
+      referencedTable: $db.turns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TurnsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.turns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UserQuestionsTableTableManager
+    extends
+        RootTableManager<
+          _$CoderDatabase,
+          $UserQuestionsTable,
+          UserQuestionRow,
+          $$UserQuestionsTableFilterComposer,
+          $$UserQuestionsTableOrderingComposer,
+          $$UserQuestionsTableAnnotationComposer,
+          $$UserQuestionsTableCreateCompanionBuilder,
+          $$UserQuestionsTableUpdateCompanionBuilder,
+          (UserQuestionRow, $$UserQuestionsTableReferences),
+          UserQuestionRow,
+          PrefetchHooks Function({bool sessionId, bool turnId})
+        > {
+  $$UserQuestionsTableTableManager(
+    _$CoderDatabase db,
+    $UserQuestionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserQuestionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserQuestionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserQuestionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> turnId = const Value.absent(),
+                Value<String> toolCallId = const Value.absent(),
+                Value<String> questionsJson = const Value.absent(),
+                Value<String> answersJson = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UserQuestionsCompanion(
+                id: id,
+                sessionId: sessionId,
+                turnId: turnId,
+                toolCallId: toolCallId,
+                questionsJson: questionsJson,
+                answersJson: answersJson,
+                status: status,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sessionId,
+                required String turnId,
+                required String toolCallId,
+                required String questionsJson,
+                required String answersJson,
+                required String status,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => UserQuestionsCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                turnId: turnId,
+                toolCallId: toolCallId,
+                questionsJson: questionsJson,
+                answersJson: answersJson,
+                status: status,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$UserQuestionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({sessionId = false, turnId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (sessionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.sessionId,
+                                referencedTable: $$UserQuestionsTableReferences
+                                    ._sessionIdTable(db),
+                                referencedColumn: $$UserQuestionsTableReferences
+                                    ._sessionIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (turnId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.turnId,
+                                referencedTable: $$UserQuestionsTableReferences
+                                    ._turnIdTable(db),
+                                referencedColumn: $$UserQuestionsTableReferences
+                                    ._turnIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$UserQuestionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$CoderDatabase,
+      $UserQuestionsTable,
+      UserQuestionRow,
+      $$UserQuestionsTableFilterComposer,
+      $$UserQuestionsTableOrderingComposer,
+      $$UserQuestionsTableAnnotationComposer,
+      $$UserQuestionsTableCreateCompanionBuilder,
+      $$UserQuestionsTableUpdateCompanionBuilder,
+      (UserQuestionRow, $$UserQuestionsTableReferences),
+      UserQuestionRow,
+      PrefetchHooks Function({bool sessionId, bool turnId})
+    >;
 typedef $$ProviderStatesTableCreateCompanionBuilder =
     ProviderStatesCompanion Function({
       required String sessionId,
@@ -11575,6 +12780,8 @@ class $CoderDatabaseManager {
       $$TimelineEventsTableTableManager(_db, _db.timelineEvents);
   $$ApprovalRequestsTableTableManager get approvalRequests =>
       $$ApprovalRequestsTableTableManager(_db, _db.approvalRequests);
+  $$UserQuestionsTableTableManager get userQuestions =>
+      $$UserQuestionsTableTableManager(_db, _db.userQuestions);
   $$ProviderStatesTableTableManager get providerStates =>
       $$ProviderStatesTableTableManager(_db, _db.providerStates);
   $$SettingsTableTableManager get settings =>

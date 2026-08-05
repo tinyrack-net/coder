@@ -150,3 +150,8 @@ tags:
   feature_scenario__settings_reset__full_reset_restart__e2e:
   feature_scenario__settings_reset__preserves_checkouts__e2e:
   route_test__advanced_settings_route__widget:
+  feature_test__turn_question__widget:
+  feature_test__turn_question__e2e:
+  feature_scenario__turn_question__ask_and_answer__e2e:
+  feature_test__tool_image_context__widget:
+  feature_test__tool_exec_session__widget:

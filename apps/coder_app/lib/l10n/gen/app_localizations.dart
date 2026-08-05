@@ -1667,8 +1667,56 @@ abstract class AppLocalizations {
   /// Title of the plan card.
   ///
   /// In en, this message translates to:
-  /// **'Proposed plan'**
+  /// **'Plan'**
   String get chatPlanTitle;
+
+  /// Result line while a pseudo-terminal session is still running.
+  ///
+  /// In en, this message translates to:
+  /// **'running · {lines} lines'**
+  String toolExecRunning(int lines);
+
+  /// Result line of a view_image tool call.
+  ///
+  /// In en, this message translates to:
+  /// **'{bytes} bytes viewed'**
+  String toolImageLoaded(int bytes);
+
+  /// Button that submits answers to the agent's questions.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get chatQuestionSubmit;
+
+  /// Choice that lets the user type a free-form answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get chatQuestionOther;
+
+  /// Placeholder of the free-form answer field.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your answer'**
+  String get chatQuestionOtherPlaceholder;
+
+  /// Screen-reader status of a plan step that has not started.
+  ///
+  /// In en, this message translates to:
+  /// **'not started'**
+  String get chatPlanStepPending;
+
+  /// Screen-reader status of the plan step being worked on.
+  ///
+  /// In en, this message translates to:
+  /// **'in progress'**
+  String get chatPlanStepInProgress;
+
+  /// Screen-reader status of a finished plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'completed'**
+  String get chatPlanStepCompleted;
 
   /// Asks how to act on a proposed plan.
   ///

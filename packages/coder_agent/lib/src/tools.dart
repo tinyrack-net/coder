@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show FileSystemException;
-import 'dart:typed_data';
 
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -9,7 +8,6 @@ import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
 import 'package:path/path.dart' as p;
 import 'package:platform/platform.dart';
-import 'package:process/process.dart';
 
 /// Upper bound on the UTF-8 size of any tool result written to a turn.
 ///
@@ -46,7 +44,12 @@ String truncateToolOutput(String output) {
   return utf8.decode(bytes.sublist(0, end));
 }
 
-Map<String, dynamic> _strictObject(
+/// Builds a schema every strict provider accepts.
+///
+/// Strict function schemas require every property to be listed in `required`
+/// and forbid extra ones, so an optional value is modelled as a nullable type
+/// rather than an absent key.
+Map<String, dynamic> strictToolObject(
   Map<String, Map<String, dynamic>> properties,
 ) => <String, dynamic>{
   'type': 'object',
@@ -54,6 +57,10 @@ Map<String, dynamic> _strictObject(
   'required': properties.keys.toList(growable: false),
   'additionalProperties': false,
 };
+
+Map<String, dynamic> _strictObject(
+  Map<String, Map<String, dynamic>> properties,
+) => strictToolObject(properties);
 
 /// WorkspacePathGuard defines a public contract.
 class WorkspacePathGuard {
@@ -426,6 +433,491 @@ class SearchTextTool extends AgentTool {
   }
 }
 
+/// Media types every supported provider accepts as model-visible images.
+const Set<String> supportedContextImageTypes = <String>{
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+};
+
+/// Fidelity levels a provider understands for a model-visible image.
+const Set<String> contextImageDetails = <String>{'auto', 'low', 'high'};
+
+/// Largest size of one image loaded into the model's context.
+///
+/// Base64 inflates the payload by four thirds, so 10 MiB of image is about
+/// 13.3 MB of request body.
+const int maxContextImageBytes = 10 * 1024 * 1024;
+
+/// Largest number of images one turn may load into the model's context.
+const int maxContextImagesPerTurn = 8;
+
+/// Loads a workspace image into the model's conversation context.
+///
+/// Distinct from [AttachFileTool], which publishes a file for the user to see:
+/// this one makes the model actually look at the image.
+class ViewImageTool extends AgentTool {
+  /// Creates a [ViewImageTool].
+  factory ViewImageTool({
+    required AttachmentPublisher publisher,
+    file_api.FileSystem fileSystem = const LocalFileSystem(),
+    Platform platform = const LocalPlatform(),
+  }) => ViewImageTool._(publisher, fileSystem, platform);
+
+  ViewImageTool._(this._publisher, this._fileSystem, this._platform);
+
+  final AttachmentPublisher _publisher;
+  final file_api.FileSystem _fileSystem;
+  final Platform _platform;
+
+  /// Images loaded so far; the tool instance is scoped to one turn.
+  int _loaded = 0;
+
+  @override
+  String get name => 'view_image';
+
+  @override
+  String get description =>
+      'Look at an image file in the workspace. Use it for screenshots, '
+      'diagrams, and design mock-ups whose content you need to reason about. '
+      'Accepts PNG, JPEG, WebP, and GIF up to '
+      '${maxContextImageBytes ~/ (1024 * 1024)} MB, at most '
+      '$maxContextImagesPerTurn per turn.';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  Map<String, dynamic> get strictJsonSchema =>
+      _strictObject(<String, Map<String, dynamic>>{
+        'path': <String, dynamic>{
+          'type': 'string',
+          'description': 'Workspace-relative path of the image.',
+        },
+        'detail': <String, dynamic>{
+          'type': <String>['string', 'null'],
+          'description':
+              'How closely to read the image: auto, low, or high. Null uses '
+              'the provider default.',
+        },
+      });
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final detail = arguments['detail'];
+    if (detail != null &&
+        (detail is! String || !contextImageDetails.contains(detail))) {
+      return _reject(
+        'detail must be one of ${contextImageDetails.join(', ')}, or null.',
+      );
+    }
+    if (_loaded >= maxContextImagesPerTurn) {
+      return _reject(
+        'At most $maxContextImagesPerTurn images can be viewed in one turn.',
+      );
+    }
+    final resolved = WorkspacePathGuard(
+      context.workspaceRoot,
+      fileSystem: _fileSystem,
+      platform: _platform,
+    ).resolveExisting(arguments['path'] as String);
+    final source = _fileSystem.file(resolved);
+    final stat = source.statSync();
+    if (stat.type != file_api.FileSystemEntityType.file) {
+      return _reject('An image must be a regular file.');
+    }
+    if (stat.size > maxContextImageBytes) {
+      return _reject(
+        'The image exceeds the '
+        '${maxContextImageBytes ~/ (1024 * 1024)} MB limit.',
+      );
+    }
+    // Sniffing the header keeps a mislabelled file from reaching the provider,
+    // which would fail the whole turn rather than this one call.
+    final mimeType = _sniffImageType(
+      await source.openRead(0, 12).expand((chunk) => chunk).toList(),
+    );
+    if (mimeType == null) {
+      return _reject(
+        'Not a supported image. Use PNG, JPEG, WebP, or GIF.',
+      );
+    }
+    context.cancellation.throwIfCancelled();
+    final published = await _publisher.publish(resolved);
+    _loaded += 1;
+    // Hydrate here rather than relying on the publisher: the model has to see
+    // the image on this very turn, and later turns refill bytes from the
+    // attachment store when the history is replayed.
+    final attachment = ConversationAttachment(
+      id: published.id,
+      fileName: published.fileName,
+      mimeType: mimeType,
+      byteSize: published.byteSize,
+      path: published.path,
+      bytes: published.bytes ?? await source.readAsBytes(),
+      kind: published.kind,
+      sha256: published.sha256,
+      createdAt: published.createdAt,
+      imageDetail: detail as String?,
+    );
+    return ToolResult(
+      output: jsonEncode(<String, dynamic>{
+        'attachmentId': attachment.id,
+        'fileName': attachment.fileName,
+        'mimeType': attachment.mimeType,
+        'byteSize': attachment.byteSize,
+        'detail': detail,
+      }),
+      attachments: <ConversationAttachment>[attachment],
+      contextImages: <ConversationAttachment>[attachment],
+    );
+  }
+
+  /// Returns the media type [header] actually starts with, or null.
+  static String? _sniffImageType(List<int> header) {
+    bool matches(int offset, List<int> magic) {
+      if (header.length < offset + magic.length) return false;
+      for (var index = 0; index < magic.length; index += 1) {
+        if (header[offset + index] != magic[index]) return false;
+      }
+      return true;
+    }
+
+    if (matches(0, <int>[0x89, 0x50, 0x4E, 0x47])) return 'image/png';
+    if (matches(0, <int>[0xFF, 0xD8, 0xFF])) return 'image/jpeg';
+    if (matches(0, <int>[0x47, 0x49, 0x46, 0x38])) return 'image/gif';
+    // WebP is a RIFF container whose form type sits after the 4-byte length.
+    if (matches(0, <int>[0x52, 0x49, 0x46, 0x46]) &&
+        matches(8, <int>[0x57, 0x45, 0x42, 0x50])) {
+      return 'image/webp';
+    }
+    return null;
+  }
+
+  ToolResult _reject(String reason) => ToolResult(
+    output: jsonEncode(<String, dynamic>{'error': reason}),
+    isError: true,
+  );
+}
+
+/// Largest number of questions one `ask_user` call may raise.
+const int maxUserQuestions = 3;
+
+/// Bounds on the fixed choices one question may offer.
+const int minUserQuestionOptions = 2;
+
+/// Largest number of fixed choices one question may offer.
+const int maxUserQuestionOptions = 3;
+
+/// Largest number of characters a question header may use.
+const int maxUserQuestionHeader = 12;
+
+/// Asks the user structured multiple-choice questions and blocks for answers.
+///
+/// The schema cannot express the bounds — strict provider schemas reject
+/// `minItems` and `maxItems` — so they are enforced here and a violation comes
+/// back as a correctable tool error instead of a failed turn.
+class AskUserTool extends AgentTool {
+  /// Creates an [AskUserTool].
+  factory AskUserTool({required UserQuestionCoordinator coordinator}) =>
+      AskUserTool._(coordinator);
+
+  AskUserTool._(this._coordinator);
+
+  final UserQuestionCoordinator _coordinator;
+
+  @override
+  String get name => 'ask_user';
+
+  @override
+  String get description =>
+      'Ask the user up to $maxUserQuestions multiple-choice questions and '
+      "wait for the answers. Use it when a decision is genuinely the user's "
+      'to make and proceeding on a guess would waste work. Each question '
+      'needs $minUserQuestionOptions to $maxUserQuestionOptions options; the '
+      'client always adds a free-form option, so never write one yourself.';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  Map<String, dynamic> get strictJsonSchema =>
+      _strictObject(<String, Map<String, dynamic>>{
+        'questions': <String, dynamic>{
+          'type': 'array',
+          'description':
+              'Between 1 and $maxUserQuestions questions, most important '
+              'first.',
+          'items': _strictObject(<String, Map<String, dynamic>>{
+            'id': <String, dynamic>{
+              'type': 'string',
+              'description': 'Identifier unique within this call.',
+            },
+            'header': <String, dynamic>{
+              'type': 'string',
+              'description':
+                  'A label of at most $maxUserQuestionHeader characters, for '
+                  'example "Storage".',
+            },
+            'question': <String, dynamic>{
+              'type': 'string',
+              'description':
+                  'The complete question, ending in a question '
+                  'mark.',
+            },
+            'options': <String, dynamic>{
+              'type': 'array',
+              'description':
+                  'Between $minUserQuestionOptions and $maxUserQuestionOptions '
+                  'mutually exclusive choices.',
+              'items': _strictObject(<String, Map<String, dynamic>>{
+                'label': <String, dynamic>{
+                  'type': 'string',
+                  'description': 'The choice, in one to five words.',
+                },
+                'description': <String, dynamic>{
+                  'type': 'string',
+                  'description': 'What choosing this option means.',
+                },
+              }),
+            },
+          }),
+        },
+      });
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final raw = arguments['questions'];
+    if (raw is! List || raw.isEmpty || raw.length > maxUserQuestions) {
+      return _reject(
+        'Ask between 1 and $maxUserQuestions questions.',
+      );
+    }
+    final questions = <UserQuestion>[];
+    final ids = <String>{};
+    for (final entry in raw) {
+      if (entry is! Map) return _reject('Every question must be an object.');
+      final id = entry['id'];
+      if (id is! String || id.trim().isEmpty) {
+        return _reject('Every question needs a non-empty "id".');
+      }
+      if (!ids.add(id)) return _reject('Duplicate question id "$id".');
+      final header = entry['header'];
+      if (header is! String ||
+          header.trim().isEmpty ||
+          header.length > maxUserQuestionHeader) {
+        return _reject(
+          'Question "$id" needs a header of 1 to $maxUserQuestionHeader '
+          'characters.',
+        );
+      }
+      final question = entry['question'];
+      if (question is! String || question.trim().isEmpty) {
+        return _reject('Question "$id" needs non-empty question text.');
+      }
+      final rawOptions = entry['options'];
+      if (rawOptions is! List ||
+          rawOptions.length < minUserQuestionOptions ||
+          rawOptions.length > maxUserQuestionOptions) {
+        return _reject(
+          'Question "$id" needs $minUserQuestionOptions to '
+          '$maxUserQuestionOptions options.',
+        );
+      }
+      final options = <UserQuestionOption>[];
+      for (final rawOption in rawOptions) {
+        if (rawOption is! Map) {
+          return _reject('Every option of "$id" must be an object.');
+        }
+        final label = rawOption['label'];
+        final optionDescription = rawOption['description'];
+        if (label is! String ||
+            label.trim().isEmpty ||
+            optionDescription is! String) {
+          return _reject(
+            'Every option of "$id" needs a non-empty label and a description.',
+          );
+        }
+        options.add(
+          UserQuestionOption(
+            label: label.trim(),
+            description: optionDescription,
+          ),
+        );
+      }
+      questions.add(
+        UserQuestion(
+          id: id,
+          header: header.trim(),
+          question: question.trim(),
+          options: List<UserQuestionOption>.unmodifiable(options),
+        ),
+      );
+    }
+    context.cancellation.throwIfCancelled();
+    final answers = await _coordinator.ask(
+      context.callId,
+      List<UserQuestion>.unmodifiable(questions),
+      context.cancellation,
+    );
+    return ToolResult(
+      output: truncateToolOutput(
+        jsonEncode(<Map<String, dynamic>>[
+          for (final answer in answers)
+            <String, dynamic>{
+              'questionId': answer.questionId,
+              'answer': answer.answer,
+              'isFreeForm': answer.isFreeForm,
+            },
+        ]),
+      ),
+    );
+  }
+
+  ToolResult _reject(String reason) => ToolResult(
+    output: jsonEncode(<String, dynamic>{'error': reason}),
+    isError: true,
+  );
+}
+
+/// Lifecycle of one step in an agent-authored plan.
+enum PlanStepStatus {
+  /// The step has not been started.
+  pending,
+
+  /// The step is the one the agent is working on right now.
+  inProgress,
+
+  /// The step is finished.
+  completed;
+
+  /// The wire name the model writes and the client reads.
+  String get wireName => switch (this) {
+    PlanStepStatus.pending => 'pending',
+    PlanStepStatus.inProgress => 'in_progress',
+    PlanStepStatus.completed => 'completed',
+  };
+
+  /// Resolves [wireName] back to a status, or null when it is unknown.
+  static PlanStepStatus? fromWireName(String wireName) => PlanStepStatus.values
+      .where((status) => status.wireName == wireName)
+      .firstOrNull;
+}
+
+/// Records the agent's ordered plan so the client can render its progress.
+///
+/// The tool is deliberately side-effect free: the emitted `tool.requested` and
+/// `tool.completed` timeline events already persist and replay the plan, so
+/// storing it a second time on the session would create a rival source of
+/// truth.
+class UpdatePlanTool extends AgentTool {
+  /// Creates an [UpdatePlanTool].
+  UpdatePlanTool();
+
+  @override
+  String get name => 'update_plan';
+
+  @override
+  String get description =>
+      'Record the ordered plan for the current task and the progress of each '
+      'step. Call it once the plan is settled and again whenever a step '
+      'starts or finishes. Keep at most one step in_progress.';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  Map<String, dynamic> get strictJsonSchema =>
+      _strictObject(<String, Map<String, dynamic>>{
+        'plan': <String, dynamic>{
+          'type': 'array',
+          'description': 'The ordered steps, at least one, in execution order.',
+          'items': _strictObject(<String, Map<String, dynamic>>{
+            'step': <String, dynamic>{
+              'type': 'string',
+              'description': 'One short imperative step, unique in the plan.',
+            },
+            'status': <String, dynamic>{
+              'type': 'string',
+              'enum': PlanStepStatus.values
+                  .map((status) => status.wireName)
+                  .toList(growable: false),
+            },
+          }),
+        },
+        'explanation': <String, dynamic>{
+          'type': 'string',
+          'description':
+              'Why the plan looks like this; empty when it needs no rationale.',
+        },
+      });
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final raw = arguments['plan'];
+    if (raw is! List || raw.isEmpty) {
+      return _reject('A plan must contain at least one step.');
+    }
+    final steps = <Map<String, dynamic>>[];
+    final seen = <String>{};
+    var active = 0;
+    for (final entry in raw) {
+      if (entry is! Map) return _reject('Every plan entry must be an object.');
+      final step = entry['step'];
+      if (step is! String || step.trim().isEmpty) {
+        return _reject('Every step needs a non-empty "step" description.');
+      }
+      final statusName = entry['status'];
+      if (statusName is! String) {
+        return _reject('Every step needs a "status".');
+      }
+      final status = PlanStepStatus.fromWireName(statusName);
+      if (status == null) {
+        return _reject(
+          'Unknown status "$statusName". Use pending, in_progress, or '
+          'completed.',
+        );
+      }
+      final normalized = step.trim();
+      if (!seen.add(normalized)) {
+        return _reject('Duplicate step "$normalized".');
+      }
+      if (status == PlanStepStatus.inProgress) active += 1;
+      steps.add(<String, dynamic>{
+        'step': normalized,
+        'status': status.wireName,
+      });
+    }
+    if (active > 1) {
+      return _reject('At most one step may be in_progress; found $active.');
+    }
+    final explanation = arguments['explanation'];
+    return ToolResult(
+      output: truncateToolOutput(
+        jsonEncode(<String, dynamic>{
+          'plan': steps,
+          'explanation': explanation is String ? explanation : '',
+        }),
+      ),
+    );
+  }
+
+  ToolResult _reject(String reason) => ToolResult(
+    output: jsonEncode(<String, dynamic>{'error': reason}),
+    isError: true,
+  );
+}
+
 /// ApplyPatchTool defines a public contract.
 class ApplyPatchTool extends AgentTool {
   /// Creates a [ApplyPatchTool].
@@ -533,98 +1025,6 @@ class ApplyPatchTool extends AgentTool {
     }
     return ToolResult(
       output: jsonEncode(<String, dynamic>{'changedFiles': applied.length}),
-    );
-  }
-}
-
-/// RunCommandTool defines a public contract.
-class RunCommandTool extends AgentTool {
-  /// Creates a [RunCommandTool].
-  RunCommandTool({
-    this._processManager = const LocalProcessManager(),
-    this._platform = const LocalPlatform(),
-  });
-
-  final ProcessManager _processManager;
-  final Platform _platform;
-
-  @override
-  String get name => 'run_command';
-  @override
-  String get description =>
-      'Run a shell command in the workspace and return bounded output.';
-  @override
-  ToolRisk get risk => ToolRisk.command;
-  @override
-  Map<String, dynamic> get strictJsonSchema =>
-      _strictObject(<String, Map<String, dynamic>>{
-        'command': <String, dynamic>{'type': 'string'},
-        'timeout_seconds': <String, dynamic>{
-          'type': <String>['integer', 'null'],
-        },
-      });
-
-  @override
-  Future<String?> preview(
-    Map<String, dynamic> arguments,
-    ToolExecutionContext context,
-  ) async => arguments['command'] as String;
-
-  @override
-  Future<ToolResult> execute(
-    Map<String, dynamic> arguments,
-    ToolExecutionContext context,
-  ) async {
-    final command = arguments['command'] as String;
-    final timeout = Duration(
-      seconds: (arguments['timeout_seconds'] as int?) ?? 600,
-    );
-    final executable = _platform.isWindows ? 'powershell.exe' : '/bin/sh';
-    final shellArguments = _platform.isWindows
-        ? <String>['-NoProfile', '-NonInteractive', '-Command', command]
-        : <String>['-lc', command];
-    final process = await _processManager.start(
-      <String>[executable, ...shellArguments],
-      workingDirectory: context.workspaceRoot,
-    );
-    context.cancellation.onCancel(process.kill);
-    final output = BytesBuilder(copy: false);
-    final subscriptions = <StreamSubscription<List<int>>>[
-      process.stdout.listen((bytes) => _appendBounded(output, bytes)),
-      process.stderr.listen((bytes) => _appendBounded(output, bytes)),
-    ];
-    int exitCode;
-    try {
-      exitCode = await process.exitCode.timeout(
-        timeout,
-        onTimeout: () {
-          process.kill();
-          throw TimeoutException(
-            'Command exceeded ${timeout.inSeconds} seconds.',
-          );
-        },
-      );
-    } finally {
-      for (final subscription in subscriptions) {
-        await subscription.cancel();
-      }
-    }
-    final text = utf8.decode(output.takeBytes(), allowMalformed: true);
-    context.cancellation.throwIfCancelled();
-    return ToolResult(
-      output: jsonEncode(<String, dynamic>{
-        'exitCode': exitCode,
-        'output': text,
-      }),
-      isError: exitCode != 0,
-    );
-  }
-
-  void _appendBounded(BytesBuilder builder, List<int> bytes) {
-    final remaining = maxToolOutputBytes - builder.length;
-    if (remaining <= 0) return;
-    builder.add(
-      bytes.length <= remaining ? bytes : bytes.sublist(0, remaining),
     );
   }
 }

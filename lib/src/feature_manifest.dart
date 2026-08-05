@@ -502,6 +502,49 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'turn.question',
+    description:
+        'Blocks a turn on a structured agent question and records the user '
+        'answer, including free-form input.',
+    apiMethods: <String>['answerUserQuestion'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'ask_and_answer',
+        description: 'Answers a blocking agent question and resumes the turn.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'tool.exec.session',
+    description:
+        'Runs and drives interactive pseudo-terminal sessions inside a turn, '
+        'with scoped session lifetime and per-session approval.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'tool.image.context',
+    description:
+        'Loads a workspace image into the model conversation context and '
+        'encodes it for the Responses and Chat Completions APIs.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'conversation.attachments',
     description:
         'Uploads, sends, previews, exports, and restores user and agent files.',

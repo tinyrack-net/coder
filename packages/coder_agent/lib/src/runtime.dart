@@ -110,7 +110,9 @@ class AgentRunner {
     required this._onEvent,
     required this._onStatus,
     required this._onProviderItems,
-  }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool};
+    ApprovalPolicy Function(PermissionMode mode)? policyFactory,
+  }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool},
+       _policyFactory = policyFactory ?? DefaultApprovalPolicy.new;
 
   final ModelProvider _provider;
   final Map<String, AgentTool> _tools;
@@ -118,6 +120,9 @@ class AgentRunner {
   final AgentEventCallback _onEvent;
   final SessionStatusCallback _onStatus;
   final ProviderItemsCallback _onProviderItems;
+
+  /// Builds the approval policy for a turn's permission mode.
+  final ApprovalPolicy Function(PermissionMode mode) _policyFactory;
 
   /// The startTurn public API member.
   Future<AgentRunResult> startTurn(
@@ -234,6 +239,7 @@ class AgentRunner {
             final context = ToolExecutionContext(
               workspaceRoot: request.workspaceRoot,
               cancellation: cancellation,
+              callId: call.callId,
             );
             final preview = await tool.preview(call.arguments, context);
             final invocation = ToolInvocation(
@@ -244,9 +250,9 @@ class AgentRunner {
               workspaceRoot: request.workspaceRoot,
               preview: preview,
             );
-            final policy = DefaultApprovalPolicy(
+            final policy = _policyFactory(
               request.permissionMode,
-            ).evaluate(tool.risk);
+            ).evaluate(invocation);
             var approved = policy == ApprovalEvaluation.allow;
             if (policy == ApprovalEvaluation.ask) {
               await _onStatus(SessionStatus.waitingForApproval);
@@ -288,6 +294,17 @@ class AgentRunner {
               'output': result.output,
               'isError': result.isError,
             });
+            if (result.contextImages.isNotEmpty) {
+              // Images cannot ride inside a tool result on either provider
+              // API, so they arrive as the next user item instead.
+              final images = UserConversationItem(
+                '',
+                attachments: result.contextImages,
+              );
+              input.add(images);
+              persisted.add(images);
+              await _onProviderItems(<ConversationItem>[images]);
+            }
             for (final attachment in result.attachments) {
               await _onEvent(
                 'assistant.attachment',

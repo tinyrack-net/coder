@@ -118,22 +118,22 @@ final class ChatAssistantMessage extends ChatItem {
   final bool isStreaming;
 }
 
-/// A plan the agent proposed while the session was in plan mode.
+/// A plan the agent recorded with the `update_plan` tool.
 final class ChatPlanProposal extends ChatItem {
   /// Creates a plan proposal.
   const ChatPlanProposal({
     required super.key,
     required super.turnId,
     required super.createdAt,
-    required this.markdown,
-    required this.isComplete,
+    required this.steps,
+    required this.explanation,
   });
 
-  /// Plan body in Markdown.
-  final String markdown;
+  /// The plan's steps in execution order; never empty.
+  final List<ChatPlanStep> steps;
 
-  /// Whether the model finished writing the plan.
-  final bool isComplete;
+  /// Why the plan looks like this; empty when the agent gave no rationale.
+  final String explanation;
 }
 
 /// Lifecycle of one tool call.
@@ -170,7 +170,7 @@ final class ChatToolActivity extends ChatItem {
   /// Provider-assigned identifier shared by the request and its result.
   final String callId;
 
-  /// Tool identifier, for example `run_command`.
+  /// Tool identifier, for example `exec_command`.
   final String toolName;
 
   /// Requested arguments; empty when only the result survived in history.
@@ -266,6 +266,7 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
   final builders = <_ChatItemBuilder>[];
   final openAssistant = <String?, _AssistantBuilder>{};
   final openTools = <String, _ToolBuilder>{};
+  final openPlans = <String, _PlanBuilder>{};
   final terminatedTurns = <String?>{};
 
   void closeAssistant(String? turnId) => openAssistant.remove(turnId);
@@ -319,6 +320,27 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
         closeAssistant(turnId);
         if (_string(event.data['name']) == 'attach_file') continue;
         final callId = _string(event.data['callId']) ?? '';
+        if (_string(event.data['name']) == 'update_plan' &&
+            !openPlans.containsKey('$turnId/$callId')) {
+          // A plan renders as its own card; a plan the model malformed badly
+          // enough to parse to nothing falls through to a plain tool row so the
+          // failure stays visible.
+          final update = parseUpdatePlanArguments(
+            _map(event.data['arguments']),
+          );
+          if (update != null) {
+            final builder = _PlanBuilder(
+              key: 'plan-$callId-${event.sequence}',
+              turnId: turnId,
+              createdAt: event.createdAt,
+              callId: callId,
+              update: update,
+            );
+            openPlans['$turnId/$callId'] = builder;
+            builders.add(builder);
+            continue;
+          }
+        }
         final existing = openTools['$turnId/$callId'];
         if (existing != null && existing.status == ChatToolStatus.running) {
           continue;
@@ -354,6 +376,20 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           'tool.failed' => ChatToolStatus.failed,
           _ => ChatToolStatus.denied,
         };
+        final plan = openPlans['$turnId/$callId'];
+        if (plan != null) {
+          if (status != ChatToolStatus.succeeded ||
+              event.data['isError'] == true) {
+            // The daemon rejected the plan, so surface the rejection rather
+            // than a card built from arguments that were never accepted.
+            plan.reject(
+              status: status,
+              output: _string(event.data['output']),
+              error: _string(event.data['error']),
+            );
+          }
+          continue;
+        }
         final existing = openTools['$turnId/$callId'];
         if (existing != null && existing.status != ChatToolStatus.running) {
           continue;
@@ -443,6 +479,20 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
   for (final builder in builders) {
     if (builder is _AssistantBuilder) lastAssistant[builder.turnId] = builder;
   }
+
+  // A turn shows one plan card: repeated update_plan calls revise the same
+  // plan, so every accepted call but the last is superseded.
+  final lastPlan = <String?, _PlanBuilder>{};
+  for (final builder in builders) {
+    if (builder is _PlanBuilder && !builder.rejected) {
+      lastPlan[builder.turnId] = builder;
+    }
+  }
+  for (final builder in builders) {
+    if (builder is _PlanBuilder && !builder.rejected) {
+      builder.superseded = !identical(lastPlan[builder.turnId], builder);
+    }
+  }
   final items = <ChatItem>[];
   for (final builder in builders) {
     items.addAll(
@@ -528,26 +578,86 @@ final class _AssistantBuilder extends _ChatItemBuilder {
 
   @override
   List<ChatItem> build({required bool isStreaming}) {
-    final segments = extractProposedPlan(_text.toString());
-    final plan = segments.plan;
+    final markdown = _text.toString();
     return <ChatItem>[
-      if (segments.markdown.isNotEmpty)
+      if (markdown.isNotEmpty)
         ChatAssistantMessage(
           key: key,
           turnId: turnId,
           createdAt: createdAt,
-          markdown: segments.markdown,
-          // A plan block owns the trailing caret once it starts streaming.
-          isStreaming: isStreaming && plan == null,
+          markdown: markdown,
+          isStreaming: isStreaming,
         ),
-      if (plan != null && plan.isNotEmpty)
-        ChatPlanProposal(
-          key: 'plan-$key',
+    ];
+  }
+}
+
+final class _PlanBuilder extends _ChatItemBuilder {
+  _PlanBuilder({
+    required this.key,
+    required this.turnId,
+    required this.createdAt,
+    required this.callId,
+    required this.update,
+  });
+
+  final String key;
+
+  @override
+  final String? turnId;
+
+  final DateTime createdAt;
+  final String callId;
+  final ChatPlanUpdate update;
+
+  /// Whether a later accepted plan in the same turn replaced this one.
+  bool superseded = false;
+
+  /// Whether the daemon refused this plan; set by [reject].
+  bool rejected = false;
+
+  ChatToolStatus _status = ChatToolStatus.succeeded;
+  String? _output;
+  String? _error;
+
+  void reject({
+    required ChatToolStatus status,
+    required String? output,
+    required String? error,
+  }) {
+    rejected = true;
+    _status = status;
+    _output = output;
+    _error = error;
+  }
+
+  @override
+  List<ChatItem> build({required bool isStreaming}) {
+    if (rejected) {
+      return <ChatItem>[
+        ChatToolActivity(
+          key: key,
           turnId: turnId,
           createdAt: createdAt,
-          markdown: plan,
-          isComplete: segments.isComplete,
+          callId: callId,
+          toolName: 'update_plan',
+          arguments: const <String, dynamic>{},
+          status: _status,
+          output: _output,
+          error: _error,
+          isError: _status == ChatToolStatus.succeeded,
         ),
+      ];
+    }
+    if (superseded) return const <ChatItem>[];
+    return <ChatItem>[
+      ChatPlanProposal(
+        key: key,
+        turnId: turnId,
+        createdAt: createdAt,
+        steps: update.steps,
+        explanation: update.explanation,
+      ),
     ];
   }
 }

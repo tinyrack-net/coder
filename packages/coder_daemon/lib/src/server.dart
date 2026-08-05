@@ -324,7 +324,8 @@ class DaemonRpcServer {
   void _broadcast(WireEnvelope event) {
     for (final session in List<_ClientSession>.of(_sessions)) {
       if (event.type == RpcNotification.timelineEvent ||
-          event.type == RpcNotification.approvalRequested) {
+          event.type == RpcNotification.approvalRequested ||
+          event.type == RpcNotification.userQuestionRequested) {
         final sessionId = event.payload['sessionId'] as String?;
         if (sessionId == null || !session.subscriptions.contains(sessionId)) {
           continue;
@@ -473,6 +474,7 @@ class _ClientSession {
       RpcMethod.turnStart,
       RpcMethod.turnCancel,
       RpcMethod.approvalResolve,
+      RpcMethod.userQuestionAnswer,
       RpcMethod.timelineSubscribe,
     ]) {
       _peer.registerMethod(
@@ -997,6 +999,13 @@ class _ClientSession {
           approved: request.approved,
         );
         return ApprovalResultDto(approval: approval).toJson();
+      case RpcMethod.userQuestionAnswer:
+        final request = UserQuestionAnswerParamsDto.fromJson(payload);
+        final answered = await agents.answerUserQuestion(
+          request.requestId,
+          request.answers,
+        );
+        return UserQuestionResultDto(request: answered).toJson();
       case RpcMethod.timelineSubscribe:
         final request = TimelineSubscribeParamsDto.fromJson(payload);
         subscriptions.add(request.sessionId);

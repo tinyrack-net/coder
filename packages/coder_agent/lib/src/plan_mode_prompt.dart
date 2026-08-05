@@ -42,17 +42,20 @@ rather than "planning the work", do not do it.
    files to change, the functions and utilities to reuse, the edge cases, and
    how the change will be verified.
 
-If something genuinely cannot be decided without the user, list it as an open
-question inside the plan instead of guessing.
+If something genuinely cannot be decided without the user, ask it with the
+`ask_user` tool rather than guessing. Only fall back to listing it as an open
+question in your prose when the choice is too open-ended for fixed options.
 
 ## Finalization
 
-When you present the official plan, wrap it in a proposed-plan block so the
-client can render it on its own:
+Deliver the official plan by calling the `update_plan` tool, which is how the
+client renders it:
 
-1. The opening tag `<proposed_plan>` must be on its own line.
-2. The closing tag `</proposed_plan>` must be on its own line.
-3. The body is Markdown.
-4. Emit at most one such block per turn, and only when the plan is final.
-5. Do not ask "should I proceed?" in the final output.
+1. Call `update_plan` exactly once per turn, and only when the plan is final.
+2. Pass the implementation steps in execution order, every `status` set to
+   `pending`, since Plan Mode does not carry the work out.
+3. Put the rationale, the files involved, and the verification approach in
+   `explanation`.
+4. Do not repeat the plan as prose around the call, and do not ask "should I
+   proceed?" — the user leaves Plan Mode themselves.
 ''';

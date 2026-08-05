@@ -258,6 +258,40 @@ class ApprovalRequests extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+/// Questions the agent raised mid-turn and the answers they are waiting on.
+///
+/// The row class is named explicitly because the default would collide with
+/// `UserQuestion`, the agent-side value type this table stores.
+@DataClassName('UserQuestionRow')
+class UserQuestions extends Table {
+  /// The id public API member.
+  TextColumn get id => text()();
+
+  /// The sessionId public API member.
+  TextColumn get sessionId => text().references(Sessions, #id)();
+
+  /// The turnId public API member.
+  TextColumn get turnId => text().references(Turns, #id)();
+
+  /// The toolCallId public API member.
+  TextColumn get toolCallId => text()();
+
+  /// The questions, serialized as a JSON array.
+  TextColumn get questionsJson => text()();
+
+  /// The answers, serialized as a JSON array; empty while pending.
+  TextColumn get answersJson => text()();
+
+  /// The status public API member.
+  TextColumn get status => text()();
+
+  /// The createdAt public API member.
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 /// ProviderStates defines a public contract.
 class ProviderStates extends Table {
   /// The sessionId public API member.
@@ -371,6 +405,7 @@ class ProviderModels extends Table {
     TurnAttachments,
     TimelineEvents,
     ApprovalRequests,
+    UserQuestions,
     ProviderStates,
     Settings,
     ProviderConnections,
@@ -405,7 +440,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

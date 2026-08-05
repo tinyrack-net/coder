@@ -104,6 +104,113 @@ data: [DONE]
   );
 
   test(
+    'both APIs honour the requested image detail',
+    tags: const <String>['feature_test__tool_image_context__unit'],
+    () async {
+      final history = <ConversationItem>[
+        UserConversationItem(
+          '',
+          attachments: <ConversationAttachment>[
+            ConversationAttachment(
+              id: 'shot',
+              fileName: 'shot.png',
+              mimeType: 'image/png',
+              byteSize: 3,
+              path: '/attachments/shot.blob',
+              bytes: Uint8List.fromList(<int>[1, 2, 3]),
+              imageDetail: 'high',
+            ),
+          ],
+        ),
+      ];
+
+      final responsesAdapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''');
+      await OpenAIResponsesProvider(
+            const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+            dio: Dio()..httpClientAdapter = responsesAdapter,
+          )
+          .stream(
+            ModelRequest(
+              model: 'gpt-5.6-sol',
+              reasoningEffort: 'medium',
+              instructions: 'test',
+              history: history,
+              tools: const <ModelToolDefinition>[],
+              safetyIdentifier: 'safe-user',
+            ),
+            CancellationToken(),
+          )
+          .toList();
+      final responsesBody = Map<String, dynamic>.from(
+        responsesAdapter.options!.data as Map,
+      );
+      expect(
+        ((responsesBody['input'] as List).single as Map)['content'],
+        contains(
+          equals(<String, dynamic>{
+            'type': 'input_image',
+            'image_url': 'data:image/png;base64,AQID',
+            'detail': 'high',
+          }),
+        ),
+      );
+
+      // Chat Completions carries the image as an array content part; a message
+      // without images keeps the plain string form.
+      final chatAdapter = _RecordingAdapter('''
+data: {"choices":[{"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+
+''');
+      await OpenAIChatCompletionsProvider(
+            const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+            dio: Dio()..httpClientAdapter = chatAdapter,
+          )
+          .stream(
+            ModelRequest(
+              model: 'gpt-5.6-sol',
+              reasoningEffort: 'medium',
+              instructions: 'test',
+              history: <ConversationItem>[
+                ...history,
+                const UserConversationItem('plain text'),
+              ],
+              tools: const <ModelToolDefinition>[],
+              safetyIdentifier: 'safe-user',
+            ),
+            CancellationToken(),
+          )
+          .toList();
+      final chatBody = Map<String, dynamic>.from(
+        chatAdapter.options!.data as Map,
+      );
+      final messages = (chatBody['messages'] as List)
+          .cast<Map<String, dynamic>>()
+          .where((message) => message['role'] == 'user')
+          .toList(growable: false);
+      expect(
+        messages.first['content'],
+        contains(
+          equals(<String, dynamic>{
+            'type': 'image_url',
+            'image_url': <String, dynamic>{
+              'url': 'data:image/png;base64,AQID',
+              'detail': 'high',
+            },
+          }),
+        ),
+      );
+      expect(messages.last['content'], 'plain text');
+    },
+  );
+
+  test(
     'Responses request is stateless, strict, sequential, '
     'and preserves output items',
     () async {

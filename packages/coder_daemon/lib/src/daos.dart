@@ -535,7 +535,14 @@ class AttachmentDao extends DatabaseAccessor<CoderDatabase>
   );
 }
 
-@DriftAccessor(tables: <Type>[TimelineEvents, ApprovalRequests, ProviderStates])
+@DriftAccessor(
+  tables: <Type>[
+    TimelineEvents,
+    ApprovalRequests,
+    UserQuestions,
+    ProviderStates,
+  ],
+)
 /// TimelineDao defines a public contract.
 class TimelineDao extends DatabaseAccessor<CoderDatabase>
     with _$TimelineDaoMixin
@@ -684,6 +691,85 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
       preview: row.preview,
     );
   }
+
+  @override
+  Future<void> createUserQuestion(UserQuestionRequestDto request) =>
+      into(userQuestions).insert(
+        UserQuestionsCompanion.insert(
+          id: request.id,
+          sessionId: request.sessionId,
+          turnId: request.turnId,
+          toolCallId: request.toolCallId,
+          questionsJson: jsonEncode(
+            request.questions
+                .map((question) => question.toJson())
+                .toList(growable: false),
+          ),
+          answersJson: jsonEncode(
+            request.answers
+                .map((answer) => answer.toJson())
+                .toList(growable: false),
+          ),
+          status: request.status.name,
+          createdAt: request.createdAt,
+        ),
+      );
+
+  @override
+  Future<UserQuestionRequestDto?> getUserQuestion(String id) async {
+    final row = await (select(
+      userQuestions,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+    return row == null ? null : _userQuestion(row);
+  }
+
+  @override
+  Future<UserQuestionRequestDto?> answerUserQuestion(
+    String id,
+    UserQuestionStatus status,
+    List<UserQuestionAnswerDto> answers,
+  ) async {
+    final row = await (select(
+      userQuestions,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+    if (row == null || row.status != UserQuestionStatus.pending.name) {
+      return null;
+    }
+    final answersJson = jsonEncode(
+      answers.map((answer) => answer.toJson()).toList(growable: false),
+    );
+    await (update(userQuestions)..where((table) => table.id.equals(id))).write(
+      UserQuestionsCompanion(
+        status: Value<String>(status.name),
+        answersJson: Value<String>(answersJson),
+      ),
+    );
+    return _userQuestion(row).copyWith(status: status, answers: answers);
+  }
+
+  UserQuestionRequestDto _userQuestion(UserQuestionRow row) =>
+      UserQuestionRequestDto(
+        id: row.id,
+        sessionId: row.sessionId,
+        turnId: row.turnId,
+        toolCallId: row.toolCallId,
+        questions: (jsonDecode(row.questionsJson) as List<dynamic>)
+            .map(
+              (question) => UserQuestionItemDto.fromJson(
+                Map<String, dynamic>.from(question as Map),
+              ),
+            )
+            .toList(growable: false),
+        status: UserQuestionStatus.values.byName(row.status),
+        createdAt: row.createdAt,
+        answers: (jsonDecode(row.answersJson) as List<dynamic>)
+            .map(
+              (answer) => UserQuestionAnswerDto.fromJson(
+                Map<String, dynamic>.from(answer as Map),
+              ),
+            )
+            .toList(growable: false),
+      );
 }
 
 @DriftAccessor(tables: <Type>[ProviderConnections, ProviderModels])
@@ -869,7 +955,7 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
   );
 }
 
-@DriftAccessor(tables: <Type>[Sessions, Turns, ApprovalRequests])
+@DriftAccessor(tables: <Type>[Sessions, Turns, ApprovalRequests, UserQuestions])
 /// RuntimeDao defines a public contract.
 class RuntimeDao extends DatabaseAccessor<CoderDatabase>
     with _$RuntimeDaoMixin
@@ -919,6 +1005,14 @@ class RuntimeDao extends DatabaseAccessor<CoderDatabase>
           status: Value<String>(ApprovalStatus.cancelled.name),
         ),
       );
+      await (update(
+            userQuestions,
+          )..where((row) => row.status.equals(UserQuestionStatus.pending.name)))
+          .write(
+            UserQuestionsCompanion(
+              status: Value<String>(UserQuestionStatus.cancelled.name),
+            ),
+          );
     });
   }
 }

@@ -159,6 +159,7 @@ class ConversationAttachment {
     this.kind,
     this.sha256,
     this.createdAt,
+    this.imageDetail,
   });
 
   /// Decodes a persisted attachment reference.
@@ -176,6 +177,7 @@ class ConversationAttachment {
         createdAt: json['createdAt'] == null
             ? null
             : DateTime.parse(json['createdAt']! as String),
+        imageDetail: json['imageDetail'] as String?,
       );
 
   /// Stable daemon attachment identifier.
@@ -205,6 +207,12 @@ class ConversationAttachment {
   /// Upload completion time from the daemon metadata snapshot.
   final DateTime? createdAt;
 
+  /// Fidelity a provider should read this image at: `auto`, `low`, or `high`.
+  ///
+  /// Null everywhere except an image a tool deliberately put into the model's
+  /// context, where the tool chooses how much detail the task needs.
+  final String? imageDetail;
+
   /// Encodes only the durable reference and metadata.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
@@ -215,6 +223,7 @@ class ConversationAttachment {
     if (kind != null) 'kind': kind!.name,
     if (sha256 != null) 'sha256': sha256,
     if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+    if (imageDetail != null) 'imageDetail': imageDetail,
   };
 }
 
@@ -448,8 +457,12 @@ enum ApprovalDecision {
 
 /// Public API exposed by this library.
 abstract interface class ApprovalPolicy {
-  /// The evaluate public API member.
-  ApprovalEvaluation evaluate(ToolRisk risk);
+  /// Decides whether [invocation] may run, must be asked about, or is denied.
+  ///
+  /// Takes the whole invocation rather than its risk so a policy can reason
+  /// about which tool is being called and with what — an interactive shell
+  /// session, for instance, is approved once rather than per keystroke.
+  ApprovalEvaluation evaluate(ToolInvocation invocation);
 }
 
 /// DefaultApprovalPolicy defines a public contract.
@@ -461,7 +474,11 @@ class DefaultApprovalPolicy implements ApprovalPolicy {
   final PermissionMode mode;
 
   @override
-  ApprovalEvaluation evaluate(ToolRisk risk) => switch ((mode, risk)) {
+  ApprovalEvaluation evaluate(ToolInvocation invocation) =>
+      evaluateRisk(invocation.risk);
+
+  /// Decides from a bare risk, ignoring which tool raised it.
+  ApprovalEvaluation evaluateRisk(ToolRisk risk) => switch ((mode, risk)) {
     (_, ToolRisk.read) => ApprovalEvaluation.allow,
     (PermissionMode.readOnly, _) => ApprovalEvaluation.deny,
     (PermissionMode.workspaceWrite, ToolRisk.write) => ApprovalEvaluation.allow,
@@ -478,12 +495,85 @@ abstract interface class ApprovalCoordinator {
   );
 }
 
+/// One fixed choice the agent offered for a [UserQuestion].
+class UserQuestionOption {
+  /// Creates a [UserQuestionOption].
+  const UserQuestionOption({required this.label, required this.description});
+
+  /// The short choice shown on the control.
+  final String label;
+
+  /// What choosing this option means.
+  final String description;
+}
+
+/// One multiple-choice question the agent asked the user.
+///
+/// [options] holds only what the agent wrote. The host always offers a
+/// free-form answer beside them, so the agent never authors an "other" choice.
+class UserQuestion {
+  /// Creates a [UserQuestion].
+  const UserQuestion({
+    required this.id,
+    required this.header,
+    required this.question,
+    required this.options,
+  });
+
+  /// Identifier the answer is keyed by; unique within one ask.
+  final String id;
+
+  /// A very short label for the question, bounded by the tool that raises it.
+  final String header;
+
+  /// The question itself.
+  final String question;
+
+  /// The offered choices.
+  final List<UserQuestionOption> options;
+}
+
+/// The user's answer to one [UserQuestion].
+class UserAnswer {
+  /// Creates a [UserAnswer].
+  const UserAnswer({
+    required this.questionId,
+    required this.answer,
+    required this.isFreeForm,
+  });
+
+  /// The [UserQuestion.id] this answers.
+  final String questionId;
+
+  /// The chosen label, or the text the user typed when [isFreeForm].
+  final String answer;
+
+  /// Whether the user typed the answer instead of choosing an option.
+  final bool isFreeForm;
+}
+
+/// Blocks a turn on a structured question and returns the user's answers.
+///
+/// Deliberately separate from [ApprovalCoordinator]: an approval is a binary
+/// gate the runtime applies from a tool's risk, while a question is raised by a
+/// tool body, returns structured content, and must work under every
+/// [PermissionMode].
+abstract interface class UserQuestionCoordinator {
+  /// Asks [questions] for the tool call [callId] and completes once answered.
+  Future<List<UserAnswer>> ask(
+    String callId,
+    List<UserQuestion> questions,
+    CancellationToken cancellation,
+  );
+}
+
 /// ToolExecutionContext defines a public contract.
 class ToolExecutionContext {
   /// Creates a [ToolExecutionContext].
   const ToolExecutionContext({
     required this.workspaceRoot,
     required this.cancellation,
+    this.callId = '',
   });
 
   /// The workspaceRoot public API member.
@@ -491,6 +581,13 @@ class ToolExecutionContext {
 
   /// The cancellation public API member.
   final CancellationToken cancellation;
+
+  /// Provider-assigned identifier of the call being executed.
+  ///
+  /// A tool that raises host state of its own — a question the user must
+  /// answer, for instance — keys that state by this so the client can tie it
+  /// back to the call that produced it.
+  final String callId;
 }
 
 /// ToolResult defines a public contract.
@@ -500,6 +597,7 @@ class ToolResult {
     required this.output,
     this.isError = false,
     this.attachments = const <ConversationAttachment>[],
+    this.contextImages = const <ConversationAttachment>[],
   });
 
   /// The output public API member.
@@ -510,6 +608,13 @@ class ToolResult {
 
   /// Files explicitly published by the tool for the user.
   final List<ConversationAttachment> attachments;
+
+  /// Images the tool put into the model's context.
+  ///
+  /// Neither the Responses nor the Chat Completions API accepts image content
+  /// inside a tool result, so the runner appends these as a follow-up user
+  /// item instead of trying to embed them in [output].
+  final List<ConversationAttachment> contextImages;
 }
 
 /// AgentTool defines a public contract.

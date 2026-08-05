@@ -526,6 +526,20 @@ abstract class ApprovalResolveParamsDto with _$ApprovalResolveParamsDto {
 }
 
 @freezed
+/// Answers to every question of one pending [UserQuestionRequestDto].
+abstract class UserQuestionAnswerParamsDto with _$UserQuestionAnswerParamsDto {
+  /// The UserQuestionAnswerParamsDto public API member.
+  const factory UserQuestionAnswerParamsDto({
+    required String requestId,
+    required List<UserQuestionAnswerDto> answers,
+  }) = _UserQuestionAnswerParamsDto;
+
+  /// Creates a [UserQuestionAnswerParamsDto].
+  factory UserQuestionAnswerParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$UserQuestionAnswerParamsDtoFromJson(json);
+}
+
+@freezed
 /// TimelineSubscribeParamsDto defines a public contract.
 abstract class TimelineSubscribeParamsDto with _$TimelineSubscribeParamsDto {
   /// The TimelineSubscribeParamsDto public API member.
@@ -1084,6 +1098,19 @@ abstract class ApprovalResultDto with _$ApprovalResultDto {
   /// Creates a [ApprovalResultDto].
   factory ApprovalResultDto.fromJson(Map<String, dynamic> json) =>
       _$ApprovalResultDtoFromJson(json);
+}
+
+@freezed
+/// The resolved question returned by an answer call.
+abstract class UserQuestionResultDto with _$UserQuestionResultDto {
+  /// The UserQuestionResultDto public API member.
+  const factory UserQuestionResultDto({
+    required UserQuestionRequestDto request,
+  }) = _UserQuestionResultDto;
+
+  /// Creates a [UserQuestionResultDto].
+  factory UserQuestionResultDto.fromJson(Map<String, dynamic> json) =>
+      _$UserQuestionResultDtoFromJson(json);
 }
 
 @freezed

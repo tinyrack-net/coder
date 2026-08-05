@@ -1,13 +1,10 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show FileSystemException, Process;
+import 'dart:io' show FileSystemException;
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/memory.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:platform/platform.dart';
-import 'package:process/process.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -300,55 +297,6 @@ void main() {
     expect(direct.files.single.apply(''), 'first\n');
   });
 
-  test(
-    'command tool selects shells and returns bounded process output',
-    () async {
-      final manager = _MockProcessManager();
-      final process = _MockProcess();
-      final largeOutput = List<int>.filled(1024 * 1024 + 64, 97);
-      when(() => process.stdout).thenAnswer(
-        (_) => Stream<List<int>>.fromIterable(<List<int>>[largeOutput]),
-      );
-      when(() => process.stderr).thenAnswer(
-        (_) =>
-            Stream<List<int>>.fromIterable(<List<int>>[utf8.encode('error')]),
-      );
-      when(() => process.exitCode).thenAnswer((_) async => 2);
-      when(process.kill).thenReturn(true);
-      when(
-        () => manager.start(
-          any(),
-          workingDirectory: any(named: 'workingDirectory'),
-        ),
-      ).thenAnswer((_) async => process);
-      final tool = RunCommandTool(processManager: manager, platform: platform);
-      expect(
-        await tool.preview(
-          const <String, dynamic>{'command': 'exit 2'},
-          context,
-        ),
-        'exit 2',
-      );
-      final result = await tool.execute(const <String, dynamic>{
-        'command': 'exit 2',
-        'timeout_seconds': 3,
-      }, context);
-      final output = jsonDecode(result.output) as Map<String, dynamic>;
-      expect(result.isError, isTrue);
-      expect((output['output'] as String).length, 1024 * 1024);
-      verify(
-        () => manager.start(
-          <String>['/bin/sh', '-lc', 'exit 2'],
-          workingDirectory: '/workspace',
-        ),
-      ).called(1);
-      expect(tool.name, 'run_command');
-      expect(tool.description, contains('shell command'));
-      expect(tool.risk, ToolRisk.command);
-      expect(tool.strictJsonSchema['required'], hasLength(2));
-    },
-  );
-
   test('tool output truncation is bounded by one shared limit', () {
     expect(maxToolOutputBytes, 1024 * 1024);
     expect(truncateToolOutput('short'), 'short');
@@ -371,80 +319,4 @@ void main() {
     );
     expect(truncated, isNot(contains('�')));
   });
-
-  test('command timeout and cancellation terminate the fake process', () async {
-    final timeoutManager = _MockProcessManager();
-    final timeoutProcess = _stubProcess(
-      exitCode: Completer<int>().future,
-      manager: timeoutManager,
-    );
-    final timeoutTool = RunCommandTool(
-      processManager: timeoutManager,
-      platform: platform,
-    );
-    await expectLater(
-      timeoutTool.execute(const <String, dynamic>{
-        'command': 'sleep',
-        'timeout_seconds': 0,
-      }, context),
-      throwsA(isA<TimeoutException>()),
-    );
-    verify(timeoutProcess.kill).called(1);
-
-    final cancelManager = _MockProcessManager();
-    final token = CancellationToken();
-    final cancelledProcess = _stubProcess(
-      exitCode: Future<int>.delayed(const Duration(milliseconds: 1), () => 0),
-      manager: cancelManager,
-    );
-    final cancelContext = ToolExecutionContext(
-      workspaceRoot: '/workspace',
-      cancellation: token,
-    );
-    final execution =
-        RunCommandTool(
-          processManager: cancelManager,
-          platform: FakePlatform(operatingSystem: 'windows'),
-        ).execute(const <String, dynamic>{
-          'command': 'dir',
-          'timeout_seconds': 1,
-        }, cancelContext);
-    token.cancel();
-    await expectLater(execution, throwsA(isA<AgentCancelledException>()));
-    verify(cancelledProcess.kill).called(1);
-    verify(
-      () => cancelManager.start(
-        <String>[
-          'powershell.exe',
-          '-NoProfile',
-          '-NonInteractive',
-          '-Command',
-          'dir',
-        ],
-        workingDirectory: '/workspace',
-      ),
-    ).called(1);
-  });
 }
-
-_MockProcess _stubProcess({
-  required Future<int> exitCode,
-  required _MockProcessManager manager,
-}) {
-  final process = _MockProcess();
-  when(() => process.stdout).thenAnswer((_) => const Stream<List<int>>.empty());
-  when(() => process.stderr).thenAnswer((_) => const Stream<List<int>>.empty());
-  when(() => process.exitCode).thenAnswer((_) => exitCode);
-  when(process.kill).thenReturn(true);
-  when(
-    () => manager.start(
-      any(),
-      workingDirectory: any(named: 'workingDirectory'),
-    ),
-  ).thenAnswer((_) async => process);
-  return process;
-}
-
-final class _MockProcessManager extends Mock implements ProcessManager {}
-
-final class _MockProcess extends Mock implements Process {}

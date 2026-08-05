@@ -54,12 +54,16 @@ final class ArchitectureVerifier {
           'coder_provider_openai',
         },
         'coder_mcp': <String>{},
+        // The PTY package wraps a native terminal and must stay reusable
+        // outside Coder, so it depends on nothing in this workspace.
+        'tinyrack_pty': <String>{},
         'coder_daemon': <String>{
           'coder_agent',
           'coder_client',
           'coder_mcp',
           'coder_protocol',
           'coder_provider_openai',
+          'tinyrack_pty',
         },
         'coder_app': <String>{
           'coder_client',

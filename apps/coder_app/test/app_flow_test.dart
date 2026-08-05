@@ -1,6 +1,7 @@
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
+import 'package:coder_app/src/chat/chat_question_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/coder_icons.dart';
@@ -32,6 +33,15 @@ const liveTerminal = TerminalDto(
   rows: 24,
   lastSequence: 0,
 );
+
+/// Arguments of an `update_plan` call, as the model sends them.
+const Map<String, dynamic> _planArguments = <String, dynamic>{
+  'plan': <Map<String, dynamic>>[
+    <String, dynamic>{'step': 'Move the parser', 'status': 'pending'},
+    <String, dynamic>{'step': 'Add tests', 'status': 'pending'},
+  ],
+  'explanation': 'Parser first.',
+};
 
 void main() {
   final now = DateTime.utc(2026, 8, 3);
@@ -1410,25 +1420,30 @@ void main() {
         ..emitTimeline(
           created.id,
           'assistant.delta',
-          <String, dynamic>{
-            'text':
-                'Explored it.\n<proposed_plan>\n'
-                '1. Move the parser\n</proposed_plan>',
-          },
+          <String, dynamic>{'text': 'Explored it.'},
         )
+        ..emitTimeline(created.id, 'tool.requested', <String, dynamic>{
+          'callId': 'call-plan',
+          'name': 'update_plan',
+          'arguments': _planArguments,
+        })
+        ..emitTimeline(created.id, 'tool.completed', <String, dynamic>{
+          'callId': 'call-plan',
+          'name': 'update_plan',
+          'output': '{}',
+        })
         ..emitTimeline(
           created.id,
           'turn.completed',
-          <String, dynamic>{'toolRounds': 0},
+          <String, dynamic>{'toolRounds': 1},
         );
       await tester.pumpAndSettle();
 
-      expect(find.text('제안된 계획'), findsOneWidget);
+      expect(find.text('계획'), findsOneWidget);
       expect(
         find.textContaining('Move the parser', findRichText: true),
         findsWidgets,
       );
-      expect(find.textContaining('proposed_plan'), findsNothing);
       expect(find.text('이 계획대로 진행할까요?'), findsOneWidget);
 
       await tester.tap(find.widgetWithText(TRButton, '계획대로 실행'));
@@ -1456,9 +1471,11 @@ void main() {
               sessionId: planning.id,
               sequence: 1,
               turnId: 'turn-1',
-              type: 'assistant.delta',
-              data: const <String, dynamic>{
-                'text': '<proposed_plan>\n1. Move the parser\n</proposed_plan>',
+              type: 'tool.requested',
+              data: <String, dynamic>{
+                'callId': 'call-plan',
+                'name': 'update_plan',
+                'arguments': _planArguments,
               },
               createdAt: now,
             ),
@@ -1466,8 +1483,20 @@ void main() {
               sessionId: planning.id,
               sequence: 2,
               turnId: 'turn-1',
+              type: 'tool.completed',
+              data: const <String, dynamic>{
+                'callId': 'call-plan',
+                'name': 'update_plan',
+                'output': '{}',
+              },
+              createdAt: now,
+            ),
+            TimelineEventDto(
+              sessionId: planning.id,
+              sequence: 3,
+              turnId: 'turn-1',
               type: 'turn.completed',
-              data: const <String, dynamic>{'toolRounds': 0},
+              data: const <String, dynamic>{'toolRounds': 1},
               createdAt: now,
             ),
           ],
@@ -1640,12 +1669,12 @@ void main() {
         findsOneWidget,
       );
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey<String>('agent-tool-tile-run_command')),
+        find.byKey(const ValueKey<String>('agent-tool-tile-exec_command')),
         200,
         scrollable: find.byType(Scrollable).last,
       );
       final toggleable = tester.widget<CoderCheckboxRow>(
-        find.byKey(const ValueKey<String>('agent-tool-tile-run_command')),
+        find.byKey(const ValueKey<String>('agent-tool-tile-exec_command')),
       );
       expect(toggleable.onChanged, isNotNull);
 
@@ -1994,6 +2023,123 @@ void main() {
       );
     },
     tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'a question card answers with an option or with free-form text',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final agent = session('asking');
+      final request = UserQuestionRequestDto(
+        id: 'question',
+        sessionId: agent.id,
+        turnId: 'turn',
+        toolCallId: 'ask-call',
+        questions: const <UserQuestionItemDto>[
+          UserQuestionItemDto(
+            id: 'store',
+            header: 'Storage',
+            question: 'Which store should the cache use?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(
+                label: 'SQLite',
+                description: 'Durable and already a dependency.',
+              ),
+              UserQuestionOptionDto(
+                label: 'In memory',
+                description: 'Fastest, lost on restart.',
+              ),
+            ],
+          ),
+        ],
+        status: UserQuestionStatus.pending,
+        createdAt: now,
+      );
+      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      Future<void> pump() => tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            home: Scaffold(
+              body: ListView(
+                children: <Widget>[
+                  Consumer(
+                    builder: (context, ref, child) => Text(
+                      ref
+                                  .watch(hostRegistryControllerProvider)
+                                  .asData
+                                  ?.value
+                                  .runtimes['server']
+                                  ?.connected ==
+                              true
+                          ? 'ready'
+                          : 'waiting',
+                    ),
+                  ),
+                  ChatQuestionCard(hostId: 'server', request: request),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await pump();
+      await tester.pumpAndSettle();
+      expect(find.text('ready'), findsOneWidget);
+      expect(find.text('Storage'), findsOneWidget);
+      expect(find.text('Which store should the cache use?'), findsOneWidget);
+      expect(find.text('Durable and already a dependency.'), findsOneWidget);
+      // The client offers the free-form choice; the agent never authors it.
+      expect(find.text('직접 입력'), findsOneWidget);
+
+      final submit = find.byKey(const ValueKey<String>('chat-question-submit'));
+      expect(tester.widget<TRButton>(submit).onPressed, isNull);
+
+      await tester.tap(find.text('SQLite'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TRButton>(submit).onPressed, isNotNull);
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
+      expect(api.questionAnswers.single.id, 'question');
+      expect(api.questionAnswers.single.answers, <UserQuestionAnswerDto>[
+        const UserQuestionAnswerDto(
+          questionId: 'store',
+          answer: 'SQLite',
+          isFreeForm: false,
+        ),
+      ]);
+
+      await pump();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('직접 입력'));
+      await tester.pumpAndSettle();
+      final field = find.byKey(
+        const ValueKey<String>('chat-question-other-store'),
+      );
+      expect(field, findsOneWidget);
+      // Blank free-form text is not an answer.
+      expect(tester.widget<TRButton>(submit).onPressed, isNull);
+      await tester.enterText(field, '  Postgres  ');
+      await tester.pumpAndSettle();
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
+      expect(api.questionAnswers.last.answers, <UserQuestionAnswerDto>[
+        const UserQuestionAnswerDto(
+          questionId: 'store',
+          answer: 'Postgres',
+          isFreeForm: true,
+        ),
+      ]);
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
   );
 }
 

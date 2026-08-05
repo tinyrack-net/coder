@@ -17,6 +17,9 @@ enum SessionStatus {
   /// The waitingForApproval public API member.
   waitingForApproval,
 
+  /// The agent asked the user a question and cannot continue without an answer.
+  waitingForInput,
+
   /// The parent session is waiting for a delegated child session.
   waitingForSubagent,
 
@@ -124,6 +127,9 @@ enum TurnStatus {
 
   /// The waitingForApproval public API member.
   waitingForApproval,
+
+  /// The turn is blocked on an answer to an agent question.
+  waitingForInput,
 
   /// The completed public API member.
   completed,
@@ -1093,6 +1099,86 @@ abstract class ApprovalRequestDto with _$ApprovalRequestDto {
   /// Creates a [ApprovalRequestDto].
   factory ApprovalRequestDto.fromJson(Map<String, dynamic> json) =>
       _$ApprovalRequestDtoFromJson(json);
+}
+
+/// Lifecycle of one question the agent asked the user.
+enum UserQuestionStatus {
+  /// The question is waiting for an answer.
+  pending,
+
+  /// The user answered every question.
+  answered,
+
+  /// The daemon withdrew the question without an answer.
+  cancelled,
+}
+
+@freezed
+/// One fixed choice offered for a [UserQuestionItemDto].
+abstract class UserQuestionOptionDto with _$UserQuestionOptionDto {
+  /// The UserQuestionOptionDto public API member.
+  const factory UserQuestionOptionDto({
+    required String label,
+    required String description,
+  }) = _UserQuestionOptionDto;
+
+  /// Creates a [UserQuestionOptionDto].
+  factory UserQuestionOptionDto.fromJson(Map<String, dynamic> json) =>
+      _$UserQuestionOptionDtoFromJson(json);
+}
+
+@freezed
+/// One multiple-choice question the agent asked.
+///
+/// [options] holds only the choices the agent wrote; the client always offers a
+/// free-form answer alongside them, so the agent never has to invent one.
+abstract class UserQuestionItemDto with _$UserQuestionItemDto {
+  /// The UserQuestionItemDto public API member.
+  const factory UserQuestionItemDto({
+    required String id,
+    required String header,
+    required String question,
+    required List<UserQuestionOptionDto> options,
+  }) = _UserQuestionItemDto;
+
+  /// Creates a [UserQuestionItemDto].
+  factory UserQuestionItemDto.fromJson(Map<String, dynamic> json) =>
+      _$UserQuestionItemDtoFromJson(json);
+}
+
+@freezed
+/// The user's answer to one [UserQuestionItemDto].
+abstract class UserQuestionAnswerDto with _$UserQuestionAnswerDto {
+  /// The UserQuestionAnswerDto public API member.
+  const factory UserQuestionAnswerDto({
+    required String questionId,
+    required String answer,
+    required bool isFreeForm,
+  }) = _UserQuestionAnswerDto;
+
+  /// Creates a [UserQuestionAnswerDto].
+  factory UserQuestionAnswerDto.fromJson(Map<String, dynamic> json) =>
+      _$UserQuestionAnswerDtoFromJson(json);
+}
+
+@freezed
+/// A blocking question the agent asked mid-turn.
+abstract class UserQuestionRequestDto with _$UserQuestionRequestDto {
+  /// The UserQuestionRequestDto public API member.
+  const factory UserQuestionRequestDto({
+    required String id,
+    required String sessionId,
+    required String turnId,
+    required String toolCallId,
+    required List<UserQuestionItemDto> questions,
+    required UserQuestionStatus status,
+    required DateTime createdAt,
+    @Default(<UserQuestionAnswerDto>[]) List<UserQuestionAnswerDto> answers,
+  }) = _UserQuestionRequestDto;
+
+  /// Creates a [UserQuestionRequestDto].
+  factory UserQuestionRequestDto.fromJson(Map<String, dynamic> json) =>
+      _$UserQuestionRequestDtoFromJson(json);
 }
 
 @freezed

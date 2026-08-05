@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -63,43 +64,43 @@ void main() {
     expect(
       const DefaultApprovalPolicy(
         PermissionMode.ask,
-      ).evaluate(ToolRisk.read),
+      ).evaluateRisk(ToolRisk.read),
       ApprovalEvaluation.allow,
     );
     expect(
       const DefaultApprovalPolicy(
         PermissionMode.readOnly,
-      ).evaluate(ToolRisk.write),
+      ).evaluateRisk(ToolRisk.write),
       ApprovalEvaluation.deny,
     );
     expect(
       const DefaultApprovalPolicy(
         PermissionMode.workspaceWrite,
-      ).evaluate(ToolRisk.write),
+      ).evaluateRisk(ToolRisk.write),
       ApprovalEvaluation.allow,
     );
     expect(
       const DefaultApprovalPolicy(
         PermissionMode.workspaceWrite,
-      ).evaluate(ToolRisk.command),
+      ).evaluateRisk(ToolRisk.command),
       ApprovalEvaluation.ask,
     );
     expect(
       const DefaultApprovalPolicy(
         PermissionMode.workspaceWrite,
-      ).evaluate(ToolRisk.dangerous),
+      ).evaluateRisk(ToolRisk.dangerous),
       ApprovalEvaluation.ask,
     );
     expect(
       const DefaultApprovalPolicy(
         PermissionMode.ask,
-      ).evaluate(ToolRisk.dangerous),
+      ).evaluateRisk(ToolRisk.dangerous),
       ApprovalEvaluation.ask,
     );
     expect(
       const DefaultApprovalPolicy(
         PermissionMode.readOnly,
-      ).evaluate(ToolRisk.dangerous),
+      ).evaluateRisk(ToolRisk.dangerous),
       ApprovalEvaluation.deny,
     );
   });
@@ -195,7 +196,8 @@ void main() {
       planProvider.requests.single.instructions,
       allOf(
         contains('You are in Plan Mode'),
-        contains('<proposed_plan>'),
+        contains('update_plan'),
+        isNot(contains('proposed_plan')),
         contains('Approval decisions are enforced by the host'),
         contains('Review every security boundary.'),
       ),
@@ -308,6 +310,51 @@ void main() {
       expect(harness.events, contains('tool.denied'));
     }
   });
+
+  test(
+    'a tool can put an image into the model context',
+    tags: const <String>['feature_test__tool_image_context__unit'],
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _toolResponse('image'),
+        _textResponse('I can see it.'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_ContextImageTool()],
+      );
+
+      final result = await harness.runner.startTurn(
+        _request(),
+        CancellationToken(),
+      );
+
+      // The image rides a follow-up user item: neither Responses nor Chat
+      // Completions accepts image content inside a tool result.
+      final injected = provider.requests.last.history
+          .whereType<UserConversationItem>()
+          .last;
+      expect(injected.text, isEmpty);
+      expect(injected.attachments.single.id, 'screenshot');
+      expect(injected.attachments.single.imageDetail, 'high');
+
+      // The same item is persisted and replayed, so a later turn still sees it.
+      expect(
+        result.conversationItems
+            .whereType<UserConversationItem>()
+            .last
+            .attachments,
+        hasLength(1),
+      );
+      expect(
+        harness.items.whereType<UserConversationItem>().last.attachments,
+        hasLength(1),
+      );
+      // It reuses the attachment event rather than inventing a new wire type.
+      expect(harness.events, contains('assistant.attachment'));
+      expect(harness.events, isNot(contains('user.message.injected')));
+    },
+  );
 
   test(
     'unknown and failing tools are persisted without aborting the turn',
@@ -596,6 +643,35 @@ final class _LooseTool extends _EchoTool {
 
   @override
   bool get strict => false;
+}
+
+final class _ContextImageTool extends _EchoTool {
+  @override
+  String get name => 'image';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final attachment = ConversationAttachment(
+      id: 'screenshot',
+      fileName: 'screenshot.png',
+      mimeType: 'image/png',
+      byteSize: 3,
+      path: '/daemon/screenshot.png',
+      bytes: Uint8List.fromList(<int>[1, 2, 3]),
+      imageDetail: 'high',
+    );
+    return ToolResult(
+      output: '{"attachmentId":"screenshot"}',
+      attachments: <ConversationAttachment>[attachment],
+      contextImages: <ConversationAttachment>[attachment],
+    );
+  }
 }
 
 final class _FailingTool extends _EchoTool {

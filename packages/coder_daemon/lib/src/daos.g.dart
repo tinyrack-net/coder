@@ -113,6 +113,7 @@ mixin _$TimelineDaoMixin on DatabaseAccessor<CoderDatabase> {
   $TurnsTable get turns => attachedDatabase.turns;
   $ApprovalRequestsTable get approvalRequests =>
       attachedDatabase.approvalRequests;
+  $UserQuestionsTable get userQuestions => attachedDatabase.userQuestions;
   $ProviderStatesTable get providerStates => attachedDatabase.providerStates;
   TimelineDaoManager get managers => TimelineDaoManager(this);
 }
@@ -138,6 +139,8 @@ class TimelineDaoManager {
         _db.attachedDatabase,
         _db.approvalRequests,
       );
+  $$UserQuestionsTableTableManager get userQuestions =>
+      $$UserQuestionsTableTableManager(_db.attachedDatabase, _db.userQuestions);
   $$ProviderStatesTableTableManager get providerStates =>
       $$ProviderStatesTableTableManager(
         _db.attachedDatabase,
@@ -174,6 +177,7 @@ mixin _$RuntimeDaoMixin on DatabaseAccessor<CoderDatabase> {
   $TurnsTable get turns => attachedDatabase.turns;
   $ApprovalRequestsTable get approvalRequests =>
       attachedDatabase.approvalRequests;
+  $UserQuestionsTable get userQuestions => attachedDatabase.userQuestions;
   RuntimeDaoManager get managers => RuntimeDaoManager(this);
 }
 
@@ -193,4 +197,6 @@ class RuntimeDaoManager {
         _db.attachedDatabase,
         _db.approvalRequests,
       );
+  $$UserQuestionsTableTableManager get userQuestions =>
+      $$UserQuestionsTableTableManager(_db.attachedDatabase, _db.userQuestions);
 }

@@ -66,6 +66,44 @@ void main() {
     );
   });
 
+  test('the PTY package is reachable only from the daemon', () {
+    for (final package in const <String>[
+      'coder_agent',
+      'coder_protocol',
+      'coder_app',
+    ]) {
+      final violations = verifier.verifySource(
+        package: package,
+        path: 'packages/$package/lib/src/bad.dart',
+        source: "import 'package:tinyrack_pty/tinyrack_pty.dart';",
+      );
+      expect(violations.single.rule, 'source_dependency_direction');
+    }
+    expect(
+      verifier.verifySource(
+        package: 'coder_daemon',
+        path: 'packages/coder_daemon/lib/src/portable_terminal.dart',
+        source: "import 'package:tinyrack_pty/tinyrack_pty.dart';",
+      ),
+      isEmpty,
+    );
+  });
+
+  test('the PTY package stays independent of every Coder package', () {
+    for (final forbidden in const <String>[
+      'coder_agent',
+      'coder_daemon',
+      'coder_protocol',
+    ]) {
+      final violations = verifier.verifySource(
+        package: 'tinyrack_pty',
+        path: 'packages/tinyrack_pty/lib/src/pty_process.dart',
+        source: "import 'package:$forbidden/$forbidden.dart';",
+      );
+      expect(violations.single.rule, 'source_dependency_direction');
+    }
+  });
+
   test('the MCP service is held to the application-layer rules', () {
     final violations = verifier.verifySource(
       package: 'coder_daemon',

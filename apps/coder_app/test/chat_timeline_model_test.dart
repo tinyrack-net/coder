@@ -99,12 +99,12 @@ void main() {
       final items = projectChatTimeline(<TimelineEventDto>[
         event('tool.requested', <String, dynamic>{
           'callId': 'call-1',
-          'name': 'run_command',
+          'name': 'exec_command',
           'arguments': <String, dynamic>{'command': 'dart test'},
         }),
         event('tool.completed', <String, dynamic>{
           'callId': 'call-1',
-          'name': 'run_command',
+          'name': 'exec_command',
           'output': '{"exitCode":0,"output":"ok"}',
           'isError': false,
         }),
@@ -120,12 +120,12 @@ void main() {
         }),
         event('tool.requested', <String, dynamic>{
           'callId': 'call-3',
-          'name': 'run_command',
+          'name': 'exec_command',
           'arguments': <String, dynamic>{'command': 'rm -rf /'},
         }),
         event('tool.denied', <String, dynamic>{
           'callId': 'call-3',
-          'name': 'run_command',
+          'name': 'exec_command',
         }),
         event('tool.requested', <String, dynamic>{
           'callId': 'call-4',

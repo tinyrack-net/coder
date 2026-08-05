@@ -9,6 +9,7 @@ import 'package:coder_daemon/src/attachment_service.dart';
 import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
 import 'package:coder_daemon/src/database.dart';
+import 'package:coder_daemon/src/exec_session_service.dart';
 import 'package:coder_daemon/src/git_workspace.dart';
 import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
@@ -148,8 +149,8 @@ abstract final class DaemonApplication {
         ListDirectoryTool(),
         ReadFileTool(),
         SearchTextTool(),
+        UpdatePlanTool(),
         ApplyPatchTool(),
-        RunCommandTool(),
       ];
       final toolById = <String, AgentTool>{
         for (final tool in builtInTools) tool.name: tool,
@@ -170,6 +171,32 @@ abstract final class DaemonApplication {
             name: 'attach_file',
             description:
                 'Attach a regular file from the workspace to the conversation.',
+            risk: ToolRisk.read,
+            alwaysOn: true,
+          ),
+          const AgentToolDefinitionDto(
+            id: 'exec_command',
+            name: 'exec_command',
+            description:
+                'Run shell commands in a pseudo-terminal, including REPLs and '
+                'servers driven across several calls.',
+            risk: ToolRisk.command,
+          ),
+          const AgentToolDefinitionDto(
+            id: 'view_image',
+            name: 'view_image',
+            description:
+                'Look at an image file in the workspace, such as a screenshot '
+                'or a design mock-up.',
+            risk: ToolRisk.read,
+            alwaysOn: true,
+          ),
+          const AgentToolDefinitionDto(
+            id: 'ask_user',
+            name: 'ask_user',
+            description:
+                'Ask the user multiple-choice questions and wait for the '
+                'answers.',
             risk: ToolRisk.read,
             alwaysOn: true,
           ),
@@ -226,6 +253,15 @@ abstract final class DaemonApplication {
         ),
       );
       await skills.initialize();
+      final execSessions = ExecSessionService(
+        gateway: const TinyrackTerminalGateway(),
+        ids: ids,
+        clock: clock,
+      );
+      final execSweep = Timer.periodic(
+        const Duration(minutes: 5),
+        (_) => execSessions.sweepIdle(),
+      );
       final service = SessionService(
         sessions: database.sessionDao,
         definitions: agentDefinitions,
@@ -243,21 +279,39 @@ abstract final class DaemonApplication {
           // and worktrees nothing has touched lately are released.
           unawaited(mcp.ensureProject(workspaceRoot));
           mcp.releaseIdleProjects();
+          final execHost = SessionExecHost(execSessions, sessionId);
           return resolveAgentToolIds(ids)
-              .map(
+              .expand<AgentTool?>(
                 (id) => switch (id) {
-                  'attach_file' => AttachFileTool(
-                    publisher: TurnAttachmentPublisher(attachments, turnId),
-                  ),
-                  'read_attachment' => ReadAttachmentTool(
-                    reader: SessionAttachmentReader(attachments, sessionId),
-                  ),
-                  _ =>
+                  'attach_file' => <AgentTool?>[
+                    AttachFileTool(
+                      publisher: TurnAttachmentPublisher(attachments, turnId),
+                    ),
+                  ],
+                  'read_attachment' => <AgentTool?>[
+                    ReadAttachmentTool(
+                      reader: SessionAttachmentReader(attachments, sessionId),
+                    ),
+                  ],
+                  'view_image' => <AgentTool?>[
+                    ViewImageTool(
+                      publisher: TurnAttachmentPublisher(attachments, turnId),
+                    ),
+                  ],
+                  // One capability, two tools: nobody can enable writing to a
+                  // shell without being able to start one.
+                  'exec_command' => <AgentTool?>[
+                    ExecCommandTool(host: execHost),
+                    WriteStdinTool(host: execHost),
+                  ],
+                  _ => <AgentTool?>[
                     toolById[id] ?? mcp.tool(id, workspaceRoot: workspaceRoot),
+                  ],
                 },
               )
               .whereType<AgentTool>();
         },
+        execHostFor: (id) => SessionExecHost(execSessions, id),
         skills: skills,
       );
       final workspaceService = WorkspaceService(
@@ -376,6 +430,8 @@ abstract final class DaemonApplication {
         skills: skills,
         lock: lock,
         attachmentCleanup: attachmentCleanup,
+        execSweep: execSweep,
+        execSessions: execSessions,
       );
     } catch (_) {
       await database.close();
@@ -400,6 +456,8 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._skills,
     required this._lock,
     required this._attachmentCleanup,
+    required this._execSweep,
+    required this._execSessions,
   }) : _serverId = serverIdValue;
 
   final Uri _endpoint;
@@ -414,6 +472,8 @@ class _LocalDaemonHandle implements DaemonHandle {
   final SkillService _skills;
   final RandomAccessFile _lock;
   final Timer _attachmentCleanup;
+  final Timer _execSweep;
+  final ExecSessionService _execSessions;
   bool _stopped = false;
 
   @override
@@ -430,6 +490,8 @@ class _LocalDaemonHandle implements DaemonHandle {
     if (_stopped) return;
     _stopped = true;
     _attachmentCleanup.cancel();
+    _execSweep.cancel();
+    await _execSessions.close();
     await _http.close(force: true);
     await _rpc.close();
     await _mcp.close();

@@ -1,5 +1,7 @@
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
+import 'package:coder_app/src/chat/chat_tool_card.dart';
 import 'package:coder_app/src/chat/chat_tool_presentation.dart';
+import 'package:coder_app/src/coder_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/localization.dart';
@@ -159,7 +161,7 @@ void main() {
       final run = describeToolActivity(
         testL10n,
         activity(
-          'run_command',
+          'exec_command',
           arguments: <String, dynamic>{'command': 'flutter test'},
           output: r'{"exitCode":0,"output":"All tests passed!\ndone"}',
         ),
@@ -176,7 +178,7 @@ void main() {
       final failedRun = describeToolActivity(
         testL10n,
         activity(
-          'run_command',
+          'exec_command',
           arguments: <String, dynamic>{'command': 'false'},
           output: '{"exitCode":3,"output":""}',
           isError: true,
@@ -233,7 +235,7 @@ void main() {
         describeToolActivity(
           testL10n,
           activity(
-            'run_command',
+            'exec_command',
             arguments: <String, dynamic>{'command': 'ls'},
             output: 'not json at all',
           ),
@@ -284,7 +286,7 @@ void main() {
         describeToolActivity(
           testL10n,
           activity(
-            'run_command',
+            'exec_command',
             arguments: <String, dynamic>{'command': 'rm -rf /'},
             status: ChatToolStatus.denied,
           ),
@@ -307,18 +309,151 @@ void main() {
   );
 
   test(
+    'a pseudo-terminal session reads as running until it exits',
+    tags: const <String>['feature_test__tool_exec_session__widget'],
+    () {
+      final running = describeToolActivity(
+        testL10n,
+        activity(
+          'exec_command',
+          arguments: const <String, dynamic>{'command': 'python3'},
+          output: '{"sessionId":"exec-1","output":">>> ","isRunning":true}',
+        ),
+      );
+      expect(running.glyph, ChatToolGlyph.run);
+      expect(running.title, 'Bash(python3)');
+      // No exit code yet, so the summary says so rather than inventing one.
+      expect(running.resultLine, contains('실행 중'));
+      expect(running.isFailure, isFalse);
+
+      final exited = describeToolActivity(
+        testL10n,
+        activity(
+          'exec_command',
+          arguments: const <String, dynamic>{'command': 'false'},
+          output: '{"output":"","isRunning":false,"exitCode":1}',
+        ),
+      );
+      expect(exited.resultLine, contains('1'));
+      expect(exited.isFailure, isTrue);
+
+      final written = describeToolActivity(
+        testL10n,
+        activity(
+          'write_stdin',
+          arguments: const <String, dynamic>{
+            'session_id': 'exec-1',
+            'chars': '2 + 2\n',
+          },
+          output: r'{"sessionId":"exec-1","output":"4\n","isRunning":true}',
+        ),
+      );
+      expect(written.glyph, ChatToolGlyph.run);
+      expect(written.title, 'Stdin(exec-1 ← 2 + 2)');
+
+      final lost = describeToolActivity(
+        testL10n,
+        activity(
+          'write_stdin',
+          arguments: const <String, dynamic>{
+            'session_id': 'exec-gone',
+            'chars': '',
+          },
+          output: '{"error":"exec session not found"}',
+          isError: true,
+        ),
+      );
+      expect(lost.title, 'Stdin(exec-gone)');
+      expect(lost.resultLine, 'exec session not found');
+      expect(lost.isFailure, isTrue);
+    },
+  );
+
+  test(
+    'view_image and ask_user get their own glyphs and summaries',
+    tags: const <String>['feature_test__tool_image_context__widget'],
+    () {
+      final viewed = describeToolActivity(
+        testL10n,
+        activity(
+          'view_image',
+          arguments: const <String, dynamic>{'path': 'design/mock.png'},
+          output: '{"byteSize":2048,"detail":"high"}',
+        ),
+      );
+      expect(viewed.glyph, ChatToolGlyph.image);
+      expect(chatToolIcon(viewed.glyph), CoderIcons.image);
+      expect(viewed.title, 'View(design/mock.png)');
+      expect(viewed.resultLine, contains('2048'));
+      expect(viewed.isFailure, isFalse);
+
+      final rejected = describeToolActivity(
+        testL10n,
+        activity(
+          'view_image',
+          arguments: const <String, dynamic>{'path': 'notes.txt'},
+          output: '{"error":"Not a supported image."}',
+          isError: true,
+        ),
+      );
+      expect(rejected.resultLine, 'Not a supported image.');
+      expect(rejected.isFailure, isTrue);
+
+      // An accepted plan renders as a card, but a rejected one stays visible.
+      final plan = describeToolActivity(
+        testL10n,
+        activity(
+          'update_plan',
+          arguments: const <String, dynamic>{
+            'plan': <Map<String, dynamic>>[
+              <String, dynamic>{'step': 'One', 'status': 'pending'},
+            ],
+          },
+          output: '{"error":"Duplicate step"}',
+          isError: true,
+        ),
+      );
+      expect(plan.glyph, ChatToolGlyph.plan);
+      expect(plan.title, 'Plan(1)');
+      expect(plan.isFailure, isTrue);
+
+      final asked = describeToolActivity(
+        testL10n,
+        activity(
+          'ask_user',
+          arguments: const <String, dynamic>{
+            'questions': <Map<String, dynamic>>[
+              <String, dynamic>{'id': 'store', 'header': 'Storage'},
+              <String, dynamic>{'id': 'cache', 'header': 'Cache'},
+            ],
+          },
+          output:
+              '[{"questionId":"store","answer":"SQLite","isFreeForm":false},'
+              '{"questionId":"cache","answer":"Redis","isFreeForm":true}]',
+        ),
+      );
+      expect(asked.glyph, ChatToolGlyph.ask);
+      expect(chatToolIcon(asked.glyph), CoderIcons.chat);
+      expect(asked.title, 'Ask(Storage, Cache)');
+      // The transcript records what the user actually chose.
+      expect(asked.resultLine, 'SQLite, Redis');
+      expect(asked.isFailure, isFalse);
+    },
+  );
+
+  test(
     'long titles and summaries are truncated',
     () {
       final long = 'x' * 200;
       final run = describeToolActivity(
         testL10n,
-        activity('run_command', arguments: <String, dynamic>{'command': long}),
+        activity('exec_command', arguments: <String, dynamic>{'command': long}),
       );
       expect(run.title.length, lessThanOrEqualTo('Bash()'.length + 60));
       final failed = describeToolActivity(
         testL10n,
         activity(
-          'run_command',
+          'exec_command',
           arguments: <String, dynamic>{'command': 'x'},
           status: ChatToolStatus.failed,
           error: long,

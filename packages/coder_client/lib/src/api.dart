@@ -106,6 +106,15 @@ final class ApprovalRequestedClientEvent extends ClientEvent {
   final ApprovalRequestDto approval;
 }
 
+/// Reports that the agent is blocked on a question for the user.
+final class UserQuestionRequestedClientEvent extends ClientEvent {
+  /// Creates a [UserQuestionRequestedClientEvent].
+  const UserQuestionRequestedClientEvent(this.request);
+
+  /// The pending question.
+  final UserQuestionRequestDto request;
+}
+
 /// Reports state changes for an interactive provider OAuth attempt.
 final class ProviderAuthUpdatedClientEvent extends ClientEvent {
   /// Creates an OAuth attempt event.
@@ -440,6 +449,12 @@ abstract interface class CoderApi {
   Future<void> resolveApproval({
     required String approvalId,
     required bool approved,
+  });
+
+  /// Answers a pending agent question and lets its turn continue.
+  Future<UserQuestionRequestDto> answerUserQuestion({
+    required String requestId,
+    required List<UserQuestionAnswerDto> answers,
   });
 
   /// The subscribeTimeline public API member.

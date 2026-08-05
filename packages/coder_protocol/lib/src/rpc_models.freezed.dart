@@ -9521,6 +9521,278 @@ as bool,
 
 
 /// @nodoc
+mixin _$UserQuestionAnswerParamsDto {
+
+ String get requestId; List<UserQuestionAnswerDto> get answers;
+/// Create a copy of UserQuestionAnswerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$UserQuestionAnswerParamsDtoCopyWith<UserQuestionAnswerParamsDto> get copyWith => _$UserQuestionAnswerParamsDtoCopyWithImpl<UserQuestionAnswerParamsDto>(this as UserQuestionAnswerParamsDto, _$identity);
+
+  /// Serializes this UserQuestionAnswerParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserQuestionAnswerParamsDto&&(identical(other.requestId, requestId) || other.requestId == requestId)&&const DeepCollectionEquality().equals(other.answers, answers));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,requestId,const DeepCollectionEquality().hash(answers));
+
+@override
+String toString() {
+  return 'UserQuestionAnswerParamsDto(requestId: $requestId, answers: $answers)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $UserQuestionAnswerParamsDtoCopyWith<$Res>  {
+  factory $UserQuestionAnswerParamsDtoCopyWith(UserQuestionAnswerParamsDto value, $Res Function(UserQuestionAnswerParamsDto) _then) = _$UserQuestionAnswerParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String requestId, List<UserQuestionAnswerDto> answers
+});
+
+
+
+
+}
+/// @nodoc
+class _$UserQuestionAnswerParamsDtoCopyWithImpl<$Res>
+    implements $UserQuestionAnswerParamsDtoCopyWith<$Res> {
+  _$UserQuestionAnswerParamsDtoCopyWithImpl(this._self, this._then);
+
+  final UserQuestionAnswerParamsDto _self;
+  final $Res Function(UserQuestionAnswerParamsDto) _then;
+
+/// Create a copy of UserQuestionAnswerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? requestId = null,Object? answers = null,}) {
+  return _then(_self.copyWith(
+requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
+as String,answers: null == answers ? _self.answers : answers // ignore: cast_nullable_to_non_nullable
+as List<UserQuestionAnswerDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [UserQuestionAnswerParamsDto].
+extension UserQuestionAnswerParamsDtoPatterns on UserQuestionAnswerParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _UserQuestionAnswerParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _UserQuestionAnswerParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _UserQuestionAnswerParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _UserQuestionAnswerParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _UserQuestionAnswerParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _UserQuestionAnswerParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String requestId,  List<UserQuestionAnswerDto> answers)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _UserQuestionAnswerParamsDto() when $default != null:
+return $default(_that.requestId,_that.answers);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String requestId,  List<UserQuestionAnswerDto> answers)  $default,) {final _that = this;
+switch (_that) {
+case _UserQuestionAnswerParamsDto():
+return $default(_that.requestId,_that.answers);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String requestId,  List<UserQuestionAnswerDto> answers)?  $default,) {final _that = this;
+switch (_that) {
+case _UserQuestionAnswerParamsDto() when $default != null:
+return $default(_that.requestId,_that.answers);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _UserQuestionAnswerParamsDto implements UserQuestionAnswerParamsDto {
+  const _UserQuestionAnswerParamsDto({required this.requestId, required final  List<UserQuestionAnswerDto> answers}): _answers = answers;
+  factory _UserQuestionAnswerParamsDto.fromJson(Map<String, dynamic> json) => _$UserQuestionAnswerParamsDtoFromJson(json);
+
+@override final  String requestId;
+ final  List<UserQuestionAnswerDto> _answers;
+@override List<UserQuestionAnswerDto> get answers {
+  if (_answers is EqualUnmodifiableListView) return _answers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_answers);
+}
+
+
+/// Create a copy of UserQuestionAnswerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$UserQuestionAnswerParamsDtoCopyWith<_UserQuestionAnswerParamsDto> get copyWith => __$UserQuestionAnswerParamsDtoCopyWithImpl<_UserQuestionAnswerParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$UserQuestionAnswerParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserQuestionAnswerParamsDto&&(identical(other.requestId, requestId) || other.requestId == requestId)&&const DeepCollectionEquality().equals(other._answers, _answers));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,requestId,const DeepCollectionEquality().hash(_answers));
+
+@override
+String toString() {
+  return 'UserQuestionAnswerParamsDto(requestId: $requestId, answers: $answers)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$UserQuestionAnswerParamsDtoCopyWith<$Res> implements $UserQuestionAnswerParamsDtoCopyWith<$Res> {
+  factory _$UserQuestionAnswerParamsDtoCopyWith(_UserQuestionAnswerParamsDto value, $Res Function(_UserQuestionAnswerParamsDto) _then) = __$UserQuestionAnswerParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String requestId, List<UserQuestionAnswerDto> answers
+});
+
+
+
+
+}
+/// @nodoc
+class __$UserQuestionAnswerParamsDtoCopyWithImpl<$Res>
+    implements _$UserQuestionAnswerParamsDtoCopyWith<$Res> {
+  __$UserQuestionAnswerParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _UserQuestionAnswerParamsDto _self;
+  final $Res Function(_UserQuestionAnswerParamsDto) _then;
+
+/// Create a copy of UserQuestionAnswerParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? requestId = null,Object? answers = null,}) {
+  return _then(_UserQuestionAnswerParamsDto(
+requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
+as String,answers: null == answers ? _self._answers : answers // ignore: cast_nullable_to_non_nullable
+as List<UserQuestionAnswerDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$TimelineSubscribeParamsDto {
 
  String get sessionId; int get afterSequence;
@@ -21295,6 +21567,287 @@ $ApprovalRequestDtoCopyWith<$Res> get approval {
   
   return $ApprovalRequestDtoCopyWith<$Res>(_self.approval, (value) {
     return _then(_self.copyWith(approval: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$UserQuestionResultDto {
+
+ UserQuestionRequestDto get request;
+/// Create a copy of UserQuestionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$UserQuestionResultDtoCopyWith<UserQuestionResultDto> get copyWith => _$UserQuestionResultDtoCopyWithImpl<UserQuestionResultDto>(this as UserQuestionResultDto, _$identity);
+
+  /// Serializes this UserQuestionResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserQuestionResultDto&&(identical(other.request, request) || other.request == request));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,request);
+
+@override
+String toString() {
+  return 'UserQuestionResultDto(request: $request)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $UserQuestionResultDtoCopyWith<$Res>  {
+  factory $UserQuestionResultDtoCopyWith(UserQuestionResultDto value, $Res Function(UserQuestionResultDto) _then) = _$UserQuestionResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ UserQuestionRequestDto request
+});
+
+
+$UserQuestionRequestDtoCopyWith<$Res> get request;
+
+}
+/// @nodoc
+class _$UserQuestionResultDtoCopyWithImpl<$Res>
+    implements $UserQuestionResultDtoCopyWith<$Res> {
+  _$UserQuestionResultDtoCopyWithImpl(this._self, this._then);
+
+  final UserQuestionResultDto _self;
+  final $Res Function(UserQuestionResultDto) _then;
+
+/// Create a copy of UserQuestionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? request = null,}) {
+  return _then(_self.copyWith(
+request: null == request ? _self.request : request // ignore: cast_nullable_to_non_nullable
+as UserQuestionRequestDto,
+  ));
+}
+/// Create a copy of UserQuestionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$UserQuestionRequestDtoCopyWith<$Res> get request {
+  
+  return $UserQuestionRequestDtoCopyWith<$Res>(_self.request, (value) {
+    return _then(_self.copyWith(request: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [UserQuestionResultDto].
+extension UserQuestionResultDtoPatterns on UserQuestionResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _UserQuestionResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _UserQuestionResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _UserQuestionResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _UserQuestionResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _UserQuestionResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _UserQuestionResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( UserQuestionRequestDto request)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _UserQuestionResultDto() when $default != null:
+return $default(_that.request);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( UserQuestionRequestDto request)  $default,) {final _that = this;
+switch (_that) {
+case _UserQuestionResultDto():
+return $default(_that.request);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( UserQuestionRequestDto request)?  $default,) {final _that = this;
+switch (_that) {
+case _UserQuestionResultDto() when $default != null:
+return $default(_that.request);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _UserQuestionResultDto implements UserQuestionResultDto {
+  const _UserQuestionResultDto({required this.request});
+  factory _UserQuestionResultDto.fromJson(Map<String, dynamic> json) => _$UserQuestionResultDtoFromJson(json);
+
+@override final  UserQuestionRequestDto request;
+
+/// Create a copy of UserQuestionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$UserQuestionResultDtoCopyWith<_UserQuestionResultDto> get copyWith => __$UserQuestionResultDtoCopyWithImpl<_UserQuestionResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$UserQuestionResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserQuestionResultDto&&(identical(other.request, request) || other.request == request));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,request);
+
+@override
+String toString() {
+  return 'UserQuestionResultDto(request: $request)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$UserQuestionResultDtoCopyWith<$Res> implements $UserQuestionResultDtoCopyWith<$Res> {
+  factory _$UserQuestionResultDtoCopyWith(_UserQuestionResultDto value, $Res Function(_UserQuestionResultDto) _then) = __$UserQuestionResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ UserQuestionRequestDto request
+});
+
+
+@override $UserQuestionRequestDtoCopyWith<$Res> get request;
+
+}
+/// @nodoc
+class __$UserQuestionResultDtoCopyWithImpl<$Res>
+    implements _$UserQuestionResultDtoCopyWith<$Res> {
+  __$UserQuestionResultDtoCopyWithImpl(this._self, this._then);
+
+  final _UserQuestionResultDto _self;
+  final $Res Function(_UserQuestionResultDto) _then;
+
+/// Create a copy of UserQuestionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? request = null,}) {
+  return _then(_UserQuestionResultDto(
+request: null == request ? _self.request : request // ignore: cast_nullable_to_non_nullable
+as UserQuestionRequestDto,
+  ));
+}
+
+/// Create a copy of UserQuestionResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$UserQuestionRequestDtoCopyWith<$Res> get request {
+  
+  return $UserQuestionRequestDtoCopyWith<$Res>(_self.request, (value) {
+    return _then(_self.copyWith(request: value));
   });
 }
 }

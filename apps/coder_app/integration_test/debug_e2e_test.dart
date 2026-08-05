@@ -1155,12 +1155,14 @@ void main() {
         isNotNull,
       );
       await tester.tap(find.byKey(send));
-      await pumpUntil(tester, find.text('제안된 계획'));
+      await pumpUntil(tester, find.text('계획'));
       await pumpUntil(
         tester,
         find.text('이 계획대로 진행할까요?'),
       );
-      expect(find.textContaining('proposed_plan'), findsNothing);
+      // The plan arrived as an update_plan call, so it renders as a checklist
+      // rather than a generic tool row.
+      expect(find.text('Create result.txt'), findsOneWidget);
       final implement = find.widgetWithText(TRButton, '계획대로 실행');
       await tester.ensureVisible(implement);
       await tester.pumpAndSettle();
@@ -1169,6 +1171,34 @@ void main() {
       // The chip returning to 실행 proves the session left plan mode.
       await pumpUntil(tester, find.text('실행'));
       await pumpUntilGone(tester, find.textContaining('Plan 모드'));
+
+      // A blocking agent question stops the turn until the user answers it,
+      // and the chosen answer reaches the model.
+      await _waitForComposerReady(tester, send);
+      await tester.enterText(find.byKey(composer), 'Ask me about storage');
+      await tester.pump();
+      await tester.tap(find.byKey(send));
+      await pumpUntil(tester, find.text('Storage'));
+      expect(find.text('Which store should the cache use?'), findsOneWidget);
+      final questionSubmit = find.byKey(
+        const ValueKey<String>('chat-question-submit'),
+      );
+      // The turn stays blocked: nothing was chosen yet.
+      expect(tester.widget<TRButton>(questionSubmit).onPressed, isNull);
+      await tester.tap(find.text('SQLite'));
+      // The blocked turn keeps the tool row spinning, so the tree never goes
+      // quiet and pumpAndSettle would run to its deadline. Wait on the state
+      // the tap produces instead.
+      await pumpUntilCondition(
+        tester,
+        () => tester.widget<TRButton>(questionSubmit).onPressed != null,
+        'the answer button to accept the chosen option',
+      );
+      await tester.ensureVisible(questionSubmit);
+      await tester.pump();
+      await tester.tap(questionSubmit);
+      await pumpUntil(tester, find.textContaining('Chose SQLite'));
+      await pumpUntilGone(tester, questionSubmit);
 
       final reconnected = await CoderClient.connect(
         endpoint: endpoint,
@@ -1509,6 +1539,8 @@ void main() {
       'feature_test__terminal_lifecycle__platformSmoke',
       'feature_scenario__terminal_lifecycle__create_write_terminate__e2e',
       'feature_test__turn_execution__e2e',
+      'feature_test__turn_question__e2e',
+      'feature_scenario__turn_question__ask_and_answer__e2e',
       'feature_test__agent_definition_management__e2e',
       'feature_test__mcp_server_management__e2e',
       'feature_test__skill_management__e2e',
@@ -2076,17 +2108,94 @@ final class _AgentE2eProvider implements ModelProvider {
     final latestUser = request.history.whereType<UserConversationItem>().last;
     final latestPrompt = latestUser.text;
     if (request.instructions.contains('You are in Plan Mode')) {
-      const plan =
-          'Explored the workspace.\n'
-          '<proposed_plan>\n'
-          '1. Create result.txt\n'
-          '</proposed_plan>';
-      yield const ModelTextDelta(plan);
+      final hasPlanResult = request.history
+          .whereType<ToolResultConversationItem>()
+          .any((item) => item.callId == 'plan-call');
+      if (!hasPlanResult) {
+        const arguments = <String, dynamic>{
+          'plan': <Map<String, dynamic>>[
+            <String, dynamic>{'step': 'Create result.txt', 'status': 'pending'},
+          ],
+          'explanation': 'Explored the workspace.',
+        };
+        yield const ModelFunctionCall(
+          callId: 'plan-call',
+          name: 'update_plan',
+          arguments: arguments,
+        );
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: '',
+            toolCalls: <ConversationToolCall>[
+              ConversationToolCall(
+                callId: 'plan-call',
+                name: 'update_plan',
+                arguments: arguments,
+              ),
+            ],
+          ),
+        );
+        return;
+      }
       yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(text: plan),
+        assistant: AssistantConversationItem(text: ''),
       );
       return;
     }
+    if (latestPrompt == 'Ask me about storage') {
+      final answered = request.history
+          .whereType<ToolResultConversationItem>()
+          .where((item) => item.callId == 'ask-call')
+          .firstOrNull;
+      if (answered == null) {
+        const arguments = <String, dynamic>{
+          'questions': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'store',
+              'header': 'Storage',
+              'question': 'Which store should the cache use?',
+              'options': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'label': 'SQLite',
+                  'description': 'Durable and already a dependency.',
+                },
+                <String, dynamic>{
+                  'label': 'In memory',
+                  'description': 'Fastest, lost on restart.',
+                },
+              ],
+            },
+          ],
+        };
+        yield const ModelFunctionCall(
+          callId: 'ask-call',
+          name: 'ask_user',
+          arguments: arguments,
+        );
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: '',
+            toolCalls: <ConversationToolCall>[
+              ConversationToolCall(
+                callId: 'ask-call',
+                name: 'ask_user',
+                arguments: arguments,
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      final reply = answered.output.contains('SQLite')
+          ? 'Chose SQLite'
+          : 'Chose something else';
+      yield ModelTextDelta(reply);
+      yield ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: reply),
+      );
+      return;
+    }
+
     final delegateEnabled = request.tools.any(
       (tool) => tool.name == 'delegate_agent',
     );

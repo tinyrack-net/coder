@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coder_app/src/chat/chat_plan.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -17,56 +19,97 @@ void main() {
         createdAt: now,
       );
 
+  Map<String, dynamic> planArguments(
+    List<List<String>> steps, {
+    String explanation = '',
+  }) => <String, dynamic>{
+    'plan': <Map<String, dynamic>>[
+      for (final step in steps)
+        <String, dynamic>{'step': step[0], 'status': step[1]},
+    ],
+    'explanation': explanation,
+  };
+
   setUp(() => sequence = 0);
 
   test(
-    'proposed plan blocks are carved out of assistant prose',
+    'update_plan arguments parse into typed steps',
     () {
-      final none = extractProposedPlan('Just prose.');
-      expect(none.plan, isNull);
-      expect(none.markdown, 'Just prose.');
-      expect(none.isComplete, isFalse);
-
-      final complete = extractProposedPlan(
-        'Here is what I found.\n'
-        '$proposedPlanOpenTag\n'
-        '1. Read the parser\n'
-        '2. Fix the bug\n'
-        '$proposedPlanCloseTag\n'
-        'Ask me anything.',
+      final update = parseUpdatePlanArguments(
+        planArguments(<List<String>>[
+          <String>['Read the parser', 'completed'],
+          <String>['Move the parser', 'in_progress'],
+          <String>['Add tests', 'pending'],
+        ], explanation: 'Parser first.'),
       );
-      expect(complete.plan, '1. Read the parser\n2. Fix the bug');
-      expect(complete.markdown, 'Here is what I found.\nAsk me anything.');
-      expect(complete.isComplete, isTrue);
 
-      final streaming = extractProposedPlan(
-        'Working.\n$proposedPlanOpenTag\n1. Read the',
-      );
-      expect(streaming.plan, '1. Read the');
-      expect(streaming.markdown, 'Working.');
-      expect(streaming.isComplete, isFalse);
-
-      final planOnly = extractProposedPlan(
-        '$proposedPlanOpenTag\nonly a plan\n$proposedPlanCloseTag',
-      );
-      expect(planOnly.markdown, isEmpty);
-      expect(planOnly.plan, 'only a plan');
+      expect(update, isNotNull);
+      expect(update!.explanation, 'Parser first.');
+      expect(update.steps.map((step) => step.step), <String>[
+        'Read the parser',
+        'Move the parser',
+        'Add tests',
+      ]);
+      expect(update.steps.map((step) => step.status), <ChatPlanStepStatus>[
+        ChatPlanStepStatus.completed,
+        ChatPlanStepStatus.inProgress,
+        ChatPlanStepStatus.pending,
+      ]);
     },
     tags: const <String>['feature_test__session_lifecycle__unit'],
   );
 
   test(
-    'the timeline renders a plan proposal instead of raw tags',
+    'a model-authored plan degrades instead of throwing',
     () {
+      expect(parseUpdatePlanArguments(const <String, dynamic>{}), isNull);
+      expect(
+        parseUpdatePlanArguments(<String, dynamic>{
+          'plan': <Map<String, dynamic>>[],
+        }),
+        isNull,
+      );
+
+      final update = parseUpdatePlanArguments(<String, dynamic>{
+        'plan': <dynamic>[
+          <String, dynamic>{'step': 'Kept', 'status': 'not_a_status'},
+          <String, dynamic>{'step': 42, 'status': 'pending'},
+          'not an object',
+        ],
+        'explanation': 7,
+      });
+
+      expect(update, isNotNull);
+      expect(update!.steps.single.step, 'Kept');
+      expect(update.steps.single.status, ChatPlanStepStatus.pending);
+      expect(update.explanation, isEmpty);
+    },
+    tags: const <String>['feature_test__session_lifecycle__unit'],
+  );
+
+  test(
+    'the timeline renders an update_plan call as a plan proposal',
+    () {
+      final arguments = planArguments(<List<String>>[
+        <String>['Move the parser', 'in_progress'],
+        <String>['Add tests', 'pending'],
+      ], explanation: 'Parser first.');
       final items = projectChatTimeline(<TimelineEventDto>[
         event('user.message', <String, dynamic>{'text': 'Plan the migration'}),
         event('assistant.delta', <String, dynamic>{
-          'text': 'Explored the code.\n$proposedPlanOpenTag\n',
+          'text': 'Explored the code.',
         }),
-        event('assistant.delta', <String, dynamic>{
-          'text': '1. Move the parser\n$proposedPlanCloseTag\n',
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'update_plan',
+          'arguments': arguments,
         }),
-        event('turn.completed', <String, dynamic>{'toolRounds': 0}),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'update_plan',
+          'output': jsonEncode(arguments),
+        }),
+        event('turn.completed', <String, dynamic>{'toolRounds': 1}),
       ]);
 
       expect(items.map((item) => item.runtimeType.toString()), <String>[
@@ -75,29 +118,83 @@ void main() {
         'ChatPlanProposal',
         'ChatNotice',
       ]);
-      final assistant = items[1] as ChatAssistantMessage;
-      expect(assistant.markdown, 'Explored the code.');
-      expect(assistant.markdown, isNot(contains('proposed_plan')));
+      expect((items[1] as ChatAssistantMessage).markdown, 'Explored the code.');
       final plan = items[2] as ChatPlanProposal;
-      expect(plan.markdown, '1. Move the parser');
-      expect(plan.isComplete, isTrue);
+      expect(plan.explanation, 'Parser first.');
+      expect(plan.steps.map((step) => step.step), <String>[
+        'Move the parser',
+        'Add tests',
+      ]);
       expect(plan.key, startsWith('plan-'));
+      expect(items.whereType<ChatToolActivity>(), isEmpty);
     },
     tags: const <String>['feature_test__session_lifecycle__unit'],
   );
 
   test(
-    'a plan-only streaming turn drops the empty assistant bubble',
+    'a rejected update_plan call stays visible as a failed tool activity',
     () {
       final items = projectChatTimeline(<TimelineEventDto>[
-        event('assistant.delta', <String, dynamic>{
-          'text': '$proposedPlanOpenTag\n1. Start',
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'update_plan',
+          'arguments': planArguments(<List<String>>[
+            <String>['Only step', 'pending'],
+          ]),
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'update_plan',
+          'output': '{"error":"Duplicate step"}',
+          'isError': true,
         }),
       ]);
 
-      final plan = items.single as ChatPlanProposal;
-      expect(plan.markdown, '1. Start');
-      expect(plan.isComplete, isFalse);
+      expect(items.whereType<ChatPlanProposal>(), isEmpty);
+      final activity = items.single as ChatToolActivity;
+      expect(activity.toolName, 'update_plan');
+      expect(activity.isError, isTrue);
+    },
+    tags: const <String>['feature_test__session_lifecycle__unit'],
+  );
+
+  test(
+    'only the newest plan of a turn survives repeated update_plan calls',
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'update_plan',
+          'arguments': planArguments(<List<String>>[
+            <String>['Step one', 'in_progress'],
+            <String>['Step two', 'pending'],
+          ]),
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'update_plan',
+          'output': '{}',
+        }),
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-2',
+          'name': 'update_plan',
+          'arguments': planArguments(<List<String>>[
+            <String>['Step one', 'completed'],
+            <String>['Step two', 'in_progress'],
+          ]),
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-2',
+          'name': 'update_plan',
+          'output': '{}',
+        }),
+      ]);
+
+      final plan = items.whereType<ChatPlanProposal>().single;
+      expect(plan.steps.map((step) => step.status), <ChatPlanStepStatus>[
+        ChatPlanStepStatus.completed,
+        ChatPlanStepStatus.inProgress,
+      ]);
     },
     tags: const <String>['feature_test__session_lifecycle__unit'],
   );

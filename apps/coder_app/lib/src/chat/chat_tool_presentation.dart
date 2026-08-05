@@ -101,6 +101,15 @@ enum ChatToolGlyph {
   /// Subagent delegation.
   delegate,
 
+  /// Plan updates.
+  plan,
+
+  /// Questions put to the user.
+  ask,
+
+  /// Images loaded into the model context.
+  image,
+
   /// Anything this build does not know.
   generic,
 }
@@ -232,6 +241,37 @@ ChatToolBody _prettyArgumentBody(ChatToolActivity activity) =>
 
 bool _neverFails(ChatToolOutput output) => false;
 
+/// Summarizes a pseudo-terminal chunk from `exec_command` or `write_stdin`.
+String _execResult(
+  AppLocalizations l10n,
+  ChatToolActivity activity,
+  ChatToolOutput output,
+) {
+  if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+  final error = output.value['error'];
+  if (error is String) return error;
+  final text = output.value['output'];
+  final lines = text is String && text.isNotEmpty ? _countLines(text) : 0;
+  final exitCode = output.value['exitCode'];
+  // A session that is still running has no exit code to report yet.
+  return exitCode is int
+      ? l10n.toolCommandResult(exitCode, lines)
+      : l10n.toolExecRunning(lines);
+}
+
+ChatToolBody _execBody(ChatToolActivity activity, ChatToolOutput output) {
+  if (output is ChatToolJsonObject && output.value['output'] is String) {
+    final text = output.value['output']! as String;
+    return text.isEmpty ? const ChatToolEmptyBody() : ChatToolTextBody(text);
+  }
+  return _plainBody(activity, output);
+}
+
+bool _execIsFailure(ChatToolOutput output) =>
+    output is ChatToolJsonObject &&
+    (output.value['error'] != null ||
+        (output.value['exitCode'] is int && output.value['exitCode'] != 0));
+
 final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
   'read_file': _ToolSpec(
     glyph: ChatToolGlyph.read,
@@ -306,41 +346,93 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
         ChatToolDiffBody(parseChatDiff(_stringArg(activity, 'patch') ?? '')),
     body: (activity, output) => const ChatToolEmptyBody(),
   ),
-  'run_command': _ToolSpec(
+  'ask_user': _ToolSpec(
+    glyph: ChatToolGlyph.ask,
+    title: (l10n, activity) {
+      final questions = activity.arguments['questions'];
+      final headers = questions is List
+          ? questions
+                .whereType<Map<dynamic, dynamic>>()
+                .map((question) => question['header'])
+                .whereType<String>()
+          : const <String>[];
+      return 'Ask(${headers.isEmpty ? '?' : headers.join(', ')})';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonArray) return _genericResult(l10n, output);
+      final answers = output.value
+          .whereType<Map<dynamic, dynamic>>()
+          .map((answer) => answer['answer'])
+          .whereType<String>();
+      return answers.isEmpty
+          ? _genericResult(l10n, output)
+          : answers.join(', ');
+    },
+  ),
+  'view_image': _ToolSpec(
+    glyph: ChatToolGlyph.image,
+    title: (l10n, activity) => 'View(${_stringArg(activity, 'path') ?? '?'})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final bytes = output.value['byteSize'];
+      return bytes is int
+          ? l10n.toolImageLoaded(bytes)
+          : _genericResult(l10n, output);
+    },
+    isFailure: (output) =>
+        output is ChatToolJsonObject && output.value['error'] != null,
+  ),
+  // An accepted plan renders as its own card, so this spec only ever draws a
+  // plan the daemon rejected.
+  'update_plan': _ToolSpec(
+    glyph: ChatToolGlyph.plan,
+    title: (l10n, activity) {
+      final plan = activity.arguments['plan'];
+      return 'Plan(${plan is List ? plan.length : 0})';
+    },
+    result: (l10n, activity, output) {
+      final error = output is ChatToolJsonObject ? output.value['error'] : null;
+      return error is String ? error : _genericResult(l10n, output);
+    },
+    isFailure: (output) =>
+        output is ChatToolJsonObject && output.value['error'] != null,
+  ),
+  'exec_command': _ToolSpec(
     glyph: ChatToolGlyph.run,
     title: (l10n, activity) {
       final command = _stringArg(activity, 'command') ?? '';
       return 'Bash(${_truncate(_firstLine(command), 60)})';
     },
-    result: (l10n, activity, output) {
-      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
-      final exitCode = output.value['exitCode'];
-      final text = output.value['output'];
-      if (exitCode is! int || text is! String) {
-        return _genericResult(l10n, output);
-      }
-      return l10n.toolCommandResult(
-        exitCode,
-        text.isEmpty ? 0 : _countLines(text),
-      );
-    },
-    body: (activity, output) {
-      if (output is ChatToolJsonObject && output.value['output'] is String) {
-        final text = output.value['output']! as String;
-        return text.isEmpty
-            ? const ChatToolEmptyBody()
-            : ChatToolTextBody(text);
-      }
-      return _plainBody(activity, output);
-    },
+    result: _execResult,
+    body: _execBody,
     argumentBody: (activity) {
       final command = _stringArg(activity, 'command');
       return command == null || command.isEmpty
           ? const ChatToolEmptyBody()
           : ChatToolTextBody('\$ $command');
     },
-    isFailure: (output) =>
-        output is ChatToolJsonObject && output.value['exitCode'] != 0,
+    isFailure: _execIsFailure,
+  ),
+  'write_stdin': _ToolSpec(
+    glyph: ChatToolGlyph.run,
+    title: (l10n, activity) {
+      final chars = _stringArg(activity, 'chars') ?? '';
+      final session = _stringArg(activity, 'session_id') ?? '?';
+      return chars.isEmpty
+          ? 'Stdin($session)'
+          : 'Stdin($session ← ${_truncate(_firstLine(chars), 40)})';
+    },
+    result: _execResult,
+    body: _execBody,
+    argumentBody: (activity) {
+      final chars = _stringArg(activity, 'chars');
+      return chars == null || chars.isEmpty
+          ? const ChatToolEmptyBody()
+          : ChatToolTextBody(chars);
+    },
+    isFailure: _execIsFailure,
   ),
   'delegate_agent': _ToolSpec(
     glyph: ChatToolGlyph.delegate,

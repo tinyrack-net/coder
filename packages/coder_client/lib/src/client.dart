@@ -115,6 +115,7 @@ class CoderClient implements CoderApi {
         RpcNotification.agentDefinitionsChanged,
         RpcNotification.skillsChanged,
         RpcNotification.approvalRequested,
+        RpcNotification.userQuestionRequested,
         RpcNotification.providerAuthUpdated,
         RpcNotification.mcpServersChanged,
         RpcNotification.terminalOutput,
@@ -199,6 +200,12 @@ class CoderClient implements CoderApi {
           _events.add(
             ApprovalRequestedClientEvent(
               ApprovalRequestDto.fromJson(parameters),
+            ),
+          );
+        case RpcNotification.userQuestionRequested:
+          _events.add(
+            UserQuestionRequestedClientEvent(
+              UserQuestionRequestDto.fromJson(parameters),
             ),
           );
         case RpcNotification.providerAuthUpdated:
@@ -1103,6 +1110,20 @@ class CoderClient implements CoderApi {
       ).toJson(),
     );
   }
+
+  @override
+  Future<UserQuestionRequestDto> answerUserQuestion({
+    required String requestId,
+    required List<UserQuestionAnswerDto> answers,
+  }) async => UserQuestionResultDto.fromJson(
+    await _request(
+      RpcMethod.userQuestionAnswer,
+      UserQuestionAnswerParamsDto(
+        requestId: requestId,
+        answers: answers,
+      ).toJson(),
+    ),
+  ).request;
 
   @override
   Future<List<TimelineEventDto>> subscribeTimeline(

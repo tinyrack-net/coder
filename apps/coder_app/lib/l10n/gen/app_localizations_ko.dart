@@ -855,7 +855,35 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatApprovalAllow => '승인';
 
   @override
-  String get chatPlanTitle => '제안된 계획';
+  String get chatPlanTitle => '계획';
+
+  @override
+  String toolExecRunning(int lines) {
+    return '실행 중 · $lines줄';
+  }
+
+  @override
+  String toolImageLoaded(int bytes) {
+    return '$bytes바이트 확인';
+  }
+
+  @override
+  String get chatQuestionSubmit => '답변';
+
+  @override
+  String get chatQuestionOther => '직접 입력';
+
+  @override
+  String get chatQuestionOtherPlaceholder => '답변을 입력하세요';
+
+  @override
+  String get chatPlanStepPending => '시작 전';
+
+  @override
+  String get chatPlanStepInProgress => '진행 중';
+
+  @override
+  String get chatPlanStepCompleted => '완료';
 
   @override
   String get chatPlanPrompt => '이 계획대로 진행할까요?';

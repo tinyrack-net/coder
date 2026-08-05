@@ -596,7 +596,7 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
   reasoningEffort: 'medium',
   permissionMode: PermissionMode.ask,
   // The read tools are always on, so only the opt-in ones are listed here.
-  toolIds: const <String>['apply_patch', 'run_command'],
+  toolIds: const <String>['apply_patch', 'exec_command'],
   callableAgentIds: const <String>[],
   contentHash: '',
   sourcePath: sourcePath,
@@ -607,13 +607,17 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
 ///
 /// Reading the workspace is how an agent grounds itself before it acts, so
 /// these are a property of the daemon rather than a per-agent choice. Writing
-/// and running commands stay opt-in.
+/// and running commands stay opt-in. Sharing a plan is likewise a property of
+/// the host UI rather than an agent capability.
 const Set<String> alwaysOnBuiltInToolIds = <String>{
   'list_directory',
   'read_file',
   'search_text',
   'attach_file',
   'read_attachment',
+  'update_plan',
+  'ask_user',
+  'view_image',
 };
 
 /// Returns the tool ids a turn runs with, always-on tools first.
