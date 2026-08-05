@@ -923,6 +923,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String toolMcpResources(int count) {
+    return '$count resources';
+  }
+
+  @override
+  String toolMcpResourceTemplates(int count) {
+    return '$count templates';
+  }
+
+  @override
+  String toolMcpResourceRead(int count) {
+    return '$count blocks';
+  }
+
+  @override
   String toolImageLoaded(int bytes) {
     return '$bytes bytes viewed';
   }
@@ -1250,6 +1265,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpSettingsStatusFailed => 'Failed';
+
+  @override
+  String get mcpSettingsDiscoveredResources => 'resources';
+
+  @override
+  String get mcpSettingsResources => 'Published resources';
+
+  @override
+  String get mcpSettingsNoResources => 'This server publishes no resources.';
+
+  @override
+  String get mcpSettingsResourceTemplates => 'Resource templates';
+
+  @override
+  String get mcpSettingsNoResourceTemplates =>
+      'This server publishes no resource templates.';
 
   @override
   String get mcpSettingsDiscoveredTools => 'Tools';

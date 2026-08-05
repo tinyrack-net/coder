@@ -907,6 +907,21 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String toolMcpResources(int count) {
+    return '리소스 $count개';
+  }
+
+  @override
+  String toolMcpResourceTemplates(int count) {
+    return '템플릿 $count개';
+  }
+
+  @override
+  String toolMcpResourceRead(int count) {
+    return '블록 $count개';
+  }
+
+  @override
   String toolImageLoaded(int bytes) {
     return '$bytes바이트 확인';
   }
@@ -1226,6 +1241,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get mcpSettingsStatusFailed => '실패';
+
+  @override
+  String get mcpSettingsDiscoveredResources => '리소스';
+
+  @override
+  String get mcpSettingsResources => '게시된 리소스';
+
+  @override
+  String get mcpSettingsNoResources => '게시된 리소스가 없습니다.';
+
+  @override
+  String get mcpSettingsResourceTemplates => '리소스 템플릿';
+
+  @override
+  String get mcpSettingsNoResourceTemplates => '게시된 리소스 템플릿이 없습니다.';
 
   @override
   String get mcpSettingsDiscoveredTools => '도구';

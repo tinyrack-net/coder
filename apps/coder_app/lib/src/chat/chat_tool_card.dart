@@ -18,6 +18,7 @@ IconData chatToolIcon(ChatToolGlyph glyph) => switch (glyph) {
   ChatToolGlyph.delegate => CoderIcons.network,
   ChatToolGlyph.plan => CoderIcons.checklist,
   ChatToolGlyph.ask => CoderIcons.chat,
+  ChatToolGlyph.resource => CoderIcons.extension,
   ChatToolGlyph.image => CoderIcons.image,
   ChatToolGlyph.generic => CoderIcons.tool,
 };

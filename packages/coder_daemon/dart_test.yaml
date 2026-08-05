@@ -44,3 +44,5 @@ tags:
   feature_test__settings_reset__verticalSlice:
   feature_test__tool_image_context__verticalSlice:
   feature_test__tool_exec_session__verticalSlice:
+  feature_test__mcp_resource_access__verticalSlice:
+  feature_test__mcp_resource_access__unit:

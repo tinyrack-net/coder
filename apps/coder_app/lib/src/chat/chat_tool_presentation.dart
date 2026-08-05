@@ -140,6 +140,9 @@ enum ChatToolGlyph {
   /// Questions put to the user.
   ask,
 
+  /// MCP resource discovery and reads.
+  resource,
+
   /// Images loaded into the model context.
   image,
 
@@ -274,6 +277,25 @@ ChatToolBody _prettyArgumentBody(ChatToolActivity activity) =>
 
 bool _neverFails(ChatToolOutput output) => false;
 
+bool _hasErrorKey(ChatToolOutput output) =>
+    output is ChatToolJsonObject && output.value['error'] != null;
+
+/// Summarizes an MCP listing, noting when a page was truncated.
+String _mcpListResult(
+  AppLocalizations l10n,
+  ChatToolOutput output,
+  String key,
+  String Function(int count) label,
+) {
+  if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+  final error = output.value['error'];
+  if (error is String) return error;
+  final entries = output.value[key];
+  final count = entries is List ? entries.length : 0;
+  final summary = label(count);
+  return output.value['truncated'] == true ? '$summary…' : summary;
+}
+
 /// Summarizes a pseudo-terminal chunk from `exec_command` or `write_stdin`.
 String _execResult(
   AppLocalizations l10n,
@@ -401,6 +423,61 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
           ? _genericResult(l10n, output)
           : answers.join(', ');
     },
+  ),
+  'list_mcp_resources': _ToolSpec(
+    glyph: ChatToolGlyph.resource,
+    title: (l10n, activity) =>
+        'Resources(${_stringArg(activity, 'server') ?? 'all'})',
+    result: (l10n, activity, output) => _mcpListResult(
+      l10n,
+      output,
+      'resources',
+      l10n.toolMcpResources,
+    ),
+    isFailure: _hasErrorKey,
+  ),
+  'list_mcp_resource_templates': _ToolSpec(
+    glyph: ChatToolGlyph.resource,
+    title: (l10n, activity) =>
+        'ResourceTemplates(${_stringArg(activity, 'server') ?? 'all'})',
+    result: (l10n, activity, output) => _mcpListResult(
+      l10n,
+      output,
+      'resourceTemplates',
+      l10n.toolMcpResourceTemplates,
+    ),
+    isFailure: _hasErrorKey,
+  ),
+  'read_mcp_resource': _ToolSpec(
+    glyph: ChatToolGlyph.resource,
+    title: (l10n, activity) {
+      final server = _stringArg(activity, 'server') ?? '?';
+      final uri = _truncate(_stringArg(activity, 'uri') ?? '?', 48);
+      return 'Resource($server: $uri)';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final contents = output.value['contents'];
+      final blocks = contents is List ? contents.length : 0;
+      return l10n.toolMcpResourceRead(blocks);
+    },
+    body: (activity, output) {
+      // Text contents are what the user actually wants to inspect.
+      if (output is! ChatToolJsonObject) return _plainBody(activity, output);
+      final contents = output.value['contents'];
+      if (contents is! List) return _plainBody(activity, output);
+      final text = contents
+          .whereType<Map<dynamic, dynamic>>()
+          .map((block) => block['text'])
+          .whereType<String>()
+          .join('\n');
+      return text.isEmpty
+          ? _plainBody(activity, output)
+          : ChatToolTextBody(text);
+    },
+    isFailure: _hasErrorKey,
   ),
   'view_image': _ToolSpec(
     glyph: ChatToolGlyph.image,

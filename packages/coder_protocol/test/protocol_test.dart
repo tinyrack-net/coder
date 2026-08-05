@@ -1192,6 +1192,65 @@ void main() {
     },
   );
 
+  test(
+    'MCP resource contracts round-trip and default to empty lists',
+    tags: const <String>['feature_test__mcp_resource_access__contract'],
+    () {
+      _roundTrip(
+        const McpResourceSummaryDto(
+          uri: 'file:///repo/README.md',
+          name: 'README',
+          title: 'Project readme',
+          description: 'How to build.',
+          mimeType: 'text/markdown',
+          sizeBytes: 4096,
+        ),
+        (value) => value.toJson(),
+        McpResourceSummaryDto.fromJson,
+      );
+      _roundTrip(
+        const McpResourceSummaryDto(uri: 'db://schema'),
+        (value) => value.toJson(),
+        McpResourceSummaryDto.fromJson,
+      );
+      _roundTrip(
+        const McpResourceTemplateSummaryDto(
+          uriTemplate: 'file:///repo/{path}',
+          name: 'Repository file',
+        ),
+        (value) => value.toJson(),
+        McpResourceTemplateSummaryDto.fromJson,
+      );
+
+      // A daemon that has not learned about resources yet reports none, so an
+      // older stored state decodes without them.
+      const bare = McpServerStateDto(
+        config: McpServerConfigDto(
+          id: 'github',
+          transport: McpTransportKind.stdio,
+          command: 'npx',
+        ),
+        status: McpServerStatus.ready,
+        scope: McpConfigScope.user,
+        sourcePath: '/config/mcp.json',
+      );
+      expect(bare.resources, isEmpty);
+      expect(bare.resourceTemplates, isEmpty);
+      _roundTrip(
+        bare.copyWith(
+          resources: const <McpResourceSummaryDto>[
+            McpResourceSummaryDto(uri: 'file:///a.txt'),
+          ],
+          resourceTemplates: const <McpResourceTemplateSummaryDto>[
+            McpResourceTemplateSummaryDto(uriTemplate: 'file:///{p}'),
+          ],
+        ),
+        (value) => value.toJson(),
+        McpServerStateDto.fromJson,
+      );
+    },
+  );
+
   test('malformed required values and protocol envelopes are rejected', () {
     expect(
       () => WorkspaceDto.fromJson(const <String, dynamic>{'id': 'missing'}),

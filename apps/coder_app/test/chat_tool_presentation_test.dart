@@ -442,6 +442,84 @@ void main() {
   );
 
   test(
+    'MCP resource tools read as discovery, not raw JSON',
+    tags: const <String>['feature_test__mcp_resource_access__widget'],
+    () {
+      final listed = describeToolActivity(
+        testL10n,
+        activity(
+          'list_mcp_resources',
+          arguments: const <String, dynamic>{'server': 'github'},
+          output:
+              '{"server":"github","resources":[{"uri":"file:///a.txt"}],'
+              '"truncated":false}',
+        ),
+      );
+      expect(listed.glyph, ChatToolGlyph.resource);
+      expect(chatToolIcon(listed.glyph), CoderIcons.extension);
+      expect(listed.title, 'Resources(github)');
+      expect(listed.resultLine, contains('1'));
+      expect(listed.isFailure, isFalse);
+
+      // Fanning out over every server says so in the title.
+      final fanned = describeToolActivity(
+        testL10n,
+        activity(
+          'list_mcp_resources',
+          output: '{"resources":[],"truncated":false}',
+        ),
+      );
+      expect(fanned.title, 'Resources(all)');
+
+      // A truncated page is marked so the model knows to page again.
+      final truncated = describeToolActivity(
+        testL10n,
+        activity(
+          'list_mcp_resource_templates',
+          arguments: const <String, dynamic>{'server': 'github'},
+          output:
+              '{"resourceTemplates":[{"uriTemplate":"a"}],"truncated":true}',
+        ),
+      );
+      expect(truncated.title, 'ResourceTemplates(github)');
+      expect(truncated.resultLine, endsWith('…'));
+
+      final read = describeToolActivity(
+        testL10n,
+        activity(
+          'read_mcp_resource',
+          arguments: const <String, dynamic>{
+            'server': 'github',
+            'uri': 'file:///a.txt',
+          },
+          output:
+              '{"server":"github","uri":"file:///a.txt","contents":'
+              '[{"uri":"file:///a.txt","mimeType":"text/plain",'
+              '"text":"file body"}]}',
+        ),
+      );
+      expect(read.title, 'Resource(github: file:///a.txt)');
+      // The expanded body shows the text, not the JSON envelope.
+      expect((read.body as ChatToolTextBody).text, 'file body');
+
+      final offline = describeToolActivity(
+        testL10n,
+        activity(
+          'read_mcp_resource',
+          arguments: const <String, dynamic>{
+            'server': 'gone',
+            'uri': 'file:///a.txt',
+          },
+          output: '{"error":"MCP server gone is not connected."}',
+          isError: true,
+        ),
+      );
+      expect(offline.resultLine, contains('gone'));
+      expect(offline.isFailure, isTrue);
+    },
+  );
+
+  test(
     'long titles and summaries are truncated',
     () {
       final long = 'x' * 200;

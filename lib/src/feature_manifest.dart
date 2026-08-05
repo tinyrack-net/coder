@@ -558,6 +558,18 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'mcp.resource.access',
+    description:
+        'Discovers MCP resources and templates, shows them per server, and '
+        'reads one resource inside a turn.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'tool.context.budget',
     description:
         'Normalizes provider token counters, reports the tokens left in the '

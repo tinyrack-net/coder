@@ -1742,6 +1742,24 @@ abstract class AppLocalizations {
   /// **'running · {lines} lines'**
   String toolExecRunning(int lines);
 
+  /// Result line of a list_mcp_resources tool call.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} resources'**
+  String toolMcpResources(int count);
+
+  /// Result line of a list_mcp_resource_templates tool call.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} templates'**
+  String toolMcpResourceTemplates(int count);
+
+  /// Result line of a read_mcp_resource tool call.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} blocks'**
+  String toolMcpResourceRead(int count);
+
   /// Result line of a view_image tool call.
   ///
   /// In en, this message translates to:
@@ -2317,6 +2335,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed'**
   String get mcpSettingsStatusFailed;
+
+  /// Label for the resource count in the MCP server list row.
+  ///
+  /// In en, this message translates to:
+  /// **'resources'**
+  String get mcpSettingsDiscoveredResources;
+
+  /// Heading of the collapsible MCP resource list.
+  ///
+  /// In en, this message translates to:
+  /// **'Published resources'**
+  String get mcpSettingsResources;
+
+  /// Empty state of the MCP resource list.
+  ///
+  /// In en, this message translates to:
+  /// **'This server publishes no resources.'**
+  String get mcpSettingsNoResources;
+
+  /// Heading of the collapsible MCP resource template list.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource templates'**
+  String get mcpSettingsResourceTemplates;
+
+  /// Empty state of the MCP resource template list.
+  ///
+  /// In en, this message translates to:
+  /// **'This server publishes no resource templates.'**
+  String get mcpSettingsNoResourceTemplates;
 
   /// Heading of the discovered tool list.
   ///

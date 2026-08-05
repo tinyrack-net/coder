@@ -43,6 +43,8 @@ final class McpClient {
       <int, Completer<Map<String, dynamic>>>{};
   final StreamController<void> _toolsChanged =
       StreamController<void>.broadcast();
+  final StreamController<void> _resourcesChanged =
+      StreamController<void>.broadcast();
   final StreamController<String> _diagnostics =
       StreamController<String>.broadcast();
   final Completer<void> _closed = Completer<void>();
@@ -55,6 +57,9 @@ final class McpClient {
   bool _connected = false;
   bool _disposed = false;
   List<McpToolDescriptor> _tools = const <McpToolDescriptor>[];
+  List<McpResourceDescriptor> _resources = const <McpResourceDescriptor>[];
+  List<McpResourceTemplateDescriptor> _resourceTemplates =
+      const <McpResourceTemplateDescriptor>[];
   McpServerIdentity? _identity;
 
   /// Whether the handshake completed and the transport is still alive.
@@ -66,8 +71,18 @@ final class McpClient {
   /// What the server reported during `initialize`, once connected.
   McpServerIdentity? get identity => _identity;
 
+  /// The resources most recently published by the server.
+  List<McpResourceDescriptor> get resources => _resources;
+
+  /// The resource templates most recently published by the server.
+  List<McpResourceTemplateDescriptor> get resourceTemplates =>
+      _resourceTemplates;
+
   /// Fires whenever [tools] changes after the initial listing.
   Stream<void> get toolsChanged => _toolsChanged.stream;
+
+  /// Fires whenever [resources] changes after the initial listing.
+  Stream<void> get resourcesChanged => _resourcesChanged.stream;
 
   /// Non-fatal notes from the transport, such as child stderr.
   Stream<String> get diagnostics => _diagnostics.stream;
@@ -118,6 +133,9 @@ final class McpClient {
     final toolCapability = capabilities is Map<String, dynamic>
         ? capabilities['tools']
         : null;
+    final resourceCapability = capabilities is Map<String, dynamic>
+        ? capabilities['resources']
+        : null;
     final identity = McpServerIdentity(
       protocolVersion: version,
       name: info is Map<String, dynamic> && info['name'] is String
@@ -130,12 +148,20 @@ final class McpClient {
       emitsToolListChanged:
           toolCapability is Map<String, dynamic> &&
           toolCapability['listChanged'] == true,
+      publishesResources: resourceCapability != null,
+      emitsResourceListChanged:
+          resourceCapability is Map<String, dynamic> &&
+          resourceCapability['listChanged'] == true,
     );
     _identity = identity;
 
     await _notify(McpMethod.initialized);
     if (identity.publishesTools) {
       _tools = await _listTools();
+    }
+    if (identity.publishesResources) {
+      _resources = await _listResources();
+      _resourceTemplates = await _listResourceTemplates();
     }
     _startPinging();
     return identity;
@@ -160,6 +186,22 @@ final class McpClient {
     if (!_toolsChanged.isClosed) _toolsChanged.add(null);
   }
 
+  /// Lists the server's resources and templates again.
+  Future<void> refreshResources() async {
+    if (_identity?.publishesResources != true) return;
+    _resources = await _listResources();
+    _resourceTemplates = await _listResourceTemplates();
+    if (!_resourcesChanged.isClosed) _resourcesChanged.add(null);
+  }
+
+  /// Reads one published resource.
+  Future<McpReadResourceResult> readResource(String uri) async {
+    final result = await _request(McpMethod.resourcesRead, <String, dynamic>{
+      'uri': uri,
+    });
+    return McpReadResourceResult.fromJson(result);
+  }
+
   /// Ends the session and releases every resource the client holds.
   Future<void> close() async {
     if (_disposed) return;
@@ -172,6 +214,7 @@ final class McpClient {
     await transport.close();
     if (!_closed.isCompleted) _closed.complete();
     await _toolsChanged.close();
+    await _resourcesChanged.close();
     await _diagnostics.close();
   }
 
@@ -183,19 +226,49 @@ final class McpClient {
     }
   }
 
-  Future<List<McpToolDescriptor>> _listTools() async {
-    final collected = <McpToolDescriptor>[];
+  Future<void> _refreshResourcesQuietly() async {
+    try {
+      await refreshResources();
+    } on Object catch (error) {
+      _report('$error');
+    }
+  }
+
+  Future<List<McpResourceDescriptor>> _listResources() =>
+      _listPaged<McpResourceDescriptor>(
+        McpMethod.resourcesList,
+        'resources',
+        McpResourceDescriptor.fromJson,
+      );
+
+  Future<List<McpResourceTemplateDescriptor>> _listResourceTemplates() =>
+      _listPaged<McpResourceTemplateDescriptor>(
+        McpMethod.resourceTemplatesList,
+        'resourceTemplates',
+        McpResourceTemplateDescriptor.fromJson,
+      );
+
+  /// Drains every page of a cursor-paginated list method.
+  ///
+  /// An entry the server malformed is reported and skipped rather than
+  /// failing the whole listing, matching how tools are decoded.
+  Future<List<T>> _listPaged<T>(
+    String method,
+    String key,
+    T Function(Map<String, dynamic> json) decode,
+  ) async {
+    final collected = <T>[];
     String? cursor;
     do {
-      final result = await _request(McpMethod.toolsList, <String, dynamic>{
+      final result = await _request(method, <String, dynamic>{
         'cursor': ?cursor,
       });
-      final entries = result['tools'];
+      final entries = result[key];
       if (entries is List) {
         for (final entry in entries) {
           if (entry is! Map<String, dynamic>) continue;
           try {
-            collected.add(McpToolDescriptor.fromJson(entry));
+            collected.add(decode(entry));
           } on McpProtocolException catch (error) {
             _report(error.message);
           }
@@ -204,8 +277,14 @@ final class McpClient {
       final next = result['nextCursor'];
       cursor = next is String && next.isNotEmpty ? next : null;
     } while (cursor != null);
-    return List<McpToolDescriptor>.unmodifiable(collected);
+    return List<T>.unmodifiable(collected);
   }
+
+  Future<List<McpToolDescriptor>> _listTools() => _listPaged<McpToolDescriptor>(
+    McpMethod.toolsList,
+    'tools',
+    McpToolDescriptor.fromJson,
+  );
 
   Future<Map<String, dynamic>> _request(
     String method,
@@ -259,6 +338,9 @@ final class McpClient {
       if (id == null) {
         if (method == McpMethod.toolsListChanged) {
           unawaited(_refreshToolsQuietly());
+        }
+        if (method == McpMethod.resourcesListChanged) {
+          unawaited(_refreshResourcesQuietly());
         }
         return;
       }

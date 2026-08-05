@@ -1122,6 +1122,21 @@
     "description": "Result line while a pseudo-terminal session is still running.",
     "placeholders": {"lines": {"type": "int"}}
   },
+  "toolMcpResources": "{count} resources",
+  "@toolMcpResources": {
+    "description": "Result line of a list_mcp_resources tool call.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "toolMcpResourceTemplates": "{count} templates",
+  "@toolMcpResourceTemplates": {
+    "description": "Result line of a list_mcp_resource_templates tool call.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "toolMcpResourceRead": "{count} blocks",
+  "@toolMcpResourceRead": {
+    "description": "Result line of a read_mcp_resource tool call.",
+    "placeholders": {"count": {"type": "int"}}
+  },
   "toolImageLoaded": "{bytes} bytes viewed",
   "@toolImageLoaded": {
     "description": "Result line of a view_image tool call.",
@@ -1602,6 +1617,26 @@
   "mcpSettingsStatusFailed": "Failed",
   "@mcpSettingsStatusFailed": {
     "description": "Server status label."
+  },
+  "mcpSettingsDiscoveredResources": "resources",
+  "@mcpSettingsDiscoveredResources": {
+    "description": "Label for the resource count in the MCP server list row."
+  },
+  "mcpSettingsResources": "Published resources",
+  "@mcpSettingsResources": {
+    "description": "Heading of the collapsible MCP resource list."
+  },
+  "mcpSettingsNoResources": "This server publishes no resources.",
+  "@mcpSettingsNoResources": {
+    "description": "Empty state of the MCP resource list."
+  },
+  "mcpSettingsResourceTemplates": "Resource templates",
+  "@mcpSettingsResourceTemplates": {
+    "description": "Heading of the collapsible MCP resource template list."
+  },
+  "mcpSettingsNoResourceTemplates": "This server publishes no resource templates.",
+  "@mcpSettingsNoResourceTemplates": {
+    "description": "Empty state of the MCP resource template list."
   },
   "mcpSettingsDiscoveredTools": "Tools",
   "@mcpSettingsDiscoveredTools": {

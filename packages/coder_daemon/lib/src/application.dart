@@ -12,6 +12,7 @@ import 'package:coder_daemon/src/database.dart';
 import 'package:coder_daemon/src/exec_session_service.dart';
 import 'package:coder_daemon/src/git_workspace.dart';
 import 'package:coder_daemon/src/mcp_config.dart';
+import 'package:coder_daemon/src/mcp_resource_tools.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/mcp_transports.dart';
 import 'package:coder_daemon/src/openai_oauth_gateway.dart';
@@ -175,6 +176,27 @@ abstract final class DaemonApplication {
             alwaysOn: true,
           ),
           const AgentToolDefinitionDto(
+            id: 'list_mcp_resources',
+            name: 'list_mcp_resources',
+            description:
+                'List resources MCP servers publish, such as files, schemas, '
+                'or application state.',
+            risk: ToolRisk.read,
+          ),
+          const AgentToolDefinitionDto(
+            id: 'list_mcp_resource_templates',
+            name: 'list_mcp_resource_templates',
+            description:
+                'List parameterized resource templates MCP servers publish.',
+            risk: ToolRisk.read,
+          ),
+          const AgentToolDefinitionDto(
+            id: 'read_mcp_resource',
+            name: 'read_mcp_resource',
+            description: 'Read one resource from an MCP server.',
+            risk: ToolRisk.read,
+          ),
+          const AgentToolDefinitionDto(
             id: 'exec_command',
             name: 'exec_command',
             description:
@@ -300,6 +322,21 @@ abstract final class DaemonApplication {
                   ],
                   // One capability, two tools: nobody can enable writing to a
                   // shell without being able to start one.
+                  'list_mcp_resources' => <AgentTool?>[
+                    ListMcpResourcesTool(
+                      host: SessionMcpResourceHost(mcp, workspaceRoot),
+                    ),
+                  ],
+                  'list_mcp_resource_templates' => <AgentTool?>[
+                    ListMcpResourceTemplatesTool(
+                      host: SessionMcpResourceHost(mcp, workspaceRoot),
+                    ),
+                  ],
+                  'read_mcp_resource' => <AgentTool?>[
+                    ReadMcpResourceTool(
+                      host: SessionMcpResourceHost(mcp, workspaceRoot),
+                    ),
+                  ],
                   'exec_command' => <AgentTool?>[
                     ExecCommandTool(host: execHost),
                     WriteStdinTool(host: execHost),

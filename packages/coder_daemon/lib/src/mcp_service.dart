@@ -15,6 +15,48 @@ typedef McpTimerFactory = Timer Function(Duration delay, void Function() run);
 
 Timer _realTimer(Duration delay, void Function() run) => Timer(delay, run);
 
+/// A server that is not configured, not visible, or not connected yet.
+///
+/// An expected runtime condition rather than a programming error: the server
+/// may still be starting, or may have dropped and be retrying.
+final class McpServerUnavailable implements Exception {
+  /// Creates an [McpServerUnavailable].
+  const McpServerUnavailable(this.server);
+
+  /// Configured id of the server that could not answer.
+  final String server;
+
+  @override
+  String toString() => 'MCP server "$server" is not connected.';
+}
+
+/// One resource paired with the server that publishes it.
+final class McpServerResource {
+  /// Creates an [McpServerResource].
+  const McpServerResource({required this.server, required this.descriptor});
+
+  /// Configured id of the owning server.
+  final String server;
+
+  /// What the server published.
+  final McpResourceDescriptor descriptor;
+}
+
+/// One resource template paired with the server that publishes it.
+final class McpServerResourceTemplate {
+  /// Creates an [McpServerResourceTemplate].
+  const McpServerResourceTemplate({
+    required this.server,
+    required this.descriptor,
+  });
+
+  /// Configured id of the owning server.
+  final String server;
+
+  /// What the server published.
+  final McpResourceTemplateDescriptor descriptor;
+}
+
 /// Connects to configured MCP servers and publishes their tools.
 ///
 /// Connections are established in the background and never block a turn: only
@@ -89,6 +131,76 @@ final class McpService implements AgentToolCatalog {
                   const <String, _Connection>{}.values)
             connection.state,
       ];
+
+  /// Ready servers visible to [workspaceRoot], user scope winning by id.
+  ///
+  /// A project server cannot shadow a user server of the same id, matching
+  /// how [tool] resolves, so a repository cannot redirect a name the user
+  /// configured for themselves.
+  Map<String, _Connection> _visibleConnections({String? workspaceRoot}) {
+    final visible = <String, _Connection>{};
+    if (workspaceRoot != null) {
+      final project = _projects[workspaceRoot]?.connections;
+      if (project != null) visible.addAll(project);
+    }
+    visible.addAll(_user);
+    return visible;
+  }
+
+  /// Resources published by [server], or by every visible server when null.
+  ///
+  /// Fan-out is sorted by server name so a model paging through the result
+  /// sees a stable order across calls.
+  List<McpServerResource> resources({String? server, String? workspaceRoot}) {
+    final visible = _visibleConnections(workspaceRoot: workspaceRoot);
+    final names = server == null
+        ? (visible.keys.toList()..sort())
+        : <String>[if (visible.containsKey(server)) server];
+    return <McpServerResource>[
+      for (final name in names)
+        for (final descriptor in visible[name]!.readyResources)
+          McpServerResource(server: name, descriptor: descriptor),
+    ];
+  }
+
+  /// Resource templates published by [server], or by every visible server.
+  List<McpServerResourceTemplate> resourceTemplates({
+    String? server,
+    String? workspaceRoot,
+  }) {
+    final visible = _visibleConnections(workspaceRoot: workspaceRoot);
+    final names = server == null
+        ? (visible.keys.toList()..sort())
+        : <String>[if (visible.containsKey(server)) server];
+    return <McpServerResourceTemplate>[
+      for (final name in names)
+        for (final descriptor in visible[name]!.readyResourceTemplates)
+          McpServerResourceTemplate(server: name, descriptor: descriptor),
+    ];
+  }
+
+  /// Whether [server] is visible to [workspaceRoot] and ready to answer.
+  bool isReady(String server, {String? workspaceRoot}) =>
+      _visibleConnections(
+        workspaceRoot: workspaceRoot,
+      )[server]?.status ==
+      McpServerStatus.ready;
+
+  /// Reads one resource from [server].
+  Future<McpReadResourceResult> readResource({
+    required String server,
+    required String uri,
+    String? workspaceRoot,
+  }) async {
+    final connection = _visibleConnections(
+      workspaceRoot: workspaceRoot,
+    )[server];
+    final client = connection?.status == McpServerStatus.ready
+        ? connection?.client
+        : null;
+    if (client == null) throw McpServerUnavailable(server);
+    return client.readResource(uri);
+  }
 
   /// Why the project configuration for [workspaceRoot] could not be read.
   String? projectError(String workspaceRoot) => _projects[workspaceRoot]?.error;
@@ -428,6 +540,7 @@ final class _Connection {
 
   McpClient? client;
   StreamSubscription<void>? _toolsChanged;
+  StreamSubscription<void>? _resourcesChanged;
   StreamSubscription<String>? _diagnostics;
   Timer? _retryTimer;
   McpServerStatus status = McpServerStatus.disabled;
@@ -471,12 +584,45 @@ final class _Connection {
           description: descriptor.description ?? '',
         ),
     ],
+    resources: <McpResourceSummaryDto>[
+      for (final descriptor in readyResources)
+        McpResourceSummaryDto(
+          uri: descriptor.uri,
+          name: descriptor.name,
+          title: descriptor.title,
+          description: descriptor.description,
+          mimeType: descriptor.mimeType,
+          sizeBytes: descriptor.sizeBytes,
+        ),
+    ],
+    resourceTemplates: <McpResourceTemplateSummaryDto>[
+      for (final descriptor in readyResourceTemplates)
+        McpResourceTemplateSummaryDto(
+          uriTemplate: descriptor.uriTemplate,
+          name: descriptor.name,
+          title: descriptor.title,
+          description: descriptor.description,
+          mimeType: descriptor.mimeType,
+        ),
+    ],
     error: error,
     diagnostics: List<String>.unmodifiable(diagnostics),
     lastConnectedAt: lastConnectedAt,
     nextRetryAt: nextRetryAt,
     attempt: attempt,
   );
+
+  /// Resources this server published, empty until it is ready.
+  List<McpResourceDescriptor> get readyResources =>
+      status == McpServerStatus.ready
+      ? client?.resources ?? const <McpResourceDescriptor>[]
+      : const <McpResourceDescriptor>[];
+
+  /// Resource templates this server published, empty until it is ready.
+  List<McpResourceTemplateDescriptor> get readyResourceTemplates =>
+      status == McpServerStatus.ready
+      ? client?.resourceTemplates ?? const <McpResourceTemplateDescriptor>[]
+      : const <McpResourceTemplateDescriptor>[];
 
   AgentTool? toolNamed(String id) {
     final connected = client;
@@ -536,6 +682,9 @@ final class _Connection {
       _toolsChanged = connected.toolsChanged.listen((_) {
         service._announce();
       });
+      _resourcesChanged = connected.resourcesChanged.listen((_) {
+        service._announce();
+      });
       unawaited(connected.closed.then((_) => _handleLost()));
       status = McpServerStatus.ready;
       error = null;
@@ -584,8 +733,10 @@ final class _Connection {
 
   Future<void> _releaseClient() async {
     await _toolsChanged?.cancel();
+    await _resourcesChanged?.cancel();
     await _diagnostics?.cancel();
     _toolsChanged = null;
+    _resourcesChanged = null;
     _diagnostics = null;
     await client?.close();
     client = null;

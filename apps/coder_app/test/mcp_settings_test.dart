@@ -186,6 +186,86 @@ void main() {
     expect(find.text('mcp__github__echo'), findsOneWidget);
   });
 
+  testWidgets(
+    'a server publishing resources lists them beside its tools',
+    (tester) async {
+      final api = FakeCoderApi()
+        ..mcpServers['github'] = ready(stdioServer).copyWith(
+          resources: const <McpResourceSummaryDto>[
+            McpResourceSummaryDto(
+              uri: 'file:///repo/README.md',
+              name: 'README',
+              description: 'How to build.',
+            ),
+          ],
+          resourceTemplates: const <McpResourceTemplateSummaryDto>[
+            McpResourceTemplateSummaryDto(
+              uriTemplate: 'file:///repo/{path}',
+              name: 'Repository file',
+            ),
+          ],
+        );
+      await pump(tester, api);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('mcp-server-tile-github')),
+      );
+      await tester.pumpAndSettle();
+
+      // Both lists are collapsed so a server with hundreds of resources
+      // cannot push the error and diagnostics blocks off screen.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('mcp-server-resources')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey<String>('mcp-resource-tile-file:///repo/README.md'),
+        ),
+        findsOneWidget,
+      );
+
+      final templates = find.byKey(
+        const ValueKey<String>('mcp-server-resource-templates'),
+      );
+      await tester.scrollUntilVisible(
+        templates,
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(templates);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey<String>(
+            'mcp-resource-template-tile-file:///repo/{path}',
+          ),
+        ),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__mcp_resource_access__widget'],
+  );
+
+  testWidgets(
+    'a server without resources says so instead of showing nothing',
+    (tester) async {
+      final api = FakeCoderApi()..mcpServers['github'] = ready(stdioServer);
+      await pump(tester, api);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('mcp-server-tile-github')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('mcp-server-resources')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('게시된 리소스가 없습니다.'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__mcp_resource_access__widget'],
+  );
+
   testWidgets('a failed server surfaces its reason and output', (tester) async {
     final api = FakeCoderApi()
       ..mcpServers['github'] = const McpServerStateDto(
