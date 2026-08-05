@@ -37,7 +37,7 @@ targets:
     windows:
       application-id: Coder
       executable: coder.exe
-      background-color: "#625bff"
+      background-color: "#0a0a0a"
       identity:
         name-env: MSIX_IDENTITY_NAME
         publisher-env: MSIX_PUBLISHER

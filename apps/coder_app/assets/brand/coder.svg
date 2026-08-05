@@ -1,5 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="112" fill="#625bff"/>
-  <path fill="#ffffff"
-        d="M256 120a136 136 0 1 0 117.8 204.1l-55.4-32A72 72 0 1 1 318.4 220l55.4-32A135.9 135.9 0 0 0 256 120Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="coder-app-icon-title coder-app-icon-description" data-row-starts="14.666667 28 41.333333" data-row-height="8" data-row-bounds="14.666667 49.333333">
+  <title id="coder-app-icon-title">Coder app icon</title>
+  <desc id="coder-app-icon-description">A command prompt chevron beside three agent output rows on a Tinyrack tile</desc>
+  <path fill="#0a0a0a" d="M16 0h32a16 16 0 0 1 16 16v32a16 16 0 0 1-16 16H16A16 16 0 0 1 0 48V16A16 16 0 0 1 16 0Z"/>
+  <path fill="#fafafa" d="M40 14.667h5.333a4 4 0 0 1 0 8H40a4 4 0 0 1 0-8Zm0 13.333h5.333a4 4 0 0 1 0 8H40a4 4 0 0 1 0-8Zm0 13.333h5.333a4 4 0 0 1 0 8H40a4 4 0 0 1 0-8Z"/>
+  <path fill="#a78bfa" d="M31.43 29.942 23.43 16.609a4 4 0 0 0-6.86 4.116l8 13.333a4 4 0 0 0 6.86-4.116Zm-6.86 0-8 13.333a4 4 0 0 0 6.86 4.116l8-13.333a4 4 0 0 0-6.86-4.116Z"/>
 </svg>
