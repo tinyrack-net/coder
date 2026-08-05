@@ -177,6 +177,31 @@ void main() {
   );
 
   testWidgets(
+    'an open menu drops below the menubar instead of covering it',
+    (tester) async {
+      final harness = build();
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      final menubar = tester.getRect(find.byType(TRMenubar));
+      await tester.tap(find.text('File'));
+      await tester.pumpAndSettle();
+
+      final panel = tester.getRect(
+        find
+            .ancestor(
+              of: find.widgetWithText(TRMenuItem, 'Quit'),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(panel.top, menubar.bottom);
+      expect(tester.getRect(find.text('Help')).overlaps(panel), isFalse);
+    },
+    tags: const <String>['feature_test__desktop_window_chrome__widget'],
+  );
+
+  testWidgets(
     'a menu stays open when a keyboard tooltip on the home pane closes',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1400, 900));
