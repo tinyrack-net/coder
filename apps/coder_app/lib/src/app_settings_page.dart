@@ -31,7 +31,7 @@ class AppSettingsPage extends ConsumerWidget {
         .supportsEmbeddedDaemon;
     final body = state.when(
       loading: () => const Center(child: TRSpinner()),
-      error: (error, stackTrace) => Center(child: Text('$error')),
+      error: (error, stackTrace) => Center(child: TRText.inherit('$error')),
       data: (registry) => _settingsBody(
         context,
         ref,
@@ -50,7 +50,7 @@ class AppSettingsPage extends ConsumerWidget {
               closeTask(context, () => const WorkspaceHomeRoute().go(context)),
           icon: const Icon(CoderIcons.back),
         ),
-        title: Text(l10n.appSettingsTitle),
+        title: TRText.inherit(l10n.appSettingsTitle),
       ),
       body: body,
     );
@@ -65,20 +65,20 @@ class AppSettingsPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final embeddedRuntime = registry.runtimes[embeddedHostId];
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       children: <Widget>[
         if (supportsEmbedded) ...<Widget>[
-          Text(
+          TRText(
             l10n.appSettingsLocalSection,
-            style: Theme.of(context).textTheme.titleLarge,
+            variant: TRTextVariant.headingLg,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: TRSpacing.small),
           if (embeddedRuntime != null &&
               embeddedRuntime.status == HostRuntimeStatus.error) ...<Widget>[
             TRAlert(
               key: const ValueKey<String>('embedded-daemon-error'),
-              title: Text(l10n.appSettingsEmbeddedFailureTitle),
-              description: Text(
+              title: TRText.inherit(l10n.appSettingsEmbeddedFailureTitle),
+              description: TRText.inherit(
                 embeddedRuntime.errorReason ==
                         HostFailureReason.embeddedPortInUse
                     ? l10n.appSettingsEmbeddedPortConflict(
@@ -95,7 +95,7 @@ class AppSettingsPage extends ConsumerWidget {
                   onPressed: () => ref
                       .read(hostRegistryControllerProvider.notifier)
                       .reconnect(embeddedHostId),
-                  child: Text(l10n.commonRetry),
+                  child: TRText.inherit(l10n.commonRetry),
                 ),
               ],
             ),
@@ -106,8 +106,8 @@ class AppSettingsPage extends ConsumerWidget {
             child: Column(
               children: <Widget>[
                 CoderSwitchRow(
-                  title: Text(l10n.embeddedDaemonName),
-                  subtitle: Text(
+                  title: TRText.inherit(l10n.embeddedDaemonName),
+                  subtitle: TRText.inherit(
                     <String>[
                       l10n.appSettingsEmbeddedSubtitle,
                       if (embeddedRuntime != null &&
@@ -126,8 +126,8 @@ class AppSettingsPage extends ConsumerWidget {
                 const TRSeparator(),
                 CoderSwitchRow(
                   key: const ValueKey<String>('embedded-daemon-exposure'),
-                  title: Text(l10n.appSettingsExposure),
-                  subtitle: Text(l10n.appSettingsExposureSubtitle),
+                  title: TRText.inherit(l10n.appSettingsExposure),
+                  subtitle: TRText.inherit(l10n.appSettingsExposureSubtitle),
                   value:
                       registry.settings.embeddedDaemonExposure ==
                       EmbeddedDaemonExposure.allInterfaces,
@@ -149,7 +149,7 @@ class AppSettingsPage extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: TRSpacing.extraLarge),
         ],
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -157,9 +157,9 @@ class AppSettingsPage extends ConsumerWidget {
           spacing: 12,
           runSpacing: 8,
           children: <Widget>[
-            Text(
+            TRText(
               l10n.appSettingsRemoteSection,
-              style: Theme.of(context).textTheme.titleLarge,
+              variant: TRTextVariant.headingLg,
             ),
             TRButton(
               key: const ValueKey<String>('app-settings-add-remote'),
@@ -171,19 +171,19 @@ class AppSettingsPage extends ConsumerWidget {
                 children: <Widget>[
                   const Icon(CoderIcons.add),
                   const SizedBox(width: TRSpacing.extraSmall),
-                  Text(l10n.appSettingsAddRemote),
+                  TRText(l10n.appSettingsAddRemote),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         if (registry.profiles.isEmpty)
           TRCard(
             padding: TRCardPadding.none,
             child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(l10n.appSettingsNoRemotes),
+              padding: const EdgeInsets.all(TRSpacing.extraLarge),
+              child: TRText.inherit(l10n.appSettingsNoRemotes),
             ),
           ),
         for (final profile in registry.profiles)
@@ -210,18 +210,18 @@ class AppSettingsPage extends ConsumerWidget {
       final confirmed = await showTRDialog<bool>(
         context: context,
         builder: (context) => TRAlertDialog(
-          title: Text(l10n.appSettingsStopEmbeddedTitle),
-          content: Text(l10n.appSettingsStopEmbeddedBody),
+          title: TRText.inherit(l10n.appSettingsStopEmbeddedTitle),
+          content: TRText.inherit(l10n.appSettingsStopEmbeddedBody),
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
               onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.commonCancel),
+              child: TRText.inherit(l10n.commonCancel),
             ),
             TRButton(
               intent: TRIntent.primary,
               onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.commonStop),
+              child: TRText.inherit(l10n.commonStop),
             ),
           ],
         ),
@@ -302,7 +302,7 @@ class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
             onPressed: changed && !_applying && !widget.restarting
                 ? () => _apply(port)
                 : null,
-            child: Text(l10n.appSettingsEmbeddedPortApply),
+            child: TRText.inherit(l10n.appSettingsEmbeddedPortApply),
           ),
         ],
       ),
@@ -333,13 +333,13 @@ class _RemoteHostCard extends ConsumerWidget {
     return TRCard(
       padding: TRCardPadding.none,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(TRSpacing.medium),
         child: Column(
           children: <Widget>[
             CoderListRow(
               leading: Icon(hostStatusIcon(runtime?.status)),
-              title: Text(profile.label),
-              subtitle: Text(
+              title: TRText.inherit(profile.label),
+              subtitle: TRText.inherit(
                 '${profile.websocketUri}\n${hostStatusText(l10n, runtime)}',
               ),
               isThreeLine: true,
@@ -354,7 +354,7 @@ class _RemoteHostCard extends ConsumerWidget {
             ),
             CoderSwitchRow(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              title: Text(l10n.appSettingsAutoConnect),
+              title: TRText.inherit(l10n.appSettingsAutoConnect),
               value: profile.autoConnect,
               onChanged: (enabled) => ref
                   .read(hostRegistryControllerProvider.notifier)
@@ -375,7 +375,7 @@ class _RemoteHostCard extends ConsumerWidget {
                     children: <Widget>[
                       const Icon(CoderIcons.refresh),
                       const SizedBox(width: TRSpacing.extraSmall),
-                      Text(l10n.appSettingsReconnect),
+                      TRText(l10n.appSettingsReconnect),
                     ],
                   ),
                 ),
@@ -390,7 +390,7 @@ class _RemoteHostCard extends ConsumerWidget {
                       children: <Widget>[
                         const Icon(CoderIcons.network),
                         const SizedBox(width: TRSpacing.extraSmall),
-                        Text(l10n.appSettingsProviderSettings),
+                        TRText(l10n.appSettingsProviderSettings),
                       ],
                     ),
                   ),
@@ -470,7 +470,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
           ),
           icon: const Icon(CoderIcons.back),
         ),
-        title: Text(
+        title: TRText.inherit(
           existing == null
               ? l10n.appSettingsAddRemoteTitle
               : l10n.appSettingsEditRemoteTitle,
@@ -480,7 +480,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 620),
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(TRSpacing.extraLarge),
             children: <Widget>[
               TRTextField(
                 key: const ValueKey<String>('remote-host-label'),
@@ -488,7 +488,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 label: l10n.commonName,
                 placeholder: 'Production daemon',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 key: const ValueKey<String>('remote-host-address'),
                 controller: _address,
@@ -496,7 +496,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 label: l10n.appSettingsAddress,
                 placeholder: 'wss://coder.example.com/ws',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 key: const ValueKey<String>('remote-host-token'),
                 controller: _token,
@@ -505,19 +505,19 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                     ? 'Bearer token'
                     : l10n.appSettingsNewToken,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: TRSpacing.small),
               CoderSwitchRow(
                 contentPadding: EdgeInsets.zero,
-                title: Text(l10n.appSettingsAutoConnect),
+                title: TRText.inherit(l10n.appSettingsAutoConnect),
                 value: _autoConnect,
                 onChanged: (value) => setState(() => _autoConnect = value),
               ),
               if (_error case final error?)
-                Text(
+                TRText(
                   error,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  color: TRTextColor.danger,
                 ),
-              const SizedBox(height: 20),
+              const SizedBox(height: TRSpacing.extraLarge),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
@@ -525,13 +525,15 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                     TRButton(
                       appearance: TRAppearance.ghost,
                       onPressed: _saving ? null : () => _delete(existing),
-                      child: Text(l10n.commonDelete),
+                      child: TRText.inherit(l10n.commonDelete),
                     ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: TRSpacing.small),
                   TRButton(
                     intent: TRIntent.primary,
                     onPressed: _saving ? null : () => _save(existing),
-                    child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
+                    child: TRText.inherit(
+                      _saving ? l10n.commonSaving : l10n.commonSave,
+                    ),
                   ),
                 ],
               ),
@@ -589,18 +591,18 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
     final confirmed = await showTRDialog<bool>(
       context: context,
       builder: (context) => TRAlertDialog(
-        title: Text(l10n.appSettingsDeleteTitle(profile.label)),
-        content: Text(l10n.appSettingsDeleteBody),
+        title: TRText.inherit(l10n.appSettingsDeleteTitle(profile.label)),
+        content: TRText.inherit(l10n.appSettingsDeleteBody),
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
+            child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
             intent: TRIntent.primary,
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.commonDelete),
+            child: TRText.inherit(l10n.commonDelete),
           ),
         ],
       ),

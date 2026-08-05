@@ -55,7 +55,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         final projects = _projects(value);
         if (projects.isEmpty) {
           return Center(
-            child: Text(
+            child: TRText(
               AppLocalizations.of(context).projectSettingsNoProjects,
             ),
           );
@@ -87,11 +87,14 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
             return Row(
               children: <Widget>[
                 SizedBox(width: 280, child: list),
-                const VerticalDivider(width: 1),
+                const TRSeparator(
+                  orientation: TRSeparatorOrientation.vertical,
+                  variant: TRSeparatorVariant.muted,
+                ),
                 Expanded(
                   child: selected == null
                       ? Center(
-                          child: Text(
+                          child: TRText(
                             AppLocalizations.of(
                               context,
                             ).projectSettingsSelectProject,
@@ -138,8 +141,10 @@ class _ProjectList extends StatelessWidget {
     return Column(
       children: <Widget>[
         CoderListRow(
-          title: Text(l10n.projectSettingsHeading),
-          subtitle: Text(l10n.projectSettingsCount(projects.length)),
+          title: TRText.inherit(l10n.projectSettingsHeading),
+          subtitle: TRText.inherit(
+            l10n.projectSettingsCount(projects.length),
+          ),
         ),
         const TRSeparator(),
         Expanded(
@@ -153,12 +158,9 @@ class _ProjectList extends StatelessWidget {
                         ? CoderIcons.worktree
                         : CoderIcons.folder,
                   ),
-                  title: Text(project.name),
-                  subtitle: Text(
-                    project.rootPath,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  title: TRText.inherit(project.name),
+                  // The row already caps and ellipsizes its subtitle.
+                  subtitle: TRText.inherit(project.rootPath),
                   trailing: const Icon(CoderIcons.chevronRight),
                   onTap: () => onSelected(project.id),
                 ),
@@ -245,8 +247,8 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                       onPressed: widget.onBack,
                       icon: const Icon(CoderIcons.back),
                     ),
-              title: Text(widget.workspace.name),
-              subtitle: Text(value.sourcePath),
+              title: TRText.inherit(widget.workspace.name),
+              subtitle: TRText.inherit(value.sourcePath),
               trailing: Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
@@ -261,7 +263,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   TRButton(
                     intent: TRIntent.primary,
                     onPressed: _saving ? null : _save,
-                    child: Text(
+                    child: TRText.inherit(
                       _saving ? l10n.commonSaving : l10n.commonSave,
                     ),
                   ),
@@ -271,15 +273,15 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
             const TRSeparator(),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(TRSpacing.extraLarge),
                 children: <Widget>[
                   if (_saved) ...[
                     TRAlert(
-                      title: Text(l10n.commonSaved),
+                      title: TRText.inherit(l10n.commonSaved),
                       variant: TRStatusVariant.success,
                       icon: const Icon(CoderIcons.success),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: TRSpacing.large),
                   ],
                   if (_error case final error?)
                     TRCard(
@@ -287,19 +289,19 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                       variant: TRCardVariant.elevated,
                       child: CoderListRow(
                         leading: const Icon(CoderIcons.error),
-                        title: Text(error),
+                        title: TRText.inherit(error),
                       ),
                     ),
-                  Text(
+                  const TRText(
                     'Worktree lifecycle hooks',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    variant: TRTextVariant.headingMd,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: TRSpacing.extraSmall),
+                  TRText(
                     l10n.projectSettingsHookHelp,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    variant: TRTextVariant.bodySm,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     controller: _setup,
                     enabled: !_saving,
@@ -308,7 +310,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsSetup,
                     placeholder: 'npm install',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     controller: _teardown,
                     enabled: !_saving,
@@ -317,17 +319,17 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsTeardown,
                     placeholder: 'docker compose down',
                   ),
-                  const SizedBox(height: 24),
-                  Text(
+                  const SizedBox(height: TRSpacing.extraLarge),
+                  TRText(
                     l10n.projectSettingsShellHeading,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    variant: TRTextVariant.headingMd,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: TRSpacing.extraSmall),
+                  TRText(
                     l10n.projectSettingsShellHelp,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    variant: TRTextVariant.bodySm,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     key: const ValueKey<String>('project-shell-executable'),
                     controller: _shellExecutable,
@@ -335,7 +337,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsShellExecutable,
                     placeholder: '/bin/zsh',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     key: const ValueKey<String>('project-shell-arguments'),
                     controller: _shellArguments,
@@ -345,17 +347,17 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsShellArguments,
                     placeholder: '-l',
                   ),
-                  const SizedBox(height: 24),
-                  Text(
+                  const SizedBox(height: TRSpacing.extraLarge),
+                  TRText(
                     l10n.projectSettingsHostShellHeading,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    variant: TRTextVariant.headingMd,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: TRSpacing.extraSmall),
+                  TRText(
                     l10n.projectSettingsHostShellHelp,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    variant: TRTextVariant.bodySm,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     key: const ValueKey<String>('host-shell-executable'),
                     controller: _hostShellExecutable,
@@ -363,7 +365,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     label: l10n.projectSettingsShellExecutable,
                     placeholder: '/bin/zsh',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TRSpacing.large),
                   TRTextField(
                     key: const ValueKey<String>('host-shell-arguments'),
                     controller: _hostShellArguments,
@@ -457,12 +459,12 @@ class _ProjectSettingsError extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text('$error'),
-        const SizedBox(height: 12),
+        TRText('$error'),
+        const SizedBox(height: TRSpacing.medium),
         TRButton(
           intent: TRIntent.primary,
           onPressed: onRetry,
-          child: Text(AppLocalizations.of(context).commonRetry),
+          child: TRText.inherit(AppLocalizations.of(context).commonRetry),
         ),
       ],
     ),

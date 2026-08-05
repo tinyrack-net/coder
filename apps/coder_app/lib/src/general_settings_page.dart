@@ -28,16 +28,18 @@ class GeneralSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final body = ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       children: const <Widget>[
         _LanguageCard(),
-        SizedBox(height: 24),
+        SizedBox(height: TRSpacing.extraLarge),
         _StartupCard(),
       ],
     );
     if (embedded) return body;
     return CoderPageShell(
-      appBar: CoderPageHeader(title: Text(l10n.settingsCategoryGeneral)),
+      appBar: CoderPageHeader(
+        title: TRText.inherit(l10n.settingsCategoryGeneral),
+      ),
       body: body,
     );
   }
@@ -63,19 +65,19 @@ class _StartupCard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
+        TRText(
           l10n.generalStartupSection,
-          style: Theme.of(context).textTheme.titleLarge,
+          variant: TRTextVariant.headingLg,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         TRCard(
           padding: TRCardPadding.none,
           child: Column(
             children: <Widget>[
               CoderSwitchRow(
                 key: const ValueKey<String>('general-settings-start-at-boot'),
-                title: Text(l10n.generalStartupAtBootLabel),
-                subtitle: Text(l10n.generalStartupAtBootDescription),
+                title: TRText.inherit(l10n.generalStartupAtBootLabel),
+                subtitle: TRText.inherit(l10n.generalStartupAtBootDescription),
                 value: settings?.startAtBoot ?? true,
                 onChanged: settings == null
                     ? null
@@ -92,8 +94,10 @@ class _StartupCard extends ConsumerWidget {
                 key: const ValueKey<String>(
                   'general-settings-start-minimized',
                 ),
-                title: Text(l10n.generalStartupMinimizedLabel),
-                subtitle: Text(l10n.generalStartupMinimizedDescription),
+                title: TRText.inherit(l10n.generalStartupMinimizedLabel),
+                subtitle: TRText.inherit(
+                  l10n.generalStartupMinimizedDescription,
+                ),
                 value: settings?.startMinimizedAtBoot ?? true,
                 // Only a login launch can start minimized, so the choice is
                 // meaningless while the app is not registered to launch.
@@ -112,10 +116,10 @@ class _StartupCard extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
+        const SizedBox(height: TRSpacing.small),
+        TRText(
           l10n.generalStartupCloseNotice,
-          style: Theme.of(context).textTheme.bodySmall,
+          variant: TRTextVariant.bodySm,
         ),
       ],
     );
@@ -136,15 +140,15 @@ class _LanguageCard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
+        TRText(
           l10n.generalLanguageSection,
-          style: Theme.of(context).textTheme.titleLarge,
+          variant: TRTextVariant.headingLg,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         TRCard(
           padding: TRCardPadding.none,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(TRSpacing.large),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -170,10 +174,10 @@ class _LanguageCard extends ConsumerWidget {
                             .read(hostRegistryControllerProvider.notifier)
                             .setLocaleTag(tag),
                 ),
-                const SizedBox(height: 8),
-                Text(
+                const SizedBox(height: TRSpacing.small),
+                TRText(
                   l10n.generalLanguageDescription,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  variant: TRTextVariant.bodySm,
                 ),
               ],
             ),

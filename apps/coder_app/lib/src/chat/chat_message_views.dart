@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
-import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/external_url_opener.dart';
@@ -32,33 +31,31 @@ class ChatUserLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
+          const TRText(
             '>',
-            style: chatMonospaceStyle(
-              context,
-              color: theme.colorScheme.primary,
-            ),
+            variant: TRTextVariant.code,
+            color: TRTextColor.primary,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: TRSpacing.small),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 if (message.text.isNotEmpty)
-                  SelectableText(
-                    message.text,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  SelectionArea(
+                    child: TRText(
+                      message.text,
+                      color: TRTextColor.muted,
                     ),
                   ),
                 if (message.attachments.isNotEmpty) ...<Widget>[
-                  if (message.text.isNotEmpty) const SizedBox(height: 6),
+                  if (message.text.isNotEmpty)
+                    const SizedBox(height: TRSpacing.small),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
@@ -143,7 +140,7 @@ class ChatAttachmentTile extends StatelessWidget {
               future: loader(attachment),
               builder: (context, snapshot) => snapshot.hasData
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: const BorderRadius.all(TRRadii.medium),
                       child: Image.memory(
                         snapshot.data!,
                         width: 56,
@@ -173,20 +170,18 @@ class ChatAttachmentTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 280),
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(TRSpacing.small),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: context.tinyrackTheme.border),
+            borderRadius: const BorderRadius.all(TRRadii.large),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               preview,
-              const SizedBox(width: 8),
+              const SizedBox(width: TRSpacing.small),
               Flexible(
-                child: Text(
+                child: TRText.inherit(
                   '${attachment.fileName}\n'
                   '${_attachmentSize(attachment.byteSize)}',
                   maxLines: 2,
@@ -194,8 +189,8 @@ class ChatAttachmentTile extends StatelessWidget {
                 ),
               ),
               if (!attachment.isImage) ...<Widget>[
-                const SizedBox(width: 6),
-                const Icon(CoderIcons.download, size: 16),
+                const SizedBox(width: TRSpacing.small),
+                const Icon(CoderIcons.download),
               ],
             ],
           ),
@@ -238,7 +233,6 @@ class ChatAssistantMessageView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -248,11 +242,11 @@ class ChatAssistantMessageView extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Icon(
               CoderIcons.status,
-              size: 8,
-              color: theme.colorScheme.primary,
+              size: TRSpacing.small,
+              color: context.tinyrackTheme.primary,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: TRSpacing.small),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,14 +262,12 @@ class ChatAssistantMessageView extends ConsumerWidget {
                   ),
                 ),
                 if (message.isStreaming)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: TRText(
                       '▌',
-                      style: chatMonospaceStyle(
-                        context,
-                        color: theme.colorScheme.primary,
-                      ),
+                      variant: TRTextVariant.code,
+                      color: TRTextColor.primary,
                     ),
                   ),
               ],
@@ -297,28 +289,21 @@ class ChatNoticeLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final (String label, Color color) = switch (notice.kind) {
-      ChatNoticeKind.turnCompleted => (
-        l10n.commonDone,
-        theme.colorScheme.outline,
-      ),
+    final (String label, TRTextColor color) = switch (notice.kind) {
+      ChatNoticeKind.turnCompleted => (l10n.commonDone, TRTextColor.muted),
       ChatNoticeKind.turnCancelled => (
         l10n.chatNoticeCancelled,
-        theme.colorScheme.outline,
+        TRTextColor.muted,
       ),
       ChatNoticeKind.turnFailed => (
         l10n.chatNoticeFailed(notice.message ?? ''),
-        theme.colorScheme.error,
+        TRTextColor.danger,
       ),
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-      child: Text(
-        label,
-        style: theme.textTheme.bodySmall?.copyWith(color: color),
-      ),
+      child: TRText(label, variant: TRTextVariant.bodySm, color: color),
     );
   }
 }
@@ -333,18 +318,16 @@ class ChatUsageLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     if (usage.tokens.isEmpty) return const SizedBox.shrink();
     final summary = usage.tokens.entries
         .map((entry) => '${entry.key} ${entry.value}')
         .join(' · ');
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-      child: Text(
+      child: TRText(
         summary,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.outline,
-        ),
+        variant: TRTextVariant.bodySm,
+        color: TRTextColor.muted,
       ),
     );
   }
@@ -360,14 +343,12 @@ class ChatUnknownEventLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-      child: Text(
+      child: TRText(
         event.type,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.outline,
-        ),
+        variant: TRTextVariant.bodySm,
+        color: TRTextColor.muted,
       ),
     );
   }
@@ -380,24 +361,22 @@ class ChatEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(
             CoderIcons.chat,
-            size: 40,
-            color: theme.colorScheme.outline,
+            size: TRSpacing.twoExtraLarge,
+            color: context.tinyrackTheme.textMuted,
           ),
-          const SizedBox(height: 12),
-          Text(AppLocalizations.of(context).chatEmptyTitle),
-          const SizedBox(height: 6),
-          Text(
+          const SizedBox(height: TRSpacing.medium),
+          TRText(AppLocalizations.of(context).chatEmptyTitle),
+          const SizedBox(height: TRSpacing.small),
+          TRText(
             AppLocalizations.of(context).chatEmptyExample,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            variant: TRTextVariant.bodySm,
+            color: TRTextColor.muted,
           ),
         ],
       ),
@@ -421,12 +400,11 @@ class ChatRunningIndicator extends StatelessWidget {
             label: AppLocalizations.of(context).commonRunning,
           ),
         ),
-        const SizedBox(width: 10),
-        Text(
+        const SizedBox(width: TRSpacing.small),
+        TRText(
           AppLocalizations.of(context).commonRunning,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          variant: TRTextVariant.bodySm,
+          color: TRTextColor.muted,
         ),
       ],
     ),

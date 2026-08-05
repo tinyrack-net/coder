@@ -2,6 +2,7 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_diff.dart';
 import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Renders parsed unified-diff files with added and removed lines colored.
 class ChatDiffView extends StatelessWidget {
@@ -16,8 +17,6 @@ class ChatDiffView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = chatDiffColorsOf(context);
-    final theme = Theme.of(context);
     var budget = maxLines;
     final rows = <Widget>[];
     var hidden = 0;
@@ -26,11 +25,10 @@ class ChatDiffView extends StatelessWidget {
         rows.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 2, top: 4),
-            child: Text(
+            child: TRText(
               '${file.path}  +${file.added} -${file.removed}',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              variant: TRTextVariant.label,
+              color: TRTextColor.muted,
             ),
           ),
         );
@@ -41,30 +39,33 @@ class ChatDiffView extends StatelessWidget {
           continue;
         }
         budget -= 1;
-        rows.add(_DiffLineRow(line: line, colors: colors));
+        rows.add(_DiffLineRow(line: line));
       }
     }
     if (hidden > 0) {
       rows.add(
-        Text(
+        TRText(
           AppLocalizations.of(context).chatMoreLines(hidden),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          variant: TRTextVariant.bodySm,
+          color: TRTextColor.muted,
         ),
       );
     }
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
+        color: context.tinyrackTheme.surfaceMuted,
+        borderRadius: const BorderRadius.all(TRRadii.small),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: rows,
+        padding: const EdgeInsets.all(TRSpacing.small),
+        // Selection spans the whole hunk rather than a single row, so a user
+        // can copy a run of diff lines in one drag.
+        child: SelectionArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: rows,
+          ),
         ),
       ),
     );
@@ -72,60 +73,43 @@ class ChatDiffView extends StatelessWidget {
 }
 
 class _DiffLineRow extends StatelessWidget {
-  const _DiffLineRow({required this.line, required this.colors});
+  const _DiffLineRow({required this.line});
 
   final ChatDiffLine line;
-  final ChatDiffColors colors;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final (
-      Color? background,
-      Color foreground,
-      String marker,
-    ) = switch (line.kind) {
-      ChatDiffLineKind.added => (
-        colors.addedBackground,
-        colors.addedForeground,
-        '+',
-      ),
-      ChatDiffLineKind.removed => (
-        colors.removedBackground,
-        colors.removedForeground,
-        '-',
-      ),
-      ChatDiffLineKind.hunkHeader => (
-        null,
-        theme.colorScheme.primary,
-        '',
-      ),
-      ChatDiffLineKind.context => (
-        null,
-        theme.colorScheme.onSurfaceVariant,
-        ' ',
-      ),
+    // `added` is null for a line the diff does not change.
+    final (bool? added, String marker) = switch (line.kind) {
+      ChatDiffLineKind.added => (true, '+'),
+      ChatDiffLineKind.removed => (false, '-'),
+      ChatDiffLineKind.hunkHeader => (null, ''),
+      ChatDiffLineKind.context => (null, ' '),
     };
-    final style = chatMonospaceStyle(context, color: foreground);
+    final foreground = line.kind == ChatDiffLineKind.hunkHeader
+        ? TRTextColor.primary
+        : chatDiffForeground(added: added);
     return ColoredBox(
-      color: background ?? Colors.transparent,
+      color: chatDiffSurface(context, added: added) ?? Colors.transparent,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(
-            width: 64,
-            child: Text(
+            width: TRSpacing.fourExtraLarge,
+            child: TRText(
               '${_gutter(line.oldLine)} ${_gutter(line.newLine)}',
-              style: chatMonospaceStyle(
-                context,
-                color: theme.colorScheme.outline,
-              ),
-              textAlign: TextAlign.right,
+              variant: TRTextVariant.code,
+              color: TRTextColor.muted,
+              align: TRTextAlign.end,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: TRSpacing.small),
           Expanded(
-            child: SelectableText('$marker${line.text}', style: style),
+            child: TRText(
+              '$marker${line.text}',
+              variant: TRTextVariant.code,
+              color: foreground,
+            ),
           ),
         ],
       ),

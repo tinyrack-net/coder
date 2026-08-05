@@ -1,5 +1,4 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
-import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,11 +42,16 @@ class ChatCodeBlock extends StatelessWidget {
     final hidden = lines.length > maxLines ? lines.length - maxLines : 0;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
+        color: context.tinyrackTheme.surfaceMuted,
+        borderRadius: const BorderRadius.all(TRRadii.medium),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+        padding: const EdgeInsets.fromLTRB(
+          TRSpacing.small,
+          TRSpacing.small,
+          TRSpacing.extraSmall,
+          TRSpacing.small,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -58,13 +62,17 @@ class ChatCodeBlock extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    SelectableText(visible, style: chatMonospaceStyle(context)),
+                    SelectionArea(
+                      child: TRText(
+                        visible,
+                        variant: TRTextVariant.code,
+                      ),
+                    ),
                     if (hidden > 0)
-                      Text(
+                      TRText(
                         AppLocalizations.of(context).chatMoreLines(hidden),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                        variant: TRTextVariant.bodySm,
+                        color: TRTextColor.muted,
                       ),
                   ],
                 ),
@@ -75,7 +83,7 @@ class ChatCodeBlock extends StatelessWidget {
                 appearance: TRAppearance.ghost,
                 label: AppLocalizations.of(context).commonCopy,
                 onPressed: () => Clipboard.setData(ClipboardData(text: text)),
-                icon: const Icon(CoderIcons.copy, size: 16),
+                icon: const Icon(CoderIcons.copy),
               ),
           ],
         ),

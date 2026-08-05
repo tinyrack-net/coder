@@ -45,9 +45,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final asyncState = ref.watch(_provider);
     final body = asyncState.when(
       loading: () => const Center(child: TRSpinner()),
-      error: (error, stackTrace) => Center(child: Text('$error')),
+      error: (error, stackTrace) => Center(child: TRText.inherit('$error')),
       data: (state) => state == null
-          ? Center(child: Text(l10n.providerSettingsRequiresDaemon))
+          ? Center(child: TRText.inherit(l10n.providerSettingsRequiresDaemon))
           : _body(state),
     );
     if (widget.embedded) return body;
@@ -59,7 +59,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           onPressed: context.pop,
           icon: const Icon(CoderIcons.back),
         ),
-        title: Text(l10n.providerSettingsTitle),
+        title: TRText.inherit(l10n.providerSettingsTitle),
       ),
       body: body,
     );
@@ -92,23 +92,26 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Column(
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          padding: const EdgeInsets.fromLTRB(
+            TRSpacing.extraLarge,
+            TRSpacing.medium,
+            TRSpacing.extraLarge,
+            0,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: <Widget>[
               if (_catalogRefreshError case final error?) ...<Widget>[
                 Expanded(
-                  child: Text(
+                  child: TRText(
                     '$error',
                     key: const ValueKey<String>(
                       'provider-catalog-refresh-error',
                     ),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    color: TRTextColor.danger,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: TRSpacing.medium),
               ],
               TRButton(
                 key: const ValueKey<String>('provider-catalog-refresh'),
@@ -119,9 +122,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Icon(CoderIcons.refresh, size: 16),
+                    const Icon(CoderIcons.refresh),
                     const SizedBox(width: TRSpacing.extraSmall),
-                    Text(
+                    TRText(
                       AppLocalizations.of(
                         context,
                       ).providerSettingsRefreshCatalog,
@@ -155,7 +158,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             CoderListRow(
               key: ValueKey<String>('provider-auth-error-${attempt.id}'),
               leading: const Icon(CoderIcons.warning),
-              title: Text(attempt.error ?? attempt.status.name),
+              title: TRText.inherit(attempt.error ?? attempt.status.name),
             ),
       ],
     );
@@ -192,10 +195,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final methodId = await showTRDrawer<String>(
       context: context,
       builder: (context) => TRDrawer(
-        title: Text(
+        title: TRText.inherit(
           AppLocalizations.of(context).providerSettingsOpenAiTitle,
         ),
-        description: Text(
+        description: TRText.inherit(
           AppLocalizations.of(context).providerSettingsOpenAiSubtitle,
         ),
         content: Column(
@@ -210,14 +213,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ? CoderIcons.user
                       : CoderIcons.key,
                 ),
-                title: Text(method.label),
+                title: TRText.inherit(method.label),
                 subtitle: method.experimental
-                    ? Text(
+                    ? TRText(
                         AppLocalizations.of(
                           context,
                         ).providerSettingsExperimental,
                       )
-                    : const Text('OpenAI Platform'),
+                    : const TRText('OpenAI Platform'),
                 onTap: () => Navigator.pop(context, method.id),
               ),
           ],
@@ -295,20 +298,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final confirmed = await showTRDialog<bool>(
       context: context,
       builder: (context) => TRAlertDialog(
-        title: Text(l10n.providerSettingsDeleteCustomTitle),
-        content: Text(
+        title: TRText.inherit(l10n.providerSettingsDeleteCustomTitle),
+        content: TRText.inherit(
           l10n.providerSettingsDeleteCustomBody(connection.displayName),
         ),
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
+            child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
             intent: TRIntent.primary,
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.commonDelete),
+            child: TRText.inherit(l10n.commonDelete),
           ),
         ],
       ),
@@ -322,20 +325,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final confirmed = await showTRDialog<bool>(
       context: context,
       builder: (context) => TRAlertDialog(
-        title: Text(l10n.providerSettingsDisconnectTitle),
-        content: Text(
+        title: TRText.inherit(l10n.providerSettingsDisconnectTitle),
+        content: TRText.inherit(
           l10n.providerSettingsDisconnectBody(connection.displayName),
         ),
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
+            child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
             intent: TRIntent.primary,
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.providerSettingsDisconnect),
+            child: TRText.inherit(l10n.providerSettingsDisconnect),
           ),
         ],
       ),
@@ -363,21 +366,21 @@ class _ConnectedProviders extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Padding(
       key: const ValueKey('provider-settings-connected'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
+          TRText(
             l10n.providerSettingsConnected,
-            style: Theme.of(context).textTheme.headlineSmall,
+            variant: TRTextVariant.headingLg,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: TRSpacing.medium),
           if (connections.isEmpty)
             TRCard(
               padding: TRCardPadding.none,
               child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(l10n.providerSettingsNoConnections),
+                padding: const EdgeInsets.all(TRSpacing.extraLarge),
+                child: TRText.inherit(l10n.providerSettingsNoConnections),
               ),
             ),
           for (final connection in connections)
@@ -412,18 +415,17 @@ class _ProviderConnectionCard extends StatelessWidget {
     return TRCard(
       padding: TRCardPadding.none,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(TRSpacing.large),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Row(
               children: <Widget>[
                 Expanded(
-                  child: Text(
+                  child: TRText(
                     connection.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    variant: TRTextVariant.headingMd,
+                    truncate: true,
                   ),
                 ),
                 TRMenu(
@@ -435,29 +437,31 @@ class _ProviderConnectionCard extends StatelessWidget {
                     if (connection.definitionId == 'custom')
                       TRMenuItem(
                         onPressed: () => onEditCustom(connection),
-                        child: Text(l10n.providerSettingsEditAdvanced),
+                        child: TRText.inherit(
+                          l10n.providerSettingsEditAdvanced,
+                        ),
                       ),
                     if (connection.definitionId == 'custom')
                       TRMenuItem(
                         onPressed: () => onDeleteCustom(connection),
-                        child: Text(l10n.commonDelete),
+                        child: TRText.inherit(l10n.commonDelete),
                       ),
                     TRMenuItem(
                       onPressed: () => onDisconnect(connection),
-                      child: Text(l10n.providerSettingsDisconnect),
+                      child: TRText.inherit(l10n.providerSettingsDisconnect),
                     ),
                   ],
                 ),
               ],
             ),
-            Text(
+            TRText(
               '${_statusLabel(l10n, connection.status)} · '
               '${_authLabel(l10n, connection.credentialOrigin)}',
             ),
             if (connection.error != null)
-              Text(
+              TRText(
                 connection.error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                color: TRTextColor.danger,
               ),
           ],
         ),
@@ -482,21 +486,21 @@ class _ProviderCatalog extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Padding(
       key: const ValueKey('provider-settings-add'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
+          TRText(
             l10n.providerSettingsAdd,
-            style: Theme.of(context).textTheme.headlineSmall,
+            variant: TRTextVariant.headingLg,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: TRSpacing.medium),
           if (definitions.isEmpty)
             TRCard(
               padding: TRCardPadding.none,
               child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(l10n.providerSettingsNoPresets),
+                padding: const EdgeInsets.all(TRSpacing.extraLarge),
+                child: TRText.inherit(l10n.providerSettingsNoPresets),
               ),
             ),
           for (final definition in definitions)
@@ -505,8 +509,8 @@ class _ProviderCatalog extends StatelessWidget {
               child: CoderListRow(
                 key: ValueKey('provider-add-${definition.id}'),
                 leading: const Icon(CoderIcons.network),
-                title: Text(definition.name),
-                subtitle: Text(definition.description),
+                title: TRText.inherit(definition.name),
+                subtitle: TRText.inherit(definition.description),
                 trailing: const Icon(CoderIcons.addCircle),
                 onTap: () => onAdd(definition),
               ),
@@ -516,8 +520,8 @@ class _ProviderCatalog extends StatelessWidget {
             child: CoderListRow(
               key: const ValueKey('provider-add-custom'),
               leading: const Icon(CoderIcons.tune),
-              title: const Text('Custom OpenAI Compatible'),
-              subtitle: Text(l10n.providerSettingsCustomSubtitle),
+              title: const TRText.inherit('Custom OpenAI Compatible'),
+              subtitle: TRText.inherit(l10n.providerSettingsCustomSubtitle),
               trailing: const Icon(CoderIcons.chevronRight),
               onTap: onAddCustom,
             ),
@@ -542,18 +546,23 @@ class _AuthAttemptBar extends StatelessWidget {
     ),
     child: CoderListRow(
       leading: const TRSpinner(),
-      title: Text(AppLocalizations.of(context).providerSettingsOAuthPending),
-      subtitle: SelectableText(
-        <String?>[
-          attempt.authorizationUrl,
-          attempt.userCode,
-        ].whereType<String>().join(' · '),
+      title: TRText.inherit(
+        AppLocalizations.of(context).providerSettingsOAuthPending,
+      ),
+      // The device code has to be copyable for the user to complete the flow.
+      subtitle: SelectionArea(
+        child: TRText.inherit(
+          <String?>[
+            attempt.authorizationUrl,
+            attempt.userCode,
+          ].whereType<String>().join(' · '),
+        ),
       ),
       trailing: TRButton(
         key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),
         appearance: TRAppearance.ghost,
         onPressed: onCancel,
-        child: Text(AppLocalizations.of(context).commonCancel),
+        child: TRText.inherit(AppLocalizations.of(context).commonCancel),
       ),
     ),
   );
@@ -581,7 +590,9 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
-      title: Text(l10n.providerSettingsConnectTitle(widget.providerName)),
+      title: TRText.inherit(
+        l10n.providerSettingsConnectTitle(widget.providerName),
+      ),
       content: TRTextField(
         key: const ValueKey('provider-api-key'),
         controller: _controller,
@@ -593,7 +604,7 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n.commonCancel),
+          child: TRText.inherit(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
@@ -601,7 +612,7 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
             final value = _controller.text.trim();
             if (value.isNotEmpty) Navigator.pop(context, value);
           },
-          child: Text(l10n.providerSettingsConnect),
+          child: TRText.inherit(l10n.providerSettingsConnect),
         ),
       ],
     );
@@ -661,7 +672,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
-      title: Text(l10n.providerSettingsCustomTitle),
+      title: TRText.inherit(l10n.providerSettingsCustomTitle),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
@@ -672,12 +683,12 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                 controller: _name,
                 label: l10n.commonName,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _baseUrl,
                 label: 'Base URL',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRSelectFormField<ProviderApiFormat>(
                 initialValue: _apiFormat,
                 label: l10n.providerSettingsApiFormat,
@@ -695,7 +706,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
               ),
               CoderSwitchRow(
                 contentPadding: EdgeInsets.zero,
-                title: Text(l10n.providerSettingsRequiresApiKey),
+                title: TRText.inherit(l10n.providerSettingsRequiresApiKey),
                 value: _authenticationRequired,
                 onChanged: (value) =>
                     setState(() => _authenticationRequired = value),
@@ -706,7 +717,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                   obscureText: true,
                   label: 'API key',
                 ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               if (widget.initial?.manualModelIds.isNotEmpty ?? false)
                 TRTextField(
                   controller: _models,
@@ -721,12 +732,12 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n.commonCancel),
+          child: TRText.inherit(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
           onPressed: _submit,
-          child: Text(l10n.commonSave),
+          child: TRText.inherit(l10n.commonSave),
         ),
       ],
     );
@@ -781,15 +792,15 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
-      title: Text(l10n.providerSettingsModelLookupFailedTitle),
+      title: TRText.inherit(l10n.providerSettingsModelLookupFailedTitle),
       content: SizedBox(
         width: 480,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(l10n.providerSettingsModelLookupFailedBody),
-            const SizedBox(height: 12),
+            TRText(l10n.providerSettingsModelLookupFailedBody),
+            const SizedBox(height: TRSpacing.medium),
             TRTextField(
               controller: _models,
               label: l10n.providerSettingsManualModels,
@@ -802,7 +813,7 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n.providerSettingsLater),
+          child: TRText.inherit(l10n.providerSettingsLater),
         ),
         TRButton(
           intent: TRIntent.primary,
@@ -815,7 +826,7 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
                 .toList(growable: false);
             if (models.isNotEmpty) Navigator.pop(context, models);
           },
-          child: Text(l10n.commonSave),
+          child: TRText.inherit(l10n.commonSave),
         ),
       ],
     );

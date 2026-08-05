@@ -107,11 +107,11 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
             final l10n = AppLocalizations.of(dialogContext);
             return TRDialog(
               semanticLabel: l10n.desktopMenuAbout,
-              title: const Text('Tinyrack Coder'),
-              description: const Text(packageVersion),
+              title: const TRText.inherit('Tinyrack Coder'),
+              description: const TRText.inherit(packageVersion),
               actions: TRButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: Text(l10n.commonClose),
+                child: TRText.inherit(l10n.commonClose),
               ),
             );
           },

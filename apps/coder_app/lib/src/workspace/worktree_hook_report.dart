@@ -50,21 +50,24 @@ Future<void> _showHookOutput(
     context: navigator.context,
     barrierDismissible: false,
     builder: (context) => TRAlertDialog(
-      title: Text(l10n.hookFailureTitle(phase)),
-      description: Text(
+      title: TRText.inherit(l10n.hookFailureTitle(phase)),
+      description: TRText.inherit(
         l10n.hookFailureMessage(phase, failure.exitCode, failure.command),
       ),
+      // The failing command and its output have to be copyable.
       content: SingleChildScrollView(
-        child: SelectableText(
-          '${failure.command}\n\nexit ${failure.exitCode}\n'
-          '${output.isEmpty ? l10n.hookFailureNoOutput : output}',
+        child: SelectionArea(
+          child: TRText.inherit(
+            '${failure.command}\n\nexit ${failure.exitCode}\n'
+            '${output.isEmpty ? l10n.hookFailureNoOutput : output}',
+          ),
         ),
       ),
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n.commonConfirm),
+          child: TRText.inherit(l10n.commonConfirm),
         ),
       ],
     ),

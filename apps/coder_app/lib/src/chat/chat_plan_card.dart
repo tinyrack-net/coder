@@ -1,12 +1,12 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_markdown.dart';
-import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Renders a plan the agent proposed in plan mode.
 class ChatPlanCard extends ConsumerWidget {
@@ -24,13 +24,18 @@ class ChatPlanCard extends ConsumerWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: const BorderRadius.all(TRRadii.large),
           border: Border(
             left: BorderSide(color: theme.colorScheme.primary, width: 3),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          padding: const EdgeInsets.fromLTRB(
+            TRSpacing.medium,
+            TRSpacing.medium,
+            TRSpacing.medium,
+            TRSpacing.medium,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -39,19 +44,17 @@ class ChatPlanCard extends ConsumerWidget {
                 children: <Widget>[
                   Icon(
                     CoderIcons.plan,
-                    size: 16,
                     color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
+                  const SizedBox(width: TRSpacing.small),
+                  TRText(
                     AppLocalizations.of(context).chatPlanTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
+                    variant: TRTextVariant.headingSm,
+                    color: TRTextColor.primary,
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: TRSpacing.small),
               MarkdownBody(
                 data: proposal.markdown,
                 selectable: true,
@@ -60,12 +63,10 @@ class ChatPlanCard extends ConsumerWidget {
                     openChatLink(ref.read(externalUrlOpenerProvider), href),
               ),
               if (!proposal.isComplete)
-                Text(
+                const TRText(
                   '▌',
-                  style: chatMonospaceStyle(
-                    context,
-                    color: theme.colorScheme.primary,
-                  ),
+                  variant: TRTextVariant.code,
+                  color: TRTextColor.primary,
                 ),
             ],
           ),

@@ -104,11 +104,14 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
       return Row(
         children: <Widget>[
           SizedBox(width: 280, child: list),
-          const VerticalDivider(width: 1),
+          const TRSeparator(
+            orientation: TRSeparatorOrientation.vertical,
+            variant: TRSeparatorVariant.muted,
+          ),
           Expanded(
             child: selected == null
                 ? Center(
-                    child: Text(
+                    child: TRText.inherit(
                       AppLocalizations.of(context).skillSettingsSelectSkill,
                     ),
                   )
@@ -178,7 +181,12 @@ class _ProjectSelector extends ConsumerWidget {
         .where((workspace) => workspace.id == workspaceId)
         .firstOrNull;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        TRSpacing.large,
+        TRSpacing.large,
+        TRSpacing.large,
+        TRSpacing.small,
+      ),
       child: TRSelectFormField<String?>(
         initialValue: selected?.id,
         label: l10n.skillSettingsProject,
@@ -223,8 +231,8 @@ class _SkillList extends ConsumerWidget {
     return Column(
       children: <Widget>[
         CoderListRow(
-          title: Text(l10n.skillSettingsHeading),
-          subtitle: Text(l10n.skillSettingsCount(skills.length)),
+          title: TRText.inherit(l10n.skillSettingsHeading),
+          subtitle: TRText.inherit(l10n.skillSettingsCount(skills.length)),
           trailing: TRIconButton(
             key: const ValueKey<String>('skill-add-button'),
             appearance: TRAppearance.ghost,
@@ -241,14 +249,16 @@ class _SkillList extends ConsumerWidget {
                 CoderListRow(
                   selected: skill.id == selectedId && !skill.isShadowed,
                   enabled: !skill.isShadowed,
-                  title: Text(skill.name),
-                  subtitle: Text(skillSourceLabel(l10n, skill.source)),
+                  title: TRText.inherit(skill.name),
+                  subtitle: TRText.inherit(
+                    skillSourceLabel(l10n, skill.source),
+                  ),
                   leading: skill.isShadowed || skill.isStale
                       ? TRTooltip(
                           message: skill.isShadowed
                               ? l10n.skillSettingsShadowed
                               : l10n.skillSettingsStale,
-                          child: const Icon(CoderIcons.warning, size: 18),
+                          child: const Icon(CoderIcons.warning),
                         )
                       : null,
                   trailing: TRSwitch(
@@ -341,8 +351,8 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                   onPressed: widget.onBack,
                   icon: const Icon(CoderIcons.back),
                 ),
-          title: Text(skill.name),
-          subtitle: Text(
+          title: TRText.inherit(skill.name),
+          subtitle: TRText.inherit(
             skill.sourcePath.isEmpty
                 ? skillSourceLabel(l10n, skill.source)
                 : skill.sourcePath,
@@ -371,7 +381,9 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 TRButton(
                   intent: TRIntent.primary,
                   onPressed: editable ? () => _save(force: false) : null,
-                  child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
+                  child: TRText.inherit(
+                    _saving ? l10n.commonSaving : l10n.commonSave,
+                  ),
                 ),
             ],
           ),
@@ -379,14 +391,14 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
         const TRSeparator(),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(TRSpacing.extraLarge),
             children: <Widget>[
               if (!skill.isEditable)
                 TRCard(
                   padding: TRCardPadding.none,
                   child: CoderListRow(
                     leading: const Icon(CoderIcons.lock),
-                    title: Text(l10n.skillSettingsReadOnly),
+                    title: TRText.inherit(l10n.skillSettingsReadOnly),
                   ),
                 ),
               for (final diagnostic in skill.diagnostics)
@@ -395,8 +407,8 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                   variant: TRCardVariant.elevated,
                   child: CoderListRow(
                     leading: const Icon(CoderIcons.warning),
-                    title: Text(diagnostic.code),
-                    subtitle: Text(diagnostic.message),
+                    title: TRText.inherit(diagnostic.code),
+                    subtitle: TRText.inherit(diagnostic.message),
                   ),
                 ),
               CoderSwitchRow(
@@ -412,9 +424,9 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                             ).notifier,
                           )
                           .setEnabled(skill.id, enabled: enabled),
-                title: Text(l10n.skillSettingsEnabled),
+                title: TRText.inherit(l10n.skillSettingsEnabled),
                 subtitle: skill.isMandatory
-                    ? Text(l10n.skillSettingsMandatory)
+                    ? TRText(l10n.skillSettingsMandatory)
                     : null,
               ),
               TRTextField(
@@ -422,13 +434,13 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 enabled: false,
                 label: l10n.skillSettingsSource,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _name,
                 enabled: editable,
                 label: l10n.commonName,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _description,
                 enabled: editable,
@@ -436,7 +448,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 maxLines: 4,
                 label: l10n.commonDescription,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 controller: _body,
                 enabled: editable,
@@ -444,19 +456,21 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 maxLines: 18,
                 label: l10n.skillSettingsInstructions,
               ),
-              const SizedBox(height: 20),
-              Text(
+              const SizedBox(height: TRSpacing.extraLarge),
+              TRText(
                 l10n.skillSettingsResources,
-                style: Theme.of(context).textTheme.titleMedium,
+                variant: TRTextVariant.headingMd,
               ),
               if (skill.resources.isEmpty)
-                CoderListRow(title: Text(l10n.skillSettingsNoResources)),
+                CoderListRow(
+                  title: TRText.inherit(l10n.skillSettingsNoResources),
+                ),
               for (final resource in skill.resources)
                 CoderListRow(
                   dense: true,
                   leading: const Icon(CoderIcons.file),
-                  title: Text(resource.path),
-                  trailing: Text('${resource.sizeBytes}'),
+                  title: TRText.inherit(resource.path),
+                  trailing: TRText.inherit('${resource.sizeBytes}'),
                 ),
             ],
           ),
@@ -490,18 +504,18 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
       final retry = await showTRDialog<bool>(
         context: context,
         builder: (context) => TRAlertDialog(
-          title: Text(l10n.skillSettingsSaveFailedTitle),
-          content: Text('$error'),
+          title: TRText.inherit(l10n.skillSettingsSaveFailedTitle),
+          content: TRText.inherit('$error'),
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
               onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.skillSettingsReload),
+              child: TRText.inherit(l10n.skillSettingsReload),
             ),
             TRButton(
               intent: TRIntent.primary,
               onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.skillSettingsOverwrite),
+              child: TRText.inherit(l10n.skillSettingsOverwrite),
             ),
           ],
         ),
@@ -517,18 +531,18 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
     final confirmed = await showTRDialog<bool>(
       context: context,
       builder: (context) => TRAlertDialog(
-        title: Text(l10n.skillSettingsDeleteTitle(widget.skill.name)),
-        content: Text(l10n.skillSettingsDeleteMessage),
+        title: TRText.inherit(l10n.skillSettingsDeleteTitle(widget.skill.name)),
+        content: TRText.inherit(l10n.skillSettingsDeleteMessage),
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
+            child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
             intent: TRIntent.primary,
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.commonDelete),
+            child: TRText.inherit(l10n.commonDelete),
           ),
         ],
       ),
@@ -617,7 +631,7 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
       if (widget.allowProject) SkillSource.project,
     ];
     return TRAlertDialog(
-      title: Text(l10n.skillSettingsAddTitle),
+      title: TRText.inherit(l10n.skillSettingsAddTitle),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -660,10 +674,10 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
                   : (value) => setState(() => _source = value!),
             ),
             if (_error case final error?) ...<Widget>[
-              const SizedBox(height: 12),
-              Text(
+              const SizedBox(height: TRSpacing.medium),
+              TRText(
                 '$error',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                color: TRTextColor.danger,
               ),
             ],
           ],
@@ -673,12 +687,14 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: _saving ? null : () => Navigator.pop(context),
-          child: Text(l10n.commonCancel),
+          child: TRText.inherit(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
           onPressed: _valid && !_saving ? _submit : null,
-          child: Text(_saving ? l10n.commonCreating : l10n.commonCreate),
+          child: TRText.inherit(
+            _saving ? l10n.commonCreating : l10n.commonCreate,
+          ),
         ),
       ],
     );
@@ -721,12 +737,12 @@ class _SkillSettingsError extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text('$error'),
-        const SizedBox(height: 12),
+        TRText('$error'),
+        const SizedBox(height: TRSpacing.medium),
         TRButton(
           intent: TRIntent.primary,
           onPressed: onRetry,
-          child: Text(AppLocalizations.of(context).commonRetry),
+          child: TRText.inherit(AppLocalizations.of(context).commonRetry),
         ),
       ],
     ),

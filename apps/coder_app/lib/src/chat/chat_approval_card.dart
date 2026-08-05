@@ -26,35 +26,40 @@ class ApprovalCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+        TRSpacing.large,
+        TRSpacing.small,
+        TRSpacing.large,
+        0,
+      ),
       child: TRCard(
         padding: TRCardPadding.none,
         variant: TRCardVariant.elevated,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(TRSpacing.medium),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
+              TRText(
                 l10n.chatApprovalRequired(approval.toolName),
-                style: Theme.of(context).textTheme.titleSmall,
+                variant: TRTextVariant.headingSm,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: TRSpacing.small),
               _preview(),
-              const SizedBox(height: 10),
+              const SizedBox(height: TRSpacing.small),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
                   TRButton(
                     appearance: TRAppearance.ghost,
                     onPressed: () => _resolve(ref, approved: false),
-                    child: Text(l10n.chatApprovalDeny),
+                    child: TRText.inherit(l10n.chatApprovalDeny),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: TRSpacing.small),
                   TRButton(
                     intent: TRIntent.primary,
                     onPressed: () => _resolve(ref, approved: true),
-                    child: Text(l10n.chatApprovalAllow),
+                    child: TRText.inherit(l10n.chatApprovalAllow),
                   ),
                 ],
               ),

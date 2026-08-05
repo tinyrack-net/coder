@@ -1,7 +1,6 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_code_block.dart';
 import 'package:coder_app/src/chat/chat_diff_view.dart';
-import 'package:coder_app/src/chat/chat_theme.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_tool_presentation.dart';
 import 'package:coder_app/src/coder_icons.dart';
@@ -94,25 +93,17 @@ class ChatToolCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(
-                      chatToolIcon(presentation.glyph),
-                      size: 16,
-                      color: statusColor,
-                    ),
-                    const SizedBox(width: 8),
+                    Icon(chatToolIcon(presentation.glyph), color: statusColor),
+                    const SizedBox(width: TRSpacing.small),
                     Flexible(
-                      child: Text(
+                      child: TRText(
                         presentation.title,
-                        style: chatMonospaceStyle(
-                          context,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        variant: TRTextVariant.code,
+                        truncate: true,
                       ),
                     ),
                     if (presentation.resultLine != null) ...<Widget>[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: TRSpacing.small),
                       if (activity.status == ChatToolStatus.running)
                         Padding(
                           padding: const EdgeInsets.only(right: 6),
@@ -124,32 +115,29 @@ class ChatToolCard extends StatelessWidget {
                           ),
                         ),
                       Flexible(
-                        child: Text(
+                        child: TRText(
                           presentation.resultLine!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: presentation.isFailure
-                                ? theme.colorScheme.error
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          variant: TRTextVariant.bodySm,
+                          color: presentation.isFailure
+                              ? TRTextColor.danger
+                              : TRTextColor.muted,
+                          truncate: true,
                         ),
                       ),
                     ],
                     if (hasBody)
                       Icon(
                         expanded ? CoderIcons.collapse : CoderIcons.expand,
-                        size: 16,
-                        color: theme.colorScheme.outline,
+                        color: context.tinyrackTheme.textMuted,
                       ),
                   ],
                 ),
                 if (expanded) ...<Widget>[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: TRSpacing.small),
                   _ChatToolBodyView(body: presentation.argumentBody),
                   if (presentation.argumentBody is! ChatToolEmptyBody &&
                       presentation.body is! ChatToolEmptyBody)
-                    const SizedBox(height: 8),
+                    const SizedBox(height: TRSpacing.small),
                   _ChatToolBodyView(body: presentation.body),
                 ],
               ],

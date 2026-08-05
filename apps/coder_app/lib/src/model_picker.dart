@@ -140,9 +140,9 @@ class _ModelPickerState extends State<ModelPicker> {
         Row(
           children: <Widget>[
             Expanded(
-              child: Text(
+              child: TRText(
                 widget.title ?? l10n.modelPickerTitle,
-                style: Theme.of(context).textTheme.titleLarge,
+                variant: TRTextVariant.headingLg,
               ),
             ),
             TRIconButton(
@@ -153,18 +153,18 @@ class _ModelPickerState extends State<ModelPicker> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TRSpacing.small),
         TRTextField(
           key: const ValueKey('model-search-field'),
           autofocus: true,
           label: l10n.modelPickerSearch,
           onChanged: (value) => setState(() => _query = value),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: TRSpacing.medium),
         if (inheritLabel != null && query.isEmpty)
           CoderListRow(
             key: const ValueKey('model-option-inherit'),
-            title: Text(inheritLabel),
+            title: TRText.inherit(inheritLabel),
             trailing: widget.currentSelection == null
                 ? const Icon(CoderIcons.check)
                 : null,
@@ -175,7 +175,7 @@ class _ModelPickerState extends State<ModelPicker> {
           ),
         Expanded(
           child: filtered.isEmpty
-              ? Center(child: Text(l10n.modelPickerNoResults))
+              ? Center(child: TRText.inherit(l10n.modelPickerNoResults))
               : ListView.builder(
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
@@ -185,12 +185,12 @@ class _ModelPickerState extends State<ModelPicker> {
                       key: ValueKey(
                         'model-option-${model.connectionId}-${model.id}',
                       ),
-                      title: Text(
+                      title: TRText.inherit(
                         model.label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text(
+                      subtitle: TRText.inherit(
                         model.label == model.id
                             ? option.providerName
                             : '${option.providerName} · ${model.id}',

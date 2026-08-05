@@ -57,21 +57,26 @@ class ChatPlanActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+        TRSpacing.large,
+        TRSpacing.small,
+        TRSpacing.large,
+        0,
+      ),
       child: TRCard(
         padding: TRCardPadding.none,
         key: const ValueKey('chat-plan-actions'),
         variant: TRCardVariant.elevated,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(TRSpacing.medium),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
+              TRText(
                 l10n.chatPlanPrompt,
-                style: Theme.of(context).textTheme.titleSmall,
+                variant: TRTextVariant.headingSm,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: TRSpacing.small),
               Wrap(
                 alignment: WrapAlignment.end,
                 spacing: 8,
@@ -80,17 +85,17 @@ class ChatPlanActions extends ConsumerWidget {
                   TRButton(
                     appearance: TRAppearance.ghost,
                     onPressed: onDismiss,
-                    child: Text(l10n.chatPlanKeepPlanning),
+                    child: TRText.inherit(l10n.chatPlanKeepPlanning),
                   ),
                   TRButton(
                     appearance: TRAppearance.ghost,
                     onPressed: () => unawaited(_startFreshSession(ref)),
-                    child: Text(l10n.chatPlanRunInNewSession),
+                    child: TRText.inherit(l10n.chatPlanRunInNewSession),
                   ),
                   TRButton(
                     intent: TRIntent.primary,
                     onPressed: () => unawaited(_implementHere(ref)),
-                    child: Text(l10n.chatPlanRun),
+                    child: TRText.inherit(l10n.chatPlanRun),
                   ),
                 ],
               ),
