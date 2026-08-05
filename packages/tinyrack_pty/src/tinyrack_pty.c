@@ -247,8 +247,7 @@ tr_pty *tr_pty_spawn(const char *executable,
     goto fail;
   }
   if (!CreateProcessW(NULL, command, NULL, NULL, FALSE,
-          EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT |
-              CREATE_NEW_PROCESS_GROUP,
+          EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
           environment_block, directory, &startup.StartupInfo, &process)) {
     goto fail;
   }
