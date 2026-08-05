@@ -1,42 +1,16 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
+import 'package:coder_client/local_daemon.dart';
 import 'package:coder_daemon/src/version.g.dart';
-import 'package:path/path.dart' as p;
 
 /// Supplies process environment and operating-system information to config.
-abstract interface class DaemonEnvironment {
-  /// Environment variables visible to the daemon process.
-  Map<String, String> get values;
-
-  /// Whether the daemon runs on Linux.
-  bool get isLinux;
-
-  /// Whether the daemon runs on macOS.
-  bool get isMacOS;
-
-  /// Whether the daemon runs on Windows.
-  bool get isWindows;
-}
+///
+/// Shared with the standalone CLI so both resolve the same directories.
+typedef DaemonEnvironment = LocalDaemonEnvironment;
 
 /// Production [DaemonEnvironment] backed by `dart:io`.
-final class IoDaemonEnvironment implements DaemonEnvironment {
-  /// Creates the production environment adapter.
-  const IoDaemonEnvironment();
-
-  @override
-  Map<String, String> get values => Platform.environment;
-
-  @override
-  bool get isLinux => Platform.isLinux;
-
-  @override
-  bool get isMacOS => Platform.isMacOS;
-
-  @override
-  bool get isWindows => Platform.isWindows;
-}
+typedef IoDaemonEnvironment = IoLocalDaemonEnvironment;
 
 /// DaemonConfig defines a public contract.
 class DaemonConfig {
@@ -73,21 +47,16 @@ class DaemonConfig {
     DaemonEnvironment environment = const IoDaemonEnvironment(),
   }) {
     final values = environment.values;
-    final override = values['TINYRACK_CODER_HOME'];
-    final directories = _defaultDirectories(values, environment);
-    final home = override ?? directories.$2;
-    final configHome = override ?? directories.$1;
-    final listen = values['TINYRACK_CODER_LISTEN'] ?? '127.0.0.1:7337';
-    final separator = listen.lastIndexOf(':');
-    if (separator < 1) {
-      throw const FormatException('TINYRACK_CODER_LISTEN must be host:port.');
-    }
+    final directories = resolveLocalDaemonDirectories(environment: environment);
+    final (host, port) = parseLocalDaemonListen(
+      values['TINYRACK_CODER_LISTEN'] ?? defaultLocalDaemonListen,
+    );
     return DaemonConfig(
-      homeDirectory: home,
-      configDirectory: configHome,
-      userHomeDirectory: values['TINYRACK_CODER_AGENTS_HOME'] ?? directories.$3,
-      host: listen.substring(0, separator),
-      port: int.parse(listen.substring(separator + 1)),
+      homeDirectory: directories.stateDirectory,
+      configDirectory: directories.configDirectory,
+      userHomeDirectory: directories.userHomeDirectory,
+      host: host,
+      port: port,
       apiKey: apiKey,
       bearerToken: values['TINYRACK_CODER_TOKEN'],
     );
@@ -158,48 +127,6 @@ class DaemonConfig {
     'version': version,
     'useEnvironmentCredentials': useEnvironmentCredentials,
   };
-}
-
-(String, String, String) _defaultDirectories(
-  Map<String, String> environment,
-  DaemonEnvironment platform,
-) {
-  final userHome =
-      environment[platform.isWindows ? 'USERPROFILE' : 'HOME'] ?? '.';
-  if (platform.isLinux) {
-    final config =
-        environment['XDG_CONFIG_HOME'] ?? p.join(userHome, '.config');
-    final state =
-        environment['XDG_STATE_HOME'] ?? p.join(userHome, '.local', 'state');
-    return (
-      p.join(config, 'tinyrack-coder'),
-      p.join(state, 'tinyrack-coder'),
-      userHome,
-    );
-  }
-  if (platform.isMacOS) {
-    final support = p.join(
-      userHome,
-      'Library',
-      'Application Support',
-      'Tinyrack Coder',
-    );
-    return (support, support, userHome);
-  }
-  if (platform.isWindows) {
-    final config = environment['APPDATA'] ?? userHome;
-    final state = environment['LOCALAPPDATA'] ?? config;
-    return (
-      p.join(config, 'Tinyrack Coder'),
-      p.join(state, 'Tinyrack Coder'),
-      userHome,
-    );
-  }
-  return (
-    p.join(userHome, '.config', 'tinyrack-coder'),
-    p.join(userHome, '.local', 'state', 'tinyrack-coder'),
-    userHome,
-  );
 }
 
 /// The generateBearerToken public API member.

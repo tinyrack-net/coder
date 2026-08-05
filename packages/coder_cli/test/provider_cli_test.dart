@@ -1,4 +1,4 @@
-import 'package:coder_daemon/src/provider_cli.dart';
+import 'package:coder_cli/coder_cli.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 

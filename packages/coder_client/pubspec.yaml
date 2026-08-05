@@ -10,6 +10,7 @@ environment:
 dependencies:
   coder_protocol: ^0.1.0
   json_rpc_2: ^4.1.0
+  path: ^1.9.1
   web_socket_channel: ^3.0.3
 
 dev_dependencies:

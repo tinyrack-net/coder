@@ -64,7 +64,7 @@ final class CoderApiAgentCliBackend implements AgentCliBackend {
   Future<AgentDefinitionDto> reset(String id) => _api.resetAgentDefinition(id);
 }
 
-/// Executes one `coder_daemon agent` subcommand.
+/// Executes one `coder-cli agent` subcommand.
 Future<int> runAgentCommand(
   List<String> arguments, {
   required AgentCliBackend backend,

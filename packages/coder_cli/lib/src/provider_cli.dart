@@ -79,7 +79,7 @@ final class CoderApiProviderCliBackend implements ProviderCliBackend {
   Future<ProviderCatalogDto> refreshCatalog() => _api.refreshProviderCatalog();
 }
 
-/// Executes one `coder_daemon provider` subcommand.
+/// Executes one `coder-cli provider` subcommand.
 Future<int> runProviderCommand(
   List<String> arguments, {
   required ProviderCliBackend backend,
