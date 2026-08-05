@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:coder_client/src/api.dart';
 import 'package:coder_client/src/endpoint.dart';
 import 'package:coder_client/src/web_socket_connector.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:http/http.dart' as http;
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 
 /// CoderClientException defines a public contract.
@@ -45,7 +45,7 @@ class CoderClient implements CoderApi {
     required DaemonCredentials credentials,
     required String clientId,
     required String clientKind,
-    WebSocketConnector connector = const IoWebSocketConnector(),
+    WebSocketConnector? connector,
     Duration requestTimeout = const Duration(seconds: 60),
     Duration Function(int attempt)? reconnectDelay,
   }) async {
@@ -54,7 +54,7 @@ class CoderClient implements CoderApi {
       credentials: credentials,
       clientId: clientId,
       clientKind: clientKind,
-      connector: connector,
+      connector: connector ?? createWebSocketConnector(),
       requestTimeout: requestTimeout,
       reconnectDelay:
           reconnectDelay ??
@@ -825,73 +825,84 @@ class CoderClient implements CoderApi {
     required int byteSize,
     required Stream<List<int>> bytes,
   }) async {
-    final client = HttpClient();
+    final client = http.Client();
     try {
-      final request = await client.postUrl(
-        _endpoint.httpBaseUri.resolve('attachments'),
+      final request =
+          http.StreamedRequest(
+              'POST',
+              _endpoint.httpBaseUri.resolve('attachments'),
+            )
+            ..headers['authorization'] = 'Bearer ${_credentials.bearerToken}'
+            ..headers['content-type'] = mimeType
+            ..headers['x-file-name'] = Uri.encodeComponent(fileName)
+            ..contentLength = byteSize;
+      unawaited(
+        bytes
+            .forEach(request.sink.add)
+            .then<void>((_) => request.sink.close())
+            .onError<Object>((error, stackTrace) {
+              request.sink.addError(error, stackTrace);
+              return request.sink.close();
+            }),
       );
-      request.headers
-        ..set('authorization', 'Bearer ${_credentials.bearerToken}')
-        ..set('content-type', mimeType)
-        ..set('x-file-name', Uri.encodeComponent(fileName));
-      request.contentLength = byteSize;
-      await request.addStream(bytes);
-      final response = await request.close();
-      final body = await utf8.decodeStream(response);
-      if (response.statusCode != HttpStatus.ok) {
+      final response = await http.Response.fromStream(
+        await client.send(request),
+      );
+      if (response.statusCode != 200) {
         throw CoderClientException(
-          body.isEmpty ? 'Attachment upload failed.' : body,
+          response.body.isEmpty ? 'Attachment upload failed.' : response.body,
           code: 'attachment_upload_failed',
         );
       }
       return AttachmentDto.fromJson(
-        Map<String, dynamic>.from(jsonDecode(body) as Map),
+        Map<String, dynamic>.from(jsonDecode(response.body) as Map),
       );
     } finally {
-      client.close(force: true);
+      client.close();
     }
   }
 
   @override
   Future<AttachmentDownload> downloadAttachment(String id) async {
-    final client = HttpClient();
-    final request = await client.getUrl(
+    final client = http.Client();
+    final request = http.Request(
+      'GET',
       _endpoint.httpBaseUri.resolve('attachments/${Uri.encodeComponent(id)}'),
-    );
-    request.headers.set(
-      'authorization',
-      'Bearer ${_credentials.bearerToken}',
-    );
-    final response = await request.close();
-    if (response.statusCode != HttpStatus.ok) {
-      final body = await utf8.decodeStream(response);
-      client.close(force: true);
+    )..headers['authorization'] = 'Bearer ${_credentials.bearerToken}';
+    final response = await client.send(request);
+    if (response.statusCode != 200) {
+      final body = await response.stream.bytesToString();
+      client.close();
       throw CoderClientException(
         body.isEmpty ? 'Attachment download failed.' : body,
         code: 'attachment_download_failed',
       );
     }
-    final disposition = response.headers.value('content-disposition') ?? '';
+    final headers = response.headers;
     final encodedName = RegExp(
       r"filename\*=UTF-8''([^;]+)",
-    ).firstMatch(disposition)?.group(1);
+    ).firstMatch(headers['content-disposition'] ?? '')?.group(1);
     return AttachmentDownload(
       fileName: encodedName == null ? id : Uri.decodeComponent(encodedName),
-      mimeType:
-          response.headers.contentType?.mimeType ?? 'application/octet-stream',
-      byteSize: response.contentLength,
-      bytes: _closeHttpClientAfter(response, client),
+      // The parameters after `;` are not part of the media type the caller
+      // matches on.
+      mimeType: (headers['content-type'] ?? 'application/octet-stream')
+          .split(';')
+          .first
+          .trim(),
+      byteSize: response.contentLength ?? -1,
+      bytes: _closeClientAfter(response.stream, client),
     );
   }
 
-  Stream<List<int>> _closeHttpClientAfter(
-    HttpClientResponse response,
-    HttpClient client,
+  Stream<List<int>> _closeClientAfter(
+    Stream<List<int>> source,
+    http.Client client,
   ) async* {
     try {
-      yield* response;
+      yield* source;
     } finally {
-      client.close(force: true);
+      client.close();
     }
   }
 

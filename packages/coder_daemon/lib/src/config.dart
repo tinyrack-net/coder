@@ -12,6 +12,15 @@ typedef DaemonEnvironment = LocalDaemonEnvironment;
 /// Production [DaemonEnvironment] backed by `dart:io`.
 typedef IoDaemonEnvironment = IoLocalDaemonEnvironment;
 
+/// Browser origins allowed to reach the daemon without extra configuration.
+///
+/// Native clients send no `Origin` and are unaffected. Only a browser is
+/// bound by this list, which is what keeps an arbitrary web page from probing
+/// a daemon on the visitor's own machine.
+const Set<String> defaultAllowedOrigins = <String>{
+  'https://coder.tinyrack.net',
+};
+
 /// DaemonConfig defines a public contract.
 class DaemonConfig {
   /// Creates a [DaemonConfig].
@@ -25,6 +34,7 @@ class DaemonConfig {
     this.bearerToken,
     this.version = packageVersion,
     this.useEnvironmentCredentials = true,
+    this.allowedOrigins = defaultAllowedOrigins,
   }) : configDirectory = configDirectory ?? homeDirectory;
 
   /// Creates a [DaemonConfig].
@@ -39,6 +49,9 @@ class DaemonConfig {
         bearerToken: value['bearerToken'] as String?,
         version: value['version']! as String,
         useEnvironmentCredentials: value['useEnvironmentCredentials']! as bool,
+        allowedOrigins: <String>{
+          ...(value['allowedOrigins']! as List<Object?>).cast<String>(),
+        },
       );
 
   /// Creates a [DaemonConfig].
@@ -59,6 +72,9 @@ class DaemonConfig {
       port: port,
       apiKey: apiKey,
       bearerToken: values['TINYRACK_CODER_TOKEN'],
+      allowedOrigins: parseAllowedOrigins(
+        values['TINYRACK_CODER_ALLOWED_ORIGINS'],
+      ),
     );
   }
 
@@ -92,6 +108,9 @@ class DaemonConfig {
   /// Whether built-in providers may use credentials from daemon environment.
   final bool useEnvironmentCredentials;
 
+  /// Browser origins permitted to call the daemon.
+  final Set<String> allowedOrigins;
+
   /// The copyWith public API member.
   DaemonConfig copyWith({
     String? homeDirectory,
@@ -102,6 +121,7 @@ class DaemonConfig {
     String? apiKey,
     String? bearerToken,
     bool? useEnvironmentCredentials,
+    Set<String>? allowedOrigins,
   }) => DaemonConfig(
     homeDirectory: homeDirectory ?? this.homeDirectory,
     configDirectory: configDirectory ?? this.configDirectory,
@@ -113,6 +133,7 @@ class DaemonConfig {
     version: version,
     useEnvironmentCredentials:
         useEnvironmentCredentials ?? this.useEnvironmentCredentials,
+    allowedOrigins: allowedOrigins ?? this.allowedOrigins,
   );
 
   /// The toIsolateMessage public API member.
@@ -126,6 +147,20 @@ class DaemonConfig {
     'bearerToken': bearerToken,
     'version': version,
     'useEnvironmentCredentials': useEnvironmentCredentials,
+    'allowedOrigins': allowedOrigins.toList(growable: false),
+  };
+}
+
+/// Parses a comma-separated origin allowlist.
+///
+/// An empty or absent value keeps [defaultAllowedOrigins]; an explicit `none`
+/// turns browser access off entirely, which a headless deployment wants.
+Set<String> parseAllowedOrigins(String? value) {
+  if (value == null || value.trim().isEmpty) return defaultAllowedOrigins;
+  if (value.trim() == 'none') return const <String>{};
+  return <String>{
+    for (final entry in value.split(','))
+      if (entry.trim().isNotEmpty) entry.trim(),
   };
 }
 

@@ -22,6 +22,10 @@ Future<void> main(List<String> arguments) async {
     ..addOption('home', defaultsTo: defaults.homeDirectory)
     ..addOption('listen', defaultsTo: '${defaults.host}:${defaults.port}')
     ..addOption('token', defaultsTo: defaults.bearerToken)
+    ..addMultiOption(
+      'allowed-origin',
+      help: 'Browser origin permitted to call this daemon. Repeatable.',
+    )
     ..addFlag('help', abbr: 'h', negatable: false);
   final options = parser.parse(arguments);
   if (options.flag('help')) {
@@ -38,6 +42,9 @@ Future<void> main(List<String> arguments) async {
       host: listen.substring(0, separator),
       port: int.parse(listen.substring(separator + 1)),
       bearerToken: options.option('token'),
+      allowedOrigins: options.multiOption('allowed-origin').isEmpty
+          ? null
+          : options.multiOption('allowed-origin').toSet(),
     ),
   );
   stdout.writeln('Tinyrack Coder daemon listening on ${handle.boundEndpoint}');

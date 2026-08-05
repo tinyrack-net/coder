@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
+import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
@@ -36,6 +38,7 @@ class DaemonRpcServer {
     required this.serverInfo,
     required this.token,
     required Stream<WireEnvelope> events,
+    this.allowedOrigins = defaultAllowedOrigins,
   }) {
     _eventSubscription = events.listen(_broadcast);
     _authSubscription = providerAuth.events.listen(
@@ -114,6 +117,9 @@ class DaemonRpcServer {
   /// The token public API member.
   final String token;
 
+  /// Browser origins permitted to call this daemon.
+  final Set<String> allowedOrigins;
+
   final Set<_ClientSession> _sessions = <_ClientSession>{};
   late final StreamSubscription<WireEnvelope> _eventSubscription;
   late final StreamSubscription<ProviderAuthAttemptDto> _authSubscription;
@@ -123,6 +129,20 @@ class DaemonRpcServer {
 
   /// The call public API member.
   FutureOr<Response> call(Request request) {
+    // A browser sends an Origin; native clients and the CLI do not, so this
+    // gate only ever constrains web pages.
+    final origin = request.headers['origin'];
+    if (origin != null && !allowedOrigins.contains(origin)) {
+      return Response.forbidden('Origin $origin is not allowed.');
+    }
+    final cors = _corsHeaders(origin);
+    if (request.method == 'OPTIONS') {
+      // Only a browser preflights, and it does so before it can send the
+      // credential, so this answers ahead of the authentication check.
+      return origin == null
+          ? Response.notFound('Not found')
+          : Response.ok(null, headers: cors);
+    }
     if (request.url.path == 'health') {
       return Response.ok(
         jsonEncode(<String, dynamic>{
@@ -130,7 +150,10 @@ class DaemonRpcServer {
           'version': serverInfo.version,
           'protocolVersion': serverInfo.protocolVersion,
         }),
-        headers: <String, String>{'content-type': 'application/json'},
+        headers: <String, String>{
+          'content-type': 'application/json',
+          ...cors,
+        },
       );
     }
     final isAttachmentRequest =
@@ -139,18 +162,62 @@ class DaemonRpcServer {
     if (request.url.path != 'ws' && !isAttachmentRequest) {
       return Response.notFound('Not found');
     }
-    final authorization = request.headers['authorization'];
-    final candidate = authorization?.startsWith('Bearer ') == true
-        ? authorization!.substring('Bearer '.length)
-        : null;
-    if (!_constantTimeEquals(candidate, token)) {
-      return Response.unauthorized('A valid bearer token is required.');
+    if (!_constantTimeEquals(_presentedToken(request), token)) {
+      return Response.unauthorized(
+        'A valid bearer token is required.',
+        headers: cors,
+      );
     }
-    if (isAttachmentRequest) return _attachmentRequest(request);
-    return webSocketHandler(_openSession)(request);
+    if (isAttachmentRequest) return _attachmentRequest(request, cors);
+    // Only the versioned protocol is offered back, so the token subprotocol a
+    // browser sends is never echoed into the response.
+    return webSocketHandler(
+      _openSession,
+      protocols: const <String>[coderWebSocketProtocol],
+    )(request);
   }
 
-  Future<Response> _attachmentRequest(Request request) async {
+  /// Reads the bearer token from the header or, for a browser, the
+  /// subprotocol.
+  ///
+  /// The `WebSocket` API cannot set request headers, so a web client has no
+  /// way to present an `Authorization` header and offers the same secret as a
+  /// subprotocol instead.
+  static String? _presentedToken(Request request) {
+    final authorization = request.headers['authorization'];
+    if (authorization != null && authorization.startsWith('Bearer ')) {
+      return authorization.substring('Bearer '.length);
+    }
+    for (final protocol in _requestedProtocols(request)) {
+      final token = decodeWebSocketTokenProtocol(protocol);
+      if (token != null) return token;
+    }
+    return null;
+  }
+
+  static Iterable<String> _requestedProtocols(Request request) =>
+      (request.headers['sec-websocket-protocol'] ?? '')
+          .split(',')
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty);
+
+  Map<String, String> _corsHeaders(String? origin) => origin == null
+      ? const <String, String>{}
+      : <String, String>{
+          'access-control-allow-origin': origin,
+          'access-control-allow-methods': 'GET, POST, OPTIONS',
+          'access-control-allow-headers':
+              'authorization, content-type, x-file-name',
+          // Without this the browser cannot read the server-provided filename.
+          'access-control-expose-headers': 'content-disposition',
+          'access-control-max-age': '600',
+          'vary': 'Origin',
+        };
+
+  Future<Response> _attachmentRequest(
+    Request request,
+    Map<String, String> cors,
+  ) async {
     try {
       if (request.method == 'POST' && request.url.path == 'attachments') {
         final encodedName = request.headers['x-file-name'];
@@ -174,6 +241,7 @@ class DaemonRpcServer {
           headers: <String, String>{
             'content-type': 'application/json',
             'x-content-type-options': 'nosniff',
+            ...cors,
           },
         );
       }
@@ -189,14 +257,15 @@ class DaemonRpcServer {
                 "attachment; filename*=UTF-8''"
                 '${Uri.encodeComponent(attachment.fileName)}',
             'x-content-type-options': 'nosniff',
+            ...cors,
           },
         );
       }
       return Response.notFound('Not found');
     } on FormatException catch (error) {
-      return Response.badRequest(body: error.message);
+      return Response.badRequest(body: error.message, headers: cors);
     } on AttachmentNotFoundException {
-      return Response.notFound('Attachment not found.');
+      return Response.notFound('Attachment not found.', headers: cors);
     }
   }
 
