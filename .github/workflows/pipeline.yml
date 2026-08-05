@@ -489,12 +489,9 @@ jobs:
       - uses: actions/checkout@v5
       # Flutter rather than a standalone Dart SDK: `dart pub get` resolves the
       # whole workspace, and `coder_app` pulls `flutter`, `flutter_test`, and
-      # `integration_test` from the Flutter SDK. Flutter 3.44.8 bundles the
-      # same Dart 3.12.2 this job used to install directly.
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      # `integration_test` from the Flutter SDK. The pinned Flutter bundles the
+      # same Dart this job used to install directly.
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - name: Checkout Tinyrack Dart packages
         if: matrix.platform == 'macos'
@@ -560,16 +557,17 @@ jobs:
           else
             cli="$bundle/coder-cli"
           fi
+          # Daemon-addressing flags follow the subcommand, so `provider list`
+          # comes before `--listen`.
+          export TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke"
           "$cli" --version
-          TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke" "$cli" daemon start \
-            --listen 127.0.0.1:7399 &
+          "$cli" daemon start --listen 127.0.0.1:7399 &
           daemon=$!
           for _ in $(seq 1 30); do
-            "$cli" --listen 127.0.0.1:7399 provider list >/dev/null 2>&1 && break
+            "$cli" provider list --listen 127.0.0.1:7399 >/dev/null 2>&1 && break
             sleep 1
           done
-          TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke" \
-            "$cli" --listen 127.0.0.1:7399 provider list
+          "$cli" provider list --listen 127.0.0.1:7399
           kill "$daemon"
 
       - name: Archive the CLI bundle
