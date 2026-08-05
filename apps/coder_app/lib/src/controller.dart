@@ -342,64 +342,77 @@ class SessionsController extends _$SessionsController {
   }
 
   /// Switches one session between planning and normal collaboration.
-  Future<SessionDto> setMode(String sessionId, SessionMode mode) async {
-    final api = await _requireHostApi(ref, hostId);
-    final session = await api.updateSessionMode(sessionId, mode);
-    _replace(session);
-    return session;
-  }
+  Future<SessionDto> setMode(String sessionId, SessionMode mode) => _apply(
+    sessionId,
+    (session) => session.copyWith(mode: mode),
+    (api) => api.updateSessionMode(sessionId, mode),
+  );
 
   /// Sets or clears the provider and model override of one session.
-  ///
-  /// The daemon broadcasts the updated session, so local state is refreshed by
-  /// [_handleEvent] instead of being patched here.
   Future<SessionDto> setModel(
     String sessionId,
     SessionModelSelectionDto? model,
-  ) async {
-    final api = await _requireHostApi(ref, hostId);
-    final session = await api.updateSessionModel(sessionId, model);
-    _replace(session);
-    return session;
-  }
+  ) => _apply(
+    sessionId,
+    (session) => session.copyWith(model: model),
+    (api) => api.updateSessionModel(sessionId, model),
+  );
 
   /// Sets or clears the reasoning effort override of one session.
   Future<SessionDto> setReasoningEffort(
     String sessionId,
     String? reasoningEffort,
-  ) async {
-    final api = await _requireHostApi(ref, hostId);
-    final session = await api.updateSessionReasoningEffort(
-      sessionId,
-      reasoningEffort,
-    );
-    _replace(session);
-    return session;
-  }
+  ) => _apply(
+    sessionId,
+    (session) => session.copyWith(reasoningEffort: reasoningEffort),
+    (api) => api.updateSessionReasoningEffort(sessionId, reasoningEffort),
+  );
 
   /// Sets or clears the permission mode override of one session.
   Future<SessionDto> setPermissionMode(
     String sessionId,
     PermissionMode? permissionMode,
-  ) async {
-    final api = await _requireHostApi(ref, hostId);
-    final session = await api.updateSessionPermissionMode(
-      sessionId,
-      permissionMode,
-    );
-    _replace(session);
-    return session;
-  }
+  ) => _apply(
+    sessionId,
+    (session) => session.copyWith(permissionMode: permissionMode),
+    (api) => api.updateSessionPermissionMode(sessionId, permissionMode),
+  );
 
   /// Sets or clears the provider service tier of one session.
   Future<SessionDto> setServiceTier(
     String sessionId,
     String? serviceTier,
+  ) => _apply(
+    sessionId,
+    (session) => session.copyWith(serviceTier: serviceTier),
+    (api) => api.updateSessionServiceTier(sessionId, serviceTier),
+  );
+
+  /// Shows a turn-setting change immediately and confirms it with the daemon.
+  ///
+  /// Without the local patch the chip keeps its old label for a full round
+  /// trip and then flips, which reads as a flicker rather than a toggle. The
+  /// daemon still owns the value, so its answer replaces the guess and a
+  /// failure restores what was on screen before.
+  Future<SessionDto> _apply(
+    String sessionId,
+    SessionDto Function(SessionDto session) patch,
+    Future<SessionDto> Function(CoderApi api) commit,
   ) async {
-    final api = await _requireHostApi(ref, hostId);
-    final session = await api.updateSessionServiceTier(sessionId, serviceTier);
-    _replace(session);
-    return session;
+    // Patched before the first suspension, so the chip is already showing the
+    // new value on the frame the tap is handled.
+    final previous = state.asData?.value
+        .where((session) => session.id == sessionId)
+        .firstOrNull;
+    if (previous != null) _replace(patch(previous));
+    try {
+      final session = await commit(await _requireHostApi(ref, hostId));
+      _replace(session);
+      return session;
+    } on Exception {
+      if (previous != null) _replace(previous);
+      rethrow;
+    }
   }
 
   void _handleEvent(ClientEvent event) {
@@ -1078,12 +1091,35 @@ class SessionComposerDraftController extends _$SessionComposerDraftController {
       state = state.copyWith(serviceTier: (value: serviceTier));
 }
 
+/// One prompt typed while a turn was still running.
+///
+/// The daemon runs a single turn per session, so a follow-up waits here until
+/// the active turn settles instead of being rejected or silently dropped.
+final class QueuedTurn {
+  /// Creates a [QueuedTurn].
+  const QueuedTurn({
+    required this.id,
+    required this.text,
+    required this.attachments,
+  });
+
+  /// Identity used to edit or promote one entry.
+  final String id;
+
+  /// Trimmed prompt text.
+  final String text;
+
+  /// Files that go up with the prompt.
+  final List<PendingAttachment> attachments;
+}
+
 /// ConversationState defines a public contract.
 final class ConversationState {
   /// Creates a [ConversationState].
   const ConversationState({
     this.timeline = const <TimelineEventDto>[],
     this.approvals = const <String, ApprovalRequestDto>{},
+    this.queued = const <QueuedTurn>[],
   });
 
   /// The timeline public API member.
@@ -1092,13 +1128,18 @@ final class ConversationState {
   /// The approvals public API member.
   final Map<String, ApprovalRequestDto> approvals;
 
+  /// Prompts waiting for the active turn to finish, oldest first.
+  final List<QueuedTurn> queued;
+
   /// The copyWith public API member.
   ConversationState copyWith({
     List<TimelineEventDto>? timeline,
     Map<String, ApprovalRequestDto>? approvals,
+    List<QueuedTurn>? queued,
   }) => ConversationState(
     timeline: timeline ?? this.timeline,
     approvals: approvals ?? this.approvals,
+    queued: queued ?? this.queued,
   );
 }
 
@@ -1107,6 +1148,9 @@ final class ConversationState {
 class ConversationController extends _$ConversationController {
   StreamSubscription<ClientEvent>? _events;
   late String? _sessionId;
+  // Both the idle session event and an explicit promotion can ask for a drain,
+  // so one send is in flight at a time.
+  bool _draining = false;
 
   @override
   Future<ConversationState> build(String hostId, String? sessionId) async {
@@ -1165,6 +1209,89 @@ class ConversationController extends _$ConversationController {
     }
   }
 
+  /// Holds a prompt until the active turn settles.
+  void enqueueTurn(
+    String prompt, {
+    List<PendingAttachment> attachments = const <PendingAttachment>[],
+  }) {
+    final text = prompt.trim();
+    final current = state.asData?.value;
+    if (current == null || (text.isEmpty && attachments.isEmpty)) return;
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        queued: <QueuedTurn>[
+          ...current.queued,
+          QueuedTurn(
+            id: ref.read(appIdGeneratorProvider).generate(),
+            text: text,
+            attachments: List<PendingAttachment>.unmodifiable(attachments),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Removes one waiting prompt and returns it, so it can be edited again.
+  QueuedTurn? takeQueuedTurn(String id) {
+    final current = state.asData?.value;
+    final item = current?.queued.where((entry) => entry.id == id).firstOrNull;
+    if (current == null || item == null) return null;
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        queued: current.queued
+            .where((entry) => entry.id != id)
+            .toList(growable: false),
+      ),
+    );
+    return item;
+  }
+
+  /// Cancels the active turn and starts one waiting prompt immediately.
+  Future<void> sendQueuedTurnNow(String id) async {
+    final item = takeQueuedTurn(id);
+    if (item == null) return;
+    try {
+      await cancelTurn();
+      await startTurn(item.text, attachments: item.attachments);
+    } on Exception {
+      _restoreQueuedTurn(item);
+      rethrow;
+    }
+  }
+
+  /// Starts the oldest waiting prompt, if any.
+  ///
+  /// Exactly one prompt leaves the queue per call: each queued follow-up earns
+  /// its own turn, and the next one waits for that turn to settle in turn.
+  Future<void> drainQueue() async {
+    if (_draining) return;
+    final current = state.asData?.value;
+    final next = current?.queued.firstOrNull;
+    if (current == null || next == null) return;
+    _draining = true;
+    state = AsyncData<ConversationState>(
+      current.copyWith(queued: current.queued.sublist(1)),
+    );
+    try {
+      await startTurn(next.text, attachments: next.attachments);
+    } on Exception {
+      // The drain runs from a broadcast event with nobody to await it, so a
+      // failed send puts the prompt back rather than disappearing.
+      _restoreQueuedTurn(next);
+    } finally {
+      _draining = false;
+    }
+  }
+
+  void _restoreQueuedTurn(QueuedTurn item) {
+    if (!ref.mounted) return;
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData<ConversationState>(
+      current.copyWith(queued: <QueuedTurn>[item, ...current.queued]),
+    );
+  }
+
   /// The resolveApproval public API member.
   Future<void> resolveApproval(
     String approvalId, {
@@ -1219,7 +1346,15 @@ class ConversationController extends _$ConversationController {
             ),
           );
         }
-      case SessionUpdatedClientEvent():
+      case SessionUpdatedClientEvent(:final session):
+        // A waiting prompt only exists because a turn was running, so a
+        // settled session is the signal to start the next one.
+        if (session.id == _sessionId &&
+            current.queued.isNotEmpty &&
+            (session.status == SessionStatus.idle ||
+                session.status == SessionStatus.failed)) {
+          unawaited(drainQueue());
+        }
       case ProviderAuthUpdatedClientEvent():
       case AgentDefinitionsChangedClientEvent():
       case McpServersChangedClientEvent():

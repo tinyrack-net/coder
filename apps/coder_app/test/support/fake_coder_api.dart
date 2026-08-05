@@ -313,6 +313,25 @@ final class FakeCoderApi implements CoderApi {
   final List<({String id, bool approved})> approvalDecisions =
       <({String id, bool approved})>[];
 
+  /// Thrown instead of starting a turn, so a caller's rollback can be checked.
+  Exception? startTurnError;
+
+  /// Thrown instead of writing a session turn setting.
+  Exception? sessionUpdateError;
+
+  /// Awaited before a session turn setting is written.
+  ///
+  /// Lets a test observe the state a caller shows while the write is in
+  /// flight, rather than only its settled result.
+  Completer<void>? sessionUpdateGate;
+
+  Future<void> _beforeSessionUpdate() async {
+    final gate = sessionUpdateGate;
+    if (gate != null) await gate.future;
+    final error = sessionUpdateError;
+    if (error != null) throw error;
+  }
+
   /// Emits a typed daemon notification.
   void emit(ClientEvent event) => _events.add(event);
 
@@ -593,6 +612,7 @@ final class FakeCoderApi implements CoderApi {
     String sessionId,
     SessionMode mode,
   ) async {
+    await _beforeSessionUpdate();
     updatedSessionModes.add((sessionId: sessionId, mode: mode));
     final index = _agents.indexWhere((agent) => agent.id == sessionId);
     if (index < 0) throw StateError('Session not found: $sessionId');
@@ -1202,6 +1222,8 @@ final class FakeCoderApi implements CoderApi {
     required String prompt,
     List<String> attachmentIds = const <String>[],
   }) async {
+    final error = startTurnError;
+    if (error != null) throw error;
     startedPrompts.add(prompt);
     startedTurnIds.add(turnId);
     startedAttachmentIds.add(List<String>.of(attachmentIds));

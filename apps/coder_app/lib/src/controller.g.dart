@@ -392,7 +392,7 @@ final class SessionsControllerProvider
 }
 
 String _$sessionsControllerHash() =>
-    r'eb9d04840113723c56496c1c93369a036f57237a';
+    r'dfab8c71df5039fa3bf857815ba41a0d735c6767';
 
 /// SessionsController defines a public contract.
 
@@ -1277,7 +1277,7 @@ final class ConversationControllerProvider
 }
 
 String _$conversationControllerHash() =>
-    r'c998a2f14a12e800721b7d205b9d7eeba64c3906';
+    r'7893992c48b0c9efb0a1650f81777eca8af71ab2';
 
 /// ConversationController defines a public contract.
 
