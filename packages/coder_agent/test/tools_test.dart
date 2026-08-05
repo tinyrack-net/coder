@@ -95,7 +95,7 @@ void main() {
           cancellation: CancellationToken(),
         ),
       );
-      expect(publisher.paths, <String>[target.path]);
+      expect(publisher.paths, <String>[await target.resolveSymbolicLinks()]);
       expect(result.attachments.single.fileName, 'result.png');
       expect(
         () => tool.execute(
