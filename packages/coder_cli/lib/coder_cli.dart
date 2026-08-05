@@ -1,3 +1,9 @@
 export 'src/agent_cli.dart';
+export 'src/cli/application.dart';
+export 'src/cli/autocomplete.dart';
+export 'src/cli/context.dart';
+export 'src/cli/shared_flags.dart';
+export 'src/daemon_host.dart';
+export 'src/progress.dart';
 export 'src/provider_cli.dart';
 export 'src/version.g.dart';

@@ -9,11 +9,7 @@ void main() {
     final backend = _Backend(now);
     final output = StringBuffer();
 
-    final exitCode = await runProviderCommand(
-      <String>['list'],
-      backend: backend,
-      output: output,
-    );
+    final exitCode = await providerList(backend: backend, output: output);
 
     expect(exitCode, 0);
     expect(output.toString(), contains('OpenAI'));
@@ -26,10 +22,11 @@ void main() {
     final output = StringBuffer();
 
     expect(
-      await runProviderCommand(
-        <String>['connect', 'deepseek', '--method', 'api-key'],
+      await providerConnect(
         backend: backend,
         output: output,
+        definitionId: 'deepseek',
+        method: ProviderConnectMethod.apiKey,
         readSecret: () async => 'secret',
       ),
       0,
@@ -37,20 +34,21 @@ void main() {
     expect(backend.apiKeys['deepseek'], 'secret');
 
     expect(
-      await runProviderCommand(
-        <String>['connect', 'ollama'],
+      await providerConnect(
         backend: backend,
         output: output,
+        definitionId: 'ollama',
       ),
       0,
     );
     expect(backend.noneConnections, contains('ollama'));
 
     expect(
-      await runProviderCommand(
-        <String>['connect', 'openai', '--method', 'chatgpt-device'],
+      await providerConnect(
         backend: backend,
         output: output,
+        definitionId: 'openai',
+        method: ProviderConnectMethod.chatgptDevice,
       ),
       0,
     );
@@ -58,107 +56,80 @@ void main() {
     expect(backend.statusCalls, 1);
   });
 
+  test('an inline API key skips the interactive prompt', () async {
+    final backend = _Backend(now);
+    final output = StringBuffer();
+
+    expect(
+      await providerConnect(
+        backend: backend,
+        output: output,
+        definitionId: 'deepseek',
+        apiKey: 'inline',
+        readSecret: () async => fail('the prompt must not run'),
+      ),
+      0,
+    );
+    expect(backend.apiKeys['deepseek'], 'inline');
+  });
+
   test('disconnect and explicit catalog refresh are routed', () async {
     final backend = _Backend(now);
     final output = StringBuffer();
 
     expect(
-      await runProviderCommand(
-        <String>['disconnect', 'openai'],
+      await providerDisconnect(
         backend: backend,
         output: output,
+        connectionId: 'openai',
       ),
       0,
     );
     expect(backend.disconnected, <String>['openai']);
     expect(
-      await runProviderCommand(
-        <String>['catalog-refresh'],
-        backend: backend,
-        output: output,
-      ),
+      await providerCatalogRefresh(backend: backend, output: output),
       0,
     );
     expect(backend.refreshes, 1);
   });
 
-  test('help and empty list produce actionable output', () async {
+  test('an empty connection list says so', () async {
     final backend = _Backend(now)..emptyConnections = true;
     final output = StringBuffer();
 
-    expect(
-      await runProviderCommand(
-        const <String>[],
-        backend: backend,
-        output: output,
-      ),
-      0,
-    );
-    expect(output.toString(), contains('provider connect'));
-    output.clear();
-    expect(
-      await runProviderCommand(
-        const <String>['list'],
-        backend: backend,
-        output: output,
-      ),
-      0,
-    );
+    expect(await providerList(backend: backend, output: output), 0);
     expect(output.toString(), contains('No provider connections.'));
   });
 
-  test('invalid command shapes fail before mutating the backend', () async {
+  test('an unknown provider fails before mutating the backend', () async {
     final backend = _Backend(now);
     final output = StringBuffer();
 
     await expectLater(
-      runProviderCommand(
-        const <String>['disconnect'],
+      providerConnect(
         backend: backend,
         output: output,
-      ),
-      throwsA(isA<FormatException>()),
-    );
-    await expectLater(
-      runProviderCommand(
-        const <String>['unknown'],
-        backend: backend,
-        output: output,
-      ),
-      throwsA(isA<FormatException>()),
-    );
-    await expectLater(
-      runProviderCommand(
-        const <String>['connect'],
-        backend: backend,
-        output: output,
-      ),
-      throwsA(isA<FormatException>()),
-    );
-    await expectLater(
-      runProviderCommand(
-        const <String>['connect', 'missing'],
-        backend: backend,
-        output: output,
+        definitionId: 'missing',
       ),
       throwsA(isA<StateError>()),
     );
+    expect(backend.apiKeys, isEmpty);
+    expect(backend.noneConnections, isEmpty);
+  });
+
+  test('a hosted provider without a secret source fails', () async {
+    final backend = _Backend(now);
+    final output = StringBuffer();
+
     await expectLater(
-      runProviderCommand(
-        const <String>['connect', 'openai', '--method', 'unknown'],
+      providerConnect(
         backend: backend,
         output: output,
-      ),
-      throwsA(isA<FormatException>()),
-    );
-    await expectLater(
-      runProviderCommand(
-        const <String>['connect', 'deepseek'],
-        backend: backend,
-        output: output,
+        definitionId: 'deepseek',
       ),
       throwsA(isA<StateError>()),
     );
+    expect(backend.apiKeys, isEmpty);
   });
 
   test('OAuth terminal failures return a non-zero result', () async {
@@ -166,23 +137,85 @@ void main() {
       ..authResult = ProviderAuthAttemptStatus.failed
       ..authError = 'authorization rejected';
     final output = StringBuffer();
+    final progress = _RecordingProgress();
 
     expect(
-      await runProviderCommand(
-        const <String>[
-          'connect',
-          'openai',
-          '--method',
-          'chatgpt-browser',
-        ],
+      await providerConnect(
         backend: backend,
         output: output,
+        definitionId: 'openai',
+        method: ProviderConnectMethod.chatgptBrowser,
+        progress: progress,
         pollInterval: Duration.zero,
       ),
       1,
     );
     expect(output.toString(), contains('authorization rejected'));
+    expect(progress.events.first, startsWith('start:'));
+    expect(progress.events.last, 'fail:authorization rejected');
   });
+
+  test('a successful OAuth flow reports progress as succeeded', () async {
+    final backend = _Backend(now);
+    final output = StringBuffer();
+    final progress = _RecordingProgress();
+
+    expect(
+      await providerConnect(
+        backend: backend,
+        output: output,
+        definitionId: 'openai',
+        method: ProviderConnectMethod.chatgptDevice,
+        progress: progress,
+        pollInterval: Duration.zero,
+      ),
+      0,
+    );
+    expect(progress.events, <String>[
+      'start:Waiting for authorization',
+      'succeed:Authorized',
+    ]);
+  });
+
+  test('catalog refresh reports progress', () async {
+    final backend = _Backend(now);
+    final progress = _RecordingProgress();
+
+    await providerCatalogRefresh(
+      backend: backend,
+      output: StringBuffer(),
+      progress: progress,
+    );
+
+    expect(progress.events, <String>[
+      'start:Refreshing the provider catalog',
+      'succeed:Provider catalog refreshed',
+    ]);
+  });
+
+  test('the silent reporter records nothing and throws nothing', () {
+    const progress = SilentCliProgress();
+
+    expect(() {
+      progress
+        ..start('a')
+        ..succeed('b')
+        ..fail('c');
+    }, returnsNormally);
+  });
+}
+
+final class _RecordingProgress implements CliProgress {
+  final List<String> events = <String>[];
+
+  @override
+  void start(String message) => events.add('start:$message');
+
+  @override
+  void succeed(String message) => events.add('succeed:$message');
+
+  @override
+  void fail(String message) => events.add('fail:$message');
 }
 
 final class _Backend implements ProviderCliBackend {

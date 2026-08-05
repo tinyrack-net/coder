@@ -156,12 +156,20 @@ void main() {
       'bin',
       'shipworld.dart',
     ].join('/');
+    // The workflow ref and the cliweave dependency ref are two independent
+    // copies of one commit; a release that resolved them differently would
+    // package the CLI with a shipworld that disagrees with the framework it
+    // was built against. Comparing them keeps the SHA in one place.
+    final pubspec = File(
+      'packages/coder_cli/pubspec.yaml',
+    ).readAsStringSync();
+    final dependencyRef = RegExp(
+      'ref: ([0-9a-f]{40})',
+    ).firstMatch(pubspec)?.group(1);
+    expect(dependencyRef, isNotNull);
     expect(
       workflow,
-      contains(
-        'TINYRACK_DART_PACKAGES_REF: '
-        'f4c874d8316d326d8dc71b811bc62f084825a0c0',
-      ),
+      contains('TINYRACK_DART_PACKAGES_REF: $dependencyRef'),
     );
     expect(workflow, contains('repository: tinyrack-net/dart-packages'));
     expect(

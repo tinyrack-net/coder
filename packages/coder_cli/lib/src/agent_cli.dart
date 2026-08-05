@@ -1,4 +1,3 @@
-import 'package:args/args.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:path/path.dart' as p;
@@ -64,67 +63,78 @@ final class CoderApiAgentCliBackend implements AgentCliBackend {
   Future<AgentDefinitionDto> reset(String id) => _api.resetAgentDefinition(id);
 }
 
-/// Executes one `coder-cli agent` subcommand.
-Future<int> runAgentCommand(
-  List<String> arguments, {
+/// Lists every active agent definition with its mode and staleness.
+Future<int> agentList({
   required AgentCliBackend backend,
   required StringSink output,
+}) async {
+  for (final definition in await backend.list()) {
+    final state = definition.isStale ? 'stale' : 'ready';
+    output.writeln(
+      '${definition.id}\t${definition.mode.name}\t$state\t'
+      '${definition.sourcePath}',
+    );
+  }
+  return 0;
+}
+
+/// Validates the Markdown definition at [path] without saving it.
+///
+/// The agent ID is taken from the file name, which is how an operator names a
+/// definition on disk.
+Future<int> agentValidate({
+  required AgentCliBackend backend,
+  required StringSink output,
+  required String path,
   Future<String> Function(String path)? readFile,
 }) async {
-  if (arguments.isEmpty || arguments.first == 'help') {
-    output.writeln(agentUsage);
-    return 0;
+  final id = p.basenameWithoutExtension(path);
+  final markdown = await _read(path, readFile);
+  final validated = await backend.validate(id, markdown);
+  output.writeln('Valid ${validated.id}: ${validated.name}');
+  return 0;
+}
+
+/// Creates or updates the agent [id] from the Markdown file at [path].
+Future<int> agentApply({
+  required AgentCliBackend backend,
+  required StringSink output,
+  required String id,
+  required String path,
+  Future<String> Function(String path)? readFile,
+}) async {
+  final markdown = await _read(path, readFile);
+  final definition = await backend.validate(id, markdown);
+  await backend.apply(id, definition);
+  output.writeln('Applied $id.');
+  return 0;
+}
+
+/// Archives the custom agent definition [id].
+Future<int> agentArchive({
+  required AgentCliBackend backend,
+  required StringSink output,
+  required String id,
+}) async {
+  await backend.archive(id);
+  output.writeln('Archived $id.');
+  return 0;
+}
+
+/// Restores the protected built-in definition [id] to its shipped content.
+Future<int> agentReset({
+  required AgentCliBackend backend,
+  required StringSink output,
+  required String id,
+}) async {
+  // `coder` is the only built-in definition, so resetting anything else would
+  // silently do nothing rather than fail.
+  if (id != 'coder') {
+    throw const FormatException('agent reset only supports coder.');
   }
-  switch (arguments.first) {
-    case 'list':
-      for (final definition in await backend.list()) {
-        final state = definition.isStale ? 'stale' : 'ready';
-        output.writeln(
-          '${definition.id}\t${definition.mode.name}\t$state\t'
-          '${definition.sourcePath}',
-        );
-      }
-      return 0;
-    case 'validate':
-      if (arguments.length != 2) {
-        throw const FormatException('agent validate requires a Markdown file.');
-      }
-      final path = arguments[1];
-      final id = p.basenameWithoutExtension(path);
-      final markdown = await _read(path, readFile);
-      final validated = await backend.validate(id, markdown);
-      output.writeln('Valid ${validated.id}: ${validated.name}');
-      return 0;
-    case 'apply':
-      final parser = ArgParser()..addOption('file', mandatory: true);
-      final options = parser.parse(arguments.skip(1).toList(growable: false));
-      if (options.rest.length != 1) {
-        throw const FormatException('agent apply requires an agent ID.');
-      }
-      final id = options.rest.single;
-      final path = options.option('file')!;
-      final markdown = await _read(path, readFile);
-      final definition = await backend.validate(id, markdown);
-      await backend.apply(id, definition);
-      output.writeln('Applied $id.');
-      return 0;
-    case 'archive':
-      if (arguments.length != 2) {
-        throw const FormatException('agent archive requires an agent ID.');
-      }
-      await backend.archive(arguments[1]);
-      output.writeln('Archived ${arguments[1]}.');
-      return 0;
-    case 'reset':
-      if (arguments.length != 2 || arguments[1] != 'coder') {
-        throw const FormatException('agent reset only supports coder.');
-      }
-      await backend.reset('coder');
-      output.writeln('Reset coder.');
-      return 0;
-    default:
-      throw FormatException('Unknown agent command: ${arguments.first}');
-  }
+  await backend.reset('coder');
+  output.writeln('Reset coder.');
+  return 0;
 }
 
 Future<String> _read(
@@ -137,14 +147,3 @@ Future<String> _read(
   }
   return reader(path);
 }
-
-/// Usage text for the `agent` commands.
-///
-/// Public so the entrypoint can answer `help` without first connecting to a
-/// daemon that may not be running.
-const String agentUsage = '''
-agent list
-agent validate <file>
-agent apply <id> --file <path>
-agent archive <id>
-agent reset coder''';

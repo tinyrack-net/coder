@@ -8,7 +8,6 @@ environment:
   sdk: ^3.12.2
 
 dependencies:
-  args: ^2.7.0
   async: ^2.13.0
   coder_agent: ^0.1.0
   coder_client: ^0.1.0

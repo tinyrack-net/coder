@@ -90,12 +90,15 @@ targets:
     commit: "release: v{version}"
     branch: main
     payload:
-      kind: executable
+      # A directory rather than a bare executable: hosting the daemon links
+      # sqlite3 and the PTY code assets, so `dart build cli` emits `bin/` plus
+      # the `lib/` the executable loads at runtime.
+      kind: directory
       launcher: coder-cli
     product:
       name: coder-cli
       display-name: Coder CLI
-      description: Command-line client for the Tinyrack Coder daemon
+      description: Command line that hosts and administers a Tinyrack Coder daemon
       executable: coder-cli
       homepage: https://github.com/tinyrack-net/coder
       repository: tinyrack-net/coder
