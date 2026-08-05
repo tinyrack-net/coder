@@ -382,6 +382,41 @@ void main() {
       }
     },
   );
+
+  testWidgets(
+    'a focused composer shows exactly one focus ring',
+    tags: const <String>['feature_test__turn_execution__widget'],
+    (tester) async {
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            onSubmit: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(inputKey));
+      await tester.pumpAndSettle();
+
+      // The ghost input paints its own focus emphasis, so the card that frames
+      // it must not ring as well; the two together read as two focused
+      // controls for a single caret.
+      final focus = Theme.of(
+        tester.element(find.byKey(inputKey)),
+      ).extension<TinyrackThemeData>()!.focus;
+      final rings = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .map((decoration) => decoration.border?.top)
+          .nonNulls
+          .where((side) => side.color == focus)
+          .toList();
+      expect(rings, hasLength(1));
+    },
+  );
 }
 
 Widget _harness({
