@@ -1181,10 +1181,10 @@ packages:
     dependency: transitive
     description:
       name: tinyrack_ui
-      sha256: "20f7d035f92abcccb746e888c9030c82558897cc4d44c30b0562d52dfa7ef2cc"
+      sha256: e32eaadd016a15e04804b3b5f6eaed093b8cf5b1842d7234a200f4760c0b17d3
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.3"
+    version: "0.4.6"
   tray_manager:
     dependency: transitive
     description:

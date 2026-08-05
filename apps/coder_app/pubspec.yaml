@@ -25,7 +25,7 @@ dependencies:
   meta: ^1.17.0
   riverpod_annotation: 4.0.3
   shared_preferences: ^2.5.4
-  tinyrack_ui: ^0.4.3
+  tinyrack_ui: ^0.4.6
   tray_manager: ^0.5.3
   url_launcher: ^6.3.2
   uuid: ^4.6.0
