@@ -45,10 +45,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos format:check
       - run: dart run melos analyze
@@ -66,10 +63,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos generate:check
 
@@ -86,10 +80,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos test:dart
 
@@ -106,10 +97,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos test:flutter
 
@@ -120,10 +108,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos test:coverage:dart
       - name: Enforce Dart package coverage
@@ -142,10 +127,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos test:coverage:flutter
       - run: dart run tool/verify_coverage.dart --scope=coder_app
@@ -157,10 +139,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos test:golden
 
@@ -185,15 +164,10 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/install-linux-desktop-deps
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-      - name: Install Linux desktop dependencies
-        run: >-
-          sudo apt-get update && sudo apt-get install -y
-          clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev xvfb
-          libayatana-appindicator3-dev
+          extra-packages: xvfb
       - run: dart pub get --enforce-lockfile
       - run: >-
           xvfb-run -a flutter test
@@ -219,10 +193,7 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Set up Gradle cache
         if: matrix.gradle_cache
         uses: gradle/actions/setup-gradle@v6
@@ -247,10 +218,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
         working-directory: apps/coder_app
@@ -262,10 +230,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       # A dart:io import reaching the web entrypoint only fails here, so this
       # runs on every pull request rather than at release time.
@@ -332,16 +297,11 @@ jobs:
       MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
+      - if: matrix.platform == 'linux'
+        uses: ./.github/actions/install-linux-desktop-deps
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-      - name: Install Linux desktop dependencies
-        if: matrix.platform == 'linux'
-        run: >-
-          sudo apt-get update && sudo apt-get install -y
-          clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev
-          libayatana-appindicator3-dev rpm
+          extra-packages: rpm
       - run: dart pub get --enforce-lockfile
       - name: Checkout Tinyrack Dart packages
         uses: actions/checkout@v5
@@ -806,10 +766,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: >-
           flutter test integration_test/${{ matrix.shard }}
@@ -823,10 +780,7 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -846,10 +800,7 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - name: Boot an iOS simulator
         run: |

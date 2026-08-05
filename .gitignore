@@ -14,3 +14,6 @@ coverage/
 # Release artifacts and packaging staging.
 dist/
 .shipworld/
+
+# CI apt package cache.
+.apt-debs/
