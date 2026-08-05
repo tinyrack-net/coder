@@ -2,6 +2,7 @@ import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/desktop_title_bar.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,7 +18,7 @@ void main() {
     FakeTrayIcon tray,
     MemoryAppStore store,
   })
-  build() {
+  build({FakeCoderApi? api, bool connected = false}) {
     final window = FakeDesktopWindow(supportsCustomTitleBar: true);
     final tray = FakeTrayIcon()..calls = window.calls;
     final store = MemoryAppStore(
@@ -29,8 +30,8 @@ void main() {
     return (
       app: CoderApp(
         services: fakeAppServices(
-          FakeCoderApi(),
-          connected: false,
+          api ?? FakeCoderApi(),
+          connected: connected,
           store: store,
         ),
         desktopWindow: window,
@@ -173,5 +174,77 @@ void main() {
       );
     },
     tags: const <String>['feature_test__desktop_window_chrome__widget'],
+  );
+
+  testWidgets(
+    'a menu stays open when a keyboard tooltip on the home pane closes',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final now = DateTime.utc(2026, 8, 5);
+      final workspace = WorkspaceDto(
+        id: 'workspace',
+        name: 'Coder',
+        rootPath: '/repos/coder',
+        kind: WorkspaceKind.git,
+        createdAt: now,
+      );
+      final harness = build(
+        api: FakeCoderApi(
+          workspaces: <WorkspaceDto>[workspace],
+          worktrees: <WorktreeDto>[
+            WorktreeDto(
+              id: 'checkout',
+              workspaceId: workspace.id,
+              name: 'main',
+              path: workspace.rootPath,
+              branch: 'main',
+              kind: WorktreeKind.checkout,
+              isCoderOwned: false,
+              createdAt: now,
+            ),
+          ],
+        ),
+        connected: true,
+      );
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // Traverse with Tab until the project chip's focus tooltip appears, the
+      // way a keyboard user reaches it on the home pane.
+      final chip = find.byKey(const ValueKey<String>('new-workspace-project'));
+      expect(chip, findsOneWidget);
+      var reached = false;
+      for (var attempt = 0; attempt < 40 && !reached; attempt += 1) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump();
+        reached = find.text('프로젝트 선택').evaluate().isNotEmpty;
+      }
+      expect(
+        reached,
+        isTrue,
+        reason: 'Tab traversal never opened the project chip tooltip',
+      );
+
+      final quitItem = find.descendant(
+        of: find.byType(TRMenuItem),
+        matching: find.text('Quit'),
+      );
+      await tester.tap(find.text('File'));
+      await tester.pump();
+      expect(quitItem, findsOneWidget);
+
+      // Closing the tooltip must not restore focus to the chip, which would
+      // pull focus out of the menu scope and dismiss the menu.
+      await tester.pumpAndSettle();
+      expect(quitItem, findsOneWidget);
+      expect(find.text('프로젝트 선택'), findsNothing);
+    },
+    tags: const <String>[
+      'feature_test__desktop_window_chrome__widget',
+      'feature_test__workspace_catalog__widget',
+    ],
   );
 }
