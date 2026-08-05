@@ -61,7 +61,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
         const TRSeparator(),
         Expanded(
           child: state.when(
-            loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+            loading: () => const Center(child: TRSpinner()),
             error: (error, _) => _SkillSettingsError(
               error: error,
               onRetry: () => ref.invalidate(provider),
@@ -183,7 +183,6 @@ class _ProjectSelector extends ConsumerWidget {
         initialValue: selected?.id,
         label: l10n.skillSettingsProject,
         helperText: l10n.skillSettingsProjectHint,
-        uiSize: TRUiSize.sm,
         items: <TRSelectItem<String?>>[
           TRSelectItem<String?>(
             value: null,
@@ -229,7 +228,6 @@ class _SkillList extends ConsumerWidget {
           trailing: TRIconButton(
             key: const ValueKey<String>('skill-add-button'),
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
             label: l10n.skillSettingsAdd,
             onPressed: onCreate,
             icon: const Icon(CoderIcons.add),
@@ -339,7 +337,6 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
               ? null
               : TRIconButton(
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
                   label: l10n.skillSettingsList,
                   onPressed: widget.onBack,
                   icon: const Icon(CoderIcons.back),
@@ -356,7 +353,6 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
               if (skill.sourcePath.isNotEmpty)
                 TRIconButton(
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
                   label: l10n.skillSettingsCopyPath,
                   onPressed: () => Clipboard.setData(
                     ClipboardData(text: skill.sourcePath),
@@ -367,7 +363,6 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 TRIconButton(
                   key: const ValueKey<String>('skill-delete-button'),
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
                   label: l10n.skillSettingsDelete,
                   onPressed: editable ? _delete : null,
                   icon: const Icon(CoderIcons.delete),
@@ -375,7 +370,6 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
               if (skill.isEditable)
                 TRButton(
                   intent: TRIntent.primary,
-                  uiSize: TRUiSize.sm,
                   onPressed: editable ? () => _save(force: false) : null,
                   child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
                 ),
@@ -424,21 +418,18 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                     : null,
               ),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 initialValue: skillSourceLabel(l10n, skill.source),
                 enabled: false,
                 label: l10n.skillSettingsSource,
               ),
               const SizedBox(height: 12),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 controller: _name,
                 enabled: editable,
                 label: l10n.commonName,
               ),
               const SizedBox(height: 12),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 controller: _description,
                 enabled: editable,
                 minLines: 2,
@@ -447,7 +438,6 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
               ),
               const SizedBox(height: 12),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 controller: _body,
                 enabled: editable,
                 minLines: 8,
@@ -505,13 +495,11 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
-              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, false),
               child: Text(l10n.skillSettingsReload),
             ),
             TRButton(
               intent: TRIntent.primary,
-              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, true),
               child: Text(l10n.skillSettingsOverwrite),
             ),
@@ -534,13 +522,11 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
           TRButton(
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.commonDelete),
           ),
@@ -638,7 +624,6 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             TRTextField(
-              uiSize: TRUiSize.sm,
               controller: _id,
               autofocus: true,
               enabled: !_saving,
@@ -648,14 +633,12 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
               errorText: _idError(l10n),
             ),
             TRTextField(
-              uiSize: TRUiSize.sm,
               controller: _name,
               enabled: !_saving,
               onChanged: (_) => setState(() => _error = null),
               label: l10n.commonName,
             ),
             TRTextField(
-              uiSize: TRUiSize.sm,
               controller: _description,
               enabled: !_saving,
               onChanged: (_) => setState(() => _error = null),
@@ -664,7 +647,6 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
             TRSelectFormField<SkillSource>(
               initialValue: _source,
               label: l10n.skillSettingsSource,
-              uiSize: TRUiSize.sm,
               items: sources
                   .map(
                     (value) => TRSelectItem<SkillSource>(
@@ -690,13 +672,11 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
           onPressed: _valid && !_saving ? _submit : null,
           child: Text(_saving ? l10n.commonCreating : l10n.commonCreate),
         ),
@@ -745,7 +725,6 @@ class _SkillSettingsError extends StatelessWidget {
         const SizedBox(height: 12),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
           onPressed: onRetry,
           child: Text(AppLocalizations.of(context).commonRetry),
         ),

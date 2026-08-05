@@ -116,7 +116,6 @@ class WorkspaceSidebar extends ConsumerWidget {
           child: TRButton(
             key: const ValueKey('workspace-new-button'),
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
             onPressed: onNewWorkspace,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -301,7 +300,6 @@ class WorkspaceSidebar extends ConsumerWidget {
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
-              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context),
               child: Text(l10n.commonConfirm),
             ),
@@ -326,14 +324,12 @@ class WorkspaceSidebar extends ConsumerWidget {
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
           TRButton(
             key: const ValueKey<String>('worktree-archive-confirm'),
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               risky ? l10n.workspaceArchiveRisky : l10n.workspaceArchive,
@@ -371,14 +367,12 @@ class WorkspaceSidebar extends ConsumerWidget {
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
           TRButton(
             key: const ValueKey<String>('workspace-unregister-confirm'),
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.workspaceUnregister),
           ),
@@ -414,7 +408,6 @@ class _SidebarEmptyState extends StatelessWidget {
               const SizedBox(height: 12),
               TRButton(
                 appearance: TRAppearance.outline,
-                uiSize: TRUiSize.sm,
                 onPressed: onSettings,
                 child: Text(
                   AppLocalizations.of(context).workspaceOpenDaemonSettings,

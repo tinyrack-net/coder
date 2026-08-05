@@ -34,7 +34,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(agentDefinitionsControllerProvider(widget.hostId));
     return state.when(
-      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+      loading: () => const Center(child: TRSpinner()),
       error: (error, _) => _AgentSettingsError(
         error: error,
         onRetry: () => ref.invalidate(
@@ -162,7 +162,6 @@ class _AgentDefinitionList extends StatelessWidget {
           trailing: TRIconButton(
             key: const ValueKey('agent-add-button'),
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
             label: l10n.agentSettingsAdd,
             onPressed: onCreate,
             icon: const Icon(CoderIcons.add),
@@ -285,7 +284,6 @@ class _AgentEditorState extends State<_AgentEditor> {
               : TRIconButton(
                   key: const ValueKey('agent-list-button'),
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
                   label: l10n.agentSettingsList,
                   onPressed: widget.onBack,
                   icon: const Icon(CoderIcons.back),
@@ -297,7 +295,6 @@ class _AgentEditorState extends State<_AgentEditor> {
               TRIconButton(
                 key: const ValueKey('agent-copy-path-button'),
                 appearance: TRAppearance.ghost,
-                uiSize: TRUiSize.sm,
                 label: l10n.agentSettingsCopyPath,
                 onPressed: () => Clipboard.setData(
                   ClipboardData(text: definition.sourcePath),
@@ -308,7 +305,6 @@ class _AgentEditorState extends State<_AgentEditor> {
                 TRIconButton(
                   key: const ValueKey('agent-reset-button'),
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
                   label: l10n.agentSettingsReset,
                   onPressed: editable ? _reset : null,
                   icon: const Icon(CoderIcons.restore),
@@ -317,14 +313,12 @@ class _AgentEditorState extends State<_AgentEditor> {
                 TRIconButton(
                   key: const ValueKey('agent-archive-button'),
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
                   label: l10n.workspaceArchive,
                   onPressed: editable ? _archive : null,
                   icon: const Icon(CoderIcons.archive),
                 ),
               TRButton(
                 intent: TRIntent.primary,
-                uiSize: TRUiSize.sm,
                 onPressed: editable ? () => _save(force: false) : null,
                 child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
               ),
@@ -349,21 +343,18 @@ class _AgentEditorState extends State<_AgentEditor> {
                   ),
                 ),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 controller: _name,
                 enabled: editable,
                 label: l10n.commonName,
               ),
               const SizedBox(height: 12),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 controller: _description,
                 enabled: editable,
                 label: l10n.commonDescription,
               ),
               const SizedBox(height: 12),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 initialValue: definition.mode.name,
                 enabled: false,
                 label: l10n.commonKind,
@@ -376,7 +367,6 @@ class _AgentEditorState extends State<_AgentEditor> {
                 title: Text(l10n.agentSettingsCustomPrompt),
               ),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 controller: _prompt,
                 enabled: editable,
                 minLines: 8,
@@ -395,25 +385,21 @@ class _AgentEditorState extends State<_AgentEditor> {
                   TRRadio(
                     value: AgentModelSource.session.name,
                     label: Text(l10n.agentSettingsSessionModel),
-                    uiSize: TRUiSize.sm,
                   ),
                   TRRadio(
                     value: AgentModelSource.fixed.name,
                     label: Text(l10n.agentSettingsPinnedModel),
-                    uiSize: TRUiSize.sm,
                   ),
                 ],
               ),
               if (_modelSource == AgentModelSource.fixed) ...<Widget>[
                 TRTextField(
-                  uiSize: TRUiSize.sm,
                   controller: _providerConnectionId,
                   enabled: editable,
                   label: 'Provider connection ID',
                 ),
                 const SizedBox(height: 12),
                 TRTextField(
-                  uiSize: TRUiSize.sm,
                   controller: _modelId,
                   enabled: editable,
                   label: 'Model ID',
@@ -423,7 +409,6 @@ class _AgentEditorState extends State<_AgentEditor> {
               TRSelectFormField<String>(
                 initialValue: _reasoningEffort,
                 label: 'Reasoning',
-                uiSize: TRUiSize.sm,
                 items: const <String>['low', 'medium', 'high']
                     .map(
                       (value) => TRSelectItem<String>(
@@ -440,7 +425,6 @@ class _AgentEditorState extends State<_AgentEditor> {
               TRSelectFormField<PermissionMode>(
                 initialValue: _permissionMode,
                 label: 'Permission',
-                uiSize: TRUiSize.sm,
                 items: PermissionMode.values
                     .map(
                       (value) => TRSelectItem<PermissionMode>(
@@ -565,13 +549,11 @@ class _AgentEditorState extends State<_AgentEditor> {
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
-              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, false),
               child: Text(l10n.agentSettingsReload),
             ),
             TRButton(
               intent: TRIntent.primary,
-              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, true),
               child: Text(l10n.agentSettingsOverwrite),
             ),
@@ -667,7 +649,6 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             TRTextField(
-              uiSize: TRUiSize.sm,
               controller: _id,
               autofocus: true,
               enabled: !_saving,
@@ -677,7 +658,6 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
               errorText: _idError(l10n),
             ),
             TRTextField(
-              uiSize: TRUiSize.sm,
               controller: _name,
               enabled: !_saving,
               onChanged: (_) => setState(() => _error = null),
@@ -689,7 +669,6 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
             TRSelectFormField<AgentMode>(
               initialValue: _mode,
               label: l10n.commonKind,
-              uiSize: TRUiSize.sm,
               items: AgentMode.values
                   .map(
                     (value) => TRSelectItem<AgentMode>(
@@ -715,13 +694,11 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
       actions: <TRButton>[
         TRButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: Text(l10n.commonCancel),
         ),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
           onPressed: _valid && !_saving ? _submit : null,
           child: Text(_saving ? l10n.commonCreating : l10n.commonCreate),
         ),
@@ -769,7 +746,6 @@ class _AgentSettingsError extends StatelessWidget {
         const SizedBox(height: 12),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
           onPressed: onRetry,
           child: Text(AppLocalizations.of(context).commonRetry),
         ),

@@ -27,7 +27,7 @@ class AppSettingsPage extends ConsumerWidget {
         .read(appServicesProvider)
         .supportsEmbeddedDaemon;
     final body = state.when(
-      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+      loading: () => const Center(child: TRSpinner()),
       error: (error, stackTrace) => Center(child: Text('$error')),
       data: (registry) => _settingsBody(
         context,
@@ -41,7 +41,6 @@ class AppSettingsPage extends ConsumerWidget {
       appBar: CoderPageHeader(
         leading: TRIconButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
           label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => context.go('/'),
           icon: const Icon(CoderIcons.back),
@@ -88,7 +87,6 @@ class AppSettingsPage extends ConsumerWidget {
               actions: <Widget>[
                 TRButton(
                   appearance: TRAppearance.outline,
-                  uiSize: TRUiSize.sm,
                   onPressed: () => ref
                       .read(hostRegistryControllerProvider.notifier)
                       .reconnect(embeddedHostId),
@@ -160,7 +158,6 @@ class AppSettingsPage extends ConsumerWidget {
             ),
             TRButton(
               intent: TRIntent.primary,
-              uiSize: TRUiSize.sm,
               onPressed: () => context.go('/settings/daemons/new'),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -211,13 +208,11 @@ class AppSettingsPage extends ConsumerWidget {
           actions: <TRButton>[
             TRButton(
               appearance: TRAppearance.ghost,
-              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, false),
               child: Text(l10n.commonCancel),
             ),
             TRButton(
               intent: TRIntent.primary,
-              uiSize: TRUiSize.sm,
               onPressed: () => Navigator.pop(context, true),
               child: Text(l10n.commonStop),
             ),
@@ -290,7 +285,6 @@ class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
               label: l10n.appSettingsEmbeddedPort,
               smallStep: 1,
               scrubbable: false,
-              uiSize: TRUiSize.sm,
               onValueChange: (value) => setState(() => _draftPort = value),
             ),
           ),
@@ -298,7 +292,6 @@ class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
           TRButton(
             key: const ValueKey<String>('embedded-daemon-port-apply'),
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
             onPressed: changed && !_applying && !widget.restarting
                 ? () => _apply(port)
                 : null,
@@ -345,7 +338,6 @@ class _RemoteHostCard extends ConsumerWidget {
               isThreeLine: true,
               trailing: TRIconButton(
                 appearance: TRAppearance.ghost,
-                uiSize: TRUiSize.sm,
                 label: l10n.appSettingsEditConnection,
                 onPressed: () => context.go('/settings/daemons/${profile.id}'),
                 icon: const Icon(CoderIcons.edit),
@@ -366,7 +358,6 @@ class _RemoteHostCard extends ConsumerWidget {
               children: <Widget>[
                 TRButton(
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
                   onPressed: () => ref
                       .read(hostRegistryControllerProvider.notifier)
                       .reconnect(profile.id),
@@ -382,7 +373,6 @@ class _RemoteHostCard extends ConsumerWidget {
                 if (runtime?.connected == true)
                   TRButton(
                     appearance: TRAppearance.ghost,
-                    uiSize: TRUiSize.sm,
                     onPressed: () => context.go(
                       '/settings/providers?hostId=${profile.id}',
                     ),
@@ -463,7 +453,6 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
       appBar: CoderPageHeader(
         leading: TRIconButton(
           appearance: TRAppearance.ghost,
-          uiSize: TRUiSize.sm,
           label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => context.go('/settings/daemons'),
           icon: const Icon(CoderIcons.back),
@@ -481,7 +470,6 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
             padding: const EdgeInsets.all(24),
             children: <Widget>[
               TRTextField(
-                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('remote-host-label'),
                 controller: _label,
                 label: l10n.commonName,
@@ -489,7 +477,6 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               ),
               const SizedBox(height: 12),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('remote-host-address'),
                 controller: _address,
                 keyboardType: TextInputType.url,
@@ -498,7 +485,6 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               ),
               const SizedBox(height: 12),
               TRTextField(
-                uiSize: TRUiSize.sm,
                 key: const ValueKey<String>('remote-host-token'),
                 controller: _token,
                 obscureText: true,
@@ -525,14 +511,12 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                   if (existing != null)
                     TRButton(
                       appearance: TRAppearance.ghost,
-                      uiSize: TRUiSize.sm,
                       onPressed: _saving ? null : () => _delete(existing),
                       child: Text(l10n.commonDelete),
                     ),
                   const SizedBox(width: 8),
                   TRButton(
                     intent: TRIntent.primary,
-                    uiSize: TRUiSize.sm,
                     onPressed: _saving ? null : () => _save(existing),
                     child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
                   ),
@@ -595,13 +579,11 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
         actions: <TRButton>[
           TRButton(
             appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.commonCancel),
           ),
           TRButton(
             intent: TRIntent.primary,
-            uiSize: TRUiSize.sm,
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.commonDelete),
           ),

@@ -44,7 +44,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(workspaceCatalogControllerProvider);
     return state.when(
-      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+      loading: () => const Center(child: TRSpinner()),
       error: (error, _) => _ProjectSettingsError(
         error: error,
         onRetry: () => ref.invalidate(workspaceCatalogControllerProvider),
@@ -208,7 +208,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
     );
     final state = ref.watch(provider);
     return state.when(
-      loading: () => const Center(child: TRSpinner(uiSize: TRUiSize.sm)),
+      loading: () => const Center(child: TRSpinner()),
       error: (error, _) => _ProjectSettingsError(
         error: error,
         onRetry: () => ref.invalidate(provider),
@@ -226,7 +226,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   ? null
                   : TRIconButton(
                       appearance: TRAppearance.ghost,
-                      uiSize: TRUiSize.sm,
                       label: l10n.projectSettingsProjectList,
                       onPressed: widget.onBack,
                       icon: const Icon(CoderIcons.back),
@@ -238,7 +237,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                 children: <Widget>[
                   TRIconButton(
                     appearance: TRAppearance.ghost,
-                    uiSize: TRUiSize.sm,
                     label: l10n.projectSettingsCopyPath,
                     onPressed: () => Clipboard.setData(
                       ClipboardData(text: value.sourcePath),
@@ -247,7 +245,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   ),
                   TRButton(
                     intent: TRIntent.primary,
-                    uiSize: TRUiSize.sm,
                     onPressed: _saving ? null : _save,
                     child: Text(
                       _saving ? l10n.commonSaving : l10n.commonSave,
@@ -289,7 +286,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   ),
                   const SizedBox(height: 16),
                   TRTextField(
-                    uiSize: TRUiSize.sm,
                     controller: _setup,
                     enabled: !_saving,
                     minLines: 3,
@@ -299,7 +295,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   ),
                   const SizedBox(height: 16),
                   TRTextField(
-                    uiSize: TRUiSize.sm,
                     controller: _teardown,
                     enabled: !_saving,
                     minLines: 3,
@@ -366,7 +361,6 @@ class _ProjectSettingsError extends StatelessWidget {
         const SizedBox(height: 12),
         TRButton(
           intent: TRIntent.primary,
-          uiSize: TRUiSize.sm,
           onPressed: onRetry,
           child: Text(AppLocalizations.of(context).commonRetry),
         ),
