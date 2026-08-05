@@ -114,6 +114,10 @@ void main() {
 
       expect(find.text('Workspaces'), findsOneWidget);
       expect(find.byKey(const ValueKey('workspace-new-button')), findsOne);
+      expect(
+        find.byKey(const ValueKey<String>('workspace-sidebar-surface')),
+        findsOneWidget,
+      );
       // The daemon has no tree level of its own; it names the workspace row.
       expect(
         find.text('Test daemon · ${workspace.rootPath}'),
@@ -895,11 +899,25 @@ void main() {
       const ProviderSettingsRoute(hostId: 'server').location,
     );
     addTearDown(router.dispose);
+    expect(
+      find.byKey(const ValueKey<String>('settings-sidebar-surface')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('settings-sidebar-tree')),
+      findsOneWidget,
+    );
     expect(find.text('Projects'), findsOneWidget);
     expect(find.text('Agent'), findsOneWidget);
     expect(find.text('Provider'), findsOneWidget);
     expect(find.text('Daemon'), findsWidgets);
     expect(find.text('Test daemon'), findsOneWidget);
+    await tester.tap(find.text('Projects'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.toString(),
+      const ProjectSettingsRoute(hostId: 'server').location,
+    );
     await tester.tap(find.text('Daemon').first);
     await tester.pumpAndSettle();
     expect(find.text('원격 daemons'), findsOneWidget);

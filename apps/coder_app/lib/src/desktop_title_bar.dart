@@ -51,14 +51,16 @@ class DesktopTitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final colors = Theme.of(context).colorScheme;
+    final colors = context.tinyrackTheme;
     return ColoredBox(
       color: colors.surface,
       child: SizedBox(
         height: desktopTitleBarHeight,
         child: DecoratedBox(
+          key: const ValueKey<String>('desktop-title-bar-border'),
+          position: DecorationPosition.foreground,
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: colors.outlineVariant)),
+            border: Border(bottom: BorderSide(color: colors.border)),
           ),
           child: Row(
             children: <Widget>[
@@ -212,6 +214,7 @@ class _CaptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TRWindowCaptionButton(
     action: action,
+    glyphStyle: TRWindowCaptionGlyphStyle.expandCollapse,
     label: tooltip,
     onPressed: onPressed,
   );

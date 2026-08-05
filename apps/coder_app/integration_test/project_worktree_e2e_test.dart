@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/coder_icons.dart';
-import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -145,11 +144,9 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(CoderApp(services: fixture.$1.services));
       await _pumpUntil(tester, find.text('archive-cancel'));
-      final row = find.ancestor(
-        of: find.text('archive-cancel'),
-        matching: find.byType(CoderListRow),
+      final menu = find.byKey(
+        const ValueKey<String>('worktree-menu-cancelled-archive'),
       );
-      final menu = find.descendant(of: row.last, matching: find.byType(TRMenu));
       await tester.tap(menu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Archive'));
