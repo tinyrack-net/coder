@@ -670,16 +670,16 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           }
           return Row(
             children: <Widget>[
-              SizedBox(
+              TRAppShellSidebar(
+                key: const ValueKey<String>('settings-sidebar-surface'),
+                scroll: false,
+                // The sidebar lays its content out at the width it is given,
+                // so the width belongs to it rather than to an outer box.
                 width: settingsSidebarWidth,
-                child: TRAppShellSidebar(
-                  key: const ValueKey<String>('settings-sidebar-surface'),
-                  scroll: false,
-                  child: _SettingsSidebar(
-                    selected: widget.category,
-                    hosts: hosts,
-                    hostId: hostId,
-                  ),
+                child: _SettingsSidebar(
+                  selected: widget.category,
+                  hosts: hosts,
+                  hostId: hostId,
                 ),
               ),
               Expanded(child: detail),
@@ -1036,16 +1036,14 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
           }
           return Row(
             children: <Widget>[
-              if (!collapsed) ...<Widget>[
-                SizedBox(
-                  width: 320,
-                  child: TRAppShellSidebar(
-                    key: const ValueKey<String>('workspace-sidebar-surface'),
-                    scroll: false,
-                    child: sidebar,
-                  ),
-                ),
-              ],
+              // The sidebar owns its width so collapsing animates instead of
+              // dropping the pane out of the row.
+              TRAppShellSidebar(
+                key: const ValueKey<String>('workspace-sidebar-surface'),
+                collapsed: collapsed,
+                scroll: false,
+                child: sidebar,
+              ),
               Expanded(child: detail),
             ],
           );
