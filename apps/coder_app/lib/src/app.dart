@@ -1608,6 +1608,14 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     ).notifier,
   );
 
+  ConversationController _conversation(WidgetRef ref, String sessionId) =>
+      ref.read(
+        conversationControllerProvider(
+          widget.selection.hostId,
+          sessionId,
+        ).notifier,
+      );
+
   @override
   Widget build(BuildContext context) {
     final current =
@@ -1735,7 +1743,24 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                   ),
                 ),
                 SessionComposer(
-                  enabled: !busy && effective != null,
+                  // A running turn never takes the keyboard away; the prompt
+                  // queues instead.
+                  enabled: effective != null,
+                  busy: busy,
+                  queued: value?.queued ?? const <QueuedTurn>[],
+                  onQueue: (submission) =>
+                      _conversation(ref, current.id).enqueueTurn(
+                        submission.text,
+                        attachments: submission.attachments,
+                      ),
+                  onQueuedEdit: (id) =>
+                      _conversation(ref, current.id).takeQueuedTurn(id),
+                  onQueuedSendNow: (id) =>
+                      _conversation(ref, current.id).sendQueuedTurnNow(id),
+                  onSubmitAndInterrupt: (submission) async {
+                    await _conversation(ref, current.id).cancelTurn();
+                    await _send(current.id, submission);
+                  },
                   hint: effective == null
                       ? AppLocalizations.of(context).composerSelectModelFirst
                       : null,
@@ -1755,8 +1780,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           )
                           .setMode(current.id, mode),
                     ),
+                    // Turn settings apply to the next turn, so they stay
+                    // reachable while one is running.
                     agentEnabled: false,
-                    enabled: !busy,
                     onAgentChanged: (_) {},
                     onModelChanged: (model) => unawaited(
                       ref
@@ -1781,23 +1807,14 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                       _sessions(ref).setServiceTier(current.id, tier),
                     ),
                   ),
-                  onModeToggled: busy
-                      ? null
-                      : () => unawaited(
-                          ref
-                              .read(
-                                sessionsControllerProvider(
-                                  widget.selection.hostId,
-                                  widget.selection.worktreeId,
-                                ).notifier,
-                              )
-                              .setMode(
-                                current.id,
-                                current.mode == SessionMode.plan
-                                    ? SessionMode.normal
-                                    : SessionMode.plan,
-                              ),
-                        ),
+                  onModeToggled: () => unawaited(
+                    _sessions(ref).setMode(
+                      current.id,
+                      current.mode == SessionMode.plan
+                          ? SessionMode.normal
+                          : SessionMode.plan,
+                    ),
+                  ),
                   attachmentInput: ref.read(attachmentInputProvider),
                   onSubmit: (submission) => _send(current.id, submission),
                 ),

@@ -149,15 +149,20 @@ class SessionService {
         if (turnStatus != null) {
           await _sessions.updateTurn(turnId, turnStatus);
         }
+        final terminal =
+            status == SessionStatus.idle || status == SessionStatus.failed;
         final updated = await _sessions.updateStatus(
           sessionId,
           status,
-          activeTurnId:
-              status == SessionStatus.idle || status == SessionStatus.failed
-              ? null
-              : turnId,
+          activeTurnId: terminal ? null : turnId,
           error: error,
         );
+        // A client that queues follow-ups starts the next turn the moment it
+        // sees the idle session, so the slot has to be free before the event
+        // goes out. The `finally` below stays as the cancellation backstop.
+        if (terminal && identical(_activeTurns[sessionId], cancellation)) {
+          _activeTurns.remove(sessionId);
+        }
         _emitSession(updated);
       },
       onProviderItems: (items) =>

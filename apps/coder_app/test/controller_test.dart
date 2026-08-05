@@ -453,6 +453,156 @@ void main() {
   );
 
   test(
+    'queued prompts start one per turn and survive a failed send',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          appIdGeneratorProvider.overrideWithValue(_SequentialIdGenerator()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+      container.read(provider.notifier)
+        ..enqueueTurn('  first  ')
+        ..enqueueTurn('second')
+        // Neither empty text nor empty attachments is worth a turn.
+        ..enqueueTurn('   ');
+      expect(
+        container.read(provider).value!.queued.map((item) => item.text),
+        <String>['first', 'second'],
+      );
+
+      // A settled session releases exactly one prompt, so each queued
+      // follow-up gets a turn of its own.
+      api.emit(
+        SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(api.startedPrompts, <String>['first']);
+      expect(
+        container.read(provider).value!.queued.map((item) => item.text),
+        <String>['second'],
+      );
+
+      // A send that fails puts its prompt back at the head rather than
+      // dropping it.
+      api
+        ..startTurnError = Exception('offline')
+        ..emit(
+          SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+        );
+      await Future<void>.delayed(Duration.zero);
+      expect(api.startedPrompts, <String>['first']);
+      expect(
+        container.read(provider).value!.queued.map((item) => item.text),
+        <String>['second'],
+      );
+
+      api
+        ..startTurnError = null
+        ..emit(
+          SessionUpdatedClientEvent(
+            agent.copyWith(status: SessionStatus.failed),
+          ),
+        );
+      await Future<void>.delayed(Duration.zero);
+      expect(api.startedPrompts, <String>['first', 'second']);
+      expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a queued prompt can be taken back or promoted past the active turn',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          appIdGeneratorProvider.overrideWithValue(_SequentialIdGenerator()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+      final notifier = container.read(provider.notifier)
+        ..enqueueTurn('edit me')
+        ..enqueueTurn('send me');
+      final queued = container.read(provider).value!.queued;
+
+      expect(notifier.takeQueuedTurn(queued.first.id)?.text, 'edit me');
+      expect(notifier.takeQueuedTurn('missing'), isNull);
+      expect(
+        container.read(provider).value!.queued.map((item) => item.text),
+        <String>['send me'],
+      );
+
+      await notifier.sendQueuedTurnNow(queued.last.id);
+      expect(api.cancelledAgents, <String>[agent.id]);
+      expect(api.startedPrompts, <String>['send me']);
+      expect(container.read(provider).value!.queued, isEmpty);
+
+      notifier.enqueueTurn('doomed');
+      final doomed = container.read(provider).value!.queued.single;
+      api.startTurnError = Exception('offline');
+      await expectLater(
+        notifier.sendQueuedTurnNow(doomed.id),
+        throwsException,
+      );
+      expect(
+        container.read(provider).value!.queued.map((item) => item.text),
+        <String>['doomed'],
+      );
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a turn setting shows before the daemon confirms it and rolls back',
+    () async {
+      final api = FakeCoderApi(
+        worktrees: <WorktreeDto>[worktree],
+        agents: <SessionDto>[agent],
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = sessionsControllerProvider('server', worktree.id);
+      await container.read(provider.future);
+      final notifier = container.read(provider.notifier);
+      final gate = Completer<void>();
+      api.sessionUpdateGate = gate;
+      final pending = notifier.setMode(agent.id, SessionMode.plan);
+      // The chip must not wait a round trip to flip.
+      expect(container.read(provider).value!.single.mode, SessionMode.plan);
+      gate.complete();
+      expect((await pending).mode, SessionMode.plan);
+
+      api
+        ..sessionUpdateGate = null
+        ..sessionUpdateError = Exception('offline');
+      await expectLater(
+        notifier.setMode(agent.id, SessionMode.normal),
+        throwsException,
+      );
+      expect(container.read(provider).value!.single.mode, SessionMode.plan);
+    },
+    tags: const <String>['feature_test__session_lifecycle__unit'],
+  );
+
+  test(
     'conversation ignores a transport event delivered after disposal',
     () async {
       final lateEvents = _LateClientEventStream();
@@ -745,6 +895,13 @@ final class _FixedIdGenerator implements AppIdGenerator {
 
   @override
   String generate() => 'generated-id';
+}
+
+final class _SequentialIdGenerator implements AppIdGenerator {
+  var _next = 0;
+
+  @override
+  String generate() => 'generated-id-${_next++}';
 }
 
 final class _LateClientEventStream extends Stream<ClientEvent> {

@@ -1640,6 +1640,117 @@ void main() {
     expect(recovered.boundEndpoint.port, config.port);
     await recovered.stop();
   });
+
+  test(
+    'a queued turn started on the idle session event is accepted',
+    tags: const <String>[
+      'feature_test__conversation_turn_queue__verticalSlice',
+    ],
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-queue-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-queue-workspace-',
+      );
+      const token = 'queue-token-0123456789abcdef0123456789';
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: token,
+          useEnvironmentCredentials: false,
+          apiKey: 'test-api-key',
+        ),
+        provider: _TextProvider(),
+      );
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: token),
+        clientId: 'queue-integration',
+        clientKind: 'test',
+      );
+      addTearDown(() async {
+        await client.close();
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+
+      final catalog = await client.registerWorkspace(
+        workspaceId: 'queue-workspace',
+        checkoutId: 'queue-checkout',
+        rootPath: workspace.path,
+        name: 'Queue',
+      );
+      final models = await client.listProviderModels('openai');
+      final session = await client.createSession(
+        id: 'queue-session',
+        worktreeId: catalog.worktrees.single.id,
+        title: 'Queue session',
+        agentDefinitionId: 'coder',
+        model: SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: models.first.id,
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+
+      // The drain a queueing client performs: start the follow-up turn from the
+      // idle session event itself, without waiting a further round trip. The
+      // daemon must have released the session slot before broadcasting it.
+      final drained = Completer<void>();
+      final subscription = client.events.listen((event) {
+        if (event is! SessionUpdatedClientEvent) return;
+        if (event.session.id != session.id) return;
+        if (event.session.status != SessionStatus.idle) return;
+        if (drained.isCompleted) return;
+        drained.complete(
+          client.startTurn(
+            sessionId: session.id,
+            turnId: 'queued-turn',
+            prompt: 'The queued follow-up.',
+          ),
+        );
+      });
+      addTearDown(subscription.cancel);
+
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'first-turn',
+        prompt: 'The first prompt.',
+      );
+      await drained.future.timeout(_eventTimeout);
+
+      await _waitForIdleSession(
+        client,
+        catalog.worktrees.single.id,
+        session.id,
+      );
+      final timeline = await client.subscribeTimeline(session.id);
+      expect(
+        timeline
+            .where((event) => event.type == 'user.message')
+            .map((event) => event.data['text']),
+        <String>['The first prompt.', 'The queued follow-up.'],
+      );
+    },
+  );
+}
+
+/// Provider that answers every turn with one assistant message.
+final class _TextProvider implements ModelProvider {
+  @override
+  String get id => 'text-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    yield const ModelTextDelta('Done.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Done.'),
+    );
+  }
 }
 
 /// Waits until a session reports idle.

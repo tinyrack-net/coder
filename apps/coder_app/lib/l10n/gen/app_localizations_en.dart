@@ -801,13 +801,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'Fast mode is on; tap to use the standard tier';
 
   @override
-  String get composerFocusShortcut => 'Ctrl+L to focus';
-
-  @override
   String get composerSettingLocked => 'Settings change between turns';
 
   @override
   String get composerSendLabel => 'Send message';
+
+  @override
+  String get composerQueueLabel => 'Queue message';
+
+  @override
+  String get composerQueueTooltip => 'Sends when the current turn finishes';
+
+  @override
+  String get composerQueuedEdit => 'Edit queued message';
+
+  @override
+  String get composerQueuedSendNow => 'Send queued message now';
+
+  @override
+  String composerQueuedAttachments(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get composerAttachLabel => 'Attach files';
+
+  @override
+  String get composerMoreSettings => 'More settings';
 
   @override
   String get chatEmptyTitle => 'Type a coding request.';

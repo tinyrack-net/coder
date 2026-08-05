@@ -975,10 +975,6 @@
   "@composerFastModeOnTooltip": {
     "description": "Tooltip of the composer fast mode toggle when it is on."
   },
-  "composerFocusShortcut": "Ctrl+L to focus",
-  "@composerFocusShortcut": {
-    "description": "Hint naming the keyboard shortcut that focuses the composer."
-  },
   "composerSettingLocked": "Settings change between turns",
   "@composerSettingLocked": {
     "description": "Tooltip shown when a composer setting cannot change mid-turn."
@@ -986,6 +982,40 @@
   "composerSendLabel": "Send message",
   "@composerSendLabel": {
     "description": "Accessible label for the composer send button."
+  },
+  "composerQueueLabel": "Queue message",
+  "@composerQueueLabel": {
+    "description": "Accessible label for the send button while a turn runs."
+  },
+  "composerQueueTooltip": "Sends when the current turn finishes",
+  "@composerQueueTooltip": {
+    "description": "Tooltip of the send button while a turn runs."
+  },
+  "composerQueuedEdit": "Edit queued message",
+  "@composerQueuedEdit": {
+    "description": "Action returning a queued message to the input."
+  },
+  "composerQueuedSendNow": "Send queued message now",
+  "@composerQueuedSendNow": {
+    "description": "Action stopping the current turn to send a queued message."
+  },
+  "composerQueuedAttachments": "{count, plural, =1{1 file} other{{count} files}}",
+  "@composerQueuedAttachments": {
+    "description": "Summary of the files attached to a queued message.",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "composerAttachLabel": "Attach files",
+  "@composerAttachLabel": {
+    "description": "Accessible label for the composer attachment button."
+  },
+  "composerMoreSettings": "More settings",
+  "@composerMoreSettings": {
+    "description": "Label of the overflow menu holding the settings that do not fit."
   },
   "chatEmptyTitle": "Type a coding request.",
   "@chatEmptyTitle": {

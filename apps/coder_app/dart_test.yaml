@@ -1,5 +1,7 @@
 tags:
   golden:
+  feature_test__conversation_turn_queue__unit:
+  feature_test__conversation_turn_queue__widget:
   feature_test__conversation_attachments__unit:
   feature_test__conversation_attachments__widget:
   feature_test__conversation_attachments__e2e:

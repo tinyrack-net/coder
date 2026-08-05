@@ -492,6 +492,16 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'conversation.turn.queue',
+    description:
+        'Queues prompts typed during a turn and starts them as it finishes.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'conversation.attachments',
     description:
         'Uploads, sends, previews, exports, and restores user and agent files.',

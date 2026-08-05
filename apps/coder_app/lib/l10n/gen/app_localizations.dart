@@ -1562,12 +1562,6 @@ abstract class AppLocalizations {
   /// **'Fast mode is on; tap to use the standard tier'**
   String get composerFastModeOnTooltip;
 
-  /// Hint naming the keyboard shortcut that focuses the composer.
-  ///
-  /// In en, this message translates to:
-  /// **'Ctrl+L to focus'**
-  String get composerFocusShortcut;
-
   /// Tooltip shown when a composer setting cannot change mid-turn.
   ///
   /// In en, this message translates to:
@@ -1579,6 +1573,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send message'**
   String get composerSendLabel;
+
+  /// Accessible label for the send button while a turn runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue message'**
+  String get composerQueueLabel;
+
+  /// Tooltip of the send button while a turn runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends when the current turn finishes'**
+  String get composerQueueTooltip;
+
+  /// Action returning a queued message to the input.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit queued message'**
+  String get composerQueuedEdit;
+
+  /// Action stopping the current turn to send a queued message.
+  ///
+  /// In en, this message translates to:
+  /// **'Send queued message now'**
+  String get composerQueuedSendNow;
+
+  /// Summary of the files attached to a queued message.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file} other{{count} files}}'**
+  String composerQueuedAttachments(num count);
+
+  /// Accessible label for the composer attachment button.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach files'**
+  String get composerAttachLabel;
+
+  /// Label of the overflow menu holding the settings that do not fit.
+  ///
+  /// In en, this message translates to:
+  /// **'More settings'**
+  String get composerMoreSettings;
 
   /// Empty state of the chat timeline.
   ///

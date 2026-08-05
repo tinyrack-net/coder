@@ -564,7 +564,7 @@ void main() {
     goldenTest(
       'session composer exposes ready invalid and loading states',
       fileName: 'composer_states',
-      constraints: const BoxConstraints.tightFor(width: 960, height: 780),
+      constraints: const BoxConstraints.tightFor(width: 960, height: 1080),
       builder: () => GoldenTestGroup(
         columns: 1,
         children: <Widget>[
@@ -596,6 +596,24 @@ void main() {
               child: _composerState(ThemeMode.dark, enabled: false),
             ),
           ),
+          GoldenTestScenario(
+            name: 'queued during a turn dark',
+            child: SizedBox(
+              width: 900,
+              height: 260,
+              child: _composerState(
+                ThemeMode.dark,
+                busy: true,
+                queued: const <QueuedTurn>[
+                  QueuedTurn(
+                    id: 'queued',
+                    text: '테스트도 함께 고쳐줘',
+                    attachments: <PendingAttachment>[],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     ),
@@ -606,6 +624,8 @@ Widget _composerState(
   ThemeMode mode, {
   bool enabled = true,
   String? hint,
+  bool busy = false,
+  List<QueuedTurn> queued = const <QueuedTurn>[],
 }) => ProviderScope(
   overrides: [
     appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
@@ -618,6 +638,11 @@ Widget _composerState(
       child: SessionComposer(
         enabled: enabled,
         hint: hint,
+        busy: busy,
+        queued: queued,
+        onQueue: (_) {},
+        onQueuedEdit: (_) => null,
+        onQueuedSendNow: (_) {},
         onSubmit: (_) {},
         bar: SessionComposerBar(
           hostId: 'server',
