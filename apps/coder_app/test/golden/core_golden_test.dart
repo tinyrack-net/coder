@@ -525,6 +525,19 @@ void main() {
 
   unawaited(
     goldenTest(
+      'directory new workspace hides Git targets',
+      fileName: 'new_workspace_directory',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      builder: () => SizedBox(
+        width: 1100,
+        height: 760,
+        child: _directoryNewWorkspace(ThemeMode.light),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'session composer exposes ready invalid and loading states',
       fileName: 'composer_states',
       constraints: const BoxConstraints.tightFor(width: 960, height: 780),
@@ -657,6 +670,39 @@ Widget _sessionComposer(ThemeMode mode) {
         ),
       ),
     ),
+  );
+}
+
+Widget _directoryNewWorkspace(ThemeMode mode) {
+  final now = DateTime.utc(2026);
+  final workspace = WorkspaceDto(
+    id: 'directory',
+    name: 'Plain folder',
+    rootPath: '/repos/plain',
+    kind: WorkspaceKind.directory,
+    createdAt: now,
+  );
+  final checkout = WorktreeDto(
+    id: 'directory-checkout',
+    workspaceId: workspace.id,
+    name: workspace.name,
+    path: workspace.rootPath,
+    kind: WorktreeKind.directory,
+    isCoderOwned: false,
+    createdAt: now,
+  );
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(
+        fakeAppServices(
+          FakeCoderApi(
+            workspaces: <WorkspaceDto>[workspace],
+            worktrees: <WorktreeDto>[checkout],
+          ),
+        ),
+      ),
+    ],
+    child: _material(mode, const WorkspacePage(compose: true)),
   );
 }
 

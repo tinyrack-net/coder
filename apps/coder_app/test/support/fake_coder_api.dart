@@ -223,6 +223,9 @@ final class FakeCoderApi implements CoderApi {
   final List<({WorktreeCreateMode mode, String branchName, String? baseBranch})>
   createdWorktrees =
       <({WorktreeCreateMode mode, String branchName, String? baseBranch})>[];
+
+  /// Workspace IDs whose Git branches were requested.
+  final List<String> listedGitBranchWorkspaceIds = <String>[];
   final StreamController<ClientEvent> _events =
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
@@ -387,8 +390,10 @@ final class FakeCoderApi implements CoderApi {
       path.split('/').where((part) => part.isNotEmpty).lastOrNull ?? path;
 
   @override
-  Future<List<GitBranchDto>> listGitBranches(String workspaceId) async =>
-      branches;
+  Future<List<GitBranchDto>> listGitBranches(String workspaceId) async {
+    listedGitBranchWorkspaceIds.add(workspaceId);
+    return branches;
+  }
 
   /// Branches reported for every workspace.
   List<GitBranchDto> branches = const <GitBranchDto>[

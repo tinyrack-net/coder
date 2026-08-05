@@ -34,6 +34,9 @@ void main() {
       final workspace = await Directory.systemTemp.createTemp(
         'coder-e2e-workspace-',
       );
+      final directoryWorkspace = await Directory.systemTemp.createTemp(
+        'coder-e2e-directory-',
+      );
       final remoteHome = await Directory.systemTemp.createTemp(
         'coder-e2e-remote-home-',
       );
@@ -95,6 +98,9 @@ void main() {
         if (home.existsSync()) home.deleteSync(recursive: true);
         if (remoteHome.existsSync()) remoteHome.deleteSync(recursive: true);
         if (workspace.existsSync()) workspace.deleteSync(recursive: true);
+        if (directoryWorkspace.existsSync()) {
+          directoryWorkspace.deleteSync(recursive: true);
+        }
         if (remoteWorkspace.existsSync()) {
           remoteWorkspace.deleteSync(recursive: true);
         }
@@ -126,6 +132,12 @@ void main() {
         checkoutId: 'checkout-e2e',
         rootPath: workspace.path,
         name: 'E2E Workspace',
+      );
+      await setupClient.registerWorkspace(
+        workspaceId: 'directory-workspace-e2e',
+        checkoutId: 'directory-checkout-e2e',
+        rootPath: directoryWorkspace.path,
+        name: 'E2E Directory',
       );
 
       final now = DateTime.utc(2026, 8, 3);
@@ -789,6 +801,41 @@ void main() {
             .status,
         ProviderConnectionStatus.disconnected,
       );
+
+      // A plain directory reuses its sole checkout without exposing or
+      // validating Git-only worktree and base-branch targets.
+      await tester.tap(find.text('파일'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('New workspace').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('E2E Directory ·').last);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('new-workspace-worktree')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('new-workspace-branch')),
+        findsNothing,
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Directory e2e',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await _pumpUntilCondition(
+        tester,
+        () async => (await setupClient.listSessions(
+          worktreeId: 'directory-checkout-e2e',
+        )).any((session) => session.title == 'Directory e2e'),
+        'the directory checkout session to start',
+      );
+      final directoryWorktrees = (await setupClient.getWorkspaceCatalog())
+          .worktrees
+          .where((item) => item.workspaceId == 'directory-workspace-e2e');
+      expect(directoryWorktrees.single.id, 'directory-checkout-e2e');
     },
     tags: const <String>[
       'feature_test__daemon_management__e2e',
