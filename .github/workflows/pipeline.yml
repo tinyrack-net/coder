@@ -22,7 +22,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: 3.44.8
-  TINYRACK_DART_PACKAGES_REF: 709ca65307ee1e4ff2918464d157a4057b49281e
+  TINYRACK_DART_PACKAGES_REF: f1a2fe524b9025fdfb9d34a57073285ea368e11e
   # wrangler-action defaults to 3.90.0, which predates Workers static assets
   # and rejects an `assets` config for having no script entry-point.
   WRANGLER_VERSION: 4.118.0
@@ -466,14 +466,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # The CLI is plain Dart, so unlike the desktop app it is not held to
-          # the platforms Flutter publishes an SDK for. Homebrew needs all four
-          # of these; dropping one makes the generated Formula unbuildable.
+          # The CLI is plain Dart, but it shares a pub workspace with
+          # `coder_app`, so resolving it needs the Flutter SDK and the job is
+          # held to the platforms Flutter publishes one for. That rules out
+          # Linux arm64, which is why `shipworld.yaml` lists the three
+          # platforms below under `homebrew.platforms`.
           - os: ubuntu-24.04
             target: linux-x64
-            platform: linux
-          - os: ubuntu-24.04-arm
-            target: linux-arm64
             platform: linux
           - os: macos-15-intel
             target: macos-x64
@@ -488,9 +487,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: 3.12.2
+      # Flutter rather than a standalone Dart SDK: `dart pub get` resolves the
+      # whole workspace, and `coder_app` pulls `flutter`, `flutter_test`, and
+      # `integration_test` from the Flutter SDK. The pinned Flutter bundles the
+      # same Dart this job used to install directly.
+      - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - name: Checkout Tinyrack Dart packages
         if: matrix.platform == 'macos'
@@ -556,16 +557,17 @@ jobs:
           else
             cli="$bundle/coder-cli"
           fi
+          # Daemon-addressing flags follow the subcommand, so `provider list`
+          # comes before `--listen`.
+          export TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke"
           "$cli" --version
-          TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke" "$cli" daemon start \
-            --listen 127.0.0.1:7399 &
+          "$cli" daemon start --listen 127.0.0.1:7399 &
           daemon=$!
           for _ in $(seq 1 30); do
-            "$cli" --listen 127.0.0.1:7399 provider list >/dev/null 2>&1 && break
+            "$cli" provider list --listen 127.0.0.1:7399 >/dev/null 2>&1 && break
             sleep 1
           done
-          TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke" \
-            "$cli" --listen 127.0.0.1:7399 provider list
+          "$cli" provider list --listen 127.0.0.1:7399
           kill "$daemon"
 
       - name: Archive the CLI bundle
