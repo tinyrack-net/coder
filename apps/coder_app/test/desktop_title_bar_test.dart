@@ -1,4 +1,5 @@
 import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/desktop_title_bar.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
@@ -63,17 +64,22 @@ void main() {
         (borderDecoration.border! as Border).bottom.color,
         tester.element(borderFinder).tinyrackTheme.border,
       );
-      for (final key in <String>[
-        'desktop-title-bar-minimize',
-        'desktop-title-bar-maximize',
-      ]) {
-        final caption = tester.widget<TRWindowCaptionButton>(
-          find.descendant(
-            of: find.byKey(ValueKey<String>(key)),
-            matching: find.byType(TRWindowCaptionButton),
-          ),
+      for (final entry in <String, IconData>{
+        'desktop-title-bar-minimize': CoderIcons.minimize,
+        'desktop-title-bar-maximize': CoderIcons.maximize,
+        'desktop-title-bar-close': CoderIcons.close,
+      }.entries) {
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(
+                  of: find.byKey(ValueKey<String>(entry.key)),
+                  matching: find.byType(Icon),
+                ),
+              )
+              .icon,
+          entry.value,
         );
-        expect(caption.glyphStyle, TRWindowCaptionGlyphStyle.expandCollapse);
       }
       await tester.drag(
         find.byKey(const ValueKey<String>('desktop-title-bar-drag-area')),
@@ -94,15 +100,19 @@ void main() {
         find.byKey(const ValueKey<String>('desktop-title-bar-restore')),
         findsOneWidget,
       );
-      final restore = tester.widget<TRWindowCaptionButton>(
-        find.descendant(
-          of: find.byKey(
-            const ValueKey<String>('desktop-title-bar-restore'),
-          ),
-          matching: find.byType(TRWindowCaptionButton),
-        ),
+      expect(
+        tester
+            .widget<Icon>(
+              find.descendant(
+                of: find.byKey(
+                  const ValueKey<String>('desktop-title-bar-restore'),
+                ),
+                matching: find.byType(Icon),
+              ),
+            )
+            .icon,
+        CoderIcons.restoreWindow,
       );
-      expect(restore.glyphStyle, TRWindowCaptionGlyphStyle.expandCollapse);
 
       await tester.tap(
         find.byKey(const ValueKey<String>('desktop-title-bar-close')),
@@ -172,6 +182,45 @@ void main() {
           'destroyWindow',
         ]),
       );
+    },
+    tags: const <String>['feature_test__desktop_window_chrome__widget'],
+  );
+
+  testWidgets(
+    'the title bar and its controls sit on the compact control size',
+    (tester) async {
+      final harness = build();
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // The row is one compact control plus the menubar's own inset, so the
+      // menubar fills it exactly instead of being clipped by a taller frame.
+      expect(
+        desktopTitleBarHeight,
+        TRControlMetrics.heightOf(TRUiSize.sm) + TRSpacing.extraSmall * 2,
+      );
+      expect(
+        tester.getSize(find.byType(TRMenubar)).height,
+        desktopTitleBarHeight,
+      );
+      // The caption group stays one neutral color: TRWindowCaptionButton
+      // would paint close with TRIntent.danger, which is too loud here.
+      for (final key in <String>[
+        'desktop-title-bar-minimize',
+        'desktop-title-bar-maximize',
+        'desktop-title-bar-close',
+      ]) {
+        final button = tester.widget<TRIconButton>(
+          find.descendant(
+            of: find.byKey(ValueKey<String>(key)),
+            matching: find.byType(TRIconButton),
+          ),
+        );
+        expect(button.uiSize, TRUiSize.sm);
+        expect(button.intent, TRIntent.neutral);
+        expect(button.appearance, TRAppearance.ghost);
+      }
+      expect(find.byType(TRWindowCaptionButton), findsNothing);
     },
     tags: const <String>['feature_test__desktop_window_chrome__widget'],
   );

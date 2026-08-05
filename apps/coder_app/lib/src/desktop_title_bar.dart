@@ -1,13 +1,18 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Height of the compact Windows and Linux application frame.
-const double desktopTitleBarHeight = 40;
+///
+/// One compact control plus the inset `TRMenubar` draws around its triggers,
+/// so the menubar fills the row instead of being clipped by a taller frame.
+final double desktopTitleBarHeight =
+    TRControlMetrics.heightOf(TRUiSize.sm) + TRSpacing.extraSmall * 2;
 
 /// Flutter-owned title bar for Windows and Linux desktop runners.
 class DesktopTitleBar extends StatelessWidget {
@@ -140,6 +145,7 @@ class _ApplicationMenu extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return TRMenubar(
       semanticLabel: l10n.desktopMenuFile,
+      uiSize: TRUiSize.sm,
       menus: <TRMenubarMenu>[
         TRMenubarMenu(
           menuChildren: <Widget>[
@@ -211,11 +217,21 @@ class _CaptionButton extends StatelessWidget {
   final TRWindowCaptionAction action;
   final VoidCallback onPressed;
 
+  /// Built from [TRIconButton] rather than [TRWindowCaptionButton] so the whole
+  /// caption group stays one neutral color. That component reads closing a
+  /// window as destructive and colors it with [TRIntent.danger], which is right
+  /// for a prominent frame but too loud for this quiet chrome row.
   @override
-  Widget build(BuildContext context) => TRWindowCaptionButton(
-    action: action,
-    glyphStyle: TRWindowCaptionGlyphStyle.expandCollapse,
+  Widget build(BuildContext context) => TRIconButton(
+    icon: Icon(switch (action) {
+      TRWindowCaptionAction.minimize => CoderIcons.minimize,
+      TRWindowCaptionAction.maximize => CoderIcons.maximize,
+      TRWindowCaptionAction.restore => CoderIcons.restoreWindow,
+      TRWindowCaptionAction.close => CoderIcons.close,
+    }),
     label: tooltip,
     onPressed: onPressed,
+    appearance: TRAppearance.ghost,
+    uiSize: TRUiSize.sm,
   );
 }
