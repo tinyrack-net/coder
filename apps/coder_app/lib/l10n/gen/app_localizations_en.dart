@@ -254,6 +254,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get terminalConnectionFailed => 'Terminal connection failed';
 
   @override
+  String get terminalMenuCopy => 'Copy';
+
+  @override
+  String get terminalMenuPaste => 'Paste';
+
+  @override
+  String get terminalMenuSelectAll => 'Select all';
+
+  @override
+  String get terminalMenuClearSelection => 'Clear selection';
+
+  @override
+  String get terminalMenuClearScreen => 'Clear screen';
+
+  @override
   String get projectSettingsShellHeading => 'Project terminal shell';
 
   @override

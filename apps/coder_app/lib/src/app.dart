@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/advanced_settings_page.dart';
@@ -33,6 +32,7 @@ import 'package:coder_app/src/workspace/workspace_sidebar.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -1438,22 +1438,89 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
         ),
       );
     }
-    return TRTerminalView(
-      key: ValueKey<String>('terminal-view-${widget.terminal.id}'),
-      controller: _controller,
-      autofocus: true,
-      onInput: (data) => unawaited(
-        _api?.writeTerminal(widget.terminal.id, data) ?? Future<void>.value(),
-      ),
-      onResize: (size) => unawaited(
-        _api?.resizeTerminal(
-              widget.terminal.id,
-              columns: size.columns,
-              rows: size.rows,
-            ) ??
-            Future<TerminalDto>.value(widget.terminal),
+    return ListenableBuilder(
+      listenable: _controller.selectionChanges,
+      builder: (context, _) => TRTerminalView(
+        key: ValueKey<String>('terminal-view-${widget.terminal.id}'),
+        controller: _controller,
+        autofocus: true,
+        contextMenuBuilder: _buildContextMenu,
+        onInput: (data) => unawaited(
+          _api?.writeTerminal(widget.terminal.id, data) ?? Future<void>.value(),
+        ),
+        onResize: (size) => unawaited(
+          _api?.resizeTerminal(
+                widget.terminal.id,
+                columns: size.columns,
+                rows: size.rows,
+              ) ??
+              Future<TerminalDto>.value(widget.terminal),
+        ),
       ),
     );
+  }
+
+  List<Widget> _buildContextMenu(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final hasSelection = _controller.hasSelection;
+    return <Widget>[
+      TRMenuItem(
+        key: const ValueKey<String>('terminal-menu-copy'),
+        onPressed: hasSelection ? _copySelection : null,
+        leadingIcon: const Icon(CoderIcons.copy),
+        child: Text(l10n.terminalMenuCopy),
+      ),
+      TRMenuItem(
+        key: const ValueKey<String>('terminal-menu-paste'),
+        onPressed: _pasteClipboard,
+        leadingIcon: const Icon(CoderIcons.paste),
+        child: Text(l10n.terminalMenuPaste),
+      ),
+      const TRMenuSeparator(),
+      TRMenuItem(
+        key: const ValueKey<String>('terminal-menu-select-all'),
+        onPressed: _controller.selectAll,
+        leadingIcon: const Icon(CoderIcons.selectAll),
+        child: Text(l10n.terminalMenuSelectAll),
+      ),
+      TRMenuItem(
+        key: const ValueKey<String>('terminal-menu-clear-selection'),
+        onPressed: hasSelection ? _controller.clearSelection : null,
+        leadingIcon: const Icon(CoderIcons.clearSelection),
+        child: Text(l10n.terminalMenuClearSelection),
+      ),
+      const TRMenuSeparator(),
+      TRMenuItem(
+        key: const ValueKey<String>('terminal-menu-clear-screen'),
+        onPressed: _clearScreen,
+        leadingIcon: const Icon(CoderIcons.erase),
+        child: Text(l10n.terminalMenuClearScreen),
+      ),
+    ];
+  }
+
+  void _copySelection() {
+    final text = _controller.selectedText;
+    if (text == null) return;
+    unawaited(Clipboard.setData(ClipboardData(text: text)));
+  }
+
+  void _pasteClipboard() {
+    unawaited(() async {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text;
+      if (text == null || text.isEmpty) return;
+      _controller
+        ..paste(text)
+        ..clearSelection();
+    }());
+  }
+
+  /// Erases the screen and the scrollback, then homes the cursor.
+  void _clearScreen() {
+    _controller
+      ..write('\x1b[H\x1b[2J\x1b[3J')
+      ..clearSelection();
   }
 }
 

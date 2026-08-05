@@ -11,7 +11,9 @@ import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/model_picker.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +21,17 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 import 'support/localization.dart';
+
+const liveTerminal = TerminalDto(
+  id: 'terminal-deep-link',
+  worktreeId: 'checkout',
+  title: 'Remote terminal',
+  shell: ShellSpecDto(executable: '/bin/sh'),
+  status: TerminalStatus.running,
+  columns: 80,
+  rows: 24,
+  lastSequence: 0,
+);
 
 void main() {
   final now = DateTime.utc(2026, 8, 3);
@@ -423,6 +436,185 @@ void main() {
       'feature_test__terminal_lifecycle__widget',
       'route_test__terminal_route__widget',
     ],
+  );
+
+  testWidgets(
+    'terminal sends a Hangul word the input method composes exactly once',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        terminals: const <TerminalDto>[liveTerminal],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        TerminalRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          terminalId: liveTerminal.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      // A Hangul input method keeps its committed text in the platform editing
+      // buffer for the whole composition session instead of letting the
+      // terminal reset it between syllables.
+      for (final value in const <TextEditingValue>[
+        TextEditingValue(
+          text: 'ㅂ',
+          selection: TextSelection.collapsed(offset: 1),
+          composing: TextRange(start: 0, end: 1),
+        ),
+        TextEditingValue(
+          text: '반',
+          selection: TextSelection.collapsed(offset: 1),
+          composing: TextRange(start: 0, end: 1),
+        ),
+        TextEditingValue(
+          text: '반',
+          selection: TextSelection.collapsed(offset: 1),
+        ),
+        TextEditingValue(
+          text: '반갑',
+          selection: TextSelection.collapsed(offset: 2),
+          composing: TextRange(start: 1, end: 2),
+        ),
+        TextEditingValue(
+          text: '반갑',
+          selection: TextSelection.collapsed(offset: 2),
+        ),
+        TextEditingValue(
+          text: '반갑다',
+          selection: TextSelection.collapsed(offset: 3),
+          composing: TextRange(start: 2, end: 3),
+        ),
+        TextEditingValue(
+          text: '반갑다',
+          selection: TextSelection.collapsed(offset: 3),
+        ),
+      ]) {
+        tester.testTextInput.updateEditingValue(value);
+        await tester.pump();
+      }
+
+      expect(
+        api.terminalWrites.map((write) => write.data).join(),
+        '반갑다',
+      );
+      expect(
+        api.terminalWrites.map((write) => write.terminalId).toSet(),
+        <String>{liveTerminal.id},
+      );
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'terminal context menu copies the selection and pastes the clipboard',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      String? clipboard;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          switch (call.method) {
+            case 'Clipboard.setData':
+              final arguments = call.arguments as Map<Object?, Object?>;
+              clipboard = arguments['text'] as String?;
+              return null;
+            case 'Clipboard.getData':
+              return <String, Object?>{'text': clipboard};
+            default:
+              return null;
+          }
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        terminals: const <TerminalDto>[liveTerminal],
+        terminalReplay: const <TerminalOutputDto>[
+          TerminalOutputDto(
+            terminalId: 'terminal-deep-link',
+            sequence: 1,
+            data: 'selectable output',
+          ),
+        ],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        TerminalRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          terminalId: liveTerminal.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      final copy = find.byKey(const ValueKey<String>('terminal-menu-copy'));
+      expect(copy, findsNothing);
+
+      Future<void> openMenu() async {
+        final surface = find.byKey(
+          const ValueKey<String>('tr-terminal-surface'),
+        );
+        final gesture = await tester.startGesture(
+          tester.getTopLeft(surface) + const Offset(24, 24),
+          kind: PointerDeviceKind.mouse,
+          buttons: kSecondaryButton,
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        await gesture.up();
+        await tester.pumpAndSettle();
+      }
+
+      await openMenu();
+      expect(copy, findsOneWidget);
+      expect(find.text('붙여넣기'), findsOneWidget);
+
+      // Copy stays unavailable until something is selected.
+      expect(tester.widget<TRMenuItem>(copy).onPressed, isNull);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('terminal-menu-select-all')),
+      );
+      await tester.pumpAndSettle();
+
+      await openMenu();
+      await tester.tap(copy);
+      await tester.pumpAndSettle();
+      expect(clipboard, contains('selectable output'));
+
+      await openMenu();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('terminal-menu-paste')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        api.terminalWrites.map((write) => write.data).join(),
+        contains('selectable output'),
+      );
+
+      await openMenu();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('terminal-menu-clear-screen')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRTerminalView), findsOneWidget);
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
   );
 
   testWidgets(
