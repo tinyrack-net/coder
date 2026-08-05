@@ -9,11 +9,11 @@ import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
-import 'package:coder_app/src/remote_path.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/session_title.dart';
 import 'package:coder_app/src/workspace/directory_browser.dart';
+import 'package:coder_app/src/workspace/directory_picker_port.dart';
 import 'package:coder_app/src/workspace/worktree_hook_report.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -404,15 +404,20 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     final hostId = await pickDaemonHost(context, online);
     if (hostId == null || !mounted) return;
     final host = online.singleWhere((item) => item.id == hostId);
-    final catalog = ref.read(workspaceCatalogControllerProvider).value;
-    final existing = catalog?.catalogs[hostId]?.workspaces.firstOrNull;
-    final path = await showDirectoryBrowser(
-      context,
-      api: host.api!,
-      initialPath: existing == null
-          ? '/'
-          : parentDirectoryPath(existing.rootPath) ?? '/',
-    );
+    // Repositories almost always live under the home of the machine that owns
+    // them, so both pickers start there. A daemon configured without a home
+    // reports none, leaving the root as the only path known to exist there.
+    final home = host.serverInfo?.homeDirectory;
+    final picker = ref.read(directoryPickerProvider);
+    // The embedded daemon shares this filesystem, so the operating system's
+    // own chooser browses exactly the paths it can register.
+    final path = host.kind == HostKind.embedded && picker != null
+        ? await picker.pickDirectory(initialDirectory: home)
+        : await showDirectoryBrowser(
+            context,
+            api: host.api!,
+            initialPath: home ?? '/',
+          );
     if (path == null || path.isEmpty || !mounted) return;
     try {
       final result = await ref

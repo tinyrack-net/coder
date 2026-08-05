@@ -47,6 +47,9 @@ void main() {
       final handle = await DaemonApplication.start(
         DaemonConfig(
           homeDirectory: home.path,
+          // A temporary directory stands in for the machine home so the test
+          // never depends on the home of whoever runs it.
+          osHomeDirectory: workspace.path,
           port: 0,
           bearerToken: 'test-token-0123456789abcdef0123456789',
           useEnvironmentCredentials: false,
@@ -73,6 +76,9 @@ void main() {
       expect(client.serverInfo.serverId, handle.serverId);
       expect(client.serverInfo.features, isNot(contains('providerAdmin')));
       expect(client.serverInfo.features['jsonRpc2'], isTrue);
+      // The handshake carries the browsing home so the app can open a picker
+      // there instead of at the drive root.
+      expect(client.serverInfo.homeDirectory, workspace.path);
       final initialCatalog = await client.listProviderCatalog();
       expect(
         initialCatalog.definitions.map((item) => item.id),

@@ -46,6 +46,7 @@ final class LocalDaemonDirectories {
     required this.configDirectory,
     required this.stateDirectory,
     required this.userHomeDirectory,
+    required this.osHomeDirectory,
   });
 
   /// Holds `credentials.json`.
@@ -56,6 +57,12 @@ final class LocalDaemonDirectories {
 
   /// Real user home used to locate the shared `~/.agents` tree.
   final String userHomeDirectory;
+
+  /// Home reported by the operating system, before any Tinyrack override.
+  ///
+  /// [userHomeDirectory] can be relocated with `TINYRACK_CODER_AGENTS_HOME`,
+  /// so it is the wrong place to start a file browser.
+  final String osHomeDirectory;
 }
 
 /// Default listening endpoint when nothing overrides it.
@@ -76,6 +83,7 @@ LocalDaemonDirectories resolveLocalDaemonDirectories({
     stateDirectory: override ?? defaults.stateDirectory,
     userHomeDirectory:
         values['TINYRACK_CODER_AGENTS_HOME'] ?? defaults.userHomeDirectory,
+    osHomeDirectory: defaults.osHomeDirectory,
   );
 }
 
@@ -133,6 +141,7 @@ LocalDaemonDirectories _defaultDirectories(
       configDirectory: p.join(config, 'tinyrack-coder'),
       stateDirectory: p.join(state, 'tinyrack-coder'),
       userHomeDirectory: userHome,
+      osHomeDirectory: userHome,
     );
   }
   if (platform.isMacOS) {
@@ -146,6 +155,7 @@ LocalDaemonDirectories _defaultDirectories(
       configDirectory: support,
       stateDirectory: support,
       userHomeDirectory: userHome,
+      osHomeDirectory: userHome,
     );
   }
   if (platform.isWindows) {
@@ -155,11 +165,13 @@ LocalDaemonDirectories _defaultDirectories(
       configDirectory: p.join(config, 'Tinyrack Coder'),
       stateDirectory: p.join(state, 'Tinyrack Coder'),
       userHomeDirectory: userHome,
+      osHomeDirectory: userHome,
     );
   }
   return LocalDaemonDirectories(
     configDirectory: p.join(userHome, '.config', 'tinyrack-coder'),
     stateDirectory: p.join(userHome, '.local', 'state', 'tinyrack-coder'),
     userHomeDirectory: userHome,
+    osHomeDirectory: userHome,
   );
 }

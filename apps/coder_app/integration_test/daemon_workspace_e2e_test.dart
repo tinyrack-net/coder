@@ -83,6 +83,14 @@ void main() {
       expect((await setup.getWorkspaceCatalog()).workspaces, isEmpty);
 
       await _openProjectDirectoryBrowser(tester);
+      // The browser starts at the home the daemon reported, not the root.
+      expect(
+        tester
+            .widget<EditableText>(_field('directory-browser-path'))
+            .controller
+            .text,
+        fixture.home.path,
+      );
       final missingPath = '${fixture.home.path}/missing-project';
       await tester.enterText(
         find.byKey(const ValueKey('directory-browser-path')),

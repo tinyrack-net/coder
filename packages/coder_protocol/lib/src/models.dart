@@ -1104,6 +1104,7 @@ abstract class ServerInfoDto with _$ServerInfoDto {
     required String version,
     required int protocolVersion,
     required Map<String, bool> features,
+    String? homeDirectory,
   }) = _ServerInfoDto;
 
   /// Creates a [ServerInfoDto].

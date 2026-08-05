@@ -10,6 +10,7 @@ void main() {
       homeDirectory: '/state',
       configDirectory: '/config',
       userHomeDirectory: '/user',
+      osHomeDirectory: '/os-home',
       host: '0.0.0.0',
       port: 8123,
       apiKey: 'api-key',
@@ -21,6 +22,7 @@ void main() {
     expect(decoded.homeDirectory, '/state');
     expect(decoded.configDirectory, '/config');
     expect(decoded.userHomeDirectory, '/user');
+    expect(decoded.osHomeDirectory, '/os-home');
     expect(decoded.host, '0.0.0.0');
     expect(decoded.port, 8123);
     expect(decoded.apiKey, 'api-key');
@@ -32,6 +34,7 @@ void main() {
       homeDirectory: '/other-state',
       configDirectory: '/other-config',
       userHomeDirectory: '/other-user',
+      osHomeDirectory: '/other-os-home',
       host: 'localhost',
       port: 9000,
       apiKey: 'other-key',
@@ -41,6 +44,7 @@ void main() {
     expect(copy.homeDirectory, '/other-state');
     expect(copy.configDirectory, '/other-config');
     expect(copy.userHomeDirectory, '/other-user');
+    expect(copy.osHomeDirectory, '/other-os-home');
     expect(copy.host, 'localhost');
     expect(copy.port, 9000);
     expect(copy.apiKey, 'other-key');
@@ -103,6 +107,9 @@ void main() {
       ),
     );
     expect(overridden.userHomeDirectory, '/tmp/agents-home');
+    // A relocated agents tree must not move the browsing home the daemon
+    // reports at handshake.
+    expect(overridden.osHomeDirectory, '/home/test');
 
     final windows = DaemonConfig.fromEnvironment(
       environment: const _Environment(
@@ -115,6 +122,7 @@ void main() {
       ),
     );
     expect(windows.userHomeDirectory, r'C:\Users\test');
+    expect(windows.osHomeDirectory, r'C:\Users\test');
   });
 
   test('platform-specific defaults cover macOS, Windows, and fallback', () {

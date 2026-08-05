@@ -84,7 +84,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
               controller: _path,
               autofocus: true,
               label: l10n.directoryBrowserPath,
-              placeholder: '/srv/repositories/project',
+              placeholder: '/home/you/repositories/project',
               onChanged: _onPathTyped,
             ),
             const SizedBox(height: 8),

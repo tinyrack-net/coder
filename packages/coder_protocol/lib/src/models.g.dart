@@ -1114,6 +1114,7 @@ _ServerInfoDto _$ServerInfoDtoFromJson(Map<String, dynamic> json) =>
       version: json['version'] as String,
       protocolVersion: (json['protocolVersion'] as num).toInt(),
       features: Map<String, bool>.from(json['features'] as Map),
+      homeDirectory: json['homeDirectory'] as String?,
     );
 
 Map<String, dynamic> _$ServerInfoDtoToJson(_ServerInfoDto instance) =>
@@ -1122,6 +1123,7 @@ Map<String, dynamic> _$ServerInfoDtoToJson(_ServerInfoDto instance) =>
       'version': instance.version,
       'protocolVersion': instance.protocolVersion,
       'features': instance.features,
+      'homeDirectory': instance.homeDirectory,
     };
 
 _RpcErrorDto _$RpcErrorDtoFromJson(Map<String, dynamic> json) => _RpcErrorDto(

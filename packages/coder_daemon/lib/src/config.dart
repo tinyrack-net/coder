@@ -28,6 +28,7 @@ class DaemonConfig {
     required this.homeDirectory,
     String? configDirectory,
     this.userHomeDirectory,
+    this.osHomeDirectory,
     this.host = '127.0.0.1',
     this.port = 7337,
     this.apiKey,
@@ -43,6 +44,7 @@ class DaemonConfig {
         homeDirectory: value['homeDirectory']! as String,
         configDirectory: value['configDirectory'] as String?,
         userHomeDirectory: value['userHomeDirectory'] as String?,
+        osHomeDirectory: value['osHomeDirectory'] as String?,
         host: value['host']! as String,
         port: value['port']! as int,
         apiKey: value['apiKey'] as String?,
@@ -68,6 +70,7 @@ class DaemonConfig {
       homeDirectory: directories.stateDirectory,
       configDirectory: directories.configDirectory,
       userHomeDirectory: directories.userHomeDirectory,
+      osHomeDirectory: directories.osHomeDirectory,
       host: host,
       port: port,
       apiKey: apiKey,
@@ -89,6 +92,12 @@ class DaemonConfig {
   /// Null keeps the daemon away from any user home, which is what tests and
   /// CI runs need.
   final String? userHomeDirectory;
+
+  /// Home this machine reports, offered to clients as a browsing start point.
+  ///
+  /// Null keeps a client from ever assuming a home on a daemon that was
+  /// configured without one, which is what tests and CI runs need.
+  final String? osHomeDirectory;
 
   /// The host public API member.
   final String host;
@@ -116,6 +125,7 @@ class DaemonConfig {
     String? homeDirectory,
     String? configDirectory,
     String? userHomeDirectory,
+    String? osHomeDirectory,
     String? host,
     int? port,
     String? apiKey,
@@ -126,6 +136,7 @@ class DaemonConfig {
     homeDirectory: homeDirectory ?? this.homeDirectory,
     configDirectory: configDirectory ?? this.configDirectory,
     userHomeDirectory: userHomeDirectory ?? this.userHomeDirectory,
+    osHomeDirectory: osHomeDirectory ?? this.osHomeDirectory,
     host: host ?? this.host,
     port: port ?? this.port,
     apiKey: apiKey ?? this.apiKey,
@@ -141,6 +152,7 @@ class DaemonConfig {
     'homeDirectory': homeDirectory,
     'configDirectory': configDirectory,
     'userHomeDirectory': userHomeDirectory,
+    'osHomeDirectory': osHomeDirectory,
     'host': host,
     'port': port,
     'apiKey': apiKey,
