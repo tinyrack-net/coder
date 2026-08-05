@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
 import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/composer_suggestions.dart';
+import 'package:coder_app/src/composer_suggestions_overlay.dart';
+import 'package:coder_app/src/composer_trigger.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/model_picker.dart';
@@ -62,6 +65,20 @@ void main() {
       builder: _composerChipApp,
     ),
   );
+
+  for (final variant in <({String name, ComposerTriggerKind kind})>[
+    (name: 'command', kind: ComposerTriggerKind.command),
+    (name: 'file', kind: ComposerTriggerKind.file),
+  ]) {
+    unawaited(
+      goldenTest(
+        'composer ${variant.name} suggestions layer',
+        fileName: 'composer_${variant.name}_suggestions',
+        constraints: const BoxConstraints.tightFor(width: 640, height: 420),
+        builder: () => _ComposerSuggestionsGoldenHost(kind: variant.kind),
+      ),
+    );
+  }
 
   for (final variant in <({String name, Size size, ThemeMode mode})>[
     (
@@ -208,4 +225,109 @@ class _OpenModelPicker extends StatelessWidget {
             ),
     );
   }
+}
+
+/// Pins the completion layer for both trigger kinds at once, so the two rows
+/// that only a command list shows — a badge and an argument hint — stay in
+/// the golden alongside the plain path rows.
+class _ComposerSuggestionsGoldenHost extends StatelessWidget {
+  const _ComposerSuggestionsGoldenHost({required this.kind});
+
+  final ComposerTriggerKind kind;
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    locale: testLocale,
+    localizationsDelegates: testLocalizationsDelegates,
+    supportedLocales: testSupportedLocales,
+    theme: testLightTheme,
+    darkTheme: testDarkTheme,
+    themeMode: kind == ComposerTriggerKind.command
+        ? ThemeMode.light
+        : ThemeMode.dark,
+    home: Scaffold(
+      body: Align(
+        alignment: Alignment.bottomCenter,
+        child: SessionComposer(
+          enabled: true,
+          onSubmit: (_) {},
+          suggestions: _state(kind),
+          bar: SessionComposerBar(
+            hostId: 'server',
+            definitions: const <AgentDefinitionDto>[],
+            agentDefinitionId: null,
+            selection: null,
+            onAgentChanged: (_) {},
+            onModelChanged: (_) {},
+            mode: SessionMode.normal,
+            onModeChanged: (_) {},
+          ),
+        ),
+      ),
+    ),
+  );
+
+  static ComposerSuggestionsState _state(ComposerTriggerKind kind) =>
+      switch (kind) {
+        ComposerTriggerKind.command => const ComposerSuggestionsState(
+          trigger: ComposerTrigger(
+            kind: ComposerTriggerKind.command,
+            start: 0,
+            end: 4,
+            query: 'rev',
+          ),
+          items: <ComposerSuggestion>[
+            ComposerSuggestion(
+              id: 'agent:review',
+              label: 'review',
+              replacement: '/review',
+              description: 'Reviews the working diff.',
+              hint: '<path>',
+              badge: 'command',
+              matchedIndices: <int>[0, 1, 2],
+            ),
+            ComposerSuggestion(
+              id: 'skill:commit',
+              label: 'commit',
+              replacement: '/commit',
+              description: 'Writes atomic commits.',
+              badge: 'skill',
+              matchedIndices: <int>[3],
+            ),
+            ComposerSuggestion(
+              id: 'client:clear',
+              label: 'clear',
+              replacement: '/clear',
+              description: 'Clear the composer.',
+              badge: 'app',
+              matchedIndices: <int>[2],
+            ),
+          ],
+        ),
+        ComposerTriggerKind.file => const ComposerSuggestionsState(
+          trigger: ComposerTrigger(
+            kind: ComposerTriggerKind.file,
+            start: 5,
+            end: 9,
+            query: 'com',
+          ),
+          items: <ComposerSuggestion>[
+            ComposerSuggestion(
+              id: 'lib/src/composer.dart',
+              label: 'lib/src/composer.dart',
+              replacement: '@lib/src/composer.dart',
+              description: 'composer.dart',
+              matchedIndices: <int>[8, 9, 10],
+            ),
+            ComposerSuggestion(
+              id: 'docs/commands.md',
+              label: 'docs/commands.md',
+              replacement: '@docs/commands.md',
+              description: 'commands.md',
+              matchedIndices: <int>[5, 6, 7],
+            ),
+          ],
+        ),
+      };
 }

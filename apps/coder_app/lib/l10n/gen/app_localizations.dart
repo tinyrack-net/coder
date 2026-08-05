@@ -2473,6 +2473,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{percent}% of the context window used'**
   String sessionContextMeterValue(int percent);
+
+  /// Error shown when a slash command is submitted with attachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachments to run a command.'**
+  String get composerCommandNoAttachments;
+
+  /// Empty state of the composer command list.
+  ///
+  /// In en, this message translates to:
+  /// **'No commands'**
+  String get composerCommandsEmpty;
+
+  /// Empty state of the composer file mention list.
+  ///
+  /// In en, this message translates to:
+  /// **'No files'**
+  String get composerFilesEmpty;
+
+  /// Loading state of the composer file mention list.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching workspace'**
+  String get composerFilesSearching;
+
+  /// Error state of the composer command list.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load commands'**
+  String get composerCommandsError;
+
+  /// Error state of the composer file mention list.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not search files'**
+  String get composerFilesError;
+
+  /// Badge marking an app-owned composer command.
+  ///
+  /// In en, this message translates to:
+  /// **'app'**
+  String get composerCommandSourceClient;
+
+  /// Badge marking a Markdown-defined agent command.
+  ///
+  /// In en, this message translates to:
+  /// **'command'**
+  String get composerCommandSourceAgent;
+
+  /// Badge marking a composer command that loads a skill.
+  ///
+  /// In en, this message translates to:
+  /// **'skill'**
+  String get composerCommandSourceSkill;
+
+  /// Name of the composer command that clears the draft.
+  ///
+  /// In en, this message translates to:
+  /// **'clear'**
+  String get composerCommandClearLabel;
+
+  /// Description of the clear command.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the composer.'**
+  String get composerCommandClearDescription;
+
+  /// Name of the composer command that starts a session.
+  ///
+  /// In en, this message translates to:
+  /// **'new'**
+  String get composerCommandNewLabel;
+
+  /// Description of the new session command.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new session.'**
+  String get composerCommandNewDescription;
+
+  /// Name of the composer command that switches mode.
+  ///
+  /// In en, this message translates to:
+  /// **'mode'**
+  String get composerCommandModeLabel;
+
+  /// Description of the mode command.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch between planning and working.'**
+  String get composerCommandModeDescription;
+
+  /// Name of the composer command that opens agent settings.
+  ///
+  /// In en, this message translates to:
+  /// **'agents'**
+  String get composerCommandAgentsLabel;
+
+  /// Description of the agents command.
+  ///
+  /// In en, this message translates to:
+  /// **'Open agent settings.'**
+  String get composerCommandAgentsDescription;
+
+  /// Name of the composer command that opens skill settings.
+  ///
+  /// In en, this message translates to:
+  /// **'skills'**
+  String get composerCommandSkillsLabel;
+
+  /// Description of the skills command.
+  ///
+  /// In en, this message translates to:
+  /// **'Open skill settings.'**
+  String get composerCommandSkillsDescription;
+
+  /// Name of the composer command that lists commands.
+  ///
+  /// In en, this message translates to:
+  /// **'help'**
+  String get composerCommandHelpLabel;
+
+  /// Description of the help command.
+  ///
+  /// In en, this message translates to:
+  /// **'List the available commands.'**
+  String get composerCommandHelpDescription;
+
+  /// Accessible name of the composer suggestion list.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions'**
+  String get composerSuggestionsLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_app/src/app.dart';
@@ -18,6 +17,7 @@ import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -51,6 +51,7 @@ void main() {
       const selectedModelId =
           'vendor/reasoning-model-with-an-extremely-long-identifier';
       await _initializeGitRepository(workspace.path);
+      await _writeProjectCommand(workspace.path);
       final modelServer = await HttpServer.bind(
         InternetAddress.loopbackIPv4,
         0,
@@ -798,6 +799,75 @@ void main() {
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
       await tester.pumpAndSettle();
+
+      // An @ token completes into a worktree-relative path rather than
+      // sending, and the completed prompt is what reaches the daemon.
+      await tester.enterText(find.byKey(composer), 'read @READ');
+      await tester.pumpAndSettle();
+      await pumpUntil(tester, find.text('README.md'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
+        'read @README.md ',
+      );
+
+      // A query that matches nothing says so, and Escape hands Enter back to
+      // sending so the typed text still goes out as prose.
+      await tester.enterText(find.byKey(composer), 'read @zzzzzz');
+      await tester.pumpAndSettle();
+      await pumpUntil(tester, find.text('No files'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('No files'), findsNothing);
+
+      // An app-owned command runs in the app: the draft clears and no turn
+      // starts for it.
+      final sessionsBefore = (await setupClient.listSessions(
+        worktreeId: 'checkout-e2e',
+      )).length;
+      await tester.enterText(find.byKey(composer), '/clear');
+      await tester.pumpAndSettle();
+      await pumpUntil(tester, find.text('clear'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
+        isEmpty,
+      );
+      expect(
+        (await setupClient.listSessions(worktreeId: 'checkout-e2e')).length,
+        sessionsBefore,
+      );
+
+      // A project command on disk expands its template into the prompt the
+      // daemon records for the turn.
+      await tester.enterText(find.byKey(composer), '/e2e-review lib/app.dart');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(send));
+      await tester.pump();
+      await pumpUntilCondition(
+        tester,
+        () async {
+          final sessions = await setupClient.listSessions(
+            worktreeId: 'checkout-e2e',
+          );
+          if (sessions.isEmpty) return false;
+          final timeline = await setupClient.subscribeTimeline(
+            sessions.first.id,
+          );
+          return timeline
+              .where((event) => event.type == 'user.message')
+              .any(
+                (event) =>
+                    '${event.data['text']}' ==
+                    'Review lib/app.dart for the E2E fixture.',
+              );
+        },
+        'the expanded agent command prompt to reach the daemon',
+      );
 
       await tester.enterText(find.byKey(composer), 'Delegate review');
       await tester.pump();
@@ -1580,6 +1650,12 @@ void main() {
       'feature_scenario__mcp_tool_execution__reject_and_offline__e2e',
       'feature_scenario__skill_management__source_crud_toggle__e2e',
       'feature_scenario__skill_management__invalid_edit_preserves_file__e2e',
+      'feature_test__composer_file_mention__e2e',
+      'feature_test__composer_slash_command__e2e',
+      'feature_scenario__composer_file_mention__mention_insert_path__e2e',
+      'feature_scenario__composer_file_mention__no_match_dismiss__e2e',
+      'feature_scenario__composer_slash_command__client_command_dispatch__e2e',
+      'feature_scenario__composer_slash_command__agent_command_prompt__e2e',
       'feature_scenario__skill_invocation__enabled_injection_and_load__e2e',
       'feature_scenario__skill_invocation__disabled_skill_excluded__e2e',
       'feature_scenario__agent_delegation__allowlisted_child_navigation__e2e',
@@ -1816,6 +1892,20 @@ Future<void> _initializeGitRepository(String path) async {
     '-m',
     'Initial fixture',
   ]);
+}
+
+/// Seeds a project command so the composer has one to expand.
+Future<void> _writeProjectCommand(String path) async {
+  final directory = Directory('$path/.agents/commands');
+  await directory.create(recursive: true);
+  await File('${directory.path}/e2e-review.md').writeAsString(
+    '---\n'
+    'description: Reviews a path in the E2E fixture.\n'
+    'argument-hint: <path>\n'
+    '---\n\n'
+    r'Review $ARGUMENTS for the E2E fixture.'
+    '\n',
+  );
 }
 
 Future<void> _runGit(String path, List<String> arguments) async {

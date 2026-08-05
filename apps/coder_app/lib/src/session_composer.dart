@@ -5,6 +5,11 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/attachment_ports.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/composer_commands.dart';
+import 'package:coder_app/src/composer_completion_scope.dart';
+import 'package:coder_app/src/composer_suggestions.dart';
+import 'package:coder_app/src/composer_suggestions_overlay.dart';
+import 'package:coder_app/src/composer_trigger.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/model_picker.dart';
@@ -693,38 +698,46 @@ class DraftSessionPane extends ConsumerWidget {
     return Column(
       children: <Widget>[
         Expanded(child: Center(child: TRText.inherit(l10n.composerStartHint))),
-        SessionComposer(
-          enabled: agent != null && effective != null,
-          hint: (agentsLoading || providersLoading)
-              ? null
-              : (agent == null
-                    ? l10n.composerNoPrimaryAgent
-                    : (effective == null
-                          ? l10n.composerSelectModelFirst
-                          : null)),
-          bar: SessionComposerBar(
-            hostId: selection.hostId,
-            definitions: definitions,
-            agentDefinitionId: agent?.id,
-            selection: effective,
-            onAgentChanged: notifier.selectAgent,
-            onModelChanged: notifier.selectModel,
-            mode: draft.mode,
-            onModeChanged: notifier.selectMode,
-            reasoningEffort: draft.reasoningEffort,
-            onReasoningEffortChanged: notifier.selectReasoningEffort,
-            permissionMode: draft.permissionMode,
-            onPermissionModeChanged: notifier.selectPermissionMode,
-            serviceTier: draft.serviceTier,
-            onServiceTierChanged: notifier.selectServiceTier,
+        ComposerCompletionScope(
+          hostId: selection.hostId,
+          workspaceId: selection.workspaceId,
+          worktreeId: selection.worktreeId,
+          builder: (context, completion) => SessionComposer(
+            commands: completion.commands,
+            suggestions: completion.suggestions,
+            onCompletionQueryChanged: completion.onQueryChanged,
+            enabled: agent != null && effective != null,
+            hint: (agentsLoading || providersLoading)
+                ? null
+                : (agent == null
+                      ? l10n.composerNoPrimaryAgent
+                      : (effective == null
+                            ? l10n.composerSelectModelFirst
+                            : null)),
+            bar: SessionComposerBar(
+              hostId: selection.hostId,
+              definitions: definitions,
+              agentDefinitionId: agent?.id,
+              selection: effective,
+              onAgentChanged: notifier.selectAgent,
+              onModelChanged: notifier.selectModel,
+              mode: draft.mode,
+              onModeChanged: notifier.selectMode,
+              reasoningEffort: draft.reasoningEffort,
+              onReasoningEffortChanged: notifier.selectReasoningEffort,
+              permissionMode: draft.permissionMode,
+              onPermissionModeChanged: notifier.selectPermissionMode,
+              serviceTier: draft.serviceTier,
+              onServiceTierChanged: notifier.selectServiceTier,
+            ),
+            onModeToggled: () => notifier.selectMode(
+              draft.mode == SessionMode.plan
+                  ? SessionMode.normal
+                  : SessionMode.plan,
+            ),
+            attachmentInput: ref.read(attachmentInputProvider),
+            onSubmit: (submission) => _start(ref, submission, agent!, draft),
           ),
-          onModeToggled: () => notifier.selectMode(
-            draft.mode == SessionMode.plan
-                ? SessionMode.normal
-                : SessionMode.plan,
-          ),
-          attachmentInput: ref.read(attachmentInputProvider),
-          onSubmit: (submission) => _start(ref, submission, agent!, draft),
         ),
       ],
     );
@@ -777,6 +790,10 @@ class SessionComposer extends StatefulWidget {
     this.attachmentInput,
     this.contextTokens = 0,
     this.contextWindow,
+    this.commands = const <ComposerCommand>[],
+    this.suggestions = ComposerSuggestionsState.closed,
+    this.onCompletionQueryChanged,
+    this.onClientCommand,
     super.key,
   });
 
@@ -833,6 +850,22 @@ class SessionComposer extends StatefulWidget {
   /// Reason shown below the input when sending is unavailable.
   final String? hint;
 
+  /// Rows offered for the token being completed; closed by default.
+  final ComposerSuggestionsState suggestions;
+
+  /// Reports the token under the caret so a host can search for it.
+  final ValueChanged<ComposerTrigger?>? onCompletionQueryChanged;
+
+  /// Runs an app-owned command, reporting whether it consumed the submission.
+  ///
+  /// A null handler leaves the message to submit as ordinary text, which is
+  /// what the draft and new-workspace composers want.
+  final Future<bool> Function(ComposerCommandInvocation invocation)?
+  onClientCommand;
+
+  /// Commands a whole-message `/name` submission is matched against.
+  final List<ComposerCommand> commands;
+
   @override
   State<SessionComposer> createState() => _SessionComposerState();
 }
@@ -840,27 +873,78 @@ class SessionComposer extends StatefulWidget {
 class _SessionComposerState extends State<SessionComposer> {
   final _controller = TextEditingController();
   final _inputFocus = FocusNode();
+  final TRInlineSuggestionsController<String> _suggestions =
+      TRInlineSuggestionsController<String>();
   final List<PendingAttachment> _attachments = <PendingAttachment>[];
   bool _submitting = false;
   bool _dragging = false;
   String? _attachmentError;
+  ComposerTrigger? _trigger;
 
   @override
   void initState() {
     super.initState();
     // The plain input paints no focus ring, so the card paints it instead.
     _inputFocus.addListener(_handleFocusChange);
+    // A listener rather than onChanged: a completion splices the value
+    // programmatically, and that has to re-evaluate the token too.
+    _controller.addListener(_handleTextChanged);
   }
 
   void _handleFocusChange() => setState(() {});
+
+  void _handleTextChanged() {
+    final trigger = parseComposerTrigger(_controller.value);
+    if (trigger == _trigger) return;
+    setState(() => _trigger = trigger);
+    widget.onCompletionQueryChanged?.call(trigger);
+  }
 
   @override
   void dispose() {
     _inputFocus
       ..removeListener(_handleFocusChange)
       ..dispose();
-    _controller.dispose();
+    _controller
+      ..removeListener(_handleTextChanged)
+      ..dispose();
+    _suggestions.dispose();
     super.dispose();
+  }
+
+  /// Splices the chosen row over the token that asked for it.
+  void _completeWith(ComposerSuggestion suggestion) {
+    final trigger = _trigger;
+    if (trigger == null) return;
+    _controller.value = applyComposerCompletion(
+      value: _controller.value,
+      trigger: trigger,
+      replacement: suggestion.replacement,
+    );
+    _inputFocus.requestFocus();
+  }
+
+  /// Runs an app-owned command instead of sending, if the text names one.
+  Future<bool> _dispatchClientCommand() async {
+    final handler = widget.onClientCommand;
+    if (handler == null) return false;
+    final invocation = parseComposerCommand(
+      _controller.text.trim(),
+      widget.commands,
+    );
+    if (invocation == null ||
+        invocation.command.kind != ComposerCommandKind.client) {
+      return false;
+    }
+    // A command replaces the whole submission, so an attachment has nowhere
+    // to go and silently dropping it would lose the user's work.
+    if (_attachments.isNotEmpty) {
+      final l10n = AppLocalizations.of(context);
+      setState(() => _attachmentError = l10n.composerCommandNoAttachments);
+      return true;
+    }
+    _clear();
+    return handler(invocation);
   }
 
   @override
@@ -908,19 +992,26 @@ class _SessionComposerState extends State<SessionComposer> {
                           ? null
                           : () => _sendQueuedNow(widget.queued[index].id),
                     ),
-                  // Shift+Tab cycles the mode instead of moving focus, and
-                  // Enter sends rather than opening a line.
-                  Focus(
-                    onKeyEvent: _handleKey,
-                    child: TRTextField(
-                      key: const ValueKey('session-composer-input'),
-                      controller: _controller,
-                      focusNode: _inputFocus,
-                      appearance: TRFieldAppearance.ghost,
-                      minLines: 1,
-                      maxLines: 8,
-                      enabled: widget.enabled,
-                      placeholder: l10n.composerInputHint,
+                  ComposerSuggestionsOverlay(
+                    state: widget.suggestions,
+                    controller: _suggestions,
+                    onSelected: _completeWith,
+                    onDismissed: () =>
+                        widget.onCompletionQueryChanged?.call(null),
+                    // Shift+Tab cycles the mode instead of moving focus, and
+                    // Enter sends rather than opening a line.
+                    child: Focus(
+                      onKeyEvent: _handleKey,
+                      child: TRTextField(
+                        key: const ValueKey('session-composer-input'),
+                        controller: _controller,
+                        focusNode: _inputFocus,
+                        appearance: TRFieldAppearance.ghost,
+                        minLines: 1,
+                        maxLines: 8,
+                        enabled: widget.enabled,
+                        placeholder: l10n.composerInputHint,
+                      ),
                     ),
                   ),
                   if (_attachments.isNotEmpty)
@@ -1035,6 +1126,11 @@ class _SessionComposerState extends State<SessionComposer> {
   };
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    // First, so an open list owns Enter, Escape, Tab, and the arrows before
+    // sending, dismissing, or the mode toggle can see them.
+    if (_suggestions.handleKeyEvent(event) == KeyEventResult.handled) {
+      return KeyEventResult.handled;
+    }
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     final pressed = HardwareKeyboard.instance.logicalKeysPressed;
     final control =
@@ -1101,7 +1197,9 @@ class _SessionComposerState extends State<SessionComposer> {
     final text = _controller.text.trim();
     if (text.isEmpty && _attachments.isEmpty) return null;
     return ComposerSubmission(
-      text: text,
+      // The single place a skill or agent command becomes its prompt, so
+      // every call site gets the expansion without repeating it.
+      text: renderComposerPrompt(text, widget.commands),
       attachments: List<PendingAttachment>.unmodifiable(_attachments),
     );
   }
@@ -1126,6 +1224,9 @@ class _SessionComposerState extends State<SessionComposer> {
 
   /// Sends, or holds the prompt for the running turn.
   Future<void> _runDefaultAction() async {
+    // Ahead of the queue branch: an app-owned command acts on the app, so it
+    // works while a turn runs and must never be held for one.
+    if (await _dispatchClientCommand()) return;
     final queue = widget.onQueue;
     if (widget.busy && queue != null) {
       final submission = _take();
