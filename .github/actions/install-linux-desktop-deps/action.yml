@@ -1,0 +1,67 @@
+name: Install Linux desktop dependencies
+description: >-
+  Install the GTK desktop toolchain, downloading the .deb files only when they
+  are not already cached. The package list expands to over a hundred packages
+  and fetching them from the Ubuntu mirror has stalled a single job for 13
+  minutes, against a normal cost of well under a minute.
+
+inputs:
+  extra-packages:
+    description: Space-separated packages appended to the shared list
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve the package list
+      id: pkgs
+      shell: bash
+      env:
+        EXTRA_PACKAGES: ${{ inputs.extra-packages }}
+      run: |
+        set -euo pipefail
+        # Sorted so that reordering the list file cannot miss the cache.
+        list="$( { cat "$GITHUB_WORKSPACE/.github/linux-desktop-packages.txt"
+                   tr ' ' '\n' <<< "$EXTRA_PACKAGES"; } \
+                 | sed '/^[[:space:]]*$/d' | sort -u | tr '\n' ' ')"
+        list="${list% }"
+        echo "list=$list" >> "$GITHUB_OUTPUT"
+        echo "hash=$(sha256sum <<< "$list" | cut -c1-16)" >> "$GITHUB_OUTPUT"
+        # Which packages are missing depends on what the runner image already
+        # ships, so the image identifies the cache. These are plain runner
+        # environment variables rather than expression contexts: reading them
+        # as ${{ env.ImageOS }} yields an empty string.
+        echo "image=${ImageOS:-unknown}-${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the cached packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/.apt-debs
+        # A miss on an image bump costs one normal download, not a broken
+        # install, because apt still resolves whatever the cache lacks.
+        key: >-
+          apt-${{ runner.os }}-${{ runner.arch }}-${{ steps.pkgs.outputs.image
+          }}-${{ steps.pkgs.outputs.hash }}
+
+    - name: Install the packages
+      shell: bash
+      env:
+        PACKAGE_LIST: ${{ steps.pkgs.outputs.list }}
+      run: |
+        set -euo pipefail
+        # apt needs `partial` to exist before it will use a custom archive dir.
+        sudo mkdir -p "$GITHUB_WORKSPACE/.apt-debs/partial"
+        # Fetching the index is the fast half (~11 MB, seconds); it is the
+        # package downloads that stall, and those come from the cache dir.
+        sudo apt-get update
+        # apt reuses any .deb already in the archive dir and downloads only the
+        # remainder, so a stale or partial cache degrades instead of failing.
+        # Letting apt drive also keeps unpack ordering and configuration
+        # correct, which a bare `dpkg -i` over the closure does not.
+        sudo apt-get install -y \
+          -o Dir::Cache::archives="$GITHUB_WORKSPACE/.apt-debs" \
+          -o APT::Keep-Downloaded-Packages=true \
+          $PACKAGE_LIST
+        # The runner user must own these for the post-job cache upload.
+        sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/.apt-debs"

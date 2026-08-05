@@ -1,0 +1,13 @@
+name: Set up Flutter
+description: >-
+  Install the pinned Flutter SDK. flutter-action already caches both the SDK and
+  the pub cache, so this only exists to keep the version pin in one place
+  instead of in every job.
+
+runs:
+  using: composite
+  steps:
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
