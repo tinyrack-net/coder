@@ -22,14 +22,21 @@ targets become possible the day Flutter ships those SDKs.
 
 | Platform | Artifacts | Channel |
 | --- | --- | --- |
-| Linux x64 and arm64 | `coder-cli-linux-<arch>.tar.gz` | GitHub Releases, `brew install tinyrack-net/tap/coder-cli` |
+| Linux x64 | `coder-cli-linux-x64.tar.gz` | GitHub Releases, `brew install tinyrack-net/tap/coder-cli` |
 | macOS x64 and arm64 | signed, notarized `coder-cli-macos-<arch>.tar.gz` | GitHub Releases, `brew install tinyrack-net/tap/coder-cli` |
 | Windows x64 | `coder-cli-windows-x64.zip` | GitHub Releases, `winget install tinyrack.coder-cli` |
 
-The CLI is plain Dart, so the `build-cli` job is not held to the platforms
-Flutter supports and covers arm64 Linux too. Since `coder-cli daemon start`
-hosts the daemon in-process, it carries the database and provider stack and is
-built with `dart build cli` rather than `dart compile exe`:
+The CLI's own code is plain Dart, but it shares a pub workspace with
+`coder_app`, so `dart pub get` resolves `flutter`, `flutter_test`, and
+`integration_test` from the Flutter SDK. `build-cli` therefore installs Flutter
+and is held to the platforms Flutter publishes an SDK for — which is why there
+is **no Linux arm64 CLI**, and why `shipworld.yaml` names only three platforms
+under `homebrew.platforms`. Taking `apps/coder_app` out of the workspace is
+what would bring that target back.
+
+Since `coder-cli daemon start` hosts the daemon in-process, it carries the
+database and provider stack and is built with `dart build cli` rather than
+`dart compile exe`:
 
 ```
 bundle/
@@ -43,11 +50,12 @@ executable resolves those two libraries from its sibling `lib/` directory. The
 sqlite3 build hook downloads a precompiled library, so the build step needs
 network access, not only `pub get`.
 
-The Formula requires all four of macOS x64/arm64 and Linux x64/arm64; dropping
-one target makes it unbuildable. Because the `coder-cli` target declares
-`payload.kind: directory`, shipworld generates a Formula that installs the
-unpacked bundle into `libexec` and symlinks `bin/coder-cli`; the symlink works
-because the executable's RPATH resolves against its real path.
+The Formula covers exactly the platforms listed in `homebrew.platforms`, so
+Linux arm64 is absent rather than pointing at an artifact no runner builds.
+Because the `coder-cli` target declares `payload.kind: directory`, shipworld
+generates a Formula that installs the unpacked bundle into `libexec` and
+symlinks `bin/coder-cli`; the symlink works because the executable's RPATH
+resolves against its real path.
 
 The Cask (`coder`) and the Formula (`coder-cli`) land in the same
 `tinyrack-net/homebrew-tap` commit.
@@ -103,7 +111,7 @@ daemon, and CLI.
 git clone https://github.com/tinyrack-net/dart-packages.git \
   .dart_tool/tinyrack-dart-packages
 git -C .dart_tool/tinyrack-dart-packages checkout \
-  709ca65307ee1e4ff2918464d157a4057b49281e
+  f1a2fe524b9025fdfb9d34a57073285ea368e11e
 dart pub get --directory .dart_tool/tinyrack-dart-packages
 
 # Writes the version files and commits; open the result as a pull request.
@@ -181,14 +189,14 @@ The CLI and its Formula need no Flutter toolchain:
 dart run melos build:cli
 ./dist/bundle/bin/coder_cli --version
 
-# The Formula wants one artifact per platform, named for its target.
+# The Formula wants one artifact per platform in `homebrew.platforms`.
 mkdir -p dist/homebrew
-for target in macos-arm64 macos-x64 linux-arm64 linux-x64; do
+for target in macos-arm64 macos-x64 linux-x64; do
   cp -R dist/bundle "dist/homebrew/coder-cli-$target"   # real builds per host
 done
 shipworld package homebrew formula coder-cli \
   --artifacts-dir dist/homebrew --output dist/coder-cli.rb
 ```
 
-Copying one binary across all four names only checks that the Formula renders;
+Copying one bundle across all three names only checks that the Formula renders;
 a real release builds each on its own runner.

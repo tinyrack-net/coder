@@ -22,7 +22,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: 3.44.8
-  TINYRACK_DART_PACKAGES_REF: 709ca65307ee1e4ff2918464d157a4057b49281e
+  TINYRACK_DART_PACKAGES_REF: f1a2fe524b9025fdfb9d34a57073285ea368e11e
   # wrangler-action defaults to 3.90.0, which predates Workers static assets
   # and rejects an `assets` config for having no script entry-point.
   WRANGLER_VERSION: 4.118.0
@@ -466,14 +466,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # The CLI is plain Dart, so unlike the desktop app it is not held to
-          # the platforms Flutter publishes an SDK for. Homebrew needs all four
-          # of these; dropping one makes the generated Formula unbuildable.
+          # The CLI is plain Dart, but it shares a pub workspace with
+          # `coder_app`, so resolving it needs the Flutter SDK and the job is
+          # held to the platforms Flutter publishes one for. That rules out
+          # Linux arm64, which is why `shipworld.yaml` lists the three
+          # platforms below under `homebrew.platforms`.
           - os: ubuntu-24.04
             target: linux-x64
-            platform: linux
-          - os: ubuntu-24.04-arm
-            target: linux-arm64
             platform: linux
           - os: macos-15-intel
             target: macos-x64
@@ -488,9 +487,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: dart-lang/setup-dart@v1
+      # Flutter rather than a standalone Dart SDK: `dart pub get` resolves the
+      # whole workspace, and `coder_app` pulls `flutter`, `flutter_test`, and
+      # `integration_test` from the Flutter SDK. Flutter 3.44.8 bundles the
+      # same Dart 3.12.2 this job used to install directly.
+      - uses: subosito/flutter-action@v2
         with:
-          sdk: 3.12.2
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
       - run: dart pub get --enforce-lockfile
       - name: Checkout Tinyrack Dart packages
         if: matrix.platform == 'macos'

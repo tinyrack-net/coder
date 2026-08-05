@@ -106,6 +106,14 @@ targets:
       entitlements: packages/coder_cli/macos/Release.entitlements
       bundle-id: net.tinyrack.coder.cli
     homebrew:
+      # No Linux arm64: building the CLI needs the Flutter SDK, because it
+      # shares a pub workspace with the app, and Flutter publishes no Linux
+      # arm64 SDK. Claiming it would point the Formula at an artifact the
+      # release does not carry.
+      platforms:
+        - macos-arm64
+        - macos-x64
+        - linux-x64
       formula-class: CoderCli
       # shipworld reads `<prefix>-<platform>-<arch>` bare executables from the
       # artifacts directory and installs them under this name.
