@@ -146,6 +146,19 @@ abstract interface class TimelineRepository {
 
   /// The resolveApproval public API member.
   Future<ApprovalRequestDto?> resolveApproval(String id, ApprovalStatus status);
+
+  /// Persists a question the agent raised, in its pending state.
+  Future<void> createUserQuestion(UserQuestionRequestDto request);
+
+  /// Reads one question, or null when it does not exist.
+  Future<UserQuestionRequestDto?> getUserQuestion(String id);
+
+  /// Resolves a pending question, returning null when it is already resolved.
+  Future<UserQuestionRequestDto?> answerUserQuestion(
+    String id,
+    UserQuestionStatus status,
+    List<UserQuestionAnswerDto> answers,
+  );
 }
 
 /// Public API exposed by this library.

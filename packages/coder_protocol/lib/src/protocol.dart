@@ -194,6 +194,9 @@ abstract final class RpcMethod {
   /// The approvalResolve public API member.
   static const String approvalResolve = 'approval.resolve';
 
+  /// Answers a pending agent question and unblocks its turn.
+  static const String userQuestionAnswer = 'userQuestion.answer';
+
   /// The timelineSubscribe public API member.
   static const String timelineSubscribe = 'timeline.subscribe';
 }
@@ -220,6 +223,9 @@ abstract final class RpcNotification {
 
   /// The approvalRequested public API member.
   static const String approvalRequested = 'approval.requested';
+
+  /// Reports that the agent is blocked on a question for the user.
+  static const String userQuestionRequested = 'userQuestion.requested';
 
   /// Reports OAuth authorization attempt state changes.
   static const String providerAuthUpdated = 'provider.auth.updated';

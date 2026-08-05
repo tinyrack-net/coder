@@ -655,6 +655,7 @@ const _$SessionStatusEnumMap = {
   SessionStatus.idle: 'idle',
   SessionStatus.running: 'running',
   SessionStatus.waitingForApproval: 'waitingForApproval',
+  SessionStatus.waitingForInput: 'waitingForInput',
   SessionStatus.waitingForSubagent: 'waitingForSubagent',
   SessionStatus.failed: 'failed',
   SessionStatus.closed: 'closed',
@@ -1106,6 +1107,95 @@ const _$ApprovalStatusEnumMap = {
   ApprovalStatus.approved: 'approved',
   ApprovalStatus.denied: 'denied',
   ApprovalStatus.cancelled: 'cancelled',
+};
+
+_UserQuestionOptionDto _$UserQuestionOptionDtoFromJson(
+  Map<String, dynamic> json,
+) => _UserQuestionOptionDto(
+  label: json['label'] as String,
+  description: json['description'] as String,
+);
+
+Map<String, dynamic> _$UserQuestionOptionDtoToJson(
+  _UserQuestionOptionDto instance,
+) => <String, dynamic>{
+  'label': instance.label,
+  'description': instance.description,
+};
+
+_UserQuestionItemDto _$UserQuestionItemDtoFromJson(Map<String, dynamic> json) =>
+    _UserQuestionItemDto(
+      id: json['id'] as String,
+      header: json['header'] as String,
+      question: json['question'] as String,
+      options: (json['options'] as List<dynamic>)
+          .map((e) => UserQuestionOptionDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$UserQuestionItemDtoToJson(
+  _UserQuestionItemDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'header': instance.header,
+  'question': instance.question,
+  'options': instance.options,
+};
+
+_UserQuestionAnswerDto _$UserQuestionAnswerDtoFromJson(
+  Map<String, dynamic> json,
+) => _UserQuestionAnswerDto(
+  questionId: json['questionId'] as String,
+  answer: json['answer'] as String,
+  isFreeForm: json['isFreeForm'] as bool,
+);
+
+Map<String, dynamic> _$UserQuestionAnswerDtoToJson(
+  _UserQuestionAnswerDto instance,
+) => <String, dynamic>{
+  'questionId': instance.questionId,
+  'answer': instance.answer,
+  'isFreeForm': instance.isFreeForm,
+};
+
+_UserQuestionRequestDto _$UserQuestionRequestDtoFromJson(
+  Map<String, dynamic> json,
+) => _UserQuestionRequestDto(
+  id: json['id'] as String,
+  sessionId: json['sessionId'] as String,
+  turnId: json['turnId'] as String,
+  toolCallId: json['toolCallId'] as String,
+  questions: (json['questions'] as List<dynamic>)
+      .map((e) => UserQuestionItemDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  status: $enumDecode(_$UserQuestionStatusEnumMap, json['status']),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  answers:
+      (json['answers'] as List<dynamic>?)
+          ?.map(
+            (e) => UserQuestionAnswerDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const <UserQuestionAnswerDto>[],
+);
+
+Map<String, dynamic> _$UserQuestionRequestDtoToJson(
+  _UserQuestionRequestDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'sessionId': instance.sessionId,
+  'turnId': instance.turnId,
+  'toolCallId': instance.toolCallId,
+  'questions': instance.questions,
+  'status': _$UserQuestionStatusEnumMap[instance.status]!,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'answers': instance.answers,
+};
+
+const _$UserQuestionStatusEnumMap = {
+  UserQuestionStatus.pending: 'pending',
+  UserQuestionStatus.answered: 'answered',
+  UserQuestionStatus.cancelled: 'cancelled',
 };
 
 _ServerInfoDto _$ServerInfoDtoFromJson(Map<String, dynamic> json) =>

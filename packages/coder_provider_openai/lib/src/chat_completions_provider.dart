@@ -101,7 +101,23 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
       switch (item) {
         case UserConversationItem(:final text, :final attachments):
           final content = StringBuffer(text);
+          final images = <Map<String, dynamic>>[];
           for (final attachment in attachments) {
+            final bytes = attachment.bytes;
+            if (_config.supportsImageInput &&
+                bytes != null &&
+                supportedContextImageTypes.contains(attachment.mimeType)) {
+              images.add(<String, dynamic>{
+                'type': 'image_url',
+                'image_url': <String, dynamic>{
+                  'url':
+                      'data:${attachment.mimeType};'
+                      'base64,${base64Encode(bytes)}',
+                  'detail': attachment.imageDetail ?? 'auto',
+                },
+              });
+              continue;
+            }
             if (content.isNotEmpty) content.writeln();
             content.write(
               '[Attachment id=${attachment.id}, '
@@ -112,7 +128,18 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
           }
           result.add(<String, dynamic>{
             'role': 'user',
-            'content': content.toString(),
+            // A message without images keeps the plain-string form, so the
+            // wire shape of every existing conversation is unchanged.
+            'content': images.isEmpty
+                ? content.toString()
+                : <Map<String, dynamic>>[
+                    if (content.isNotEmpty)
+                      <String, dynamic>{
+                        'type': 'text',
+                        'text': content.toString(),
+                      },
+                    ...images,
+                  ],
           });
         case AssistantConversationItem(:final text, :final toolCalls):
           result.add(<String, dynamic>{

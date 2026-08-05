@@ -520,6 +520,22 @@ Map<String, dynamic> _$ApprovalResolveParamsDtoToJson(
   'approved': instance.approved,
 };
 
+_UserQuestionAnswerParamsDto _$UserQuestionAnswerParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _UserQuestionAnswerParamsDto(
+  requestId: json['requestId'] as String,
+  answers: (json['answers'] as List<dynamic>)
+      .map((e) => UserQuestionAnswerDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$UserQuestionAnswerParamsDtoToJson(
+  _UserQuestionAnswerParamsDto instance,
+) => <String, dynamic>{
+  'requestId': instance.requestId,
+  'answers': instance.answers,
+};
+
 _TimelineSubscribeParamsDto _$TimelineSubscribeParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _TimelineSubscribeParamsDto(
@@ -1011,6 +1027,18 @@ _ApprovalResultDto _$ApprovalResultDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ApprovalResultDtoToJson(_ApprovalResultDto instance) =>
     <String, dynamic>{'approval': instance.approval};
+
+_UserQuestionResultDto _$UserQuestionResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _UserQuestionResultDto(
+  request: UserQuestionRequestDto.fromJson(
+    json['request'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$UserQuestionResultDtoToJson(
+  _UserQuestionResultDto instance,
+) => <String, dynamic>{'request': instance.request};
 
 _TimelineResultDto _$TimelineResultDtoFromJson(Map<String, dynamic> json) =>
     _TimelineResultDto(

@@ -107,6 +107,19 @@ void main() {
       () => approvals.primaryKey,
     ]);
 
+    final questions = UserQuestions();
+    _expectGeneratedDsl(<Object? Function()>[
+      () => questions.id,
+      () => questions.sessionId,
+      () => questions.turnId,
+      () => questions.toolCallId,
+      () => questions.questionsJson,
+      () => questions.answersJson,
+      () => questions.status,
+      () => questions.createdAt,
+      () => questions.primaryKey,
+    ]);
+
     final states = ProviderStates();
     _expectGeneratedDsl(<Object? Function()>[
       () => states.sessionId,
@@ -158,7 +171,7 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 11);
+      expect(database.schemaVersion, 12);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

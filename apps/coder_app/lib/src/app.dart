@@ -8,6 +8,7 @@ import 'package:coder_app/src/app_settings_page.dart';
 import 'package:coder_app/src/attachment_ports.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
+import 'package:coder_app/src/chat/chat_question_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/coder_icons.dart';
@@ -1648,6 +1649,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final busy =
         current.status == SessionStatus.running ||
         current.status == SessionStatus.waitingForApproval ||
+        current.status == SessionStatus.waitingForInput ||
         current.status == SessionStatus.waitingForSubagent;
     final conversation = ref.watch(
       conversationControllerProvider(widget.selection.hostId, current.id),
@@ -1676,12 +1678,13 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         (definition == null
             ? null
             : agentSelectionFor(definition, connections));
-    // Only the newest finished plan can still be acted on.
+    // Only the newest plan can still be acted on, and only in plan mode: the
+    // card asks whether to leave planning and carry the plan out.
     final lastPlan = items.whereType<ChatPlanProposal>().lastOrNull;
     final pendingPlan =
         !busy &&
+            current.mode == SessionMode.plan &&
             lastPlan != null &&
-            lastPlan.isComplete &&
             !_dismissedPlans.contains(lastPlan.key)
         ? lastPlan
         : null;
@@ -1752,6 +1755,13 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           ApprovalCard(
                             hostId: widget.selection.hostId,
                             approval: approval,
+                          ),
+                        for (final question
+                            in value?.questions.values ??
+                                const <UserQuestionRequestDto>[])
+                          ChatQuestionCard(
+                            hostId: widget.selection.hostId,
+                            request: question,
                           ),
                       ],
                     ),

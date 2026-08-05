@@ -36,19 +36,25 @@ void main() {
       'search_text',
       'attach_file',
       'read_attachment',
+      'update_plan',
+      'ask_user',
+      'view_image',
     });
   });
 
   test('resolution forces the always-on tools ahead of the chosen ones', () {
     expect(
-      resolveAgentToolIds(const <String>['run_command']),
+      resolveAgentToolIds(const <String>['exec_command']),
       <String>[
         'list_directory',
         'read_file',
         'search_text',
         'attach_file',
         'read_attachment',
-        'run_command',
+        'update_plan',
+        'ask_user',
+        'view_image',
+        'exec_command',
       ],
     );
     // An agent that still lists a read tool gets it once, not twice.
@@ -60,6 +66,9 @@ void main() {
         'search_text',
         'attach_file',
         'read_attachment',
+        'update_plan',
+        'ask_user',
+        'view_image',
         'mcp__repo__lint',
       ],
     );
@@ -71,6 +80,9 @@ void main() {
         'search_text',
         'attach_file',
         'read_attachment',
+        'update_plan',
+        'ask_user',
+        'view_image',
       ],
     );
   });
@@ -227,7 +239,7 @@ void main() {
       () async {
         final coder = await service.get('coder');
 
-        expect(coder.toolIds, <String>['apply_patch', 'run_command']);
+        expect(coder.toolIds, <String>['apply_patch', 'exec_command']);
         expect(
           resolveAgentToolIds(coder.toolIds),
           <String>[
@@ -236,8 +248,11 @@ void main() {
             'search_text',
             'attach_file',
             'read_attachment',
+            'update_plan',
+            'ask_user',
+            'view_image',
             'apply_patch',
-            'run_command',
+            'exec_command',
           ],
         );
       },

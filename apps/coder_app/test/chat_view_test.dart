@@ -104,12 +104,12 @@ void main() {
       await pump(tester, <TimelineEventDto>[
         event('tool.requested', <String, dynamic>{
           'callId': 'call-1',
-          'name': 'run_command',
+          'name': 'exec_command',
           'arguments': <String, dynamic>{'command': 'flutter test'},
         }),
         event('tool.completed', <String, dynamic>{
           'callId': 'call-1',
-          'name': 'run_command',
+          'name': 'exec_command',
           'output': r'{"exitCode":0,"output":"All tests passed!\ndone"}',
           'isError': false,
         }),
@@ -188,7 +188,7 @@ void main() {
           event('user.message', <String, dynamic>{'text': 'Run it'}),
           event('tool.requested', <String, dynamic>{
             'callId': 'call-1',
-            'name': 'run_command',
+            'name': 'exec_command',
             'arguments': <String, dynamic>{'command': 'sleep 5'},
           }),
         ],

@@ -5,6 +5,7 @@ import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
+import 'package:coder_app/src/chat/chat_question_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/controller.dart';
@@ -100,7 +101,7 @@ void main() {
       type: 'tool.requested',
       data: const <String, dynamic>{
         'callId': 'call-2',
-        'name': 'run_command',
+        'name': 'exec_command',
         'arguments': <String, dynamic>{'command': 'dart test'},
       },
       createdAt: now,
@@ -112,7 +113,7 @@ void main() {
       type: 'tool.completed',
       data: const <String, dynamic>{
         'callId': 'call-2',
-        'name': 'run_command',
+        'name': 'exec_command',
         'output': '{"exitCode":1,"output":"1 test failed"}',
         'isError': true,
       },
@@ -140,6 +141,31 @@ void main() {
       createdAt: now,
     ),
   ];
+  final question = UserQuestionRequestDto(
+    id: 'question',
+    sessionId: 'agent-1',
+    turnId: 'turn-1',
+    toolCallId: 'ask-call',
+    questions: const <UserQuestionItemDto>[
+      UserQuestionItemDto(
+        id: 'store',
+        header: 'Storage',
+        question: 'Which store should the cache use?',
+        options: <UserQuestionOptionDto>[
+          UserQuestionOptionDto(
+            label: 'SQLite',
+            description: 'Durable and already a dependency.',
+          ),
+          UserQuestionOptionDto(
+            label: 'In memory',
+            description: 'Fastest, lost on restart.',
+          ),
+        ],
+      ),
+    ],
+    status: UserQuestionStatus.pending,
+    createdAt: now,
+  );
   final planEvents = <TimelineEventDto>[
     TimelineEventDto(
       sessionId: 'agent-1',
@@ -155,14 +181,7 @@ void main() {
       turnId: 'turn-1',
       type: 'assistant.delta',
       data: const <String, dynamic>{
-        'text':
-            'Explored the parser and its tests.\n'
-            '<proposed_plan>\n'
-            '## Plan\n\n'
-            '1. Extract the tokenizer\n'
-            '2. Move the parser tests\n'
-            '3. Run `dart test`\n'
-            '</proposed_plan>\n',
+        'text': 'Explored the parser and its tests.',
       },
       createdAt: now,
     ),
@@ -170,8 +189,45 @@ void main() {
       sessionId: 'agent-1',
       sequence: 3,
       turnId: 'turn-1',
+      type: 'tool.requested',
+      data: const <String, dynamic>{
+        'callId': 'call-plan',
+        'name': 'update_plan',
+        'arguments': <String, dynamic>{
+          'plan': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'step': 'Extract the tokenizer',
+              'status': 'completed',
+            },
+            <String, dynamic>{
+              'step': 'Move the parser tests',
+              'status': 'in_progress',
+            },
+            <String, dynamic>{'step': 'Run dart test', 'status': 'pending'},
+          ],
+          'explanation': 'The tokenizer has no dependants, so it moves first.',
+        },
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 4,
+      turnId: 'turn-1',
+      type: 'tool.completed',
+      data: const <String, dynamic>{
+        'callId': 'call-plan',
+        'name': 'update_plan',
+        'output': '{}',
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 5,
+      turnId: 'turn-1',
       type: 'turn.completed',
-      data: const <String, dynamic>{'toolRounds': 0},
+      data: const <String, dynamic>{'toolRounds': 1},
       createdAt: now,
     ),
   ];
@@ -292,6 +348,32 @@ void main() {
               width: 460,
               height: 340,
               child: _chat(ThemeMode.dark, planEvents),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'question light',
+            child: SizedBox(
+              width: 460,
+              height: 400,
+              child: _material(
+                ThemeMode.light,
+                ProviderScope(
+                  child: ChatQuestionCard(hostId: 'server', request: question),
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'question dark',
+            child: SizedBox(
+              width: 460,
+              height: 400,
+              child: _material(
+                ThemeMode.dark,
+                ProviderScope(
+                  child: ChatQuestionCard(hostId: 'server', request: question),
+                ),
+              ),
             ),
           ),
           GoldenTestScenario(

@@ -1120,6 +1120,7 @@ final class ConversationState {
     this.timeline = const <TimelineEventDto>[],
     this.approvals = const <String, ApprovalRequestDto>{},
     this.queued = const <QueuedTurn>[],
+    this.questions = const <String, UserQuestionRequestDto>{},
   });
 
   /// The timeline public API member.
@@ -1131,15 +1132,20 @@ final class ConversationState {
   /// Prompts waiting for the active turn to finish, oldest first.
   final List<QueuedTurn> queued;
 
+  /// Questions the agent is blocked on, keyed by request id.
+  final Map<String, UserQuestionRequestDto> questions;
+
   /// The copyWith public API member.
   ConversationState copyWith({
     List<TimelineEventDto>? timeline,
     Map<String, ApprovalRequestDto>? approvals,
     List<QueuedTurn>? queued,
+    Map<String, UserQuestionRequestDto>? questions,
   }) => ConversationState(
     timeline: timeline ?? this.timeline,
     approvals: approvals ?? this.approvals,
     queued: queued ?? this.queued,
+    questions: questions ?? this.questions,
   );
 }
 
@@ -1168,6 +1174,7 @@ class ConversationController extends _$ConversationController {
     return ConversationState(
       timeline: timeline,
       approvals: _pendingApprovals(timeline),
+      questions: _pendingQuestions(timeline),
     );
   }
 
@@ -1313,6 +1320,24 @@ class ConversationController extends _$ConversationController {
     );
   }
 
+  /// Answers a pending agent question and lets its turn continue.
+  Future<void> answerUserQuestion(
+    String requestId,
+    List<UserQuestionAnswerDto> answers,
+  ) async {
+    final api = await _requireHostApi(ref, hostId);
+    await api.answerUserQuestion(requestId: requestId, answers: answers);
+    if (!ref.mounted) return;
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        questions: Map<String, UserQuestionRequestDto>.of(current.questions)
+          ..remove(requestId),
+      ),
+    );
+  }
+
   void _handleEvent(ClientEvent clientEvent) {
     if (!ref.mounted) return;
     final current = state.asData?.value;
@@ -1329,10 +1354,12 @@ class ConversationController extends _$ConversationController {
         if (event.type == 'approval.resolved') {
           approvals.remove(event.data['approvalId']);
         }
+        final timeline = <TimelineEventDto>[...current.timeline, event];
         state = AsyncData<ConversationState>(
           current.copyWith(
-            timeline: <TimelineEventDto>[...current.timeline, event],
+            timeline: timeline,
             approvals: approvals,
+            questions: _pendingQuestions(timeline),
           ),
         );
       case ApprovalRequestedClientEvent(:final approval):
@@ -1354,6 +1381,17 @@ class ConversationController extends _$ConversationController {
             (session.status == SessionStatus.idle ||
                 session.status == SessionStatus.failed)) {
           unawaited(drainQueue());
+        }
+      case UserQuestionRequestedClientEvent(:final request):
+        if (request.sessionId == _sessionId) {
+          state = AsyncData<ConversationState>(
+            current.copyWith(
+              questions: <String, UserQuestionRequestDto>{
+                ...current.questions,
+                request.id: request,
+              },
+            ),
+          );
         }
       case ProviderAuthUpdatedClientEvent():
       case AgentDefinitionsChangedClientEvent():
@@ -1379,6 +1417,45 @@ class ConversationController extends _$ConversationController {
       }
     }
     return approvals;
+  }
+
+  /// Questions still awaiting an answer, derived from the timeline.
+  ///
+  /// A question whose turn already ended is dropped: the daemon cancels it on
+  /// restart without writing an answer event, so leaving it would strand a card
+  /// the user can never resolve.
+  Map<String, UserQuestionRequestDto> _pendingQuestions(
+    List<TimelineEventDto> timeline,
+  ) {
+    final questions = <String, UserQuestionRequestDto>{};
+    final terminated = <String?>{
+      for (final event in timeline)
+        if (event.type == 'turn.completed' ||
+            event.type == 'turn.failed' ||
+            event.type == 'turn.cancelled')
+          event.turnId,
+    };
+    for (final event in timeline) {
+      final request = _questionFromTimeline(event);
+      if (request != null && request.status == UserQuestionStatus.pending) {
+        questions[request.id] = request;
+      }
+      if (event.type == 'userQuestion.answered') {
+        questions.remove(event.data['requestId']);
+      }
+    }
+    questions.removeWhere(
+      (_, request) => terminated.contains(request.turnId),
+    );
+    return questions;
+  }
+
+  UserQuestionRequestDto? _questionFromTimeline(TimelineEventDto event) {
+    if (event.type != 'userQuestion.requested') return null;
+    final raw = event.data['request'];
+    return raw is Map<dynamic, dynamic>
+        ? UserQuestionRequestDto.fromJson(Map<String, dynamic>.from(raw))
+        : null;
   }
 
   ApprovalRequestDto? _approvalFromTimeline(TimelineEventDto event) {

@@ -871,7 +871,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatApprovalAllow => 'Allow';
 
   @override
-  String get chatPlanTitle => 'Proposed plan';
+  String get chatPlanTitle => 'Plan';
+
+  @override
+  String toolExecRunning(int lines) {
+    return 'running · $lines lines';
+  }
+
+  @override
+  String toolImageLoaded(int bytes) {
+    return '$bytes bytes viewed';
+  }
+
+  @override
+  String get chatQuestionSubmit => 'Answer';
+
+  @override
+  String get chatQuestionOther => 'Other';
+
+  @override
+  String get chatQuestionOtherPlaceholder => 'Type your answer';
+
+  @override
+  String get chatPlanStepPending => 'not started';
+
+  @override
+  String get chatPlanStepInProgress => 'in progress';
+
+  @override
+  String get chatPlanStepCompleted => 'completed';
 
   @override
   String get chatPlanPrompt => 'Proceed with this plan?';

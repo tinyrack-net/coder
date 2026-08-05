@@ -22,6 +22,9 @@ typedef AgentToolsFactory =
       String turnId,
     );
 
+/// Resolves the pseudo-terminals one coder session owns.
+typedef ExecHostFactory = ExecSessionHost Function(String sessionId);
+
 /// SessionService defines a public contract.
 class SessionService {
   /// Creates a [SessionService].
@@ -38,8 +41,10 @@ class SessionService {
     required this._toolsFactory,
     required this._skills,
     required this._attachments,
+    required this._execHostFor,
   });
 
+  final ExecHostFactory _execHostFor;
   final SessionRepository _sessions;
   final AgentDefinitionService _definitions;
   final WorktreeRepository _worktrees;
@@ -56,6 +61,8 @@ class SessionService {
       <String, CancellationToken>{};
   final Map<String, Completer<ApprovalDecision>> _pendingApprovals =
       <String, Completer<ApprovalDecision>>{};
+  final Map<String, Completer<List<UserAnswer>>> _pendingQuestions =
+      <String, Completer<List<UserAnswer>>>{};
   final Map<String, Completer<AgentRunResult>> _turnCompletions =
       <String, Completer<AgentRunResult>>{};
 
@@ -105,6 +112,33 @@ class SessionService {
     );
     _emitSession(await _sessions.getById(sessionId));
 
+    Future<void> reportStatus(SessionStatus status, {String? error}) async {
+      final turnStatus = switch (status) {
+        SessionStatus.waitingForApproval => TurnStatus.waitingForApproval,
+        SessionStatus.waitingForInput => TurnStatus.waitingForInput,
+        SessionStatus.running => TurnStatus.running,
+        _ => null,
+      };
+      if (turnStatus != null) {
+        await _sessions.updateTurn(turnId, turnStatus);
+      }
+      final terminal =
+          status == SessionStatus.idle || status == SessionStatus.failed;
+      final updated = await _sessions.updateStatus(
+        sessionId,
+        status,
+        activeTurnId: terminal ? null : turnId,
+        error: error,
+      );
+      // A client that queues follow-ups starts the next turn the moment it
+      // sees the idle session, so the slot has to be free before the event
+      // goes out. The `finally` below stays as the cancellation backstop.
+      if (terminal && identical(_activeTurns[sessionId], cancellation)) {
+        _activeTurns.remove(sessionId);
+      }
+      _emitSession(updated);
+    }
+
     final permissionMode = await _effectivePermission(session, definition);
     // Skills resolve against the worktree, so a branch carries the project
     // skills that were committed to it.
@@ -112,6 +146,18 @@ class SessionService {
     final skillSummaries = skills.summaries();
     final tools = <AgentTool>[
       ..._toolsFactory(definition.toolIds, worktree.path, sessionId, turnId),
+      AskUserTool(
+        coordinator: _DatabaseUserQuestionCoordinator(
+          timeline: _timeline,
+          events: _events,
+          pending: _pendingQuestions,
+          ids: _ids,
+          clock: _clock,
+          sessionId: sessionId,
+          turnId: turnId,
+          reportStatus: reportStatus,
+        ),
+      ),
       if (skillSummaries.isNotEmpty) SkillTool(skills),
       if (definition.mode == AgentMode.primary &&
           definition.callableAgentIds.isNotEmpty)
@@ -140,33 +186,15 @@ class SessionService {
         type: type,
         data: data,
       ),
-      onStatus: (status, {error}) async {
-        final turnStatus = switch (status) {
-          SessionStatus.waitingForApproval => TurnStatus.waitingForApproval,
-          SessionStatus.running => TurnStatus.running,
-          _ => null,
-        };
-        if (turnStatus != null) {
-          await _sessions.updateTurn(turnId, turnStatus);
-        }
-        final terminal =
-            status == SessionStatus.idle || status == SessionStatus.failed;
-        final updated = await _sessions.updateStatus(
-          sessionId,
-          status,
-          activeTurnId: terminal ? null : turnId,
-          error: error,
-        );
-        // A client that queues follow-ups starts the next turn the moment it
-        // sees the idle session, so the slot has to be free before the event
-        // goes out. The `finally` below stays as the cancellation backstop.
-        if (terminal && identical(_activeTurns[sessionId], cancellation)) {
-          _activeTurns.remove(sessionId);
-        }
-        _emitSession(updated);
-      },
+      onStatus: reportStatus,
       onProviderItems: (items) =>
           _timeline.appendProviderItems(sessionId, items),
+      // A shell the user allowed stays writable, so an interactive session
+      // does not raise a dialog for every keystroke.
+      policyFactory: (mode) => ExecSessionApprovalPolicy(
+        DefaultApprovalPolicy(mode),
+        _execHostFor(sessionId),
+      ),
     );
 
     final turnAttachments = await _attachments.resolveAll(
@@ -382,6 +410,54 @@ class SessionService {
       data: <String, dynamic>{'approvalId': approval.id, 'status': status.name},
     );
     return approval;
+  }
+
+  /// Answers a pending agent question and lets its turn continue.
+  Future<UserQuestionRequestDto> answerUserQuestion(
+    String requestId,
+    List<UserQuestionAnswerDto> answers,
+  ) async {
+    // Validate before writing: a rejected answer must leave the question
+    // pending, or the blocked turn would never be answerable again.
+    final pending = await _timeline.getUserQuestion(requestId);
+    if (pending == null || pending.status != UserQuestionStatus.pending) {
+      throw StateError('Question is not pending: $requestId');
+    }
+    final missing = pending.questions
+        .map((question) => question.id)
+        .toSet()
+        .difference(answers.map((answer) => answer.questionId).toSet());
+    if (missing.isNotEmpty) {
+      throw StateError('Unanswered questions: ${missing.join(', ')}');
+    }
+    final request = await _timeline.answerUserQuestion(
+      requestId,
+      UserQuestionStatus.answered,
+      answers,
+    );
+    if (request == null) {
+      throw StateError('Question is not pending: $requestId');
+    }
+    _pendingQuestions.remove(requestId)?.complete(<UserAnswer>[
+      for (final answer in answers)
+        UserAnswer(
+          questionId: answer.questionId,
+          answer: answer.answer,
+          isFreeForm: answer.isFreeForm,
+        ),
+    ]);
+    await _appendEvent(
+      sessionId: request.sessionId,
+      turnId: request.turnId,
+      type: 'userQuestion.answered',
+      data: <String, dynamic>{
+        'requestId': request.id,
+        'answers': answers
+            .map((answer) => answer.toJson())
+            .toList(growable: false),
+      },
+    );
+    return request;
   }
 
   Future<void> _appendEvent({
@@ -603,6 +679,103 @@ final class _DelegateAgentTool extends AgentTool {
     prompt: arguments['prompt'] as String,
     cancellation: context.cancellation,
   );
+}
+
+class _DatabaseUserQuestionCoordinator implements UserQuestionCoordinator {
+  _DatabaseUserQuestionCoordinator({
+    required this.timeline,
+    required this.events,
+    required this.pending,
+    required this.ids,
+    required this.clock,
+    required this.sessionId,
+    required this.turnId,
+    required this.reportStatus,
+  });
+
+  final TimelineRepository timeline;
+  final DaemonEventSink events;
+  final Map<String, Completer<List<UserAnswer>>> pending;
+  final IdGenerator ids;
+  final Clock clock;
+  final String sessionId;
+  final String turnId;
+  final Future<void> Function(SessionStatus status) reportStatus;
+
+  @override
+  Future<List<UserAnswer>> ask(
+    String callId,
+    List<UserQuestion> questions,
+    CancellationToken cancellation,
+  ) async {
+    final request = UserQuestionRequestDto(
+      id: ids.generate(),
+      sessionId: sessionId,
+      turnId: turnId,
+      toolCallId: callId,
+      questions: <UserQuestionItemDto>[
+        for (final question in questions)
+          UserQuestionItemDto(
+            id: question.id,
+            header: question.header,
+            question: question.question,
+            options: <UserQuestionOptionDto>[
+              for (final option in question.options)
+                UserQuestionOptionDto(
+                  label: option.label,
+                  description: option.description,
+                ),
+            ],
+          ),
+      ],
+      status: UserQuestionStatus.pending,
+      createdAt: clock.nowUtc(),
+    );
+    final completer = Completer<List<UserAnswer>>();
+    pending[request.id] = completer;
+    await timeline.createUserQuestion(request);
+    final timelineEvent = await timeline.append(
+      sessionId: sessionId,
+      turnId: turnId,
+      type: 'userQuestion.requested',
+      data: <String, dynamic>{'request': request.toJson()},
+    );
+    events(
+      WireEnvelope(
+        type: RpcNotification.timelineEvent,
+        payload: timelineEvent.toJson(),
+      ),
+    );
+    events(
+      WireEnvelope(
+        type: RpcNotification.userQuestionRequested,
+        payload: request.toJson(),
+      ),
+    );
+    // The runner does not know a tool is blocking, so the waiting state is set
+    // here and cleared once an answer arrives.
+    await reportStatus(SessionStatus.waitingForInput);
+    cancellation.onCancel(() {
+      final active = pending.remove(request.id);
+      if (active != null && !active.isCompleted) {
+        active.completeError(const AgentCancelledException());
+      }
+      unawaited(
+        timeline.answerUserQuestion(
+          request.id,
+          UserQuestionStatus.cancelled,
+          const <UserQuestionAnswerDto>[],
+        ),
+      );
+    });
+    try {
+      return await completer.future;
+    } finally {
+      if (!cancellation.isCancelled) {
+        await reportStatus(SessionStatus.running);
+      }
+    }
+  }
 }
 
 class _DatabaseApprovalCoordinator implements ApprovalCoordinator {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/attachment_ports.dart';
+import 'package:coder_app/src/chat/chat_plan.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -124,7 +125,11 @@ class ChatPlanActions extends ConsumerWidget {
   }
 
   Future<void> _startFreshSession(WidgetRef ref) async {
-    final prompt = '$freshSessionPlanPreamble\n\n${proposal.markdown}';
+    final markdown = ChatPlanUpdate(
+      steps: proposal.steps,
+      explanation: proposal.explanation,
+    ).toMarkdown();
+    final prompt = '$freshSessionPlanPreamble\n\n$markdown';
     // Dismiss only after the work is done; this widget owns the `ref` used by
     // `startSessionWithPrompt` and unmounts as soon as the card is dismissed.
     final created = await startSessionWithPrompt(
@@ -132,7 +137,7 @@ class ChatPlanActions extends ConsumerWidget {
       selection: selection,
       agentDefinitionId: session.agentDefinitionId,
       model: session.model,
-      title: deriveSessionTitle(proposal.markdown),
+      title: deriveSessionTitle(proposal.steps.first.step),
       prompt: prompt,
     );
     onDismiss();

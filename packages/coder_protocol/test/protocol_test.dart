@@ -1111,6 +1111,87 @@ void main() {
     );
   });
 
+  test(
+    'user question contracts round-trip and expose a waiting status',
+    tags: const <String>['feature_test__turn_question__contract'],
+    () {
+      final question = UserQuestionRequestDto(
+        id: 'question',
+        sessionId: agent.id,
+        turnId: 'turn',
+        toolCallId: 'call',
+        questions: const <UserQuestionItemDto>[
+          UserQuestionItemDto(
+            id: 'q1',
+            header: 'Storage',
+            question: 'Which store should the cache use?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(
+                label: 'SQLite',
+                description: 'Durable and already a dependency.',
+              ),
+              UserQuestionOptionDto(
+                label: 'In memory',
+                description: 'Fastest, lost on restart.',
+              ),
+            ],
+          ),
+        ],
+        status: UserQuestionStatus.pending,
+        createdAt: now,
+      );
+      _roundTrip(
+        question,
+        (value) => value.toJson(),
+        UserQuestionRequestDto.fromJson,
+      );
+      _roundTrip(
+        question.copyWith(
+          status: UserQuestionStatus.answered,
+          answers: const <UserQuestionAnswerDto>[
+            UserQuestionAnswerDto(
+              questionId: 'q1',
+              answer: 'Postgres',
+              isFreeForm: true,
+            ),
+          ],
+        ),
+        (value) => value.toJson(),
+        UserQuestionRequestDto.fromJson,
+      );
+      _roundTrip(
+        const UserQuestionAnswerParamsDto(
+          requestId: 'question',
+          answers: <UserQuestionAnswerDto>[
+            UserQuestionAnswerDto(
+              questionId: 'q1',
+              answer: 'SQLite',
+              isFreeForm: false,
+            ),
+          ],
+        ),
+        (value) => value.toJson(),
+        UserQuestionAnswerParamsDto.fromJson,
+      );
+      _roundTrip(
+        UserQuestionResultDto(request: question),
+        (value) => value.toJson(),
+        UserQuestionResultDto.fromJson,
+      );
+
+      // A blocked turn is a distinct state from one blocked on an approval.
+      expect(
+        SessionDto.fromJson(
+          agent.copyWith(status: SessionStatus.waitingForInput).toJson(),
+        ).status,
+        SessionStatus.waitingForInput,
+      );
+      expect(TurnStatus.values, contains(TurnStatus.waitingForInput));
+      expect(RpcMethod.userQuestionAnswer, 'userQuestion.answer');
+      expect(RpcNotification.userQuestionRequested, 'userQuestion.requested');
+    },
+  );
+
   test('malformed required values and protocol envelopes are rejected', () {
     expect(
       () => WorkspaceDto.fromJson(const <String, dynamic>{'id': 'missing'}),
@@ -1158,6 +1239,7 @@ void main() {
       ...TurnStatus.values,
       ...PermissionMode.values,
       ...ApprovalStatus.values,
+      ...UserQuestionStatus.values,
       ...ToolRisk.values,
       ...McpConfigScope.values,
       ...McpTransportKind.values,

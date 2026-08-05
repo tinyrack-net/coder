@@ -785,6 +785,318 @@ void main() {
   );
 
   test(
+    'exec_command drives a real pseudo-terminal across two tool calls',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-exec-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-exec-workspace-',
+      );
+      const bearerToken = 'exec-command-token-0123456789abcdef012';
+      final provider = _ExecProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'exec-command-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final coder = (await client.listAgentDefinitions()).single;
+      await client.updateAgentDefinition(
+        coder.copyWith(permissionMode: PermissionMode.workspaceWrite),
+        expectedContentHash: coder.contentHash,
+      );
+      final session = await client.createSession(
+        id: 'exec-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Exec',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+      // Running a command always asks; approving the first one is what makes
+      // every later write into that same session pass without another dialog.
+      final approvals = <String>[];
+      final approvalSubscription = client.events
+          .where((event) => event is ApprovalRequestedClientEvent)
+          .cast<ApprovalRequestedClientEvent>()
+          .listen((event) {
+            approvals.add(event.approval.toolName);
+            unawaited(
+              client.resolveApproval(
+                approvalId: event.approval.id,
+                approved: true,
+              ),
+            );
+          });
+      addTearDown(approvalSubscription.cancel);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'exec-turn',
+        prompt: 'Run the shell',
+      );
+
+      // A shell that outlives the first call hands back an id the second call
+      // writes into, and the echoed text proves the same PTY answered.
+      final seen = await provider.echoed.future.timeout(_eventTimeout);
+      expect(seen, contains('tinyrack-exec-probe'));
+      expect(approvals, <String>['exec_command']);
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+    },
+    tags: const <String>['feature_test__tool_exec_session__verticalSlice'],
+    // The pseudo-terminal is a POSIX shell; Windows uses PowerShell instead.
+    testOn: '!windows',
+  );
+
+  test(
+    'view_image puts a hydrated workspace image into the model context',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-image-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-image-workspace-',
+      );
+      // A one-pixel PNG, valid down to its magic bytes.
+      await File(p.join(workspace.path, 'shot.png')).writeAsBytes(<int>[
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, //
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+      ]);
+      const bearerToken = 'view-image-token-0123456789abcdef01234';
+      final provider = _ViewImageProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'view-image-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final session = await client.createSession(
+        id: 'image-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Image',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'image-turn',
+        prompt: 'Look at the screenshot',
+      );
+
+      final request = await provider.secondRequest.future.timeout(
+        _eventTimeout,
+      );
+      final injected = request.history
+          .whereType<UserConversationItem>()
+          .last
+          .attachments
+          .single;
+      expect(injected.mimeType, 'image/png');
+      expect(injected.imageDetail, 'high');
+      // The bytes are hydrated, so the provider can actually encode the image.
+      expect(injected.bytes, isNotNull);
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+    },
+    tags: const <String>['feature_test__tool_image_context__verticalSlice'],
+  );
+
+  test(
+    'an agent question blocks the turn until the user answers it',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-ask-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-ask-workspace-',
+      );
+      const bearerToken = 'ask-user-token-0123456789abcdef0123456';
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: _AskingProvider(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'ask-user-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final session = await client.createSession(
+        id: 'ask-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Ask',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+
+      final questionFuture = client.events
+          .where((event) => event is UserQuestionRequestedClientEvent)
+          .cast<UserQuestionRequestedClientEvent>()
+          .map((event) => event.request)
+          .first
+          .timeout(_eventTimeout);
+      final waitingFuture = client.events
+          .where((event) => event is SessionUpdatedClientEvent)
+          .cast<SessionUpdatedClientEvent>()
+          .map((event) => event.session)
+          .firstWhere(
+            (updated) =>
+                updated.id == session.id &&
+                updated.status == SessionStatus.waitingForInput,
+          )
+          .timeout(_eventTimeout);
+      final completedFuture = client.events
+          .where((event) => event is TimelineClientEvent)
+          .cast<TimelineClientEvent>()
+          .map((event) => event.event)
+          .firstWhere(
+            (event) =>
+                event.sessionId == session.id && event.type == 'turn.completed',
+          )
+          .timeout(_eventTimeout);
+
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'ask-turn',
+        prompt: 'Decide the store',
+      );
+
+      final question = await questionFuture;
+      expect(question.toolCallId, 'ask-call');
+      expect(question.status, UserQuestionStatus.pending);
+      expect(question.questions.single.header, 'Storage');
+      expect(question.questions.single.options, hasLength(2));
+      await waitingFuture;
+
+      // Every question must be answered before the turn may continue.
+      await expectLater(
+        client.answerUserQuestion(
+          requestId: question.id,
+          answers: const <UserQuestionAnswerDto>[],
+        ),
+        throwsA(isA<CoderClientException>()),
+      );
+
+      const answers = <UserQuestionAnswerDto>[
+        UserQuestionAnswerDto(
+          questionId: 'store',
+          answer: 'Postgres',
+          isFreeForm: true,
+        ),
+      ];
+      final answered = await client.answerUserQuestion(
+        requestId: question.id,
+        answers: answers,
+      );
+      expect(answered.status, UserQuestionStatus.answered);
+      expect(answered.answers, answers);
+
+      // The same question cannot be answered twice.
+      await expectLater(
+        client.answerUserQuestion(requestId: question.id, answers: answers),
+        throwsA(isA<CoderClientException>()),
+      );
+
+      await completedFuture;
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+
+      final events = await client.subscribeTimeline(session.id);
+      expect(
+        events.map((event) => event.type),
+        containsAll(<String>[
+          'userQuestion.requested',
+          'userQuestion.answered',
+        ]),
+      );
+      final result = events.firstWhere(
+        (event) =>
+            event.type == 'tool.completed' && event.data['name'] == 'ask_user',
+      );
+      // The chosen answer reaches the model as the tool's output.
+      expect(result.data['output'], contains('Postgres'));
+    },
+    tags: const <String>['feature_test__turn_question__verticalSlice'],
+  );
+
+  test(
     'a server that cannot start leaves the daemon and its turns working',
     () async {
       final home = await Directory.systemTemp.createTemp(
@@ -1978,6 +2290,67 @@ class _PatchProvider implements ModelProvider {
   }
 }
 
+class _AskingProvider implements ModelProvider {
+  var _round = 0;
+
+  @override
+  String get id => 'fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    if (_round++ == 0) {
+      const arguments = <String, dynamic>{
+        'questions': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'store',
+            'header': 'Storage',
+            'question': 'Which store should the cache use?',
+            'options': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'label': 'SQLite',
+                'description': 'Durable and already a dependency.',
+              },
+              <String, dynamic>{
+                'label': 'In memory',
+                'description': 'Fastest, lost on restart.',
+              },
+            ],
+          },
+        ],
+      };
+      yield const ModelFunctionCall(
+        callId: 'ask-call',
+        name: 'ask_user',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'ask-call',
+              name: 'ask_user',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    final answer = request.history
+        .whereType<ToolResultConversationItem>()
+        .firstWhere((item) => item.callId == 'ask-call')
+        .output;
+    yield ModelTextDelta('Using $answer');
+    yield ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Using $answer'),
+    );
+  }
+}
+
 final class _AttachmentProvider implements ModelProvider {
   final Completer<ModelRequest> firstRequest = Completer<ModelRequest>();
 
@@ -2016,6 +2389,142 @@ final class _AttachmentProvider implements ModelProvider {
     }
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'Attached.'),
+    );
+  }
+}
+
+class _ExecProvider implements ModelProvider {
+  /// Completes with the shell's output once stdin has been echoed back.
+  final Completer<String> echoed = Completer<String>();
+
+  var _round = 0;
+  String? _sessionId;
+
+  @override
+  String get id => 'exec-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    Map<String, dynamic> resultFor(String callId) => Map<String, dynamic>.from(
+      jsonDecode(
+            request.history
+                .whereType<ToolResultConversationItem>()
+                .firstWhere((item) => item.callId == callId)
+                .output,
+          )
+          as Map,
+    );
+
+    if (_round++ == 0) {
+      // `cat` keeps running with no arguments, so the session survives the
+      // call and the next one can write into it.
+      const arguments = <String, dynamic>{
+        'command': 'cat',
+        'yield_time_ms': 300,
+        'max_output_tokens': null,
+      };
+      yield const ModelFunctionCall(
+        callId: 'exec-call',
+        name: 'exec_command',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'exec-call',
+              name: 'exec_command',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (_round == 2) {
+      _sessionId = resultFor('exec-call')['sessionId'] as String?;
+      final arguments = <String, dynamic>{
+        'session_id': _sessionId,
+        'chars': 'tinyrack-exec-probe\n',
+        'yield_time_ms': 1000,
+        'max_output_tokens': null,
+      };
+      yield ModelFunctionCall(
+        callId: 'stdin-call',
+        name: 'write_stdin',
+        arguments: arguments,
+      );
+      yield ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'stdin-call',
+              name: 'write_stdin',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (!echoed.isCompleted) {
+      echoed.complete(resultFor('stdin-call')['output'] as String);
+    }
+    yield const ModelTextDelta('Done.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Done.'),
+    );
+  }
+}
+
+final class _ViewImageProvider implements ModelProvider {
+  /// The request that carried the image back into the model's context.
+  final Completer<ModelRequest> secondRequest = Completer<ModelRequest>();
+
+  @override
+  String get id => 'view-image-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    final viewed = request.history.whereType<ToolResultConversationItem>().any(
+      (item) => item.callId == 'view-call',
+    );
+    if (!viewed) {
+      const arguments = <String, dynamic>{
+        'path': 'shot.png',
+        'detail': 'high',
+      };
+      yield const ModelFunctionCall(
+        callId: 'view-call',
+        name: 'view_image',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'view-call',
+              name: 'view_image',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (!secondRequest.isCompleted) secondRequest.complete(request);
+    yield const ModelTextDelta('I can see it.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'I can see it.'),
     );
   }
 }

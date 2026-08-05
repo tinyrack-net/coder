@@ -1064,9 +1064,43 @@
   "@chatApprovalAllow": {
     "description": "Approves a tool call."
   },
-  "chatPlanTitle": "Proposed plan",
+  "chatPlanTitle": "Plan",
   "@chatPlanTitle": {
     "description": "Title of the plan card."
+  },
+  "toolExecRunning": "running · {lines} lines",
+  "@toolExecRunning": {
+    "description": "Result line while a pseudo-terminal session is still running.",
+    "placeholders": {"lines": {"type": "int"}}
+  },
+  "toolImageLoaded": "{bytes} bytes viewed",
+  "@toolImageLoaded": {
+    "description": "Result line of a view_image tool call.",
+    "placeholders": {"bytes": {"type": "int"}}
+  },
+  "chatQuestionSubmit": "Answer",
+  "@chatQuestionSubmit": {
+    "description": "Button that submits answers to the agent's questions."
+  },
+  "chatQuestionOther": "Other",
+  "@chatQuestionOther": {
+    "description": "Choice that lets the user type a free-form answer."
+  },
+  "chatQuestionOtherPlaceholder": "Type your answer",
+  "@chatQuestionOtherPlaceholder": {
+    "description": "Placeholder of the free-form answer field."
+  },
+  "chatPlanStepPending": "not started",
+  "@chatPlanStepPending": {
+    "description": "Screen-reader status of a plan step that has not started."
+  },
+  "chatPlanStepInProgress": "in progress",
+  "@chatPlanStepInProgress": {
+    "description": "Screen-reader status of the plan step being worked on."
+  },
+  "chatPlanStepCompleted": "completed",
+  "@chatPlanStepCompleted": {
+    "description": "Screen-reader status of a finished plan step."
   },
   "chatPlanPrompt": "Proceed with this plan?",
   "@chatPlanPrompt": {

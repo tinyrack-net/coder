@@ -310,6 +310,10 @@ final class FakeCoderApi implements CoderApi {
   final List<String> cancelledAuthAttempts = <String>[];
 
   /// Approval decisions received by the fake.
+  /// Answers submitted through [answerUserQuestion], in order.
+  final List<({String id, List<UserQuestionAnswerDto> answers})>
+  questionAnswers = <({String id, List<UserQuestionAnswerDto> answers})>[];
+
   final List<({String id, bool approved})> approvalDecisions =
       <({String id, bool approved})>[];
 
@@ -861,9 +865,9 @@ final class FakeCoderApi implements CoderApi {
       alwaysOn: true,
     ),
     AgentToolDefinitionDto(
-      id: 'run_command',
-      name: 'run_command',
-      description: 'Run a command.',
+      id: 'exec_command',
+      name: 'exec_command',
+      description: 'Run a command in a pseudo-terminal.',
       risk: ToolRisk.command,
     ),
   ];
@@ -1281,6 +1285,24 @@ final class FakeCoderApi implements CoderApi {
     required bool approved,
   }) async {
     approvalDecisions.add((id: approvalId, approved: approved));
+  }
+
+  @override
+  Future<UserQuestionRequestDto> answerUserQuestion({
+    required String requestId,
+    required List<UserQuestionAnswerDto> answers,
+  }) async {
+    questionAnswers.add((id: requestId, answers: answers));
+    return UserQuestionRequestDto(
+      id: requestId,
+      sessionId: 'session',
+      turnId: 'turn',
+      toolCallId: 'ask-call',
+      questions: const <UserQuestionItemDto>[],
+      status: UserQuestionStatus.answered,
+      createdAt: DateTime.utc(2026, 8, 3),
+      answers: answers,
+    );
   }
 
   @override

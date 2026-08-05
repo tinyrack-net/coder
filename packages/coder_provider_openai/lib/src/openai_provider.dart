@@ -186,7 +186,7 @@ class OpenAIResponsesProvider implements ModelProvider {
                 'type': 'input_image',
                 'image_url':
                     'data:${attachment.mimeType};base64,${base64Encode(bytes)}',
-                'detail': 'auto',
+                'detail': attachment.imageDetail ?? 'auto',
               });
             } else if (_config.supportsFileInput &&
                 bytes != null &&
@@ -248,12 +248,7 @@ class OpenAIResponsesProvider implements ModelProvider {
     return result;
   }
 
-  static const Set<String> _supportedImageTypes = <String>{
-    'image/png',
-    'image/jpeg',
-    'image/webp',
-    'image/gif',
-  };
+  static const Set<String> _supportedImageTypes = supportedContextImageTypes;
 
   static const int _maxDirectFileBytes = 50 * 1024 * 1024;
 
