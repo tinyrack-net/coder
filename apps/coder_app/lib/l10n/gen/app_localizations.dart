@@ -836,6 +836,12 @@ abstract class AppLocalizations {
   /// **'The selected port is already in use.'**
   String get hostErrorEmbeddedPortInUse;
 
+  /// Connection failure in a browser for a daemon on the local machine or network, where the browser does not report whether the daemon was down or the Local Network Access permission was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the daemon. Check that it is running, and that you allowed this site to access your local network.'**
+  String get hostErrorLocalNetworkUnreachable;
+
   /// Title of the standalone daemon settings page.
   ///
   /// In en, this message translates to:

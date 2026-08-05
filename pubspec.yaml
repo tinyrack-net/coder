@@ -74,10 +74,15 @@ melos:
     verify:debug:
       run: dart run melos test:e2e:linux
     run:daemon:
-      run: dart run packages/coder_cli/bin/coder_cli.dart daemon start
+      # Built, not `dart run`: the CLI hosts the daemon and links the sqlite3
+      # and PTY code assets, which only `dart build cli` produces. Under `dart
+      # run` the build hooks never execute and startup fails on a missing
+      # `sqlite3_initialize`.
+      run: dart run melos build:cli && dist/bundle/bin/coder_cli daemon start
       stdio: inherit
     run:cli:
-      run: dart run packages/coder_cli/bin/coder_cli.dart
+      # Built for the same reason as `run:daemon`.
+      run: dart run melos build:cli && dist/bundle/bin/coder_cli
       stdio: inherit
     build:cli:
       # `dart build cli` rather than `dart compile exe`: the CLI now hosts the

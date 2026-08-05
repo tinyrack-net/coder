@@ -463,6 +463,10 @@
   "@hostErrorEmbeddedPortInUse": {
     "description": "Embedded daemon startup failure when its listener port is occupied."
   },
+  "hostErrorLocalNetworkUnreachable": "Could not reach the daemon. Check that it is running, and that you allowed this site to access your local network.",
+  "@hostErrorLocalNetworkUnreachable": {
+    "description": "Connection failure in a browser for a daemon on the local machine or network, where the browser does not report whether the daemon was down or the Local Network Access permission was refused."
+  },
   "appSettingsTitle": "App settings",
   "@appSettingsTitle": {
     "description": "Title of the standalone daemon settings page."

@@ -33,6 +33,13 @@ enum HostFailureReason {
 
   /// The configured embedded-daemon port is owned by another process.
   embeddedPortInUse,
+
+  /// A browser could not reach a daemon on the local machine or network.
+  ///
+  /// The cause is either a daemon that is not running or a refused Local
+  /// Network Access permission; a browser reports both identically, so the
+  /// message names both. See `docs/remote-daemon.md`.
+  localNetworkUnreachable,
 }
 
 /// Why a factory reset could not finish.

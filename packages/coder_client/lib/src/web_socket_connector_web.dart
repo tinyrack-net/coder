@@ -1,3 +1,4 @@
+import 'package:coder_client/src/client.dart';
 import 'package:coder_client/src/web_socket_connector.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -28,7 +29,20 @@ final class WebWebSocketConnector implements WebSocketConnector {
         if (token != null) encodeWebSocketTokenProtocol(token),
       ],
     );
-    await channel.ready;
+    try {
+      await channel.ready;
+    } on Exception {
+      // A browser reports every WebSocket failure identically so that a page
+      // cannot scan the local network, so a refused daemon and a refused Local
+      // Network Access permission are indistinguishable here. Report the
+      // address instead of guessing between them.
+      if (!targetsLocalNetwork(uri)) rethrow;
+      throw CoderClientException(
+        'Could not reach a daemon at ${uri.host}:${uri.port}.',
+        code: localNetworkUnreachableCode,
+        retryable: true,
+      );
+    }
     return channel;
   }
 }

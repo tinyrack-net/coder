@@ -1012,6 +1012,52 @@ void main() {
       expect(lateApi.isClosed, isTrue);
     },
   );
+  test(
+    'an unreachable local-network daemon reports its own failure reason',
+    () async {
+      final profile = RemoteDaemonProfile(
+        id: 'remote',
+        label: 'Remote',
+        websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+        // Auto-connect would retry this retryable failure forever.
+        autoConnect: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[profile],
+        tokens: const <String, String>{'remote': 'token'},
+      );
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _SequenceClientFactory(<Future<CoderApi> Function()>[
+          () => Future<CoderApi>.error(
+            const CoderClientException(
+              'Could not reach a daemon at 127.0.0.1:7337.',
+              code: localNetworkUnreachableCode,
+              retryable: true,
+            ),
+          ),
+        ]),
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'web',
+      );
+      addTearDown(registry.close);
+      await registry.load();
+      await registry.reconnect('remote');
+      await _flush();
+
+      final runtime = registry.value.runtimes['remote']!;
+      expect(runtime.errorReason, HostFailureReason.localNetworkUnreachable);
+      // The message is a fallback only; the UI localizes the reason instead.
+      expect(runtime.error, 'Could not reach a daemon at 127.0.0.1:7337.');
+    },
+    tags: const <String>['feature_test__daemon_management__unit'],
+  );
+
   test('sidebar collapse is persisted through the settings store', () async {
     final store = MemoryAppStore(
       settings: const AppSettings(embeddedDaemonEnabled: false),
