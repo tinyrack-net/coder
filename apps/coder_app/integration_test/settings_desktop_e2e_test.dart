@@ -113,6 +113,95 @@ void main() {
   );
 
   testWidgets(
+    'a full reset erases real daemon data, keeps checkouts, and restarts',
+    (tester) async {
+      tester.binding.platformDispatcher.localeTestValue = const Locale('ko');
+      addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
+      final home = await Directory.systemTemp.createTemp('coder-reset-e2e-');
+      addTearDown(() {
+        if (home.existsSync()) home.deleteSync(recursive: true);
+      });
+      // One shared resolution, exactly as the production composition root
+      // wires the launcher and the eraser.
+      final config = DaemonConfig(
+        homeDirectory: home.path,
+        port: 0,
+        useEnvironmentCredentials: false,
+      );
+      final launcher = _IdentityRecordingLauncher(
+        IsolateEmbeddedDaemonLauncher(resolveConfig: () => config),
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(localeTag: 'ko', sidebarCollapsed: true),
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const WebSocketHostClientFactory(),
+            clientKind: 'reset-e2e',
+            embeddedLauncher: launcher,
+            embeddedDataEraser: IsolateEmbeddedDaemonDataEraser(
+              resolveConfig: () => config,
+            ),
+          ),
+          autostart: _RecordingAutostart(),
+        ),
+      );
+      await _pumpUntil(tester, () => launcher.serverIds.isNotEmpty);
+      await tester.pumpAndSettle();
+
+      // Unpushed work in a managed checkout has to survive the reset.
+      final checkout = File(
+        _join(<String>[home.path, 'worktrees', 'repo', 'main.dart']),
+      );
+      await checkout.create(recursive: true);
+      await checkout.writeAsString('void main() {}');
+      expect(
+        File(_join(<String>[home.path, 'coder.sqlite'])).existsSync(),
+        isTrue,
+      );
+      expect(
+        File(_join(<String>[home.path, 'credentials.json'])).existsSync(),
+        isTrue,
+      );
+
+      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('고급'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('advanced-settings-reset-button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('advanced-reset-confirm-accept')),
+      );
+      await _pumpUntil(tester, () => launcher.serverIds.length == 2);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('advanced-settings-reset-error')),
+        findsNothing,
+      );
+      expect(launcher.serverIds.last, isNot(launcher.serverIds.first));
+      expect(launcher.tokens.last, isNot(launcher.tokens.first));
+      expect(store.settings.localeTag, isNull);
+      expect(store.settings.sidebarCollapsed, isFalse);
+      // The daemon rebuilt its own state, so these exist again but hold
+      // nothing from before the reset.
+      expect(checkout.existsSync(), isTrue);
+      expect(await checkout.readAsString(), 'void main() {}');
+    },
+    tags: const <String>[
+      'feature_scenario__settings_reset__full_reset_restart__e2e',
+      'feature_scenario__settings_reset__preserves_checkouts__e2e',
+    ],
+  );
+
+  testWidgets(
     'tray quit stops the real embedded daemon before destroying the window',
     (tester) async {
       final home = await Directory.systemTemp.createTemp(
@@ -124,7 +213,7 @@ void main() {
       final calls = <String>[];
       final launcher = _RecordingEmbeddedLauncher(
         IsolateEmbeddedDaemonLauncher(
-          config: DaemonConfig(
+          resolveConfig: () => DaemonConfig(
             homeDirectory: home.path,
             port: 0,
             bearerToken: 'tray-quit-e2e-token-0123456789abcdef',
@@ -185,6 +274,8 @@ void main() {
   );
 }
 
+String _join(List<String> segments) => segments.join(Platform.pathSeparator);
+
 Future<void> _waitForVisibility(
   DesktopWindow window, {
   required bool visible,
@@ -244,6 +335,26 @@ final class _RecordingAutostart implements AutostartRegistration {
 
   @override
   Future<bool> isEnabled() async => true;
+}
+
+/// Records the identity each real embedded daemon starts with.
+final class _IdentityRecordingLauncher implements EmbeddedDaemonLauncher {
+  _IdentityRecordingLauncher(this.delegate);
+
+  final EmbeddedDaemonLauncher delegate;
+  final List<String> serverIds = <String>[];
+  final List<String> tokens = <String>[];
+
+  @override
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+    required int port,
+  }) async {
+    final session = await delegate.start(exposure: exposure, port: port);
+    serverIds.add(session.serverId);
+    tokens.add(session.credentials.bearerToken);
+    return session;
+  }
 }
 
 final class _RecordingEmbeddedLauncher implements EmbeddedDaemonLauncher {

@@ -157,6 +157,234 @@ void main() {
     },
   );
 
+  test(
+    'reset stops every host before erasing and restarts with defaults',
+    () async {
+      final profile = RemoteDaemonProfile(
+        id: 'remote',
+        label: 'Remote',
+        websocketUri: Uri.parse('ws://remote.test/ws'),
+        autoConnect: true,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(
+          embeddedDaemonPort: 9100,
+          lastActiveHostId: 'remote',
+          localeTag: 'ko',
+          sidebarCollapsed: true,
+        ),
+        profiles: <RemoteDaemonProfile>[profile],
+        tokens: const <String, String>{'remote': 'token'},
+      );
+      final calls = <String>[];
+      final launcher = _EmbeddedLauncher(calls: calls);
+      final eraser = _DataEraser(calls: calls);
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
+          'embedded.test': Future<CoderApi>.value(
+            FakeCoderApi(serverInfo: _serverInfo('embedded-server')),
+          ),
+          'remote.test': Future<CoderApi>.value(
+            FakeCoderApi(serverInfo: _serverInfo('remote-server')),
+          ),
+        }),
+        embeddedLauncher: launcher,
+        embeddedDataEraser: eraser,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'desktop',
+      );
+      addTearDown(registry.close);
+
+      await registry.load();
+      await _flush();
+      expect(launcher.starts, 1);
+      calls.clear();
+
+      await registry.resetToFactoryDefaults();
+      await _flush();
+
+      expect(calls, <String>['stop', 'erase', 'start']);
+      expect(eraser.erases, 1);
+      expect(store.tokens, isEmpty);
+      expect(store.profiles, isEmpty);
+      expect(registry.value.profiles, isEmpty);
+      expect(registry.value.settings.localeTag, isNull);
+      expect(registry.value.settings.lastActiveHostId, isNull);
+      expect(registry.value.settings.sidebarCollapsed, isFalse);
+      expect(registry.value.settings.embeddedDaemonEnabled, isTrue);
+      expect(
+        registry.value.settings.embeddedDaemonPort,
+        defaultEmbeddedDaemonPort,
+      );
+      expect(registry.value.runtimes.keys, <String>[embeddedHostId]);
+      expect(
+        registry.value.runtimes[embeddedHostId]!.status,
+        HostRuntimeStatus.online,
+      );
+      expect(launcher.ports.last, defaultEmbeddedDaemonPort);
+    },
+    tags: const <String>['feature_test__settings_reset__unit'],
+  );
+
+  test(
+    'a failed erase keeps every stored value and restarts the daemon',
+    () async {
+      final profile = RemoteDaemonProfile(
+        id: 'remote',
+        label: 'Remote',
+        websocketUri: Uri.parse('ws://remote.test/ws'),
+        autoConnect: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+      const settings = AppSettings(embeddedDaemonPort: 9100);
+      final store = MemoryAppStore(
+        settings: settings,
+        profiles: <RemoteDaemonProfile>[profile],
+        tokens: const <String, String>{'remote': 'token'},
+      );
+      final calls = <String>[];
+      final launcher = _EmbeddedLauncher(calls: calls);
+      final eraser = _DataEraser(
+        calls: calls,
+        failure: const FactoryResetFailure(
+          'locked',
+          reason: FactoryResetFailureReason.daemonStillRunning,
+        ),
+      );
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
+          'embedded.test': Future<CoderApi>.value(
+            FakeCoderApi(serverInfo: _serverInfo('embedded-server')),
+          ),
+        }),
+        embeddedLauncher: launcher,
+        embeddedDataEraser: eraser,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'desktop',
+      );
+      addTearDown(registry.close);
+
+      await registry.load();
+      await _flush();
+      calls.clear();
+
+      await expectLater(
+        registry.resetToFactoryDefaults(),
+        throwsA(
+          isA<FactoryResetFailure>().having(
+            (error) => error.reason,
+            'reason',
+            FactoryResetFailureReason.daemonStillRunning,
+          ),
+        ),
+      );
+      await _flush();
+
+      expect(calls, <String>['stop', 'erase', 'start']);
+      expect(store.settings.embeddedDaemonPort, 9100);
+      expect(identical(store.settings, settings), isTrue);
+      expect(store.profiles, <RemoteDaemonProfile>[profile]);
+      expect(store.tokens, const <String, String>{'remote': 'token'});
+      expect(registry.value.settings.embeddedDaemonPort, 9100);
+      expect(launcher.ports.last, 9100);
+      expect(
+        registry.value.runtimes[embeddedHostId]!.status,
+        HostRuntimeStatus.online,
+      );
+    },
+    tags: const <String>['feature_test__settings_reset__unit'],
+  );
+
+  test(
+    'a second concurrent reset is rejected without erasing twice',
+    () async {
+      final store = MemoryAppStore();
+      final calls = <String>[];
+      final eraser = _DataEraser(calls: calls);
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        embeddedLauncher: _EmbeddedLauncher(calls: calls),
+        embeddedDataEraser: eraser,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'desktop',
+      );
+      addTearDown(registry.close);
+
+      await registry.load();
+      await _flush();
+
+      final first = registry.resetToFactoryDefaults();
+      await expectLater(
+        registry.resetToFactoryDefaults(),
+        throwsA(
+          isA<FactoryResetFailure>().having(
+            (error) => error.reason,
+            'reason',
+            FactoryResetFailureReason.incomplete,
+          ),
+        ),
+      );
+      await first;
+
+      expect(eraser.erases, 1);
+    },
+    tags: const <String>['feature_test__settings_reset__unit'],
+  );
+
+  test(
+    'a surface without an embedded daemon still clears device-local data',
+    () async {
+      final profile = RemoteDaemonProfile(
+        id: 'remote',
+        label: 'Remote',
+        websocketUri: Uri.parse('ws://remote.test/ws'),
+        autoConnect: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[profile],
+        tokens: const <String, String>{'remote': 'token'},
+      );
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'mobile',
+      );
+      addTearDown(registry.close);
+
+      await registry.load();
+      await registry.resetToFactoryDefaults();
+
+      expect(store.profiles, isEmpty);
+      expect(store.tokens, isEmpty);
+      expect(registry.value.profiles, isEmpty);
+      expect(registry.value.runtimes, isEmpty);
+      expect(registry.value.settings.embeddedDaemonEnabled, isTrue);
+      expect(
+        registry.value.settings.embeddedDaemonPort,
+        defaultEmbeddedDaemonPort,
+      );
+    },
+    tags: const <String>['feature_test__settings_reset__unit'],
+  );
+
   test('duplicate server identity becomes an explicit conflict', () async {
     final profiles = <RemoteDaemonProfile>[
       for (final id in <String>['first', 'second'])
@@ -934,10 +1162,14 @@ final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
   _EmbeddedLauncher({
     this.firstStopGate,
     this.failingStarts = const <int>{},
+    this.calls,
   });
 
   final Completer<void>? firstStopGate;
   final Set<int> failingStarts;
+
+  /// Shared ordered log used by reset tests.
+  final List<String>? calls;
   final List<EmbeddedDaemonExposure> exposures = <EmbeddedDaemonExposure>[];
   final List<int> ports = <int>[];
   final List<_EmbeddedSession> sessions = <_EmbeddedSession>[];
@@ -953,11 +1185,13 @@ final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
     starts += 1;
     exposures.add(exposure);
     ports.add(port);
+    calls?.add('start');
     if (failingStarts.contains(starts)) {
       throw const HostConnectionFailure.network('startup failed');
     }
     final session = _EmbeddedSession(
       stopGate: sessions.isEmpty ? firstStopGate : null,
+      calls: calls,
     );
     sessions.add(session);
     return session;
@@ -965,9 +1199,10 @@ final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
 }
 
 final class _EmbeddedSession implements EmbeddedDaemonSession {
-  _EmbeddedSession({this.stopGate});
+  _EmbeddedSession({this.stopGate, this.calls});
 
   final Completer<void>? stopGate;
+  final List<String>? calls;
 
   @override
   HostEndpoint get endpoint => HostEndpoint.parse('ws://embedded.test/ws');
@@ -984,7 +1219,24 @@ final class _EmbeddedSession implements EmbeddedDaemonSession {
   @override
   Future<void> stop() async {
     stops += 1;
+    calls?.add('stop');
     await stopGate?.future;
+  }
+}
+
+final class _DataEraser implements EmbeddedDaemonDataEraser {
+  _DataEraser({required this.calls, this.failure});
+
+  final List<String> calls;
+  final FactoryResetFailure? failure;
+  int erases = 0;
+
+  @override
+  Future<void> eraseAll() async {
+    erases += 1;
+    calls.add('erase');
+    final error = failure;
+    if (error != null) throw error;
   }
 }
 

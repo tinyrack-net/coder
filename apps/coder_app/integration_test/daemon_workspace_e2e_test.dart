@@ -170,7 +170,7 @@ void main() {
       const token = 'embedded-e2e-token-0123456789abcdef0123456789';
       final launcher = _ControlledEmbeddedLauncher(
         IsolateEmbeddedDaemonLauncher(
-          config: DaemonConfig(
+          resolveConfig: () => DaemonConfig(
             homeDirectory: home.path,
             port: 0,
             bearerToken: token,

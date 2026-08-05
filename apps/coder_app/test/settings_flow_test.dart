@@ -631,6 +631,12 @@ final class _FailingStore
   Future<void> deleteBearerToken(String profileId) async {}
 
   @override
+  Future<void> deleteAllBearerTokens() async {}
+
+  @override
+  Future<void> clear() async {}
+
+  @override
   Future<CoderApi> connect({
     required HostEndpoint endpoint,
     required DaemonCredentials credentials,

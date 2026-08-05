@@ -29,6 +29,7 @@ final class HostRegistry {
     RemoteHostRepository? profiles,
     RemoteHostCredentialStore? credentials,
     EmbeddedDaemonLauncher? embeddedLauncher,
+    EmbeddedDaemonDataEraser? embeddedDataEraser,
     RetryDelayPolicy retryPolicy = const ExponentialRetryDelayPolicy(),
   }) => HostRegistry._(
     settings: store,
@@ -36,6 +37,7 @@ final class HostRegistry {
     credentials: credentials ?? _requireCredentials(store),
     clientFactory: clientFactory,
     embeddedLauncher: embeddedLauncher,
+    embeddedDataEraser: embeddedDataEraser,
     ids: ids,
     clock: clock,
     delay: delay,
@@ -49,6 +51,7 @@ final class HostRegistry {
     required this._credentials,
     required this._clientFactory,
     required this._embeddedLauncher,
+    required this._embeddedDataEraser,
     required this._ids,
     required this._clock,
     required this._delay,
@@ -61,6 +64,7 @@ final class HostRegistry {
   final RemoteHostCredentialStore _credentials;
   final HostClientFactory _clientFactory;
   final EmbeddedDaemonLauncher? _embeddedLauncher;
+  final EmbeddedDaemonDataEraser? _embeddedDataEraser;
   final AppIdGenerator _ids;
   final AppClock _clock;
   final AppDelay _delay;
@@ -74,6 +78,7 @@ final class HostRegistry {
   Future<void> _embeddedLifecycle = Future<void>.value();
   HostRegistryState? _state;
   bool _closed = false;
+  bool _resetting = false;
 
   /// Latest loaded registry state.
   HostRegistryState get value =>
@@ -478,6 +483,106 @@ final class HostRegistry {
       );
       await _startEmbedded(settings.embeddedDaemonExposure, port);
     });
+  }
+
+  /// Erases stored daemon data and every device-local app setting.
+  ///
+  /// Managed Git checkouts stay on disk and remote daemons keep running; only
+  /// their profiles and bearer tokens are dropped. The app-owned daemon
+  /// restarts with a new server identity and a new bearer token.
+  ///
+  /// Throws [FactoryResetFailure] with
+  /// [FactoryResetFailureReason.daemonStillRunning] or
+  /// [FactoryResetFailureReason.filesystem] when stored daemon data could not
+  /// be erased, in which case nothing was deleted and the daemon is restarted.
+  Future<void> resetToFactoryDefaults() async {
+    _ensureLoaded();
+    if (_resetting) {
+      throw const FactoryResetFailure(
+        'A reset is already running.',
+        reason: FactoryResetFailureReason.incomplete,
+      );
+    }
+    _resetting = true;
+    try {
+      await _serializeEmbedded(_eraseEverything);
+    } finally {
+      _resetting = false;
+    }
+  }
+
+  Future<void> _eraseEverything() async {
+    // Releasing the daemon lock and the database handle has to happen before
+    // any deletion, and every remote client before its token disappears.
+    await _stopEmbedded();
+    for (final hostId in List<String>.of(_resources.keys)) {
+      await _stopRuntime(hostId);
+    }
+    _emit(
+      value.copyWith(
+        runtimes: const <String, HostRuntimeSnapshot>{},
+      ),
+    );
+
+    final previous = value.settings;
+    try {
+      await _embeddedDataEraser?.eraseAll();
+    } on FactoryResetFailure {
+      // Nothing was deleted, so put the user back online before reporting.
+      await _restoreAfterFailedErase(previous);
+      rethrow;
+    }
+
+    try {
+      await _credentials.deleteAllBearerTokens();
+      await _settings.clear();
+    } on Exception catch (error) {
+      throw FactoryResetFailure(
+        '$error',
+        reason: FactoryResetFailureReason.incomplete,
+      );
+    }
+
+    final settings = await _settings.loadSettings();
+    _emit(
+      HostRegistryState(
+        settings: settings,
+        profiles: const <RemoteDaemonProfile>[],
+        runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(
+          <String, HostRuntimeSnapshot>{
+            if (settings.embeddedDaemonEnabled && _embeddedLauncher != null)
+              embeddedHostId: const HostRuntimeSnapshot(
+                id: embeddedHostId,
+                label: embeddedDaemonFallbackLabel,
+                kind: HostKind.embedded,
+                status: HostRuntimeStatus.connecting,
+              ),
+          },
+        ),
+      ),
+    );
+    if (settings.embeddedDaemonEnabled) {
+      await _startEmbedded(
+        settings.embeddedDaemonExposure,
+        settings.embeddedDaemonPort,
+      );
+    }
+  }
+
+  Future<void> _restoreAfterFailedErase(AppSettings settings) async {
+    if (!settings.embeddedDaemonEnabled || _embeddedLauncher == null) return;
+    _replaceRuntime(
+      const HostRuntimeSnapshot(
+        id: embeddedHostId,
+        label: embeddedDaemonFallbackLabel,
+        kind: HostKind.embedded,
+        status: HostRuntimeStatus.connecting,
+      ),
+    );
+    await _startEmbedded(
+      settings.embeddedDaemonExposure,
+      settings.embeddedDaemonPort,
+    );
   }
 
   Future<void> _startEmbedded(

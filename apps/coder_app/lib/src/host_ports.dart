@@ -10,6 +10,11 @@ abstract interface class AppSettingsRepository {
 
   /// Persists the complete settings value.
   Future<void> saveSettings(AppSettings settings);
+
+  /// Drops the stored document so the next load returns fresh defaults.
+  ///
+  /// Settings and remote profiles share one document, so both are cleared.
+  Future<void> clear();
 }
 
 /// Stores non-secret remote daemon profiles.
@@ -34,6 +39,9 @@ abstract interface class RemoteHostCredentialStore {
 
   /// Deletes the bearer token for one profile.
   Future<void> deleteBearerToken(String profileId);
+
+  /// Deletes every stored remote bearer token, including orphaned entries.
+  Future<void> deleteAllBearerTokens();
 }
 
 /// Opens one typed daemon API without owning profile persistence.
@@ -69,6 +77,18 @@ abstract interface class EmbeddedDaemonLauncher {
     required EmbeddedDaemonExposure exposure,
     required int port,
   });
+}
+
+/// Optional port for erasing the app-owned daemon's stored data.
+///
+/// Absent on surfaces that never own a daemon, where a reset clears only
+/// device-local app settings.
+abstract interface class EmbeddedDaemonDataEraser {
+  /// Erases every daemon-owned file, preserving managed Git checkouts.
+  ///
+  /// The daemon must already be stopped. Throws [FactoryResetFailure] when
+  /// the data directory cannot be erased, in which case nothing was deleted.
+  Future<void> eraseAll();
 }
 
 /// Injectable asynchronous delay used by reconnect loops.
@@ -125,6 +145,15 @@ final class MemoryAppStore
 
   /// Current bearer tokens keyed by profile ID.
   final Map<String, String> tokens;
+
+  @override
+  Future<void> clear() async {
+    settings = const AppSettings();
+    profiles.clear();
+  }
+
+  @override
+  Future<void> deleteAllBearerTokens() async => tokens.clear();
 
   @override
   Future<void> deleteBearerToken(String profileId) async {

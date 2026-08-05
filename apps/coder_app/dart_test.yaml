@@ -134,3 +134,10 @@ tags:
   route_test__daemon_settings_route__widget:
   route_test__new_host_route__widget:
   route_test__edit_host_route__widget:
+  feature_test__settings_reset__unit:
+  feature_test__settings_reset__verticalSlice:
+  feature_test__settings_reset__widget:
+  feature_test__settings_reset__e2e:
+  feature_scenario__settings_reset__full_reset_restart__e2e:
+  feature_scenario__settings_reset__preserves_checkouts__e2e:
+  route_test__advanced_settings_route__widget:

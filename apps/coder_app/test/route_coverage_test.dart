@@ -170,6 +170,20 @@ void main() {
   );
 
   testWidgets(
+    'AdvancedSettingsRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const AdvancedSettingsRoute().location,
+      find.byKey(const ValueKey<String>('advanced-settings-reset-button')),
+    ),
+    tags: const <String>[
+      'route_test__advanced_settings_route__widget',
+      'feature_test__settings_reset__widget',
+    ],
+  );
+
+  testWidgets(
     'NewHostRoute renders at desktop and mobile sizes',
     (tester) => _verifyRoute(
       tester,

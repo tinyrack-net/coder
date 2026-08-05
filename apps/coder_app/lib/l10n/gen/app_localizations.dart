@@ -272,6 +272,90 @@ abstract class AppLocalizations {
   /// **'Daemons'**
   String get settingsCategoryDaemon;
 
+  /// Settings sidebar entry for developer maintenance actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get settingsCategoryAdvanced;
+
+  /// Heading of the full reset card.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get advancedResetSection;
+
+  /// Title of the full reset row.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all data'**
+  String get advancedResetTitle;
+
+  /// Scope of a reset on a surface that owns an embedded daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the embedded daemon\'s database, credentials, MCP and agent configuration, skills, and attachments, and clears every app setting and stored remote daemon token. Git checkouts under the worktrees folder stay on disk.'**
+  String get advancedResetDescription;
+
+  /// Scope of a reset on a surface without an embedded daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Clears every app setting and stored remote daemon token on this device. Remote daemons keep their own data.'**
+  String get advancedResetDescriptionAppOnly;
+
+  /// Label of the button that starts a full reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all data'**
+  String get advancedResetAction;
+
+  /// Label of the reset button while a reset runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Resetting…'**
+  String get advancedResetRunning;
+
+  /// Title of the full reset confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all data?'**
+  String get advancedResetConfirmTitle;
+
+  /// Body of the full reset confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Every session, workspace registration, provider connection, agent, skill, and MCP server on the embedded daemon is deleted, together with every app setting and remote daemon profile and token. The daemon returns to its default port. Git checkouts stay on disk but have to be added again. This cannot be undone.'**
+  String get advancedResetConfirmBody;
+
+  /// Confirm action of the full reset dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get advancedResetConfirmAccept;
+
+  /// Title of the alert shown when a reset fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset failed'**
+  String get advancedResetFailedTitle;
+
+  /// Reset failure caused by a daemon owning the data directory.
+  ///
+  /// In en, this message translates to:
+  /// **'Another Tinyrack Coder daemon is using the data directory. Quit it and try again. Nothing was deleted.'**
+  String get advancedResetFailedDaemonRunning;
+
+  /// Reset failure reported by the operating system.
+  ///
+  /// In en, this message translates to:
+  /// **'Some daemon files could not be deleted: {error}'**
+  String advancedResetFailedFilesystem(String error);
+
+  /// Reset failure that leaves device-local settings behind.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon data was removed but the app settings could not be cleared. Restart Tinyrack Coder.'**
+  String get advancedResetFailedIncomplete;
+
   /// Shown when a host-scoped settings page has no online daemon.
   ///
   /// In en, this message translates to:

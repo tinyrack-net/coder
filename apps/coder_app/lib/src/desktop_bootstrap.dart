@@ -11,23 +11,35 @@ import 'package:shared_preferences/shared_preferences.dart';
 typedef EmbeddedDaemonStarter =
     Future<DaemonHandle> Function(DaemonConfig config);
 
+/// Resolves the directories and listener the embedded daemon owns.
+typedef DaemonConfigResolver = DaemonConfig Function();
+
 /// Creates production desktop services after local settings storage is ready.
 Future<AppServices> createDesktopServices({
-  EmbeddedDaemonLauncher embeddedLauncher =
-      const IsolateEmbeddedDaemonLauncher(),
+  EmbeddedDaemonLauncher? embeddedLauncher,
+  EmbeddedDaemonDataEraser? embeddedDataEraser,
   HostClientFactory clients = const WebSocketHostClientFactory(),
   FlutterSecureStorage secureStorage = const FlutterSecureStorage(),
 }) async {
   final store = SharedPreferencesAppStore(
     await SharedPreferences.getInstance(),
   );
+  // One memoized resolution shared by the launcher and the eraser: an
+  // environment change mid-run must never point them at different trees.
+  DaemonConfig? resolved;
+  DaemonConfig resolveConfig() => resolved ??= DaemonConfig.fromEnvironment();
   return AppServices(
     settings: store,
     profiles: store,
     credentials: SecureRemoteHostCredentialStore(secureStorage),
     clients: clients,
     clientKind: 'desktop',
-    embeddedLauncher: embeddedLauncher,
+    embeddedLauncher:
+        embeddedLauncher ??
+        IsolateEmbeddedDaemonLauncher(resolveConfig: resolveConfig),
+    embeddedDataEraser:
+        embeddedDataEraser ??
+        IsolateEmbeddedDaemonDataEraser(resolveConfig: resolveConfig),
   );
 }
 
@@ -35,12 +47,12 @@ Future<AppServices> createDesktopServices({
 final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
   /// Creates the production embedded daemon launcher.
   const IsolateEmbeddedDaemonLauncher({
-    this.config,
+    this.resolveConfig = DaemonConfig.fromEnvironment,
     this.startDaemon = _startEmbeddedDaemon,
   });
 
-  /// Explicit configuration used by deterministic integration tests.
-  final DaemonConfig? config;
+  /// Resolves the base configuration; tests substitute a temporary tree.
+  final DaemonConfigResolver resolveConfig;
 
   /// Injected isolate starter used by deterministic tests.
   final EmbeddedDaemonStarter startDaemon;
@@ -51,7 +63,7 @@ final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
     required int port,
   }) async {
     try {
-      final baseConfig = config ?? DaemonConfig.fromEnvironment();
+      final baseConfig = resolveConfig();
       return _EmbeddedSession(
         await startDaemon(
           baseConfig.copyWith(host: exposure.bindHost, port: port),
@@ -66,6 +78,39 @@ final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
       );
     } on Exception catch (error) {
       throw HostConnectionFailure.network('$error');
+    }
+  }
+}
+
+/// Erases the app-owned daemon's stored data from disk.
+final class IsolateEmbeddedDaemonDataEraser
+    implements EmbeddedDaemonDataEraser {
+  /// Creates the production embedded daemon data eraser.
+  const IsolateEmbeddedDaemonDataEraser({
+    this.resolveConfig = DaemonConfig.fromEnvironment,
+  });
+
+  /// Resolves the directories to erase; tests substitute a temporary tree.
+  final DaemonConfigResolver resolveConfig;
+
+  @override
+  Future<void> eraseAll() async {
+    final config = resolveConfig();
+    try {
+      await DaemonDataReset(
+        configDirectory: config.configDirectory,
+        homeDirectory: config.homeDirectory,
+      ).eraseAll();
+    } on DaemonDataResetException catch (error) {
+      throw FactoryResetFailure(
+        error.message,
+        reason: switch (error.reason) {
+          DaemonDataResetFailureReason.daemonRunning =>
+            FactoryResetFailureReason.daemonStillRunning,
+          DaemonDataResetFailureReason.filesystem =>
+            FactoryResetFailureReason.filesystem,
+        },
+      );
     }
   }
 }

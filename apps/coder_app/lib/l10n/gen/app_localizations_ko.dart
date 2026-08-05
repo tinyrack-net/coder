@@ -98,6 +98,55 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsCategoryDaemon => 'Daemons';
 
   @override
+  String get settingsCategoryAdvanced => '고급';
+
+  @override
+  String get advancedResetSection => '초기화';
+
+  @override
+  String get advancedResetTitle => '전체 초기화';
+
+  @override
+  String get advancedResetDescription =>
+      '임베디드 daemon의 데이터베이스, 자격 증명, MCP 및 에이전트 설정, 스킬, 첨부 파일을 삭제하고 모든 앱 설정과 저장된 원격 daemon 토큰을 지웁니다. worktrees 폴더의 Git 체크아웃은 디스크에 남습니다.';
+
+  @override
+  String get advancedResetDescriptionAppOnly =>
+      '이 기기의 모든 앱 설정과 저장된 원격 daemon 토큰을 지웁니다. 원격 daemon의 데이터는 그대로 유지됩니다.';
+
+  @override
+  String get advancedResetAction => '전체 초기화';
+
+  @override
+  String get advancedResetRunning => '초기화 중…';
+
+  @override
+  String get advancedResetConfirmTitle => '전체 초기화할까요?';
+
+  @override
+  String get advancedResetConfirmBody =>
+      '임베디드 daemon의 모든 세션, 워크스페이스 등록, 프로바이더 연결, 에이전트, 스킬, MCP 서버가 삭제되고 모든 앱 설정과 원격 daemon 프로필 및 토큰도 함께 삭제됩니다. daemon은 기본 포트로 돌아갑니다. Git 체크아웃은 디스크에 남지만 다시 추가해야 합니다. 되돌릴 수 없습니다.';
+
+  @override
+  String get advancedResetConfirmAccept => '초기화';
+
+  @override
+  String get advancedResetFailedTitle => '초기화 실패';
+
+  @override
+  String get advancedResetFailedDaemonRunning =>
+      '다른 Tinyrack Coder daemon이 데이터 디렉터리를 사용 중입니다. 종료한 뒤 다시 시도하세요. 삭제된 항목은 없습니다.';
+
+  @override
+  String advancedResetFailedFilesystem(String error) {
+    return '일부 daemon 파일을 삭제하지 못했습니다: $error';
+  }
+
+  @override
+  String get advancedResetFailedIncomplete =>
+      'daemon 데이터는 삭제했지만 앱 설정을 지우지 못했습니다. Tinyrack Coder를 다시 시작하세요.';
+
+  @override
   String get settingsRequiresOnlineDaemon => '온라인 daemon 연결이 필요합니다.';
 
   @override

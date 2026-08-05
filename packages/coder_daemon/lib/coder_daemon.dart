@@ -3,6 +3,7 @@ export 'src/application.dart';
 export 'src/attachment_service.dart';
 export 'src/built_in_skills.dart';
 export 'src/config.dart';
+export 'src/data_reset.dart';
 export 'src/embedded.dart';
 export 'src/git_workspace.dart';
 export 'src/ports.dart';
