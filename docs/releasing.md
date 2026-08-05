@@ -44,7 +44,13 @@ The Cask (`coder`) and the Formula (`coder-cli`) land in the same
 
 | Artifact | Channel |
 | --- | --- |
-| `flutter build web` output | Cloudflare Workers static assets |
+| `flutter build web` output | `tinyrack-coder` Worker at `https://coder.tinyrack.net` |
+
+`apps/coder_app/wrangler.jsonc` binds the custom domain, so the deploying API
+token needs Workers Routes and Zone read on `tinyrack.net` alongside Workers
+Scripts edit. The hostname is also the daemon's default allowed origin
+(`defaultAllowedOrigins` in `packages/coder_daemon/lib/src/config.dart`);
+changing one without the other locks every browser client out.
 
 The web build is a static client with no server of its own; it connects to a
 daemon the user runs. It is **not** tied to a version tag: `deploy-web`
@@ -110,8 +116,13 @@ All are repository secrets on `tinyrack-net/coder`.
 | `APPLE_NOTARY_KEY_P8_BASE64` | notarization | yes |
 | `HOMEBREW_TAP_TOKEN` | pushing the Cask to the tap | yes |
 | `WINGET_TOKEN` | the winget-pkgs pull requests | yes |
-| `CLOUDFLARE_API_TOKEN` | the web deployment | no |
-| `CLOUDFLARE_ACCOUNT_ID` | the web deployment | no |
+| `CLOUDFLARE_API_TOKEN` | the web deployment | organisation-wide |
+| `CLOUDFLARE_ACCOUNT_ID` | the web deployment | organisation-wide |
+
+The two Cloudflare values are read as either a secret or an Actions variable,
+so the deployment works from whichever organisation tab holds them. Prefer the
+secret for `CLOUDFLARE_API_TOKEN`: an Actions variable is not masked in logs,
+and that token can deploy Workers.
 | `MSIX_IDENTITY_NAME` | MSIX identity, optional | no, `tinyrack.coder` |
 | `MSIX_PUBLISHER` | MSIX identity, optional | yes, matches the signing certificate |
 | `MSIX_PUBLISHER_DISPLAY_NAME` | MSIX identity, optional | yes |
