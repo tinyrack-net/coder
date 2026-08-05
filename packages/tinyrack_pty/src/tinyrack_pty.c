@@ -248,7 +248,7 @@ tr_pty *tr_pty_spawn(const char *executable,
   }
   if (!CreateProcessW(NULL, command, NULL, NULL, FALSE,
           EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT |
-              CREATE_NEW_PROCESS_GROUP | CREATE_SUSPENDED,
+              CREATE_NEW_PROCESS_GROUP,
           environment_block, directory, &startup.StartupInfo, &process)) {
     goto fail;
   }
@@ -261,13 +261,12 @@ tr_pty *tr_pty_spawn(const char *executable,
           &limits, sizeof(limits)) ||
       !AssignProcessToJobObject(job, process.hProcess)) goto fail;
   // The pseudoconsole owns the opposing ends after CreateProcess. Releasing
-  // our copies before the client resumes matches the documented ConPTY handle
-  // lifecycle and prevents its synchronous input channel from remaining idle.
+  // our copies immediately matches the documented ConPTY handle lifecycle and
+  // prevents its synchronous input channel from remaining idle.
   tr_close(input_read);
   input_read = NULL;
   tr_close(output_write);
   output_write = NULL;
-  if (ResumeThread(process.hThread) == (DWORD)-1) goto fail;
 
   result = (tr_pty *)calloc(1, sizeof(tr_pty));
   if (result == NULL) {
