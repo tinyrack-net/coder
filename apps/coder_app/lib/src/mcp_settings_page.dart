@@ -265,7 +265,7 @@ class _ServerTile extends StatelessWidget {
                   '${server.tools.length}',
       ),
       trailing: server.scope == McpConfigScope.project
-          ? const Icon(CoderIcons.lock, size: 18)
+          ? const Icon(CoderIcons.lock)
           : null,
     );
   }
@@ -293,7 +293,8 @@ class _StatusDot extends StatelessWidget {
     return Icon(
       CoderIcons.status,
       key: ValueKey<String>('mcp-server-status-${server.config.id}'),
-      size: 12,
+      // An inline status dot, deliberately smaller than a control glyph.
+      size: TRSpacing.medium,
       color: color,
     );
   }

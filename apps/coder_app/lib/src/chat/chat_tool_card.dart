@@ -93,11 +93,7 @@ class ChatToolCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(
-                      chatToolIcon(presentation.glyph),
-                      size: 16,
-                      color: statusColor,
-                    ),
+                    Icon(chatToolIcon(presentation.glyph), color: statusColor),
                     const SizedBox(width: 8),
                     Flexible(
                       child: TRText(
@@ -132,8 +128,7 @@ class ChatToolCard extends StatelessWidget {
                     if (hasBody)
                       Icon(
                         expanded ? CoderIcons.collapse : CoderIcons.expand,
-                        size: 16,
-                        color: theme.colorScheme.outline,
+                        color: context.tinyrackTheme.textMuted,
                       ),
                   ],
                 ),

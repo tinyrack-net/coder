@@ -1405,7 +1405,7 @@ class _SessionTab extends StatelessWidget {
         appearance: TRAppearance.ghost,
         label: AppLocalizations.of(context).workspaceCloseTab,
         onPressed: onClose,
-        icon: const Icon(CoderIcons.close, size: 16),
+        icon: const Icon(CoderIcons.close),
       ),
     ),
   );

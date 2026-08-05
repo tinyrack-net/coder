@@ -78,7 +78,7 @@ class ChatCodeBlock extends StatelessWidget {
                 appearance: TRAppearance.ghost,
                 label: AppLocalizations.of(context).commonCopy,
                 onPressed: () => Clipboard.setData(ClipboardData(text: text)),
-                icon: const Icon(CoderIcons.copy, size: 16),
+                icon: const Icon(CoderIcons.copy),
               ),
           ],
         ),

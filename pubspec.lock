@@ -1341,11 +1341,33 @@ packages:
     dependency: transitive
     description:
       path: "packages/ui_flutter"
+<<<<<<< HEAD
       ref: c728b9b3e9b45ecc94932b8d1743ab87bf8081e2
       resolved-ref: c728b9b3e9b45ecc94932b8d1743ab87bf8081e2
+||||||| parent of eb23111 (refactor(ui): size every icon from a token)
+      ref: "77f03afb968f71baed6944c29337843d04482958"
+      resolved-ref: "77f03afb968f71baed6944c29337843d04482958"
+=======
+<<<<<<< HEAD
+      ref: "77f03afb968f71baed6944c29337843d04482958"
+      resolved-ref: "77f03afb968f71baed6944c29337843d04482958"
+||||||| parent of 9735c69 (refactor(ui): size every icon from a token)
+      ref: "7026f56647094e0257a2ead2e098860f4c0e55d9"
+      resolved-ref: "7026f56647094e0257a2ead2e098860f4c0e55d9"
+=======
+      ref: "0647a72c272e71e453689595a2e38c80b01d5ff0"
+      resolved-ref: "0647a72c272e71e453689595a2e38c80b01d5ff0"
+>>>>>>> 9735c69 (refactor(ui): size every icon from a token)
+>>>>>>> eb23111 (refactor(ui): size every icon from a token)
       url: "https://github.com/tinyrack-net/design.git"
     source: git
+<<<<<<< HEAD
     version: "0.14.0"
+||||||| parent of eb23111 (refactor(ui): size every icon from a token)
+    version: "0.12.0"
+=======
+    version: "0.13.0"
+>>>>>>> eb23111 (refactor(ui): size every icon from a token)
   tray_manager:
     dependency: transitive
     description:

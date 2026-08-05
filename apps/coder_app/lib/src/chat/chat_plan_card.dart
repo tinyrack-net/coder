@@ -39,7 +39,6 @@ class ChatPlanCard extends ConsumerWidget {
                 children: <Widget>[
                   Icon(
                     CoderIcons.plan,
-                    size: 16,
                     color: theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),

@@ -120,7 +120,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                const Icon(CoderIcons.add, size: 18),
+                const Icon(CoderIcons.add),
                 const SizedBox(width: TRSpacing.extraSmall),
                 TRText(l10n.workspaceNewWorkspace),
               ],

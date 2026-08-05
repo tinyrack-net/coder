@@ -192,7 +192,7 @@ class _AgentDefinitionList extends StatelessWidget {
                   ),
                   trailing: definition.diagnostics.isEmpty
                       ? null
-                      : const Icon(CoderIcons.warning, size: 18),
+                      : const Icon(CoderIcons.warning),
                   onTap: () => onSelected(definition.id),
                 ),
             ],

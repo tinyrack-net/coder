@@ -117,7 +117,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Icon(CoderIcons.refresh, size: 16),
+                    const Icon(CoderIcons.refresh),
                     const SizedBox(width: TRSpacing.extraSmall),
                     TRText(
                       AppLocalizations.of(

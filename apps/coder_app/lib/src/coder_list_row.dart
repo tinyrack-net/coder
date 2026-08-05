@@ -77,7 +77,7 @@ class _CoderListRowState extends State<CoderListRow> {
       children: [
         if (widget.leading case final leading?) ...[
           IconTheme.merge(
-            data: IconThemeData(color: colors.textMuted, size: 16),
+            data: IconThemeData(color: colors.textMuted),
             child: leading,
           ),
           const SizedBox(width: TRSpacing.small),

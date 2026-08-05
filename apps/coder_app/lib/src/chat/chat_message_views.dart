@@ -191,7 +191,7 @@ class ChatAttachmentTile extends StatelessWidget {
               ),
               if (!attachment.isImage) ...<Widget>[
                 const SizedBox(width: 6),
-                const Icon(CoderIcons.download, size: 16),
+                const Icon(CoderIcons.download),
               ],
             ],
           ),

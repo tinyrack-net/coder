@@ -253,7 +253,7 @@ class _SkillList extends ConsumerWidget {
                           message: skill.isShadowed
                               ? l10n.skillSettingsShadowed
                               : l10n.skillSettingsStale,
-                          child: const Icon(CoderIcons.warning, size: 18),
+                          child: const Icon(CoderIcons.warning),
                         )
                       : null,
                   trailing: TRSwitch(
