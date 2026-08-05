@@ -923,6 +923,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String chatAnswerTyped(String answer) {
+    return '$answer (typed)';
+  }
+
+  @override
   String get chatSleepWaiting => 'Waiting';
 
   @override

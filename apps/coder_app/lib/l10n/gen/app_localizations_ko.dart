@@ -907,6 +907,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String chatAnswerTyped(String answer) {
+    return '$answer (직접 입력)';
+  }
+
+  @override
   String get chatSleepWaiting => '대기 중';
 
   @override

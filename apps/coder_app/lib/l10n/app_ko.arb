@@ -274,6 +274,7 @@
   "usageOutputReasoning": "출력 {tokens}(추론 {reasoning})",
   "usageTotal": "합계 {tokens}",
   "toolExecRunning": "실행 중 · {lines}줄",
+  "chatAnswerTyped": "{answer} (직접 입력)",
   "chatSleepWaiting": "대기 중",
   "chatSleepRemaining": "{seconds}초 남음",
   "chatSleepDone": "{seconds}초 대기함",

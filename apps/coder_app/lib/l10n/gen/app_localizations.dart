@@ -1742,6 +1742,12 @@ abstract class AppLocalizations {
   /// **'running · {lines} lines'**
   String toolExecRunning(int lines);
 
+  /// A free-form answer the user typed instead of choosing.
+  ///
+  /// In en, this message translates to:
+  /// **'{answer} (typed)'**
+  String chatAnswerTyped(String answer);
+
   /// Label of the sleep countdown card.
   ///
   /// In en, this message translates to:

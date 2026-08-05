@@ -287,6 +287,50 @@ void main() {
   );
 
   testWidgets(
+    'an answered question renders as prose, marking typed answers',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'arguments': <String, dynamic>{
+            'questions': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'store',
+                'header': 'Storage',
+                'question': 'Which store should the cache use?',
+                'options': <Map<String, dynamic>>[],
+              },
+              <String, dynamic>{
+                'id': 'ttl',
+                'header': 'TTL',
+                'question': 'How long should entries live?',
+                'options': <Map<String, dynamic>>[],
+              },
+            ],
+          },
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'output':
+              '[{"questionId":"store","answer":"SQLite","isFreeForm":false},'
+              '{"questionId":"ttl","answer":"A week","isFreeForm":true}]',
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Which store should the cache use?'), findsOneWidget);
+      expect(find.text('SQLite'), findsOneWidget);
+      // A typed answer is marked so it is not mistaken for an offered option.
+      expect(find.text('A week (직접 입력)'), findsOneWidget);
+      // No JSON tool row duplicates it.
+      expect(find.textContaining('questionId'), findsNothing);
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
+  );
+
+  testWidgets(
     'a running sleep counts down and settles when it ends',
     (tester) async {
       // A sleep is projected from its request, which carries createdAt, so

@@ -1122,6 +1122,11 @@
     "description": "Result line while a pseudo-terminal session is still running.",
     "placeholders": {"lines": {"type": "int"}}
   },
+  "chatAnswerTyped": "{answer} (typed)",
+  "@chatAnswerTyped": {
+    "description": "A free-form answer the user typed instead of choosing.",
+    "placeholders": {"answer": {"type": "String"}}
+  },
   "chatSleepWaiting": "Waiting",
   "@chatSleepWaiting": {
     "description": "Label of the sleep countdown card."

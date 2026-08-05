@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coder_app/src/chat/chat_plan.dart';
@@ -223,6 +224,43 @@ final class ChatNotice extends ChatItem {
   final int? toolRounds;
 }
 
+/// One question the agent asked and the answer the user gave.
+final class ChatQuestionAnswer {
+  /// Creates a question-and-answer pair.
+  const ChatQuestionAnswer({
+    required this.header,
+    required this.question,
+    required this.answer,
+    required this.isFreeForm,
+  });
+
+  /// The short label the agent gave the question.
+  final String header;
+
+  /// The question as it was put to the user.
+  final String question;
+
+  /// What the user chose, or typed when [isFreeForm].
+  final String answer;
+
+  /// Whether the user typed the answer instead of taking an option.
+  final bool isFreeForm;
+}
+
+/// An answered `ask_user` call, read as conversation rather than tool output.
+final class ChatUserAnswer extends ChatItem {
+  /// Creates an answered-question item.
+  const ChatUserAnswer({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+    required this.entries,
+  });
+
+  /// Every question of the call, paired with its answer.
+  final List<ChatQuestionAnswer> entries;
+}
+
 /// One `sleep` call, rendered as a countdown rather than a tool row.
 final class ChatSleep extends ChatItem {
   /// Creates a sleep item.
@@ -308,6 +346,7 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
   final openTools = <String, _ToolBuilder>{};
   final openPlans = <String, _PlanBuilder>{};
   final openSleeps = <String, _SleepBuilder>{};
+  final openQuestions = <String, _QuestionBuilder>{};
   final terminatedTurns = <String?>{};
 
   void closeAssistant(String? turnId) => openAssistant.remove(turnId);
@@ -382,6 +421,21 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
             continue;
           }
         }
+        if (_string(event.data['name']) == 'ask_user' &&
+            !openQuestions.containsKey('$turnId/$callId')) {
+          // A pending question renders from conversation state, so a tool row
+          // beside it would only duplicate it; the answer replaces both.
+          final builder = _QuestionBuilder(
+            key: 'question-$callId-${event.sequence}',
+            turnId: turnId,
+            createdAt: event.createdAt,
+            callId: callId,
+            questions: _map(event.data['arguments'])['questions'],
+          );
+          openQuestions['$turnId/$callId'] = builder;
+          builders.add(builder);
+          continue;
+        }
         if (_string(event.data['name']) == 'sleep' &&
             !openSleeps.containsKey('$turnId/$callId')) {
           final arguments = _map(event.data['arguments']);
@@ -434,6 +488,16 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           'tool.failed' => ChatToolStatus.failed,
           _ => ChatToolStatus.denied,
         };
+        final question = openQuestions['$turnId/$callId'];
+        if (question != null) {
+          question.finish(
+            status: status,
+            output: _string(event.data['output']),
+            error: _string(event.data['error']),
+            isError: event.data['isError'] == true,
+          );
+          continue;
+        }
         final sleep = openSleeps['$turnId/$callId'];
         if (sleep != null) {
           sleep.finish();
@@ -735,6 +799,104 @@ final class _PlanBuilder extends _ChatItemBuilder {
         createdAt: createdAt,
         steps: update.steps,
         explanation: update.explanation,
+      ),
+    ];
+  }
+}
+
+final class _QuestionBuilder extends _ChatItemBuilder {
+  _QuestionBuilder({
+    required this.key,
+    required this.turnId,
+    required this.createdAt,
+    required this.callId,
+    required this.questions,
+  });
+
+  final String key;
+
+  @override
+  final String? turnId;
+
+  final DateTime createdAt;
+  final String callId;
+  final Object? questions;
+
+  ChatToolStatus _status = ChatToolStatus.running;
+  String? _output;
+  String? _error;
+  bool _isError = false;
+
+  void finish({
+    required ChatToolStatus status,
+    required String? output,
+    required String? error,
+    required bool isError,
+  }) {
+    _status = status;
+    _output = output;
+    _error = error;
+    _isError = isError;
+  }
+
+  /// Pairs each asked question with the answer that came back.
+  List<ChatQuestionAnswer> _entries() {
+    final asked = questions;
+    final output = _output;
+    if (asked is! List || output == null) return const <ChatQuestionAnswer>[];
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(output);
+    } on FormatException {
+      return const <ChatQuestionAnswer>[];
+    }
+    if (decoded is! List) return const <ChatQuestionAnswer>[];
+    final answers = <String, Map<String, dynamic>>{
+      for (final entry in decoded.whereType<Map<dynamic, dynamic>>())
+        if (entry['questionId'] case final String id)
+          id: Map<String, dynamic>.from(entry),
+    };
+    return <ChatQuestionAnswer>[
+      for (final entry in asked.whereType<Map<dynamic, dynamic>>())
+        if (entry['id'] case final String id)
+          if (answers[id] case final answer?)
+            ChatQuestionAnswer(
+              header: _string(entry['header']) ?? '',
+              question: _string(entry['question']) ?? '',
+              answer: _string(answer['answer']) ?? '',
+              isFreeForm: answer['isFreeForm'] == true,
+            ),
+    ];
+  }
+
+  @override
+  List<ChatItem> build({required bool isStreaming}) {
+    // Still pending: the question card owns the screen.
+    if (_status == ChatToolStatus.running) return const <ChatItem>[];
+    final entries = _entries();
+    if (_isError || _status != ChatToolStatus.succeeded || entries.isEmpty) {
+      // A refused or cancelled question stays a tool row so it is visible.
+      return <ChatItem>[
+        ChatToolActivity(
+          key: key,
+          turnId: turnId,
+          createdAt: createdAt,
+          callId: callId,
+          toolName: 'ask_user',
+          arguments: const <String, dynamic>{},
+          status: _status,
+          output: _output,
+          error: _error,
+          isError: _isError,
+        ),
+      ];
+    }
+    return <ChatItem>[
+      ChatUserAnswer(
+        key: key,
+        turnId: turnId,
+        createdAt: createdAt,
+        entries: entries,
       ),
     ];
   }

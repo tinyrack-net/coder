@@ -334,6 +334,74 @@ class ChatUsageLine extends StatelessWidget {
   }
 }
 
+/// Renders an answered agent question as question-and-answer prose.
+///
+/// The pending question is a card the user acts on; once answered it belongs
+/// in the transcript as conversation, not as a tool row full of JSON.
+class ChatUserAnswerLine extends StatelessWidget {
+  /// Creates an answered-question line.
+  const ChatUserAnswerLine({required this.answer, super.key});
+
+  /// The answered questions to render.
+  final ChatUserAnswer answer;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: TRSpacing.extraSmall,
+        horizontal: TRSpacing.extraSmall,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (final entry in answer.entries)
+            Padding(
+              key: ValueKey<String>('chat-answer-${entry.header}'),
+              padding: const EdgeInsets.only(bottom: TRSpacing.threeExtraSmall),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: TRSpacing.threeExtraSmall,
+                    ),
+                    child: Icon(
+                      CoderIcons.chat,
+                      size: TRTypography.bodySm.fontSize,
+                      color: context.tinyrackTheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: TRSpacing.small),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        TRText(
+                          entry.question,
+                          variant: TRTextVariant.bodySm,
+                          color: TRTextColor.muted,
+                        ),
+                        TRText(
+                          entry.isFreeForm
+                              ? l10n.chatAnswerTyped(entry.answer)
+                              : entry.answer,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Tells the user that tools exist beyond the ones the model was handed.
 class ChatDeferredToolsLine extends StatelessWidget {
   /// Creates a deferred-tools line.

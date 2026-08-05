@@ -147,6 +147,7 @@ class ChatItemView extends StatelessWidget {
         onToggle: onToggle,
       ),
       ChatNotice() => ChatNoticeLine(notice: value),
+      ChatUserAnswer() => ChatUserAnswerLine(answer: value),
       ChatSleep() => ChatSleepCard(sleep: value),
       ChatDeferredTools() => ChatDeferredToolsLine(notice: value),
       ChatUsage() => ChatUsageLine(usage: value),
