@@ -7145,7 +7145,9 @@ mixin _$SessionDto {
  String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; SessionMode get mode; SessionModelSelectionDto? get model;/// Overrides the reasoning effort of the agent definition; null inherits.
  String? get reasoningEffort;/// Overrides the permission mode of the agent definition; null inherits.
  PermissionMode? get permissionMode;/// Provider service tier for this session; null uses the provider default.
- String? get serviceTier; String? get parentSessionId; String? get activeTurnId; String? get lastError;
+ String? get serviceTier; String? get parentSessionId; String? get activeTurnId; String? get lastError;/// Tokens the last response reported for the live context window.
+ int get contextTokens;/// Context window of the resolved model; null when it is not advertised.
+ int? get contextWindow;
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -7158,16 +7160,16 @@ $SessionDtoCopyWith<SessionDto> get copyWith => _$SessionDtoCopyWithImpl<Session
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError,contextTokens,contextWindow);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
 }
 
 
@@ -7178,7 +7180,7 @@ abstract mixin class $SessionDtoCopyWith<$Res>  {
   factory $SessionDtoCopyWith(SessionDto value, $Res Function(SessionDto) _then) = _$SessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
 });
 
 
@@ -7195,7 +7197,7 @@ class _$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -7213,7 +7215,9 @@ as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : ser
 as String?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,contextTokens: null == contextTokens ? _self.contextTokens : contextTokens // ignore: cast_nullable_to_non_nullable
+as int,contextWindow: freezed == contextWindow ? _self.contextWindow : contextWindow // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 /// Create a copy of SessionDto
@@ -7310,10 +7314,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   return orElse();
 
 }
@@ -7331,10 +7335,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7351,10 +7355,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   return null;
 
 }
@@ -7366,7 +7370,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionDto implements SessionDto {
-  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier, this.parentSessionId, this.activeTurnId, this.lastError});
+  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier, this.parentSessionId, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow});
   factory _SessionDto.fromJson(Map<String, dynamic> json) => _$SessionDtoFromJson(json);
 
 @override final  String id;
@@ -7388,6 +7392,10 @@ class _SessionDto implements SessionDto {
 @override final  String? parentSessionId;
 @override final  String? activeTurnId;
 @override final  String? lastError;
+/// Tokens the last response reported for the live context window.
+@override@JsonKey() final  int contextTokens;
+/// Context window of the resolved model; null when it is not advertised.
+@override final  int? contextWindow;
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
@@ -7402,16 +7410,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError,contextTokens,contextWindow);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
 }
 
 
@@ -7422,7 +7430,7 @@ abstract mixin class _$SessionDtoCopyWith<$Res> implements $SessionDtoCopyWith<$
   factory _$SessionDtoCopyWith(_SessionDto value, $Res Function(_SessionDto) _then) = __$SessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
 });
 
 
@@ -7439,7 +7447,7 @@ class __$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
   return _then(_SessionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -7457,7 +7465,9 @@ as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : ser
 as String?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,contextTokens: null == contextTokens ? _self.contextTokens : contextTokens // ignore: cast_nullable_to_non_nullable
+as int,contextWindow: freezed == contextWindow ? _self.contextWindow : contextWindow // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

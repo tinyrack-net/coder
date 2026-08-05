@@ -48,3 +48,4 @@ tags:
   feature_test__mcp_resource_access__unit:
   feature_test__tool_search_deferred__unit:
   feature_test__tool_clock__verticalSlice:
+  feature_test__tool_context_budget__verticalSlice:

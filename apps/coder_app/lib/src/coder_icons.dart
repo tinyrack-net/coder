@@ -37,6 +37,9 @@ abstract final class CoderIcons {
   static const IconData restore = LucideIcons.rotateCcw;
 
   /// Semantic Lucide glyph.
+  static const IconData gauge = LucideIcons.gauge;
+
+  /// Semantic Lucide glyph.
   static const IconData agent = LucideIcons.bot;
 
   /// Semantic Lucide glyph.

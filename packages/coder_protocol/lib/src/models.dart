@@ -889,6 +889,12 @@ abstract class SessionDto with _$SessionDto {
     String? parentSessionId,
     String? activeTurnId,
     String? lastError,
+
+    /// Tokens the last response reported for the live context window.
+    @Default(0) int contextTokens,
+
+    /// Context window of the resolved model; null when it is not advertised.
+    int? contextWindow,
   }) = _SessionDto;
 
   /// Decodes a session descriptor.

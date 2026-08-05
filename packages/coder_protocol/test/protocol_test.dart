@@ -1193,6 +1193,47 @@ void main() {
   );
 
   test(
+    'the context budget rides the session contract',
+    tags: const <String>['feature_test__tool_context_budget__contract'],
+    () {
+      final session = SessionDto(
+        id: 'session',
+        worktreeId: 'worktree',
+        title: 'Budgeted',
+        agentDefinitionId: 'coder',
+        origin: SessionOrigin.manual,
+        status: SessionStatus.idle,
+        createdAt: now,
+        updatedAt: now,
+        contextTokens: 32000,
+        contextWindow: 200000,
+      );
+      _roundTrip(session, (value) => value.toJson(), SessionDto.fromJson);
+
+      // A provider that never advertised a window leaves the meter hidden
+      // rather than reporting a made-up denominator.
+      final unknown = SessionDto(
+        id: 'session',
+        worktreeId: 'worktree',
+        title: 'Unknown',
+        agentDefinitionId: 'coder',
+        origin: SessionOrigin.manual,
+        status: SessionStatus.idle,
+        createdAt: now,
+        updatedAt: now,
+      );
+      expect(unknown.contextWindow, isNull);
+      expect(unknown.contextTokens, 0);
+      expect(
+        SessionDto.fromJson(
+          json.decode(json.encode(unknown.toJson())) as Map<String, dynamic>,
+        ).contextWindow,
+        isNull,
+      );
+    },
+  );
+
+  test(
     'MCP resource contracts round-trip and default to empty lists',
     tags: const <String>['feature_test__mcp_resource_access__contract'],
     () {

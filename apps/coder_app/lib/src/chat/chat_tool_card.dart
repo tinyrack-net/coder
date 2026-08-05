@@ -21,6 +21,7 @@ IconData chatToolIcon(ChatToolGlyph glyph) => switch (glyph) {
   ChatToolGlyph.resource => CoderIcons.extension,
   ChatToolGlyph.tools => CoderIcons.tool,
   ChatToolGlyph.clock => CoderIcons.time,
+  ChatToolGlyph.context => CoderIcons.gauge,
   ChatToolGlyph.image => CoderIcons.image,
   ChatToolGlyph.generic => CoderIcons.tool,
 };

@@ -683,6 +683,8 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   parentSessionId: json['parentSessionId'] as String?,
   activeTurnId: json['activeTurnId'] as String?,
   lastError: json['lastError'] as String?,
+  contextTokens: (json['contextTokens'] as num?)?.toInt() ?? 0,
+  contextWindow: (json['contextWindow'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
@@ -703,6 +705,8 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'parentSessionId': instance.parentSessionId,
       'activeTurnId': instance.activeTurnId,
       'lastError': instance.lastError,
+      'contextTokens': instance.contextTokens,
+      'contextWindow': instance.contextWindow,
     };
 
 const _$SessionOriginEnumMap = {

@@ -117,7 +117,14 @@ class SessionService {
       SessionStatus.running,
       activeTurnId: turnId,
     );
-    _emitSession(await _sessions.getById(sessionId));
+    // Cached on the row so the context meter reads the same window the turn
+    // runs against, without a catalog lookup on every session read.
+    _emitSession(
+      await _sessions.recordContextWindow(
+        sessionId,
+        resolvedModel.limits?.context,
+      ),
+    );
 
     Future<void> reportStatus(SessionStatus status, {String? error}) async {
       final turnStatus = switch (status) {
@@ -160,6 +167,8 @@ class SessionService {
       ..._toolsFactory(definition.toolIds, worktree.path, sessionId, turnId),
       CurrentTimeTool(clock: agentClock),
       SleepTool(clock: agentClock),
+      GetContextRemainingTool(),
+      NewContextTool(),
       AskUserTool(
         coordinator: _DatabaseUserQuestionCoordinator(
           timeline: _timeline,
@@ -194,15 +203,35 @@ class SessionService {
         sessionId: sessionId,
         turnId: turnId,
       ),
-      onEvent: (type, data) => _appendEvent(
-        sessionId: sessionId,
-        turnId: turnId,
-        type: type,
-        data: data,
-      ),
+      onEvent: (type, data) async {
+        await _appendEvent(
+          sessionId: sessionId,
+          turnId: turnId,
+          type: type,
+          data: data,
+        );
+        // The context meter rides the session stream, so every reported usage
+        // updates the row the clients already watch.
+        if (type == 'model.usage') {
+          _emitSession(
+            await _sessions.recordContextTokens(
+              sessionId,
+              ModelUsage.fromJson(data).contextTokens,
+            ),
+          );
+        }
+      },
       onStatus: reportStatus,
       onProviderItems: (items) =>
           _timeline.appendProviderItems(sessionId, items),
+      // The runner emits `context.reset` itself; this only makes the discard
+      // durable so a reconnect does not replay the retired window.
+      contextResets: _DatabaseContextResetCoordinator(
+        timeline: _timeline,
+        sessions: _sessions,
+        emitSession: _emitSession,
+        sessionId: sessionId,
+      ),
       // A shell the user allowed stays writable, so an interactive session
       // does not raise a dialog for every keystroke.
       policyFactory: (mode) => ExecSessionApprovalPolicy(
@@ -239,6 +268,7 @@ class SessionService {
               ? definition.systemPrompt
               : null,
           skills: skillSummaries,
+          contextWindowTokens: resolvedModel.limits?.context,
         ),
         cancellation,
       ),
@@ -715,6 +745,31 @@ final class _DelegateAgentTool extends AgentTool {
     prompt: arguments['prompt'] as String,
     cancellation: context.cancellation,
   );
+}
+
+/// Makes a `new_context` reset durable.
+///
+/// The runner has already trimmed its in-memory conversation; this retires the
+/// stored window so a reconnect or a daemon restart replays exactly the same
+/// items, and clears the token counter the meter reads.
+class _DatabaseContextResetCoordinator implements ContextResetCoordinator {
+  _DatabaseContextResetCoordinator({
+    required this.timeline,
+    required this.sessions,
+    required this.emitSession,
+    required this.sessionId,
+  });
+
+  final TimelineRepository timeline;
+  final SessionRepository sessions;
+  final void Function(SessionDto?) emitSession;
+  final String sessionId;
+
+  @override
+  Future<void> reset(List<ConversationItem> retain) async {
+    await timeline.resetContextWindow(sessionId, retain);
+    emitSession(await sessions.getById(sessionId));
+  }
 }
 
 class _DatabaseUserQuestionCoordinator implements UserQuestionCoordinator {

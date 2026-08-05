@@ -5,6 +5,7 @@ import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/plan_mode_prompt.dart';
 import 'package:coder_agent/src/skills.dart';
 import 'package:coder_agent/src/tool_search.dart';
+import 'package:coder_agent/src/usage.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Signature used by AgentEventCallback.
@@ -38,7 +39,14 @@ class AgentRunRequest {
     this.sessionMode = SessionMode.normal,
     this.customSystemPrompt,
     this.skills = const <SkillSummary>[],
+    this.contextWindowTokens,
   });
+
+  /// Tokens this model's context window holds, when the catalog knows one.
+  ///
+  /// A plain int rather than the provider DTO, so this package never learns
+  /// about provider catalogs.
+  final int? contextWindowTokens;
 
   /// The sessionId public API member.
   final String sessionId;
@@ -111,6 +119,7 @@ class AgentRunner {
     required this._onEvent,
     required this._onStatus,
     required this._onProviderItems,
+    this._contextResets,
     ApprovalPolicy Function(PermissionMode mode)? policyFactory,
   }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool},
        _policyFactory = policyFactory ?? DefaultApprovalPolicy.new {
@@ -134,6 +143,9 @@ class AgentRunner {
   final AgentEventCallback _onEvent;
   final SessionStatusCallback _onStatus;
   final ProviderItemsCallback _onProviderItems;
+
+  /// Discards persisted history when a tool asks for a fresh window.
+  final ContextResetCoordinator? _contextResets;
 
   /// Builds the approval policy for a turn's permission mode.
   final ApprovalPolicy Function(PermissionMode mode) _policyFactory;
@@ -196,6 +208,8 @@ class AgentRunner {
     final input = <ConversationItem>[...request.history, userItem];
     final persisted = <ConversationItem>[userItem];
     var toolRounds = 0;
+    var turnUsage = const ModelUsage();
+    var resetRequested = false;
     _restoreSurfaced(request.history);
     await _onStatus(SessionStatus.running);
     if (_deferredCount > 0) {
@@ -256,6 +270,7 @@ class AgentRunner {
         input.add(assistant);
         persisted.add(assistant);
         await _onProviderItems(<ConversationItem>[assistant]);
+        turnUsage = completed.usage;
         await _onEvent('model.usage', completed.usage.toJson());
 
         if (functionCalls.isEmpty) {
@@ -298,6 +313,9 @@ class AgentRunner {
               workspaceRoot: request.workspaceRoot,
               cancellation: cancellation,
               callId: call.callId,
+              contextWindowTokens: request.contextWindowTokens,
+              turnUsage: turnUsage,
+              requestContextReset: () => resetRequested = true,
             );
             final preview = await tool.preview(call.arguments, context);
             final invocation = ToolInvocation(
@@ -387,6 +405,11 @@ class AgentRunner {
             });
           }
         }
+
+        if (resetRequested) {
+          resetRequested = false;
+          await _startNewContextWindow(input, persisted, request);
+        }
       }
     } on AgentCancelledException {
       await _onEvent('turn.cancelled', const <String, dynamic>{});
@@ -397,6 +420,37 @@ class AgentRunner {
       await _onStatus(SessionStatus.failed, error: '$error');
       rethrow;
     }
+  }
+
+  /// Discards the conversation, keeping only the round that asked for it.
+  ///
+  /// Both provider APIs reject a `function_call_output` whose `function_call`
+  /// is missing, so the assistant item that issued the reset and every tool
+  /// result of that same round have to survive together. The coordinator is
+  /// given exactly what the live conversation kept, so the database and the
+  /// in-memory history cannot drift apart.
+  Future<void> _startNewContextWindow(
+    List<ConversationItem> input,
+    List<ConversationItem> persisted,
+    AgentRunRequest request,
+  ) async {
+    final lastAssistant = input.lastIndexWhere(
+      (item) => item is AssistantConversationItem,
+    );
+    if (lastAssistant < 0) return;
+    final retain = List<ConversationItem>.unmodifiable(
+      input.sublist(lastAssistant),
+    );
+    input
+      ..clear()
+      ..addAll(retain);
+    persisted
+      ..clear()
+      ..addAll(retain);
+    await _contextResets?.reset(retain);
+    await _onEvent('context.reset', <String, dynamic>{
+      'retained': retain.length,
+    });
   }
 
   String _instructions(AgentRunRequest request) {

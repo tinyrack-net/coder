@@ -2443,6 +2443,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Always available'**
   String get agentSettingsToolAlwaysOn;
+
+  /// Result line of a get_context_remaining call.
+  ///
+  /// In en, this message translates to:
+  /// **'{remaining} of {window} tokens left'**
+  String toolContextRemaining(int remaining, int window);
+
+  /// Result line when the provider never advertised a window.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} tokens used'**
+  String toolContextRemainingUnknown(int used);
+
+  /// Divider marking where the model's history was discarded.
+  ///
+  /// In en, this message translates to:
+  /// **'New context window'**
+  String get chatContextReset;
+
+  /// Label of the composer context budget meter.
+  ///
+  /// In en, this message translates to:
+  /// **'Context'**
+  String get sessionContextMeter;
+
+  /// Accessible value of the context budget meter.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of the context window used'**
+  String sessionContextMeterValue(int percent);
 }
 
 class _AppLocalizationsDelegate

@@ -569,6 +569,15 @@ abstract interface class UserQuestionCoordinator {
   );
 }
 
+/// Discards the persisted conversation and starts a fresh context window.
+///
+/// The retained items are re-appended under a new epoch so the database and
+/// the runner's in-memory conversation cannot drift apart.
+abstract interface class ContextResetCoordinator {
+  /// Keeps only [retain], under a new context epoch.
+  Future<void> reset(List<ConversationItem> retain);
+}
+
 /// ToolExecutionContext defines a public contract.
 class ToolExecutionContext {
   /// Creates a [ToolExecutionContext].
@@ -576,6 +585,9 @@ class ToolExecutionContext {
     required this.workspaceRoot,
     required this.cancellation,
     this.callId = '',
+    this.contextWindowTokens,
+    this.turnUsage = const ModelUsage(),
+    this.requestContextReset = _ignoreContextReset,
   });
 
   /// The workspaceRoot public API member.
@@ -590,7 +602,21 @@ class ToolExecutionContext {
   /// answer, for instance — keys that state by this so the client can tie it
   /// back to the call that produced it.
   final String callId;
+
+  /// Tokens this model's context window holds, when the provider reports one.
+  final int? contextWindowTokens;
+
+  /// What the last response in this turn consumed.
+  final ModelUsage turnUsage;
+
+  /// Asks the runner to start a fresh context window after this round.
+  ///
+  /// Deliberately deferred: resetting inside the tool would strand any call
+  /// that follows it in the same round.
+  final void Function() requestContextReset;
 }
+
+void _ignoreContextReset() {}
 
 /// ToolResult defines a public contract.
 class ToolResult {

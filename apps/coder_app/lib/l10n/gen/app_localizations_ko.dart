@@ -1305,4 +1305,25 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get agentSettingsToolAlwaysOn => '항상 사용 가능';
+
+  @override
+  String toolContextRemaining(int remaining, int window) {
+    return '토큰 $remaining/$window 남음';
+  }
+
+  @override
+  String toolContextRemainingUnknown(int used) {
+    return '토큰 $used개 사용';
+  }
+
+  @override
+  String get chatContextReset => '새 컨텍스트 창';
+
+  @override
+  String get sessionContextMeter => '컨텍스트';
+
+  @override
+  String sessionContextMeterValue(int percent) {
+    return '컨텍스트 창의 $percent% 사용';
+  }
 }

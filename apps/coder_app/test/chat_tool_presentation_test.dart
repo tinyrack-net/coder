@@ -483,6 +483,53 @@ void main() {
   );
 
   test(
+    'the context budget reads as tokens, not raw counters',
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+    () {
+      final remaining = describeToolActivity(
+        testL10n,
+        activity(
+          'get_context_remaining',
+          output:
+              '{"usedTokens":32000,"contextWindowTokens":200000,'
+              '"remainingTokens":168000}',
+        ),
+      );
+      expect(remaining.glyph, ChatToolGlyph.context);
+      expect(chatToolIcon(remaining.glyph), CoderIcons.gauge);
+      expect(remaining.title, 'Context()');
+      expect(remaining.resultLine, '토큰 168000/200000 남음');
+
+      // Without an advertised window there is no fraction to report, so the
+      // row falls back to what was actually spent.
+      final unknown = describeToolActivity(
+        testL10n,
+        activity(
+          'get_context_remaining',
+          output:
+              '{"usedTokens":900,"contextWindowTokens":null,'
+              '"remainingTokens":null}',
+        ),
+      );
+      expect(unknown.resultLine, '토큰 900개 사용');
+
+      // A successful reset is the timeline divider; only a refusal draws here.
+      final denied = describeToolActivity(
+        testL10n,
+        activity(
+          'new_context',
+          output: '{"error":"Denied."}',
+          isError: true,
+        ),
+      );
+      expect(denied.glyph, ChatToolGlyph.context);
+      expect(denied.title, 'NewContext()');
+      expect(denied.resultLine, 'Denied.');
+      expect(denied.isFailure, isTrue);
+    },
+  );
+
+  test(
     'tool_search reports what it loaded and what stays hidden',
     tags: const <String>['feature_test__tool_search_deferred__widget'],
     () {

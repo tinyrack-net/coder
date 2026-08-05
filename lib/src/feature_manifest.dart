@@ -600,6 +600,8 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'model context window, and starts a fresh window on request.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
     },
   ),

@@ -1785,6 +1785,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                   // queues instead.
                   enabled: effective != null,
                   busy: busy,
+                  contextTokens: current.contextTokens,
+                  contextWindow: current.contextWindow,
                   queued: value?.queued ?? const <QueuedTurn>[],
                   onQueue: (submission) =>
                       _conversation(ref, current.id).enqueueTurn(

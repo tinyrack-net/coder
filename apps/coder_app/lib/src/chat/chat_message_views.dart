@@ -402,6 +402,38 @@ class ChatUserAnswerLine extends StatelessWidget {
   }
 }
 
+/// Marks where the model's history was discarded.
+///
+/// The conversation above stays readable, so the divider is what tells the
+/// user why the agent no longer remembers any of it.
+class ChatContextResetLine extends StatelessWidget {
+  /// Creates a context reset divider.
+  const ChatContextResetLine({required this.reset, super.key});
+
+  /// The reset to render.
+  final ChatContextReset reset;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: TRSpacing.small),
+    child: Row(
+      children: <Widget>[
+        const Expanded(child: TRSeparator(variant: TRSeparatorVariant.muted)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: TRSpacing.small),
+          child: TRText(
+            AppLocalizations.of(context).chatContextReset,
+            key: const ValueKey<String>('chat-context-reset'),
+            variant: TRTextVariant.bodySm,
+            color: TRTextColor.muted,
+          ),
+        ),
+        const Expanded(child: TRSeparator(variant: TRSeparatorVariant.muted)),
+      ],
+    ),
+  );
+}
+
 /// Tells the user that tools exist beyond the ones the model was handed.
 class ChatDeferredToolsLine extends StatelessWidget {
   /// Creates a deferred-tools line.

@@ -390,5 +390,10 @@
   "mcpSettingsSecretSet": "비밀값 저장",
   "mcpSettingsSecretKey": "참조 이름",
   "mcpSettingsSecretValue": "값",
-  "agentSettingsToolAlwaysOn": "항상 사용 가능"
+  "agentSettingsToolAlwaysOn": "항상 사용 가능",
+  "toolContextRemaining": "토큰 {remaining}/{window} 남음",
+  "toolContextRemainingUnknown": "토큰 {used}개 사용",
+  "chatContextReset": "새 컨텍스트 창",
+  "sessionContextMeter": "컨텍스트",
+  "sessionContextMeterValue": "컨텍스트 창의 {percent}% 사용"
 }

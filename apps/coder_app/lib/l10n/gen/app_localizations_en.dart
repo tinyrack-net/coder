@@ -1330,4 +1330,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSettingsToolAlwaysOn => 'Always available';
+
+  @override
+  String toolContextRemaining(int remaining, int window) {
+    return '$remaining of $window tokens left';
+  }
+
+  @override
+  String toolContextRemainingUnknown(int used) {
+    return '$used tokens used';
+  }
+
+  @override
+  String get chatContextReset => 'New context window';
+
+  @override
+  String get sessionContextMeter => 'Context';
+
+  @override
+  String sessionContextMeterValue(int percent) {
+    return '$percent% of the context window used';
+  }
 }

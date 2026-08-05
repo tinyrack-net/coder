@@ -775,11 +775,20 @@ class SessionComposer extends StatefulWidget {
     this.header,
     this.hint,
     this.attachmentInput,
+    this.contextTokens = 0,
+    this.contextWindow,
     super.key,
   });
 
   /// Selector row rendered above the input.
   final SessionComposerBar bar;
+
+  /// Tokens the last response reported for the live context window.
+  final int contextTokens;
+
+  /// Context window of the session's model; null hides the meter entirely
+  /// rather than showing a percentage of a denominator nobody advertised.
+  final int? contextWindow;
 
   /// Receives the trimmed prompt text.
   final FutureOr<void> Function(ComposerSubmission submission) onSubmit;
@@ -934,6 +943,8 @@ class _SessionComposerState extends State<SessionComposer> {
                           ),
                       ],
                     ),
+                  if (widget.contextWindow case final window? when window > 0)
+                    _ContextMeter(used: widget.contextTokens, window: window),
                   Row(
                     spacing: TRSpacing.small,
                     children: <Widget>[
@@ -1176,6 +1187,40 @@ class _SessionComposerState extends State<SessionComposer> {
 }
 
 /// One prompt waiting for the running turn, shown above the input.
+/// How much of the model's context window the session has spent.
+///
+/// The number is the last response's own total, not a running sum, so it drops
+/// back to zero whenever the agent starts a new window.
+class _ContextMeter extends StatelessWidget {
+  const _ContextMeter({required this.used, required this.window});
+
+  /// Tokens reported for the live window.
+  final int used;
+
+  /// Size of the window; always greater than zero at this point.
+  final int window;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final percent = ((used / window) * 100).round().clamp(0, 100);
+    return TRMeter(
+      key: const ValueKey<String>('session-composer-context-meter'),
+      value: used.toDouble().clamp(0, window.toDouble()),
+      max: window.toDouble(),
+      label: l10n.sessionContextMeter,
+      valueText: l10n.sessionContextMeterValue(percent),
+      // Warn while there is still room to react, and only call it dangerous
+      // once a long tool result could no longer fit.
+      variant: switch (percent) {
+        >= 95 => TRStatusVariant.danger,
+        >= 80 => TRStatusVariant.warning,
+        _ => TRStatusVariant.neutral,
+      },
+    );
+  }
+}
+
 class _QueuedTurnRow extends StatelessWidget {
   const _QueuedTurnRow({
     required this.slotKey,

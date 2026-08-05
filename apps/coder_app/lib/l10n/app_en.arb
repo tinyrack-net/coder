@@ -1694,5 +1694,28 @@
   "agentSettingsToolAlwaysOn": "Always available",
   "@agentSettingsToolAlwaysOn": {
     "description": "Subtitle marking a tool every agent gets."
+  },
+  "toolContextRemaining": "{remaining} of {window} tokens left",
+  "@toolContextRemaining": {
+    "description": "Result line of a get_context_remaining call.",
+    "placeholders": {"remaining": {"type": "int"}, "window": {"type": "int"}}
+  },
+  "toolContextRemainingUnknown": "{used} tokens used",
+  "@toolContextRemainingUnknown": {
+    "description": "Result line when the provider never advertised a window.",
+    "placeholders": {"used": {"type": "int"}}
+  },
+  "chatContextReset": "New context window",
+  "@chatContextReset": {
+    "description": "Divider marking where the model's history was discarded."
+  },
+  "sessionContextMeter": "Context",
+  "@sessionContextMeter": {
+    "description": "Label of the composer context budget meter."
+  },
+  "sessionContextMeterValue": "{percent}% of the context window used",
+  "@sessionContextMeterValue": {
+    "description": "Accessible value of the context budget meter.",
+    "placeholders": {"percent": {"type": "int"}}
   }
 }

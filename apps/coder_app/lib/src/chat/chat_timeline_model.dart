@@ -287,6 +287,18 @@ final class ChatSleep extends ChatItem {
   final String? reason;
 }
 
+/// The point where `new_context` discarded the model's history.
+///
+/// The conversation above it stays on screen: only the model forgot it.
+final class ChatContextReset extends ChatItem {
+  /// Creates a context reset divider.
+  const ChatContextReset({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+  });
+}
+
 /// A notice that some tools were withheld from the model's tool list.
 final class ChatDeferredTools extends ChatItem {
   /// Creates a deferred-tools notice.
@@ -398,7 +410,10 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
         }
       case 'tool.requested':
         closeAssistant(turnId);
-        if (_string(event.data['name']) == 'attach_file') continue;
+        // Both render as their own item, so a tool row beside them would
+        // only repeat what the reader already sees.
+        const suppressed = <String>{'attach_file', 'new_context'};
+        if (suppressed.contains(_string(event.data['name']))) continue;
         final callId = _string(event.data['callId']) ?? '';
         if (_string(event.data['name']) == 'update_plan' &&
             !openPlans.containsKey('$turnId/$callId')) {
@@ -477,8 +492,12 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
       case 'tool.failed':
       case 'tool.denied':
         closeAssistant(turnId);
+        // A failure still falls through to a plain row so it stays visible.
         if (event.type == 'tool.completed' &&
-            _string(event.data['name']) == 'attach_file' &&
+            const <String>{
+              'attach_file',
+              'new_context',
+            }.contains(_string(event.data['name'])) &&
             event.data['isError'] != true) {
           continue;
         }
@@ -541,6 +560,17 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           output: _string(event.data['output']),
           error: _string(event.data['error']),
           isError: event.data['isError'] == true,
+        );
+      case 'context.reset':
+        closeAssistant(turnId);
+        builders.add(
+          _StaticBuilder(
+            ChatContextReset(
+              key: 'context-reset-${event.sequence}',
+              turnId: turnId,
+              createdAt: event.createdAt,
+            ),
+          ),
         );
       case 'tools.deferred':
         closeAssistant(turnId);

@@ -407,6 +407,60 @@ void main() {
   );
 
   testWidgets(
+    'a context reset draws a divider instead of a tool row',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-reset',
+          'name': 'new_context',
+          'arguments': <String, dynamic>{},
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-reset',
+          'name': 'new_context',
+          'output': '{"started":true}',
+        }),
+        event('context.reset', <String, dynamic>{'retained': 2}),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-context-reset')),
+        findsOne,
+      );
+      // The divider already says it, so no tool row repeats it.
+      expect(find.text('NewContext()'), findsNothing);
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
+    'a rejected context reset stays visible as a tool row',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-reset',
+          'name': 'new_context',
+          'arguments': <String, dynamic>{},
+        }),
+        event('tool.denied', <String, dynamic>{
+          'callId': 'call-reset',
+          'name': 'new_context',
+          'error': 'Denied.',
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('NewContext()'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('chat-context-reset')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
     'withheld tools are announced so the user knows they exist',
     (tester) async {
       await pump(tester, <TimelineEventDto>[

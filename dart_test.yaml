@@ -73,6 +73,8 @@ tags:
   feature_test__mcp_resource_access__verticalSlice:
   feature_test__mcp_resource_access__widget:
   feature_test__tool_context_budget__unit:
+  feature_test__tool_context_budget__contract:
+  feature_test__tool_context_budget__verticalSlice:
   feature_test__tool_context_budget__widget:
   feature_test__tool_image_context__unit:
   feature_test__tool_image_context__verticalSlice:

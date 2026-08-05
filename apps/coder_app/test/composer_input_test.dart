@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 import 'support/localization.dart';
@@ -333,6 +334,52 @@ void main() {
       );
 
       expect(find.textContaining('Ctrl+L'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'the context meter appears only once a window is known',
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+    (tester) async {
+      const meterKey = ValueKey<String>('session-composer-context-meter');
+
+      // A provider that never advertised a window would make any percentage a
+      // fiction, so nothing is drawn at all.
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            contextTokens: 4000,
+            onSubmit: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(meterKey), findsNothing);
+
+      for (final expected in <(int, TRStatusVariant)>[
+        (32000, TRStatusVariant.neutral),
+        (170000, TRStatusVariant.warning),
+        (196000, TRStatusVariant.danger),
+      ]) {
+        await tester.pumpWidget(
+          _harness(
+            composer: SessionComposer(
+              enabled: true,
+              contextTokens: expected.$1,
+              contextWindow: 200000,
+              onSubmit: (_) {},
+              bar: _bar(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final meter = tester.widget<TRMeter>(find.byKey(meterKey));
+        expect(meter.variant, expected.$2, reason: '${expected.$1} tokens');
+        expect(meter.max, 200000);
+        expect(meter.value, expected.$1);
+      }
     },
   );
 }

@@ -268,11 +268,58 @@ void main() {
     ),
   ]).single;
 
+  // The budget row, the divider that replaces a successful reset, and the
+  // ordinary row a refused one still draws.
+  final contextEvents = <TimelineEventDto>[
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 1,
+      turnId: 'turn-1',
+      type: 'tool.requested',
+      data: const <String, dynamic>{
+        'callId': 'call-budget',
+        'name': 'get_context_remaining',
+        'arguments': <String, dynamic>{},
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 2,
+      turnId: 'turn-1',
+      type: 'tool.completed',
+      data: const <String, dynamic>{
+        'callId': 'call-budget',
+        'name': 'get_context_remaining',
+        'output':
+            '{"usedTokens":191000,"contextWindowTokens":200000,'
+            '"remainingTokens":9000}',
+      },
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 3,
+      turnId: 'turn-1',
+      type: 'context.reset',
+      data: const <String, dynamic>{'retained': 2},
+      createdAt: now,
+    ),
+    TimelineEventDto(
+      sessionId: 'agent-1',
+      sequence: 4,
+      turnId: 'turn-1',
+      type: 'assistant.delta',
+      data: const <String, dynamic>{'text': '이어서 진행할게요.'},
+      createdAt: now,
+    ),
+  ];
+
   unawaited(
     goldenTest(
       'chat timeline and approval cards render in light and dark themes',
       fileName: 'core_cards',
-      constraints: const BoxConstraints.tightFor(width: 1000, height: 1560),
+      constraints: const BoxConstraints.tightFor(width: 1000, height: 2560),
       builder: () => GoldenTestGroup(
         columns: 2,
         children: <Widget>[
@@ -374,6 +421,22 @@ void main() {
                   child: ChatQuestionCard(hostId: 'server', request: question),
                 ),
               ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'context light',
+            child: SizedBox(
+              width: 460,
+              height: 260,
+              child: _chat(ThemeMode.light, contextEvents),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'context dark',
+            child: SizedBox(
+              width: 460,
+              height: 260,
+              child: _chat(ThemeMode.dark, contextEvents),
             ),
           ),
           GoldenTestScenario(
@@ -646,7 +709,7 @@ void main() {
     goldenTest(
       'session composer exposes ready invalid and loading states',
       fileName: 'composer_states',
-      constraints: const BoxConstraints.tightFor(width: 960, height: 1080),
+      constraints: const BoxConstraints.tightFor(width: 960, height: 1380),
       builder: () => GoldenTestGroup(
         columns: 1,
         children: <Widget>[
@@ -679,6 +742,18 @@ void main() {
             ),
           ),
           GoldenTestScenario(
+            name: 'context nearly full light',
+            child: SizedBox(
+              width: 900,
+              height: 240,
+              child: _composerState(
+                ThemeMode.light,
+                contextTokens: 196000,
+                contextWindow: 200000,
+              ),
+            ),
+          ),
+          GoldenTestScenario(
             name: 'queued during a turn dark',
             child: SizedBox(
               width: 900,
@@ -708,6 +783,8 @@ Widget _composerState(
   String? hint,
   bool busy = false,
   List<QueuedTurn> queued = const <QueuedTurn>[],
+  int contextTokens = 0,
+  int? contextWindow,
 }) => ProviderScope(
   overrides: [
     appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
@@ -722,6 +799,8 @@ Widget _composerState(
         hint: hint,
         busy: busy,
         queued: queued,
+        contextTokens: contextTokens,
+        contextWindow: contextWindow,
         onQueue: (_) {},
         onQueuedEdit: (_) => null,
         onQueuedSendNow: (_) {},
