@@ -816,58 +816,11 @@ void main() {
       // sending so the typed text still goes out as prose.
       await tester.enterText(find.byKey(composer), 'read @zzzzzz');
       await tester.pumpAndSettle();
-      await pumpUntil(tester, find.text('No files'));
+      // The E2E app is pinned to Korean, so the empty row reads in Korean.
+      await pumpUntil(tester, find.text('파일 없음'));
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
-      expect(find.text('No files'), findsNothing);
-
-      // An app-owned command runs in the app: the draft clears and no turn
-      // starts for it.
-      final sessionsBefore = (await setupClient.listSessions(
-        worktreeId: 'checkout-e2e',
-      )).length;
-      await tester.enterText(find.byKey(composer), '/clear');
-      await tester.pumpAndSettle();
-      await pumpUntil(tester, find.text('clear'));
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
-        isEmpty,
-      );
-      expect(
-        (await setupClient.listSessions(worktreeId: 'checkout-e2e')).length,
-        sessionsBefore,
-      );
-
-      // A project command on disk expands its template into the prompt the
-      // daemon records for the turn.
-      await tester.enterText(find.byKey(composer), '/e2e-review lib/app.dart');
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(send));
-      await tester.pump();
-      await pumpUntilCondition(
-        tester,
-        () async {
-          final sessions = await setupClient.listSessions(
-            worktreeId: 'checkout-e2e',
-          );
-          if (sessions.isEmpty) return false;
-          final timeline = await setupClient.subscribeTimeline(
-            sessions.first.id,
-          );
-          return timeline
-              .where((event) => event.type == 'user.message')
-              .any(
-                (event) =>
-                    '${event.data['text']}' ==
-                    'Review lib/app.dart for the E2E fixture.',
-              );
-        },
-        'the expanded agent command prompt to reach the daemon',
-      );
+      expect(find.text('파일 없음'), findsNothing);
 
       await tester.enterText(find.byKey(composer), 'Delegate review');
       await tester.pump();
@@ -899,6 +852,68 @@ void main() {
       await tester.tap(find.text('Delegate review').first);
       await pumpUntil(tester, find.text('coder · manual'));
       await pumpUntil(tester, find.byKey(composer));
+
+      // An app-owned command runs in the app: the draft clears and no turn
+      // starts for it. This needs the live session, which is where the app
+      // wires a handler; a draft composer has none and submits the text.
+      final composerInput = find.descendant(
+        of: find.byKey(composer),
+        matching: find.byType(EditableText),
+      );
+      await tester.tap(composerInput);
+      await tester.pump();
+      final sessionsBefore = (await setupClient.listSessions(
+        worktreeId: 'checkout-e2e',
+      )).length;
+      tester.testTextInput.enterText('/clear');
+      await tester.pumpAndSettle();
+      await pumpUntil(tester, find.text('clear'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
+        isEmpty,
+      );
+      expect(
+        (await setupClient.listSessions(worktreeId: 'checkout-e2e')).length,
+        sessionsBefore,
+      );
+
+      // A project command on disk expands its template into the prompt the
+      // daemon records for the turn.
+      await _submitComposerPrompt(
+        tester,
+        composer,
+        send,
+        '/e2e-review lib/app.dart',
+      );
+      await pumpUntilCondition(
+        tester,
+        () async {
+          for (final session in await setupClient.listSessions(
+            worktreeId: 'checkout-e2e',
+          )) {
+            final timeline = await setupClient.subscribeTimeline(session.id);
+            final expanded = timeline
+                .where((event) => event.type == 'user.message')
+                .any(
+                  (event) =>
+                      '${event.data['text']}' ==
+                      'Review lib/app.dart for the E2E fixture.',
+                );
+            if (expanded) return true;
+          }
+          return false;
+        },
+        'the expanded agent command prompt to reach the daemon',
+      );
+      await _waitForComposerReady(tester, send);
+      // Sending moved focus to the send button; the flow below types straight
+      // into the field, so hand it back.
+      await tester.tap(composerInput);
+      await tester.pump();
 
       await tester.enterText(
         find.byKey(composer),
