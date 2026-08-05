@@ -57,12 +57,14 @@ void main() {
     required List<HostRuntimeSnapshot> hosts,
     required Map<String, WorkspaceCatalogDto> catalogs,
     ValueChanged<WorkspaceSelection>? onSelect,
+    ThemeMode themeMode = ThemeMode.light,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
           theme: testLightTheme,
           darkTheme: testDarkTheme,
+          themeMode: themeMode,
           locale: testLocale,
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
@@ -95,6 +97,37 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets(
+    'New Workspace separator matches the title bar border in light and dark '
+    'themes',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final themeMode in <ThemeMode>[ThemeMode.light, ThemeMode.dark]) {
+        await pump(
+          tester,
+          hosts: const <HostRuntimeSnapshot>[],
+          catalogs: const <String, WorkspaceCatalogDto>{},
+          themeMode: themeMode,
+        );
+
+        final separator = find.byType(TRSeparator);
+        expect(separator, findsOneWidget);
+        final line = find.descendant(
+          of: separator,
+          matching: find.byType(ColoredBox),
+        );
+        expect(line, findsOneWidget);
+        expect(
+          tester.widget<ColoredBox>(line).color,
+          tester.element(separator).tinyrackTheme.border,
+          reason: '${themeMode.name} sidebar and title bar borders must match',
+        );
+      }
+    },
+  );
 
   testWidgets(
     'workspaces from every daemon share one flat list sorted by name',

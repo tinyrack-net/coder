@@ -5,6 +5,14 @@ Flutter design over compatibility with development data, deprecated APIs, or an
 older internal protocol. Do not add compatibility shims or legacy adapters unless
 the user explicitly requests them.
 
+## Tinyrack dependency sources
+
+Consume packages owned by `tinyrack-net`, including `tinyrack_ui`, `cliweave`,
+`dartage`, and `shipworld`, from their public Git repositories at exact
+40-character commit SHAs. Do not use pub.dev, moving branches or tags, path
+dependencies, or `dependency_overrides` for these packages. Run
+`dart run melos tinyrack-sources:check` after changing dependencies.
+
 ## UI design system
 
 For every Flutter UI implementation, modification, refactor, review, styling,
@@ -20,10 +28,11 @@ only when they are composed entirely from public TR components and tokens.
 
 When a reusable primitive, interaction contract, component variant, or token is
 missing, stop the consumer implementation and use the skill's authorized
-upstream workflow to add it in `~/Workspaces/tinyrack/design`, merge and release
-it, upgrade the published dependency, and then resume the original work. Do not
-substitute a private clone, hardcoded design value, pub-cache edit, path or git
-dependency, or `dependency_overrides`.
+upstream workflow to add it in `~/Workspaces/tinyrack/design`, merge it, pin the
+consumer to the exact 40-character merge commit from the public Git repository,
+and then resume the original work. Do not substitute a private clone, hardcoded
+design value, pub-cache edit, path dependency, moving Git ref, or
+`dependency_overrides`.
 
 ## Required workflow
 

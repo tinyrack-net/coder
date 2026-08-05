@@ -146,6 +146,39 @@ void main() {
     expect(script, isNot(contains('project.exec')));
     expect(script, contains('android.compileSdk = 36'));
   });
+
+  test('shipworld runs from the pinned Tinyrack Dart workspace', () {
+    const shipworldRoot = '.dart_tool/tinyrack-dart-packages';
+    final shipworldExecutable = <String>[
+      shipworldRoot,
+      'packages',
+      'shipworld',
+      'bin',
+      'shipworld.dart',
+    ].join('/');
+    expect(
+      workflow,
+      contains(
+        'TINYRACK_DART_PACKAGES_REF: '
+        'f4c874d8316d326d8dc71b811bc62f084825a0c0',
+      ),
+    );
+    expect(workflow, contains('repository: tinyrack-net/dart-packages'));
+    expect(
+      workflow,
+      contains(r'ref: ${{ env.TINYRACK_DART_PACKAGES_REF }}'),
+    );
+    expect(
+      workflow,
+      contains('dart pub get --directory $shipworldRoot'),
+    );
+    expect(workflow, contains('dart run $shipworldExecutable'));
+    expect(workflow, isNot(contains('dart pub global activate shipworld')));
+    expect(
+      workflow,
+      isNot(contains('dart pub global run shipworld:shipworld')),
+    );
+  });
 }
 
 String _job(String workflow, String name) {

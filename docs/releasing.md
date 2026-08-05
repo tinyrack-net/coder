@@ -88,13 +88,19 @@ reads the same version, which is why one tag ships a matching desktop app,
 daemon, and CLI.
 
 ```sh
-dart pub global activate shipworld 0.2.3
+git clone https://github.com/tinyrack-net/dart-packages.git \
+  .dart_tool/tinyrack-dart-packages
+git -C .dart_tool/tinyrack-dart-packages checkout \
+  f4c874d8316d326d8dc71b811bc62f084825a0c0
+dart pub get --directory .dart_tool/tinyrack-dart-packages
 
 # Writes the version files and commits; open the result as a pull request.
-shipworld release prepare coder=minor    # or =patch / =major
+dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart \
+  release prepare coder=minor    # or =patch / =major
 
 # After the pull request merges, from an up-to-date main:
-shipworld release finalize coder --push
+dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart \
+  release finalize coder --push
 ```
 
 `finalize` refuses unless `HEAD` matches `origin/main`, and creates a
@@ -143,7 +149,8 @@ sideloaded without developer mode.
 
 ```sh
 dart run melos build:linux:release
-shipworld package linux deb coder \
+dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart \
+  package linux deb coder \
   --input apps/coder_app/build/linux/x64/release/bundle \
   --output dist/coder-linux-x64.deb --arch amd64
 sudo dpkg -i dist/coder-linux-x64.deb && coder

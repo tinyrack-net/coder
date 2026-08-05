@@ -29,7 +29,11 @@ dependencies:
   shared_preferences: ^2.5.4
   super_clipboard: ^0.9.1
   super_drag_and_drop: ^0.9.1
-  tinyrack_ui: ^0.7.0
+  tinyrack_ui:
+    git:
+      url: https://github.com/tinyrack-net/design.git
+      ref: 377345c240d0d3dd1a4aeae0301a89567755fe10
+      path: packages/ui_flutter
   tray_manager: ^0.5.3
   url_launcher: ^6.3.2
   uuid: ^4.6.0

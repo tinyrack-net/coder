@@ -1,19 +1,19 @@
 ---
 name: tinyrack-coder-design-guidelines
-description: Enforce Tinyrack's Flutter design system in Coder. Use for any Flutter UI implementation, modification, refactor, review, styling, layout, component selection, theme work, or pixel-changing test update in apps/coder_app, including deciding whether a missing reusable primitive, token, or variant belongs in the upstream tinyrack_ui package.
+description: Enforce Tinyrack's Flutter design system in Coder using the public tinyrack_ui Git source pinned to an exact commit. Use for any Flutter UI implementation, modification, refactor, review, styling, layout, component selection, theme work, or pixel-changing test update in apps/coder_app, including deciding whether a missing reusable primitive, token, or variant belongs upstream.
 ---
 
 # Tinyrack Coder Design Guidelines
 
-Build every Coder interface from the published `tinyrack_ui` package. Keep
-product-specific composition in Coder and reusable visual contracts in the
-Tinyrack design system.
+Build every Coder interface from the public `tinyrack_ui` package pinned to an
+exact commit in `tinyrack-net/design`. Keep product-specific composition in
+Coder and reusable visual contracts in the Tinyrack design system.
 
 ## Inspect Before Editing
 
 1. Read the consumer `pubspec.yaml`, lockfile, `.dart_tool/package_config.json`,
    existing imports, and neighboring widgets.
-2. Inspect the resolved release's README, public
+2. Inspect the resolved Git revision's README, public
    `lib/tinyrack_ui.dart` exports, component documentation, theme, and tokens.
    Treat that installed release as the source of truth; do not infer APIs from
    memory or an unreleased checkout.
@@ -51,8 +51,8 @@ Tinyrack design system.
   pointer behavior, semantics, and disabled, loading, readonly, invalid, hover,
   and pressed states.
 - Never import `package:tinyrack_ui/src/...`, edit the pub cache, or use a path
-  dependency, git dependency, or `dependency_overrides`. Consume only a
-  released pub.dev version.
+  dependency, moving Git ref, or `dependency_overrides`. Consume the public
+  repository with its canonical package path and an exact 40-character commit.
 
 ## Decide Ownership
 
@@ -125,19 +125,17 @@ through merge, release, and reintegration; do not request another approval.
 7. Because repository auto-merge is disabled, squash-merge the green PR with
    `gh pr merge --squash`. Record the exact merge commit. Do not merge while a
    required check is pending or failing.
-8. Follow `$tinyrack-package-release`: create the annotated
-   `tinyrack_ui-v<X>.<Y>.<Z>` tag on that merge commit, push it, monitor the
-   exact `.github/workflows/publish-flutter.yml` run, and confirm both version
-   fields from `https://pub.dev/api/packages/tinyrack_ui`. Never move or reuse a
-   pushed tag or published version.
-9. Remove the completed upstream worktree, upgrade Coder's `tinyrack_ui`
-   constraint to the published release, run `flutter pub get`, and resume the
+8. Record the exact squash-merge commit and verify it is reachable from the
+   public `tinyrack-net/design` repository. Tags and pub.dev publishing may
+   continue for other consumers, but Coder does not wait for publication.
+9. Remove the completed upstream worktree, update Coder's `tinyrack_ui` Git
+   `ref` to that exact merge commit, run `flutter pub get`, and resume the
    original consumer change.
 
-Continue autonomously through correctable test, CI, review, and release
-failures. Stop and report the exact blocker only when required authentication
-or permissions are absent, an external service failure is not recoverable, or
-resolving the failure would require an unrelated product decision.
+Continue autonomously through correctable test, CI, and review failures. Stop
+and report the exact blocker only when required authentication or permissions
+are absent, an external service failure is not recoverable, or resolving the
+failure would require an unrelated product decision.
 
 ## Verify the Consumer
 
