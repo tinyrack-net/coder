@@ -327,6 +327,98 @@ void main() {
     },
     tags: const <String>['feature_test__workspace_registration__widget'],
   );
+
+  testWidgets(
+    'a directory project skips Git targets and starts on its checkout',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final directory = workspace.copyWith(
+        id: 'directory',
+        name: 'Plain folder',
+        rootPath: '/repos/plain',
+        kind: WorkspaceKind.directory,
+      );
+      final directoryCheckout = checkout.copyWith(
+        id: 'directory-checkout',
+        workspaceId: directory.id,
+        name: directory.name,
+        path: directory.rootPath,
+        branch: null,
+        kind: WorktreeKind.directory,
+      );
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[directory],
+        worktrees: <WorktreeDto>[directoryCheckout],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+
+      expect(find.text('Plain folder'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('new-workspace-worktree')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('new-workspace-branch')),
+        findsNothing,
+      );
+      expect(api.listedGitBranchWorkspaceIds, isEmpty);
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Inspect this folder',
+      );
+      expect(
+        tester
+            .widget<TRIconButton>(
+              find.byKey(const ValueKey('session-composer-send')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      expect(api.createdWorktrees, isEmpty);
+      expect(api.createdSessions.single.worktreeId, directoryCheckout.id);
+      expect(api.startedPrompts, <String>['Inspect this folder']);
+    },
+    tags: const <String>[
+      'feature_test__workspace_catalog__widget',
+      'feature_test__session_lifecycle__widget',
+    ],
+  );
+
+  testWidgets(
+    'a directory project without its checkout cannot submit',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final directory = workspace.copyWith(
+        id: 'directory',
+        name: 'Incomplete folder',
+        rootPath: '/repos/incomplete',
+        kind: WorkspaceKind.directory,
+      );
+      final api = FakeCoderApi(workspaces: <WorkspaceDto>[directory]);
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+
+      expect(find.text('프로젝트 checkout을 찾을 수 없습니다.'), findsOne);
+      expect(
+        tester
+            .widget<TRIconButton>(
+              find.byKey(const ValueKey('session-composer-send')),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(api.listedGitBranchWorkspaceIds, isEmpty);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
 }
 
 HostRuntimeSnapshot _host(String id, String label) => HostRuntimeSnapshot(
