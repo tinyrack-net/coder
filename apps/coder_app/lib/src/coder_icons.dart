@@ -181,6 +181,9 @@ abstract final class CoderIcons {
   static const IconData send = LucideIcons.arrowUp;
 
   /// Semantic Lucide glyph.
+  static const IconData queue = LucideIcons.clock;
+
+  /// Semantic Lucide glyph.
   static const IconData checklist = LucideIcons.listChecks;
 
   /// Semantic Lucide glyph.

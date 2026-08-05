@@ -786,13 +786,43 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerFastModeOnTooltip => '빠른 모드가 켜져 있어요. 누르면 표준 등급을 사용해요';
 
   @override
-  String get composerFocusShortcut => 'Ctrl+L로 포커스';
-
-  @override
   String get composerSettingLocked => '설정은 턴 사이에만 바꿀 수 있어요';
 
   @override
   String get composerSendLabel => '메시지 보내기';
+
+  @override
+  String get composerQueueLabel => '메시지 대기열에 넣기';
+
+  @override
+  String get composerQueueTooltip => '현재 턴이 끝나면 보내요';
+
+  @override
+  String get composerQueuedEdit => '대기 중인 메시지 편집';
+
+  @override
+  String get composerQueuedSendNow => '대기 중인 메시지 지금 보내기';
+
+  @override
+  String composerQueuedAttachments(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '파일 $countString개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get composerAttachLabel => '파일 첨부';
+
+  @override
+  String get composerMoreSettings => '설정 더 보기';
 
   @override
   String get chatEmptyTitle => '코딩 요청을 입력하세요.';
