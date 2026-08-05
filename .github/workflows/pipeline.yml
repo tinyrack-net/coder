@@ -242,6 +242,48 @@ jobs:
           path: apps/coder_app/build/web
           if-no-files-found: error
 
+  cli-verify:
+    name: CLI Verify (${{ matrix.target }})
+    if: github.event_name != 'schedule'
+    # `build-cli` only runs on a tag or a manual dispatch, so nothing used to
+    # build the CLI on a pull request. Two release-path breakages reached main
+    # that way: a workspace resolution failure that made the job fail on every
+    # target, and a smoke test left on a stale flag order. Same argument as
+    # `web-build` above — the failure mode exists only here.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: linux-x64
+            platform: linux
+          - os: macos-15-intel
+            target: macos-x64
+            platform: macos
+          - os: macos-26
+            target: macos-arm64
+            platform: macos
+          - os: windows-2025
+            target: windows-x64
+            platform: windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - uses: ./.github/actions/build-cli-bundle
+        with:
+          target: ${{ matrix.target }}
+          platform: ${{ matrix.platform }}
+      # Signing, archiving, and uploading stay in `build-cli`: they need
+      # secrets a fork pull request never receives, and produce artifacts only
+      # a release consumes.
+      - uses: ./.github/actions/smoke-cli-bundle
+        with:
+          target: ${{ matrix.target }}
+          platform: ${{ matrix.platform }}
+
   quality-gate:
     name: Quality Gate
     if: always() && github.event_name != 'schedule'
@@ -257,6 +299,7 @@ jobs:
       - mobile-debug-build
       - desktop-debug-build
       - web-build
+      - cli-verify
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -504,23 +547,10 @@ jobs:
         if: matrix.platform == 'macos'
         run: dart pub get --directory .dart_tool/tinyrack-dart-packages
 
-      - name: Build the CLI
-        shell: bash
-        # `dart build cli`, not `dart compile exe`: the CLI hosts the daemon,
-        # so it links the sqlite3 and PTY code assets and ships as
-        # `bundle/bin/coder_cli` plus `bundle/lib/*`. The sqlite3 build hook
-        # downloads a precompiled library, so this step needs network access.
-        run: |
-          dart build cli -t packages/coder_cli/bin/coder_cli.dart -o dist
-          mkdir -p "dist/coder-cli-${{ matrix.target }}"
-          cp -R dist/bundle/. "dist/coder-cli-${{ matrix.target }}/"
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            mv "dist/coder-cli-${{ matrix.target }}/bin/coder_cli.exe" \
-              "dist/coder-cli-${{ matrix.target }}/bin/coder-cli.exe"
-          else
-            mv "dist/coder-cli-${{ matrix.target }}/bin/coder_cli" \
-              "dist/coder-cli-${{ matrix.target }}/bin/coder-cli"
-          fi
+      - uses: ./.github/actions/build-cli-bundle
+        with:
+          target: ${{ matrix.target }}
+          platform: ${{ matrix.platform }}
 
       - name: Sign and notarize the macOS bundle
         if: matrix.platform == 'macos'
@@ -544,31 +574,11 @@ jobs:
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
           codesign --verify --strict "$bundle/bin/coder-cli"
 
-      - name: Smoke-test the bundle
-        # Cross-built arm64 would not run here, but every target in this matrix
-        # is built on its own architecture, so the bundle has to work. Starting
-        # a daemon is what proves the sqlite3 and PTY libraries resolved; a
-        # bare `--version` would pass with either one missing.
-        shell: bash
-        run: |
-          bundle="dist/coder-cli-${{ matrix.target }}/bin"
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            cli="$bundle/coder-cli.exe"
-          else
-            cli="$bundle/coder-cli"
-          fi
-          # Daemon-addressing flags follow the subcommand, so `provider list`
-          # comes before `--listen`.
-          export TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke"
-          "$cli" --version
-          "$cli" daemon start --listen 127.0.0.1:7399 &
-          daemon=$!
-          for _ in $(seq 1 30); do
-            "$cli" provider list --listen 127.0.0.1:7399 >/dev/null 2>&1 && break
-            sleep 1
-          done
-          "$cli" provider list --listen 127.0.0.1:7399
-          kill "$daemon"
+      # After signing, so what runs here is the artifact that ships.
+      - uses: ./.github/actions/smoke-cli-bundle
+        with:
+          target: ${{ matrix.target }}
+          platform: ${{ matrix.platform }}
 
       - name: Archive the CLI bundle
         shell: bash

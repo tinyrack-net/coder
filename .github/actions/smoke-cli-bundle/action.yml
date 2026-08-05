@@ -1,0 +1,52 @@
+name: Smoke-test the CLI bundle
+description: >-
+  Run the built bundle end to end: host a daemon from it and drive that daemon
+  with the same binary. Starting a daemon is what proves the sqlite3 and PTY
+  libraries resolved from `lib/`; a bare `--version` passes with either one
+  missing.
+
+inputs:
+  target:
+    description: Release target name, such as linux-x64
+    required: true
+  platform:
+    description: linux, macos, or windows
+    required: true
+  port:
+    description: Loopback port the smoke daemon binds
+    required: false
+    default: '7399'
+
+runs:
+  using: composite
+  steps:
+    - name: Smoke-test the bundle
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        PLATFORM: ${{ inputs.platform }}
+        PORT: ${{ inputs.port }}
+      # Cross-built arm64 would not run here, but every release target is built
+      # on its own architecture, so the bundle has to work where it was made.
+      run: |
+        set -euo pipefail
+        bundle="dist/coder-cli-$TARGET/bin"
+        if [ "$PLATFORM" = "windows" ]; then
+          cli="$bundle/coder-cli.exe"
+        else
+          cli="$bundle/coder-cli"
+        fi
+        # A throwaway home keeps the smoke daemon off any real credentials.
+        export TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke"
+        "$cli" --version
+        # Daemon-addressing flags follow the subcommand, so `provider list`
+        # comes before `--listen`.
+        "$cli" daemon start --listen "127.0.0.1:$PORT" &
+        daemon=$!
+        for _ in $(seq 1 30); do
+          "$cli" provider list --listen "127.0.0.1:$PORT" >/dev/null 2>&1 &&
+            break
+          sleep 1
+        done
+        "$cli" provider list --listen "127.0.0.1:$PORT"
+        kill "$daemon"
