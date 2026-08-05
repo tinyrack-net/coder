@@ -2,6 +2,12 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+/// The scanned path as a key the exemption table can be written in.
+///
+/// Windows reports a backslash separator, so an exemption spelled with forward
+/// slashes would silently never match there.
+String scannedPathKey(String path) => path.replaceAll(r'\', '/');
+
 void main() {
   test('production UI uses Tinyrack components and Lucide icons', () {
     final sourceDirectory = Directory('lib/src');
@@ -58,7 +64,7 @@ void main() {
     for (final entity in sourceDirectory.listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
       final source = entity.readAsStringSync();
-      final allowed = exempt[entity.path] ?? const <String>{};
+      final allowed = exempt[scannedPathKey(entity.path)] ?? const <String>{};
       for (final entry in forbidden.entries) {
         if (allowed.contains(entry.value)) continue;
         for (final match in entry.key.allMatches(source)) {
@@ -75,6 +81,17 @@ void main() {
       reason:
           'Use tinyrack_ui components and LucideIcons instead:\n'
           '${violations.join('\n')}',
+    );
+  });
+
+  test('exemptions match on every platform separator', () {
+    expect(
+      scannedPathKey(r'lib\src\coder_icons.dart'),
+      'lib/src/coder_icons.dart',
+    );
+    expect(
+      scannedPathKey('lib/src/coder_icons.dart'),
+      'lib/src/coder_icons.dart',
     );
   });
 }
