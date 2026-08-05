@@ -81,6 +81,35 @@ void main() {
   );
 
   test(
+    'the embedded daemon row never includes unbounded failure details',
+    () {
+      const schemaFailure =
+          'SQLite schema validation failed: expected a very long list of '
+          'migrations, columns, indexes, and constraints that must remain '
+          'available in settings without expanding the native tray menu.';
+      final label = labelFor(
+        menu(
+          daemon: const HostRuntimeSnapshot(
+            id: embeddedHostId,
+            label: 'Embedded',
+            kind: HostKind.embedded,
+            status: HostRuntimeStatus.error,
+            error: schemaFailure,
+          ),
+        ),
+        trayItemDaemonStatus,
+      );
+
+      expect(
+        label,
+        '${testL10n.embeddedDaemonName}: ${testL10n.hostStatusError}',
+      );
+      expect(label, isNot(contains(schemaFailure)));
+    },
+    tags: const <String>['feature_test__desktop_residency__unit'],
+  );
+
+  test(
     'a build without an embedded daemon omits the status row entirely',
     () {
       final model = menu(supportsEmbeddedDaemon: false);

@@ -256,9 +256,10 @@ final class _RecordingEmbeddedLauncher implements EmbeddedDaemonLauncher {
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   }) async {
     final result = _RecordingEmbeddedSession(
-      await delegate.start(exposure: exposure),
+      await delegate.start(exposure: exposure, port: port),
       calls,
     );
     session = result;

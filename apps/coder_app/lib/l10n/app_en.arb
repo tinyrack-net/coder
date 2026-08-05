@@ -360,6 +360,10 @@
   "@hostErrorUnauthorized": {
     "description": "Connection failure when the daemon returns 401."
   },
+  "hostErrorEmbeddedPortInUse": "The selected port is already in use.",
+  "@hostErrorEmbeddedPortInUse": {
+    "description": "Embedded daemon startup failure when its listener port is occupied."
+  },
   "appSettingsTitle": "App settings",
   "@appSettingsTitle": {
     "description": "Title of the standalone daemon settings page."
@@ -379,6 +383,31 @@
   "appSettingsExposureSubtitle": "Off accepts connections from this machine only; on accepts them on every IPv4 interface.",
   "@appSettingsExposureSubtitle": {
     "description": "Explains the embedded daemon exposure toggle."
+  },
+  "appSettingsEmbeddedPort": "Port",
+  "@appSettingsEmbeddedPort": {
+    "description": "Numeric listener port for the embedded daemon."
+  },
+  "appSettingsEmbeddedPortHelp": "Choose a port from 1 to 65535. Applying restarts the embedded daemon when it is running.",
+  "@appSettingsEmbeddedPortHelp": {
+    "description": "Explains the embedded daemon port setting."
+  },
+  "appSettingsEmbeddedPortInvalid": "Enter a whole number from 1 to 65535.",
+  "@appSettingsEmbeddedPortInvalid": {
+    "description": "Validation message for an invalid embedded daemon port."
+  },
+  "appSettingsEmbeddedPortApply": "Apply",
+  "@appSettingsEmbeddedPortApply": {
+    "description": "Saves the embedded daemon port and restarts it when active."
+  },
+  "appSettingsEmbeddedFailureTitle": "The embedded daemon could not start",
+  "@appSettingsEmbeddedFailureTitle": {
+    "description": "Persistent alert title for an embedded daemon startup or connection failure."
+  },
+  "appSettingsEmbeddedPortConflict": "Port {port} is being used by another process. Choose another port and apply it, or retry after the port becomes available.",
+  "@appSettingsEmbeddedPortConflict": {
+    "description": "Resolution guidance for an occupied embedded daemon port.",
+    "placeholders": {"port": {"type": "int"}}
   },
   "appSettingsRemoteSection": "Remote daemons",
   "@appSettingsRemoteSection": {

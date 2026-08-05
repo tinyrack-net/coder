@@ -1106,6 +1106,7 @@ final class _GoldenEmbeddedLauncher implements EmbeddedDaemonLauncher {
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   }) => Future<EmbeddedDaemonSession>.error(
     const HostConnectionFailure.network('Golden daemon is offline.'),
   );

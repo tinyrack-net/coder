@@ -67,6 +67,7 @@ abstract interface class EmbeddedDaemonLauncher {
   /// Starts one daemon session.
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
+    required int port,
   });
 }
 

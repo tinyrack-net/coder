@@ -1506,6 +1506,39 @@ void main() {
     await handle.stop();
     await home.delete(recursive: true);
   });
+
+  test('embedded daemon reports a typed port conflict', () async {
+    final occupied = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(occupied.close);
+    final home = await Directory.systemTemp.createTemp(
+      'coder-embedded-conflict-',
+    );
+    addTearDown(() => home.delete(recursive: true));
+
+    final config = DaemonConfig(
+      homeDirectory: home.path,
+      port: occupied.port,
+      bearerToken: 'embedded-token-0123456789abcdef012345',
+      useEnvironmentCredentials: false,
+    );
+    await expectLater(
+      EmbeddedDaemonHandle.start(
+        config,
+      ),
+      throwsA(
+        isA<EmbeddedDaemonStartupException>().having(
+          (error) => error.reason,
+          'reason',
+          EmbeddedDaemonStartupFailureReason.portInUse,
+        ),
+      ),
+    );
+
+    await occupied.close();
+    final recovered = await EmbeddedDaemonHandle.start(config);
+    expect(recovered.boundEndpoint.port, config.port);
+    await recovered.stop();
+  });
 }
 
 /// Waits until a session reports idle.
