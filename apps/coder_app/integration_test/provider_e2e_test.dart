@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
 
 void main() {
@@ -74,12 +75,13 @@ void main() {
 
       await _startDeviceOAuth(tester);
       oauth.sessions.single.fail('planned authorization failure');
-      await _pumpUntil(
+      await pumpUntilCondition(
         tester,
         () => find
             .textContaining('planned authorization failure')
             .evaluate()
             .isNotEmpty,
+        'the failed authorization message',
       );
 
       await _startDeviceOAuth(tester);
@@ -87,7 +89,11 @@ void main() {
       final cancel = _authCancelButton();
       expect(cancel, findsOneWidget);
       await tester.tap(cancel);
-      await _pumpUntil(tester, () => cancelled.cancelled);
+      await pumpUntilCondition(
+        tester,
+        () => cancelled.cancelled,
+        'the cancelled device authorization to report it',
+      );
       expect(cancelled.cancelled, isTrue);
 
       await _startDeviceOAuth(tester);
@@ -99,14 +105,18 @@ void main() {
           accountId: 'e2e-account',
         ),
       );
-      await _pumpUntil(tester, () async {
-        final connections = await assertions.listProviderConnections();
-        return connections.any(
-          (connection) =>
-              connection.definitionId == 'openai' &&
-              connection.status == ProviderConnectionStatus.connected,
-        );
-      });
+      await pumpUntilCondition(
+        tester,
+        () async {
+          final connections = await assertions.listProviderConnections();
+          return connections.any(
+            (connection) =>
+                connection.definitionId == 'openai' &&
+                connection.status == ProviderConnectionStatus.connected,
+          );
+        },
+        'the OAuth connection to report connected',
+      );
 
       final connection = (await assertions.listProviderConnections())
           .singleWhere((item) => item.definitionId == 'openai');
@@ -155,9 +165,10 @@ Future<void> _startDeviceOAuth(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.text('Sign in with device code'));
   await tester.pump();
-  await _pumpUntil(
+  await pumpUntilCondition(
     tester,
     () => _authCancelButton().evaluate().isNotEmpty,
+    'the device authorization prompt',
   );
 }
 
@@ -166,17 +177,6 @@ Finder _authCancelButton() => find.byWidgetPredicate((widget) {
   return key is ValueKey<String> &&
       key.value.startsWith('provider-auth-cancel-');
 });
-
-Future<void> _pumpUntil(
-  WidgetTester tester,
-  FutureOr<bool> Function() condition,
-) async {
-  for (var attempt = 0; attempt < 100; attempt += 1) {
-    if (await condition()) return;
-    await tester.pump(const Duration(milliseconds: 20));
-  }
-  throw TestFailure('Timed out waiting for the provider E2E condition.');
-}
 
 final class _RetryingMetadataSource implements ProviderCatalogMetadataSource {
   int calls = 0;

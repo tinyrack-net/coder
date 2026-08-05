@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
 
 void main() {
@@ -36,7 +37,7 @@ void main() {
         'dart run cleanup',
       );
       await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await _pumpUntil(tester, find.text('저장했습니다.'));
+      await pumpUntil(tester, find.text('저장했습니다.'));
 
       final document =
           jsonDecode(await settingsFile.readAsString()) as Map<String, dynamic>;
@@ -69,12 +70,12 @@ void main() {
       await settingsFile.writeAsString('{not json\n');
 
       await _pumpProjectSettings(tester, fixture.$1, waitForEditor: false);
-      await _pumpUntil(tester, find.textContaining('invalid_project_settings'));
+      await pumpUntil(tester, find.textContaining('invalid_project_settings'));
       expect(find.text('다시 시도'), findsOneWidget);
 
       await settingsFile.writeAsString('{}\n', flush: true);
       await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
-      await _pumpUntil(tester, _textInput('Setup (worktree 생성 후)'));
+      await pumpUntil(tester, _textInput('Setup (worktree 생성 후)'));
       expect(find.textContaining('invalid_project_settings'), findsNothing);
     },
     tags: const <String>[
@@ -99,7 +100,7 @@ void main() {
       );
 
       await tester.pumpWidget(CoderApp(services: fixture.$1.services));
-      await _pumpUntil(tester, find.text('Git Project E2E'));
+      await pumpUntil(tester, find.text('Git Project E2E'));
       final created = await client.createWorktree(
         id: 'failed-worktree',
         workspaceId: fixture.$3,
@@ -143,14 +144,14 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(CoderApp(services: fixture.$1.services));
-      await _pumpUntil(tester, find.text('archive-cancel'));
+      await pumpUntil(tester, find.text('archive-cancel'));
       final menu = find.byKey(
         const ValueKey<String>('worktree-menu-cancelled-archive'),
       );
       await tester.tap(menu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Archive'));
-      await _pumpUntil(
+      await pumpUntil(
         tester,
         find.byKey(const ValueKey<String>('worktree-archive-confirm')),
       );
@@ -236,13 +237,13 @@ Future<void> _pumpProjectSettings(
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(CoderApp(services: fixture.services));
   await tester.pumpAndSettle();
-  await _pumpUntil(tester, find.text('Project E2E'));
+  await pumpUntil(tester, find.text('Project E2E'));
   await tester.tap(find.byIcon(CoderIcons.settings));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Projects'));
   await tester.pumpAndSettle();
   if (waitForEditor) {
-    await _pumpUntil(tester, _textInput('Setup (worktree 생성 후)'));
+    await pumpUntil(tester, _textInput('Setup (worktree 생성 후)'));
   }
 }
 
@@ -252,15 +253,3 @@ Finder _textInput(String label) => find.descendant(
   ),
   matching: find.byType(EditableText),
 );
-
-Future<void> _pumpUntil(
-  WidgetTester tester,
-  Finder finder, {
-  int attempts = 100,
-}) async {
-  for (var attempt = 0; attempt < attempts; attempt += 1) {
-    await tester.pump(const Duration(milliseconds: 100));
-    if (finder.evaluate().isNotEmpty) return;
-  }
-  throw TestFailure('Timed out waiting for $finder.');
-}
