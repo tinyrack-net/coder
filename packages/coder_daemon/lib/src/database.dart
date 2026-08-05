@@ -103,6 +103,15 @@ class Sessions extends Table {
   /// Model pinned for this session; null inherits the agent definition.
   TextColumn get modelId => text().nullable()();
 
+  /// Reasoning effort for this session; null inherits the agent definition.
+  TextColumn get reasoningEffort => text().nullable()();
+
+  /// Permission mode for this session; null inherits the agent definition.
+  TextColumn get permissionMode => text().nullable()();
+
+  /// Provider service tier for this session; null uses the provider default.
+  TextColumn get serviceTier => text().nullable()();
+
   /// The createdAt public API member.
   DateTimeColumn get createdAt => dateTime()();
 
@@ -396,7 +405,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

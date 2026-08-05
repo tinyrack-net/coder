@@ -140,6 +140,9 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
     required String agentDefinitionId,
     @Default(SessionMode.normal) SessionMode mode,
     SessionModelSelectionDto? model,
+    String? reasoningEffort,
+    PermissionMode? permissionMode,
+    String? serviceTier,
   }) = _SessionCreateParamsDto;
 
   /// Decodes session creation parameters.
@@ -176,6 +179,61 @@ abstract class SessionModelSetParamsDto with _$SessionModelSetParamsDto {
   /// Decodes session model override parameters.
   factory SessionModelSetParamsDto.fromJson(Map<String, dynamic> json) =>
       _$SessionModelSetParamsDtoFromJson(json);
+}
+
+@freezed
+/// Sets or clears the reasoning effort override of one session.
+abstract class SessionReasoningEffortSetParamsDto
+    with _$SessionReasoningEffortSetParamsDto {
+  /// Creates session reasoning effort override parameters.
+  ///
+  /// A null [reasoningEffort] clears the override so the session inherits the
+  /// reasoning effort of its agent definition again.
+  const factory SessionReasoningEffortSetParamsDto({
+    required String sessionId,
+    String? reasoningEffort,
+  }) = _SessionReasoningEffortSetParamsDto;
+
+  /// Decodes session reasoning effort override parameters.
+  factory SessionReasoningEffortSetParamsDto.fromJson(
+    Map<String, dynamic> json,
+  ) => _$SessionReasoningEffortSetParamsDtoFromJson(json);
+}
+
+@freezed
+/// Sets or clears the permission mode override of one session.
+abstract class SessionPermissionModeSetParamsDto
+    with _$SessionPermissionModeSetParamsDto {
+  /// Creates session permission mode override parameters.
+  ///
+  /// A null [permissionMode] clears the override so the session inherits the
+  /// permission mode of its agent definition again.
+  const factory SessionPermissionModeSetParamsDto({
+    required String sessionId,
+    PermissionMode? permissionMode,
+  }) = _SessionPermissionModeSetParamsDto;
+
+  /// Decodes session permission mode override parameters.
+  factory SessionPermissionModeSetParamsDto.fromJson(
+    Map<String, dynamic> json,
+  ) => _$SessionPermissionModeSetParamsDtoFromJson(json);
+}
+
+@freezed
+/// Sets or clears the provider service tier of one session.
+abstract class SessionServiceTierSetParamsDto
+    with _$SessionServiceTierSetParamsDto {
+  /// Creates session service tier parameters.
+  ///
+  /// A null [serviceTier] clears the selection so the provider default applies.
+  const factory SessionServiceTierSetParamsDto({
+    required String sessionId,
+    String? serviceTier,
+  }) = _SessionServiceTierSetParamsDto;
+
+  /// Decodes session service tier parameters.
+  factory SessionServiceTierSetParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionServiceTierSetParamsDtoFromJson(json);
 }
 
 @freezed

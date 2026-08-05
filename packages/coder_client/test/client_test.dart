@@ -414,6 +414,25 @@ void main() {
         await client.updateSessionMode(agent.id, SessionMode.plan),
         agent,
       );
+      expect(
+        await client.updateSessionReasoningEffort(agent.id, 'high'),
+        agent,
+      );
+      expect(await client.updateSessionReasoningEffort(agent.id, null), agent);
+      expect(
+        await client.updateSessionPermissionMode(
+          agent.id,
+          PermissionMode.workspaceWrite,
+        ),
+        agent,
+      );
+      expect(await client.updateSessionPermissionMode(agent.id, null), agent);
+      expect(
+        await client.updateSessionServiceTier(agent.id, 'priority'),
+        agent,
+      );
+      expect(await client.updateSessionServiceTier(agent.id, null), agent);
+
       expect(await client.listTerminals(worktree.id), hasLength(1));
       final terminal = await client.createTerminal(
         id: 'terminal',
@@ -636,6 +655,9 @@ void main() {
           RpcMethod.sessionCreate,
           RpcMethod.sessionModelSet,
           RpcMethod.sessionModeSet,
+          RpcMethod.sessionReasoningEffortSet,
+          RpcMethod.sessionPermissionModeSet,
+          RpcMethod.sessionServiceTierSet,
           RpcMethod.agentDefinitionList,
           RpcMethod.agentDefinitionGet,
           RpcMethod.agentDefinitionCreate,
@@ -1017,6 +1039,14 @@ void _registerFixtureMethods(
     RpcMethod.sessionCreate: SessionResultDto(session: agent).toJson(),
     RpcMethod.sessionModelSet: SessionResultDto(session: agent).toJson(),
     RpcMethod.sessionModeSet: SessionResultDto(session: agent).toJson(),
+    RpcMethod.sessionReasoningEffortSet: SessionResultDto(
+      session: agent,
+    ).toJson(),
+    RpcMethod.sessionPermissionModeSet: SessionResultDto(
+      session: agent,
+    ).toJson(),
+    RpcMethod.sessionServiceTierSet: SessionResultDto(session: agent).toJson(),
+
     RpcMethod.terminalList: const TerminalListResultDto(
       terminals: <TerminalDto>[terminal],
     ).toJson(),

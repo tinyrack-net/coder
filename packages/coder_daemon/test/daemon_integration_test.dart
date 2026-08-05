@@ -325,6 +325,55 @@ void main() {
         throwsA(isA<CoderClientException>()),
       );
 
+      // The three composer overrides persist independently and each returns to
+      // inheriting from the agent definition when cleared.
+      expect(
+        (await client.updateSessionReasoningEffort(
+          agent.id,
+          'high',
+        )).reasoningEffort,
+        'high',
+      );
+      expect(
+        (await client.updateSessionPermissionMode(
+          agent.id,
+          PermissionMode.workspaceWrite,
+        )).permissionMode,
+        PermissionMode.workspaceWrite,
+      );
+      expect(
+        (await client.updateSessionServiceTier(
+          agent.id,
+          'priority',
+        )).serviceTier,
+        'priority',
+      );
+      final overridden = (await client.listSessions(
+        worktreeId: checkout.id,
+      )).single;
+      expect(overridden.reasoningEffort, 'high');
+      expect(overridden.permissionMode, PermissionMode.workspaceWrite);
+      expect(overridden.serviceTier, 'priority');
+
+      expect(
+        (await client.updateSessionReasoningEffort(
+          agent.id,
+          null,
+        )).reasoningEffort,
+        isNull,
+      );
+      expect(
+        (await client.updateSessionPermissionMode(
+          agent.id,
+          null,
+        )).permissionMode,
+        isNull,
+      );
+      expect(
+        (await client.updateSessionServiceTier(agent.id, null)).serviceTier,
+        isNull,
+      );
+
       expect(
         await File('${workspace.path}/result.txt').readAsString(),
         'done\n',

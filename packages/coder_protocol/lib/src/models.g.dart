@@ -614,6 +614,12 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
       : SessionModelSelectionDto.fromJson(
           json['model'] as Map<String, dynamic>,
         ),
+  reasoningEffort: json['reasoningEffort'] as String?,
+  permissionMode: $enumDecodeNullable(
+    _$PermissionModeEnumMap,
+    json['permissionMode'],
+  ),
+  serviceTier: json['serviceTier'] as String?,
   parentSessionId: json['parentSessionId'] as String?,
   activeTurnId: json['activeTurnId'] as String?,
   lastError: json['lastError'] as String?,
@@ -631,6 +637,9 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'updatedAt': instance.updatedAt.toIso8601String(),
       'mode': _$SessionModeEnumMap[instance.mode]!,
       'model': instance.model,
+      'reasoningEffort': instance.reasoningEffort,
+      'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
+      'serviceTier': instance.serviceTier,
       'parentSessionId': instance.parentSessionId,
       'activeTurnId': instance.activeTurnId,
       'lastError': instance.lastError,
@@ -677,8 +686,16 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
   fileInput:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['fileInput']) ??
       CapabilitySupport.unknown,
+  serviceTier:
+      $enumDecodeNullable(_$CapabilitySupportEnumMap, json['serviceTier']) ??
+      CapabilitySupport.unknown,
   supportedReasoningEfforts:
       (json['supportedReasoningEfforts'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  supportedServiceTiers:
+      (json['supportedServiceTiers'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
@@ -695,7 +712,9 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
   'reasoningEffort': _$CapabilitySupportEnumMap[instance.reasoningEffort]!,
   'imageInput': _$CapabilitySupportEnumMap[instance.imageInput]!,
   'fileInput': _$CapabilitySupportEnumMap[instance.fileInput]!,
+  'serviceTier': _$CapabilitySupportEnumMap[instance.serviceTier]!,
   'supportedReasoningEfforts': instance.supportedReasoningEfforts,
+  'supportedServiceTiers': instance.supportedServiceTiers,
   'source': _$CapabilitySourceEnumMap[instance.source]!,
 };
 

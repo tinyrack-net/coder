@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 16;
+const int coderProtocolVersion = 17;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -112,6 +112,15 @@ abstract final class RpcMethod {
 
   /// Switches one session between planning and normal collaboration.
   static const String sessionModeSet = 'session.mode.set';
+
+  /// Sets or clears the per-session reasoning effort override.
+  static const String sessionReasoningEffortSet = 'session.reasoningEffort.set';
+
+  /// Sets or clears the per-session permission mode override.
+  static const String sessionPermissionModeSet = 'session.permissionMode.set';
+
+  /// Sets or clears the per-session provider service tier.
+  static const String sessionServiceTierSet = 'session.serviceTier.set';
 
   /// Lists live terminals in one worktree.
   static const String terminalList = 'terminal.list';

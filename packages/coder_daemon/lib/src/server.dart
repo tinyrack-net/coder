@@ -445,6 +445,10 @@ class _ClientSession {
       RpcMethod.sessionCreate,
       RpcMethod.sessionModelSet,
       RpcMethod.sessionModeSet,
+      RpcMethod.sessionReasoningEffortSet,
+      RpcMethod.sessionPermissionModeSet,
+      RpcMethod.sessionServiceTierSet,
+
       RpcMethod.terminalList,
       RpcMethod.terminalCreate,
       RpcMethod.terminalAttach,
@@ -809,6 +813,9 @@ class _ClientSession {
             status: SessionStatus.idle,
             mode: request.mode,
             model: requestedModel,
+            reasoningEffort: request.reasoningEffort,
+            permissionMode: request.permissionMode,
+            serviceTier: request.serviceTier,
             createdAt: now,
             updatedAt: now,
           ),
@@ -822,6 +829,28 @@ class _ClientSession {
         final request = SessionModelSetParamsDto.fromJson(payload);
         final session = await agents.setModel(request.sessionId, request.model);
         return SessionResultDto(session: session).toJson();
+      case RpcMethod.sessionReasoningEffortSet:
+        final request = SessionReasoningEffortSetParamsDto.fromJson(payload);
+        final session = await agents.setReasoningEffort(
+          request.sessionId,
+          request.reasoningEffort,
+        );
+        return SessionResultDto(session: session).toJson();
+      case RpcMethod.sessionPermissionModeSet:
+        final request = SessionPermissionModeSetParamsDto.fromJson(payload);
+        final session = await agents.setPermissionMode(
+          request.sessionId,
+          request.permissionMode,
+        );
+        return SessionResultDto(session: session).toJson();
+      case RpcMethod.sessionServiceTierSet:
+        final request = SessionServiceTierSetParamsDto.fromJson(payload);
+        final session = await agents.setServiceTier(
+          request.sessionId,
+          request.serviceTier,
+        );
+        return SessionResultDto(session: session).toJson();
+
       case RpcMethod.terminalList:
         final request = TerminalListParamsDto.fromJson(payload);
         return TerminalListResultDto(

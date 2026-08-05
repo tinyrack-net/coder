@@ -1136,6 +1136,39 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _reasoningEffortMeta = const VerificationMeta(
+    'reasoningEffort',
+  );
+  @override
+  late final GeneratedColumn<String> reasoningEffort = GeneratedColumn<String>(
+    'reasoning_effort',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _permissionModeMeta = const VerificationMeta(
+    'permissionMode',
+  );
+  @override
+  late final GeneratedColumn<String> permissionMode = GeneratedColumn<String>(
+    'permission_mode',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serviceTierMeta = const VerificationMeta(
+    'serviceTier',
+  );
+  @override
+  late final GeneratedColumn<String> serviceTier = GeneratedColumn<String>(
+    'service_tier',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1172,6 +1205,9 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     mode,
     modelConnectionId,
     modelId,
+    reasoningEffort,
+    permissionMode,
+    serviceTier,
     createdAt,
     updatedAt,
   ];
@@ -1280,6 +1316,33 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
       );
     }
+    if (data.containsKey('reasoning_effort')) {
+      context.handle(
+        _reasoningEffortMeta,
+        reasoningEffort.isAcceptableOrUnknown(
+          data['reasoning_effort']!,
+          _reasoningEffortMeta,
+        ),
+      );
+    }
+    if (data.containsKey('permission_mode')) {
+      context.handle(
+        _permissionModeMeta,
+        permissionMode.isAcceptableOrUnknown(
+          data['permission_mode']!,
+          _permissionModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('service_tier')) {
+      context.handle(
+        _serviceTierMeta,
+        serviceTier.isAcceptableOrUnknown(
+          data['service_tier']!,
+          _serviceTierMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1353,6 +1416,18 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}model_id'],
       ),
+      reasoningEffort: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reasoning_effort'],
+      ),
+      permissionMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}permission_mode'],
+      ),
+      serviceTier: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}service_tier'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1407,6 +1482,15 @@ class Session extends DataClass implements Insertable<Session> {
   /// Model pinned for this session; null inherits the agent definition.
   final String? modelId;
 
+  /// Reasoning effort for this session; null inherits the agent definition.
+  final String? reasoningEffort;
+
+  /// Permission mode for this session; null inherits the agent definition.
+  final String? permissionMode;
+
+  /// Provider service tier for this session; null uses the provider default.
+  final String? serviceTier;
+
   /// The createdAt public API member.
   final DateTime createdAt;
 
@@ -1425,6 +1509,9 @@ class Session extends DataClass implements Insertable<Session> {
     required this.mode,
     this.modelConnectionId,
     this.modelId,
+    this.reasoningEffort,
+    this.permissionMode,
+    this.serviceTier,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1452,6 +1539,15 @@ class Session extends DataClass implements Insertable<Session> {
     }
     if (!nullToAbsent || modelId != null) {
       map['model_id'] = Variable<String>(modelId);
+    }
+    if (!nullToAbsent || reasoningEffort != null) {
+      map['reasoning_effort'] = Variable<String>(reasoningEffort);
+    }
+    if (!nullToAbsent || permissionMode != null) {
+      map['permission_mode'] = Variable<String>(permissionMode);
+    }
+    if (!nullToAbsent || serviceTier != null) {
+      map['service_tier'] = Variable<String>(serviceTier);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1482,6 +1578,15 @@ class Session extends DataClass implements Insertable<Session> {
       modelId: modelId == null && nullToAbsent
           ? const Value.absent()
           : Value(modelId),
+      reasoningEffort: reasoningEffort == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reasoningEffort),
+      permissionMode: permissionMode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(permissionMode),
+      serviceTier: serviceTier == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serviceTier),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1507,6 +1612,9 @@ class Session extends DataClass implements Insertable<Session> {
         json['modelConnectionId'],
       ),
       modelId: serializer.fromJson<String?>(json['modelId']),
+      reasoningEffort: serializer.fromJson<String?>(json['reasoningEffort']),
+      permissionMode: serializer.fromJson<String?>(json['permissionMode']),
+      serviceTier: serializer.fromJson<String?>(json['serviceTier']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1527,6 +1635,9 @@ class Session extends DataClass implements Insertable<Session> {
       'mode': serializer.toJson<String>(mode),
       'modelConnectionId': serializer.toJson<String?>(modelConnectionId),
       'modelId': serializer.toJson<String?>(modelId),
+      'reasoningEffort': serializer.toJson<String?>(reasoningEffort),
+      'permissionMode': serializer.toJson<String?>(permissionMode),
+      'serviceTier': serializer.toJson<String?>(serviceTier),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1545,6 +1656,9 @@ class Session extends DataClass implements Insertable<Session> {
     String? mode,
     Value<String?> modelConnectionId = const Value.absent(),
     Value<String?> modelId = const Value.absent(),
+    Value<String?> reasoningEffort = const Value.absent(),
+    Value<String?> permissionMode = const Value.absent(),
+    Value<String?> serviceTier = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Session(
@@ -1564,6 +1678,13 @@ class Session extends DataClass implements Insertable<Session> {
         ? modelConnectionId.value
         : this.modelConnectionId,
     modelId: modelId.present ? modelId.value : this.modelId,
+    reasoningEffort: reasoningEffort.present
+        ? reasoningEffort.value
+        : this.reasoningEffort,
+    permissionMode: permissionMode.present
+        ? permissionMode.value
+        : this.permissionMode,
+    serviceTier: serviceTier.present ? serviceTier.value : this.serviceTier,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1591,6 +1712,15 @@ class Session extends DataClass implements Insertable<Session> {
           ? data.modelConnectionId.value
           : this.modelConnectionId,
       modelId: data.modelId.present ? data.modelId.value : this.modelId,
+      reasoningEffort: data.reasoningEffort.present
+          ? data.reasoningEffort.value
+          : this.reasoningEffort,
+      permissionMode: data.permissionMode.present
+          ? data.permissionMode.value
+          : this.permissionMode,
+      serviceTier: data.serviceTier.present
+          ? data.serviceTier.value
+          : this.serviceTier,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1611,6 +1741,9 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('mode: $mode, ')
           ..write('modelConnectionId: $modelConnectionId, ')
           ..write('modelId: $modelId, ')
+          ..write('reasoningEffort: $reasoningEffort, ')
+          ..write('permissionMode: $permissionMode, ')
+          ..write('serviceTier: $serviceTier, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1631,6 +1764,9 @@ class Session extends DataClass implements Insertable<Session> {
     mode,
     modelConnectionId,
     modelId,
+    reasoningEffort,
+    permissionMode,
+    serviceTier,
     createdAt,
     updatedAt,
   );
@@ -1650,6 +1786,9 @@ class Session extends DataClass implements Insertable<Session> {
           other.mode == this.mode &&
           other.modelConnectionId == this.modelConnectionId &&
           other.modelId == this.modelId &&
+          other.reasoningEffort == this.reasoningEffort &&
+          other.permissionMode == this.permissionMode &&
+          other.serviceTier == this.serviceTier &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1667,6 +1806,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String> mode;
   final Value<String?> modelConnectionId;
   final Value<String?> modelId;
+  final Value<String?> reasoningEffort;
+  final Value<String?> permissionMode;
+  final Value<String?> serviceTier;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1683,6 +1825,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.mode = const Value.absent(),
     this.modelConnectionId = const Value.absent(),
     this.modelId = const Value.absent(),
+    this.reasoningEffort = const Value.absent(),
+    this.permissionMode = const Value.absent(),
+    this.serviceTier = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1700,6 +1845,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.mode = const Value.absent(),
     this.modelConnectionId = const Value.absent(),
     this.modelId = const Value.absent(),
+    this.reasoningEffort = const Value.absent(),
+    this.permissionMode = const Value.absent(),
+    this.serviceTier = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1724,6 +1872,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? mode,
     Expression<String>? modelConnectionId,
     Expression<String>? modelId,
+    Expression<String>? reasoningEffort,
+    Expression<String>? permissionMode,
+    Expression<String>? serviceTier,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1741,6 +1892,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (mode != null) 'mode': mode,
       if (modelConnectionId != null) 'model_connection_id': modelConnectionId,
       if (modelId != null) 'model_id': modelId,
+      if (reasoningEffort != null) 'reasoning_effort': reasoningEffort,
+      if (permissionMode != null) 'permission_mode': permissionMode,
+      if (serviceTier != null) 'service_tier': serviceTier,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1760,6 +1914,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String>? mode,
     Value<String?>? modelConnectionId,
     Value<String?>? modelId,
+    Value<String?>? reasoningEffort,
+    Value<String?>? permissionMode,
+    Value<String?>? serviceTier,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1777,6 +1934,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       mode: mode ?? this.mode,
       modelConnectionId: modelConnectionId ?? this.modelConnectionId,
       modelId: modelId ?? this.modelId,
+      reasoningEffort: reasoningEffort ?? this.reasoningEffort,
+      permissionMode: permissionMode ?? this.permissionMode,
+      serviceTier: serviceTier ?? this.serviceTier,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1822,6 +1982,15 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (modelId.present) {
       map['model_id'] = Variable<String>(modelId.value);
     }
+    if (reasoningEffort.present) {
+      map['reasoning_effort'] = Variable<String>(reasoningEffort.value);
+    }
+    if (permissionMode.present) {
+      map['permission_mode'] = Variable<String>(permissionMode.value);
+    }
+    if (serviceTier.present) {
+      map['service_tier'] = Variable<String>(serviceTier.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1849,6 +2018,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('mode: $mode, ')
           ..write('modelConnectionId: $modelConnectionId, ')
           ..write('modelId: $modelId, ')
+          ..write('reasoningEffort: $reasoningEffort, ')
+          ..write('permissionMode: $permissionMode, ')
+          ..write('serviceTier: $serviceTier, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -6910,6 +7082,9 @@ typedef $$SessionsTableCreateCompanionBuilder =
       Value<String> mode,
       Value<String?> modelConnectionId,
       Value<String?> modelId,
+      Value<String?> reasoningEffort,
+      Value<String?> permissionMode,
+      Value<String?> serviceTier,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -6928,6 +7103,9 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String> mode,
       Value<String?> modelConnectionId,
       Value<String?> modelId,
+      Value<String?> reasoningEffort,
+      Value<String?> permissionMode,
+      Value<String?> serviceTier,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -7104,6 +7282,21 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get modelId => $composableBuilder(
     column: $table.modelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reasoningEffort => $composableBuilder(
+    column: $table.reasoningEffort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get permissionMode => $composableBuilder(
+    column: $table.permissionMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serviceTier => $composableBuilder(
+    column: $table.serviceTier,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7323,6 +7516,21 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get reasoningEffort => $composableBuilder(
+    column: $table.reasoningEffort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get permissionMode => $composableBuilder(
+    column: $table.permissionMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serviceTier => $composableBuilder(
+    column: $table.serviceTier,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -7424,6 +7632,21 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<String> get modelId =>
       $composableBuilder(column: $table.modelId, builder: (column) => column);
+
+  GeneratedColumn<String> get reasoningEffort => $composableBuilder(
+    column: $table.reasoningEffort,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get permissionMode => $composableBuilder(
+    column: $table.permissionMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serviceTier => $composableBuilder(
+    column: $table.serviceTier,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -7625,6 +7848,9 @@ class $$SessionsTableTableManager
                 Value<String> mode = const Value.absent(),
                 Value<String?> modelConnectionId = const Value.absent(),
                 Value<String?> modelId = const Value.absent(),
+                Value<String?> reasoningEffort = const Value.absent(),
+                Value<String?> permissionMode = const Value.absent(),
+                Value<String?> serviceTier = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7641,6 +7867,9 @@ class $$SessionsTableTableManager
                 mode: mode,
                 modelConnectionId: modelConnectionId,
                 modelId: modelId,
+                reasoningEffort: reasoningEffort,
+                permissionMode: permissionMode,
+                serviceTier: serviceTier,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -7659,6 +7888,9 @@ class $$SessionsTableTableManager
                 Value<String> mode = const Value.absent(),
                 Value<String?> modelConnectionId = const Value.absent(),
                 Value<String?> modelId = const Value.absent(),
+                Value<String?> reasoningEffort = const Value.absent(),
+                Value<String?> permissionMode = const Value.absent(),
+                Value<String?> serviceTier = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -7675,6 +7907,9 @@ class $$SessionsTableTableManager
                 mode: mode,
                 modelConnectionId: modelConnectionId,
                 modelId: modelId,
+                reasoningEffort: reasoningEffort,
+                permissionMode: permissionMode,
+                serviceTier: serviceTier,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

@@ -416,6 +416,8 @@ final class ProviderService implements ProviderOAuthConnector {
           model?.capabilities.imageInput == CapabilitySupport.supported,
       supportsFileInput:
           model?.capabilities.fileInput == CapabilitySupport.supported,
+      supportsServiceTier:
+          model?.capabilities.serviceTier == CapabilitySupport.supported,
     );
   }
 

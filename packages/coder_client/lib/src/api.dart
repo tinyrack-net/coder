@@ -193,6 +193,9 @@ abstract interface class CoderApi {
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
+    String? reasoningEffort,
+    PermissionMode? permissionMode,
+    String? serviceTier,
   });
 
   /// Switches one session between planning and normal collaboration.
@@ -204,6 +207,32 @@ abstract interface class CoderApi {
   Future<SessionDto> updateSessionModel(
     String sessionId,
     SessionModelSelectionDto? model,
+  );
+
+  /// Sets or clears the reasoning effort override of one session.
+  ///
+  /// Passing a null [reasoningEffort] restores inheritance from the agent
+  /// definition.
+  Future<SessionDto> updateSessionReasoningEffort(
+    String sessionId,
+    String? reasoningEffort,
+  );
+
+  /// Sets or clears the permission mode override of one session.
+  ///
+  /// Passing a null [permissionMode] restores inheritance from the agent
+  /// definition.
+  Future<SessionDto> updateSessionPermissionMode(
+    String sessionId,
+    PermissionMode? permissionMode,
+  );
+
+  /// Sets or clears the provider service tier of one session.
+  ///
+  /// Passing a null [serviceTier] restores the provider default tier.
+  Future<SessionDto> updateSessionServiceTier(
+    String sessionId,
+    String? serviceTier,
   );
 
   /// Lists live terminals for a worktree.

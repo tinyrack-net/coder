@@ -32,6 +32,7 @@ class AgentRunRequest {
     required this.safetyIdentifier,
     this.attachments = const <ConversationAttachment>[],
     this.reasoningEffort = 'medium',
+    this.serviceTier,
     this.maxToolRounds = 64,
     this.sessionMode = SessionMode.normal,
     this.customSystemPrompt,
@@ -55,6 +56,9 @@ class AgentRunRequest {
 
   /// The reasoningEffort public API member.
   final String reasoningEffort;
+
+  /// Provider service tier for this turn; null uses the provider default.
+  final String? serviceTier;
 
   /// The permissionMode public API member.
   final PermissionMode permissionMode;
@@ -145,6 +149,7 @@ class AgentRunner {
         final modelRequest = ModelRequest(
           model: request.model,
           reasoningEffort: request.reasoningEffort,
+          serviceTier: request.serviceTier,
           instructions: _instructions(request),
           history: input,
           safetyIdentifier: request.safetyIdentifier,

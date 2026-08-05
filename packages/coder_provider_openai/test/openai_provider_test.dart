@@ -169,6 +169,57 @@ data: [DONE]
     },
   );
 
+  test('the service tier is sent only when the model supports it', () async {
+    Future<Map<String, dynamic>> body({
+      required bool supportsServiceTier,
+      required String? serviceTier,
+    }) async {
+      final adapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''');
+      final provider = OpenAIResponsesProvider(
+        OpenAIProviderConfig(
+          apiKey: 'secret-test-key',
+          supportsServiceTier: supportsServiceTier,
+        ),
+        dio: Dio()..httpClientAdapter = adapter,
+      );
+      await provider
+          .stream(
+            ModelRequest(
+              model: 'gpt-5.6-sol',
+              reasoningEffort: 'medium',
+              serviceTier: serviceTier,
+              instructions: 'test',
+              history: const <ConversationItem>[],
+              tools: const <ModelToolDefinition>[],
+              safetyIdentifier: 'safe-user',
+            ),
+            CancellationToken(),
+          )
+          .toList();
+      return Map<String, dynamic>.from(adapter.options!.data as Map);
+    }
+
+    expect(
+      await body(supportsServiceTier: true, serviceTier: 'priority'),
+      containsPair('service_tier', 'priority'),
+    );
+    // An unsupported model must never receive the field, because endpoints
+    // that do not know it reject the whole request.
+    expect(
+      await body(supportsServiceTier: false, serviceTier: 'priority'),
+      isNot(contains('service_tier')),
+    );
+    expect(
+      await body(supportsServiceTier: true, serviceTier: null),
+      isNot(contains('service_tier')),
+    );
+  });
+
   test('an empty API key fails before opening a connection', () async {
     final provider = OpenAIResponsesProvider(
       const OpenAIProviderConfig(),

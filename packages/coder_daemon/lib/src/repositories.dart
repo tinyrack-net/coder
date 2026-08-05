@@ -66,6 +66,18 @@ abstract interface class SessionRepository {
   /// Sets or clears the provider and model override of one session.
   Future<SessionDto> updateModel(String id, SessionModelSelectionDto? model);
 
+  /// Sets or clears the reasoning effort override of one session.
+  Future<SessionDto> updateReasoningEffort(String id, String? reasoningEffort);
+
+  /// Sets or clears the permission mode override of one session.
+  Future<SessionDto> updatePermissionMode(
+    String id,
+    PermissionMode? permissionMode,
+  );
+
+  /// Sets or clears the provider service tier of one session.
+  Future<SessionDto> updateServiceTier(String id, String? serviceTier);
+
   /// The updateStatus public API member.
   Future<SessionDto> updateStatus(
     String id,

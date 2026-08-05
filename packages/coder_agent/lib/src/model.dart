@@ -306,6 +306,7 @@ class ModelRequest {
     required this.tools,
     required this.safetyIdentifier,
     this.forceToolName,
+    this.serviceTier,
   });
 
   /// The model public API member.
@@ -313,6 +314,9 @@ class ModelRequest {
 
   /// The reasoningEffort public API member.
   final String reasoningEffort;
+
+  /// Provider service tier for this request; null uses the provider default.
+  final String? serviceTier;
 
   /// The instructions public API member.
   final String instructions;

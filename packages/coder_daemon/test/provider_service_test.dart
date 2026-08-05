@@ -678,6 +678,7 @@ final class _Factory implements ModelProviderFactory {
   ProviderRuntimeConfig? lastConfig;
   ProviderCredential? lastCredential;
   bool? lastSupportsReasoning;
+  bool? lastSupportsServiceTier;
 
   @override
   ModelProvider create({
@@ -686,10 +687,12 @@ final class _Factory implements ModelProviderFactory {
     required bool supportsReasoningEffort,
     required bool supportsImageInput,
     required bool supportsFileInput,
+    required bool supportsServiceTier,
   }) {
     lastConfig = config;
     lastCredential = credential;
     lastSupportsReasoning = supportsReasoningEffort;
+    lastSupportsServiceTier = supportsServiceTier;
     return _EventProvider();
   }
 }

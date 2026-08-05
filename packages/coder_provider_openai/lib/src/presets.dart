@@ -87,12 +87,15 @@ const ModelCapabilitiesDto _reasoning = ModelCapabilitiesDto(
   source: CapabilitySource.bundled,
 );
 
+// Only the OpenAI Responses endpoint documents the `service_tier` field, so
+// other reasoning providers keep the unknown default and hide the control.
 const ModelCapabilitiesDto _openAiReasoning = ModelCapabilitiesDto(
   streaming: CapabilitySupport.supported,
   toolCalling: CapabilitySupport.supported,
   reasoningEffort: CapabilitySupport.supported,
   imageInput: CapabilitySupport.supported,
   fileInput: CapabilitySupport.supported,
+  serviceTier: CapabilitySupport.supported,
   supportedReasoningEfforts: <String>[
     'none',
     'low',
@@ -101,6 +104,7 @@ const ModelCapabilitiesDto _openAiReasoning = ModelCapabilitiesDto(
     'xhigh',
     'max',
   ],
+  supportedServiceTiers: <String>['default', 'flex', 'priority'],
   source: CapabilitySource.bundled,
 );
 

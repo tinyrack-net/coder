@@ -2424,7 +2424,7 @@ as String?,
 /// @nodoc
 mixin _$SessionCreateParamsDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; SessionModelSelectionDto? get model;
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; SessionModelSelectionDto? get model; String? get reasoningEffort; PermissionMode? get permissionMode; String? get serviceTier;
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2437,16 +2437,16 @@ $SessionCreateParamsDtoCopyWith<SessionCreateParamsDto> get copyWith => _$Sessio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,reasoningEffort,permissionMode,serviceTier);
 
 @override
 String toString() {
-  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier)';
 }
 
 
@@ -2457,7 +2457,7 @@ abstract mixin class $SessionCreateParamsDtoCopyWith<$Res>  {
   factory $SessionCreateParamsDtoCopyWith(SessionCreateParamsDto value, $Res Function(SessionCreateParamsDto) _then) = _$SessionCreateParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model
+ String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier
 });
 
 
@@ -2474,7 +2474,7 @@ class _$SessionCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -2482,7 +2482,10 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,
+as SessionModelSelectionDto?,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as String?,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of SessionCreateParamsDto
@@ -2579,10 +2582,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
   return orElse();
 
 }
@@ -2600,10 +2603,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2620,10 +2623,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
   return null;
 
 }
@@ -2635,7 +2638,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionCreateParamsDto implements SessionCreateParamsDto {
-  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, this.mode = SessionMode.normal, this.model});
+  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier});
   factory _SessionCreateParamsDto.fromJson(Map<String, dynamic> json) => _$SessionCreateParamsDtoFromJson(json);
 
 @override final  String id;
@@ -2644,6 +2647,9 @@ class _SessionCreateParamsDto implements SessionCreateParamsDto {
 @override final  String agentDefinitionId;
 @override@JsonKey() final  SessionMode mode;
 @override final  SessionModelSelectionDto? model;
+@override final  String? reasoningEffort;
+@override final  PermissionMode? permissionMode;
+@override final  String? serviceTier;
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -2658,16 +2664,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,reasoningEffort,permissionMode,serviceTier);
 
 @override
 String toString() {
-  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier)';
 }
 
 
@@ -2678,7 +2684,7 @@ abstract mixin class _$SessionCreateParamsDtoCopyWith<$Res> implements $SessionC
   factory _$SessionCreateParamsDtoCopyWith(_SessionCreateParamsDto value, $Res Function(_SessionCreateParamsDto) _then) = __$SessionCreateParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model
+ String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier
 });
 
 
@@ -2695,7 +2701,7 @@ class __$SessionCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,}) {
   return _then(_SessionCreateParamsDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -2703,7 +2709,10 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,
+as SessionModelSelectionDto?,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as String?,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -3276,6 +3285,804 @@ $SessionModelSelectionDtoCopyWith<$Res>? get model {
     return _then(_self.copyWith(model: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$SessionReasoningEffortSetParamsDto {
+
+ String get sessionId; String? get reasoningEffort;
+/// Create a copy of SessionReasoningEffortSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SessionReasoningEffortSetParamsDtoCopyWith<SessionReasoningEffortSetParamsDto> get copyWith => _$SessionReasoningEffortSetParamsDtoCopyWithImpl<SessionReasoningEffortSetParamsDto>(this as SessionReasoningEffortSetParamsDto, _$identity);
+
+  /// Serializes this SessionReasoningEffortSetParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionReasoningEffortSetParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,reasoningEffort);
+
+@override
+String toString() {
+  return 'SessionReasoningEffortSetParamsDto(sessionId: $sessionId, reasoningEffort: $reasoningEffort)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SessionReasoningEffortSetParamsDtoCopyWith<$Res>  {
+  factory $SessionReasoningEffortSetParamsDtoCopyWith(SessionReasoningEffortSetParamsDto value, $Res Function(SessionReasoningEffortSetParamsDto) _then) = _$SessionReasoningEffortSetParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String? reasoningEffort
+});
+
+
+
+
+}
+/// @nodoc
+class _$SessionReasoningEffortSetParamsDtoCopyWithImpl<$Res>
+    implements $SessionReasoningEffortSetParamsDtoCopyWith<$Res> {
+  _$SessionReasoningEffortSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SessionReasoningEffortSetParamsDto _self;
+  final $Res Function(SessionReasoningEffortSetParamsDto) _then;
+
+/// Create a copy of SessionReasoningEffortSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? reasoningEffort = freezed,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SessionReasoningEffortSetParamsDto].
+extension SessionReasoningEffortSetParamsDtoPatterns on SessionReasoningEffortSetParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionReasoningEffortSetParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SessionReasoningEffortSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionReasoningEffortSetParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SessionReasoningEffortSetParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionReasoningEffortSetParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SessionReasoningEffortSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String? reasoningEffort)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SessionReasoningEffortSetParamsDto() when $default != null:
+return $default(_that.sessionId,_that.reasoningEffort);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String? reasoningEffort)  $default,) {final _that = this;
+switch (_that) {
+case _SessionReasoningEffortSetParamsDto():
+return $default(_that.sessionId,_that.reasoningEffort);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String? reasoningEffort)?  $default,) {final _that = this;
+switch (_that) {
+case _SessionReasoningEffortSetParamsDto() when $default != null:
+return $default(_that.sessionId,_that.reasoningEffort);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SessionReasoningEffortSetParamsDto implements SessionReasoningEffortSetParamsDto {
+  const _SessionReasoningEffortSetParamsDto({required this.sessionId, this.reasoningEffort});
+  factory _SessionReasoningEffortSetParamsDto.fromJson(Map<String, dynamic> json) => _$SessionReasoningEffortSetParamsDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  String? reasoningEffort;
+
+/// Create a copy of SessionReasoningEffortSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SessionReasoningEffortSetParamsDtoCopyWith<_SessionReasoningEffortSetParamsDto> get copyWith => __$SessionReasoningEffortSetParamsDtoCopyWithImpl<_SessionReasoningEffortSetParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SessionReasoningEffortSetParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionReasoningEffortSetParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,reasoningEffort);
+
+@override
+String toString() {
+  return 'SessionReasoningEffortSetParamsDto(sessionId: $sessionId, reasoningEffort: $reasoningEffort)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SessionReasoningEffortSetParamsDtoCopyWith<$Res> implements $SessionReasoningEffortSetParamsDtoCopyWith<$Res> {
+  factory _$SessionReasoningEffortSetParamsDtoCopyWith(_SessionReasoningEffortSetParamsDto value, $Res Function(_SessionReasoningEffortSetParamsDto) _then) = __$SessionReasoningEffortSetParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String? reasoningEffort
+});
+
+
+
+
+}
+/// @nodoc
+class __$SessionReasoningEffortSetParamsDtoCopyWithImpl<$Res>
+    implements _$SessionReasoningEffortSetParamsDtoCopyWith<$Res> {
+  __$SessionReasoningEffortSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SessionReasoningEffortSetParamsDto _self;
+  final $Res Function(_SessionReasoningEffortSetParamsDto) _then;
+
+/// Create a copy of SessionReasoningEffortSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? reasoningEffort = freezed,}) {
+  return _then(_SessionReasoningEffortSetParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SessionPermissionModeSetParamsDto {
+
+ String get sessionId; PermissionMode? get permissionMode;
+/// Create a copy of SessionPermissionModeSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SessionPermissionModeSetParamsDtoCopyWith<SessionPermissionModeSetParamsDto> get copyWith => _$SessionPermissionModeSetParamsDtoCopyWithImpl<SessionPermissionModeSetParamsDto>(this as SessionPermissionModeSetParamsDto, _$identity);
+
+  /// Serializes this SessionPermissionModeSetParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionPermissionModeSetParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,permissionMode);
+
+@override
+String toString() {
+  return 'SessionPermissionModeSetParamsDto(sessionId: $sessionId, permissionMode: $permissionMode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SessionPermissionModeSetParamsDtoCopyWith<$Res>  {
+  factory $SessionPermissionModeSetParamsDtoCopyWith(SessionPermissionModeSetParamsDto value, $Res Function(SessionPermissionModeSetParamsDto) _then) = _$SessionPermissionModeSetParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, PermissionMode? permissionMode
+});
+
+
+
+
+}
+/// @nodoc
+class _$SessionPermissionModeSetParamsDtoCopyWithImpl<$Res>
+    implements $SessionPermissionModeSetParamsDtoCopyWith<$Res> {
+  _$SessionPermissionModeSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SessionPermissionModeSetParamsDto _self;
+  final $Res Function(SessionPermissionModeSetParamsDto) _then;
+
+/// Create a copy of SessionPermissionModeSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? permissionMode = freezed,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SessionPermissionModeSetParamsDto].
+extension SessionPermissionModeSetParamsDtoPatterns on SessionPermissionModeSetParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionPermissionModeSetParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SessionPermissionModeSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionPermissionModeSetParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SessionPermissionModeSetParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionPermissionModeSetParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SessionPermissionModeSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SessionPermissionModeSetParamsDto() when $default != null:
+return $default(_that.sessionId,_that.permissionMode);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  PermissionMode? permissionMode)  $default,) {final _that = this;
+switch (_that) {
+case _SessionPermissionModeSetParamsDto():
+return $default(_that.sessionId,_that.permissionMode);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  PermissionMode? permissionMode)?  $default,) {final _that = this;
+switch (_that) {
+case _SessionPermissionModeSetParamsDto() when $default != null:
+return $default(_that.sessionId,_that.permissionMode);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SessionPermissionModeSetParamsDto implements SessionPermissionModeSetParamsDto {
+  const _SessionPermissionModeSetParamsDto({required this.sessionId, this.permissionMode});
+  factory _SessionPermissionModeSetParamsDto.fromJson(Map<String, dynamic> json) => _$SessionPermissionModeSetParamsDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  PermissionMode? permissionMode;
+
+/// Create a copy of SessionPermissionModeSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SessionPermissionModeSetParamsDtoCopyWith<_SessionPermissionModeSetParamsDto> get copyWith => __$SessionPermissionModeSetParamsDtoCopyWithImpl<_SessionPermissionModeSetParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SessionPermissionModeSetParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionPermissionModeSetParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,permissionMode);
+
+@override
+String toString() {
+  return 'SessionPermissionModeSetParamsDto(sessionId: $sessionId, permissionMode: $permissionMode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SessionPermissionModeSetParamsDtoCopyWith<$Res> implements $SessionPermissionModeSetParamsDtoCopyWith<$Res> {
+  factory _$SessionPermissionModeSetParamsDtoCopyWith(_SessionPermissionModeSetParamsDto value, $Res Function(_SessionPermissionModeSetParamsDto) _then) = __$SessionPermissionModeSetParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, PermissionMode? permissionMode
+});
+
+
+
+
+}
+/// @nodoc
+class __$SessionPermissionModeSetParamsDtoCopyWithImpl<$Res>
+    implements _$SessionPermissionModeSetParamsDtoCopyWith<$Res> {
+  __$SessionPermissionModeSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SessionPermissionModeSetParamsDto _self;
+  final $Res Function(_SessionPermissionModeSetParamsDto) _then;
+
+/// Create a copy of SessionPermissionModeSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? permissionMode = freezed,}) {
+  return _then(_SessionPermissionModeSetParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SessionServiceTierSetParamsDto {
+
+ String get sessionId; String? get serviceTier;
+/// Create a copy of SessionServiceTierSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SessionServiceTierSetParamsDtoCopyWith<SessionServiceTierSetParamsDto> get copyWith => _$SessionServiceTierSetParamsDtoCopyWithImpl<SessionServiceTierSetParamsDto>(this as SessionServiceTierSetParamsDto, _$identity);
+
+  /// Serializes this SessionServiceTierSetParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionServiceTierSetParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,serviceTier);
+
+@override
+String toString() {
+  return 'SessionServiceTierSetParamsDto(sessionId: $sessionId, serviceTier: $serviceTier)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SessionServiceTierSetParamsDtoCopyWith<$Res>  {
+  factory $SessionServiceTierSetParamsDtoCopyWith(SessionServiceTierSetParamsDto value, $Res Function(SessionServiceTierSetParamsDto) _then) = _$SessionServiceTierSetParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String? serviceTier
+});
+
+
+
+
+}
+/// @nodoc
+class _$SessionServiceTierSetParamsDtoCopyWithImpl<$Res>
+    implements $SessionServiceTierSetParamsDtoCopyWith<$Res> {
+  _$SessionServiceTierSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SessionServiceTierSetParamsDto _self;
+  final $Res Function(SessionServiceTierSetParamsDto) _then;
+
+/// Create a copy of SessionServiceTierSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? serviceTier = freezed,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SessionServiceTierSetParamsDto].
+extension SessionServiceTierSetParamsDtoPatterns on SessionServiceTierSetParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionServiceTierSetParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SessionServiceTierSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionServiceTierSetParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SessionServiceTierSetParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionServiceTierSetParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SessionServiceTierSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String? serviceTier)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SessionServiceTierSetParamsDto() when $default != null:
+return $default(_that.sessionId,_that.serviceTier);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String? serviceTier)  $default,) {final _that = this;
+switch (_that) {
+case _SessionServiceTierSetParamsDto():
+return $default(_that.sessionId,_that.serviceTier);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String? serviceTier)?  $default,) {final _that = this;
+switch (_that) {
+case _SessionServiceTierSetParamsDto() when $default != null:
+return $default(_that.sessionId,_that.serviceTier);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SessionServiceTierSetParamsDto implements SessionServiceTierSetParamsDto {
+  const _SessionServiceTierSetParamsDto({required this.sessionId, this.serviceTier});
+  factory _SessionServiceTierSetParamsDto.fromJson(Map<String, dynamic> json) => _$SessionServiceTierSetParamsDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  String? serviceTier;
+
+/// Create a copy of SessionServiceTierSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SessionServiceTierSetParamsDtoCopyWith<_SessionServiceTierSetParamsDto> get copyWith => __$SessionServiceTierSetParamsDtoCopyWithImpl<_SessionServiceTierSetParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SessionServiceTierSetParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionServiceTierSetParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,serviceTier);
+
+@override
+String toString() {
+  return 'SessionServiceTierSetParamsDto(sessionId: $sessionId, serviceTier: $serviceTier)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SessionServiceTierSetParamsDtoCopyWith<$Res> implements $SessionServiceTierSetParamsDtoCopyWith<$Res> {
+  factory _$SessionServiceTierSetParamsDtoCopyWith(_SessionServiceTierSetParamsDto value, $Res Function(_SessionServiceTierSetParamsDto) _then) = __$SessionServiceTierSetParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String? serviceTier
+});
+
+
+
+
+}
+/// @nodoc
+class __$SessionServiceTierSetParamsDtoCopyWithImpl<$Res>
+    implements _$SessionServiceTierSetParamsDtoCopyWith<$Res> {
+  __$SessionServiceTierSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SessionServiceTierSetParamsDto _self;
+  final $Res Function(_SessionServiceTierSetParamsDto) _then;
+
+/// Create a copy of SessionServiceTierSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? serviceTier = freezed,}) {
+  return _then(_SessionServiceTierSetParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
 }
 
 

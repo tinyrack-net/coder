@@ -180,7 +180,9 @@ class SessionService {
           workspaceRoot: worktree.path,
           prompt: prompt,
           model: resolvedModel.modelId,
-          reasoningEffort: definition.reasoningEffort,
+          reasoningEffort:
+              session.reasoningEffort ?? definition.reasoningEffort,
+          serviceTier: session.serviceTier,
           permissionMode: permissionMode,
           history: history,
           attachments: turnAttachments,
@@ -254,6 +256,74 @@ class SessionService {
       throw StateError('Cannot change the mode while a turn is running.');
     }
     final updated = await _sessions.updateMode(sessionId, mode);
+    _emitSession(updated);
+    return updated;
+  }
+
+  /// Sets or clears the reasoning effort override of one session.
+  ///
+  /// A null [reasoningEffort] restores inheritance from the agent definition.
+  /// The effort is read when a turn starts, so it can only change between
+  /// turns.
+  Future<SessionDto> setReasoningEffort(
+    String sessionId,
+    String? reasoningEffort,
+  ) async {
+    final session = await _sessions.getById(sessionId);
+    if (session == null) throw StateError('Session not found: $sessionId');
+    if (_activeTurns.containsKey(sessionId)) {
+      throw StateError(
+        'Cannot change the reasoning effort while a turn is running.',
+      );
+    }
+    final updated = await _sessions.updateReasoningEffort(
+      sessionId,
+      reasoningEffort,
+    );
+    _emitSession(updated);
+    return updated;
+  }
+
+  /// Sets or clears the permission mode override of one session.
+  ///
+  /// A null [permissionMode] restores inheritance from the agent definition.
+  /// Permissions are resolved when a turn starts, so they can only change
+  /// between turns.
+  Future<SessionDto> setPermissionMode(
+    String sessionId,
+    PermissionMode? permissionMode,
+  ) async {
+    final session = await _sessions.getById(sessionId);
+    if (session == null) throw StateError('Session not found: $sessionId');
+    if (_activeTurns.containsKey(sessionId)) {
+      throw StateError(
+        'Cannot change the permission mode while a turn is running.',
+      );
+    }
+    final updated = await _sessions.updatePermissionMode(
+      sessionId,
+      permissionMode,
+    );
+    _emitSession(updated);
+    return updated;
+  }
+
+  /// Sets or clears the provider service tier of one session.
+  ///
+  /// A null [serviceTier] restores the provider default tier. The tier is read
+  /// when a turn starts, so it can only change between turns.
+  Future<SessionDto> setServiceTier(
+    String sessionId,
+    String? serviceTier,
+  ) async {
+    final session = await _sessions.getById(sessionId);
+    if (session == null) throw StateError('Session not found: $sessionId');
+    if (_activeTurns.containsKey(sessionId)) {
+      throw StateError(
+        'Cannot change the service tier while a turn is running.',
+      );
+    }
+    final updated = await _sessions.updateServiceTier(sessionId, serviceTier);
     _emitSession(updated);
     return updated;
   }
@@ -344,16 +414,19 @@ class SessionService {
     SessionDto session,
     AgentDefinitionDto definition,
   ) async {
+    final own = session.permissionMode ?? definition.permissionMode;
     final parentId = session.parentSessionId;
-    if (parentId == null) return definition.permissionMode;
+    if (parentId == null) return own;
     final parent = await _sessions.getById(parentId);
     if (parent == null) return PermissionMode.readOnly;
     final parentDefinition = await _definitions.resolve(
       parent.agentDefinitionId,
     );
+    // A session override may narrow the parent's permissions but never widen
+    // them, so a delegated agent cannot escalate past its caller.
     return _moreRestrictive(
-      parentDefinition.permissionMode,
-      definition.permissionMode,
+      parent.permissionMode ?? parentDefinition.permissionMode,
+      own,
     );
   }
 

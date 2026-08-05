@@ -129,6 +129,7 @@ abstract interface class ModelProviderFactory {
     required bool supportsReasoningEffort,
     required bool supportsImageInput,
     required bool supportsFileInput,
+    required bool supportsServiceTier,
   });
 }
 
@@ -147,6 +148,7 @@ final class OpenAICompatibleProviderFactory implements ModelProviderFactory {
     required bool supportsReasoningEffort,
     required bool supportsImageInput,
     required bool supportsFileInput,
+    required bool supportsServiceTier,
   }) {
     final apiKey = switch (credential) {
       ApiKeyCredential(:final key) => key,
@@ -161,6 +163,7 @@ final class OpenAICompatibleProviderFactory implements ModelProviderFactory {
       supportsReasoningEffort: supportsReasoningEffort,
       supportsImageInput: supportsImageInput,
       supportsFileInput: supportsFileInput,
+      supportsServiceTier: supportsServiceTier,
       strictToolSchema: config.strictToolSchema,
       additionalHeaders: <String, String>{
         if (credential is OAuthCredential) 'originator': 'tinyrack_coder',
