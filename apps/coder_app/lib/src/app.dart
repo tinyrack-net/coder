@@ -27,6 +27,7 @@ import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/settings_page.dart';
 import 'package:coder_app/src/skill_settings_page.dart';
+import 'package:coder_app/src/workspace/directory_picker_port.dart';
 import 'package:coder_app/src/workspace/new_workspace_pane.dart';
 import 'package:coder_app/src/workspace/workspace_sidebar.dart';
 import 'package:coder_client/coder_client.dart';
@@ -44,6 +45,7 @@ class CoderApp extends StatelessWidget {
   CoderApp({
     required this.services,
     this.attachmentInput,
+    this.directoryPicker,
     this.externalUrlOpener = const PlatformExternalUrlOpener(),
     this.desktopWindow,
     this.trayIcon,
@@ -57,6 +59,9 @@ class CoderApp extends StatelessWidget {
 
   /// Platform file picker, clipboard, and desktop drop adapter.
   final AttachmentInputPort? attachmentInput;
+
+  /// Native folder chooser used for hosts that share this filesystem.
+  final DirectoryPickerPort? directoryPicker;
 
   /// Opens interactive provider authorization pages.
   final ExternalUrlOpener externalUrlOpener;
@@ -80,6 +85,7 @@ class CoderApp extends StatelessWidget {
     overrides: [
       appServicesProvider.overrideWithValue(services),
       attachmentInputProvider.overrideWithValue(attachmentInput),
+      directoryPickerProvider.overrideWithValue(directoryPicker),
       externalUrlOpenerProvider.overrideWithValue(externalUrlOpener),
       desktopWindowProvider.overrideWithValue(desktopWindow),
       trayIconProvider.overrideWithValue(trayIcon),

@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v17 exposes terminals and existing typed contracts', () {
-    expect(coderProtocolVersion, 17);
+  test('protocol v18 exposes terminals and existing typed contracts', () {
+    expect(coderProtocolVersion, 18);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -556,7 +556,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 17);
+    expect(coderProtocolVersion, 18);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -742,6 +742,19 @@ void main() {
       (value) => value.toJson(),
       ApprovalRequestDto.fromJson,
     );
+    _roundTrip(
+      const ServerInfoDto(
+        serverId: 'server',
+        version: '1.0.0',
+        protocolVersion: coderProtocolVersion,
+        features: <String, bool>{},
+        homeDirectory: '/home/test',
+      ),
+      (value) => value.toJson(),
+      ServerInfoDto.fromJson,
+    );
+    // A daemon configured without a home reports none, and the client has to
+    // read that back as null rather than inventing a path.
     _roundTrip(
       const ServerInfoDto(
         serverId: 'server',

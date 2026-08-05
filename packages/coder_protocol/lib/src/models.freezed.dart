@@ -10700,7 +10700,7 @@ as String?,
 /// @nodoc
 mixin _$ServerInfoDto {
 
- String get serverId; String get version; int get protocolVersion; Map<String, bool> get features;
+ String get serverId; String get version; int get protocolVersion; Map<String, bool> get features; String? get homeDirectory;
 /// Create a copy of ServerInfoDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -10713,16 +10713,16 @@ $ServerInfoDtoCopyWith<ServerInfoDto> get copyWith => _$ServerInfoDtoCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServerInfoDto&&(identical(other.serverId, serverId) || other.serverId == serverId)&&(identical(other.version, version) || other.version == version)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&const DeepCollectionEquality().equals(other.features, features));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServerInfoDto&&(identical(other.serverId, serverId) || other.serverId == serverId)&&(identical(other.version, version) || other.version == version)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&const DeepCollectionEquality().equals(other.features, features)&&(identical(other.homeDirectory, homeDirectory) || other.homeDirectory == homeDirectory));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,serverId,version,protocolVersion,const DeepCollectionEquality().hash(features));
+int get hashCode => Object.hash(runtimeType,serverId,version,protocolVersion,const DeepCollectionEquality().hash(features),homeDirectory);
 
 @override
 String toString() {
-  return 'ServerInfoDto(serverId: $serverId, version: $version, protocolVersion: $protocolVersion, features: $features)';
+  return 'ServerInfoDto(serverId: $serverId, version: $version, protocolVersion: $protocolVersion, features: $features, homeDirectory: $homeDirectory)';
 }
 
 
@@ -10733,7 +10733,7 @@ abstract mixin class $ServerInfoDtoCopyWith<$Res>  {
   factory $ServerInfoDtoCopyWith(ServerInfoDto value, $Res Function(ServerInfoDto) _then) = _$ServerInfoDtoCopyWithImpl;
 @useResult
 $Res call({
- String serverId, String version, int protocolVersion, Map<String, bool> features
+ String serverId, String version, int protocolVersion, Map<String, bool> features, String? homeDirectory
 });
 
 
@@ -10750,13 +10750,14 @@ class _$ServerInfoDtoCopyWithImpl<$Res>
 
 /// Create a copy of ServerInfoDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? serverId = null,Object? version = null,Object? protocolVersion = null,Object? features = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? serverId = null,Object? version = null,Object? protocolVersion = null,Object? features = null,Object? homeDirectory = freezed,}) {
   return _then(_self.copyWith(
 serverId: null == serverId ? _self.serverId : serverId // ignore: cast_nullable_to_non_nullable
 as String,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
 as String,protocolVersion: null == protocolVersion ? _self.protocolVersion : protocolVersion // ignore: cast_nullable_to_non_nullable
 as int,features: null == features ? _self.features : features // ignore: cast_nullable_to_non_nullable
-as Map<String, bool>,
+as Map<String, bool>,homeDirectory: freezed == homeDirectory ? _self.homeDirectory : homeDirectory // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -10841,10 +10842,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String serverId,  String version,  int protocolVersion,  Map<String, bool> features)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String serverId,  String version,  int protocolVersion,  Map<String, bool> features,  String? homeDirectory)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ServerInfoDto() when $default != null:
-return $default(_that.serverId,_that.version,_that.protocolVersion,_that.features);case _:
+return $default(_that.serverId,_that.version,_that.protocolVersion,_that.features,_that.homeDirectory);case _:
   return orElse();
 
 }
@@ -10862,10 +10863,10 @@ return $default(_that.serverId,_that.version,_that.protocolVersion,_that.feature
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String serverId,  String version,  int protocolVersion,  Map<String, bool> features)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String serverId,  String version,  int protocolVersion,  Map<String, bool> features,  String? homeDirectory)  $default,) {final _that = this;
 switch (_that) {
 case _ServerInfoDto():
-return $default(_that.serverId,_that.version,_that.protocolVersion,_that.features);case _:
+return $default(_that.serverId,_that.version,_that.protocolVersion,_that.features,_that.homeDirectory);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -10882,10 +10883,10 @@ return $default(_that.serverId,_that.version,_that.protocolVersion,_that.feature
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String serverId,  String version,  int protocolVersion,  Map<String, bool> features)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String serverId,  String version,  int protocolVersion,  Map<String, bool> features,  String? homeDirectory)?  $default,) {final _that = this;
 switch (_that) {
 case _ServerInfoDto() when $default != null:
-return $default(_that.serverId,_that.version,_that.protocolVersion,_that.features);case _:
+return $default(_that.serverId,_that.version,_that.protocolVersion,_that.features,_that.homeDirectory);case _:
   return null;
 
 }
@@ -10897,7 +10898,7 @@ return $default(_that.serverId,_that.version,_that.protocolVersion,_that.feature
 @JsonSerializable()
 
 class _ServerInfoDto implements ServerInfoDto {
-  const _ServerInfoDto({required this.serverId, required this.version, required this.protocolVersion, required final  Map<String, bool> features}): _features = features;
+  const _ServerInfoDto({required this.serverId, required this.version, required this.protocolVersion, required final  Map<String, bool> features, this.homeDirectory}): _features = features;
   factory _ServerInfoDto.fromJson(Map<String, dynamic> json) => _$ServerInfoDtoFromJson(json);
 
 @override final  String serverId;
@@ -10910,6 +10911,7 @@ class _ServerInfoDto implements ServerInfoDto {
   return EqualUnmodifiableMapView(_features);
 }
 
+@override final  String? homeDirectory;
 
 /// Create a copy of ServerInfoDto
 /// with the given fields replaced by the non-null parameter values.
@@ -10924,16 +10926,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ServerInfoDto&&(identical(other.serverId, serverId) || other.serverId == serverId)&&(identical(other.version, version) || other.version == version)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&const DeepCollectionEquality().equals(other._features, _features));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ServerInfoDto&&(identical(other.serverId, serverId) || other.serverId == serverId)&&(identical(other.version, version) || other.version == version)&&(identical(other.protocolVersion, protocolVersion) || other.protocolVersion == protocolVersion)&&const DeepCollectionEquality().equals(other._features, _features)&&(identical(other.homeDirectory, homeDirectory) || other.homeDirectory == homeDirectory));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,serverId,version,protocolVersion,const DeepCollectionEquality().hash(_features));
+int get hashCode => Object.hash(runtimeType,serverId,version,protocolVersion,const DeepCollectionEquality().hash(_features),homeDirectory);
 
 @override
 String toString() {
-  return 'ServerInfoDto(serverId: $serverId, version: $version, protocolVersion: $protocolVersion, features: $features)';
+  return 'ServerInfoDto(serverId: $serverId, version: $version, protocolVersion: $protocolVersion, features: $features, homeDirectory: $homeDirectory)';
 }
 
 
@@ -10944,7 +10946,7 @@ abstract mixin class _$ServerInfoDtoCopyWith<$Res> implements $ServerInfoDtoCopy
   factory _$ServerInfoDtoCopyWith(_ServerInfoDto value, $Res Function(_ServerInfoDto) _then) = __$ServerInfoDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String serverId, String version, int protocolVersion, Map<String, bool> features
+ String serverId, String version, int protocolVersion, Map<String, bool> features, String? homeDirectory
 });
 
 
@@ -10961,13 +10963,14 @@ class __$ServerInfoDtoCopyWithImpl<$Res>
 
 /// Create a copy of ServerInfoDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? serverId = null,Object? version = null,Object? protocolVersion = null,Object? features = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? serverId = null,Object? version = null,Object? protocolVersion = null,Object? features = null,Object? homeDirectory = freezed,}) {
   return _then(_ServerInfoDto(
 serverId: null == serverId ? _self.serverId : serverId // ignore: cast_nullable_to_non_nullable
 as String,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
 as String,protocolVersion: null == protocolVersion ? _self.protocolVersion : protocolVersion // ignore: cast_nullable_to_non_nullable
 as int,features: null == features ? _self._features : features // ignore: cast_nullable_to_non_nullable
-as Map<String, bool>,
+as Map<String, bool>,homeDirectory: freezed == homeDirectory ? _self.homeDirectory : homeDirectory // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

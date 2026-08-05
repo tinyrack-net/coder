@@ -33,6 +33,9 @@ final class RealDaemonFixture {
     final daemon = await DaemonApplication.start(
       DaemonConfig(
         homeDirectory: home.path,
+        // The isolated temporary home stands in for the machine home, so a
+        // picker opened in this run never reaches the real user home.
+        osHomeDirectory: home.path,
         port: 0,
         bearerToken: token,
         useEnvironmentCredentials: false,

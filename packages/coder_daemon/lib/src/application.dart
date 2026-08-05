@@ -312,6 +312,7 @@ abstract final class DaemonApplication {
         serverId: serverId,
         version: config.version,
         protocolVersion: coderProtocolVersion,
+        homeDirectory: config.osHomeDirectory,
         features: <String, bool>{
           'timelineCatchup': true,
           'approvals': true,

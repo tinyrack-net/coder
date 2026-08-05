@@ -153,6 +153,38 @@ void main() {
         ),
       );
       expect(directories.userHomeDirectory, '/tmp/agents-home');
+      // The agents override must not move the home a file browser starts in.
+      expect(directories.osHomeDirectory, '/home/test');
+    });
+
+    test('the operating-system home follows the platform variable', () {
+      expect(
+        resolveLocalDaemonDirectories(
+          environment: const _Environment(
+            values: <String, String>{'HOME': '/home/test'},
+            linux: true,
+          ),
+        ).osHomeDirectory,
+        '/home/test',
+      );
+      expect(
+        resolveLocalDaemonDirectories(
+          environment: const _Environment(
+            values: <String, String>{'USERPROFILE': r'C:\Users\test'},
+            windows: true,
+          ),
+        ).osHomeDirectory,
+        r'C:\Users\test',
+      );
+      expect(
+        resolveLocalDaemonDirectories(
+          environment: const _Environment(
+            values: <String, String>{'TINYRACK_CODER_HOME': '/override'},
+            linux: true,
+          ),
+        ).osHomeDirectory,
+        '.',
+      );
     });
 
     test('the IO adapter reports exactly one running platform', () {

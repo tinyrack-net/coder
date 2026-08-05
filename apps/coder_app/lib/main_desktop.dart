@@ -4,6 +4,7 @@ import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/desktop_bootstrap.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/desktop_startup.dart';
+import 'package:coder_app/src/workspace/directory_picker_io.dart';
 import 'package:flutter/material.dart';
 
 /// Starts the desktop widget tree with an injectable bootstrap.
@@ -28,6 +29,7 @@ Future<void> runDesktopApp({
     CoderApp(
       services: resolved,
       attachmentInput: const NativeAttachmentInput(),
+      directoryPicker: const NativeDirectoryPicker(),
       desktopWindow: desktopWindow,
       trayIcon: tray ?? PluginTrayIcon(),
       autostart: autostart ?? const LaunchAtStartupRegistration(),
