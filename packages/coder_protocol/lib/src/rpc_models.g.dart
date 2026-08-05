@@ -136,6 +136,12 @@ _SessionCreateParamsDto _$SessionCreateParamsDtoFromJson(
       : SessionModelSelectionDto.fromJson(
           json['model'] as Map<String, dynamic>,
         ),
+  reasoningEffort: json['reasoningEffort'] as String?,
+  permissionMode: $enumDecodeNullable(
+    _$PermissionModeEnumMap,
+    json['permissionMode'],
+  ),
+  serviceTier: json['serviceTier'] as String?,
 );
 
 Map<String, dynamic> _$SessionCreateParamsDtoToJson(
@@ -147,11 +153,20 @@ Map<String, dynamic> _$SessionCreateParamsDtoToJson(
   'agentDefinitionId': instance.agentDefinitionId,
   'mode': _$SessionModeEnumMap[instance.mode]!,
   'model': instance.model,
+  'reasoningEffort': instance.reasoningEffort,
+  'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
+  'serviceTier': instance.serviceTier,
 };
 
 const _$SessionModeEnumMap = {
   SessionMode.plan: 'plan',
   SessionMode.normal: 'normal',
+};
+
+const _$PermissionModeEnumMap = {
+  PermissionMode.readOnly: 'readOnly',
+  PermissionMode.ask: 'ask',
+  PermissionMode.workspaceWrite: 'workspaceWrite',
 };
 
 _SessionModeSetParamsDto _$SessionModeSetParamsDtoFromJson(
@@ -184,6 +199,51 @@ Map<String, dynamic> _$SessionModelSetParamsDtoToJson(
 ) => <String, dynamic>{
   'sessionId': instance.sessionId,
   'model': instance.model,
+};
+
+_SessionReasoningEffortSetParamsDto
+_$SessionReasoningEffortSetParamsDtoFromJson(Map<String, dynamic> json) =>
+    _SessionReasoningEffortSetParamsDto(
+      sessionId: json['sessionId'] as String,
+      reasoningEffort: json['reasoningEffort'] as String?,
+    );
+
+Map<String, dynamic> _$SessionReasoningEffortSetParamsDtoToJson(
+  _SessionReasoningEffortSetParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'reasoningEffort': instance.reasoningEffort,
+};
+
+_SessionPermissionModeSetParamsDto _$SessionPermissionModeSetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionPermissionModeSetParamsDto(
+  sessionId: json['sessionId'] as String,
+  permissionMode: $enumDecodeNullable(
+    _$PermissionModeEnumMap,
+    json['permissionMode'],
+  ),
+);
+
+Map<String, dynamic> _$SessionPermissionModeSetParamsDtoToJson(
+  _SessionPermissionModeSetParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
+};
+
+_SessionServiceTierSetParamsDto _$SessionServiceTierSetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionServiceTierSetParamsDto(
+  sessionId: json['sessionId'] as String,
+  serviceTier: json['serviceTier'] as String?,
+);
+
+Map<String, dynamic> _$SessionServiceTierSetParamsDtoToJson(
+  _SessionServiceTierSetParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'serviceTier': instance.serviceTier,
 };
 
 _AgentDefinitionIdParamsDto _$AgentDefinitionIdParamsDtoFromJson(

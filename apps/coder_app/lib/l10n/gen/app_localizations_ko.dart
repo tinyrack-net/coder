@@ -735,6 +735,48 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerInputHint => '코딩 요청을 입력하세요…';
 
   @override
+  String get composerReasoningEffort => '추론';
+
+  @override
+  String get composerSelectReasoningEffort => '추론 강도 선택';
+
+  @override
+  String get composerInheritReasoningEffort => '에이전트 기본값';
+
+  @override
+  String get composerPermissionMode => '권한';
+
+  @override
+  String get composerSelectPermissionMode => '권한 선택';
+
+  @override
+  String get composerInheritPermissionMode => '에이전트 기본값';
+
+  @override
+  String get composerPermissionReadOnly => '읽기 전용';
+
+  @override
+  String get composerPermissionAsk => '확인 후 실행';
+
+  @override
+  String get composerPermissionWorkspaceWrite => '작업 공간 쓰기';
+
+  @override
+  String get composerFastMode => '빠르게';
+
+  @override
+  String get composerFastModeTooltip => '크레딧을 더 쓰고 응답을 빠르게 받아요';
+
+  @override
+  String get composerFastModeOnTooltip => '빠른 모드가 켜져 있어요. 누르면 표준 등급을 사용해요';
+
+  @override
+  String get composerFocusShortcut => 'Ctrl+L로 포커스';
+
+  @override
+  String get composerSettingLocked => '설정은 턴 사이에만 바꿀 수 있어요';
+
+  @override
   String get composerSendLabel => '메시지 보내기';
 
   @override

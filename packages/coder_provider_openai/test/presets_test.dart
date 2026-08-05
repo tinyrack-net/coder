@@ -79,6 +79,7 @@ void main() {
         reasoningEffort: CapabilitySupport.supported,
         imageInput: CapabilitySupport.supported,
         fileInput: CapabilitySupport.supported,
+        serviceTier: CapabilitySupport.supported,
         supportedReasoningEfforts: <String>[
           'none',
           'low',
@@ -87,6 +88,7 @@ void main() {
           'xhigh',
           'max',
         ],
+        supportedServiceTiers: <String>['default', 'flex', 'priority'],
         source: CapabilitySource.bundled,
       ),
     );

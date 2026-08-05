@@ -310,6 +310,9 @@ class SessionsController extends _$SessionsController {
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
+    String? reasoningEffort,
+    PermissionMode? permissionMode,
+    String? serviceTier,
   }) async {
     final worktreeId = _worktreeId;
     if (worktreeId == null) {
@@ -326,6 +329,9 @@ class SessionsController extends _$SessionsController {
         agentDefinitionId: agentDefinitionId,
         mode: mode,
         model: model,
+        reasoningEffort: reasoningEffort,
+        permissionMode: permissionMode,
+        serviceTier: serviceTier,
       );
       state = AsyncData<List<SessionDto>>(<SessionDto>[session, ...previous]);
       return session;
@@ -353,6 +359,45 @@ class SessionsController extends _$SessionsController {
   ) async {
     final api = await _requireHostApi(ref, hostId);
     final session = await api.updateSessionModel(sessionId, model);
+    _replace(session);
+    return session;
+  }
+
+  /// Sets or clears the reasoning effort override of one session.
+  Future<SessionDto> setReasoningEffort(
+    String sessionId,
+    String? reasoningEffort,
+  ) async {
+    final api = await _requireHostApi(ref, hostId);
+    final session = await api.updateSessionReasoningEffort(
+      sessionId,
+      reasoningEffort,
+    );
+    _replace(session);
+    return session;
+  }
+
+  /// Sets or clears the permission mode override of one session.
+  Future<SessionDto> setPermissionMode(
+    String sessionId,
+    PermissionMode? permissionMode,
+  ) async {
+    final api = await _requireHostApi(ref, hostId);
+    final session = await api.updateSessionPermissionMode(
+      sessionId,
+      permissionMode,
+    );
+    _replace(session);
+    return session;
+  }
+
+  /// Sets or clears the provider service tier of one session.
+  Future<SessionDto> setServiceTier(
+    String sessionId,
+    String? serviceTier,
+  ) async {
+    final api = await _requireHostApi(ref, hostId);
+    final session = await api.updateSessionServiceTier(sessionId, serviceTier);
     _replace(session);
     return session;
   }
@@ -945,6 +990,9 @@ final class SessionComposerDraft {
     this.agentDefinitionId,
     this.model,
     this.mode = SessionMode.normal,
+    this.reasoningEffort,
+    this.permissionMode,
+    this.serviceTier,
   });
 
   /// Explicitly chosen agent definition; null falls back to the first usable.
@@ -955,6 +1003,41 @@ final class SessionComposerDraft {
 
   /// Collaboration mode the next session starts in.
   final SessionMode mode;
+
+  /// Explicitly chosen reasoning effort; null inherits the agent definition.
+  final String? reasoningEffort;
+
+  /// Explicitly chosen permission mode; null inherits the agent definition.
+  final PermissionMode? permissionMode;
+
+  /// Explicitly chosen provider service tier; null uses the provider default.
+  final String? serviceTier;
+
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// Every nullable field takes a wrapper so passing an explicit null clears
+  /// the override instead of being read as "leave unchanged".
+  SessionComposerDraft copyWith({
+    SessionMode? mode,
+    ({String? value})? agentDefinitionId,
+    ({SessionModelSelectionDto? value})? model,
+    ({String? value})? reasoningEffort,
+    ({PermissionMode? value})? permissionMode,
+    ({String? value})? serviceTier,
+  }) => SessionComposerDraft(
+    agentDefinitionId: agentDefinitionId == null
+        ? this.agentDefinitionId
+        : agentDefinitionId.value,
+    model: model == null ? this.model : model.value,
+    mode: mode ?? this.mode,
+    reasoningEffort: reasoningEffort == null
+        ? this.reasoningEffort
+        : reasoningEffort.value,
+    permissionMode: permissionMode == null
+        ? this.permissionMode
+        : permissionMode.value,
+    serviceTier: serviceTier == null ? this.serviceTier : serviceTier.value,
+  );
 }
 
 @Riverpod(keepAlive: true)
@@ -964,26 +1047,35 @@ class SessionComposerDraftController extends _$SessionComposerDraftController {
   SessionComposerDraft build(String hostId, String? worktreeId) =>
       const SessionComposerDraft();
 
-  /// Chooses the agent definition and drops a model bound to the old agent.
+  /// Chooses the agent definition and drops every override bound to the old
+  /// agent, so the new definition supplies its own defaults.
   void selectAgent(String agentDefinitionId) => state = SessionComposerDraft(
     agentDefinitionId: agentDefinitionId,
     mode: state.mode,
   );
 
   /// Chooses the provider and model override, or clears it when null.
-  void selectModel(SessionModelSelectionDto? model) =>
-      state = SessionComposerDraft(
-        agentDefinitionId: state.agentDefinitionId,
-        model: model,
-        mode: state.mode,
-      );
+  void selectModel(SessionModelSelectionDto? model) => state = state.copyWith(
+    model: (value: model),
+    // A different model may not support the previous tier or effort.
+    reasoningEffort: const (value: null),
+    serviceTier: const (value: null),
+  );
 
   /// Chooses the collaboration mode the next session starts in.
-  void selectMode(SessionMode mode) => state = SessionComposerDraft(
-    agentDefinitionId: state.agentDefinitionId,
-    model: state.model,
-    mode: mode,
-  );
+  void selectMode(SessionMode mode) => state = state.copyWith(mode: mode);
+
+  /// Chooses the reasoning effort override, or clears it when null.
+  void selectReasoningEffort(String? reasoningEffort) =>
+      state = state.copyWith(reasoningEffort: (value: reasoningEffort));
+
+  /// Chooses the permission mode override, or clears it when null.
+  void selectPermissionMode(PermissionMode? permissionMode) =>
+      state = state.copyWith(permissionMode: (value: permissionMode));
+
+  /// Chooses the provider service tier, or clears it when null.
+  void selectServiceTier(String? serviceTier) =>
+      state = state.copyWith(serviceTier: (value: serviceTier));
 }
 
 /// ConversationState defines a public contract.

@@ -196,7 +196,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                   Padding(
                     padding: const EdgeInsets.only(left: 20, bottom: 4),
                     child: Text(
-                      'New workspace',
+                      AppLocalizations.of(context).workspaceNewWorkspace,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
@@ -225,6 +225,15 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       onModeChanged: (mode) => _notifier(project)?.selectMode(
                         mode,
                       ),
+                      reasoningEffort: draft?.reasoningEffort,
+                      onReasoningEffortChanged: (effort) =>
+                          _notifier(project)?.selectReasoningEffort(effort),
+                      permissionMode: draft?.permissionMode,
+                      onPermissionModeChanged: (mode) =>
+                          _notifier(project)?.selectPermissionMode(mode),
+                      serviceTier: draft?.serviceTier,
+                      onServiceTierChanged: (tier) =>
+                          _notifier(project)?.selectServiceTier(tier),
                     ),
                     onModeToggled: project == null
                         ? null

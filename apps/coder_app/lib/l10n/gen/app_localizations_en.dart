@@ -748,6 +748,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerInputHint => 'Type a coding request…';
 
   @override
+  String get composerReasoningEffort => 'Effort';
+
+  @override
+  String get composerSelectReasoningEffort => 'Select reasoning effort';
+
+  @override
+  String get composerInheritReasoningEffort => 'Agent default';
+
+  @override
+  String get composerPermissionMode => 'Permissions';
+
+  @override
+  String get composerSelectPermissionMode => 'Select permissions';
+
+  @override
+  String get composerInheritPermissionMode => 'Agent default';
+
+  @override
+  String get composerPermissionReadOnly => 'Read only';
+
+  @override
+  String get composerPermissionAsk => 'Ask';
+
+  @override
+  String get composerPermissionWorkspaceWrite => 'Write workspace';
+
+  @override
+  String get composerFastMode => 'Fast';
+
+  @override
+  String get composerFastModeTooltip =>
+      'Faster responses at a higher credit rate';
+
+  @override
+  String get composerFastModeOnTooltip =>
+      'Fast mode is on; tap to use the standard tier';
+
+  @override
+  String get composerFocusShortcut => 'Ctrl+L to focus';
+
+  @override
+  String get composerSettingLocked => 'Settings change between turns';
+
+  @override
   String get composerSendLabel => 'Send message';
 
   @override

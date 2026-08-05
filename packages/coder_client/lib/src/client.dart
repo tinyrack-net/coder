@@ -422,6 +422,9 @@ class CoderClient implements CoderApi {
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
+    String? reasoningEffort,
+    PermissionMode? permissionMode,
+    String? serviceTier,
   }) async {
     final response = await _request(
       RpcMethod.sessionCreate,
@@ -432,6 +435,9 @@ class CoderClient implements CoderApi {
         agentDefinitionId: agentDefinitionId,
         mode: mode,
         model: model,
+        reasoningEffort: reasoningEffort,
+        permissionMode: permissionMode,
+        serviceTier: serviceTier,
       ).toJson(),
     );
     return SessionResultDto.fromJson(response).session;
@@ -457,6 +463,51 @@ class CoderClient implements CoderApi {
     final response = await _request(
       RpcMethod.sessionModelSet,
       SessionModelSetParamsDto(sessionId: sessionId, model: model).toJson(),
+    );
+    return SessionResultDto.fromJson(response).session;
+  }
+
+  @override
+  Future<SessionDto> updateSessionReasoningEffort(
+    String sessionId,
+    String? reasoningEffort,
+  ) async {
+    final response = await _request(
+      RpcMethod.sessionReasoningEffortSet,
+      SessionReasoningEffortSetParamsDto(
+        sessionId: sessionId,
+        reasoningEffort: reasoningEffort,
+      ).toJson(),
+    );
+    return SessionResultDto.fromJson(response).session;
+  }
+
+  @override
+  Future<SessionDto> updateSessionPermissionMode(
+    String sessionId,
+    PermissionMode? permissionMode,
+  ) async {
+    final response = await _request(
+      RpcMethod.sessionPermissionModeSet,
+      SessionPermissionModeSetParamsDto(
+        sessionId: sessionId,
+        permissionMode: permissionMode,
+      ).toJson(),
+    );
+    return SessionResultDto.fromJson(response).session;
+  }
+
+  @override
+  Future<SessionDto> updateSessionServiceTier(
+    String sessionId,
+    String? serviceTier,
+  ) async {
+    final response = await _request(
+      RpcMethod.sessionServiceTierSet,
+      SessionServiceTierSetParamsDto(
+        sessionId: sessionId,
+        serviceTier: serviceTier,
+      ).toJson(),
     );
     return SessionResultDto.fromJson(response).session;
   }

@@ -274,6 +274,20 @@ final class FakeCoderApi implements CoderApi {
   updatedSessionModels =
       <({String sessionId, SessionModelSelectionDto? model})>[];
 
+  /// Session reasoning effort overrides written through the fake.
+  final List<({String sessionId, String? reasoningEffort})>
+  updatedSessionReasoningEfforts =
+      <({String sessionId, String? reasoningEffort})>[];
+
+  /// Session permission mode overrides written through the fake.
+  final List<({String sessionId, PermissionMode? permissionMode})>
+  updatedSessionPermissionModes =
+      <({String sessionId, PermissionMode? permissionMode})>[];
+
+  /// Session service tier selections written through the fake.
+  final List<({String sessionId, String? serviceTier})>
+  updatedSessionServiceTiers = <({String sessionId, String? serviceTier})>[];
+
   /// Turn prompts received by the fake.
   final List<String> startedPrompts = <String>[];
 
@@ -550,6 +564,9 @@ final class FakeCoderApi implements CoderApi {
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
+    String? reasoningEffort,
+    PermissionMode? permissionMode,
+    String? serviceTier,
   }) async {
     final agent = SessionDto(
       id: id,
@@ -560,6 +577,9 @@ final class FakeCoderApi implements CoderApi {
       status: SessionStatus.idle,
       mode: mode,
       model: model,
+      reasoningEffort: reasoningEffort,
+      permissionMode: permissionMode,
+      serviceTier: serviceTier,
       createdAt: _now,
       updatedAt: _now,
     );
@@ -591,6 +611,63 @@ final class FakeCoderApi implements CoderApi {
     final index = _agents.indexWhere((agent) => agent.id == sessionId);
     if (index < 0) throw StateError('Session not found: $sessionId');
     final updated = _agents[index].copyWith(model: model);
+    _agents[index] = updated;
+    emit(SessionUpdatedClientEvent(updated));
+    return updated;
+  }
+
+  @override
+  Future<SessionDto> updateSessionReasoningEffort(
+    String sessionId,
+    String? reasoningEffort,
+  ) async {
+    updatedSessionReasoningEfforts.add((
+      sessionId: sessionId,
+      reasoningEffort: reasoningEffort,
+    ));
+    return _replaceSession(
+      sessionId,
+      (session) => session.copyWith(reasoningEffort: reasoningEffort),
+    );
+  }
+
+  @override
+  Future<SessionDto> updateSessionPermissionMode(
+    String sessionId,
+    PermissionMode? permissionMode,
+  ) async {
+    updatedSessionPermissionModes.add((
+      sessionId: sessionId,
+      permissionMode: permissionMode,
+    ));
+    return _replaceSession(
+      sessionId,
+      (session) => session.copyWith(permissionMode: permissionMode),
+    );
+  }
+
+  @override
+  Future<SessionDto> updateSessionServiceTier(
+    String sessionId,
+    String? serviceTier,
+  ) async {
+    updatedSessionServiceTiers.add((
+      sessionId: sessionId,
+      serviceTier: serviceTier,
+    ));
+    return _replaceSession(
+      sessionId,
+      (session) => session.copyWith(serviceTier: serviceTier),
+    );
+  }
+
+  SessionDto _replaceSession(
+    String sessionId,
+    SessionDto Function(SessionDto session) update,
+  ) {
+    final index = _agents.indexWhere((agent) => agent.id == sessionId);
+    if (index < 0) throw StateError('Session not found: $sessionId');
+    final updated = update(_agents[index]);
     _agents[index] = updated;
     emit(SessionUpdatedClientEvent(updated));
     return updated;

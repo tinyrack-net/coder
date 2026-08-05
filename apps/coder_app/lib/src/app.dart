@@ -1464,6 +1464,13 @@ class _ConversationPane extends ConsumerStatefulWidget {
 class _ConversationPaneState extends ConsumerState<_ConversationPane> {
   final Set<String> _dismissedPlans = <String>{};
 
+  SessionsController _sessions(WidgetRef ref) => ref.read(
+    sessionsControllerProvider(
+      widget.selection.hostId,
+      widget.selection.worktreeId,
+    ).notifier,
+  );
+
   @override
   Widget build(BuildContext context) {
     final current =
@@ -1623,6 +1630,18 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                             ).notifier,
                           )
                           .setModel(current.id, model),
+                    ),
+                    reasoningEffort: current.reasoningEffort,
+                    onReasoningEffortChanged: (effort) => unawaited(
+                      _sessions(ref).setReasoningEffort(current.id, effort),
+                    ),
+                    permissionMode: current.permissionMode,
+                    onPermissionModeChanged: (mode) => unawaited(
+                      _sessions(ref).setPermissionMode(current.id, mode),
+                    ),
+                    serviceTier: current.serviceTier,
+                    onServiceTierChanged: (tier) => unawaited(
+                      _sessions(ref).setServiceTier(current.id, tier),
                     ),
                   ),
                   onModeToggled: busy

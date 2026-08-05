@@ -344,12 +344,16 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Starts sessions from the chat composer with a selected Agent, model, '
         'and collaboration mode, resolves the model provider automatically, '
-        'and changes the session model or mode afterwards.',
+        'and changes the session model, mode, reasoning effort, permission '
+        'mode, or provider service tier afterwards.',
     apiMethods: <String>[
       'listSessions',
       'createSession',
       'updateSessionModel',
       'updateSessionMode',
+      'updateSessionReasoningEffort',
+      'updateSessionPermissionMode',
+      'updateSessionServiceTier',
     ],
     routes: <String>['SessionRoute'],
     requiredLayers: <FeatureVerificationLayer>{

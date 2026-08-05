@@ -832,6 +832,15 @@ abstract class SessionDto with _$SessionDto {
     required DateTime updatedAt,
     @Default(SessionMode.normal) SessionMode mode,
     SessionModelSelectionDto? model,
+
+    /// Overrides the reasoning effort of the agent definition; null inherits.
+    String? reasoningEffort,
+
+    /// Overrides the permission mode of the agent definition; null inherits.
+    PermissionMode? permissionMode,
+
+    /// Provider service tier for this session; null uses the provider default.
+    String? serviceTier,
     String? parentSessionId,
     String? activeTurnId,
     String? lastError,
@@ -852,7 +861,9 @@ abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
     @Default(CapabilitySupport.unknown) CapabilitySupport reasoningEffort,
     @Default(CapabilitySupport.unknown) CapabilitySupport imageInput,
     @Default(CapabilitySupport.unknown) CapabilitySupport fileInput,
+    @Default(CapabilitySupport.unknown) CapabilitySupport serviceTier,
     @Default(<String>[]) List<String> supportedReasoningEfforts,
+    @Default(<String>[]) List<String> supportedServiceTiers,
     @Default(CapabilitySource.unknown) CapabilitySource source,
   }) = _ModelCapabilitiesDto;
 

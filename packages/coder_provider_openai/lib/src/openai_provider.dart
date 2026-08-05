@@ -18,6 +18,7 @@ class OpenAIProviderConfig {
     this.supportsReasoningEffort = true,
     this.supportsImageInput = true,
     this.supportsFileInput = true,
+    this.supportsServiceTier = false,
     this.strictToolSchema = true,
     this.additionalHeaders = const <String, String>{},
   });
@@ -45,6 +46,9 @@ class OpenAIProviderConfig {
 
   /// Whether hydrated documents may be sent as Responses content parts.
   final bool supportsFileInput;
+
+  /// Whether the endpoint accepts a `service_tier` request field.
+  final bool supportsServiceTier;
 
   /// The strictToolSchema public API member.
   final bool strictToolSchema;
@@ -138,6 +142,8 @@ class OpenAIResponsesProvider implements ModelProvider {
     'input': _responsesInput(request.history),
     if (_config.supportsReasoningEffort)
       'reasoning': <String, dynamic>{'effort': request.reasoningEffort},
+    if (_config.supportsServiceTier && request.serviceTier != null)
+      'service_tier': request.serviceTier,
     'tools': request.tools
         .map(
           (tool) => <String, dynamic>{

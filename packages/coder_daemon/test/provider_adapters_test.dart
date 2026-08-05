@@ -37,6 +37,7 @@ void main() {
         supportsReasoningEffort: true,
         supportsImageInput: true,
         supportsFileInput: true,
+        supportsServiceTier: true,
       );
 
       await provider
@@ -183,6 +184,7 @@ void main() {
           supportsReasoningEffort: false,
           supportsImageInput: false,
           supportsFileInput: false,
+          supportsServiceTier: false,
         );
 
     expect(provider, isA<OpenAIChatCompletionsProvider>());

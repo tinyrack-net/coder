@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v16 exposes terminals and existing typed contracts', () {
-    expect(coderProtocolVersion, 16);
+  test('protocol v17 exposes terminals and existing typed contracts', () {
+    expect(coderProtocolVersion, 17);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -32,6 +32,12 @@ void main() {
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
     expect(RpcMethod.sessionModeSet, 'session.mode.set');
+    expect(
+      RpcMethod.sessionReasoningEffortSet,
+      'session.reasoningEffort.set',
+    );
+    expect(RpcMethod.sessionPermissionModeSet, 'session.permissionMode.set');
+    expect(RpcMethod.sessionServiceTierSet, 'session.serviceTier.set');
   });
 
   test('session collaboration modes round-trip', () {
@@ -550,11 +556,17 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 16);
+    expect(coderProtocolVersion, 17);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
     expect(RpcMethod.sessionModeSet, 'session.mode.set');
+    expect(
+      RpcMethod.sessionReasoningEffortSet,
+      'session.reasoningEffort.set',
+    );
+    expect(RpcMethod.sessionPermissionModeSet, 'session.permissionMode.set');
+    expect(RpcMethod.sessionServiceTierSet, 'session.serviceTier.set');
     expect(RpcMethod.providerCatalog, 'provider.catalog');
     expect(RpcMethod.providerAuthStart, 'provider.auth.start');
     expect(RpcMethod.turnStart, 'turn.start');

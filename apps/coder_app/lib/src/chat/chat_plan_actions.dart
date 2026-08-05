@@ -148,6 +148,9 @@ Future<SessionDto> startSessionWithPrompt(
   List<PendingAttachment> attachments = const <PendingAttachment>[],
   SessionMode mode = SessionMode.normal,
   SessionModelSelectionDto? model,
+  String? reasoningEffort,
+  PermissionMode? permissionMode,
+  String? serviceTier,
 }) async {
   final sessions = sessionsControllerProvider(
     selection.hostId,
@@ -173,6 +176,9 @@ Future<SessionDto> startSessionWithPrompt(
           agentDefinitionId: agentDefinitionId,
           mode: mode,
           model: model,
+          reasoningEffort: reasoningEffort,
+          permissionMode: permissionMode,
+          serviceTier: serviceTier,
         );
     await ref
         .read(sessionTabsControllerProvider(selection).notifier)

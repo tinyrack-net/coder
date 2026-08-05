@@ -17,7 +17,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Agent and model selectors shown above the chat input.
+/// Service tier the fast-mode toggle selects.
+///
+/// Codex names this tier `fast`; the OpenAI APIs accept `priority` for the same
+/// behavior, so the request field carries the documented API value.
+const String _priorityServiceTier = 'priority';
+
+/// Turn settings shown in the composer toolbar row.
 class SessionComposerBar extends ConsumerStatefulWidget {
   /// Creates a [SessionComposerBar].
   const SessionComposerBar({
@@ -29,6 +35,12 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     required this.onModelChanged,
     required this.mode,
     required this.onModeChanged,
+    this.reasoningEffort,
+    this.onReasoningEffortChanged,
+    this.permissionMode,
+    this.onPermissionModeChanged,
+    this.serviceTier,
+    this.onServiceTierChanged,
     this.agentEnabled = true,
     this.enabled = true,
     super.key,
@@ -57,6 +69,24 @@ class SessionComposerBar extends ConsumerStatefulWidget {
 
   /// Called with the mode to switch to.
   final ValueChanged<SessionMode> onModeChanged;
+
+  /// Reasoning effort in effect, or null to inherit the agent definition.
+  final String? reasoningEffort;
+
+  /// Called with the chosen effort, or null to inherit the agent definition.
+  final ValueChanged<String?>? onReasoningEffortChanged;
+
+  /// Permission mode in effect, or null to inherit the agent definition.
+  final PermissionMode? permissionMode;
+
+  /// Called with the chosen mode, or null to inherit the agent definition.
+  final ValueChanged<PermissionMode?>? onPermissionModeChanged;
+
+  /// Provider service tier in effect, or null for the provider default.
+  final String? serviceTier;
+
+  /// Called with the chosen tier, or null to restore the provider default.
+  final ValueChanged<String?>? onServiceTierChanged;
 
   /// Whether the agent can still be changed; false once a session exists.
   final bool agentEnabled;
@@ -93,66 +123,138 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         .firstOrNull;
     final models =
         providers?.models[connection?.id] ?? const <ProviderModelDto>[];
-    final modelLabel = models
-        .where((model) => model.id == selection?.modelId)
-        .firstOrNull
-        ?.label;
+    final model = models
+        .where((item) => item.id == selection?.modelId)
+        .firstOrNull;
+    final modelLabel = model?.label;
+    // The catalog decides which turn settings the chosen model can honour, so
+    // an unsupported control is hidden rather than shown and ignored.
+    final capabilities = model?.capabilities ?? const ModelCapabilitiesDto();
     // Labels come from the model catalog, so load it once per connection
     // instead of showing a raw model id.
     if (connection != null && _loadedModels(connection.id) == null) {
       unawaited(_ensureModelsLoaded(connection.id));
     }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: <Widget>[
+    final efforts = capabilities.reasoningEffort == CapabilitySupport.supported
+        ? capabilities.supportedReasoningEfforts
+        : const <String>[];
+    final fastEnabled = widget.serviceTier == _priorityServiceTier;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: TRSpacing.extraSmall,
+      children: <Widget>[
+        ComposerChip(
+          valueKey: const ValueKey('session-composer-agent'),
+          icon: CoderIcons.agent,
+          label: agent?.name ?? 'Agent',
+          tooltip: agentEnabled
+              ? l10n.composerSelectAgent
+              : l10n.composerAgentLocked,
+          menuChildren: enabled && agentEnabled && definitions.isNotEmpty
+              ? <Widget>[
+                  for (final definition in definitions)
+                    TRMenuItem(
+                      key: ValueKey('session-composer-agent-${definition.id}'),
+                      onPressed: () => widget.onAgentChanged(definition.id),
+                      child: Text(definition.name),
+                    ),
+                ]
+              : null,
+        ),
+        ComposerChip(
+          valueKey: const ValueKey('session-composer-model'),
+          icon: CoderIcons.memory,
+          label: modelLabel ?? selection?.modelId ?? l10n.composerModel,
+          tooltip: l10n.composerSelectModel,
+          onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
+        ),
+        if (efforts.isNotEmpty)
           ComposerChip(
-            valueKey: const ValueKey('session-composer-mode'),
-            icon: CoderIcons.checklist,
-            label: planning ? l10n.composerPlan : l10n.composerRun,
-            tooltip: planning
-                ? l10n.composerPlanTooltip
-                : l10n.composerRunTooltip,
-            selected: planning,
-            onPressed: enabled
-                ? (_) => widget.onModeChanged(
-                    planning ? SessionMode.normal : SessionMode.plan,
-                  )
-                : null,
-          ),
-          const SizedBox(width: 8),
-          ComposerChip(
-            valueKey: const ValueKey('session-composer-agent'),
-            icon: CoderIcons.agent,
-            label: agent?.name ?? 'Agent',
-            tooltip: agentEnabled
-                ? l10n.composerSelectAgent
-                : l10n.composerAgentLocked,
-            menuChildren: enabled && agentEnabled && definitions.isNotEmpty
+            valueKey: const ValueKey('session-composer-effort'),
+            icon: CoderIcons.reasoning,
+            label: widget.reasoningEffort ?? l10n.composerReasoningEffort,
+            tooltip: l10n.composerSelectReasoningEffort,
+            menuChildren: enabled && widget.onReasoningEffortChanged != null
                 ? <Widget>[
-                    for (final definition in definitions)
+                    TRMenuItem(
+                      key: const ValueKey('session-composer-effort-inherit'),
+                      onPressed: () => widget.onReasoningEffortChanged!(null),
+                      child: Text(l10n.composerInheritReasoningEffort),
+                    ),
+                    for (final effort in efforts)
                       TRMenuItem(
-                        key: ValueKey(
-                          'session-composer-agent-${definition.id}',
-                        ),
-                        onPressed: () => widget.onAgentChanged(definition.id),
-                        child: Text(definition.name),
+                        key: ValueKey('session-composer-effort-$effort'),
+                        onPressed: () =>
+                            widget.onReasoningEffortChanged!(effort),
+                        child: Text(effort),
                       ),
                   ]
                 : null,
           ),
-          const SizedBox(width: 8),
+        ComposerChip(
+          valueKey: const ValueKey('session-composer-permission'),
+          icon: CoderIcons.permission,
+          label: widget.permissionMode == null
+              ? l10n.composerPermissionMode
+              : _permissionLabel(l10n, widget.permissionMode!),
+          tooltip: l10n.composerSelectPermissionMode,
+          menuChildren: enabled && widget.onPermissionModeChanged != null
+              ? <Widget>[
+                  TRMenuItem(
+                    key: const ValueKey('session-composer-permission-inherit'),
+                    onPressed: () => widget.onPermissionModeChanged!(null),
+                    child: Text(l10n.composerInheritPermissionMode),
+                  ),
+                  for (final value in PermissionMode.values)
+                    TRMenuItem(
+                      key: ValueKey(
+                        'session-composer-permission-${value.name}',
+                      ),
+                      onPressed: () => widget.onPermissionModeChanged!(value),
+                      child: Text(_permissionLabel(l10n, value)),
+                    ),
+                ]
+              : null,
+        ),
+        if (capabilities.serviceTier == CapabilitySupport.supported)
           ComposerChip(
-            valueKey: const ValueKey('session-composer-model'),
-            icon: CoderIcons.memory,
-            label: modelLabel ?? selection?.modelId ?? l10n.composerModel,
-            tooltip: l10n.composerSelectModel,
-            onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
+            valueKey: const ValueKey('session-composer-fast'),
+            icon: CoderIcons.fast,
+            label: l10n.composerFastMode,
+            tooltip: fastEnabled
+                ? l10n.composerFastModeOnTooltip
+                : l10n.composerFastModeTooltip,
+            selected: fastEnabled,
+            onPressed: enabled && widget.onServiceTierChanged != null
+                ? (_) => widget.onServiceTierChanged!(
+                    fastEnabled ? null : _priorityServiceTier,
+                  )
+                : null,
           ),
-        ],
-      ),
+        ComposerChip(
+          valueKey: const ValueKey('session-composer-mode'),
+          icon: CoderIcons.checklist,
+          label: planning ? l10n.composerPlan : l10n.composerRun,
+          tooltip: planning
+              ? l10n.composerPlanTooltip
+              : l10n.composerRunTooltip,
+          selected: planning,
+          onPressed: enabled
+              ? (_) => widget.onModeChanged(
+                  planning ? SessionMode.normal : SessionMode.plan,
+                )
+              : null,
+        ),
+      ],
     );
   }
+
+  static String _permissionLabel(AppLocalizations l10n, PermissionMode mode) =>
+      switch (mode) {
+        PermissionMode.readOnly => l10n.composerPermissionReadOnly,
+        PermissionMode.ask => l10n.composerPermissionAsk,
+        PermissionMode.workspaceWrite => l10n.composerPermissionWorkspaceWrite,
+      };
 
   List<ProviderModelDto>? _loadedModels(String connectionId) => ref
       .read(providerSettingsControllerProvider(widget.hostId))
@@ -248,13 +350,19 @@ class ComposerChip extends StatelessWidget {
   /// Whether the chip renders as active.
   final bool selected;
 
+  /// Whether the chip opens a menu or picker rather than toggling in place.
+  bool get _opensOverlay => menuChildren != null || onPressed != null;
+
   @override
   Widget build(BuildContext context) {
+    // A toggle reports its own state, so only a chip that opens something
+    // carries the disclosure glyph.
+    final disclosing = _opensOverlay && !selected && menuChildren != null;
     final content = Row(
       mainAxisSize: MainAxisSize.min,
+      spacing: TRSpacing.extraSmall,
       children: <Widget>[
-        Icon(icon, size: 18),
-        const SizedBox(width: TRSpacing.extraSmall),
+        Icon(icon),
         Flexible(
           child: Text(
             label,
@@ -262,12 +370,15 @@ class ComposerChip extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        if (disclosing) const Icon(CoderIcons.expand),
       ],
     );
+    // Every chip sits inside the composer card, so the toolbar reads as one
+    // surface: flat until a chip is active, and never a second nested border.
     final control = menuChildren == null
         ? TRButton(
             key: valueKey,
-            appearance: selected ? TRAppearance.solid : TRAppearance.outline,
+            appearance: selected ? TRAppearance.solid : TRAppearance.ghost,
             intent: selected ? TRIntent.primary : TRIntent.neutral,
             onPressed: onPressed == null ? null : () => onPressed!(context),
             child: content,
@@ -348,6 +459,12 @@ class DraftSessionPane extends ConsumerWidget {
             onModelChanged: notifier.selectModel,
             mode: draft.mode,
             onModeChanged: notifier.selectMode,
+            reasoningEffort: draft.reasoningEffort,
+            onReasoningEffortChanged: notifier.selectReasoningEffort,
+            permissionMode: draft.permissionMode,
+            onPermissionModeChanged: notifier.selectPermissionMode,
+            serviceTier: draft.serviceTier,
+            onServiceTierChanged: notifier.selectServiceTier,
           ),
           onModeToggled: () => notifier.selectMode(
             draft.mode == SessionMode.plan
@@ -381,6 +498,9 @@ class DraftSessionPane extends ConsumerWidget {
         attachments: submission.attachments,
         mode: draft.mode,
         model: draft.model,
+        reasoningEffort: draft.reasoningEffort,
+        permissionMode: draft.permissionMode,
+        serviceTier: draft.serviceTier,
       ),
     );
   }
@@ -427,126 +547,172 @@ class SessionComposer extends StatefulWidget {
 
 class _SessionComposerState extends State<SessionComposer> {
   final _controller = TextEditingController();
+  final _inputFocus = FocusNode();
   final List<PendingAttachment> _attachments = <PendingAttachment>[];
   bool _submitting = false;
   bool _dragging = false;
   String? _attachmentError;
 
   @override
+  void initState() {
+    super.initState();
+    // The plain input paints no focus ring, so the card paints it instead.
+    _inputFocus.addListener(_handleFocusChange);
+  }
+
+  void _handleFocusChange() => setState(() {});
+
+  @override
   void dispose() {
+    _inputFocus
+      ..removeListener(_handleFocusChange)
+      ..dispose();
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final editable = widget.enabled && !_submitting;
     final content = SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        padding: const EdgeInsets.fromLTRB(
+          TRSpacing.medium,
+          TRSpacing.small,
+          TRSpacing.medium,
+          TRSpacing.medium,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
+          spacing: TRSpacing.small,
           children: <Widget>[
-            if (widget.header != null) ...<Widget>[
-              widget.header!,
-              const SizedBox(height: 8),
-            ],
-            widget.bar,
-            if (widget.bar.mode == SessionMode.plan)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  AppLocalizations.of(context).composerPlanBanner,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            if (_attachments.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
+            if (widget.header != null) widget.header!,
+            TRCard(
+              // A drop target reads the same way as focus: this card is where
+              // the content lands.
+              focused: _inputFocus.hasFocus || _dragging,
+              padding: TRCardPadding.sm,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                spacing: TRSpacing.small,
                 children: <Widget>[
-                  for (var index = 0; index < _attachments.length; index += 1)
-                    _PendingAttachmentPill(
-                      key: ValueKey('pending-attachment-$index'),
-                      attachment: _attachments[index],
-                      uploading: _submitting,
-                      onRemove: _submitting
-                          ? null
-                          : () => setState(() => _attachments.removeAt(index)),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: TRSpacing.small,
+                    children: <Widget>[
+                      Expanded(
+                        // Shift+Tab cycles the mode instead of moving focus.
+                        child: Focus(
+                          onKeyEvent: _handleKey,
+                          child: TRTextField(
+                            key: const ValueKey('session-composer-input'),
+                            controller: _controller,
+                            focusNode: _inputFocus,
+                            variant: TRTextInputVariant.plain,
+                            minLines: 1,
+                            maxLines: 8,
+                            enabled: editable,
+                            placeholder: l10n.composerInputHint,
+                            onSubmitted: editable
+                                ? (_) => unawaited(_submit())
+                                : null,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        l10n.composerFocusShortcut,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: context.tinyrackTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_attachments.isNotEmpty)
+                    Wrap(
+                      spacing: TRSpacing.extraSmall,
+                      runSpacing: TRSpacing.extraSmall,
+                      children: <Widget>[
+                        for (
+                          var index = 0;
+                          index < _attachments.length;
+                          index += 1
+                        )
+                          _PendingAttachmentPill(
+                            key: ValueKey('pending-attachment-$index'),
+                            attachment: _attachments[index],
+                            uploading: _submitting,
+                            onRemove: _submitting
+                                ? null
+                                : () => setState(
+                                    () => _attachments.removeAt(index),
+                                  ),
+                          ),
+                      ],
                     ),
+                  Row(
+                    spacing: TRSpacing.small,
+                    children: <Widget>[
+                      // The chips outgrow a phone width, so they scroll while
+                      // send stays reachable at the trailing edge.
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            spacing: TRSpacing.extraSmall,
+                            children: <Widget>[
+                              TRIconButton(
+                                key: const ValueKey('session-composer-attach'),
+                                appearance: TRAppearance.ghost,
+                                onPressed:
+                                    editable && widget.attachmentInput != null
+                                    ? _pickFiles
+                                    : null,
+                                icon: const Icon(CoderIcons.paperclip),
+                                label: 'Attach files',
+                              ),
+                              widget.bar,
+                            ],
+                          ),
+                        ),
+                      ),
+                      TRIconButton(
+                        key: const ValueKey('session-composer-send'),
+                        intent: TRIntent.primary,
+                        onPressed: editable ? () => unawaited(_submit()) : null,
+                        icon: const Icon(CoderIcons.send),
+                        label: l10n.composerSendLabel,
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              children: <Widget>[
-                TRIconButton(
-                  key: const ValueKey('session-composer-attach'),
-                  appearance: TRAppearance.ghost,
-                  onPressed:
-                      widget.enabled &&
-                          !_submitting &&
-                          widget.attachmentInput != null
-                      ? _pickFiles
-                      : null,
-                  icon: const Icon(CoderIcons.paperclip),
-                  label: 'Attach files',
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  // Shift+Tab cycles the mode instead of moving focus.
-                  child: Focus(
-                    onKeyEvent: _handleKey,
-                    child: TRTextField(
-                      key: const ValueKey('session-composer-input'),
-                      controller: _controller,
-                      minLines: 1,
-                      maxLines: 8,
-                      enabled: widget.enabled && !_submitting,
-                      placeholder: AppLocalizations.of(
-                        context,
-                      ).composerInputHint,
-                      onSubmitted: widget.enabled && !_submitting
-                          ? (_) => unawaited(_submit())
-                          : null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TRIconButton(
-                  key: const ValueKey('session-composer-send'),
-                  intent: TRIntent.primary,
-                  onPressed: widget.enabled && !_submitting
-                      ? () => unawaited(_submit())
-                      : null,
-                  icon: const Icon(CoderIcons.send),
-                  label: AppLocalizations.of(context).composerSendLabel,
-                ),
-              ],
             ),
+            if (widget.bar.mode == SessionMode.plan)
+              Text(
+                l10n.composerPlanBanner,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: context.tinyrackTheme.primary,
+                ),
+              ),
             if (widget.hint != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  widget.hint!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+              Text(
+                widget.hint!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: context.tinyrackTheme.danger,
                 ),
               ),
             if (_attachmentError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _attachmentError!,
-                  key: const ValueKey('session-composer-attachment-error'),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+              Text(
+                _attachmentError!,
+                key: const ValueKey('session-composer-attachment-error'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: context.tinyrackTheme.danger,
                 ),
               ),
           ],
@@ -557,23 +723,14 @@ class _SessionComposerState extends State<SessionComposer> {
     if (input == null || !input.supportsDrop) return content;
     return DropRegion(
       formats: Formats.standardFormats,
-      onDropOver: (_) => widget.enabled && !_submitting
-          ? DropOperation.copy
-          : DropOperation.none,
+      onDropOver: (_) => editable ? DropOperation.copy : DropOperation.none,
       onDropEnter: (_) => setState(() => _dragging = true),
       onDropLeave: (_) => setState(() => _dragging = false),
       onPerformDrop: (event) async {
         setState(() => _dragging = false);
         await _addFiles(input.droppedFiles(event));
       },
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: _dragging
-              ? Border.all(color: Theme.of(context).colorScheme.primary)
-              : null,
-        ),
-        child: content,
-      ),
+      child: content,
     );
   }
 
@@ -671,40 +828,35 @@ class _PendingAttachmentPill extends StatelessWidget {
   final VoidCallback? onRemove;
 
   @override
-  Widget build(BuildContext context) => Container(
-    constraints: const BoxConstraints(maxWidth: 260),
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        if (uploading)
-          const SizedBox.square(
-            dimension: 24,
-            child: Center(child: TRSpinner()),
-          )
-        else
-          _PendingAttachmentPreview(attachment: attachment),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            '${attachment.fileName} · ${_formatBytes(attachment.byteSize)}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: TRMeasurements.measureMd),
+    child: TRCard(
+      padding: TRCardPadding.sm,
+      variant: TRCardVariant.elevated,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: TRSpacing.extraSmall,
+        children: <Widget>[
+          if (uploading)
+            const TRSpinner()
+          else
+            _PendingAttachmentPreview(attachment: attachment),
+          Flexible(
+            child: Text(
+              '${attachment.fileName} · ${_formatBytes(attachment.byteSize)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-        const SizedBox(width: 4),
-        TRIconButton(
-          key: ValueKey('remove-${attachment.fileName}'),
-          appearance: TRAppearance.ghost,
-          onPressed: onRemove,
-          icon: const Icon(CoderIcons.close),
-          label: 'Remove ${attachment.fileName}',
-        ),
-      ],
+          TRIconButton(
+            key: ValueKey('remove-${attachment.fileName}'),
+            appearance: TRAppearance.ghost,
+            onPressed: onRemove,
+            icon: const Icon(CoderIcons.close),
+            label: 'Remove ${attachment.fileName}',
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -737,27 +889,23 @@ class _PendingAttachmentPreviewState extends State<_PendingAttachmentPreview> {
   @override
   Widget build(BuildContext context) {
     final bytes = _bytes;
-    if (bytes == null) return const Icon(CoderIcons.file, size: 16);
+    if (bytes == null) return const Icon(CoderIcons.file);
     return FutureBuilder<Uint8List>(
       future: bytes,
       builder: (context, snapshot) => snapshot.hasData
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: const BorderRadius.all(TRRadii.extraSmall),
               child: Image.memory(
                 snapshot.data!,
-                width: 24,
-                height: 24,
+                // The thumbnail matches the icon it replaces, so a loaded
+                // preview never reflows the pill.
+                width: IconTheme.of(context).size,
+                height: IconTheme.of(context).size,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(
-                  CoderIcons.image,
-                  size: 16,
-                ),
+                errorBuilder: (_, _, _) => const Icon(CoderIcons.image),
               ),
             )
-          : const SizedBox.square(
-              dimension: 24,
-              child: Center(child: TRSpinner()),
-            ),
+          : const TRSpinner(),
     );
   }
 }
