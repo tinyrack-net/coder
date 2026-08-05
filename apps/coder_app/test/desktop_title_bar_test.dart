@@ -203,8 +203,8 @@ void main() {
         tester.getSize(find.byType(TRMenubar)).height,
         desktopTitleBarHeight,
       );
-      // The caption group stays one neutral color: TRWindowCaptionButton
-      // would paint close with TRIntent.danger, which is too loud here.
+      // Close is not tinted apart from its siblings, so the group reads as
+      // quiet chrome rather than three competing controls.
       for (final key in <String>[
         'desktop-title-bar-minimize',
         'desktop-title-bar-maximize',
@@ -220,7 +220,6 @@ void main() {
         expect(button.intent, TRIntent.neutral);
         expect(button.appearance, TRAppearance.ghost);
       }
-      expect(find.byType(TRWindowCaptionButton), findsNothing);
     },
     tags: const <String>['feature_test__desktop_window_chrome__widget'],
   );
