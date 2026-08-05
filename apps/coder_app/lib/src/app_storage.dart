@@ -185,6 +185,7 @@ final class _AppDocument {
       'sidebarCollapsed': settings.sidebarCollapsed,
       'startAtBoot': settings.startAtBoot,
       'startMinimizedAtBoot': settings.startMinimizedAtBoot,
+      'themeMode': settings.themeMode.name,
     },
     'profiles': profiles.map(_profileToJson).toList(growable: false),
   };
@@ -205,6 +206,9 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
   // keep the enabled defaults rather than failing the whole document.
   final startAtBoot = json['startAtBoot'];
   final startMinimized = json['startMinimizedAtBoot'];
+  // Absent in documents written before the appearance setting existed, which
+  // read back as following the system rather than failing the whole document.
+  final themeMode = json['themeMode'];
   if (embedded is! bool ||
       collapsed is! bool ||
       (startAtBoot != null && startAtBoot is! bool) ||
@@ -214,6 +218,7 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
       (lastHost != null && lastHost is! String) ||
       (lastWorktree != null && lastWorktree is! Map<String, dynamic>) ||
       (localeTag != null && localeTag is! String) ||
+      (themeMode != null && themeMode is! String) ||
       tabs is! List) {
     throw const FormatException('Invalid app settings values.');
   }
@@ -256,8 +261,16 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
     sidebarCollapsed: collapsed,
     startAtBoot: startAtBoot as bool? ?? true,
     startMinimizedAtBoot: startMinimized as bool? ?? true,
+    themeMode: _themeModeFromJson(themeMode),
   );
 }
+
+AppThemeMode _themeModeFromJson(Object? value) => switch (value) {
+  null || 'system' => AppThemeMode.system,
+  'light' => AppThemeMode.light,
+  'dark' => AppThemeMode.dark,
+  _ => throw const FormatException('Invalid app theme mode.'),
+};
 
 EmbeddedDaemonExposure _exposureFromJson(Object? value) => switch (value) {
   null || 'loopback' => EmbeddedDaemonExposure.loopback,

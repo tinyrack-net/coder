@@ -362,6 +362,42 @@ abstract class AppLocalizations {
   /// **'Connect an online daemon first.'**
   String get settingsRequiresOnlineDaemon;
 
+  /// Heading of the appearance card on the General settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get generalAppearanceSection;
+
+  /// Dropdown label for the app theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get generalAppearanceLabel;
+
+  /// Explains the scope of the theme setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to the whole app and is remembered the next time you start it.'**
+  String get generalAppearanceDescription;
+
+  /// Theme option that follows the operating system brightness.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow system'**
+  String get generalAppearanceSystem;
+
+  /// Theme option that always paints the light theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get generalAppearanceLight;
+
+  /// Theme option that always paints the dark theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get generalAppearanceDark;
+
   /// Heading of the language card on the General settings page.
   ///
   /// In en, this message translates to:

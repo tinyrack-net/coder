@@ -23,6 +23,8 @@ tags:
   feature_scenario__workspace_registration__invalid_path_cancel__e2e:
   feature_scenario__settings_language__selection_restart_persistence__e2e:
   feature_scenario__settings_language__system_locale_fallback__e2e:
+  feature_scenario__settings_appearance__restart_persistence__e2e:
+  feature_scenario__settings_appearance__system_brightness_follow__e2e:
   feature_scenario__settings_startup__registration_toggle__e2e:
   feature_scenario__settings_startup__hidden_login_launch__e2e:
   feature_scenario__desktop_residency__close_hide_restore__e2e:
@@ -85,6 +87,8 @@ tags:
   feature_test__worktree_lifecycle__unit:
   feature_test__worktree_lifecycle__widget:
   feature_test__project_settings__widget:
+  feature_test__settings_appearance__unit:
+  feature_test__settings_appearance__widget:
   feature_test__settings_language__unit:
   feature_test__settings_language__widget:
   feature_test__settings_startup__unit:

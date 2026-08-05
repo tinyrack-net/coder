@@ -182,6 +182,30 @@
   "@settingsRequiresOnlineDaemon": {
     "description": "Shown when a host-scoped settings page has no online daemon."
   },
+  "generalAppearanceSection": "Appearance",
+  "@generalAppearanceSection": {
+    "description": "Heading of the appearance card on the General settings page."
+  },
+  "generalAppearanceLabel": "Theme",
+  "@generalAppearanceLabel": {
+    "description": "Dropdown label for the app theme."
+  },
+  "generalAppearanceDescription": "Applies to the whole app and is remembered the next time you start it.",
+  "@generalAppearanceDescription": {
+    "description": "Explains the scope of the theme setting."
+  },
+  "generalAppearanceSystem": "Follow system",
+  "@generalAppearanceSystem": {
+    "description": "Theme option that follows the operating system brightness."
+  },
+  "generalAppearanceLight": "Light",
+  "@generalAppearanceLight": {
+    "description": "Theme option that always paints the light theme."
+  },
+  "generalAppearanceDark": "Dark",
+  "@generalAppearanceDark": {
+    "description": "Theme option that always paints the dark theme."
+  },
   "generalLanguageSection": "Language",
   "@generalLanguageSection": {
     "description": "Heading of the language card on the General settings page."

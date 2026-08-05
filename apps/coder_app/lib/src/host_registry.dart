@@ -330,6 +330,13 @@ final class HostRegistry {
     _emit(value.copyWith(settings: settings));
   }
 
+  /// Persists the theme the app paints itself with.
+  Future<void> setThemeMode(AppThemeMode mode) async {
+    final settings = value.settings.copyWith(themeMode: mode);
+    await _settings.saveSettings(settings);
+    _emit(value.copyWith(settings: settings));
+  }
+
   /// Persists whether the operating system launches the app at login.
   Future<void> setStartAtBoot({required bool enabled}) async {
     final settings = value.settings.copyWith(startAtBoot: enabled);
