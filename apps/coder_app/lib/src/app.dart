@@ -539,7 +539,13 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
-  bool _adoptedRouteHost = false;
+  /// Daemon this page has already adopted from a route.
+  ///
+  /// Categories replace each other rather than pushing, so this state outlives
+  /// a location change and cannot latch on "have I ever adopted one": it has to
+  /// remember which daemon it adopted, or a later location naming a different
+  /// daemon would be ignored.
+  String? _adoptedRouteHost;
 
   @override
   void initState() {
@@ -550,12 +556,12 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   }
 
   void _adoptRouteHost() {
-    if (!mounted || _adoptedRouteHost) return;
+    if (!mounted) return;
     final requested = widget.hostId;
-    if (requested == null) return;
+    if (requested == null || requested == _adoptedRouteHost) return;
     final registry = ref.read(hostRegistryControllerProvider).asData?.value;
     if (registry == null) return;
-    _adoptedRouteHost = true;
+    _adoptedRouteHost = requested;
     if (!registry.runtimes.containsKey(requested)) return;
     if (registry.settings.lastActiveHostId == requested) return;
     unawaited(
@@ -565,7 +571,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_adoptedRouteHost) _adoptRouteHost();
+    _adoptRouteHost();
     final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
     final hosts =
         registry?.runtimes.values.toList(growable: false) ??
@@ -1013,6 +1019,11 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                       _goSession(context, selection, session.id),
                 )
               : _SessionArea(
+                  // Selecting a checkout replaces the location rather than
+                  // pushing, so this page is not rebuilt from scratch. Key the
+                  // session area on the checkout so its tabs, conversation,
+                  // and terminals still start clean on a different one.
+                  key: ValueKey<WorkspaceSelection>(widget.selection!),
                   selection: widget.selection!,
                   requestedAgentId: widget.requestedAgentId,
                   requestedTerminalId: widget.requestedTerminalId,
@@ -1083,6 +1094,7 @@ class _SessionArea extends ConsumerStatefulWidget {
     this.requestedAgentId,
     this.requestedTerminalId,
     this.showBack = false,
+    super.key,
   });
 
   final WorkspaceSelection selection;
@@ -1095,19 +1107,23 @@ class _SessionArea extends ConsumerStatefulWidget {
 }
 
 class _SessionAreaState extends ConsumerState<_SessionArea> {
-  bool _requestedOpened = false;
-  bool _requestedTerminalOpened = false;
+  // Selecting a session or terminal replaces the location rather than pushing,
+  // so this state outlives the change. These remember which id was opened
+  // instead of latching on "have I opened one", or the second location to name
+  // a session would never open it.
+  String? _openedAgentId;
+  String? _openedTerminalId;
 
   @override
   Widget build(BuildContext context) {
     final provider = sessionTabsControllerProvider(widget.selection);
     final tabs = ref.watch(provider);
     final state = tabs.asData?.value;
-    if (!_requestedOpened &&
-        widget.requestedAgentId != null &&
+    if (widget.requestedAgentId != null &&
+        widget.requestedAgentId != _openedAgentId &&
         state != null &&
         state.sessions.any((item) => item.id == widget.requestedAgentId)) {
-      _requestedOpened = true;
+      _openedAgentId = widget.requestedAgentId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           unawaited(
@@ -1116,13 +1132,13 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         }
       });
     }
-    if (!_requestedTerminalOpened &&
-        widget.requestedTerminalId != null &&
+    if (widget.requestedTerminalId != null &&
+        widget.requestedTerminalId != _openedTerminalId &&
         state != null &&
         state.terminals.any(
           (item) => item.id == widget.requestedTerminalId,
         )) {
-      _requestedTerminalOpened = true;
+      _openedTerminalId = widget.requestedTerminalId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           unawaited(

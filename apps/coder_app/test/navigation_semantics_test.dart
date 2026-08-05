@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coder_app/src/app.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -170,6 +172,45 @@ void main() {
         tester.state<State<WorkspacePage>>(find.byType(WorkspacePage)),
         same(before),
       );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'a later session location opens that session',
+    (tester) async {
+      await useDesktop(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[
+          session('one', 'Session one'),
+          session('two', 'Session two'),
+        ]),
+        initialLocation: SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: worktree.id,
+          sessionId: 'one',
+        ).location,
+      );
+      addTearDown(router.dispose);
+      expect(find.text('Session two'), findsNothing);
+
+      // Selecting a session replaces the location instead of pushing, so the
+      // page survives and has to react to the new session itself.
+      unawaited(
+        router.replace<void>(
+          SessionRoute(
+            hostId: 'server',
+            workspaceId: workspace.id,
+            worktreeId: worktree.id,
+            sessionId: 'two',
+          ).location,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Session two'), findsWidgets);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
