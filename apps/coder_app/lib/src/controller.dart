@@ -48,6 +48,8 @@ CoderApi _connectedApi(HostRuntimeSnapshot? runtime) {
   return api;
 }
 
+Duration? _noAutomaticRetry(int retryCount, Object error) => null;
+
 @Riverpod(keepAlive: true)
 /// Riverpod bridge exposing the independently testable [HostRegistry].
 class HostRegistryController extends _$HostRegistryController {
@@ -352,7 +354,7 @@ class SessionsController extends _$SessionsController {
   }
 }
 
-@riverpod
+@Riverpod(retry: _noAutomaticRetry)
 /// Loads and edits the `coder.json` worktree hooks of one project.
 class ProjectSettingsController extends _$ProjectSettingsController {
   @override
@@ -396,6 +398,7 @@ final class McpServersState {
 /// Loads and edits one daemon's MCP server configuration.
 class McpServersController extends _$McpServersController {
   StreamSubscription<ClientEvent>? _events;
+  int _refreshGeneration = 0;
 
   @override
   Future<McpServersState> build(String hostId, String? worktreeId) async {
@@ -411,11 +414,12 @@ class McpServersController extends _$McpServersController {
 
   /// Re-reads every server and its live connection state.
   Future<void> refresh() async {
+    final generation = ++_refreshGeneration;
     final api = await _requireHostApi(ref, hostId);
+    final servers = await api.listMcpServers(worktreeId: worktreeId);
+    if (!ref.mounted || generation != _refreshGeneration) return;
     state = AsyncData<McpServersState>(
-      McpServersState(
-        servers: await api.listMcpServers(worktreeId: worktreeId),
-      ),
+      McpServersState(servers: servers),
     );
   }
 

@@ -23,6 +23,34 @@ enum FeatureVerificationLayer {
   platformSmoke,
 }
 
+/// Application surfaces on which an E2E scenario must remain executable.
+enum FeatureSurface {
+  /// Linux, macOS, and Windows desktop runners.
+  desktop,
+
+  /// Android and iOS remote-only runners.
+  mobile,
+}
+
+/// One stable, user-observable E2E behavior owned by a feature.
+final class FeatureScenario {
+  /// Creates an immutable E2E scenario contract.
+  const FeatureScenario({
+    required this.id,
+    required this.description,
+    required this.surfaces,
+  });
+
+  /// Stable snake-case identifier used in executable test tags.
+  final String id;
+
+  /// User-observable outcome and boundary protected by the scenario.
+  final String description;
+
+  /// Product surfaces on which this behavior is supported.
+  final Set<FeatureSurface> surfaces;
+}
+
 /// Declares one user-visible capability and its mandatory evidence.
 final class FeatureContract {
   /// Creates an immutable feature contract.
@@ -32,6 +60,7 @@ final class FeatureContract {
     required this.requiredLayers,
     this.apiMethods = const <String>[],
     this.routes = const <String>[],
+    this.e2eScenarios = const <FeatureScenario>[],
   });
 
   /// Stable dotted identifier used by test tags and reports.
@@ -48,6 +77,9 @@ final class FeatureContract {
 
   /// Test layers that must contain tagged evidence.
   final Set<FeatureVerificationLayer> requiredLayers;
+
+  /// Executable real-runner behaviors required for this feature.
+  final List<FeatureScenario> e2eScenarios;
 }
 
 /// One actionable feature verification failure.
@@ -92,6 +124,7 @@ final class FeatureVerifier {
   List<FeatureViolation> verify() {
     final violations = <FeatureViolation>[];
     final contractsById = <String, FeatureContract>{};
+    final scenariosByFeature = <String, Map<String, FeatureScenario>>{};
     final methodOwners = <String, String>{};
     final routeOwners = <String, String>{};
     for (final contract in contracts) {
@@ -110,6 +143,47 @@ final class FeatureVerifier {
         violations.add(
           FeatureViolation('Feature ${contract.id} has no required layers.'),
         );
+      }
+      if (contract.requiredLayers.contains(FeatureVerificationLayer.e2e) &&
+          contract.e2eScenarios.isEmpty) {
+        violations.add(
+          FeatureViolation('Feature ${contract.id} has no E2E scenarios.'),
+        );
+      }
+      final scenariosById = <String, FeatureScenario>{};
+      scenariosByFeature[contract.id] = scenariosById;
+      for (final scenario in contract.e2eScenarios) {
+        if (scenariosById.containsKey(scenario.id)) {
+          violations.add(
+            FeatureViolation(
+              'Duplicate E2E scenario ${scenario.id} for ${contract.id}.',
+            ),
+          );
+        }
+        scenariosById[scenario.id] = scenario;
+        if (!RegExp(r'^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$').hasMatch(scenario.id)) {
+          violations.add(
+            FeatureViolation(
+              'E2E scenario ${contract.id}/${scenario.id} must use a stable '
+              'snake-case ID.',
+            ),
+          );
+        }
+        if (scenario.description.trim().isEmpty) {
+          violations.add(
+            FeatureViolation(
+              'E2E scenario ${contract.id}/${scenario.id} has no description.',
+            ),
+          );
+        }
+        if (scenario.surfaces.isEmpty) {
+          violations.add(
+            FeatureViolation(
+              'E2E scenario ${contract.id}/${scenario.id} has no supported '
+              'surface.',
+            ),
+          );
+        }
       }
       for (final method in contract.apiMethods) {
         final previous = methodOwners[method];
@@ -157,12 +231,16 @@ final class FeatureVerifier {
     }
 
     final evidence = <String, Set<FeatureVerificationLayer>>{};
+    final scenarioEvidence = <String>{};
     final routeEvidence = <String>{};
     final marker = RegExp(
       'feature_test__([a-z0-9_]+)__'
       '(unit|contract|verticalSlice|widget|e2e|platformSmoke)',
     );
     final routeMarker = RegExp('route_test__([a-z0-9_]+)__widget');
+    final scenarioMarker = RegExp(
+      'feature_scenario__([a-z0-9_]+)__([a-z0-9_]+)__e2e',
+    );
     final routesByTag = <String, String>{
       for (final route in routes) _snakeCase(route): route,
     };
@@ -196,6 +274,41 @@ final class FeatureVerifier {
         }
         evidence.putIfAbsent(id, () => <FeatureVerificationLayer>{}).add(layer);
       }
+      for (final match in scenarioMarker.allMatches(source)) {
+        final featureId = match.group(1)!.replaceAll('_', '.');
+        final scenarioId = match.group(2)!;
+        final scenario = scenariosByFeature[featureId]?[scenarioId];
+        if (scenario == null) {
+          violations.add(
+            FeatureViolation(
+              'Unknown E2E scenario tag: $featureId/$scenarioId.',
+            ),
+          );
+          continue;
+        }
+        if (hasSkip) {
+          violations.add(
+            FeatureViolation(
+              'E2E scenario $featureId/$scenarioId cannot use skip in '
+              '${p.relative(file.path, from: workspaceRoot)}.',
+            ),
+          );
+        }
+        if (!_hasExecutableScenario(source, match.start)) {
+          violations.add(
+            FeatureViolation(
+              'E2E scenario $featureId/$scenarioId has no executable '
+              'testWidgets behavior in '
+              '${p.relative(file.path, from: workspaceRoot)}.',
+            ),
+          );
+          continue;
+        }
+        scenarioEvidence.add('$featureId/$scenarioId');
+        evidence
+            .putIfAbsent(featureId, () => <FeatureVerificationLayer>{})
+            .add(FeatureVerificationLayer.e2e);
+      }
       for (final match in routeMarker.allMatches(source)) {
         final tagId = match.group(1)!;
         final route = routesByTag[tagId];
@@ -226,6 +339,16 @@ final class FeatureVerifier {
             'Feature ${contract.id} is missing ${layer.name} evidence.',
           ),
         );
+      }
+      for (final scenario in contract.e2eScenarios) {
+        final key = '${contract.id}/${scenario.id}';
+        if (!scenarioEvidence.contains(key)) {
+          violations.add(
+            FeatureViolation(
+              'E2E scenario $key is missing E2E evidence.',
+            ),
+          );
+        }
       }
     }
     for (final route in routes.difference(routeEvidence)) {
@@ -293,6 +416,13 @@ final class FeatureVerifier {
       .where((part) => part.isNotEmpty)
       .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
       .join();
+
+  bool _hasExecutableScenario(String source, int markerOffset) {
+    final testStart = source.lastIndexOf('testWidgets(', markerOffset);
+    if (testStart < 0) return false;
+    final body = source.substring(testStart, markerOffset);
+    return body.contains('await ') && body.contains('expect(');
+  }
 
   Set<String> _apiMethods(String source) {
     final declaration = RegExp(

@@ -17,6 +17,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 typedef _WorkspaceEntry = ({
   String hostId,
   String hostLabel,
+  CoderApi api,
   WorkspaceDto workspace,
   List<WorktreeDto> worktrees,
 });
@@ -75,6 +76,7 @@ class WorkspaceSidebar extends StatelessWidget {
         entries.add((
           hostId: host.id,
           hostLabel: label,
+          api: host.api!,
           workspace: workspace,
           worktrees: hostCatalog.worktrees
               .where((item) => item.workspaceId == workspace.id)
@@ -160,6 +162,7 @@ class WorkspaceSidebar extends StatelessWidget {
             onArchivedSelection: onArchivedSelection,
             hostId: entry.hostId,
             hostLabel: entry.hostLabel,
+            api: entry.api,
             workspace: entry.workspace,
             worktrees: entry.worktrees,
             selected: selected,
@@ -180,6 +183,7 @@ class _WorkspaceTreeNode extends ConsumerWidget {
     required this.onArchivedSelection,
     required this.hostId,
     required this.hostLabel,
+    required this.api,
     required this.workspace,
     required this.worktrees,
     required this.selected,
@@ -191,6 +195,7 @@ class _WorkspaceTreeNode extends ConsumerWidget {
   final VoidCallback onArchivedSelection;
   final String hostId;
   final String hostLabel;
+  final CoderApi api;
   final WorkspaceDto workspace;
   final List<WorktreeDto> worktrees;
   final WorkspaceSelection? selected;
@@ -231,6 +236,24 @@ class _WorkspaceTreeNode extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+            TRMenu(
+              key: ValueKey<String>('workspace-menu-${workspace.id}'),
+              trigger: Icon(
+                CoderIcons.more,
+                semanticLabel: l10n.workspaceProjectMenu,
+              ),
+              menuChildren: <Widget>[
+                TRMenuItem(
+                  key: ValueKey<String>(
+                    'workspace-unregister-${workspace.id}',
+                  ),
+                  onPressed: () => unawaited(
+                    _unregisterWorkspace(context, ref),
+                  ),
+                  child: Text(l10n.workspaceUnregister),
+                ),
+              ],
             ),
           ],
         ),
@@ -289,7 +312,6 @@ class _WorkspaceTreeNode extends ConsumerWidget {
     WorktreeDto worktree,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final api = await _api(ref);
     final preview = await api.previewWorktreeArchive(worktree.id);
     if (!context.mounted) return;
     if (preview.runningSessionCount > 0) {
@@ -358,12 +380,37 @@ class _WorkspaceTreeNode extends ConsumerWidget {
     }
   }
 
-  Future<CoderApi> _api(WidgetRef ref) async {
-    final runtime = (await ref.read(
-      hostRegistryControllerProvider.future,
-    )).runtimes[hostId];
-    return runtime?.api ??
-        (throw StateError('Online daemon connection required.'));
+  Future<void> _unregisterWorkspace(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showTRDialog<bool>(
+      context: context,
+      builder: (context) => TRAlertDialog(
+        title: Text(l10n.workspaceUnregisterTitle(workspace.name)),
+        content: Text(l10n.workspaceUnregisterBody),
+        actions: <TRButton>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.commonCancel),
+          ),
+          TRButton(
+            key: const ValueKey<String>('workspace-unregister-confirm'),
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.workspaceUnregister),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await api.unregisterWorkspace(workspace.id);
+    ref.invalidate(workspaceCatalogControllerProvider);
+    if (selected?.workspaceId == workspace.id) onArchivedSelection();
   }
 }
 

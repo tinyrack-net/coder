@@ -1,12 +1,15 @@
 import 'package:coder_app/src/app.dart';
+import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/chat/chat_approval_card.dart';
 import 'package:coder_app/src/chat/chat_timeline_model.dart';
 import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/model_picker.dart';
+import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -130,6 +133,92 @@ void main() {
       expect(router.routeInformationProvider.value.uri.path, contains('two'));
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
+    'host-scoped settings keep the selected daemon across categories',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final first = FakeCoderApi(
+        serverInfo: const ServerInfoDto(
+          serverId: 'first-server',
+          version: 'test',
+          protocolVersion: coderProtocolVersion,
+          features: <String, bool>{},
+        ),
+      );
+      final second = FakeCoderApi(
+        serverInfo: const ServerInfoDto(
+          serverId: 'second-server',
+          version: 'test',
+          protocolVersion: coderProtocolVersion,
+          features: <String, bool>{},
+        ),
+      );
+      addTearDown(first.close);
+      addTearDown(second.close);
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[
+          RemoteDaemonProfile(
+            id: 'first',
+            label: 'First daemon',
+            websocketUri: Uri.parse('ws://first.test/ws'),
+            autoConnect: true,
+            createdAt: now,
+            updatedAt: now,
+          ),
+          RemoteDaemonProfile(
+            id: 'second',
+            label: 'Second daemon',
+            websocketUri: Uri.parse('ws://second.test/ws'),
+            autoConnect: true,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        tokens: const <String, String>{
+          'first': 'first-token',
+          'second': 'second-token',
+        },
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: _MappedClients(<String, CoderApi>{
+              'first.test': first,
+              'second.test': second,
+            }),
+            clientKind: 'settings-host-test',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Agent'));
+      await tester.pumpAndSettle();
+
+      final daemonSelect = find.byKey(
+        const ValueKey<String>('settings-daemon-select'),
+      );
+      await tester.tap(daemonSelect);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Second daemon').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('MCP'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TRSelectFormField<String>>(daemonSelect).initialValue,
+        'second',
+      );
+    },
+    tags: const <String>['feature_test__daemon_management__widget'],
   );
 
   testWidgets(
@@ -816,6 +905,31 @@ void main() {
     expect(find.text('원격 daemons'), findsOneWidget);
   });
 
+  testWidgets('mobile settings can switch between every typed category', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final router = await _pumpRoute(
+      tester,
+      FakeCoderApi(),
+      const GeneralSettingsRoute().location,
+    );
+    addTearDown(router.dispose);
+
+    final selector = find.byKey(
+      const ValueKey<String>('settings-category-select'),
+    );
+    expect(selector, findsOneWidget);
+    await tester.tap(selector);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daemon').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('원격 daemons'), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, '/settings/daemons');
+  });
+
   testWidgets(
     'agent settings edits Markdown definitions and creates subagents',
     (tester) async {
@@ -1252,3 +1366,17 @@ Finder _textInput(String label) => find.descendant(
   of: _textField(label),
   matching: find.byType(EditableText),
 );
+
+final class _MappedClients implements HostClientFactory {
+  const _MappedClients(this.apis);
+
+  final Map<String, CoderApi> apis;
+
+  @override
+  Future<CoderApi> connect({
+    required HostEndpoint endpoint,
+    required DaemonCredentials credentials,
+    required String clientId,
+    required String clientKind,
+  }) async => apis[endpoint.websocketUri.host]!;
+}

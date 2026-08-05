@@ -58,6 +58,7 @@ abstract final class DaemonApplication {
     ModelProviderFactory providerFactory =
         const OpenAICompatibleProviderFactory(),
     ProviderOAuthGateway? oauthGateway,
+    ProviderCatalogMetadataSource? providerCatalogMetadataSource,
     WorkspacePathGateway workspacePaths = const IoWorkspacePathGateway(),
     GitWorkspaceGateway? git,
     ProjectSettingsStore projectSettings = const FileProjectSettingsStore(),
@@ -115,7 +116,10 @@ abstract final class DaemonApplication {
         clock: clock,
         modelDiscovery: modelDiscovery,
         providerFactory: providerFactory,
-        catalog: BuiltInProviderCatalog(clock: clock),
+        catalog: BuiltInProviderCatalog(
+          clock: clock,
+          metadataSource: providerCatalogMetadataSource,
+        ),
         oauthRefresher: OAuthCredentialRefresher(
           gateway: effectiveOAuthGateway,
         ),

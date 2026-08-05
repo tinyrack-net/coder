@@ -17,17 +17,33 @@ embedded-daemon path.
 - Widget tests cover loading, data, empty, error, responsive, navigation, approval,
   conversation, and provider settings states through `CoderApi` overrides.
 - Linux canonical golden tests cover light/dark and desktop/mobile presentation.
-- Debug E2E starts an embedded daemon with a deterministic fake model provider,
-  drives the real Linux Flutter runner through remote workspace registration,
-  worktree lifecycle, Markdown Agent create/edit/reload/archive/reset, session
-  delegation, approval, and provider connection/disconnection. It checks files
-  and daemon readback, then reconnects to verify persisted timeline recovery.
+- Debug E2E is split into daemon/workspace, project/worktree, cross-domain
+  session/turn/Agent/skill/MCP, provider, and settings/desktop runner shards.
+  The shards use embedded or local remote daemons with deterministic provider
+  ports, check files and daemon readback, and reconnect or restart where the
+  scenario requires persistence evidence.
 
 ## Feature traceability
 
 `lib/src/feature_manifest.dart` owns the stable feature catalog. Every public
 `CoderApi` method and every `@TypedGoRoute` must belong to exactly one feature.
 Each feature declares the layers required to prove it.
+
+Every feature that requires E2E evidence also declares typed scenarios and the
+desktop and/or mobile surfaces that support them. Scenario evidence uses this
+encoding:
+
+```dart
+tags: const <String>[
+  'feature_scenario__turn_execution__cancel_stream__e2e',
+]
+```
+
+Scenario tests must use `testWidgets`, perform asynchronous runner behavior,
+and assert an observable result. The verifier rejects undeclared, duplicate,
+empty, skipped, marker-only, or missing scenarios. A scenario tag also supplies
+the feature's E2E layer evidence; a broad feature tag alone cannot satisfy a
+declared scenario.
 
 Tests expose evidence with executable tags using this encoding:
 
@@ -71,7 +87,9 @@ clean, independent checks run concurrently with a maximum of four tasks.
 running the same tests once normally and again with instrumentation. Dart and
 Flutter coverage plus goldens run concurrently, followed by the per-package
 coverage threshold check. `verify:debug` is deliberately separate because it
-compiles and launches the Linux desktop runner.
+compiles and launches the Linux desktop runner. Each E2E shard runs in a fresh
+Flutter process because a stopped desktop runner cannot safely hand its debug
+log connection to the next integration file.
 
 Focused layer commands remain available for development. `test:dart` is the
 single-pass aggregate for the root and every non-Flutter package, including the
@@ -92,8 +110,10 @@ is the Linux execution of the full suite; macOS and Windows run the non-coverage
 Dart and Flutter suites independently. The `Quality Gate` job requires every
 job to succeed and is the sole required branch-protection check.
 
-Nightly runs are limited to macOS/Windows desktop E2E and Android/iOS smoke
-tests. Release packages are built only for version tags or an explicit manual
+Nightly runs the same desktop shard matrix on macOS and Windows. Android and
+iOS run the remote-only bootstrap and provider suites; desktop-owned daemon,
+tray, window, and local Git-process scenarios remain desktop-only. Release
+packages are built only for version tags or an explicit manual
 dispatch. Tag builds start in parallel with verification, while publishing
 waits for both `Quality Gate` and all four platform artifacts. Homebrew and
 WinGet publishing proceed independently after the GitHub Release is available.

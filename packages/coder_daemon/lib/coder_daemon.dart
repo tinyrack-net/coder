@@ -8,6 +8,8 @@ export 'src/git_workspace.dart';
 export 'src/ports.dart';
 export 'src/project_settings.dart';
 export 'src/provider_adapters.dart';
+export 'src/provider_auth.dart';
+export 'src/provider_catalog.dart';
 export 'src/repositories.dart';
 export 'src/skills.dart';
 export 'src/workspace_service.dart';

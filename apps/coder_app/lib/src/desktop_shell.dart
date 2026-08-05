@@ -183,9 +183,12 @@ final class PluginDesktopWindow implements DesktopWindow {
       await configureCustomTitleBar(enabled: true);
     }
     await readyToShow(() async {
-      if (startHidden) return;
-      await showWindow();
+      if (!startHidden) await showWindow();
     });
+    // A production window starts hidden, while an integration runner already
+    // owns a visible window. Enforce the requested state after readiness so
+    // both compositions have the same observable behavior.
+    if (startHidden) await hideWindow();
   }
 
   @override

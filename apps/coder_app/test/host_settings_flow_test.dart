@@ -177,6 +177,7 @@ void main() {
 
       expect(find.text('내장 daemon'), findsOneWidget);
       expect(find.text('네트워크 접근 허용'), findsOneWidget);
+      expect(find.textContaining('not running'), findsOneWidget);
       final embeddedToggle = find.widgetWithText(
         CoderSwitchRow,
         '내장 daemon',

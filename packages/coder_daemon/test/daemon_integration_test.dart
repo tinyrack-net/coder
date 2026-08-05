@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
-import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 import 'package:path/path.dart' as p;

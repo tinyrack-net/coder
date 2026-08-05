@@ -156,6 +156,33 @@ void main() {
     expect(find.text('등록된 project가 없습니다.'), findsOneWidget);
   });
 
+  testWidgets('project settings exposes load errors until an explicit retry', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = FakeCoderApi(
+      workspaces: <WorkspaceDto>[workspace('workspace', 'coder')],
+      projectSettingsError: Exception('invalid_project_settings'),
+    );
+    final router = await _pumpRoute(
+      tester,
+      api,
+      const ProjectSettingsRoute(hostId: 'server').location,
+    );
+    addTearDown(router.dispose);
+
+    expect(find.textContaining('invalid_project_settings'), findsOneWidget);
+    expect(api.projectSettingsLoadCount, 1);
+
+    api.projectSettingsError = null;
+    await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
+    await tester.pumpAndSettle();
+
+    expect(_textInput('Setup (worktree 생성 후)'), findsOneWidget);
+    expect(api.projectSettingsLoadCount, 2);
+  });
+
   testWidgets('mobile project settings navigates from list to editor', (
     tester,
   ) async {

@@ -33,6 +33,9 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
+  Object? _catalogRefreshError;
+  bool _refreshingCatalog = false;
+
   ProviderSettingsControllerProvider get _provider =>
       providerSettingsControllerProvider(widget.hostId);
 
@@ -58,17 +61,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           icon: const Icon(CoderIcons.back),
         ),
         title: Text(l10n.providerSettingsTitle),
-        actions: <Widget>[
-          TRIconButton(
-            appearance: TRAppearance.ghost,
-            uiSize: TRUiSize.sm,
-            label: l10n.providerSettingsRefreshCatalog,
-            onPressed: asyncState.asData?.value == null
-                ? null
-                : () => ref.read(_provider.notifier).refreshCatalog(),
-            icon: const Icon(CoderIcons.refresh),
-          ),
-        ],
       ),
       body: body,
     );
@@ -85,6 +77,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       connections: activeConnections,
       onDisconnect: _disconnect,
       onEditCustom: _editCustom,
+      onDeleteCustom: _deleteCustom,
     );
     final catalog = _ProviderCatalog(
       definitions: state.catalog.definitions
@@ -99,6 +92,48 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     return Column(
       children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: <Widget>[
+              if (_catalogRefreshError case final error?) ...<Widget>[
+                Expanded(
+                  child: Text(
+                    '$error',
+                    key: const ValueKey<String>(
+                      'provider-catalog-refresh-error',
+                    ),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              TRButton(
+                key: const ValueKey<String>('provider-catalog-refresh'),
+                appearance: TRAppearance.outline,
+                uiSize: TRUiSize.sm,
+                onPressed: _refreshingCatalog
+                    ? null
+                    : () => unawaited(_refreshCatalog()),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Icon(CoderIcons.refresh, size: 16),
+                    const SizedBox(width: TRSpacing.extraSmall),
+                    Text(
+                      AppLocalizations.of(
+                        context,
+                      ).providerSettingsRefreshCatalog,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         Expanded(
           child: CustomScrollView(
             slivers: <Widget>[
@@ -116,8 +151,30 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               onCancel: () =>
                   ref.read(_provider.notifier).cancelAuth(attempt.id),
             ),
+        for (final attempt in state.authAttempts.values)
+          if (attempt.status == ProviderAuthAttemptStatus.failed ||
+              attempt.status == ProviderAuthAttemptStatus.expired)
+            CoderListRow(
+              key: ValueKey<String>('provider-auth-error-${attempt.id}'),
+              leading: const Icon(CoderIcons.warning),
+              title: Text(attempt.error ?? attempt.status.name),
+            ),
       ],
     );
+  }
+
+  Future<void> _refreshCatalog() async {
+    setState(() {
+      _refreshingCatalog = true;
+      _catalogRefreshError = null;
+    });
+    try {
+      await ref.read(_provider.notifier).refreshCatalog();
+    } on Object catch (error) {
+      if (mounted) setState(() => _catalogRefreshError = error);
+    } finally {
+      if (mounted) setState(() => _refreshingCatalog = false);
+    }
   }
 
   Future<void> _addDefinition(ProviderDefinitionDto definition) async {
@@ -235,6 +292,35 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         .updateCustom(connection.id, draft.config, apiKey: draft.apiKey);
   }
 
+  Future<void> _deleteCustom(ProviderConnectionDto connection) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showTRDialog<bool>(
+      context: context,
+      builder: (context) => TRAlertDialog(
+        title: Text(l10n.providerSettingsDeleteCustomTitle),
+        content: Text(
+          l10n.providerSettingsDeleteCustomBody(connection.displayName),
+        ),
+        actions: <TRButton>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            uiSize: TRUiSize.sm,
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.commonCancel),
+          ),
+          TRButton(
+            intent: TRIntent.primary,
+            uiSize: TRUiSize.sm,
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.commonDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(_provider.notifier).deleteCustom(connection.id);
+  }
+
   Future<void> _disconnect(ProviderConnectionDto connection) async {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showTRDialog<bool>(
@@ -270,11 +356,13 @@ class _ConnectedProviders extends StatelessWidget {
     required this.connections,
     required this.onDisconnect,
     required this.onEditCustom,
+    required this.onDeleteCustom,
   });
 
   final List<ProviderConnectionDto> connections;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
   final ValueChanged<ProviderConnectionDto> onEditCustom;
+  final ValueChanged<ProviderConnectionDto> onDeleteCustom;
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +391,7 @@ class _ConnectedProviders extends StatelessWidget {
               connection: connection,
               onDisconnect: onDisconnect,
               onEditCustom: onEditCustom,
+              onDeleteCustom: onDeleteCustom,
             ),
         ],
       ),
@@ -315,11 +404,13 @@ class _ProviderConnectionCard extends StatelessWidget {
     required this.connection,
     required this.onDisconnect,
     required this.onEditCustom,
+    required this.onDeleteCustom,
   });
 
   final ProviderConnectionDto connection;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
   final ValueChanged<ProviderConnectionDto> onEditCustom;
+  final ValueChanged<ProviderConnectionDto> onDeleteCustom;
 
   @override
   Widget build(BuildContext context) {
@@ -351,6 +442,11 @@ class _ProviderConnectionCard extends StatelessWidget {
                       TRMenuItem(
                         onPressed: () => onEditCustom(connection),
                         child: Text(l10n.providerSettingsEditAdvanced),
+                      ),
+                    if (connection.definitionId == 'custom')
+                      TRMenuItem(
+                        onPressed: () => onDeleteCustom(connection),
+                        child: Text(l10n.commonDelete),
                       ),
                     TRMenuItem(
                       onPressed: () => onDisconnect(connection),
@@ -460,6 +556,7 @@ class _AuthAttemptBar extends StatelessWidget {
         ].whereType<String>().join(' · '),
       ),
       trailing: TRButton(
+        key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),
         appearance: TRAppearance.ghost,
         uiSize: TRUiSize.sm,
         onPressed: onCancel,

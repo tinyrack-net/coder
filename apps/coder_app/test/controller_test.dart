@@ -606,6 +606,55 @@ void main() {
   );
 
   test(
+    'MCP reload ignores an older response that completes last',
+    () async {
+      const config = McpServerConfigDto(
+        id: 'e2e',
+        transport: McpTransportKind.stdio,
+        command: '/missing',
+      );
+      const connecting = McpServerStateDto(
+        config: config,
+        scope: McpConfigScope.user,
+        sourcePath: '/config/mcp.json',
+        status: McpServerStatus.connecting,
+      );
+      const failed = McpServerStateDto(
+        config: config,
+        scope: McpConfigScope.user,
+        sourcePath: '/config/mcp.json',
+        status: McpServerStatus.failed,
+        error: 'planned process failure',
+      );
+      final api = FakeCoderApi();
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = mcpServersControllerProvider('server', null);
+      await container.read(provider.future);
+
+      final older = Completer<List<McpServerStateDto>>();
+      final newer = Completer<List<McpServerStateDto>>();
+      api.mcpListResponses.addAll(<Future<List<McpServerStateDto>>>[
+        older.future,
+        newer.future,
+      ]);
+      final first = container.read(provider.notifier).refresh();
+      final second = container.read(provider.notifier).refresh();
+      newer.complete(const <McpServerStateDto>[failed]);
+      await second;
+      older.complete(const <McpServerStateDto>[connecting]);
+      await first;
+
+      expect(container.read(provider).value!.servers, <McpServerStateDto>[
+        failed,
+      ]);
+    },
+    tags: const <String>['feature_test__mcp_server_management__unit'],
+  );
+
+  test(
     'feature state value objects and production ports are deterministic',
     () {
       final api = FakeCoderApi();

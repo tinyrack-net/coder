@@ -83,6 +83,33 @@ void main() {
     expect(_job(workflow, 'publish-release'), contains('- quality-gate'));
   });
 
+  test('desktop E2E jobs execute every domain shard', () {
+    final linux = _job(workflow, 'debug-e2e-linux');
+    final nightly = _job(workflow, 'nightly-desktop-e2e');
+    for (final testFile in <String>[
+      'daemon_workspace_e2e_test.dart',
+      'project_worktree_e2e_test.dart',
+      'debug_e2e_test.dart',
+      'provider_e2e_test.dart',
+      'settings_desktop_e2e_test.dart',
+    ]) {
+      expect(linux, contains(testFile));
+      expect(nightly, contains(testFile));
+    }
+    expect(linux, contains('fail-fast: false'));
+    expect(nightly, contains(r'-d ${{ matrix.platform.device }}'));
+  });
+
+  test('mobile nightly jobs run remote bootstrap and provider E2E', () {
+    for (final job in <String>[
+      _job(workflow, 'nightly-android-smoke'),
+      _job(workflow, 'nightly-ios-smoke'),
+    ]) {
+      expect(job, contains('remote_bootstrap_smoke_test.dart'));
+      expect(job, contains('provider_e2e_test.dart'));
+    }
+  });
+
   test('only Android mobile builds use the enhanced Gradle cache', () {
     final mobileBuild = _job(workflow, 'mobile-debug-build');
     final androidBuild = _matrixEntry(mobileBuild, 'ubuntu-24.04');

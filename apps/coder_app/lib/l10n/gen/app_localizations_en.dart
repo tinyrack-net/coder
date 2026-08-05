@@ -181,6 +181,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceWorktreeMenu => 'Worktree menu';
 
   @override
+  String get workspaceProjectMenu => 'Project menu';
+
+  @override
+  String get workspaceUnregister => 'Remove project';
+
+  @override
+  String workspaceUnregisterTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get workspaceUnregisterBody =>
+      'The project disappears from Coder, but its repository and files stay on disk.';
+
+  @override
   String get workspaceArchive => 'Archive';
 
   @override
@@ -458,6 +473,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsDisconnect => 'Disconnect';
+
+  @override
+  String get providerSettingsDeleteCustomTitle => 'Delete custom provider';
+
+  @override
+  String providerSettingsDeleteCustomBody(String name) {
+    return 'Delete $name and its stored credentials? Existing session history is kept.';
+  }
 
   @override
   String get providerSettingsConnected => 'Connected';

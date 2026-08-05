@@ -28,12 +28,17 @@ final class FakeCoderApi implements CoderApi {
     this.failNextAgentCreate = false,
     this.failNextAgentUpdate = false,
     this.failNextSkillUpdate = false,
+    this.catalogRefreshError,
     this.modelListGate,
     this.suggestDirectoriesGate,
     this.createWorktreeError,
     this.suggestDirectoriesError,
+    this.projectSettingsError,
+    List<Future<List<McpServerStateDto>>>? mcpListResponses,
     Map<String, List<String>>? directories,
-  }) : directories = directories ?? const <String, List<String>>{},
+  }) : mcpListResponses =
+           mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
+       directories = directories ?? const <String, List<String>>{},
        _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
        _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
@@ -60,6 +65,9 @@ final class FakeCoderApi implements CoderApi {
        };
 
   static final DateTime _now = DateTime.utc(2026);
+
+  /// Error thrown once by the next explicit provider catalog refresh.
+  CoderClientException? catalogRefreshError;
   static const ServerInfoDto _defaultServerInfo = ServerInfoDto(
     serverId: 'server',
     version: 'test',
@@ -419,6 +427,12 @@ final class FakeCoderApi implements CoderApi {
   final Map<String, ProjectSettingsDto> projectSettings =
       <String, ProjectSettingsDto>{};
 
+  /// Error returned while loading project settings.
+  Exception? projectSettingsError;
+
+  /// Number of project settings load attempts.
+  int projectSettingsLoadCount = 0;
+
   /// Hook runs reported by the next worktree create call.
   List<WorktreeHookRunDto> createWorktreeHookRuns =
       const <WorktreeHookRunDto>[];
@@ -430,10 +444,14 @@ final class FakeCoderApi implements CoderApi {
   @override
   Future<ProjectSettingsResultDto> getProjectSettings(
     String workspaceId,
-  ) async => ProjectSettingsResultDto(
-    settings: projectSettings[workspaceId] ?? const ProjectSettingsDto(),
-    sourcePath: '/projects/$workspaceId/coder.json',
-  );
+  ) async {
+    projectSettingsLoadCount += 1;
+    if (projectSettingsError case final error?) throw error;
+    return ProjectSettingsResultDto(
+      settings: projectSettings[workspaceId] ?? const ProjectSettingsDto(),
+      sourcePath: '/projects/$workspaceId/coder.json',
+    );
+  }
 
   @override
   Future<ProjectSettingsResultDto> saveProjectSettings(
@@ -662,12 +680,19 @@ final class FakeCoderApi implements CoderApi {
   final Map<String, McpServerStateDto> mcpServers =
       <String, McpServerStateDto>{};
 
+  /// Ordered MCP list responses used to reproduce out-of-order reloads.
+  final List<Future<List<McpServerStateDto>>> mcpListResponses;
+
   /// Secrets stored through [setMcpSecret].
   final Map<String, String> mcpSecrets = <String, String>{};
 
   @override
-  Future<List<McpServerStateDto>> listMcpServers({String? worktreeId}) async =>
-      mcpServers.values.toList(growable: false);
+  Future<List<McpServerStateDto>> listMcpServers({String? worktreeId}) async {
+    if (mcpListResponses.isNotEmpty) {
+      return mcpListResponses.removeAt(0);
+    }
+    return mcpServers.values.toList(growable: false);
+  }
 
   @override
   Future<McpServerStateDto> addMcpServer(McpServerConfigDto server) async =>
@@ -883,8 +908,14 @@ final class FakeCoderApi implements CoderApi {
   }
 
   @override
-  Future<ProviderCatalogDto> refreshProviderCatalog() async =>
-      _catalog = _catalog.copyWith(source: ProviderCatalogSource.refreshed);
+  Future<ProviderCatalogDto> refreshProviderCatalog() async {
+    final error = catalogRefreshError;
+    catalogRefreshError = null;
+    if (error != null) throw error;
+    return _catalog = _catalog.copyWith(
+      source: ProviderCatalogSource.refreshed,
+    );
+  }
 
   @override
   Future<List<ProviderModelDto>> listProviderModels(

@@ -14,7 +14,6 @@ import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/tray_menu_model.dart';
-import 'package:coder_app/src/workspace/directory_browser.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -32,6 +31,8 @@ void main() {
   testWidgets(
     'app switches hosts, streams, approves a patch, and restores timeline',
     (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       FlutterSecureStorage.setMockInitialValues(<String, String>{});
       final home = await Directory.systemTemp.createTemp('coder-e2e-home-');
       final workspace = await Directory.systemTemp.createTemp(
@@ -102,6 +103,7 @@ void main() {
           useEnvironmentCredentials: false,
         ),
         provider: _PatchProvider(),
+        modelDiscovery: const _E2eModelDiscovery(),
       );
       addTearDown(() async {
         await embeddedLauncher.stopCurrent();
@@ -120,7 +122,7 @@ void main() {
       final endpoint = HostEndpoint(
         websocketUri: handle.boundEndpoint,
       );
-      final setupClient = await CoderClient.connect(
+      var setupClient = await CoderClient.connect(
         endpoint: endpoint,
         credentials: DaemonCredentials(
           bearerToken: handle.bearerToken,
@@ -128,7 +130,7 @@ void main() {
         clientId: 'e2e-setup',
         clientKind: 'integration-test',
       );
-      addTearDown(setupClient.close);
+      addTearDown(() => setupClient.close());
       final remoteClient = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: remoteHandle.boundEndpoint),
         credentials: const DaemonCredentials(
@@ -149,6 +151,15 @@ void main() {
         checkoutId: 'directory-checkout-e2e',
         rootPath: directoryWorkspace.path,
         name: 'E2E Directory',
+      );
+      final remoteWorkspaceName = remoteWorkspace.path
+          .split(Platform.pathSeparator)
+          .last;
+      await remoteClient.registerWorkspace(
+        workspaceId: 'remote-workspace-e2e',
+        checkoutId: 'remote-checkout-e2e',
+        rootPath: remoteWorkspace.path,
+        name: remoteWorkspaceName,
       );
 
       final now = DateTime.utc(2026, 8, 3);
@@ -194,6 +205,7 @@ void main() {
       // The sidebar has no daemon level; each daemon names the workspace rows
       // it serves, so a subtitle is the evidence that it connected.
       await _pumpUntil(tester, find.text('E2E Workspace'));
+      await _pumpUntil(tester, find.text(remoteWorkspaceName));
       await _pumpUntil(tester, find.textContaining('내장 daemon · '));
 
       // The global desktop menu reaches the same typed new-workspace route.
@@ -223,31 +235,11 @@ void main() {
       );
       expect(addProject, findsOneWidget);
       expect(find.text('프로젝트 선택'), findsNothing);
+      await pointer.down(projectChipCenter);
+      await pointer.up();
+      await tester.pumpAndSettle();
+      expect(addProject, findsNothing);
       await pointer.removePointer();
-
-      await tester.tap(addProject);
-      await tester.pumpAndSettle();
-      final remoteOption = find.descendant(
-        of: find.byType(DaemonPickerDialog),
-        matching: find.text('Remote daemon'),
-      );
-      // The remote daemon is only offered once its connection is online.
-      await _pumpUntil(tester, remoteOption);
-      await tester.tap(remoteOption);
-      await _pumpUntil(tester, find.text('Daemon의 폴더 선택'));
-      await tester.enterText(
-        find.byKey(const ValueKey('directory-browser-path')),
-        remoteWorkspace.path,
-      );
-      await tester.pump(directoryBrowserDebounce);
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '이 폴더 선택'));
-      await tester.pumpAndSettle();
-      await _pumpUntilGone(tester, find.text('Daemon의 폴더 선택'));
-      final remoteWorkspaceName = remoteWorkspace.path
-          .split(Platform.pathSeparator)
-          .last;
-      await _pumpUntil(tester, find.text(remoteWorkspaceName));
 
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-settings-button')),
@@ -291,10 +283,20 @@ void main() {
         embeddedLauncher.exposures.last,
         EmbeddedDaemonExposure.loopback,
       );
+      setupClient = await CoderClient.connect(
+        endpoint: endpoint,
+        credentials: DaemonCredentials(
+          bearerToken: handle.bearerToken,
+        ),
+        clientId: 'e2e-setup-reconnected',
+        clientKind: 'integration-test',
+      );
       await tester.tap(find.text('Agent'));
       await _pumpUntil(tester, find.text('Agents'));
       await _selectDaemon(tester, 'Remote daemon');
-      await tester.tap(find.byKey(const ValueKey('agent-add-button')));
+      final addAgent = find.byKey(const ValueKey('agent-add-button'));
+      await _pumpUntil(tester, addAgent);
+      await tester.tap(addAgent);
       await tester.pumpAndSettle();
       await tester.enterText(
         _trTextInput('ID (파일명)'),
@@ -316,7 +318,8 @@ void main() {
       );
       expect(remoteAgent.sourcePath, startsWith(remoteHome.path));
       await _selectDaemon(tester, '내장 daemon');
-      await tester.tap(find.byKey(const ValueKey('agent-add-button')));
+      await _pumpUntil(tester, addAgent);
+      await tester.tap(addAgent);
       await tester.pumpAndSettle();
       await tester.enterText(
         _trTextInput('ID (파일명)'),
@@ -367,8 +370,18 @@ void main() {
         promptField,
         'Review the current change after external reload.',
       );
+      final validReviewerSource = await reviewerFile.readAsString();
+      await expectLater(
+        setupClient.validateAgentDefinition(
+          'reviewer',
+          'this document has no frontmatter',
+        ),
+        throwsA(isA<CoderClientException>()),
+      );
+      expect(await reviewerFile.readAsString(), validReviewerSource);
 
-      await tester.tap(find.byKey(const ValueKey('agent-add-button')));
+      await _pumpUntil(tester, addAgent);
+      await tester.tap(addAgent);
       await tester.pumpAndSettle();
       await tester.enterText(
         _trTextInput('ID (파일명)'),
@@ -481,14 +494,44 @@ void main() {
         ),
         'the skill to be archived',
       );
+      final invokedSkill = await setupClient.createSkill(
+        id: 'invoke-e2e',
+        source: SkillSource.config,
+        name: 'invoke-e2e',
+        description: 'Loaded during an end-to-end turn.',
+        body: 'Use the deterministic E2E instructions.',
+      );
+      final invokedSkillFile = File(invokedSkill.sourcePath);
+      final validSkillSource = await invokedSkillFile.readAsString();
+      await expectLater(
+        setupClient.updateSkill(
+          invokedSkill.copyWith(body: 'must not overwrite'),
+          expectedContentHash: 'stale-content-hash',
+        ),
+        throwsA(isA<CoderClientException>()),
+      );
+      expect(await invokedSkillFile.readAsString(), validSkillSource);
 
       await tester.tap(find.text('Agent'));
       await _pumpUntil(tester, find.text('Agents'));
       await tester.pumpAndSettle();
-      // MCP: add a server through the real UI against the real daemon, see
-      // it reach configuration, then remove it again.
-      await tester.tap(find.text('MCP'));
+      // MCP: expose a real child-process failure, repair its command and
+      // secret through the UI, test discovery, then remove it again.
+      await tester.tap(find.text('MCP').last);
       await _pumpUntil(tester, find.text('MCP 서버'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TRSelectFormField<String>>(
+              find
+                  .byKey(
+                    const ValueKey<String>('settings-daemon-select'),
+                  )
+                  .last,
+            )
+            .initialValue,
+        embeddedHostId,
+      );
       await tester.tap(find.byKey(const ValueKey('mcp-server-add')));
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -503,21 +546,111 @@ void main() {
       final saveServer = find.byKey(const ValueKey('mcp-server-save'));
       await tester.ensureVisible(saveServer);
       await tester.pumpAndSettle();
+      final testServer = find.byKey(
+        const ValueKey<String>('mcp-server-test'),
+      );
+      await tester.ensureVisible(testServer);
+      await tester.tap(testServer);
+      await _pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('mcp-editor-error')),
+      );
+      await _pumpUntilCondition(
+        tester,
+        () => tester.widget<TRButton>(testServer).onPressed != null,
+        'the failed MCP probe to release the editor',
+      );
+      await _replaceMcpFieldText(
+        tester,
+        'mcp-field-command',
+        _dartExecutable(),
+      );
+      await _replaceMcpFieldText(
+        tester,
+        'mcp-field-args',
+        _fakeMcpServerPath(),
+      );
+      await _replaceMcpFieldText(
+        tester,
+        'mcp-field-env',
+        r'MCP_ECHO_PREFIX=${secret:e2e.prefix}',
+      );
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const ValueKey('mcp-field-command')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        _dartExecutable(),
+      );
+      final setSecret = find.byKey(const ValueKey<String>('mcp-secret-set'));
+      await tester.ensureVisible(setSecret);
+      await tester.tap(setSecret);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey<String>('mcp-secret-key')),
+        'e2e.prefix',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey<String>('mcp-secret-value')),
+        'secret-',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('mcp-secret-save')),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(testServer);
+      await tester.tap(testServer);
+      await tester.pump();
+      final mcpTestNotice = find.byKey(
+        const ValueKey<String>('mcp-editor-notice'),
+      );
+      final mcpTestError = find.byKey(
+        const ValueKey<String>('mcp-editor-error'),
+      );
+      expect(mcpTestError, findsNothing);
+      await _pumpUntilCondition(
+        tester,
+        () =>
+            mcpTestNotice.evaluate().isNotEmpty ||
+            mcpTestError.evaluate().isNotEmpty,
+        'the repaired unsaved MCP test to finish',
+        attempts: 200,
+      );
+      if (mcpTestError.evaluate().isNotEmpty) {
+        throw TestFailure(
+          'Repaired unsaved MCP test failed: '
+          '${tester.widget<Text>(mcpTestError).data}',
+        );
+      }
+      await tester.ensureVisible(saveServer);
       await tester.tap(saveServer);
       await _pumpUntilCondition(
         tester,
-        () async => (await setupClient.listMcpServers()).any(
-          (server) => server.config.id == 'e2e',
-        ),
-        'the MCP server to reach daemon configuration',
+        () async {
+          final servers = await setupClient.listMcpServers();
+          if (servers.isEmpty) return false;
+          final server = servers.single;
+          if (server.status == McpServerStatus.failed &&
+              server.config.command == _dartExecutable()) {
+            throw TestFailure(
+              'Repaired MCP server failed: ${server.error}; '
+              'args=${server.config.args}; env=${server.config.env}',
+            );
+          }
+          return server.status == McpServerStatus.ready;
+        },
+        'the repaired MCP server to become ready',
       );
-      await _pumpUntil(
-        tester,
-        find.byKey(const ValueKey('mcp-server-tile-e2e')),
-      );
-
-      await tester.tap(find.byKey(const ValueKey('mcp-server-tile-e2e')));
       await tester.pumpAndSettle();
+      expect(
+        (await setupClient.listMcpServers()).single.tools.single.toolId,
+        'mcp__e2e__echo',
+      );
       final deleteServer = find.byKey(const ValueKey('mcp-server-delete'));
       await tester.ensureVisible(deleteServer);
       await tester.pumpAndSettle();
@@ -527,6 +660,37 @@ void main() {
       await _pumpUntilGone(
         tester,
         find.byKey(const ValueKey('mcp-server-tile-e2e')),
+      );
+      expect(await setupClient.listMcpServers(), isEmpty);
+
+      // Reinstall the proven local server for the turn-execution scenarios.
+      await setupClient.addMcpServer(
+        McpServerConfigDto(
+          id: 'e2e',
+          transport: McpTransportKind.stdio,
+          command: _dartExecutable(),
+          args: <String>[_fakeMcpServerPath()],
+          env: const <String, String>{
+            'MCP_ECHO_PREFIX': r'${secret:e2e.prefix}',
+          },
+        ),
+      );
+      await _pumpUntilCondition(
+        tester,
+        () async =>
+            (await setupClient.listMcpServers()).single.status ==
+            McpServerStatus.ready,
+        'the MCP turn server to reconnect',
+      );
+      final coderDefinition = await setupClient.getAgentDefinition('coder');
+      await setupClient.updateAgentDefinition(
+        coderDefinition.copyWith(
+          toolIds: <String>[
+            ...coderDefinition.toolIds,
+            'mcp__e2e__echo',
+          ],
+        ),
+        expectedContentHash: coderDefinition.contentHash,
       );
 
       await tester.tap(find.byIcon(CoderIcons.back).first);
@@ -640,12 +804,16 @@ void main() {
       await _pumpUntil(tester, find.text('reviewer · delegated'));
       await tester.tap(find.text('Delegate review').first);
       await _pumpUntil(tester, find.text('coder · manual'));
+      await _pumpUntil(tester, find.byKey(composer));
 
-      await tester.enterText(find.byKey(composer), 'Create result.txt');
+      await tester.enterText(
+        find.byKey(composer),
+        'Disallowed delegation',
+      );
       await tester.pump();
       expect(
         tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
-        isNotEmpty,
+        'Disallowed delegation',
       );
       expect(
         tester.widget<TRIconButton>(find.byKey(send)).onPressed,
@@ -653,6 +821,21 @@ void main() {
       );
       await tester.tap(find.byKey(send));
       await tester.pump();
+      await _pumpUntilWithSessionDiagnostics(
+        tester,
+        find.textContaining(
+          'Agent delegation is not allowed: not-allowed',
+          findRichText: true,
+        ),
+        setupClient,
+      );
+      await _pumpUntilCondition(
+        tester,
+        () => tester.widget<TRIconButton>(find.byKey(send)).onPressed != null,
+        'the failed delegation turn to release the composer',
+      );
+
+      await _submitComposerPrompt(tester, composer, send, 'Create result.txt');
       await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
       await tester.tap(find.text('승인'));
       await _pumpUntil(
@@ -691,6 +874,10 @@ void main() {
       final attachButton = find
           .byKey(const ValueKey('session-composer-attach'))
           .hitTestable();
+      expect(tester.widget<TRIconButton>(attachButton).onPressed, isNotNull);
+      await tester.tap(attachButton);
+      await tester.pump();
+      expect(find.textContaining('fixture.png'), findsNothing);
       expect(tester.widget<TRIconButton>(attachButton).onPressed, isNotNull);
       await tester.tap(attachButton);
       await _pumpUntil(tester, find.textContaining('fixture.png'));
@@ -743,10 +930,10 @@ void main() {
       await tester.tap(
         find.byKey(ValueKey('chat-attachment-$imageAttachmentId')),
       );
-      await tester.pumpAndSettle();
+      await _pumpUntil(tester, find.byType(InteractiveViewer));
       expect(find.byType(InteractiveViewer), findsOneWidget);
       Navigator.of(tester.element(find.byType(InteractiveViewer))).pop();
-      await tester.pumpAndSettle();
+      await _pumpUntilGone(tester, find.byType(InteractiveViewer));
       await _pumpUntil(
         tester,
         find.text('Attached fixtures.', findRichText: true),
@@ -789,6 +976,142 @@ void main() {
         attempts: 300,
       );
 
+      await _submitComposerPrompt(tester, composer, send, 'Reject result.txt');
+      await _pumpUntil(tester, find.text('승인 필요 · apply_patch'));
+      await tester.tap(find.widgetWithText(TRButton, '거부'));
+      await _pumpUntil(
+        tester,
+        find.text('Rejected safely', findRichText: true),
+      );
+      expect(File('${workspace.path}/rejected.txt').existsSync(), isFalse);
+
+      final liveMcpServer = (await setupClient.listMcpServers()).single;
+      expect(liveMcpServer.status, McpServerStatus.ready);
+      expect(
+        liveMcpServer.tools.map((tool) => tool.toolId),
+        contains('mcp__e2e__echo'),
+      );
+      expect(
+        (await setupClient.listAgentTools()).map((tool) => tool.id),
+        contains('mcp__e2e__echo'),
+      );
+      await _submitComposerPrompt(tester, composer, send, 'MCP echo');
+      await _pumpUntilWithSessionDiagnostics(
+        tester,
+        find.text('승인 필요 · mcp__e2e__echo'),
+        setupClient,
+      );
+      await tester.tap(find.widgetWithText(TRButton, '승인'));
+      await _pumpUntil(
+        tester,
+        find.text('MCP completed', findRichText: true),
+      );
+
+      await _submitComposerPrompt(tester, composer, send, 'Reject MCP');
+      await _pumpUntilWithSessionDiagnostics(
+        tester,
+        find.text('승인 필요 · mcp__e2e__echo'),
+        setupClient,
+      );
+      await tester.tap(find.widgetWithText(TRButton, '거부'));
+      await _pumpUntil(tester, find.text('MCP rejected', findRichText: true));
+
+      await setupClient.removeMcpServer('e2e');
+      await _pumpUntilCondition(
+        tester,
+        () async => (await setupClient.listAgentTools()).every(
+          (tool) => tool.id != 'mcp__e2e__echo',
+        ),
+        'the offline MCP tool to leave the agent catalog',
+      );
+      await _submitComposerPrompt(tester, composer, send, 'Offline MCP');
+      await _pumpUntil(
+        tester,
+        find.text('MCP unavailable safely', findRichText: true),
+      );
+
+      await _submitComposerPrompt(tester, composer, send, 'Use E2E skill');
+      await _pumpUntil(
+        tester,
+        find.text('Skill loaded', findRichText: true),
+      );
+      await setupClient.setSkillEnabled('invoke-e2e', enabled: false);
+      await _submitComposerPrompt(tester, composer, send, 'Disabled E2E skill');
+      await _pumpUntil(
+        tester,
+        find.text('Disabled skill excluded', findRichText: true),
+      );
+
+      await _submitComposerPrompt(tester, composer, send, 'Cancel streaming');
+      await _pumpUntil(
+        tester,
+        find.text('Streaming before cancel', findRichText: true),
+      );
+      final stop = find.byWidgetPredicate(
+        (widget) => widget is TRIconButton && widget.label == '중지',
+        description: 'stop active turn button',
+      );
+      await tester.tap(stop);
+      await _pumpUntil(tester, find.text('중지됨'));
+
+      await _submitComposerPrompt(tester, composer, send, 'Recover provider');
+      await _pumpUntil(tester, find.textContaining('planned provider outage'));
+      await _submitComposerPrompt(tester, composer, send, 'Recover provider');
+      await _pumpUntil(
+        tester,
+        find.text('Provider recovered', findRichText: true),
+      );
+
+      final turnBranches = await setupClient.subscribeTimeline(
+        (await setupClient.listSessions(
+          worktreeId: 'checkout-e2e',
+        )).singleWhere((session) => session.origin == SessionOrigin.manual).id,
+      );
+      expect(
+        turnBranches.map((event) => event.type),
+        containsAll(<String>[
+          'turn.cancelled',
+          'turn.failed',
+          'approval.resolved',
+          'tool.denied',
+        ]),
+      );
+      expect(
+        turnBranches
+            .where((event) => event.type == 'turn.failed')
+            .map((event) => event.data['error']),
+        contains(
+          contains('Agent delegation is not allowed: not-allowed'),
+        ),
+      );
+      expect(
+        turnBranches
+            .where((event) => event.type == 'approval.resolved')
+            .map((event) => event.data['status']),
+        contains('denied'),
+      );
+      expect(
+        turnBranches
+            .where(
+              (event) =>
+                  event.type == 'tool.completed' &&
+                  event.data['name'] == 'mcp__e2e__echo',
+            )
+            .map((event) => event.data['output']),
+        contains('secret-through MCP'),
+      );
+      expect(
+        turnBranches
+            .where(
+              (event) =>
+                  event.type == 'tool.completed' &&
+                  event.data['name'] == 'skill',
+            )
+            .map((event) => event.data['output'])
+            .join('\n'),
+        contains('Use the deterministic E2E instructions.'),
+      );
+
       // Plan mode proposes work and hands it back for approval.
       await tester.tap(
         find.byKey(const ValueKey('session-composer-mode')).hitTestable(),
@@ -805,6 +1128,7 @@ void main() {
         'the attachment session to enter plan mode',
       );
       await tester.pumpAndSettle();
+      await _waitForComposerReady(tester, send);
       await tester.enterText(find.byKey(composer), 'Plan the change');
       await tester.pump();
       expect(
@@ -878,6 +1202,31 @@ void main() {
       );
       await reconnected.close();
 
+      // Session tabs are device-local: closing one must preserve daemon
+      // history, and the all-sessions picker must restore it.
+      await tester.tap(
+        find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
+      );
+      await _pumpUntilGone(
+        tester,
+        find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
+      );
+      expect(
+        (await setupClient.listSessions(
+          worktreeId: 'checkout-e2e',
+        )).map((session) => session.id),
+        contains(parent.id),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delegate review').last);
+      await _pumpUntil(
+        tester,
+        find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
+      );
+
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
@@ -895,21 +1244,50 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(addCustom);
       await tester.pumpAndSettle();
+      await tester.enterText(_trTextInput('이름'), '');
+      await tester.enterText(_trTextInput('Base URL'), '');
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(find.text('Custom Provider 고급 설정'), findsOneWidget);
       await tester.enterText(
         _trTextInput('이름'),
         'E2E Provider',
       );
       await tester.enterText(
         _trTextInput('Base URL'),
-        'http://127.0.0.1:${modelServer.port}/v1',
+        'http://127.0.0.1:${modelServer.port}/unavailable/v1',
       );
       await tester.tap(find.text('API key 필요'));
       await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await _pumpUntil(tester, find.text('Model 자동 조회 실패'));
+      await tester.tap(find.widgetWithText(TRButton, '나중에'));
       await _pumpUntil(tester, find.text('E2E Provider'));
-      // The connection is stored before its model catalog is fetched.
+      final degradedProvider = (await remoteClient.listProviderConnections())
+          .singleWhere((item) => item.displayName == 'E2E Provider');
+      expect(degradedProvider.status, ProviderConnectionStatus.degraded);
+
+      var providerCard = find.ancestor(
+        of: find.text('E2E Provider'),
+        matching: find.byType(TRCard),
+      );
+      var providerMenu = find.descendant(
+        of: providerCard.first,
+        matching: find.byType(TRMenu),
+      );
+      await tester.tap(providerMenu);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('고급 설정 편집'));
+      await tester.pumpAndSettle();
+      await tester.enterText(_trTextInput('이름'), 'E2E Provider Edited');
+      await tester.enterText(
+        _trTextInput('Base URL'),
+        'http://127.0.0.1:${modelServer.port}/v1',
+      );
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await _pumpUntil(tester, find.text('E2E Provider Edited'));
       final providerConnection = await _waitForProviderModels(
         remoteClient,
-        'E2E Provider',
+        'E2E Provider Edited',
       );
       expect(
         (await remoteClient.listProviderModels(
@@ -931,11 +1309,11 @@ void main() {
         tester.getBottomRight(connectedSection).dy,
         lessThanOrEqualTo(tester.getTopLeft(addSection).dy),
       );
-      final providerCard = find.ancestor(
-        of: find.text('E2E Provider'),
+      providerCard = find.ancestor(
+        of: find.text('E2E Provider Edited'),
         matching: find.byType(TRCard),
       );
-      final providerMenu = find.descendant(
+      providerMenu = find.descendant(
         of: providerCard.first,
         matching: find.byType(TRMenu),
       );
@@ -946,25 +1324,119 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(providerMenu);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('연결 해제'));
+      await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
+      await tester.tap(find.widgetWithText(TRButton, '취소'));
+      expect(
+        (await remoteClient.listProviderConnections()).where(
+          (item) => item.id == providerConnection.id,
+        ),
+        hasLength(1),
+      );
+      await Scrollable.ensureVisible(
+        tester.element(providerMenu),
+        alignment: 0.3,
+      );
       await tester.pumpAndSettle();
-      // The daemon call outlives the frame, so poll instead of asserting once.
+      await tester.tap(providerMenu.hitTestable());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '삭제'));
+      await _pumpUntilCondition(
+        tester,
+        () async => (await remoteClient.listProviderConnections()).every(
+          (item) => item.id != providerConnection.id,
+        ),
+        'custom provider to be deleted',
+      );
+
+      final addDeepSeek = find.byKey(const ValueKey('provider-add-deepseek'));
+      await tester.ensureVisible(addDeepSeek);
+      await tester.tap(addDeepSeek);
+      await tester.pumpAndSettle();
+      await tester.enterText(_trTextInput('API key'), 'invalid-key');
+      await tester.tap(find.widgetWithText(TRButton, '연결'));
+      await _pumpUntilCondition(
+        tester,
+        () async {
+          final matches = (await remoteClient.listProviderConnections())
+              .where((item) => item.id == 'deepseek')
+              .toList();
+          return matches.isNotEmpty &&
+              matches.single.status == ProviderConnectionStatus.error;
+        },
+        'invalid provider credential to be rejected',
+      );
+      expect(find.textContaining('credential rejected'), findsOneWidget);
+      await _disconnectProviderCard(tester, 'DeepSeek');
       await _pumpUntilCondition(
         tester,
         () async =>
             (await remoteClient.listProviderConnections())
-                .singleWhere((item) => item.id == providerConnection.id)
+                .singleWhere((item) => item.id == 'deepseek')
                 .status ==
             ProviderConnectionStatus.disconnected,
-        'remote provider to disconnect',
+        'failed provider to disconnect',
+      );
+
+      await tester.ensureVisible(addDeepSeek);
+      await tester.tap(addDeepSeek);
+      await tester.pumpAndSettle();
+      await tester.enterText(_trTextInput('API key'), 'valid-key');
+      await tester.tap(find.widgetWithText(TRButton, '연결'));
+      await _pumpUntilCondition(
+        tester,
+        () async {
+          final matches = (await remoteClient.listProviderConnections())
+              .where((item) => item.id == 'deepseek')
+              .toList();
+          return matches.isNotEmpty &&
+              matches.single.status == ProviderConnectionStatus.connected;
+        },
+        'corrected provider credential to connect',
+      );
+      await _disconnectProviderCard(tester, 'DeepSeek');
+
+      final addOllama = find.byKey(const ValueKey('provider-add-ollama'));
+      await tester.ensureVisible(addOllama);
+      await tester.tap(addOllama);
+      await _pumpUntilCondition(
+        tester,
+        () async {
+          final matches = (await remoteClient.listProviderConnections())
+              .where((item) => item.id == 'ollama')
+              .toList();
+          return matches.isNotEmpty &&
+              matches.single.status == ProviderConnectionStatus.connected &&
+              matches.single.credentialOrigin == ProviderCredentialOrigin.none;
+        },
+        'no-auth provider to connect',
+      );
+      await _disconnectProviderCard(tester, 'Ollama');
+      await _pumpUntilCondition(
+        tester,
+        () async => (await remoteClient.listProviderConnections())
+            .where(
+              (item) =>
+                  (item.id == 'deepseek' || item.id == 'ollama') &&
+                  item.status == ProviderConnectionStatus.connected,
+            )
+            .isEmpty,
+        'connected providers to finish disconnecting',
+      );
+      final remainingConnections = await remoteClient.listProviderConnections();
+      expect(
+        remainingConnections.where(
+          (item) =>
+              (item.id == 'deepseek' || item.id == 'ollama') &&
+              item.status == ProviderConnectionStatus.connected,
+        ),
+        isEmpty,
       );
       expect(
-        (await remoteClient.listProviderConnections())
-            .singleWhere((item) => item.id == providerConnection.id)
-            .status,
-        ProviderConnectionStatus.disconnected,
+        remainingConnections.singleWhere((item) => item.id == 'openai').status,
+        ProviderConnectionStatus.connected,
       );
 
       // A plain directory reuses its sole checkout without exposing or
@@ -1021,6 +1493,50 @@ void main() {
       'feature_test__provider_custom__e2e',
       'feature_test__desktop_window_chrome__e2e',
       'feature_test__conversation_attachments__e2e',
+      'feature_scenario__conversation_attachments__picker_cancel_retry__e2e',
+      'feature_scenario__conversation_attachments__upload_preview_restore__e2e',
+      'feature_scenario__conversation_attachments__agent_publish_download__e2e',
+      'feature_scenario__daemon_authentication__valid_token_reconnect__e2e',
+      'feature_scenario__daemon_exposure__loopback_lan_restart__e2e',
+      'feature_scenario__workspace_catalog__multi_host_merge_refresh__e2e',
+      'feature_scenario__worktree_lifecycle__create_and_archive__e2e',
+      'feature_scenario__session_lifecycle__create_with_configuration__e2e',
+      'feature_scenario__session_lifecycle__update_model_and_mode__e2e',
+      'feature_scenario__session_lifecycle__reconnect_persistence__e2e',
+      'feature_scenario__session_tabs__open_switch_close_restore__e2e',
+      'feature_scenario__turn_execution__stream_and_restore__e2e',
+      'feature_scenario__turn_execution__cancel_stream__e2e',
+      'feature_scenario__turn_execution__approve_and_reject__e2e',
+      'feature_scenario__turn_execution__provider_failure_recovery__e2e',
+      // The verifier requires one literal tag so it can reject stale evidence.
+      // ignore: lines_longer_than_80_chars
+      'feature_scenario__agent_definition_management__create_validate_edit_reload__e2e',
+      // The scenario tag mirrors its typed manifest ID exactly.
+      // ignore: lines_longer_than_80_chars
+      'feature_scenario__agent_definition_management__invalid_definition_rejected__e2e',
+      'feature_scenario__agent_definition_management__archive_and_reset__e2e',
+      'feature_scenario__mcp_server_management__add_edit_test_remove__e2e',
+      // The scenario tag mirrors its typed manifest ID exactly.
+      // ignore: lines_longer_than_80_chars
+      'feature_scenario__mcp_server_management__offline_and_secret_recovery__e2e',
+      'feature_scenario__mcp_tool_execution__approve_execute_result__e2e',
+      'feature_scenario__mcp_tool_execution__reject_and_offline__e2e',
+      'feature_scenario__skill_management__source_crud_toggle__e2e',
+      'feature_scenario__skill_management__invalid_edit_preserves_file__e2e',
+      'feature_scenario__skill_invocation__enabled_injection_and_load__e2e',
+      'feature_scenario__skill_invocation__disabled_skill_excluded__e2e',
+      'feature_scenario__agent_delegation__allowlisted_child_navigation__e2e',
+      'feature_scenario__agent_delegation__disallowed_delegation_rejected__e2e',
+      'feature_scenario__provider_catalog__presets_models_refresh__e2e',
+      // The scenario tag mirrors its typed manifest ID exactly.
+      // ignore: lines_longer_than_80_chars
+      'feature_scenario__provider_connection_management__api_key_none_disconnect__e2e',
+      // The second connection scenario has the same typed tag constraint.
+      // ignore: lines_longer_than_80_chars
+      'feature_scenario__provider_connection_management__invalid_credential_recovery__e2e',
+      'feature_scenario__provider_custom__create_edit_delete__e2e',
+      'feature_scenario__provider_custom__validation_and_model_failure__e2e',
+      'feature_scenario__desktop_window_chrome__localized_menu_navigation__e2e',
     ],
   );
 
@@ -1077,6 +1593,8 @@ void main() {
       'feature_test__desktop_residency__platformSmoke',
       'feature_test__desktop_window_chrome__platformSmoke',
       'feature_test__conversation_attachments__platformSmoke',
+      'feature_scenario__desktop_residency__close_hide_restore__e2e',
+      'feature_scenario__desktop_window_chrome__native_window_controls__e2e',
     ],
   );
 }
@@ -1095,30 +1613,37 @@ Future<void> _waitForWindowVisibility(
 }
 
 final class _E2eAttachmentInput implements AttachmentInputPort {
-  const _E2eAttachmentInput({
+  _E2eAttachmentInput({
     required this.imageBytes,
     required this.documentBytes,
   });
 
   final Uint8List imageBytes;
   final List<int> documentBytes;
+  bool _cancelNextPick = true;
 
   @override
   bool get supportsDrop => false;
 
   @override
-  Future<List<PendingAttachment>> pickFiles() async => <PendingAttachment>[
-    PendingAttachment.fromBytes(
-      fileName: 'fixture.png',
-      mimeType: 'image/png',
-      bytes: imageBytes,
-    ),
-    PendingAttachment.fromBytes(
-      fileName: 'fixture.txt',
-      mimeType: 'text/plain',
-      bytes: Uint8List.fromList(documentBytes),
-    ),
-  ];
+  Future<List<PendingAttachment>> pickFiles() async {
+    if (_cancelNextPick) {
+      _cancelNextPick = false;
+      return const <PendingAttachment>[];
+    }
+    return <PendingAttachment>[
+      PendingAttachment.fromBytes(
+        fileName: 'fixture.png',
+        mimeType: 'image/png',
+        bytes: imageBytes,
+      ),
+      PendingAttachment.fromBytes(
+        fileName: 'fixture.txt',
+        mimeType: 'text/plain',
+        bytes: Uint8List.fromList(documentBytes),
+      ),
+    ];
+  }
 
   @override
   Future<List<PendingAttachment>> pasteFiles() async =>
@@ -1197,6 +1722,26 @@ Future<void> _selectDaemon(
   }
 }
 
+Future<void> _disconnectProviderCard(
+  WidgetTester tester,
+  String displayName,
+) async {
+  final card = find.ancestor(
+    of: find.text(displayName),
+    matching: find.byType(TRCard),
+  );
+  final menu = find.descendant(of: card.first, matching: find.byType(TRMenu));
+  await _pumpUntil(tester, menu);
+  await Scrollable.ensureVisible(tester.element(menu), alignment: 0.3);
+  await tester.pumpAndSettle();
+  await tester.tap(menu);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('연결 해제'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
+  await tester.pumpAndSettle();
+}
+
 Future<void> _pumpUntilTextFieldValue(
   WidgetTester tester,
   Finder finder,
@@ -1241,6 +1786,58 @@ Future<void> _runGit(String path, List<String> arguments) async {
   }
 }
 
+String _fakeMcpServerPath() {
+  final suffix = <String>[
+    'packages',
+    'coder_daemon',
+    'test',
+    'support',
+    'fake_mcp_server_main.dart',
+  ].join(Platform.pathSeparator);
+  final candidates = <File>[
+    File('${Directory.current.path}${Platform.pathSeparator}$suffix'),
+    File(
+      '${Directory.current.path}${Platform.pathSeparator}..'
+      '${Platform.pathSeparator}..${Platform.pathSeparator}$suffix',
+    ),
+  ];
+  for (final candidate in candidates) {
+    if (candidate.existsSync()) return candidate.absolute.path;
+  }
+  throw TestFailure(
+    'Could not locate fake_mcp_server_main.dart from ${Directory.current}.',
+  );
+}
+
+String _dartExecutable() {
+  final flutterRoot = Platform.environment['FLUTTER_ROOT'];
+  if (flutterRoot != null && flutterRoot.isNotEmpty) {
+    final executable = File(
+      <String>[
+        flutterRoot,
+        'bin',
+        'cache',
+        'dart-sdk',
+        'bin',
+        if (Platform.isWindows) 'dart.exe' else 'dart',
+      ].join(Platform.pathSeparator),
+    );
+    if (executable.existsSync()) return executable.absolute.path;
+  }
+  final lookup = Process.runSync(
+    Platform.isWindows ? 'where' : 'which',
+    <String>[
+      'dart',
+    ],
+  );
+  if (lookup.exitCode == 0) {
+    return (lookup.stdout as String).split(RegExp(r'\r?\n')).first.trim();
+  }
+  throw TestFailure(
+    'Could not locate the Dart executable for the MCP fixture.',
+  );
+}
+
 Future<void> _pumpUntil(
   WidgetTester tester,
   Finder finder, {
@@ -1276,6 +1873,50 @@ Future<void> _pumpUntilCondition(
     if (await condition()) return;
   }
   throw TestFailure('Timed out waiting for $description.');
+}
+
+Future<void> _waitForComposerReady(
+  WidgetTester tester,
+  ValueKey<String> sendKey,
+) => _pumpUntilCondition(
+  tester,
+  () => tester.widget<TRIconButton>(find.byKey(sendKey)).onPressed != null,
+  'the composer to accept another turn',
+);
+
+Future<void> _submitComposerPrompt(
+  WidgetTester tester,
+  ValueKey<String> composerKey,
+  ValueKey<String> sendKey,
+  String prompt,
+) async {
+  await _waitForComposerReady(tester, sendKey);
+  final composer = find.byKey(composerKey);
+  final input = find.descendant(
+    of: composer,
+    matching: find.byType(EditableText),
+  );
+  await tester.tap(input);
+  await tester.pump();
+  tester.testTextInput.enterText(prompt);
+  await tester.pump();
+  expect(tester.widget<TRTextField>(composer).controller?.text, prompt);
+  await tester.tap(find.byKey(sendKey));
+  await tester.pump();
+}
+
+Future<void> _replaceMcpFieldText(
+  WidgetTester tester,
+  String key,
+  String value,
+) async {
+  final field = find.byKey(ValueKey<String>(key));
+  final input = find.descendant(of: field, matching: find.byType(EditableText));
+  await tester.ensureVisible(field);
+  await tester.tap(input);
+  await tester.pump();
+  tester.testTextInput.enterText(value);
+  await tester.pump();
 }
 
 Future<void> _pumpUntilWithSessionDiagnostics(
@@ -1420,10 +2061,38 @@ final class _PatchProvider implements ModelProvider {
   }
 }
 
+final class _E2eModelDiscovery implements ProviderModelDiscovery {
+  const _E2eModelDiscovery();
+
+  @override
+  Future<List<String>> fetchModelIds(
+    ProviderRuntimeConfig config,
+    ProviderCredential? credential,
+  ) async {
+    if (config.baseUrl.contains('/unavailable/')) {
+      throw const ProviderDiscoveryFailure(
+        ProviderDiscoveryFailureKind.unavailable,
+        'planned model discovery outage',
+      );
+    }
+    if (credential case ApiKeyCredential(:final key) when key != 'valid-key') {
+      throw const ProviderDiscoveryFailure(
+        ProviderDiscoveryFailureKind.invalidCredential,
+        'credential rejected by deterministic provider',
+      );
+    }
+    return const <String>[
+      'e2e-model',
+      'vendor/reasoning-model-with-an-extremely-long-identifier',
+    ];
+  }
+}
+
 final class _AgentE2eProvider implements ModelProvider {
-  const _AgentE2eProvider(this.attachmentCapturePath);
+  _AgentE2eProvider(this.attachmentCapturePath);
 
   final String attachmentCapturePath;
+  int _providerFailures = 0;
 
   @override
   String get id => 'agent-e2e-fake';
@@ -1512,6 +2181,198 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
 
+    final hasRejectedPatchResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'reject-patch-call');
+    final hasMcpResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'mcp-call');
+    final hasRejectedMcpResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'reject-mcp-call');
+    final hasSkillResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'skill-call');
+    final hasDisallowedDelegationResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'disallowed-delegate-call');
+
+    if (latestPrompt == 'Disallowed delegation' &&
+        !hasDisallowedDelegationResult) {
+      const arguments = <String, dynamic>{
+        'agentDefinitionId': 'not-allowed',
+        'prompt': 'This delegation must not start.',
+      };
+      yield const ModelFunctionCall(
+        callId: 'disallowed-delegate-call',
+        name: 'delegate_agent',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'disallowed-delegate-call',
+              name: 'delegate_agent',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (latestPrompt == 'Disallowed delegation') {
+      yield const ModelTextDelta('Disallowed delegation rejected');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: 'Disallowed delegation rejected',
+        ),
+      );
+      return;
+    }
+
+    if (latestPrompt == 'Use E2E skill' && !hasSkillResult) {
+      if (!request.instructions.contains(
+            '- invoke-e2e: Loaded during an end-to-end turn.',
+          ) ||
+          request.instructions.contains('- commit:')) {
+        throw StateError('enabled and disabled skill catalog was incorrect');
+      }
+      const arguments = <String, dynamic>{
+        'name': 'invoke-e2e',
+        'resource': null,
+      };
+      yield const ModelFunctionCall(
+        callId: 'skill-call',
+        name: 'skill',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'skill-call',
+              name: 'skill',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (latestPrompt == 'Use E2E skill') {
+      yield const ModelTextDelta('Skill loaded');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Skill loaded'),
+      );
+      return;
+    }
+    if (latestPrompt == 'Disabled E2E skill') {
+      if (request.instructions.contains('- invoke-e2e:') ||
+          request.instructions.contains('- commit:')) {
+        throw StateError('disabled skill remained in the turn catalog');
+      }
+      yield const ModelTextDelta('Disabled skill excluded');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Disabled skill excluded'),
+      );
+      return;
+    }
+
+    if (latestPrompt == 'Offline MCP') {
+      final available = request.tools.any(
+        (tool) => tool.name == 'mcp__e2e__echo',
+      );
+      if (available) throw StateError('offline MCP tool remained available');
+      yield const ModelTextDelta('MCP unavailable safely');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: 'MCP unavailable safely',
+        ),
+      );
+      return;
+    }
+    if (latestPrompt == 'MCP echo' && !hasMcpResult) {
+      if (!request.tools.any((tool) => tool.name == 'mcp__e2e__echo')) {
+        throw StateError('MCP echo tool was not injected');
+      }
+      const arguments = <String, dynamic>{'value': 'through MCP'};
+      yield const ModelFunctionCall(
+        callId: 'mcp-call',
+        name: 'mcp__e2e__echo',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'mcp-call',
+              name: 'mcp__e2e__echo',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (latestPrompt == 'MCP echo') {
+      yield const ModelTextDelta('MCP completed');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'MCP completed'),
+      );
+      return;
+    }
+    if (latestPrompt == 'Reject MCP' && !hasRejectedMcpResult) {
+      const arguments = <String, dynamic>{'value': 'must not run'};
+      yield const ModelFunctionCall(
+        callId: 'reject-mcp-call',
+        name: 'mcp__e2e__echo',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'reject-mcp-call',
+              name: 'mcp__e2e__echo',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (latestPrompt == 'Reject MCP') {
+      yield const ModelTextDelta('MCP rejected');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'MCP rejected'),
+      );
+      return;
+    }
+
+    if (latestPrompt == 'Cancel streaming') {
+      yield const ModelTextDelta('Streaming before cancel');
+      final cancelled = Completer<void>();
+      cancellation.onCancel(cancelled.complete);
+      await cancelled.future;
+      cancellation.throwIfCancelled();
+    }
+    if (latestPrompt == 'Recover provider') {
+      if (_providerFailures == 0) {
+        _providerFailures += 1;
+        throw StateError('planned provider outage');
+      }
+      yield const ModelTextDelta('Provider recovered');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Provider recovered'),
+      );
+      return;
+    }
+
     if (latestPrompt == 'Delegate review' &&
         delegateEnabled &&
         !hasDelegateResult) {
@@ -1572,6 +2433,36 @@ final class _AgentE2eProvider implements ModelProvider {
             ),
           ],
         ),
+      );
+      return;
+    }
+    if (latestPrompt == 'Reject result.txt' && !hasRejectedPatchResult) {
+      const arguments = <String, dynamic>{
+        'patch': '--- /dev/null\n+++ b/rejected.txt\n@@ -0,0 +1,1 @@\n+nope\n',
+      };
+      yield const ModelFunctionCall(
+        callId: 'reject-patch-call',
+        name: 'apply_patch',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'reject-patch-call',
+              name: 'apply_patch',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (latestPrompt == 'Reject result.txt') {
+      yield const ModelTextDelta('Rejected safely');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Rejected safely'),
       );
       return;
     }

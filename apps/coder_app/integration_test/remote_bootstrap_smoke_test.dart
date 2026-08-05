@@ -3,6 +3,7 @@ import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -12,6 +13,8 @@ void main() {
   testWidgets(
     'mobile bootstrap remains remote-only',
     (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       final store = MemoryAppStore(
         settings: const AppSettings(embeddedDaemonEnabled: false),
       );
@@ -29,9 +32,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
-      await tester.tap(find.byTooltip('설정'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemon'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-category-select')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Daemon').last);
       await tester.pumpAndSettle();
       expect(find.text('내장 daemon'), findsNothing);
       expect(find.text('원격 daemon 추가'), findsOneWidget);
