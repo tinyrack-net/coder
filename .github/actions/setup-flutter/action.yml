@@ -2,7 +2,8 @@ name: Set up Flutter
 description: >-
   Install the pinned Flutter SDK. flutter-action already caches both the SDK and
   the pub cache, so this only exists to keep the version pin in one place
-  instead of in every job.
+  instead of in every job, and to decide per runner whether the SDK cache is
+  worth its share of the repository cache quota.
 
 runs:
   using: composite
@@ -10,4 +11,15 @@ runs:
     - uses: subosito/flutter-action@v2
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
-        cache: true
+        # Measured across six runs, a macOS SDK cache hit (median 66s) is no
+        # faster than a miss that downloads the SDK from Google's CDN (median
+        # 63s). The two macOS entries are 2.03 GB each, so they burned 4.06 GB
+        # of the repository's 10 GB quota for no gain and pushed total usage to
+        # 10.18 GB, which evicted the caches that do pay off -- entire runs
+        # were observed with every Windows job missing the SDK cache. Dropping
+        # them also removes six concurrent 2 GB downloads per run, the
+        # contention behind Windows setup times reaching 440s.
+        cache: ${{ runner.os != 'macOS' }}
+        # flutter-action gates the pub cache on `cache` unless `pub-cache` is
+        # set, so pin it: the pub cache is ~0.12 GB and must stay on macOS.
+        pub-cache: 'true'

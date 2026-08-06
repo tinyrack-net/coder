@@ -4,6 +4,9 @@ import 'package:test/test.dart';
 
 void main() {
   final workflow = File('.github/workflows/pipeline.yml').readAsStringSync();
+  final setupFlutter = File(
+    '.github/actions/setup-flutter/action.yml',
+  ).readAsStringSync();
   final androidBuild = File(
     'apps/coder_app/android/build.gradle.kts',
   ).readAsStringSync();
@@ -154,6 +157,16 @@ void main() {
     expect(mobileBuild, contains('if: matrix.gradle_cache'));
     expect(mobileBuild, contains('uses: gradle/actions/setup-gradle@v6'));
     expect(mobileBuild, contains('cache-provider: enhanced'));
+  });
+
+  test('macOS runners skip the Flutter SDK cache but keep the pub cache', () {
+    // The macOS SDK archive is ~2.03 GB per architecture and restores no
+    // faster than a fresh CDN download, so caching it only consumes the
+    // repository's 10 GB quota and evicts the caches that do pay off.
+    // flutter-action gates the pub cache on `inputs.cache` unless `pub-cache`
+    // is set explicitly, so pin it to keep pub caching on every runner.
+    expect(setupFlutter, contains("cache: \${{ runner.os != 'macOS' }}"));
+    expect(setupFlutter, contains("pub-cache: 'true'"));
   });
 
   test('native attachment plugins receive macOS and Windows debug builds', () {
