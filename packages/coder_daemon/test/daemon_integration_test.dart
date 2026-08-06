@@ -805,96 +805,103 @@ void main() {
     ],
   );
 
-  test(
-    'exec_command drives a real pseudo-terminal across two tool calls',
-    () async {
-      final home = await Directory.systemTemp.createTemp('coder-exec-home-');
-      final workspace = await Directory.systemTemp.createTemp(
-        'coder-exec-workspace-',
-      );
-      const bearerToken = 'exec-command-token-0123456789abcdef012';
-      final provider = _ExecProvider();
-      final handle = await DaemonApplication.start(
-        DaemonConfig(
-          homeDirectory: home.path,
-          port: 0,
-          bearerToken: bearerToken,
-          useEnvironmentCredentials: false,
-        ),
-        provider: provider,
-      );
-      addTearDown(() async {
-        await handle.stop();
-        await home.delete(recursive: true);
-        await workspace.delete(recursive: true);
-      });
-      final client = await CoderClient.connect(
-        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
-        credentials: const DaemonCredentials(bearerToken: bearerToken),
-        clientId: 'exec-command-test',
-        clientKind: 'test',
-      );
-      addTearDown(client.close);
+  // Both transports are production paths — pipes for ordinary commands, a
+  // pseudo-terminal for the interactive ones — so both are proved against a
+  // real daemon and a real process rather than only the default.
+  for (final tty in <bool>[false, true]) {
+    final transport = tty ? 'pseudo-terminal' : 'pipes';
+    test(
+      'exec_command drives a real $transport across two tool calls',
+      () async {
+        final home = await Directory.systemTemp.createTemp('coder-exec-home-');
+        final workspace = await Directory.systemTemp.createTemp(
+          'coder-exec-workspace-',
+        );
+        const bearerToken = 'exec-command-token-0123456789abcdef012';
+        final provider = _ExecProvider(tty: tty);
+        final handle = await DaemonApplication.start(
+          DaemonConfig(
+            homeDirectory: home.path,
+            port: 0,
+            bearerToken: bearerToken,
+            useEnvironmentCredentials: false,
+          ),
+          provider: provider,
+        );
+        addTearDown(() async {
+          await handle.stop();
+          await home.delete(recursive: true);
+          await workspace.delete(recursive: true);
+        });
+        final client = await CoderClient.connect(
+          endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+          credentials: const DaemonCredentials(bearerToken: bearerToken),
+          clientId: 'exec-command-test',
+          clientKind: 'test',
+        );
+        addTearDown(client.close);
 
-      final registered = await client.registerWorkspace(
-        workspaceId: 'workspace',
-        checkoutId: 'checkout',
-        rootPath: workspace.path,
-        name: 'Workspace',
-      );
-      final coder = (await client.listAgentDefinitions()).single;
-      await client.updateAgentDefinition(
-        coder.copyWith(permissionMode: PermissionMode.workspaceWrite),
-        expectedContentHash: coder.contentHash,
-      );
-      final session = await client.createSession(
-        id: 'exec-session',
-        worktreeId: registered.worktrees.single.id,
-        title: 'Exec',
-        agentDefinitionId: 'coder',
-        model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
-        ),
-      );
-      await client.subscribeTimeline(session.id);
-      // Running a command always asks; approving the first one is what makes
-      // every later write into that same session pass without another dialog.
-      final approvals = <String>[];
-      final approvalSubscription = client.events
-          .where((event) => event is ApprovalRequestedClientEvent)
-          .cast<ApprovalRequestedClientEvent>()
-          .listen((event) {
-            approvals.add(event.approval.toolName);
-            unawaited(
-              client.resolveApproval(
-                approvalId: event.approval.id,
-                approved: true,
-              ),
-            );
-          });
-      addTearDown(approvalSubscription.cancel);
-      await client.startTurn(
-        sessionId: session.id,
-        turnId: 'exec-turn',
-        prompt: 'Run the shell',
-      );
+        final registered = await client.registerWorkspace(
+          workspaceId: 'workspace',
+          checkoutId: 'checkout',
+          rootPath: workspace.path,
+          name: 'Workspace',
+        );
+        final coder = (await client.listAgentDefinitions()).single;
+        await client.updateAgentDefinition(
+          coder.copyWith(permissionMode: PermissionMode.workspaceWrite),
+          expectedContentHash: coder.contentHash,
+        );
+        final session = await client.createSession(
+          id: 'exec-session',
+          worktreeId: registered.worktrees.single.id,
+          title: 'Exec',
+          agentDefinitionId: 'coder',
+          model: const SessionModelSelectionDto(
+            providerConnectionId: 'openai',
+            modelId: 'gpt-5.6-sol',
+          ),
+        );
+        await client.subscribeTimeline(session.id);
+        // Running a command always asks; approving the first one is what makes
+        // every later write into that same session pass without another dialog.
+        final approvals = <String>[];
+        final approvalSubscription = client.events
+            .where((event) => event is ApprovalRequestedClientEvent)
+            .cast<ApprovalRequestedClientEvent>()
+            .listen((event) {
+              approvals.add(event.approval.toolName);
+              unawaited(
+                client.resolveApproval(
+                  approvalId: event.approval.id,
+                  approved: true,
+                ),
+              );
+            });
+        addTearDown(approvalSubscription.cancel);
+        await client.startTurn(
+          sessionId: session.id,
+          turnId: 'exec-turn',
+          prompt: 'Run the shell',
+        );
 
-      // A shell that outlives the first call hands back an id the second call
-      // writes into, and the echoed text proves the same PTY answered.
-      final seen = await provider.echoed.future.timeout(_eventTimeout);
-      expect(seen, contains('tinyrack-exec-probe'));
-      expect(approvals, <String>['exec_command']);
-      await _waitForIdleSession(
-        client,
-        registered.worktrees.single.id,
-        session.id,
-      );
-    },
-    tags: const <String>['feature_test__tool_exec_session__verticalSlice'],
-    // The pseudo-terminal is a POSIX shell; Windows uses PowerShell instead.
-    testOn: '!windows',
-  );
+        // A command that outlives the first call hands back an id the second
+        // call writes into, and the echoed text proves the same process
+        // answered.
+        final seen = await provider.echoed.future.timeout(_eventTimeout);
+        expect(seen, contains('tinyrack-exec-probe'));
+        expect(approvals, <String>['exec_command']);
+        await _waitForIdleSession(
+          client,
+          registered.worktrees.single.id,
+          session.id,
+        );
+      },
+      tags: const <String>['feature_test__tool_exec_session__verticalSlice'],
+      // Both transports run a POSIX shell; Windows uses PowerShell instead.
+      testOn: '!windows',
+    );
+  }
 
   test(
     'view_image puts a hydrated workspace image into the model context',
@@ -3032,6 +3039,11 @@ final class _AttachmentProvider implements ModelProvider {
 }
 
 class _ExecProvider implements ModelProvider {
+  _ExecProvider({required this.tty});
+
+  /// Whether the command is asked for a pseudo-terminal or plain pipes.
+  final bool tty;
+
   /// Completes with the shell's output once stdin has been echoed back.
   final Completer<String> echoed = Completer<String>();
 
@@ -3059,17 +3071,19 @@ class _ExecProvider implements ModelProvider {
     if (_round++ == 0) {
       // `cat` keeps running with no arguments, so the session survives the
       // call and the next one can write into it.
-      const arguments = <String, dynamic>{
+      final arguments = <String, dynamic>{
         'command': 'cat',
+        'workdir': null,
+        'tty': tty,
         'yield_time_ms': 300,
         'max_output_tokens': null,
       };
-      yield const ModelFunctionCall(
+      yield ModelFunctionCall(
         callId: 'exec-call',
         name: 'exec_command',
         arguments: arguments,
       );
-      yield const ModelResponseCompleted(
+      yield ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[

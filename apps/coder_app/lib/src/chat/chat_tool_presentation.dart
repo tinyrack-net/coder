@@ -613,9 +613,15 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
     body: _execBody,
     argumentBody: (activity) {
       final command = _stringArg(activity, 'command');
-      return command == null || command.isEmpty
-          ? const ChatToolEmptyBody()
-          : ChatToolTextBody('\$ $command');
+      if (command == null || command.isEmpty) return const ChatToolEmptyBody();
+      // The directory changes what the command does, so it is shown whenever
+      // it is not simply the workspace root.
+      final workdir = _stringArg(activity, 'workdir');
+      return ChatToolTextBody(
+        workdir == null || workdir.isEmpty
+            ? '\$ $command'
+            : '$workdir\n\$ $command',
+      );
     },
     isFailure: _execIsFailure,
   ),

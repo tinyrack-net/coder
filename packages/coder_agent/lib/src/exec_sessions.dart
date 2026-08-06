@@ -9,6 +9,7 @@ class ExecSessionChunk {
     required this.output,
     required this.isRunning,
     this.exitCode,
+    this.wallTime = Duration.zero,
   });
 
   /// Output produced since the previous read, decoded leniently.
@@ -19,6 +20,13 @@ class ExecSessionChunk {
 
   /// Exit status once the command finished; null while it runs.
   final int? exitCode;
+
+  /// How long this read actually waited.
+  ///
+  /// Reported back to the model so it can tell a command that finished
+  /// instantly from one that consumed the whole yield window, which is what
+  /// decides whether polling again is worthwhile.
+  final Duration wallTime;
 }
 
 /// A live pseudo-terminal the agent can drive across several tool calls.
@@ -39,10 +47,20 @@ abstract interface class ExecSession {
   Future<void> interrupt();
 }
 
-/// Owns the pseudo-terminals one coder session may drive.
+/// Owns the terminals and pipes one coder session may drive.
 abstract interface class ExecSessionHost {
-  /// Starts [command] in a new pseudo-terminal.
-  Future<ExecSession> start(String command, String workspaceRoot);
+  /// Starts [command] in a new session rooted at [workingDirectory].
+  ///
+  /// [workingDirectory] is already resolved and verified to sit inside the
+  /// workspace by the caller, so a host never has to re-check containment.
+  /// When [tty] is false the command runs on plain pipes instead of a
+  /// pseudo-terminal: no escape sequences, no echo, and no interactive
+  /// prompts.
+  Future<ExecSession> start({
+    required String command,
+    required String workingDirectory,
+    required bool tty,
+  });
 
   /// Returns a live session, or null when it never existed or already ended.
   ExecSession? lookup(String sessionId);

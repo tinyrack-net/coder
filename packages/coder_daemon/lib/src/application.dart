@@ -219,8 +219,8 @@ abstract final class DaemonApplication {
             id: 'exec_command',
             name: 'exec_command',
             description:
-                'Run shell commands in a pseudo-terminal, including REPLs and '
-                'servers driven across several calls.',
+                'Run shell commands, on pipes or in a pseudo-terminal, '
+                'including REPLs and servers driven across several calls.',
             risk: ToolRisk.command,
           ),
           const AgentToolDefinitionDto(
@@ -316,6 +316,7 @@ abstract final class DaemonApplication {
       await commands.initialize();
       final execSessions = ExecSessionService(
         gateway: const TinyrackTerminalGateway(),
+        pipes: const IoPipeGateway(),
         ids: ids,
         clock: clock,
       );

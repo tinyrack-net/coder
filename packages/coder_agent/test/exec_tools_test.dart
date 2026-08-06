@@ -6,6 +6,9 @@ import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:file/file.dart' as file_api;
+import 'package:file/memory.dart';
+import 'package:platform/platform.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -45,7 +48,10 @@ void main() {
     // A finished command leaves nothing to drive, so no id is offered.
     expect(decoded.containsKey('sessionId'), isFalse);
     expect(host.started.single.command, 'echo hi');
-    expect(host.started.single.workspaceRoot, '/workspace');
+    expect(host.started.single.workingDirectory, '/workspace');
+    // Pipes are the default: an ordinary command wants its real output, not a
+    // rendering of a screen.
+    expect(host.started.single.tty, isFalse);
   });
 
   test('a nonzero exit is reported as a tool error', () async {
@@ -214,15 +220,226 @@ void main() {
     expect(truncateToTokenBudget('short', 1000), 'short');
   });
 
+  test('a chunk reports what the budget hid and how long it waited', () async {
+    final flood = List<String>.generate(
+      400,
+      (index) => 'line $index',
+    ).join('\n');
+    host.script('yes', <ExecSessionChunk>[
+      ExecSessionChunk(
+        output: flood,
+        isRunning: false,
+        exitCode: 0,
+        wallTime: const Duration(milliseconds: 1500),
+      ),
+    ]);
+
+    final result = await ExecCommandTool(host: host).execute(
+      <String, dynamic>{
+        'command': 'yes',
+        'workdir': null,
+        'tty': null,
+        'yield_time_ms': null,
+        'max_output_tokens': minExecOutputTokens,
+      },
+      context,
+    );
+
+    final decoded = decode(result);
+    // The count describes the output before the budget was applied, which is
+    // how the model learns that raising the budget would show it more.
+    expect(decoded['originalTokenCount'], estimateTokenCount(flood));
+    expect(decoded['originalTokenCount'], greaterThan(minExecOutputTokens));
+    expect(decoded['wallTimeSeconds'], 1.5);
+  });
+
+  test('tty is opt-in and reaches the host', () async {
+    host.script('python3', <ExecSessionChunk>[
+      const ExecSessionChunk(output: '>>> ', isRunning: true),
+    ]);
+
+    await ExecCommandTool(host: host).execute(
+      <String, dynamic>{
+        'command': 'python3',
+        'workdir': null,
+        'tty': true,
+        'yield_time_ms': null,
+        'max_output_tokens': null,
+      },
+      context,
+    );
+
+    expect(host.started.single.tty, isTrue);
+  });
+
+  group('workdir', () {
+    late file_api.FileSystem fileSystem;
+    late ToolExecutionContext rooted;
+
+    setUp(() {
+      fileSystem = MemoryFileSystem.test();
+      fileSystem
+          .directory('/workspace/packages/app')
+          .createSync(
+            recursive: true,
+          );
+      fileSystem.file('/workspace/pubspec.yaml').createSync();
+      fileSystem.directory('/outside').createSync(recursive: true);
+      rooted = ToolExecutionContext(
+        workspaceRoot: '/workspace',
+        cancellation: CancellationToken(),
+      );
+    });
+
+    Future<ToolResult> run(Object? workdir) {
+      host.script('ls', <ExecSessionChunk>[
+        const ExecSessionChunk(output: '', isRunning: false, exitCode: 0),
+      ]);
+      return ExecCommandTool(
+        host: host,
+        fileSystem: fileSystem,
+        platform: FakePlatform(
+          operatingSystem: 'linux',
+          environment: const <String, String>{},
+        ),
+      ).execute(<String, dynamic>{
+        'command': 'ls',
+        'workdir': workdir,
+        'tty': null,
+        'yield_time_ms': null,
+        'max_output_tokens': null,
+      }, rooted);
+    }
+
+    test('a relative directory resolves against the workspace root', () async {
+      final result = await run('packages/app');
+
+      expect(result.isError, isFalse);
+      expect(host.started.single.workingDirectory, '/workspace/packages/app');
+    });
+
+    test('null runs at the workspace root', () async {
+      await run(null);
+
+      expect(host.started.single.workingDirectory, '/workspace');
+    });
+
+    test('a directory outside the workspace is refused', () async {
+      final result = await run('../outside');
+
+      expect(result.isError, isTrue);
+      expect(decode(result)['error'], contains('inside the workspace'));
+      // Nothing runs, so an escape attempt cannot have a side effect.
+      expect(host.started, isEmpty);
+    });
+
+    test('a file is refused rather than silently ignored', () async {
+      final result = await run('pubspec.yaml');
+
+      expect(result.isError, isTrue);
+      expect(host.started, isEmpty);
+    });
+
+    test('the preview names the directory the user is approving', () async {
+      expect(
+        await ExecCommandTool(host: host).preview(
+          const <String, dynamic>{'command': 'ls', 'workdir': 'packages/app'},
+          rooted,
+        ),
+        'ls  (in packages/app)',
+      );
+    });
+  });
+
+  test('a write and a poll get different default waits', () async {
+    host.script('sh', <ExecSessionChunk>[
+      const ExecSessionChunk(output: r'$ ', isRunning: true),
+      const ExecSessionChunk(output: 'hi\n', isRunning: true),
+      const ExecSessionChunk(output: '', isRunning: true),
+    ]);
+    final started = await ExecCommandTool(host: host).execute(
+      <String, dynamic>{
+        'command': 'sh',
+        'workdir': null,
+        'tty': true,
+        'yield_time_ms': null,
+        'max_output_tokens': null,
+      },
+      context,
+    );
+    final sessionId = decode(started)['sessionId'];
+
+    await WriteStdinTool(host: host).execute(<String, dynamic>{
+      'session_id': sessionId,
+      'chars': 'echo hi\n',
+      'yield_time_ms': null,
+      'max_output_tokens': null,
+    }, context);
+    await WriteStdinTool(host: host).execute(<String, dynamic>{
+      'session_id': sessionId,
+      'chars': '',
+      'yield_time_ms': null,
+      'max_output_tokens': null,
+    }, context);
+
+    expect(host.started.single.yieldTimes, <Duration>[
+      defaultExecYieldTime,
+      // A warm program answers a write immediately; waiting the full window
+      // would just idle.
+      defaultWriteYieldTime,
+      defaultExecYieldTime,
+    ]);
+  });
+
+  test('a poll may not be shortened into a busy loop', () async {
+    host.script('sh', <ExecSessionChunk>[
+      const ExecSessionChunk(output: r'$ ', isRunning: true),
+      const ExecSessionChunk(output: '', isRunning: true),
+      const ExecSessionChunk(output: '', isRunning: true),
+    ]);
+    final started = await ExecCommandTool(host: host).execute(
+      <String, dynamic>{
+        'command': 'sh',
+        'workdir': null,
+        'tty': true,
+        'yield_time_ms': null,
+        'max_output_tokens': null,
+      },
+      context,
+    );
+    final sessionId = decode(started)['sessionId'];
+
+    await WriteStdinTool(host: host).execute(<String, dynamic>{
+      'session_id': sessionId,
+      'chars': '',
+      'yield_time_ms': 10,
+      'max_output_tokens': null,
+    }, context);
+    // A write may still ask for a short wait: it has something to send.
+    await WriteStdinTool(host: host).execute(<String, dynamic>{
+      'session_id': sessionId,
+      'chars': 'x',
+      'yield_time_ms': 10,
+      'max_output_tokens': null,
+    }, context);
+
+    expect(host.started.single.yieldTimes.skip(1), <Duration>[
+      minPollYieldTime,
+      minExecYieldTime,
+    ]);
+  });
+
   test('both tools publish a strict schema and a readable preview', () async {
     final exec = ExecCommandTool(host: host);
     expect(exec.name, 'exec_command');
     expect(exec.risk, ToolRisk.command);
-    expect(exec.description, contains('pseudo-terminal'));
+    expect(exec.description, contains('exit code'));
     final execSchema = exec.strictJsonSchema;
     expect(execSchema['additionalProperties'], isFalse);
     expect(execSchema['required'], <String>[
       'command',
+      'workdir',
+      'tty',
       'yield_time_ms',
       'max_output_tokens',
     ]);
@@ -426,11 +643,16 @@ final class _ScriptedExecHost implements ExecSessionHost {
       _scripts[command] = Queue<ExecSessionChunk>.of(chunks);
 
   @override
-  Future<ExecSession> start(String command, String workspaceRoot) async {
+  Future<ExecSession> start({
+    required String command,
+    required String workingDirectory,
+    required bool tty,
+  }) async {
     final session = _ScriptedExecSession(
       id: 'exec-${started.length + 1}',
       command: command,
-      workspaceRoot: workspaceRoot,
+      workingDirectory: workingDirectory,
+      tty: tty,
       chunks: _scripts[command] ?? Queue<ExecSessionChunk>(),
       onRead: () => cancelBeforeRead?.cancel(),
     );
@@ -453,7 +675,8 @@ final class _ScriptedExecSession implements ExecSession {
   _ScriptedExecSession({
     required this.id,
     required this.command,
-    required this.workspaceRoot,
+    required this.workingDirectory,
+    required this.tty,
     required this.chunks,
     required this.onRead,
   });
@@ -462,7 +685,8 @@ final class _ScriptedExecSession implements ExecSession {
   final String id;
 
   final String command;
-  final String workspaceRoot;
+  final String workingDirectory;
+  final bool tty;
   final Queue<ExecSessionChunk> chunks;
   final void Function() onRead;
   final List<String> writes = <String>[];

@@ -84,6 +84,8 @@ final class _FakeTerminalProcess implements TerminalProcess {
   @override
   Future<void> write(String data) async => input.add(data);
   @override
+  Future<void> interrupt() async => input.add(String.fromCharCode(0x03));
+  @override
   Future<void> resize(int columns, int rows) async =>
       sizes.add((columns, rows));
   @override

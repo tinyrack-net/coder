@@ -1,24 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Running pseudo-terminal process boundary.
-abstract interface class TerminalProcess {
-  /// Emits decoded PTY output.
-  Stream<String> get outputs;
-
-  /// Completes with the shell exit code.
-  Future<int> get exitCode;
-
-  /// Writes input to the PTY.
-  Future<void> write(String data);
-
+abstract interface class TerminalProcess implements ExecProcess {
   /// Changes the PTY character-cell dimensions.
   Future<void> resize(int columns, int rows);
-
-  /// Terminates the PTY and child process.
-  Future<void> terminate();
 }
 
 /// Starts interactive terminal processes.
