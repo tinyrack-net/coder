@@ -271,7 +271,9 @@ Future<String> _callbackBody(
       ),
     );
     final response = await request.close();
-    return response.transform(utf8.decoder).join();
+    // Read the body before `finally` force-closes the client, otherwise the
+    // socket is torn down mid-read when the body spans more than one packet.
+    return await response.transform(utf8.decoder).join();
   } finally {
     client.close(force: true);
   }
