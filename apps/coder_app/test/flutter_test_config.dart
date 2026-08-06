@@ -2,6 +2,7 @@ import 'package:alchemist/alchemist.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/golden_config.dart';
 import 'support/localization.dart';
 
 /// Configures Linux as the single canonical golden rendering environment.
@@ -14,12 +15,7 @@ Future<void> testExecutable(Future<void> Function() testMain) {
     ..localeTestValue = testLocale
     ..localesTestValue = <Locale>[testLocale];
   return AlchemistConfig.runWithConfig(
-    config: AlchemistConfig(
-      platformGoldensConfig: PlatformGoldensConfig(
-        platforms: <HostPlatform>{HostPlatform.linux},
-      ),
-      ciGoldensConfig: const CiGoldensConfig(enabled: false),
-    ),
+    config: goldenAlchemistConfig(HostPlatform.current()),
     run: testMain,
   );
 }
