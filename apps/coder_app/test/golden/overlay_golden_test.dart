@@ -11,9 +11,11 @@ import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/model_picker.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../support/fake_coder_api.dart';
@@ -65,6 +67,37 @@ void main() {
         return null;
       },
       builder: _composerChipApp,
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'terminal context menu is open',
+      fileName: 'terminal_context_menu_open',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      whilePerforming: (tester) async {
+        final gesture = await tester.startGesture(
+          tester.getTopLeft(
+                find.byKey(const ValueKey<String>('tr-terminal-surface')),
+              ) +
+              const Offset(24, 24),
+          kind: PointerDeviceKind.mouse,
+          buttons: kSecondaryButton,
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey<String>('terminal-menu-copy')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey<String>('terminal-menu-clear-screen')),
+          findsOneWidget,
+        );
+        return null;
+      },
+      builder: _terminalApp,
     ),
   );
 
@@ -123,6 +156,103 @@ Widget _desktopApp() => CoderApp(
   trayIcon: FakeTrayIcon(),
   autostart: FakeAutostartRegistration(),
 );
+
+/// Pins the terminal's own context menu, which no other golden reaches.
+///
+/// The menu is built by `TRTerminalView` rather than by the app, because the
+/// terminal swallows secondary taps, so only a real right-click on the
+/// terminal surface opens it.
+Widget _terminalApp() {
+  final now = DateTime.utc(2026, 8, 3);
+  final workspace = WorkspaceDto(
+    id: 'workspace',
+    name: 'Coder',
+    rootPath: '/repos/coder',
+    kind: WorkspaceKind.git,
+    createdAt: now,
+  );
+  final worktree = WorktreeDto(
+    id: 'checkout',
+    workspaceId: workspace.id,
+    name: 'main',
+    path: workspace.rootPath,
+    branch: 'main',
+    head: 'abc',
+    kind: WorktreeKind.checkout,
+    isCoderOwned: false,
+    createdAt: now,
+  );
+  const terminal = TerminalDto(
+    id: 'terminal-golden',
+    worktreeId: 'checkout',
+    title: 'Remote terminal',
+    shell: ShellSpecDto(executable: '/bin/sh'),
+    status: TerminalStatus.running,
+    columns: 80,
+    rows: 24,
+    lastSequence: 0,
+  );
+  return _TerminalGoldenHost(
+    api: FakeCoderApi(
+      workspaces: <WorkspaceDto>[workspace],
+      worktrees: <WorktreeDto>[worktree],
+      terminals: const <TerminalDto>[terminal],
+      terminalReplay: const <TerminalOutputDto>[
+        TerminalOutputDto(
+          terminalId: 'terminal-golden',
+          sequence: 1,
+          data: 'selectable output',
+        ),
+      ],
+    ),
+    location: TerminalRoute(
+      hostId: 'server',
+      workspaceId: workspace.id,
+      worktreeId: worktree.id,
+      terminalId: terminal.id,
+    ).location,
+  );
+}
+
+class _TerminalGoldenHost extends StatefulWidget {
+  const _TerminalGoldenHost({required this.api, required this.location});
+
+  final FakeCoderApi api;
+  final String location;
+
+  @override
+  State<_TerminalGoldenHost> createState() => _TerminalGoldenHostState();
+}
+
+class _TerminalGoldenHostState extends State<_TerminalGoldenHost> {
+  late final GoRouter _router = GoRouter(
+    initialLocation: widget.location,
+    routes: $appRoutes,
+  );
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(widget.api)),
+    ],
+    child: MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      locale: testLocale,
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      theme: testLightTheme,
+      darkTheme: testDarkTheme,
+      themeMode: ThemeMode.dark,
+      routerConfig: _router,
+    ),
+  );
+}
 
 Widget _composerChipApp() => MaterialApp(
   debugShowCheckedModeBanner: false,
