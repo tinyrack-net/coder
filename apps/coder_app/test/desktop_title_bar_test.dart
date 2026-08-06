@@ -19,11 +19,13 @@ void main() {
     Widget app,
     FakeDesktopWindow window,
     FakeTrayIcon tray,
+    FakeAppTerminator terminator,
     MemoryAppStore store,
   })
   build({FakeCoderApi? api, bool connected = false}) {
     final window = FakeDesktopWindow(supportsCustomTitleBar: true);
     final tray = FakeTrayIcon()..calls = window.calls;
+    final terminator = FakeAppTerminator(calls: window.calls);
     final store = MemoryAppStore(
       settings: const AppSettings(
         embeddedDaemonEnabled: false,
@@ -39,10 +41,12 @@ void main() {
         ),
         desktopWindow: window,
         trayIcon: tray,
+        terminator: terminator,
         autostart: FakeAutostartRegistration(),
       ),
       window: window,
       tray: tray,
+      terminator: terminator,
       store: store,
     );
   }
@@ -121,7 +125,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(harness.window.hides, 1);
-      expect(harness.window.destroys, 0);
+      expect(harness.terminator.terminations, 0);
       expect(harness.window.visible, isFalse);
     },
     tags: const <String>['feature_test__desktop_window_chrome__widget'],
@@ -177,7 +181,7 @@ void main() {
       await tester.pumpAndSettle();
       for (
         var attempt = 0;
-        attempt < 20 && harness.window.destroys == 0;
+        attempt < 20 && harness.terminator.terminations == 0;
         attempt += 1
       ) {
         await tester.pump(const Duration(milliseconds: 10));
@@ -185,9 +189,10 @@ void main() {
       expect(
         harness.window.calls,
         containsAllInOrder(<String>[
+          'hide',
           'destroyTray',
           'releaseClose',
-          'destroyWindow',
+          'terminate',
         ]),
       );
     },

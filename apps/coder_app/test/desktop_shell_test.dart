@@ -141,23 +141,41 @@ void main() {
     );
 
     test(
-      'show, hide, visibility, and destroy reach the plugin',
+      'show, hide, and visibility reach the plugin',
       () async {
         var shown = 0;
         var hidden = 0;
-        var destroyed = 0;
         final window = PluginDesktopWindow(
           showWindow: () async => shown += 1,
           hideWindow: () async => hidden += 1,
           windowIsVisible: () async => true,
-          destroyWindow: () async => destroyed += 1,
         );
 
         await window.show();
         await window.hide();
-        await window.destroy();
         expect(await window.isVisible(), isTrue);
-        expect(<int>[shown, hidden, destroyed], <int>[1, 1, 1]);
+        expect(<int>[shown, hidden], <int>[1, 1]);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+  });
+
+  group('process terminator', () {
+    test(
+      'terminating ends the process successfully',
+      () async {
+        final codes = <int>[];
+        // The real `exit` never returns, so the seam models that too: reaching
+        // the line after `terminate` would mean the app kept running.
+        final terminator = ProcessAppTerminator(
+          exitProcess: (code) {
+            codes.add(code);
+            throw const _Exited();
+          },
+        );
+
+        await expectLater(terminator.terminate(), throwsA(isA<_Exited>()));
+        expect(codes, <int>[0]);
       },
       tags: const <String>['feature_test__desktop_residency__unit'],
     );
@@ -418,4 +436,9 @@ void main() {
       tags: const <String>['feature_test__settings_startup__unit'],
     );
   });
+}
+
+/// Stands in for a process that really did exit.
+final class _Exited implements Exception {
+  const _Exited();
 }

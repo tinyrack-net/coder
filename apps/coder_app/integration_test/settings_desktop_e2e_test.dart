@@ -284,7 +284,7 @@ void main() {
   );
 
   testWidgets(
-    'tray quit stops the real embedded daemon before destroying the window',
+    'tray quit stops the real embedded daemon before ending the process',
     (tester) async {
       final home = await Directory.systemTemp.createTemp(
         'coder-tray-quit-e2e-',
@@ -309,6 +309,7 @@ void main() {
       );
       final window = _RecordingWindow(calls);
       final tray = _RecordingTray(calls);
+      final terminator = _RecordingTerminator(calls);
       final services = AppServices(
         settings: store,
         profiles: store,
@@ -323,6 +324,7 @@ void main() {
           services: services,
           desktopWindow: window,
           trayIcon: tray,
+          terminator: terminator,
           autostart: _RecordingAutostart(),
         ),
       );
@@ -344,20 +346,21 @@ void main() {
         ..select(trayItemQuit);
       await pumpUntilCondition(
         tester,
-        () => window.destroys == 1,
-        'the window to be destroyed exactly once',
+        () => terminator.terminations == 1,
+        'the process to be ended exactly once',
       );
 
       expect(launcher.session!.stops, 1);
       expect(tray.destroys, 1);
-      expect(window.destroys, 1);
+      expect(terminator.terminations, 1);
       expect(
         calls,
         containsAllInOrder(<String>[
+          'hide',
           'destroyTray',
           'releaseClose',
           'stopDaemon',
-          'destroyWindow',
+          'terminate',
         ]),
       );
     },
@@ -493,7 +496,6 @@ final class _RecordingWindow implements DesktopWindow {
 
   final List<String> calls;
   final ValueNotifier<bool> _maximized = ValueNotifier<bool>(false);
-  int destroys = 0;
 
   @override
   ValueListenable<bool> get maximized => _maximized;
@@ -502,13 +504,7 @@ final class _RecordingWindow implements DesktopWindow {
   bool get supportsCustomTitleBar => false;
 
   @override
-  Future<void> destroy() async {
-    destroys += 1;
-    calls.add('destroyWindow');
-  }
-
-  @override
-  Future<void> hide() async {}
+  Future<void> hide() async => calls.add('hide');
 
   @override
   Future<void> interceptClose(void Function() onClose) async {}
@@ -533,6 +529,19 @@ final class _RecordingWindow implements DesktopWindow {
 
   @override
   Future<void> toggleMaximized() async {}
+}
+
+final class _RecordingTerminator implements AppTerminator {
+  _RecordingTerminator(this.calls);
+
+  final List<String> calls;
+  int terminations = 0;
+
+  @override
+  Future<void> terminate() async {
+    terminations += 1;
+    calls.add('terminate');
+  }
 }
 
 final class _RecordingTray implements TrayIcon {

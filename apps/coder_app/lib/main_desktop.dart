@@ -15,6 +15,7 @@ class DesktopBoot {
     required this.services,
     required this.window,
     required this.tray,
+    required this.terminator,
     required this.autostart,
     required this.startHidden,
   });
@@ -27,6 +28,9 @@ class DesktopBoot {
 
   /// Tray icon the resident app installs.
   final TrayIcon tray;
+
+  /// Process terminator the quit path ends with.
+  final AppTerminator terminator;
 
   /// Login-item registration port.
   final AutostartRegistration autostart;
@@ -41,6 +45,7 @@ Future<void> runDesktopApp({
   List<String> arguments = const <String>[],
   DesktopWindow? window,
   TrayIcon? tray,
+  AppTerminator? terminator,
   AutostartRegistration? autostart,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +65,7 @@ Future<void> runDesktopApp({
           services: resolved,
           window: desktopWindow,
           tray: tray ?? PluginTrayIcon(),
+          terminator: terminator ?? const ProcessAppTerminator(),
           autostart: autostart ?? const LaunchAtStartupRegistration(),
           startHidden: startHidden,
         );
@@ -70,6 +76,7 @@ Future<void> runDesktopApp({
         directoryPicker: const NativeDirectoryPicker(),
         desktopWindow: boot.window,
         trayIcon: boot.tray,
+        terminator: boot.terminator,
         autostart: boot.autostart,
         startHidden: boot.startHidden,
       ),

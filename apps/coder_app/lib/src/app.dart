@@ -55,6 +55,7 @@ class CoderApp extends StatelessWidget {
     this.externalUrlOpener = const PlatformExternalUrlOpener(),
     this.desktopWindow,
     this.trayIcon,
+    this.terminator,
     this.autostart,
     this.startHidden = false,
     super.key,
@@ -78,6 +79,9 @@ class CoderApp extends StatelessWidget {
   /// Tray icon owner, or null on platforms without a tray.
   final TrayIcon? trayIcon;
 
+  /// Process terminator, or null where quitting is not the app's to perform.
+  final AppTerminator? terminator;
+
   /// Login-item registration, or null where the app cannot register one.
   final AutostartRegistration? autostart;
 
@@ -95,6 +99,7 @@ class CoderApp extends StatelessWidget {
       externalUrlOpenerProvider.overrideWithValue(externalUrlOpener),
       desktopWindowProvider.overrideWithValue(desktopWindow),
       trayIconProvider.overrideWithValue(trayIcon),
+      appTerminatorProvider.overrideWithValue(terminator),
       autostartProvider.overrideWithValue(autostart),
     ],
     child: _CoderAppView(

@@ -29,7 +29,6 @@ final class FakeDesktopWindow implements DesktopWindow {
   /// Counts of each destructive call, so ordering can be asserted.
   int shows = 0;
   int hides = 0;
-  int destroys = 0;
   int drags = 0;
   int minimizes = 0;
   int maximizeToggles = 0;
@@ -96,11 +95,23 @@ final class FakeDesktopWindow implements DesktopWindow {
     preventingClose = false;
     calls.add('releaseClose');
   }
+}
+
+/// Records the process-ending call instead of killing the test runner.
+final class FakeAppTerminator implements AppTerminator {
+  /// Creates a terminator that only counts requests.
+  FakeAppTerminator({this.calls});
+
+  /// Number of times the app asked to end the process.
+  int terminations = 0;
+
+  /// Shared ordering log, assigned by tests that assert teardown order.
+  List<String>? calls;
 
   @override
-  Future<void> destroy() async {
-    destroys += 1;
-    calls.add('destroyWindow');
+  Future<void> terminate() async {
+    terminations += 1;
+    calls?.add('terminate');
   }
 }
 
