@@ -1448,11 +1448,11 @@ void main() {
       // Session tabs are device-local: closing one must preserve daemon
       // history, and the all-sessions picker must restore it.
       await tester.tap(
-        find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
+        find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
       );
       await pumpUntilGone(
         tester,
-        find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
+        find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
       );
       expect(
         (await setupClient.listSessions(
@@ -1471,7 +1471,7 @@ void main() {
       await tester.tap(find.text('Delegate review').last);
       await pumpUntil(
         tester,
-        find.byKey(ValueKey<String>('session-tab-close-${parent.id}')),
+        find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
       );
 
       await tester.tap(

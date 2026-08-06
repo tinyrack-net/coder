@@ -164,7 +164,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(currentLocation(router), sessionLocation('child-a'));
       expect(
-        find.byKey(const ValueKey('session-tab-close-child-a')),
+        find.byKey(const ValueKey('tr-tabs-close-child-a')),
         findsOneWidget,
       );
     },
