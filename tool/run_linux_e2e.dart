@@ -21,7 +21,13 @@ Future<void> main() async {
       final process = await Process.start(
         'flutter',
         <String>['test', shard, '-d', 'linux'],
-        environment: <String, String>{'TINYRACK_CODER_HOME': home.path},
+        environment: <String, String>{
+          'TINYRACK_CODER_HOME': home.path,
+          // The runner is a unique GApplication, so a Coder already running on
+          // this machine would take this launch over and leave the tester
+          // without a debug connection.
+          'TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES': '1',
+        },
         mode: ProcessStartMode.inheritStdio,
       );
       final shardExitCode = await process.exitCode;

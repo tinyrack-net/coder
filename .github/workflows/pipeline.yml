@@ -178,6 +178,8 @@ jobs:
           xvfb-run -a flutter test
           integration_test/${{ matrix.test }} -d linux
         working-directory: apps/coder_app
+        env:
+          TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
 
   mobile-debug-build:
     name: Mobile Debug Build (${{ matrix.os }})
@@ -789,6 +791,8 @@ jobs:
           flutter test integration_test/${{ matrix.shard }}
           -d ${{ matrix.platform.device }}
         working-directory: apps/coder_app
+        env:
+          TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
 
   nightly-android-smoke:
     name: Nightly Android Remote E2E
