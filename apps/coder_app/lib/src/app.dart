@@ -142,14 +142,20 @@ class _CoderAppView extends ConsumerWidget {
       routerConfig: router,
       // The shell sits below Localizations and the router so tray labels
       // follow the selected language and a tray row can navigate.
-      builder: (context, child) => TRTooltipProvider(
-        child: !resident
-            ? child ?? const SizedBox.shrink()
-            : DesktopShellScope(
-                router: router,
-                startHidden: startHidden,
-                child: child ?? const SizedBox.shrink(),
-              ),
+      builder: (context, child) => TRContextMenuPresenterScope(
+        // The one place a concrete presenter is named. A widget test that omits
+        // this scope gets the deterministic Flutter presentation instead of a
+        // menu the operating system would draw outside the tree.
+        presenter: const TRNativeContextMenuPresenter(),
+        child: TRTooltipProvider(
+          child: !resident
+              ? child ?? const SizedBox.shrink()
+              : DesktopShellScope(
+                  router: router,
+                  startHidden: startHidden,
+                  child: child ?? const SizedBox.shrink(),
+                ),
+        ),
       ),
     );
   }
@@ -1581,7 +1587,7 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
         key: ValueKey<String>('terminal-view-${widget.terminal.id}'),
         controller: _controller,
         autofocus: true,
-        contextMenuBuilder: _buildContextMenu,
+        contextMenuItems: _buildContextMenu,
         onInput: (data) => unawaited(
           _api?.writeTerminal(widget.terminal.id, data) ?? Future<void>.value(),
         ),
@@ -1597,41 +1603,47 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
     );
   }
 
-  List<Widget> _buildContextMenu(BuildContext context) {
+  /// Describes the terminal menu so the operating system can draw it.
+  ///
+  /// The ids are what a system menu reports back in place of a Dart closure,
+  /// and are the same strings the Flutter presentation keys its items by.
+  List<TRMenuElement> _buildContextMenu(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final hasSelection = _controller.hasSelection;
-    return <Widget>[
-      TRMenuItem(
-        key: const ValueKey<String>('terminal-menu-copy'),
-        onPressed: hasSelection ? _copySelection : null,
-        leadingIcon: const Icon(CoderIcons.copy),
-        child: Text(l10n.terminalMenuCopy),
+    return <TRMenuElement>[
+      TRMenuActionElement(
+        id: 'terminal-menu-copy',
+        title: l10n.terminalMenuCopy,
+        icon: CoderIcons.copy,
+        enabled: hasSelection,
+        onPressed: _copySelection,
       ),
-      TRMenuItem(
-        key: const ValueKey<String>('terminal-menu-paste'),
+      TRMenuActionElement(
+        id: 'terminal-menu-paste',
+        title: l10n.terminalMenuPaste,
+        icon: CoderIcons.paste,
         onPressed: _pasteClipboard,
-        leadingIcon: const Icon(CoderIcons.paste),
-        child: Text(l10n.terminalMenuPaste),
       ),
-      const TRMenuSeparator(),
-      TRMenuItem(
-        key: const ValueKey<String>('terminal-menu-select-all'),
+      const TRMenuSeparatorElement(),
+      TRMenuActionElement(
+        id: 'terminal-menu-select-all',
+        title: l10n.terminalMenuSelectAll,
+        icon: CoderIcons.selectAll,
         onPressed: _controller.selectAll,
-        leadingIcon: const Icon(CoderIcons.selectAll),
-        child: Text(l10n.terminalMenuSelectAll),
       ),
-      TRMenuItem(
-        key: const ValueKey<String>('terminal-menu-clear-selection'),
-        onPressed: hasSelection ? _controller.clearSelection : null,
-        leadingIcon: const Icon(CoderIcons.clearSelection),
-        child: Text(l10n.terminalMenuClearSelection),
+      TRMenuActionElement(
+        id: 'terminal-menu-clear-selection',
+        title: l10n.terminalMenuClearSelection,
+        icon: CoderIcons.clearSelection,
+        enabled: hasSelection,
+        onPressed: _controller.clearSelection,
       ),
-      const TRMenuSeparator(),
-      TRMenuItem(
-        key: const ValueKey<String>('terminal-menu-clear-screen'),
+      const TRMenuSeparatorElement(),
+      TRMenuActionElement(
+        id: 'terminal-menu-clear-screen',
+        title: l10n.terminalMenuClearScreen,
+        icon: CoderIcons.erase,
         onPressed: _clearScreen,
-        leadingIcon: const Icon(CoderIcons.erase),
-        child: Text(l10n.terminalMenuClearScreen),
       ),
     ];
   }
