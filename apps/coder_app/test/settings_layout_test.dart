@@ -15,9 +15,14 @@ Widget _host(Widget child, {double width = 1200}) => MaterialApp(
 
 void main() {
   group('SettingsScaffold', () {
-    testWidgets('caps its content and keeps it against the leading edge', (
+    testWidgets('caps its content and centres it in a wide pane', (
       tester,
     ) async {
+      // A real surface, not just a SizedBox: the default test window is
+      // narrower than the cap, so the column would fill it and centring would
+      // never be exercised.
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
         _host(
           SettingsScaffold(
@@ -36,6 +41,7 @@ void main() {
               ),
             ],
           ),
+          width: 1400,
         ),
       );
 
@@ -44,9 +50,37 @@ void main() {
       final card = tester.getRect(find.byType(TRCard));
       expect(card.width, lessThanOrEqualTo(TRMeasurements.readingWidthMd));
 
-      // Left aligned, not centred: the settings sidebar already weights the
-      // window to one side.
+      // Centred, so a wide window does not strand the column against one
+      // edge with a growing void beside it.
+      expect(card.width, TRMeasurements.readingWidthMd);
+      expect(
+        card.left,
+        moreOrLessEquals(1400 - card.right, epsilon: 0.5),
+      );
+    });
+
+    testWidgets('fills a pane narrower than the cap', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const SettingsScaffold(
+            children: <Widget>[
+              SettingsSection(
+                title: 'Section',
+                children: <Widget>[
+                  SettingsRow(title: TRText.inherit('Row')),
+                ],
+              ),
+            ],
+          ),
+          // A list-detail detail pane is narrower than the cap, so centring
+          // has to leave the column filling it rather than shrinking it.
+          width: 600,
+        ),
+      );
+
+      final card = tester.getRect(find.byType(TRCard));
       expect(card.left, TRSpacing.extraLarge);
+      expect(card.width, 600 - 2 * TRSpacing.extraLarge);
     });
 
     testWidgets('separates its sections by one step', (tester) async {

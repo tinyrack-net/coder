@@ -58,7 +58,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
           workspaceId: widget.workspaceId,
           onChanged: widget.onWorkspaceChanged,
         ),
-        const TRSeparator(),
+        const TRSeparator(variant: TRSeparatorVariant.muted),
         Expanded(
           child: state.when(
             loading: () => const Center(child: TRSpinner()),
