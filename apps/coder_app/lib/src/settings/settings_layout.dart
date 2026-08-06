@@ -97,15 +97,18 @@ class SettingsSection extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: <Widget>[
-      Row(
+      // A Wrap rather than a Row: on a narrow window, or at a large text
+      // scale, a heading and its action do not fit on one line. Wrapping is
+      // what keeps the action from overflowing, and spaceBetween still puts
+      // it against the trailing edge whenever the two do fit.
+      Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: TRSpacing.large,
+        runSpacing: TRSpacing.small,
         children: <Widget>[
-          Expanded(
-            child: TRText(title, variant: TRTextVariant.headingMd),
-          ),
-          if (action case final action?) ...<Widget>[
-            const SizedBox(width: TRSpacing.large),
-            action,
-          ],
+          TRText(title, variant: TRTextVariant.headingMd),
+          ?action,
         ],
       ),
       if (description case final description?) ...<Widget>[
@@ -165,6 +168,7 @@ class SettingsRow extends StatelessWidget {
     this.enabled = true,
     this.selected = false,
     this.wrapsDescription = false,
+    this.unboundedDescription = false,
     this.flush = false,
     super.key,
   });
@@ -193,6 +197,12 @@ class SettingsRow extends StatelessWidget {
   /// Whether the description may occupy a second line.
   final bool wrapsDescription;
 
+  /// Whether the description may run to as many lines as it needs.
+  ///
+  /// For a description that is prose rather than a status line: two lines cut
+  /// it mid-sentence on a narrow window.
+  final bool unboundedDescription;
+
   /// Whether the surrounding container already supplies the inline inset.
   ///
   /// A dialog pads its own content, so a row inside one would otherwise sit a
@@ -215,7 +225,8 @@ class SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) => CoderListRow(
     contentPadding: flush ? flushPadding : contentPadding,
     enabled: enabled,
-    isThreeLine: wrapsDescription,
+    isThreeLine: wrapsDescription || unboundedDescription,
+    unboundedSubtitle: unboundedDescription,
     leading: leading,
     onTap: onTap,
     selected: selected,

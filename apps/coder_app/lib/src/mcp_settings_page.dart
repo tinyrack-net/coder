@@ -188,7 +188,7 @@ class _ServerList extends StatelessWidget {
                 label: l10n.mcpSettingsScopeUser,
               ),
               if (state.userServers.isEmpty)
-                CoderListRow(
+                SettingsRow(
                   key: const ValueKey<String>('mcp-server-list-empty'),
                   title: TRText.inherit(l10n.mcpSettingsEmpty),
                 ),
@@ -253,13 +253,13 @@ class _ServerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return CoderListRow(
+    return SettingsRow(
       key: ValueKey<String>('mcp-server-tile-${server.config.id}'),
       selected: selected,
       onTap: onTap,
       leading: _StatusDot(server: server),
       title: TRText.inherit(server.config.id),
-      subtitle: TRText.inherit(
+      description: TRText.inherit(
         server.shadowed
             ? l10n.mcpSettingsShadowed
             : '${mcpStatusLabel(l10n, server.status)} · '
@@ -268,7 +268,7 @@ class _ServerTile extends StatelessWidget {
                   '${l10n.mcpSettingsDiscoveredResources} '
                   '${server.resources.length}',
       ),
-      trailing: server.scope == McpConfigScope.project
+      control: server.scope == McpConfigScope.project
           ? const Icon(CoderIcons.lock)
           : null,
     );
@@ -596,6 +596,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                           key: ValueKey<String>(
                             'mcp-tool-tile-${tool.toolId}',
                           ),
+                          contentPadding: SettingsRow.flushPadding,
                           dense: true,
                           title: TRText.inherit(tool.toolId),
                           subtitle: TRText.inherit(tool.description),
@@ -617,6 +618,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                                 key: ValueKey<String>(
                                   'mcp-resource-tile-${resource.uri}',
                                 ),
+                                contentPadding: SettingsRow.flushPadding,
                                 dense: true,
                                 title: TRText.inherit(resource.uri),
                                 subtitle: TRText.inherit(
@@ -646,6 +648,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                                   'mcp-resource-template-tile-'
                                   '${template.uriTemplate}',
                                 ),
+                                contentPadding: SettingsRow.flushPadding,
                                 dense: true,
                                 title: TRText.inherit(template.uriTemplate),
                                 subtitle: TRText.inherit(
@@ -664,6 +667,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                           children: <Widget>[
                             for (final line in server.diagnostics)
                               CoderListRow(
+                                contentPadding: SettingsRow.flushPadding,
                                 dense: true,
                                 title: TRText.inherit(line),
                               ),

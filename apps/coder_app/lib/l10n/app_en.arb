@@ -636,6 +636,10 @@
   "@appSettingsBearerToken": {
     "description": "Text field label for the token of a new remote daemon."
   },
+  "appSettingsRemoteDetails": "Daemon",
+  "@appSettingsRemoteDetails": {
+    "description": "Section heading for a remote daemon's name and address."
+  },
   "appSettingsConnectionBehaviour": "Connection",
   "@appSettingsConnectionBehaviour": {
     "description": "Section heading for how the app connects to a daemon."

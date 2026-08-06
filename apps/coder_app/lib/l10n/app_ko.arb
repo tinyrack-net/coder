@@ -163,6 +163,7 @@
   "appSettingsAddress": "WebSocket 주소",
   "appSettingsNewToken": "새 Bearer token (변경할 때만 입력)",
   "appSettingsBearerToken": "Bearer token",
+  "appSettingsRemoteDetails": "Daemon",
   "appSettingsConnectionBehaviour": "연결",
   "appSettingsConnectionFailed": "연결을 저장하지 못했어요",
   "appSettingsDeleteTitle": "{label}을 삭제할까요?",

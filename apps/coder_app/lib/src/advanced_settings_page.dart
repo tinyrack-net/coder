@@ -69,7 +69,7 @@ class _ResetSectionState extends ConsumerState<_ResetSection> {
                 ? l10n.advancedResetDescription
                 : l10n.advancedResetDescriptionAppOnly,
           ),
-          wrapsDescription: true,
+          unboundedDescription: true,
           control: TRButton(
             key: const ValueKey<String>('advanced-settings-reset-button'),
             appearance: TRAppearance.outline,

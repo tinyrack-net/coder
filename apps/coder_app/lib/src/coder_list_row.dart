@@ -15,7 +15,9 @@ class CoderListRow extends StatefulWidget {
     this.onTap,
     this.selected = false,
     this.subtitle,
+    this.subtitleMaxLines,
     this.trailing,
+    this.unboundedSubtitle = false,
     super.key,
   });
 
@@ -45,6 +47,16 @@ class CoderListRow extends StatefulWidget {
 
   /// Whether supporting content may occupy two lines.
   final bool isThreeLine;
+
+  /// Caps the supporting content, overriding the cap [isThreeLine] implies.
+  final int? subtitleMaxLines;
+
+  /// Whether the supporting content may run to as many lines as it needs.
+  ///
+  /// A list row truncates by default, because a list reads as a column of
+  /// equal rows. A setting's description is prose the reader has to finish,
+  /// and on a narrow window two lines cut it mid-sentence.
+  final bool unboundedSubtitle;
 
   /// Overrides token-based content padding when layout requires it.
   final EdgeInsetsGeometry? contentPadding;
@@ -95,8 +107,12 @@ class _CoderListRowState extends State<CoderListRow> {
                 const SizedBox(height: TRSpacing.extraSmall),
                 DefaultTextStyle.merge(
                   style: TRTypography.bodySm.copyWith(color: colors.textMuted),
-                  maxLines: widget.isThreeLine ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: widget.unboundedSubtitle
+                      ? null
+                      : widget.subtitleMaxLines ?? (widget.isThreeLine ? 2 : 1),
+                  overflow: widget.unboundedSubtitle
+                      ? TextOverflow.clip
+                      : TextOverflow.ellipsis,
                   child: subtitle,
                 ),
               ],
