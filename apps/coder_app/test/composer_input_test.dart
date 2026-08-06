@@ -518,6 +518,44 @@ void main() {
   );
 
   testWidgets(
+    'Enter waits for a mention whose list has not arrived yet',
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+          // The search is debounced and asynchronous, so the list is not on
+          // screen on the frame the user presses Enter.
+          suppressList: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(inputKey), 'read @READ');
+      await tester.pumpAndSettle();
+      expect(find.text('README.md'), findsNothing);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      // The half-typed mention is neither sent nor lost.
+      expect(submitted, isEmpty);
+      expect(
+        tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
+        'read @READ',
+      );
+
+      // A finished mention sends as usual.
+      await tester.enterText(find.byKey(inputKey), 'read @README.md ');
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(submitted, <String>['read @README.md']);
+    },
+  );
+
+  testWidgets(
     'Escape closes the mention list and returns Enter to sending',
     tags: const <String>['feature_test__composer_file_mention__widget'],
     (tester) async {
@@ -797,12 +835,14 @@ Widget _completionHarness({
   Future<bool> Function(ComposerCommandInvocation invocation)? onClientCommand,
   VoidCallback? onModeToggled,
   AttachmentInputPort? attachmentInput,
+  bool suppressList = false,
 }) => _harness(
   composer: _CompletionHost(
     onSubmit: onSubmit,
     onClientCommand: onClientCommand,
     onModeToggled: onModeToggled,
     attachmentInput: attachmentInput,
+    suppressList: suppressList,
   ),
 );
 
@@ -819,6 +859,7 @@ class _CompletionHost extends StatefulWidget {
     this.onClientCommand,
     this.onModeToggled,
     this.attachmentInput,
+    this.suppressList = false,
   });
 
   final void Function(ComposerSubmission submission) onSubmit;
@@ -826,6 +867,7 @@ class _CompletionHost extends StatefulWidget {
   onClientCommand;
   final VoidCallback? onModeToggled;
   final AttachmentInputPort? attachmentInput;
+  final bool suppressList;
 
   @override
   State<_CompletionHost> createState() => _CompletionHostState();
@@ -852,7 +894,11 @@ class _CompletionHostState extends State<_CompletionHost> {
 
   ComposerSuggestionsState get _suggestions {
     final trigger = _trigger;
-    if (trigger == null) return ComposerSuggestionsState.closed;
+    // Stands in for the window before a debounced search has resolved, when
+    // the token is typed but the list is not on screen yet.
+    if (trigger == null || widget.suppressList) {
+      return ComposerSuggestionsState.closed;
+    }
     if (trigger.kind == ComposerTriggerKind.command) {
       return ComposerSuggestionsState(
         trigger: trigger,

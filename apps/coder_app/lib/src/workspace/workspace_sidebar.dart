@@ -388,6 +388,10 @@ class WorkspaceSidebar extends ConsumerWidget {
     );
     if (confirmed != true) return;
     final archived = await entry.api.archiveWorktree(worktree.id, force: risky);
+    // Archiving the selected worktree can unmount this sidebar, and reading a
+    // provider after that throws. Whatever replaces it reads the catalog
+    // itself, so an unmounted sidebar has nothing left to do here.
+    if (!context.mounted) return;
     await ref
         .read(workspaceCatalogControllerProvider.notifier)
         .refreshHost(entry.hostId);
@@ -429,6 +433,8 @@ class WorkspaceSidebar extends ConsumerWidget {
     );
     if (confirmed != true) return;
     await entry.api.unregisterWorkspace(workspace.id);
+    // Same unmount hazard as archiving.
+    if (!context.mounted) return;
     ref.invalidate(workspaceCatalogControllerProvider);
     if (selected?.workspaceId == workspace.id) onArchivedSelection();
   }

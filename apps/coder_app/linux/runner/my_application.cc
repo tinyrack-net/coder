@@ -171,7 +171,17 @@ MyApplication* my_application_new() {
   // Deliberately not G_APPLICATION_NON_UNIQUE: the app owns an embedded
   // daemon, so a second instance would bind a second daemon over the same
   // data. Later launches are routed to the running instance instead.
+  //
+  // That routing is keyed on a session-bus name shared by every build on the
+  // machine, so any running Coder — a developer's own app, or another
+  // checkout's Linux E2E run — makes the next launch hand itself over and exit
+  // before the Flutter engine starts. A run that owns an isolated daemon home
+  // says so here and keeps its own process.
+  GApplicationFlags flags = G_APPLICATION_DEFAULT_FLAGS;
+  if (g_getenv("TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES") != nullptr) {
+    flags = static_cast<GApplicationFlags>(flags | G_APPLICATION_NON_UNIQUE);
+  }
   return MY_APPLICATION(g_object_new(my_application_get_type(),
                                      "application-id", APPLICATION_ID, "flags",
-                                     G_APPLICATION_DEFAULT_FLAGS, nullptr));
+                                     flags, nullptr));
 }

@@ -820,7 +820,13 @@ void main() {
       await tester.enterText(find.byKey(composer), 'read @READ');
       await tester.pumpAndSettle();
       await pumpUntil(tester, find.text('README.md'));
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      // Picked with the pointer rather than Enter: the catalog is still
+      // streaming here, and a rebuild that takes focus sends the keystroke
+      // nowhere. This step is about the daemon's search reaching the composer,
+      // and `composer_input_test.dart` owns the keyboard contract.
+      // The row names the file and its worktree-relative path, which are the
+      // same string at the repository root, so both land in the same row.
+      await tester.tap(find.text('README.md').first);
       await tester.pumpAndSettle();
       expect(
         tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
@@ -922,8 +928,15 @@ void main() {
         of: find.byKey(composer),
         matching: find.byType(EditableText),
       );
+      // Enter is ignored until a model resolves, so typing before that leaves
+      // the draft sitting in the field.
+      await _waitForComposerReady(tester, send);
       await tester.tap(composerInput);
-      await tester.pump();
+      await pumpUntilCondition(
+        tester,
+        () => tester.widget<EditableText>(composerInput).focusNode.hasFocus,
+        'the composer to take focus',
+      );
       final sessionsBefore = (await setupClient.listSessions(
         worktreeId: 'checkout-e2e',
       )).length;
@@ -975,7 +988,11 @@ void main() {
       // Sending moved focus to the send button; the flow below types straight
       // into the field, so hand it back.
       await tester.tap(composerInput);
-      await tester.pump();
+      await pumpUntilCondition(
+        tester,
+        () => tester.widget<EditableText>(composerInput).focusNode.hasFocus,
+        'the composer to take focus',
+      );
 
       await tester.enterText(
         find.byKey(composer),
@@ -1013,14 +1030,10 @@ void main() {
         tester,
         find.text('Created result.txt', findRichText: true),
       );
-      expect(
-        await File('${workspace.path}/result.txt').readAsString(),
-        'done\n',
-      );
-      // Tool activity renders as a CLI summary; no raw payload reaches the UI.
-      expect(find.textContaining('Edit('), findsWidgets);
-      expect(find.textContaining('changedFiles'), findsNothing);
-      expect(find.textContaining('"isError"'), findsNothing);
+      // That reply is the scripted provider's catch-all, so an earlier turn
+      // already put it in this transcript and the finder above matches on the
+      // first poll. Only a settled session proves this turn's tool ran, and
+      // the file it wrote is what the next line reads.
       await pumpUntilCondition(
         tester,
         () async =>
@@ -1030,8 +1043,16 @@ void main() {
                 )
                 .status ==
             SessionStatus.idle,
-        'the current session to become idle',
+        'the patch turn to finish',
       );
+      expect(
+        await File('${workspace.path}/result.txt').readAsString(),
+        'done\n',
+      );
+      // Tool activity renders as a CLI summary; no raw payload reaches the UI.
+      expect(find.textContaining('Edit('), findsWidgets);
+      expect(find.textContaining('changedFiles'), findsNothing);
+      expect(find.textContaining('"isError"'), findsNothing);
       expect(tester.takeException(), isNull);
 
       // Attachments use the authenticated HTTP transport even though the turn
@@ -1326,15 +1347,33 @@ void main() {
       await tester.pump();
       // The chip returning to 실행 proves the session left plan mode.
       await pumpUntil(tester, find.text('실행'));
-      await pumpUntilGone(tester, find.textContaining('Plan 모드'));
+      // The chip only reflects what the app asked for, so confirm the daemon
+      // agrees before sending a prompt that must not be planned again.
+      await pumpUntilCondition(
+        tester,
+        () async =>
+            (await setupClient.listSessions(
+                  worktreeId: 'checkout-e2e',
+                ))
+                .singleWhere((session) => session.id == attachmentSession.id)
+                .mode ==
+            SessionMode.normal,
+        'the attachment session to leave plan mode',
+      );
 
       // A blocking agent question stops the turn until the user answers it,
-      // and the chosen answer reaches the model.
+      // and the chosen answer reaches the model. Implementing the plan started
+      // a turn of its own, so this prompt may queue behind it; the wait spans
+      // both turns.
       await _waitForComposerReady(tester, send);
       await tester.enterText(find.byKey(composer), 'Ask me about storage');
       await tester.pump();
       await tester.tap(find.byKey(send));
-      await pumpUntil(tester, find.text('Storage'));
+      await _pumpUntilWithSessionDiagnostics(
+        tester,
+        find.text('Storage'),
+        setupClient,
+      );
       expect(find.text('Which store should the cache use?'), findsOneWidget);
       final questionSubmit = find.byKey(
         const ValueKey<String>('chat-question-submit'),
@@ -1670,6 +1709,12 @@ void main() {
       expect(
         find.byKey(const ValueKey('new-workspace-branch')),
         findsNothing,
+      );
+      // The send button is disabled until a model resolves, so tapping before
+      // that does nothing and no session is ever created.
+      await _waitForComposerReady(
+        tester,
+        const ValueKey<String>('session-composer-send'),
       );
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -2112,13 +2157,18 @@ String _dartExecutable() {
   );
 }
 
+/// Waits for the composer to have a model, which is all that gates sending.
+///
+/// A running turn never disables the button; the prompt queues instead. So
+/// this is not a barrier on the previous turn, and a caller that needs one has
+/// to wait on daemon state itself.
 Future<void> _waitForComposerReady(
   WidgetTester tester,
   ValueKey<String> sendKey,
 ) => pumpUntilCondition(
   tester,
   () => tester.widget<TRIconButton>(find.byKey(sendKey)).onPressed != null,
-  'the composer to accept another turn',
+  'the composer to have a model selected',
 );
 
 Future<void> _submitComposerPrompt(
@@ -2134,7 +2184,14 @@ Future<void> _submitComposerPrompt(
     matching: find.byType(EditableText),
   );
   await tester.tap(input);
-  await tester.pump();
+  // `testTextInput` delivers to whichever field owns the input connection, so
+  // typing before the tap lands writes the prompt nowhere and the field stays
+  // empty. Focus is the evidence that the connection is this composer's.
+  await pumpUntilCondition(
+    tester,
+    () => tester.widget<EditableText>(input).focusNode.hasFocus,
+    'the composer to take focus',
+  );
   tester.testTextInput.enterText(prompt);
   await tester.pump();
   expect(tester.widget<TRTextField>(composer).controller?.text, prompt);

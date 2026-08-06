@@ -982,6 +982,56 @@ void main() {
   );
 
   testWidgets(
+    'an archive that outlives its sidebar finishes without throwing',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final managed = WorktreeDto(
+        id: 'managed',
+        workspaceId: workspace.id,
+        name: 'feature/settings',
+        path: '/worktrees/feature-settings',
+        branch: 'feature/settings',
+        kind: WorktreeKind.managed,
+        isCoderOwned: true,
+        createdAt: now,
+      );
+      final gate = Completer<void>();
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout, managed],
+      )..archiveWorktreeGate = gate;
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: managed.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      await tester.tap(findAccessibleAction('Worktree 메뉴').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, 'Archive'));
+      await tester.pump();
+
+      // Archiving the selected worktree tears the sidebar down, so the call
+      // finishes with nothing left to read a provider from.
+      await tester.pumpWidget(const SizedBox.shrink());
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__widget'],
+  );
+
+  testWidgets(
     'the project select registers a project through the daemon browser',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
@@ -1672,8 +1722,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
       await tester.pumpAndSettle();
+      // The chip label is the whole mode indicator, so the run label is gone.
       expect(find.text('Plan'), findsOneWidget);
-      expect(find.textContaining('Plan 모드'), findsNothing);
+      expect(find.text('실행'), findsNothing);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -1684,7 +1735,9 @@ void main() {
 
       final created = api.createdSessions.single;
       expect(created.mode, SessionMode.plan);
-      expect(find.textContaining('Plan 모드'), findsNothing);
+      // Sending a prompt keeps the session in plan mode.
+      expect(find.text('Plan'), findsOneWidget);
+      expect(find.text('실행'), findsNothing);
 
       api
         ..emitTimeline(

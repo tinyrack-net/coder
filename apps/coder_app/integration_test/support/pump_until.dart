@@ -29,9 +29,9 @@ const Duration _pollInterval = Duration(milliseconds: 100);
 /// [description] completes the sentence "Timed out after 60s waiting for ...".
 ///
 /// The pump comes before the first check on purpose. Callers wait on states
-/// that the frame after their own action produces, such as a composer that
-/// disables its send button once a turn starts; checking first would read the
-/// state the action was about to change and return immediately.
+/// that the frame after their own action produces, such as a sent prompt
+/// appearing in the transcript; checking first would read the state the action
+/// was about to change and return immediately.
 Future<void> pumpUntilCondition(
   WidgetTester tester,
   FutureOr<bool> Function() condition,

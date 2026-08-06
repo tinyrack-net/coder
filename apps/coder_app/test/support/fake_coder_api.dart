@@ -373,7 +373,16 @@ final class FakeCoderApi implements CoderApi {
   }
 
   /// Emits a typed daemon notification.
-  void emit(ClientEvent event) => _events.add(event);
+  ///
+  /// A session update also lands in the stored sessions, so a later
+  /// [listSessions] agrees with what subscribers were told.
+  void emit(ClientEvent event) {
+    if (event is SessionUpdatedClientEvent) {
+      final index = _agents.indexWhere((agent) => agent.id == event.session.id);
+      if (index >= 0) _agents[index] = event.session;
+    }
+    _events.add(event);
+  }
 
   /// Appends and broadcasts one timeline event for a session.
   void emitTimeline(
@@ -531,6 +540,9 @@ final class FakeCoderApi implements CoderApi {
   List<WorktreeHookRunDto> archiveWorktreeHookRuns =
       const <WorktreeHookRunDto>[];
 
+  /// Holds an archive open, so a test can unmount the caller mid-flight.
+  Completer<void>? archiveWorktreeGate;
+
   @override
   Future<ProjectSettingsResultDto> getProjectSettings(
     String workspaceId,
@@ -603,6 +615,7 @@ final class FakeCoderApi implements CoderApi {
     String worktreeId, {
     bool force = false,
   }) async {
+    if (archiveWorktreeGate case final gate?) await gate.future;
     final index = _worktrees.indexWhere((item) => item.id == worktreeId);
     final archived = _worktrees[index].copyWith(archivedAt: _now);
     _worktrees.removeAt(index);

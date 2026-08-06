@@ -110,6 +110,14 @@ temporary home so no run reaches the real daemon home or its exclusive
 `daemon.lock`. `embedded-ports:check` enforces all three and runs as part of
 `verify:fast` and `verify`.
 
+The Linux runner is a unique `GApplication`, so a launch whose session-bus name
+is already owned hands itself to the running instance and exits before the
+Flutter engine starts; the tester only reports that it could not start the app
+on the device. Any Coder on the machine causes it — a developer's own app, or
+another checkout's E2E run. A test run therefore sets
+`TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES=1`, which keeps the process to itself.
+It is safe precisely because the run already owns an isolated daemon home.
+
 `test:e2e:linux` additionally points `TINYRACK_CODER_HOME` at a per-run
 temporary directory. Together these let two checkouts verify at the same time
 and let `verify:debug` pass while a developer's own `melos run:daemon` holds the
