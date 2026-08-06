@@ -1316,6 +1316,7 @@ class ConversationController extends _$ConversationController {
   Future<void> startTurn(
     String prompt, {
     List<PendingAttachment> attachments = const <PendingAttachment>[],
+    bool queueWhenBusy = true,
   }) async {
     final sessionId = _sessionId;
     if (sessionId == null || (prompt.trim().isEmpty && attachments.isEmpty)) {
@@ -1333,12 +1334,35 @@ class ConversationController extends _$ConversationController {
         ),
       );
     }
-    await api.startTurn(
-      sessionId: sessionId,
-      turnId: ref.read(appIdGeneratorProvider).generate(),
-      prompt: prompt.trim(),
-      attachmentIds: uploaded.map((item) => item.id).toList(growable: false),
-    );
+    try {
+      await api.startTurn(
+        sessionId: sessionId,
+        turnId: ref.read(appIdGeneratorProvider).generate(),
+        prompt: prompt.trim(),
+        attachmentIds: uploaded.map((item) => item.id).toList(growable: false),
+      );
+    } on Exception {
+      // The composer sends or queues from a rendered flag that trails the
+      // daemon by one event, so it can send into a turn that is still running.
+      // The daemon is the authority: when it says one is, hold the prompt the
+      // way the composer would have, rather than handing back an error that
+      // reads as "not sent" and drops it.
+      if (!queueWhenBusy || !await _hasRunningTurn(api, sessionId)) rethrow;
+      enqueueTurn(prompt, attachments: attachments);
+    }
+  }
+
+  Future<bool> _hasRunningTurn(CoderApi api, String sessionId) async {
+    try {
+      final session = (await api.listSessions())
+          .where((session) => session.id == sessionId)
+          .firstOrNull;
+      return session != null &&
+          session.status != SessionStatus.idle &&
+          session.status != SessionStatus.failed;
+    } on Exception {
+      return false;
+    }
   }
 
   /// The cancelTurn public API member.
@@ -1447,7 +1471,13 @@ class ConversationController extends _$ConversationController {
       current.copyWith(queued: current.queued.sublist(1)),
     );
     try {
-      await startTurn(next.text, attachments: next.attachments);
+      // Already queued once: re-queueing here would only trade a restore for
+      // a loop, so a busy daemon takes the same path as any other failure.
+      await startTurn(
+        next.text,
+        attachments: next.attachments,
+        queueWhenBusy: false,
+      );
     } on Exception {
       // The drain runs from a broadcast event with nobody to await it, so a
       // failed send puts the prompt back rather than disappearing.

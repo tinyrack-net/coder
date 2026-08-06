@@ -607,6 +607,85 @@ void main() {
   );
 
   test(
+    'a prompt the daemon rejects as busy is queued, not handed back',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          appIdGeneratorProvider.overrideWithValue(_SequentialIdGenerator()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+
+      // The composer read `busy` one event too early and sent into a turn the
+      // daemon still has running.
+      api
+        ..startTurnError = Exception('Agent already has a running turn.')
+        ..emit(
+          SessionUpdatedClientEvent(
+            agent.copyWith(status: SessionStatus.running),
+          ),
+        );
+      await Future<void>.delayed(Duration.zero);
+      await container.read(provider.notifier).startTurn('into a live turn');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(api.startedPrompts, isEmpty);
+      expect(
+        container.read(provider).value!.queued.map((item) => item.text),
+        <String>['into a live turn'],
+      );
+
+      // It leaves the queue as soon as that turn settles.
+      api
+        ..startTurnError = null
+        ..emit(
+          SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+        );
+      await Future<void>.delayed(Duration.zero);
+      expect(api.startedPrompts, <String>['into a live turn']);
+      expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a start failure that is not a running turn still surfaces',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent])
+        ..startTurnError = Exception('offline');
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          appIdGeneratorProvider.overrideWithValue(_SequentialIdGenerator()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+
+      // The session is idle, so the composer keeps owning the error.
+      await expectLater(
+        container.read(provider.notifier).startTurn('while offline'),
+        throwsA(isA<Exception>()),
+      );
+      expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
     'a queued prompt can be taken back or promoted past the active turn',
     () async {
       final api = FakeCoderApi(agents: <SessionDto>[agent]);
