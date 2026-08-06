@@ -132,6 +132,7 @@ final class MemoryAppStore
   /// Creates an in-memory store.
   MemoryAppStore({
     this.settings = const AppSettings(),
+    this.factoryDefaults = const AppSettings(),
     List<RemoteDaemonProfile> profiles = const <RemoteDaemonProfile>[],
     Map<String, String> tokens = const <String, String>{},
   }) : profiles = List<RemoteDaemonProfile>.of(profiles),
@@ -139,6 +140,13 @@ final class MemoryAppStore
 
   /// Current settings value.
   AppSettings settings;
+
+  /// Settings [clear] restores.
+  ///
+  /// Production storage restores the compiled defaults, including the product
+  /// daemon port. A test that starts a real daemon has to survive a reset
+  /// without binding that machine-global port, so it overrides this instead.
+  final AppSettings factoryDefaults;
 
   /// Current profile values.
   final List<RemoteDaemonProfile> profiles;
@@ -148,7 +156,7 @@ final class MemoryAppStore
 
   @override
   Future<void> clear() async {
-    settings = const AppSettings();
+    settings = factoryDefaults;
     profiles.clear();
   }
 

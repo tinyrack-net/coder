@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+import 'support/ephemeral_port.dart';
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
 
@@ -187,7 +188,9 @@ void main() {
           ),
         ),
       );
-      final store = MemoryAppStore();
+      final store = MemoryAppStore(
+        settings: AppSettings(embeddedDaemonPort: await reserveEphemeralPort()),
+      );
       await tester.pumpWidget(
         CoderApp(
           services: AppServices(
@@ -207,12 +210,7 @@ void main() {
       await tester.pumpAndSettle();
       await _pumpUntil(tester, find.textContaining('온라인'));
 
-      final available = await ServerSocket.bind(
-        InternetAddress.loopbackIPv4,
-        0,
-      );
-      final changedPort = available.port;
-      await available.close();
+      final changedPort = await reserveEphemeralPort();
       final portField = find.descendant(
         of: find.byKey(const ValueKey<String>('embedded-daemon-port')),
         matching: find.byType(EditableText),

@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'support/ephemeral_port.dart';
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
 
@@ -195,8 +196,17 @@ void main() {
       final launcher = _IdentityRecordingLauncher(
         IsolateEmbeddedDaemonLauncher(resolveConfig: () => config),
       );
+      // The reset restores the store's factory defaults and restarts the real
+      // daemon on them, so the port after the reset has to be reserved too.
       final store = MemoryAppStore(
-        settings: const AppSettings(localeTag: 'ko', sidebarCollapsed: true),
+        settings: AppSettings(
+          embeddedDaemonPort: await reserveEphemeralPort(),
+          localeTag: 'ko',
+          sidebarCollapsed: true,
+        ),
+        factoryDefaults: AppSettings(
+          embeddedDaemonPort: await reserveEphemeralPort(),
+        ),
       );
       await tester.pumpWidget(
         CoderApp(
@@ -294,7 +304,9 @@ void main() {
         ),
         calls,
       );
-      final store = MemoryAppStore();
+      final store = MemoryAppStore(
+        settings: AppSettings(embeddedDaemonPort: await reserveEphemeralPort()),
+      );
       final window = _RecordingWindow(calls);
       final tray = _RecordingTray(calls);
       final services = AppServices(

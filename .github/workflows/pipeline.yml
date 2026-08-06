@@ -53,6 +53,7 @@ jobs:
       - run: dart run melos tinyrack-sources:check
       - run: dart run melos architecture:check
       - run: dart run melos features:check
+      - run: dart run melos embedded-ports:check
       - name: Validate the workflow
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coder_workspace/src/verification_runner.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -21,7 +22,27 @@ void main() {
       contains('--concurrency=4'),
     );
   });
+
+  test('the embedded daemon port gate is a registered static check', () {
+    expect(
+      _script(pubspec, 'embedded-ports:check'),
+      contains('tool/verify_embedded_ports.dart'),
+    );
+    expect(
+      _scripts(WorkspaceVerificationPlans.fast()),
+      contains('embedded-ports:check'),
+    );
+    expect(
+      _scripts(WorkspaceVerificationPlans.full()),
+      contains('embedded-ports:check'),
+    );
+  });
 }
+
+List<String> _scripts(VerificationPlan plan) => <String>[
+  for (final phase in plan.phases)
+    for (final task in phase.tasks) task.script,
+];
 
 String _script(String pubspec, String name) {
   final marker = '    $name:\n';

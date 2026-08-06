@@ -41,6 +41,8 @@ melos:
       run: dart run tool/verify_architecture.dart
     features:check:
       run: dart run tool/verify_features.dart
+    embedded-ports:check:
+      run: dart run tool/verify_embedded_ports.dart
     test:
       run: dart run tool/verify_workspace.dart fast
     test:dart:
