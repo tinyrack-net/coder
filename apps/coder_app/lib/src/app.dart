@@ -27,6 +27,7 @@ import 'package:coder_app/src/mcp_settings_page.dart';
 import 'package:coder_app/src/project_settings_page.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/session_model_options.dart';
+import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:coder_app/src/settings_page.dart';
 import 'package:coder_app/src/skill_settings_page.dart';
 import 'package:coder_app/src/subagents/subagent_status_icon.dart';
@@ -163,12 +164,6 @@ class _CoderAppView extends ConsumerWidget {
     );
   }
 }
-
-/// Width at which the workspace and settings shells show both panes.
-const double wideLayoutBreakpoint = 760;
-
-/// Width of the settings navigation pane.
-const double settingsSidebarWidth = 230;
 
 /// Builds the shared Material theme for one brightness.
 ThemeData coderTheme(Brightness brightness) => brightness == Brightness.light
@@ -644,48 +639,37 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth < wideLayoutBreakpoint) {
+          if (constraints.maxWidth < TRBreakpoints.medium) {
             final l10n = AppLocalizations.of(context);
             return Column(
               children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    TRSpacing.large,
-                    TRSpacing.medium,
-                    TRSpacing.large,
-                    TRSpacing.extraSmall,
-                  ),
-                  child: TRSelectFormField<SettingsCategory>(
-                    key: const ValueKey<String>('settings-category-select'),
-                    initialValue: widget.category,
-                    label: l10n.settingsTitle,
-                    items: <TRSelectItem<SettingsCategory>>[
-                      for (final category in SettingsCategory.values)
-                        TRSelectItem<SettingsCategory>(
-                          value: category,
-                          label: _settingsCategoryLabel(l10n, category),
-                        ),
-                    ],
-                    onValueChange: (category) {
-                      if (category == null) return;
-                      _goToSettingsCategory(context, category);
-                    },
-                  ),
+                SettingsCompactToolbar(
+                  builder: (width) => <Widget>[
+                    TRSelectFormField<SettingsCategory>(
+                      key: const ValueKey<String>('settings-category-select'),
+                      initialValue: widget.category,
+                      label: l10n.settingsTitle,
+                      width: width,
+                      items: <TRSelectItem<SettingsCategory>>[
+                        for (final category in SettingsCategory.values)
+                          TRSelectItem<SettingsCategory>(
+                            value: category,
+                            label: _settingsCategoryLabel(l10n, category),
+                          ),
+                      ],
+                      onValueChange: (category) {
+                        if (category == null) return;
+                        _goToSettingsCategory(context, category);
+                      },
+                    ),
+                    if (widget.category.scope == SettingsCategoryScope.daemon)
+                      _DaemonSelect(
+                        hosts: hosts,
+                        hostId: hostId,
+                        showLabel: true,
+                      ),
+                  ],
                 ),
-                if (widget.category.scope == SettingsCategoryScope.daemon)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      TRSpacing.large,
-                      TRSpacing.extraSmall,
-                      TRSpacing.large,
-                      TRSpacing.extraSmall,
-                    ),
-                    child: _DaemonSelect(
-                      hosts: hosts,
-                      hostId: hostId,
-                      showLabel: true,
-                    ),
-                  ),
                 Expanded(child: detail),
               ],
             );
@@ -697,7 +681,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                 scroll: false,
                 // The sidebar lays its content out at the width it is given,
                 // so the width belongs to it rather than to an outer box.
-                width: settingsSidebarWidth,
+                width: TRMeasurements.paneSm,
                 child: _SettingsSidebar(
                   selected: widget.category,
                   hosts: hosts,
@@ -1000,7 +984,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     return CoderPageShell(
       appBar: CoderPageHeader(
         // The toggle keeps one position in both states: the very top left.
-        leading: MediaQuery.sizeOf(context).width < wideLayoutBreakpoint
+        leading: MediaQuery.sizeOf(context).width < TRBreakpoints.medium
             ? null
             : TRIconButton(
                 appearance: TRAppearance.ghost,
@@ -1048,7 +1032,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
           );
           final detail = widget.selection == null
               ? NewWorkspacePane(
-                  showBack: constraints.maxWidth < wideLayoutBreakpoint,
+                  showBack: constraints.maxWidth < TRBreakpoints.medium,
                   onBack: () => const WorkspaceHomeRoute().replace(context),
                   onStarted: (selection, session) =>
                       _goSession(context, selection, session.id),
@@ -1062,9 +1046,9 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                   selection: widget.selection!,
                   requestedAgentId: widget.requestedAgentId,
                   requestedTerminalId: widget.requestedTerminalId,
-                  showBack: constraints.maxWidth < wideLayoutBreakpoint,
+                  showBack: constraints.maxWidth < TRBreakpoints.medium,
                 );
-          if (constraints.maxWidth < wideLayoutBreakpoint) {
+          if (constraints.maxWidth < TRBreakpoints.medium) {
             return widget.selection == null && !widget.compose
                 ? sidebar
                 : detail;

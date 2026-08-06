@@ -1965,7 +1965,7 @@ void main() {
 
       expect(find.text('Agents'), findsOneWidget);
       expect(find.text('Coder'), findsWidgets);
-      final prompt = _textInput('System prompt (Markdown)');
+      final prompt = _textInput('시스템 프롬프트 (Markdown)');
       await tester.enterText(prompt, 'Always run focused tests.');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
@@ -2106,10 +2106,10 @@ void main() {
     addTearDown(router.dispose);
 
     expect(find.text('Agents'), findsOneWidget);
-    expect(_textField('System prompt (Markdown)'), findsNothing);
+    expect(_textField('시스템 프롬프트 (Markdown)'), findsNothing);
     await tester.tap(find.text('Coder').first);
     await tester.pumpAndSettle();
-    expect(_textField('System prompt (Markdown)'), findsOneWidget);
+    expect(_textField('시스템 프롬프트 (Markdown)'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('agent-list-button')));
     await tester.pumpAndSettle();
     expect(find.text('Agents'), findsOneWidget);
@@ -2181,7 +2181,7 @@ void main() {
       await tester.tap(find.text('고정 provider/model'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        _textInput('Provider connection ID'),
+        _textInput('Provider 연결 ID'),
         'openai',
       );
       await tester.enterText(

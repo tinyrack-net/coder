@@ -212,10 +212,19 @@ void main() {
       await tester.pumpAndSettle();
 
       // Both lists are collapsed so a server with hundreds of resources
-      // cannot push the error and diagnostics blocks off screen.
-      await tester.tap(
-        find.byKey(const ValueKey<String>('mcp-server-resources')),
+      // cannot push the error and diagnostics blocks off screen. The editor
+      // carries section headings above them, so reaching either one scrolls
+      // first, exactly as the templates list below does.
+      final resources = find.byKey(
+        const ValueKey<String>('mcp-server-resources'),
       );
+      await tester.scrollUntilVisible(
+        resources,
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(resources);
       await tester.pumpAndSettle();
       expect(
         find.byKey(
@@ -257,9 +266,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('mcp-server-resources')),
+      final resources = find.byKey(
+        const ValueKey<String>('mcp-server-resources'),
       );
+      await tester.scrollUntilVisible(
+        resources,
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(resources);
       await tester.pumpAndSettle();
       expect(find.text('게시된 리소스가 없습니다.'), findsOneWidget);
     },

@@ -1,8 +1,8 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/coder_icons.dart';
-import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,7 +44,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       data: (value) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < 760;
+            final compact = constraints.maxWidth < TRBreakpoints.medium;
             if (!compact &&
                 !value.definitions.any(
                   (definition) => definition.id == _selectedId,
@@ -73,7 +73,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             if (compact) return list;
             return Row(
               children: <Widget>[
-                SizedBox(width: 280, child: list),
+                SizedBox(width: TRMeasurements.paneMd, child: list),
                 const TRSeparator(
                   orientation: TRSeparatorOrientation.vertical,
                   variant: TRSeparatorVariant.muted,
@@ -159,25 +159,24 @@ class _AgentDefinitionList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        CoderListRow(
-          title: TRText.inherit(l10n.agentSettingsHeading),
-          subtitle: TRText.inherit(
-            l10n.agentSettingsCount(state.definitions.length),
-          ),
-          trailing: TRIconButton(
-            key: const ValueKey('agent-add-button'),
-            appearance: TRAppearance.ghost,
-            label: l10n.agentSettingsAdd,
-            onPressed: onCreate,
-            icon: const Icon(CoderIcons.add),
-          ),
+        SettingsPaneHeader.list(
+          title: l10n.agentSettingsHeading,
+          subtitle: l10n.agentSettingsCount(state.definitions.length),
+          actions: <Widget>[
+            TRIconButton(
+              key: const ValueKey('agent-add-button'),
+              appearance: TRAppearance.ghost,
+              label: l10n.agentSettingsAdd,
+              onPressed: onCreate,
+              icon: const Icon(CoderIcons.add),
+            ),
+          ],
         ),
-        const TRSeparator(),
         Expanded(
           child: ListView(
             children: <Widget>[
               for (final definition in state.definitions)
-                CoderListRow(
+                SettingsRow(
                   selected: definition.id == selectedId,
                   leading: Icon(
                     definition.mode == AgentMode.primary
@@ -185,12 +184,12 @@ class _AgentDefinitionList extends StatelessWidget {
                         : CoderIcons.branch,
                   ),
                   title: TRText.inherit(definition.name),
-                  subtitle: TRText.inherit(
+                  description: TRText.inherit(
                     definition.isStale
                         ? '${definition.mode.name} · stale'
                         : definition.mode.name,
                   ),
-                  trailing: definition.diagnostics.isEmpty
+                  control: definition.diagnostics.isEmpty
                       ? null
                       : const Icon(CoderIcons.warning),
                   onTap: () => onSelected(definition.id),
@@ -283,7 +282,7 @@ class _AgentEditorState extends State<_AgentEditor> {
     );
     return Column(
       children: <Widget>[
-        CoderListRow(
+        SettingsPaneHeader.detail(
           leading: widget.onBack == null
               ? null
               : TRIconButton(
@@ -293,213 +292,248 @@ class _AgentEditorState extends State<_AgentEditor> {
                   onPressed: widget.onBack,
                   icon: const Icon(CoderIcons.back),
                 ),
-          title: TRText.inherit(definition.name),
-          subtitle: TRText.inherit(definition.sourcePath),
-          trailing: Wrap(
-            children: <Widget>[
+          title: definition.name,
+          subtitle: definition.sourcePath,
+          actions: <Widget>[
+            TRIconButton(
+              key: const ValueKey('agent-copy-path-button'),
+              appearance: TRAppearance.ghost,
+              label: l10n.agentSettingsCopyPath,
+              onPressed: () => Clipboard.setData(
+                ClipboardData(text: definition.sourcePath),
+              ),
+              icon: const Icon(CoderIcons.copy),
+            ),
+            if (definition.isBuiltIn)
               TRIconButton(
-                key: const ValueKey('agent-copy-path-button'),
+                key: const ValueKey('agent-reset-button'),
                 appearance: TRAppearance.ghost,
-                label: l10n.agentSettingsCopyPath,
-                onPressed: () => Clipboard.setData(
-                  ClipboardData(text: definition.sourcePath),
-                ),
-                icon: const Icon(CoderIcons.copy),
+                label: l10n.agentSettingsReset,
+                onPressed: editable ? _reset : null,
+                icon: const Icon(CoderIcons.restore),
+              )
+            else
+              TRIconButton(
+                key: const ValueKey('agent-archive-button'),
+                appearance: TRAppearance.ghost,
+                label: l10n.workspaceArchive,
+                onPressed: editable ? _archive : null,
+                icon: const Icon(CoderIcons.archive),
               ),
-              if (definition.isBuiltIn)
-                TRIconButton(
-                  key: const ValueKey('agent-reset-button'),
-                  appearance: TRAppearance.ghost,
-                  label: l10n.agentSettingsReset,
-                  onPressed: editable ? _reset : null,
-                  icon: const Icon(CoderIcons.restore),
-                )
-              else
-                TRIconButton(
-                  key: const ValueKey('agent-archive-button'),
-                  appearance: TRAppearance.ghost,
-                  label: l10n.workspaceArchive,
-                  onPressed: editable ? _archive : null,
-                  icon: const Icon(CoderIcons.archive),
-                ),
-              TRButton(
-                intent: TRIntent.primary,
-                onPressed: editable ? () => _save(force: false) : null,
-                child: TRText.inherit(
-                  _saving ? l10n.commonSaving : l10n.commonSave,
-                ),
+            TRButton(
+              intent: TRIntent.primary,
+              onPressed: editable ? () => _save(force: false) : null,
+              child: TRText.inherit(
+                _saving ? l10n.commonSaving : l10n.commonSave,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        const TRSeparator(),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(TRSpacing.extraLarge),
+          child: SettingsScaffold(
             children: <Widget>[
-              if (definition.diagnostics.isNotEmpty)
-                ...definition.diagnostics.map(
-                  (diagnostic) => TRCard(
-                    padding: TRCardPadding.none,
-                    variant: TRCardVariant.elevated,
-                    child: CoderListRow(
-                      leading: const Icon(CoderIcons.warning),
-                      title: TRText.inherit(diagnostic.code),
-                      subtitle: TRText.inherit(diagnostic.message),
-                    ),
+              SettingsSection.form(
+                title: l10n.agentSettingsDefinitionHeading,
+                banner: definition.diagnostics.isEmpty
+                    ? null
+                    : TRAlert(
+                        title: TRText.inherit(
+                          definition.diagnostics.first.code,
+                        ),
+                        description: TRText.inherit(
+                          definition.diagnostics
+                              .map((diagnostic) => diagnostic.message)
+                              .join('\n'),
+                        ),
+                        icon: const Icon(CoderIcons.warning),
+                        variant: TRStatusVariant.warning,
+                      ),
+                children: <Widget>[
+                  TRTextField(
+                    controller: _name,
+                    enabled: editable,
+                    label: l10n.commonName,
                   ),
-                ),
-              TRTextField(
-                controller: _name,
-                enabled: editable,
-                label: l10n.commonName,
-              ),
-              const SizedBox(height: TRSpacing.medium),
-              TRTextField(
-                controller: _description,
-                enabled: editable,
-                label: l10n.commonDescription,
-              ),
-              const SizedBox(height: TRSpacing.medium),
-              TRTextField(
-                initialValue: definition.mode.name,
-                enabled: false,
-                label: l10n.commonKind,
-              ),
-              CoderSwitchRow(
-                value: _promptEnabled,
-                onChanged: editable
-                    ? (value) => setState(() => _promptEnabled = value)
-                    : null,
-                title: TRText.inherit(l10n.agentSettingsCustomPrompt),
-              ),
-              TRTextField(
-                controller: _prompt,
-                enabled: editable,
-                minLines: 8,
-                maxLines: 18,
-                label: 'System prompt (Markdown)',
-              ),
-              const SizedBox(height: TRSpacing.extraLarge),
-              const TRText('Model', variant: TRTextVariant.headingMd),
-              TRRadioGroup(
-                value: _modelSource.name,
-                disabled: !editable,
-                onValueChange: (value) => setState(
-                  () => _modelSource = AgentModelSource.values.byName(value),
-                ),
-                children: [
-                  TRRadio(
-                    value: AgentModelSource.session.name,
-                    label: TRText.inherit(l10n.agentSettingsSessionModel),
+                  TRTextField(
+                    controller: _description,
+                    enabled: editable,
+                    label: l10n.commonDescription,
                   ),
-                  TRRadio(
-                    value: AgentModelSource.fixed.name,
-                    label: TRText.inherit(l10n.agentSettingsPinnedModel),
+                  TRTextField(
+                    initialValue: definition.mode.name,
+                    enabled: false,
+                    label: l10n.commonKind,
                   ),
                 ],
               ),
-              if (_modelSource == AgentModelSource.fixed) ...<Widget>[
-                TRTextField(
-                  controller: _providerConnectionId,
-                  enabled: editable,
-                  label: 'Provider connection ID',
-                ),
-                const SizedBox(height: TRSpacing.medium),
-                TRTextField(
-                  controller: _modelId,
-                  enabled: editable,
-                  label: 'Model ID',
-                ),
-              ],
-              const SizedBox(height: TRSpacing.medium),
-              TRSelectFormField<String>(
-                initialValue: _reasoningEffort,
-                label: 'Reasoning',
-                items: const <String>['low', 'medium', 'high']
-                    .map(
-                      (value) => TRSelectItem<String>(
-                        value: value,
-                        label: value,
-                      ),
-                    )
-                    .toList(growable: false),
-                onValueChange: editable
-                    ? (value) => setState(() => _reasoningEffort = value!)
-                    : null,
-              ),
-              const SizedBox(height: TRSpacing.medium),
-              TRSelectFormField<PermissionMode>(
-                initialValue: _permissionMode,
-                label: 'Permission',
-                items: PermissionMode.values
-                    .map(
-                      (value) => TRSelectItem<PermissionMode>(
-                        value: value,
-                        label: value.name,
-                      ),
-                    )
-                    .toList(growable: false),
-                onValueChange: editable
-                    ? (value) => setState(() => _permissionMode = value!)
-                    : null,
-              ),
-              const SizedBox(height: TRSpacing.extraLarge),
-              TRText(
-                l10n.agentSettingsBuiltinTools,
-                variant: TRTextVariant.headingMd,
-              ),
-              for (final tool in _sortedTools)
-                CoderCheckboxRow(
-                  key: ValueKey<String>('agent-tool-tile-${tool.id}'),
-                  value: tool.alwaysOn || _tools.contains(tool.id),
-                  // An always-on tool has no toggle to offer, so the tile is
-                  // checked and inert rather than lying about being editable.
-                  onChanged: editable && !tool.alwaysOn
-                      ? (enabled) => setState(() {
-                          enabled!
-                              ? _tools.add(tool.id)
-                              : _tools.remove(tool.id);
-                        })
-                      : null,
-                  secondary: tool.alwaysOn
-                      ? Icon(
-                          CoderIcons.lock,
-                          key: ValueKey<String>('agent-tool-lock-${tool.id}'),
-                        )
-                      : null,
-                  title: TRText.inherit(tool.name),
-                  subtitle: TRText.inherit(
-                    tool.alwaysOn
-                        ? '${tool.description} · '
-                              '${l10n.agentSettingsToolAlwaysOn}'
-                        : tool.description,
-                  ),
-                ),
-              if (definition.mode == AgentMode.primary) ...<Widget>[
-                const SizedBox(height: TRSpacing.extraLarge),
-                TRText(
-                  l10n.agentSettingsSubagents,
-                  variant: TRTextVariant.headingMd,
-                ),
-                if (subagents.isEmpty)
-                  CoderListRow(
-                    title: TRText.inherit(l10n.agentSettingsNoSubagents),
-                  ),
-                for (final subagent in subagents)
-                  CoderCheckboxRow(
-                    value: _callableAgents.contains(subagent.id),
+              SettingsSection.form(
+                title: l10n.agentSettingsPromptHeading,
+                children: <Widget>[
+                  // Whether there is a custom prompt and what it says are one
+                  // decision, so they share a heading. The toggle goes flush
+                  // to line up with the editor rather than sitting in a card
+                  // that steps in from it.
+                  CoderSwitchRow(
+                    flush: true,
+                    value: _promptEnabled,
                     onChanged: editable
-                        ? (enabled) => setState(() {
-                            enabled!
-                                ? _callableAgents.add(subagent.id)
-                                : _callableAgents.remove(subagent.id);
-                          })
+                        ? (value) => setState(() => _promptEnabled = value)
                         : null,
-                    title: TRText.inherit(subagent.name),
-                    subtitle: TRText.inherit(subagent.description),
+                    title: TRText.inherit(l10n.agentSettingsCustomPrompt),
                   ),
-              ],
+                  TRTextField(
+                    controller: _prompt,
+                    enabled: editable,
+                    minLines: 8,
+                    maxLines: 18,
+                    label: l10n.agentSettingsSystemPrompt,
+                  ),
+                ],
+              ),
+              SettingsSection.form(
+                title: l10n.agentSettingsModelHeading,
+                children: <Widget>[
+                  TRRadioGroup(
+                    value: _modelSource.name,
+                    disabled: !editable,
+                    onValueChange: (value) => setState(
+                      () =>
+                          _modelSource = AgentModelSource.values.byName(value),
+                    ),
+                    children: [
+                      TRRadio(
+                        value: AgentModelSource.session.name,
+                        label: TRText.inherit(l10n.agentSettingsSessionModel),
+                      ),
+                      TRRadio(
+                        value: AgentModelSource.fixed.name,
+                        label: TRText.inherit(l10n.agentSettingsPinnedModel),
+                      ),
+                    ],
+                  ),
+                  if (_modelSource == AgentModelSource.fixed) ...<Widget>[
+                    TRTextField(
+                      controller: _providerConnectionId,
+                      enabled: editable,
+                      label: l10n.agentSettingsProviderConnectionId,
+                    ),
+                    TRTextField(
+                      controller: _modelId,
+                      enabled: editable,
+                      label: l10n.agentSettingsModelId,
+                    ),
+                  ],
+                ],
+              ),
+              SettingsSection(
+                title: l10n.agentSettingsBehaviourHeading,
+                children: <Widget>[
+                  SettingsRow(
+                    title: TRText.inherit(l10n.agentSettingsReasoning),
+                    control: Semantics(
+                      label: l10n.agentSettingsReasoning,
+                      container: true,
+                      child: TRSelect<String>.controlled(
+                        value: _reasoningEffort,
+                        enabled: editable,
+                        items: const <String>['low', 'medium', 'high']
+                            .map(
+                              (value) => TRSelectItem<String>(
+                                value: value,
+                                label: value,
+                              ),
+                            )
+                            .toList(growable: false),
+                        onValueChange: editable
+                            ? (value) =>
+                                  setState(() => _reasoningEffort = value!)
+                            : null,
+                      ),
+                    ),
+                  ),
+                  SettingsRow(
+                    title: TRText.inherit(l10n.agentSettingsPermission),
+                    control: Semantics(
+                      label: l10n.agentSettingsPermission,
+                      container: true,
+                      child: TRSelect<PermissionMode>.controlled(
+                        value: _permissionMode,
+                        enabled: editable,
+                        items: PermissionMode.values
+                            .map(
+                              (value) => TRSelectItem<PermissionMode>(
+                                value: value,
+                                label: value.name,
+                              ),
+                            )
+                            .toList(growable: false),
+                        onValueChange: editable
+                            ? (value) =>
+                                  setState(() => _permissionMode = value!)
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SettingsSection(
+                title: l10n.agentSettingsBuiltinTools,
+                children: <Widget>[
+                  for (final tool in _sortedTools)
+                    CoderCheckboxRow(
+                      key: ValueKey<String>('agent-tool-tile-${tool.id}'),
+                      value: tool.alwaysOn || _tools.contains(tool.id),
+                      // An always-on tool has no toggle to offer, so the tile
+                      // is checked and inert rather than lying about being
+                      // editable.
+                      onChanged: editable && !tool.alwaysOn
+                          ? (enabled) => setState(() {
+                              enabled!
+                                  ? _tools.add(tool.id)
+                                  : _tools.remove(tool.id);
+                            })
+                          : null,
+                      secondary: tool.alwaysOn
+                          ? Icon(
+                              CoderIcons.lock,
+                              key: ValueKey<String>(
+                                'agent-tool-lock-${tool.id}',
+                              ),
+                            )
+                          : null,
+                      title: TRText.inherit(tool.name),
+                      subtitle: TRText.inherit(
+                        tool.alwaysOn
+                            ? '${tool.description} · '
+                                  '${l10n.agentSettingsToolAlwaysOn}'
+                            : tool.description,
+                      ),
+                    ),
+                ],
+              ),
+              if (definition.mode == AgentMode.primary)
+                SettingsSection(
+                  title: l10n.agentSettingsSubagents,
+                  children: <Widget>[
+                    if (subagents.isEmpty)
+                      SettingsRow(
+                        title: TRText.inherit(l10n.agentSettingsNoSubagents),
+                      ),
+                    for (final subagent in subagents)
+                      CoderCheckboxRow(
+                        value: _callableAgents.contains(subagent.id),
+                        onChanged: editable
+                            ? (enabled) => setState(() {
+                                enabled!
+                                    ? _callableAgents.add(subagent.id)
+                                    : _callableAgents.remove(subagent.id);
+                              })
+                            : null,
+                        title: TRText.inherit(subagent.name),
+                        subtitle: TRText.inherit(subagent.description),
+                      ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -653,7 +687,7 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
     return TRAlertDialog(
       title: TRText.inherit(l10n.agentSettingsAddTitle),
       content: SizedBox(
-        width: 420,
+        width: TRMeasurements.overlayWidthMd,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[

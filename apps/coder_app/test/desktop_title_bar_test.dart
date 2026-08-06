@@ -147,7 +147,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('DISPLAY LANGUAGE'), findsOneWidget);
+      expect(find.text('Display language'), findsOneWidget);
 
       await tester.tap(find.text('Help'));
       await tester.pumpAndSettle();

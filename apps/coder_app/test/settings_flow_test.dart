@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:coder_app/src/settings_page.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -455,7 +455,7 @@ void main() {
       expect(find.textContaining('조회만 할 수 있습니다'), findsNothing);
       expect(
         tester
-            .widget<CoderListRow>(
+            .widget<SettingsRow>(
               find.byKey(const ValueKey('provider-add-deepseek')),
             )
             .onTap,

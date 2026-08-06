@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/coder_icons.dart';
-import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +62,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         }
         return LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < 760;
+            final compact = constraints.maxWidth < TRBreakpoints.medium;
             if (!compact &&
                 !projects.any((project) => project.id == _selectedId)) {
               _selectedId = projects.first.id;
@@ -86,7 +86,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
             if (compact) return list;
             return Row(
               children: <Widget>[
-                SizedBox(width: 280, child: list),
+                SizedBox(width: TRMeasurements.paneMd, child: list),
                 const TRSeparator(
                   orientation: TRSeparatorOrientation.vertical,
                   variant: TRSeparatorVariant.muted,
@@ -140,18 +140,15 @@ class _ProjectList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        CoderListRow(
-          title: TRText.inherit(l10n.projectSettingsHeading),
-          subtitle: TRText.inherit(
-            l10n.projectSettingsCount(projects.length),
-          ),
+        SettingsPaneHeader.list(
+          title: l10n.projectSettingsHeading,
+          subtitle: l10n.projectSettingsCount(projects.length),
         ),
-        const TRSeparator(),
         Expanded(
           child: ListView(
             children: <Widget>[
               for (final project in projects)
-                CoderListRow(
+                SettingsRow(
                   selected: project.id == selectedId,
                   leading: Icon(
                     project.kind == WorkspaceKind.git
@@ -159,9 +156,9 @@ class _ProjectList extends StatelessWidget {
                         : CoderIcons.folder,
                   ),
                   title: TRText.inherit(project.name),
-                  // The row already caps and ellipsizes its subtitle.
-                  subtitle: TRText.inherit(project.rootPath),
-                  trailing: const Icon(CoderIcons.chevronRight),
+                  // The row already caps and ellipsizes its description.
+                  description: TRText.inherit(project.rootPath),
+                  control: const Icon(CoderIcons.chevronRight),
                   onTap: () => onSelected(project.id),
                 ),
             ],
@@ -238,7 +235,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
         }
         return Column(
           children: <Widget>[
-            CoderListRow(
+            SettingsPaneHeader.detail(
               leading: widget.onBack == null
                   ? null
                   : TRIconButton(
@@ -247,133 +244,108 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                       onPressed: widget.onBack,
                       icon: const Icon(CoderIcons.back),
                     ),
-              title: TRText.inherit(widget.workspace.name),
-              subtitle: TRText.inherit(value.sourcePath),
-              trailing: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  TRIconButton(
-                    appearance: TRAppearance.ghost,
-                    label: l10n.projectSettingsCopyPath,
-                    onPressed: () => Clipboard.setData(
-                      ClipboardData(text: value.sourcePath),
-                    ),
-                    icon: const Icon(CoderIcons.copy),
+              title: widget.workspace.name,
+              subtitle: value.sourcePath,
+              actions: <Widget>[
+                TRIconButton(
+                  appearance: TRAppearance.ghost,
+                  label: l10n.projectSettingsCopyPath,
+                  onPressed: () => Clipboard.setData(
+                    ClipboardData(text: value.sourcePath),
                   ),
-                  TRButton(
-                    intent: TRIntent.primary,
-                    onPressed: _saving ? null : _save,
-                    child: TRText.inherit(
-                      _saving ? l10n.commonSaving : l10n.commonSave,
-                    ),
+                  icon: const Icon(CoderIcons.copy),
+                ),
+                const SizedBox(width: TRSpacing.small),
+                TRButton(
+                  intent: TRIntent.primary,
+                  onPressed: _saving ? null : _save,
+                  child: TRText.inherit(
+                    _saving ? l10n.commonSaving : l10n.commonSave,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const TRSeparator(),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(TRSpacing.extraLarge),
+              child: SettingsScaffold(
                 children: <Widget>[
-                  if (_saved) ...[
-                    TRAlert(
-                      title: TRText.inherit(l10n.commonSaved),
-                      variant: TRStatusVariant.success,
-                      icon: const Icon(CoderIcons.success),
-                    ),
-                    const SizedBox(height: TRSpacing.large),
-                  ],
-                  if (_error case final error?)
-                    TRCard(
-                      padding: TRCardPadding.none,
-                      variant: TRCardVariant.elevated,
-                      child: CoderListRow(
-                        leading: const Icon(CoderIcons.error),
+                  SettingsSection.form(
+                    title: l10n.projectSettingsHookHeading,
+                    description: l10n.projectSettingsHookHelp,
+                    banner: switch ((_saved, _error)) {
+                      (_, final String error) => TRAlert(
                         title: TRText.inherit(error),
+                        variant: TRStatusVariant.danger,
+                        icon: const Icon(CoderIcons.error),
                       ),
-                    ),
-                  const TRText(
-                    'Worktree lifecycle hooks',
-                    variant: TRTextVariant.headingMd,
+                      (true, _) => TRAlert(
+                        title: TRText.inherit(l10n.commonSaved),
+                        variant: TRStatusVariant.success,
+                        icon: const Icon(CoderIcons.success),
+                      ),
+                      _ => null,
+                    },
+                    children: <Widget>[
+                      TRTextField(
+                        controller: _setup,
+                        enabled: !_saving,
+                        minLines: 3,
+                        maxLines: 8,
+                        label: l10n.projectSettingsSetup,
+                        placeholder: 'npm install',
+                      ),
+                      TRTextField(
+                        controller: _teardown,
+                        enabled: !_saving,
+                        minLines: 3,
+                        maxLines: 8,
+                        label: l10n.projectSettingsTeardown,
+                        placeholder: 'docker compose down',
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: TRSpacing.extraSmall),
-                  TRText(
-                    l10n.projectSettingsHookHelp,
-                    variant: TRTextVariant.bodySm,
+                  SettingsSection.form(
+                    title: l10n.projectSettingsShellHeading,
+                    description: l10n.projectSettingsShellHelp,
+                    children: <Widget>[
+                      TRTextField(
+                        key: const ValueKey<String>('project-shell-executable'),
+                        controller: _shellExecutable,
+                        enabled: !_saving,
+                        label: l10n.projectSettingsShellExecutable,
+                        placeholder: '/bin/zsh',
+                      ),
+                      TRTextField(
+                        key: const ValueKey<String>('project-shell-arguments'),
+                        controller: _shellArguments,
+                        enabled: !_saving,
+                        minLines: 2,
+                        maxLines: 4,
+                        label: l10n.projectSettingsShellArguments,
+                        placeholder: '-l',
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: TRSpacing.large),
-                  TRTextField(
-                    controller: _setup,
-                    enabled: !_saving,
-                    minLines: 3,
-                    maxLines: 8,
-                    label: l10n.projectSettingsSetup,
-                    placeholder: 'npm install',
-                  ),
-                  const SizedBox(height: TRSpacing.large),
-                  TRTextField(
-                    controller: _teardown,
-                    enabled: !_saving,
-                    minLines: 3,
-                    maxLines: 8,
-                    label: l10n.projectSettingsTeardown,
-                    placeholder: 'docker compose down',
-                  ),
-                  const SizedBox(height: TRSpacing.extraLarge),
-                  TRText(
-                    l10n.projectSettingsShellHeading,
-                    variant: TRTextVariant.headingMd,
-                  ),
-                  const SizedBox(height: TRSpacing.extraSmall),
-                  TRText(
-                    l10n.projectSettingsShellHelp,
-                    variant: TRTextVariant.bodySm,
-                  ),
-                  const SizedBox(height: TRSpacing.large),
-                  TRTextField(
-                    key: const ValueKey<String>('project-shell-executable'),
-                    controller: _shellExecutable,
-                    enabled: !_saving,
-                    label: l10n.projectSettingsShellExecutable,
-                    placeholder: '/bin/zsh',
-                  ),
-                  const SizedBox(height: TRSpacing.large),
-                  TRTextField(
-                    key: const ValueKey<String>('project-shell-arguments'),
-                    controller: _shellArguments,
-                    enabled: !_saving,
-                    minLines: 2,
-                    maxLines: 4,
-                    label: l10n.projectSettingsShellArguments,
-                    placeholder: '-l',
-                  ),
-                  const SizedBox(height: TRSpacing.extraLarge),
-                  TRText(
-                    l10n.projectSettingsHostShellHeading,
-                    variant: TRTextVariant.headingMd,
-                  ),
-                  const SizedBox(height: TRSpacing.extraSmall),
-                  TRText(
-                    l10n.projectSettingsHostShellHelp,
-                    variant: TRTextVariant.bodySm,
-                  ),
-                  const SizedBox(height: TRSpacing.large),
-                  TRTextField(
-                    key: const ValueKey<String>('host-shell-executable'),
-                    controller: _hostShellExecutable,
-                    enabled: !_saving,
-                    label: l10n.projectSettingsShellExecutable,
-                    placeholder: '/bin/zsh',
-                  ),
-                  const SizedBox(height: TRSpacing.large),
-                  TRTextField(
-                    key: const ValueKey<String>('host-shell-arguments'),
-                    controller: _hostShellArguments,
-                    enabled: !_saving,
-                    minLines: 2,
-                    maxLines: 4,
-                    label: l10n.projectSettingsShellArguments,
-                    placeholder: '-l',
+                  SettingsSection.form(
+                    title: l10n.projectSettingsHostShellHeading,
+                    description: l10n.projectSettingsHostShellHelp,
+                    children: <Widget>[
+                      TRTextField(
+                        key: const ValueKey<String>('host-shell-executable'),
+                        controller: _hostShellExecutable,
+                        enabled: !_saving,
+                        label: l10n.projectSettingsShellExecutable,
+                        placeholder: '/bin/zsh',
+                      ),
+                      TRTextField(
+                        key: const ValueKey<String>('host-shell-arguments'),
+                        controller: _hostShellArguments,
+                        enabled: !_saving,
+                        minLines: 2,
+                        maxLines: 4,
+                        label: l10n.projectSettingsShellArguments,
+                        placeholder: '-l',
+                      ),
+                    ],
                   ),
                 ],
               ),
