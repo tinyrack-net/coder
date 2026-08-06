@@ -10,6 +10,7 @@ environment:
 dependencies:
   coder_protocol: ^0.1.0
   file: ^7.0.1
+  glob: ^2.1.3
   path: ^1.9.1
   platform: ^3.1.6
 

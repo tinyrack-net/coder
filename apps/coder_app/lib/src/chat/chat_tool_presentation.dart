@@ -195,7 +195,11 @@ ChatToolPresentation describeToolActivity(
   AppLocalizations l10n,
   ChatToolActivity activity,
 ) {
-  final spec = _specs[activity.toolName] ?? _genericSpec;
+  final spec =
+      _specs[activity.toolName] ??
+      // MCP tool names are `mcp__server__tool`, made up at runtime, so they
+      // cannot sit in a fixed map the way the built-ins do.
+      (activity.toolName.startsWith('mcp__') ? _mcpSpec : _genericSpec);
   final title = spec.title(l10n, activity);
   final argumentBody = spec.argumentBody(activity);
   switch (activity.status) {
@@ -375,15 +379,109 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
       return path == null ? 'Search($query)' : 'Search($query in $path)';
     },
     result: (l10n, activity, output) {
-      if (output is! ChatToolJsonArray) return _genericResult(l10n, output);
-      if (output.value.isEmpty) return l10n.toolNoMatches;
-      final paths = output.value
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final matches = output.value['matches'];
+      if (matches is! List || matches.isEmpty) return l10n.toolNoMatches;
+      final paths = matches
           .whereType<Map<String, dynamic>>()
           .map((match) => match['path'])
           .whereType<String>()
           .toSet();
-      return l10n.toolMatches(output.value.length, paths.length);
+      // The cap changes what the count means: a truncated run says "at least",
+      // not "exactly".
+      return output.value['truncated'] == true
+          ? l10n.toolMatchesTruncated(matches.length, paths.length)
+          : l10n.toolMatches(matches.length, paths.length);
     },
+    isFailure: (output) =>
+        output is ChatToolJsonObject && output.value['error'] != null,
+  ),
+  'glob': _ToolSpec(
+    glyph: ChatToolGlyph.search,
+    title: (l10n, activity) {
+      final pattern = _truncate(_stringArg(activity, 'pattern') ?? '', 40);
+      final path = _stringArg(activity, 'path');
+      return path == null ? 'Glob($pattern)' : 'Glob($pattern in $path)';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final paths = output.value['paths'];
+      if (paths is! List || paths.isEmpty) return l10n.toolNoPaths;
+      return output.value['truncated'] == true
+          ? l10n.toolPathsTruncated(paths.length)
+          : l10n.toolPaths(paths.length);
+    },
+    isFailure: (output) =>
+        output is ChatToolJsonObject && output.value['error'] != null,
+  ),
+  'attach_file': _ToolSpec(
+    glyph: ChatToolGlyph.read,
+    title: (l10n, activity) =>
+        'Attach(${_truncate(_stringArg(activity, 'path') ?? '?', 60)})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final name = output.value['fileName'];
+      return name is String
+          ? l10n.toolAttached(name)
+          : _genericResult(l10n, output);
+    },
+  ),
+  'read_attachment': _ToolSpec(
+    glyph: ChatToolGlyph.read,
+    title: (l10n, activity) =>
+        'Attachment(${_truncate(_stringArg(activity, 'id') ?? '?', 40)})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final name = output.value['fileName'];
+      return name is String
+          ? l10n.toolAttached(name)
+          : _genericResult(l10n, output);
+    },
+  ),
+  'list_skills': _ToolSpec(
+    glyph: ChatToolGlyph.list,
+    title: (l10n, activity) => 'Skills()',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final skills = output.value['skills'];
+      if (skills is! List || skills.isEmpty) return l10n.toolNoMatches;
+      return output.value['nextCursor'] != null
+          ? l10n.toolSkillsTruncated(skills.length)
+          : l10n.toolSkills(skills.length);
+    },
+    isFailure: _hasErrorKey,
+  ),
+  'skill': _ToolSpec(
+    glyph: ChatToolGlyph.read,
+    title: (l10n, activity) {
+      final name = _stringArg(activity, 'name') ?? '?';
+      final resource = _stringArg(activity, 'resource');
+      // The bundled file matters as much as the skill when one is named.
+      return resource == null || resource.isEmpty
+          ? 'Skill($name)'
+          : 'Skill($name:${_truncate(resource, 40)})';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final name = output.value['name'];
+      return name is String
+          ? l10n.toolSkillLoaded(name)
+          : _genericResult(l10n, output);
+    },
+    body: (activity, output) {
+      if (output is! ChatToolJsonObject) return _plainBody(activity, output);
+      final text = output.value['instructions'] ?? output.value['content'];
+      return text is String && text.isNotEmpty
+          ? ChatToolTextBody(text)
+          : const ChatToolEmptyBody();
+    },
+    isFailure: _hasErrorKey,
   ),
   'apply_patch': _ToolSpec(
     glyph: ChatToolGlyph.edit,
@@ -613,9 +711,15 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
     body: _execBody,
     argumentBody: (activity) {
       final command = _stringArg(activity, 'command');
-      return command == null || command.isEmpty
-          ? const ChatToolEmptyBody()
-          : ChatToolTextBody('\$ $command');
+      if (command == null || command.isEmpty) return const ChatToolEmptyBody();
+      // The directory changes what the command does, so it is shown whenever
+      // it is not simply the workspace root.
+      final workdir = _stringArg(activity, 'workdir');
+      return ChatToolTextBody(
+        workdir == null || workdir.isEmpty
+            ? '\$ $command'
+            : '$workdir\n\$ $command',
+      );
     },
     isFailure: _execIsFailure,
   ),
@@ -664,6 +768,31 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
     },
   ),
 };
+
+/// Renders any `mcp__server__tool` call.
+///
+/// The server and tool halves are the only thing known about it, so the title
+/// says which server is being asked and the body falls back to whatever text
+/// the server returned.
+final _ToolSpec _mcpSpec = _ToolSpec(
+  glyph: ChatToolGlyph.generic,
+  argumentBody: _prettyArgumentBody,
+  title: (l10n, activity) {
+    final parts = activity.toolName.split('__');
+    return parts.length >= 3
+        ? '${parts[1]}.${parts.sublist(2).join('__')}'
+        : activity.toolName;
+  },
+  result: (l10n, activity, output) {
+    // A server may answer with structured data or with plain text, and the
+    // error key is the one shape this side knows how to read.
+    if (output is ChatToolJsonObject && output.value['error'] is String) {
+      return output.value['error']! as String;
+    }
+    return _genericResult(l10n, output);
+  },
+  isFailure: _hasErrorKey,
+);
 
 final _ToolSpec _genericSpec = _ToolSpec(
   glyph: ChatToolGlyph.generic,

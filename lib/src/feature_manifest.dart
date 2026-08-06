@@ -575,8 +575,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'tool.exec.session',
     description:
-        'Runs and drives interactive pseudo-terminal sessions inside a turn, '
-        'with scoped session lifetime and per-session approval.',
+        'Runs and drives command sessions inside a turn, on plain pipes or a '
+        'pseudo-terminal, in a chosen workspace directory, with scoped session '
+        'lifetime and per-session approval.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.verticalSlice,
@@ -624,6 +625,17 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'tool.search',
+    description:
+        'Searches workspace file contents by literal or regular expression and '
+        'finds files by glob, honouring the same ignore rules as git.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
       FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
     },

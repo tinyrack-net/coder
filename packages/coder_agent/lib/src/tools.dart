@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
+import 'package:coder_agent/src/gitignore.dart';
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/workspace_walk.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
+import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 import 'package:platform/platform.dart';
 
@@ -173,7 +176,9 @@ class ListDirectoryTool extends AgentTool {
         entries
             .map(
               (entry) => <String, dynamic>{
-                'name': p.basename(entry.path),
+                // The injected filesystem's own context, not the host's, is
+                // what knows which separator these paths use.
+                'name': _fileSystem.path.basename(entry.path),
                 'type': switch (entry) {
                   file_api.Directory() => 'directory',
                   file_api.File() => 'file',
@@ -344,39 +349,90 @@ class ReadAttachmentTool extends AgentTool {
   }
 }
 
+/// Longest match line reported before it is cut.
+const int maxSearchLineLength = 500;
+
+/// Results one search returns unless the caller asks for fewer.
+const int defaultSearchResults = 200;
+
+/// Most lines of surrounding context a match may carry on each side.
+const int maxSearchContextLines = 5;
+
+/// Largest file the search will read.
+///
+/// Reporting context lines means holding a whole file at once, so a file this
+/// far past anything hand-written is skipped rather than paged into memory. It
+/// is almost certainly data or a build artefact.
+const int maxSearchFileBytes = 8 * 1024 * 1024;
+
 /// SearchTextTool defines a public contract.
 class SearchTextTool extends AgentTool {
   /// Creates a [SearchTextTool].
   SearchTextTool({
     this._fileSystem = const LocalFileSystem(),
     this._platform = const LocalPlatform(),
+    this._gitignoreEnvironment = const GitignoreEnvironment.none(),
   });
 
   final file_api.FileSystem _fileSystem;
   final Platform _platform;
 
-  static const Set<String> _ignored = <String>{
-    '.git',
-    '.dart_tool',
-    'build',
-    'node_modules',
-  };
+  /// Where user-level git configuration lives.
+  ///
+  /// Empty by default so nothing reads the running user's home unless a
+  /// composition root deliberately says to.
+  final GitignoreEnvironment _gitignoreEnvironment;
 
   @override
   String get name => 'search_text';
   @override
-  String get description => 'Search workspace text files for a literal string.';
+  String get description =>
+      'Search workspace text file contents. Matches a literal string by '
+      'default, or a regular expression when regex is true. Files git ignores '
+      'are skipped unless include_ignored is set. Use glob to search by file '
+      'name instead.';
   @override
   ToolRisk get risk => ToolRisk.read;
   @override
   Map<String, dynamic> get strictJsonSchema =>
       _strictObject(<String, Map<String, dynamic>>{
-        'query': <String, dynamic>{'type': 'string'},
+        'query': <String, dynamic>{
+          'type': 'string',
+          'description': 'Text to find, or a regular expression when regex.',
+        },
         'path': <String, dynamic>{
           'type': <String>['string', 'null'],
+          'description':
+              'Directory to search, relative to the workspace root. Null '
+              'searches the whole workspace.',
+        },
+        'regex': <String, dynamic>{
+          'type': <String>['boolean', 'null'],
+          'description':
+              'Whether query is a regular expression. Null and false treat it '
+              'as a literal string.',
+        },
+        'case_sensitive': <String, dynamic>{
+          'type': <String>['boolean', 'null'],
+          'description':
+              'Whether case matters. Null and true match case exactly.',
+        },
+        'context_lines': <String, dynamic>{
+          'type': <String>['integer', 'null'],
+          'description':
+              'Lines of surrounding context on each side of a match. Null '
+              'returns none; values are clamped to $maxSearchContextLines.',
+        },
+        'include_ignored': <String, dynamic>{
+          'type': <String>['boolean', 'null'],
+          'description':
+              'Whether to search files git ignores, such as build output and '
+              'generated code. Null and false skip them.',
         },
         'max_results': <String, dynamic>{
           'type': <String>['integer', 'null'],
+          'description':
+              'Most matches to return. Null uses $defaultSearchResults.',
         },
       });
 
@@ -387,49 +443,239 @@ class SearchTextTool extends AgentTool {
   ) async {
     final query = arguments['query'] as String;
     if (query.isEmpty) throw const FormatException('query must not be empty.');
-    final guard = WorkspacePathGuard(
+    final caseSensitive = arguments['case_sensitive'] != false;
+    final RegExp? pattern;
+    if (arguments['regex'] == true) {
+      try {
+        pattern = RegExp(query, caseSensitive: caseSensitive);
+      } on FormatException catch (error) {
+        // A bad expression is something the model can fix on the next call, so
+        // it is reported as tool output rather than failing the turn.
+        return ToolResult(
+          output: jsonEncode(<String, dynamic>{
+            'error': 'query is not a valid regular expression.',
+            'detail': error.message,
+          }),
+          isError: true,
+        );
+      }
+    } else {
+      pattern = null;
+    }
+
+    final root = WorkspacePathGuard(
       context.workspaceRoot,
       fileSystem: _fileSystem,
       platform: _platform,
+    ).resolveExisting((arguments['path'] as String?) ?? '.');
+    final maxResults =
+        (arguments['max_results'] as int?) ?? defaultSearchResults;
+    final contextLines = ((arguments['context_lines'] as int?) ?? 0).clamp(
+      0,
+      maxSearchContextLines,
     );
-    final root = guard.resolveExisting((arguments['path'] as String?) ?? '.');
-    final maxResults = (arguments['max_results'] as int?) ?? 200;
+    final needle = caseSensitive ? query : query.toLowerCase();
+
     final matches = <Map<String, dynamic>>[];
-    await for (final entity
-        in _fileSystem
-            .directory(root)
-            .list(recursive: true, followLinks: false)) {
-      context.cancellation.throwIfCancelled();
-      if (entity is! file_api.File ||
-          _ignored.any((name) => p.split(entity.path).contains(name))) {
-        continue;
-      }
+    var filesSearched = 0;
+    var truncated = false;
+    final walker = WorkspaceWalker(
+      fileSystem: _fileSystem,
+      workspaceRoot: context.workspaceRoot,
+      respectGitignore: arguments['include_ignored'] != true,
+      gitignoreEnvironment: _gitignoreEnvironment,
+    );
+
+    await for (final walked in walker.walk(root, context.cancellation)) {
+      final List<String> lines;
       try {
-        var lineNumber = 0;
-        await for (final line
-            in entity
-                .openRead()
-                .transform(utf8.decoder)
-                .transform(const LineSplitter())) {
-          lineNumber += 1;
-          if (line.contains(query)) {
-            matches.add(<String, dynamic>{
-              'path': p.relative(entity.path, from: context.workspaceRoot),
-              'line': lineNumber,
-              'text': line.length > 500 ? line.substring(0, 500) : line,
-            });
-            if (matches.length >= maxResults) {
-              return ToolResult(output: jsonEncode(matches));
-            }
-          }
-        }
+        if (await walked.file.length() > maxSearchFileBytes) continue;
+        lines = const LineSplitter().convert(await walked.file.readAsString());
       } on FormatException {
+        // Binary and non-UTF-8 files are skipped, not reported.
         continue;
       } on FileSystemException {
         continue;
       }
+      filesSearched += 1;
+      for (var index = 0; index < lines.length; index += 1) {
+        final line = lines[index];
+        final hit = pattern != null
+            ? pattern.hasMatch(line)
+            : (caseSensitive ? line : line.toLowerCase()).contains(needle);
+        if (!hit) continue;
+        matches.add(<String, dynamic>{
+          'path': walked.relativePath,
+          'line': index + 1,
+          'text': _clip(line),
+          if (contextLines > 0) ...<String, dynamic>{
+            'before': _slice(lines, index - contextLines, index),
+            'after': _slice(lines, index + 1, index + 1 + contextLines),
+          },
+        });
+        if (matches.length >= maxResults) {
+          truncated = true;
+          break;
+        }
+      }
+      // The cap ends the whole walk, not just this file.
+      if (truncated) break;
     }
-    return ToolResult(output: jsonEncode(matches));
+
+    return ToolResult(
+      output: truncateToolOutput(
+        jsonEncode(<String, dynamic>{
+          'matches': matches,
+          'matchCount': matches.length,
+          'filesSearched': filesSearched,
+          // Without this the model cannot tell "no more matches" from "the cap
+          // hid the rest", which are opposite conclusions.
+          'truncated': truncated,
+        }),
+      ),
+    );
+  }
+
+  static String _clip(String line) => line.length > maxSearchLineLength
+      ? line.substring(0, maxSearchLineLength)
+      : line;
+
+  static List<String> _slice(List<String> lines, int start, int end) => lines
+      .sublist(start.clamp(0, lines.length), end.clamp(0, lines.length))
+      .map(_clip)
+      .toList(growable: false);
+}
+
+/// GlobTool defines a public contract.
+class GlobTool extends AgentTool {
+  /// Creates a [GlobTool].
+  GlobTool({
+    this._fileSystem = const LocalFileSystem(),
+    this._platform = const LocalPlatform(),
+    this._gitignoreEnvironment = const GitignoreEnvironment.none(),
+  });
+
+  final file_api.FileSystem _fileSystem;
+  final Platform _platform;
+
+  /// Where user-level git configuration lives.
+  final GitignoreEnvironment _gitignoreEnvironment;
+
+  @override
+  String get name => 'glob';
+  @override
+  String get description =>
+      'Find workspace files by name using a glob pattern such as '
+      '`**/*_test.dart`. Files git ignores are skipped unless include_ignored '
+      'is set. Use search_text to search file contents instead.';
+  @override
+  ToolRisk get risk => ToolRisk.read;
+  @override
+  Map<String, dynamic> get strictJsonSchema => _strictObject(
+    <String, Map<String, dynamic>>{
+      'pattern': <String, dynamic>{
+        'type': 'string',
+        'description':
+            'Glob matched against paths relative to the searched directory, '
+            'for example `**/*.dart` or `lib/**/model_*.dart`.',
+      },
+      'path': <String, dynamic>{
+        'type': <String>['string', 'null'],
+        'description':
+            'Directory to search, relative to the workspace root. Null '
+            'searches the whole workspace.',
+      },
+      'include_ignored': <String, dynamic>{
+        'type': <String>['boolean', 'null'],
+        'description':
+            'Whether to include files git ignores. Null and false skip them.',
+      },
+      'max_results': <String, dynamic>{
+        'type': <String>['integer', 'null'],
+        'description': 'Most paths to return. Null uses $defaultSearchResults.',
+      },
+    },
+  );
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final rawPattern = arguments['pattern'] as String;
+    if (rawPattern.isEmpty) {
+      throw const FormatException('pattern must not be empty.');
+    }
+    final List<Glob> globs;
+    try {
+      // Walked paths are always `/`-separated, so the pattern is compiled in
+      // that same context rather than the host's.
+      globs = <Glob>[
+        Glob(rawPattern, context: p.posix),
+        // `**/` means "one or more directories" to package:glob, so a plain
+        // `**/*.dart` would silently miss every top-level file. Everyone who
+        // writes that pattern means "at any depth, including here", so the
+        // prefix-free form is matched as well.
+        if (rawPattern.startsWith('**/'))
+          Glob(rawPattern.substring(3), context: p.posix),
+      ];
+    } on FormatException catch (error) {
+      return ToolResult(
+        output: jsonEncode(<String, dynamic>{
+          'error': 'pattern is not a valid glob.',
+          'detail': error.message,
+        }),
+        isError: true,
+      );
+    }
+
+    final root = WorkspacePathGuard(
+      context.workspaceRoot,
+      fileSystem: _fileSystem,
+      platform: _platform,
+    ).resolveExisting((arguments['path'] as String?) ?? '.');
+    final maxResults =
+        (arguments['max_results'] as int?) ?? defaultSearchResults;
+    final walker = WorkspaceWalker(
+      fileSystem: _fileSystem,
+      workspaceRoot: context.workspaceRoot,
+      respectGitignore: arguments['include_ignored'] != true,
+      gitignoreEnvironment: _gitignoreEnvironment,
+    );
+    // Matching happens against the path the caller asked about, so a pattern
+    // written for a subdirectory does not have to repeat that subdirectory.
+    final scope = _scopeOf(root, context.workspaceRoot);
+
+    final paths = <String>[];
+    var truncated = false;
+    await for (final walked in walker.walk(root, context.cancellation)) {
+      final candidate = scope.isEmpty
+          ? walked.relativePath
+          : walked.relativePath.substring(scope.length + 1);
+      // Glob.matches is used rather than Glob.list, which reaches for dart:io
+      // directly and would bypass the injected filesystem.
+      if (!globs.any((glob) => glob.matches(candidate))) continue;
+      paths.add(walked.relativePath);
+      if (paths.length >= maxResults) {
+        truncated = true;
+        break;
+      }
+    }
+
+    return ToolResult(
+      output: truncateToolOutput(
+        jsonEncode(<String, dynamic>{
+          'paths': paths,
+          'truncated': truncated,
+        }),
+      ),
+    );
+  }
+
+  String _scopeOf(String root, String workspaceRoot) {
+    final relative = _fileSystem.path.relative(root, from: workspaceRoot);
+    if (relative == '.') return '';
+    return _fileSystem.path.split(relative).join('/');
   }
 }
 
@@ -940,7 +1186,9 @@ class ApplyPatchTool extends AgentTool {
   String get name => 'apply_patch';
   @override
   String get description =>
-      'Apply a unified diff to UTF-8 files inside the workspace.';
+      'Apply a unified diff to UTF-8 files inside the workspace. Create a file '
+      'with a /dev/null source, delete one with a /dev/null target, and move '
+      'or rename one by naming different paths in the --- and +++ headers.';
   @override
   ToolRisk get risk => ToolRisk.write;
   @override
@@ -966,66 +1214,167 @@ class ApplyPatchTool extends AgentTool {
       fileSystem: _fileSystem,
       platform: _platform,
     );
-    final writes = <String, String>{};
-    final deletes = <String>{};
-    final originals = <String, String?>{};
+
+    // Every change is planned, and every patch context validated, before a
+    // single byte is written. A patch that cannot apply must leave the
+    // workspace exactly as it found it.
+    final plan = <_PlannedChange>[];
     for (final filePatch in patch.files) {
       context.cancellation.throwIfCancelled();
-      final relative = filePatch.newPath == '/dev/null'
-          ? filePatch.oldPath
-          : filePatch.newPath;
-      final clean = relative.startsWith('a/') || relative.startsWith('b/')
-          ? relative.substring(2)
-          : relative;
-      final target = guard.resolveWritable(clean);
-      final exists = _fileSystem.file(target).existsSync();
-      if (filePatch.newPath == '/dev/null' && !exists) {
-        throw FormatException('Cannot delete a missing file: $clean');
-      }
-      final original = exists
-          ? await _fileSystem.file(target).readAsString()
-          : '';
-      originals[target] = exists ? original : null;
-      writes[target] = filePatch.newPath == '/dev/null'
-          ? ''
-          : filePatch.apply(original);
-      if (filePatch.newPath == '/dev/null') deletes.add(target);
+      plan.add(await _plan(filePatch, guard));
     }
 
-    final applied = <String>[];
+    final applied = <_PlannedChange>[];
     try {
-      for (final entry in writes.entries) {
-        final original = originals[entry.key];
-        if (deletes.contains(entry.key) && original != null) {
-          await _fileSystem.file(entry.key).delete();
-        } else {
-          await _fileSystem
-              .directory(p.dirname(entry.key))
-              .create(recursive: true);
-          final temporary = _fileSystem.file(
-            '${entry.key}.coder-tmp-${_temporarySuffix()}',
-          );
-          await temporary.writeAsString(entry.value, flush: true);
-          await temporary.rename(entry.key);
-        }
-        applied.add(entry.key);
+      for (final change in plan) {
+        await change.apply(_fileSystem, _temporarySuffix);
+        applied.add(change);
       }
     } catch (_) {
-      for (final target in applied.reversed) {
-        final original = originals[target];
-        if (original == null) {
-          if (_fileSystem.file(target).existsSync()) {
-            await _fileSystem.file(target).delete();
-          }
-        } else {
-          await _fileSystem.file(target).writeAsString(original, flush: true);
-        }
+      for (final change in applied.reversed) {
+        await change.revert(_fileSystem);
       }
       rethrow;
     }
     return ToolResult(
       output: jsonEncode(<String, dynamic>{'changedFiles': applied.length}),
     );
+  }
+
+  /// Works out what one file header asks for, and reads what it needs.
+  Future<_PlannedChange> _plan(
+    FilePatch filePatch,
+    WorkspacePathGuard guard,
+  ) async {
+    final from = _cleanPath(filePatch.oldPath);
+    final to = _cleanPath(filePatch.newPath);
+    if (from == null && to == null) {
+      throw const FormatException('A patch cannot move /dev/null to itself.');
+    }
+
+    if (to == null) {
+      final source = guard.resolveWritable(from!);
+      if (!_fileSystem.file(source).existsSync()) {
+        throw FormatException('Cannot delete a missing file: $from');
+      }
+      return _PlannedChange(
+        source: source,
+        sourceContents: await _fileSystem.file(source).readAsString(),
+      );
+    }
+
+    final target = guard.resolveWritable(to);
+    // A creation names /dev/null as its source; a plain edit names the same
+    // path on both sides. Anything else is a move.
+    final source = from == null ? null : guard.resolveWritable(from);
+    final moving = source != null && source != target;
+
+    final readFrom = source ?? target;
+    final originalExists = _fileSystem.file(readFrom).existsSync();
+    if (moving && !originalExists) {
+      throw FormatException('Cannot move a missing file: $from');
+    }
+    final original = originalExists
+        ? await _fileSystem.file(readFrom).readAsString()
+        : '';
+
+    if (moving && _fileSystem.file(target).existsSync()) {
+      // Silently clobbering the destination would lose a file the patch never
+      // mentioned, so the move is refused instead.
+      throw FormatException('Cannot move onto an existing file: $to');
+    }
+
+    return _PlannedChange(
+      source: moving ? source : null,
+      sourceContents: moving ? original : null,
+      target: target,
+      targetContents: filePatch.apply(original),
+      targetExisted: !moving && originalExists,
+      targetOriginal: !moving && originalExists ? original : null,
+    );
+  }
+
+  /// Strips the `a/` and `b/` prefixes, mapping `/dev/null` to null.
+  static String? _cleanPath(String path) {
+    if (path == '/dev/null') return null;
+    return path.startsWith('a/') || path.startsWith('b/')
+        ? path.substring(2)
+        : path;
+  }
+}
+
+/// One file's worth of work, and everything needed to undo it.
+class _PlannedChange {
+  _PlannedChange({
+    this.source,
+    this.sourceContents,
+    this.target,
+    this.targetContents,
+    this.targetExisted = false,
+    this.targetOriginal,
+  });
+
+  /// Path to remove, for a delete or the origin half of a move.
+  final String? source;
+
+  /// What [source] held, so a failure can put it back.
+  final String? sourceContents;
+
+  /// Path to write, absent for a delete.
+  final String? target;
+
+  /// What [target] should hold afterwards.
+  final String? targetContents;
+
+  /// Whether [target] existed before this change.
+  final bool targetExisted;
+
+  /// What [target] held before, when it existed.
+  final String? targetOriginal;
+
+  Future<void> apply(
+    file_api.FileSystem fileSystem,
+    String Function() temporarySuffix,
+  ) async {
+    if (target case final path?) {
+      await fileSystem
+          .directory(fileSystem.path.dirname(path))
+          .create(recursive: true);
+      // Written beside the target and renamed over it, so a reader never sees
+      // a half-written file.
+      final temporary = fileSystem.file(
+        '$path.coder-tmp-${temporarySuffix()}',
+      );
+      await temporary.writeAsString(targetContents ?? '', flush: true);
+      await temporary.rename(path);
+    }
+    // The removal comes last: until it happens the content still exists
+    // somewhere, whichever half of a move fails.
+    if (source case final path?) {
+      if (fileSystem.file(path).existsSync()) {
+        await fileSystem.file(path).delete();
+      }
+    }
+  }
+
+  Future<void> revert(file_api.FileSystem fileSystem) async {
+    if (source case final path?) {
+      await fileSystem
+          .file(path)
+          .writeAsString(sourceContents ?? '', flush: true);
+    }
+    if (target case final path?) {
+      if (targetExisted) {
+        await fileSystem
+            .file(path)
+            .writeAsString(
+              targetOriginal ?? '',
+              flush: true,
+            );
+      } else if (fileSystem.file(path).existsSync()) {
+        await fileSystem.file(path).delete();
+      }
+    }
   }
 }
 

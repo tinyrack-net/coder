@@ -2,6 +2,48 @@ import 'package:coder_mcp/coder_mcp.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('tool annotations', () {
+    test('a descriptor without annotations claims nothing', () {
+      final tool = McpToolDescriptor.fromJson(<String, dynamic>{
+        'name': 'lookup',
+      });
+
+      expect(tool.annotations.readOnlyHint, isFalse);
+      expect(tool.annotations.destructiveHint, isNull);
+      expect(tool.annotations.idempotentHint, isNull);
+      expect(tool.annotations.openWorldHint, isNull);
+    });
+
+    test('every declared hint is decoded', () {
+      final tool = McpToolDescriptor.fromJson(<String, dynamic>{
+        'name': 'lookup',
+        'annotations': <String, dynamic>{
+          'readOnlyHint': true,
+          'destructiveHint': false,
+          'idempotentHint': true,
+          'openWorldHint': false,
+        },
+      });
+
+      expect(tool.annotations.readOnlyHint, isTrue);
+      expect(tool.annotations.destructiveHint, isFalse);
+      expect(tool.annotations.idempotentHint, isTrue);
+      expect(tool.annotations.openWorldHint, isFalse);
+    });
+
+    test('a non-boolean hint is treated as unsaid', () {
+      final tool = McpToolDescriptor.fromJson(<String, dynamic>{
+        'name': 'lookup',
+        'annotations': <String, dynamic>{
+          'readOnlyHint': 'yes',
+          'destructiveHint': 1,
+        },
+      });
+
+      expect(tool.annotations.readOnlyHint, isFalse);
+      expect(tool.annotations.destructiveHint, isNull);
+    });
+  });
   test('the negotiated protocol versions are ordered newest first', () {
     expect(supportedMcpProtocolVersions.first, preferredMcpProtocolVersion);
     expect(supportedMcpProtocolVersions, contains('2025-06-18'));

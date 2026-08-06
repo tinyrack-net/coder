@@ -12,6 +12,68 @@ import 'package:test/test.dart';
 import 'support/scripted_mcp_server.dart';
 
 void main() {
+  group('risk grading', () {
+    McpAgentTool toolFor(Map<String, dynamic>? annotations) => McpAgentTool(
+      serverId: 'github',
+      descriptor: McpToolDescriptor.fromJson(<String, dynamic>{
+        'name': 'lookup',
+        'annotations': ?annotations,
+      }),
+      lookup: (_) => null,
+    );
+
+    test('a tool the server calls read-only is graded as a read', () {
+      expect(
+        toolFor(<String, dynamic>{'readOnlyHint': true}).risk,
+        ToolRisk.read,
+      );
+    });
+
+    test('anything else stays dangerous', () {
+      // No annotations at all is the common case, and says nothing.
+      expect(toolFor(null).risk, ToolRisk.dangerous);
+      expect(
+        toolFor(<String, dynamic>{'readOnlyHint': false}).risk,
+        ToolRisk.dangerous,
+      );
+      // "Not destructive" is still a change the user should get to see.
+      expect(
+        toolFor(<String, dynamic>{'destructiveHint': false}).risk,
+        ToolRisk.dangerous,
+      );
+    });
+
+    test('a read-only tool is still denied under a read-only policy', () {
+      const policy = DefaultApprovalPolicy(PermissionMode.readOnly);
+
+      // Grading relaxes the prompt, it does not grant anything: a read is
+      // exactly what readOnly mode is meant to allow, and nothing more.
+      expect(
+        policy.evaluate(
+          ToolInvocation(
+            callId: 'call',
+            name: 'mcp__github__lookup',
+            arguments: const <String, dynamic>{},
+            risk: toolFor(<String, dynamic>{'readOnlyHint': true}).risk,
+            workspaceRoot: '/workspace',
+          ),
+        ),
+        ApprovalEvaluation.allow,
+      );
+      expect(
+        policy.evaluate(
+          ToolInvocation(
+            callId: 'call',
+            name: 'mcp__github__lookup',
+            arguments: const <String, dynamic>{},
+            risk: toolFor(null).risk,
+            workspaceRoot: '/workspace',
+          ),
+        ),
+        ApprovalEvaluation.deny,
+      );
+    });
+  });
   final context = ToolExecutionContext(
     workspaceRoot: '/workspace',
     cancellation: CancellationToken(),

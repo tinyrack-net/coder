@@ -1059,6 +1059,44 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String toolMatchesTruncated(int matches, int files) {
+    return '$files개 파일에서 $matches건 이상';
+  }
+
+  @override
+  String get toolNoPaths => '파일 없음';
+
+  @override
+  String toolPaths(int count) {
+    return '파일 $count개';
+  }
+
+  @override
+  String toolPathsTruncated(int count) {
+    return '파일 $count개 이상';
+  }
+
+  @override
+  String toolAttached(String name) {
+    return '$name 첨부';
+  }
+
+  @override
+  String toolSkillLoaded(String name) {
+    return '$name 불러옴';
+  }
+
+  @override
+  String toolSkills(int count) {
+    return '스킬 $count개';
+  }
+
+  @override
+  String toolSkillsTruncated(int count) {
+    return '스킬 $count개 이상';
+  }
+
+  @override
   String toolEditFiles(int count) {
     return 'Edit($count개 파일)';
   }

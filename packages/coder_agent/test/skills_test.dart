@@ -27,6 +27,87 @@ void main() {
     cancellation: CancellationToken(),
   );
 
+  group('list_skills', () {
+    Future<Map<String, dynamic>> page(
+      SkillCatalog catalog,
+      String? cursor,
+    ) async =>
+        jsonDecode(
+              (await ListSkillsTool(catalog).execute(<String, dynamic>{
+                'cursor': cursor,
+              }, context())).output,
+            )
+            as Map<String, dynamic>;
+
+    test('a short catalog comes back in one sorted page', () async {
+      final result = await page(_CountedCatalog(3), null);
+
+      expect(
+        (result['skills']! as List)
+            .map((skill) => (skill! as Map<String, dynamic>)['name'])
+            .toList(),
+        <String>['skill-000', 'skill-001', 'skill-002'],
+      );
+      expect(result['total'], 3);
+      // The last page says so by omission, which is how the model stops.
+      expect(result.containsKey('nextCursor'), isFalse);
+    });
+
+    test('a long catalog pages through a cursor', () async {
+      final catalog = _CountedCatalog(skillPageSize + 2);
+
+      final first = await page(catalog, null);
+      expect(first['skills']! as List, hasLength(skillPageSize));
+      expect(first['total'], skillPageSize + 2);
+      expect(first['nextCursor'], '$skillPageSize');
+
+      final second = await page(catalog, first['nextCursor'] as String);
+      expect(second['skills']! as List, hasLength(2));
+      expect(second.containsKey('nextCursor'), isFalse);
+      // The two pages together are the whole catalog, with nothing repeated.
+      expect(
+        (second['skills']! as List).first,
+        containsPair(
+          'name',
+          'skill-${skillPageSize.toString().padLeft(3, '0')}',
+        ),
+      );
+    });
+
+    test('an empty catalog is a page, not an error', () async {
+      final result = await page(_CountedCatalog(0), null);
+
+      expect(result['skills'], isEmpty);
+      expect(result['total'], 0);
+    });
+
+    test('a cursor this tool never issued is correctable', () async {
+      final tool = ListSkillsTool(_CountedCatalog(2));
+
+      for (final cursor in <String>['nonsense', '-1', '99']) {
+        final result = await tool.execute(<String, dynamic>{
+          'cursor': cursor,
+        }, context());
+        expect(result.isError, isTrue, reason: cursor);
+        expect(
+          (jsonDecode(result.output) as Map<String, dynamic>)['error'],
+          contains('cursor'),
+          reason: cursor,
+        );
+      }
+    });
+
+    test('it advertises a read-risk strict schema', () {
+      final tool = ListSkillsTool(_CountedCatalog(1));
+
+      expect(tool.name, 'list_skills');
+      expect(tool.risk, ToolRisk.read);
+      expect(tool.strict, isTrue);
+      expect(tool.strictJsonSchema['additionalProperties'], isFalse);
+      expect(tool.strictJsonSchema['required'], <String>['cursor']);
+    });
+  });
+
   test(
     'skill tool advertises a read-risk strict schema',
     () {
@@ -193,6 +274,31 @@ void main() {
     },
     tags: const <String>['feature_test__skill_invocation__unit'],
   );
+}
+
+/// A catalog holding a fixed number of generated skills.
+final class _CountedCatalog implements SkillCatalog {
+  _CountedCatalog(this.count);
+
+  final int count;
+
+  @override
+  List<SkillSummary> summaries() => <SkillSummary>[
+    // Deliberately out of order, so sorting is the tool's job.
+    for (var index = count - 1; index >= 0; index -= 1)
+      SkillSummary(
+        name: 'skill-${index.toString().padLeft(3, '0')}',
+        description: 'Number $index.',
+      ),
+  ];
+
+  @override
+  Future<SkillContent> read(String name) async =>
+      throw SkillLookupException('Unknown skill: $name');
+
+  @override
+  Future<String> readResource(String name, String relativePath) async =>
+      throw SkillLookupException('Unknown skill: $name');
 }
 
 final class _FakeCatalog implements SkillCatalog {

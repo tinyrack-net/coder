@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
@@ -119,7 +120,93 @@ final class SkillPathGuard {
   }
 }
 
-/// Loads skill instructions on demand so the prompt only carries a catalog.
+/// Name of the tool that pages through the available skills.
+const String listSkillsToolName = 'list_skills';
+
+/// How many skills one page of [ListSkillsTool] carries.
+const int skillPageSize = 50;
+
+/// Lists the available skills a page at a time.
+///
+/// The catalog used to be written into the system prompt in full, which cost
+/// every turn a token for every skill whether or not any were used. Paging it
+/// behind a tool makes that cost proportional to the turns that actually want
+/// a skill, which is what lets a workspace carry many of them.
+class ListSkillsTool extends AgentTool {
+  /// Creates a [ListSkillsTool] bound to one turn's catalog.
+  ListSkillsTool(this._catalog);
+
+  final SkillCatalog _catalog;
+
+  @override
+  String get name => listSkillsToolName;
+
+  @override
+  String get description =>
+      'List the skills available in this workspace, with a one-line '
+      'description each. Load one with the `skill` tool before acting on it.';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
+    'type': 'object',
+    'properties': <String, dynamic>{
+      'cursor': <String, dynamic>{
+        'type': <String>['string', 'null'],
+        'description':
+            'Continue from a previous call by passing its nextCursor. Null '
+            'starts at the first page.',
+      },
+    },
+    'required': <String>['cursor'],
+    'additionalProperties': false,
+  };
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final summaries = _catalog.summaries().toList(growable: false)
+      ..sort((left, right) => left.name.compareTo(right.name));
+    final raw = arguments['cursor'];
+    final start = raw is String ? int.tryParse(raw) : 0;
+    if (start == null || start < 0 || start > summaries.length) {
+      // A bad cursor is correctable, so it comes back as tool output rather
+      // than failing the turn.
+      return ToolResult(
+        isError: true,
+        output: jsonEncode(<String, dynamic>{
+          'error': 'cursor is not one this tool handed out.',
+        }),
+      );
+    }
+    final end = start + skillPageSize < summaries.length
+        ? start + skillPageSize
+        : summaries.length;
+    return ToolResult(
+      output: truncateToolOutput(
+        jsonEncode(<String, dynamic>{
+          'skills': summaries
+              .sublist(start, end)
+              .map(
+                (summary) => <String, dynamic>{
+                  'name': summary.name,
+                  'description': summary.description,
+                },
+              )
+              .toList(growable: false),
+          'total': summaries.length,
+          if (end < summaries.length) 'nextCursor': '$end',
+        }),
+      ),
+    );
+  }
+}
+
+/// Loads skill instructions on demand so the prompt only carries a pointer.
 class SkillTool extends AgentTool {
   /// Creates a [SkillTool] bound to one turn's catalog.
   SkillTool(this._catalog);

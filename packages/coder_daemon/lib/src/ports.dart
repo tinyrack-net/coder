@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_protocol/coder_protocol.dart';
@@ -283,6 +285,122 @@ abstract interface class WorktreeHookRunner {
     required String workingDirectory,
     required Map<String, String> environment,
   });
+}
+
+/// A running command the agent can read from, write to, and stop.
+///
+/// Shared by pseudo-terminals and plain pipes so an exec session does not care
+/// which one it is driving.
+abstract interface class ExecProcess {
+  /// Emits decoded output as it arrives.
+  Stream<String> get outputs;
+
+  /// Completes with the process exit code.
+  Future<int> get exitCode;
+
+  /// Writes to the process standard input.
+  Future<void> write(String data);
+
+  /// Stops the foreground command without ending the session.
+  ///
+  /// How that happens depends on the transport, which is exactly why it lives
+  /// here: a terminal turns ETX into SIGINT through its line discipline, while
+  /// on a pipe ETX is an ordinary byte and the signal has to be sent directly.
+  Future<void> interrupt();
+
+  /// Terminates the process.
+  Future<void> terminate();
+}
+
+/// Starts commands on plain pipes, with no pseudo-terminal attached.
+///
+/// This is the path for ordinary non-interactive commands: without a terminal
+/// the child emits no escape sequences and echoes no input, so its output is
+/// what the program actually printed rather than what a screen would show.
+abstract interface class PipeGateway {
+  /// Starts [shell] in [workingDirectory].
+  Future<ExecProcess> start({
+    required ShellSpecDto shell,
+    required String workingDirectory,
+  });
+}
+
+/// Production pipe adapter.
+final class IoPipeGateway implements PipeGateway {
+  /// Creates the production pipe adapter.
+  const IoPipeGateway();
+
+  @override
+  Future<ExecProcess> start({
+    required ShellSpecDto shell,
+    required String workingDirectory,
+  }) async {
+    final process = await Process.start(
+      shell.executable,
+      shell.arguments,
+      workingDirectory: workingDirectory,
+    );
+    return _IoPipeProcess(process);
+  }
+}
+
+final class _IoPipeProcess implements ExecProcess {
+  _IoPipeProcess(this._process) {
+    // stdout and stderr are interleaved because the agent reads one transcript
+    // and a program's diagnostics are only meaningful next to the output they
+    // describe. Lossy decoding keeps a stray byte from killing the stream.
+    _subscriptions = <StreamSubscription<String>>[
+      _process.stdout.transform(_decoder).listen(_outputs.add, onDone: _done),
+      _process.stderr.transform(_decoder).listen(_outputs.add, onDone: _done),
+    ];
+  }
+
+  static const Utf8Decoder _decoder = Utf8Decoder(allowMalformed: true);
+
+  final Process _process;
+
+  /// Buffers until the session subscribes, so nothing a fast command prints
+  /// before the first read is lost.
+  final StreamController<String> _outputs = StreamController<String>();
+  late final List<StreamSubscription<String>> _subscriptions;
+  int _open = 2;
+  bool _closed = false;
+
+  void _done() {
+    if (--_open == 0) _close();
+  }
+
+  void _close() {
+    if (_closed) return;
+    _closed = true;
+    unawaited(_outputs.close());
+  }
+
+  @override
+  Stream<String> get outputs => _outputs.stream;
+
+  @override
+  Future<int> get exitCode => _process.exitCode;
+
+  @override
+  Future<void> write(String data) async {
+    _process.stdin.write(data);
+    // A pipe is buffered, unlike a terminal, so an unflushed write would sit
+    // here while the caller waits for output that cannot arrive.
+    await _process.stdin.flush();
+  }
+
+  @override
+  Future<void> interrupt() async => _process.kill(ProcessSignal.sigint);
+
+  @override
+  Future<void> terminate() async {
+    _process.kill(ProcessSignal.sigkill);
+    await Future.wait(
+      _subscriptions.map((subscription) => subscription.cancel()),
+    );
+    _close();
+  }
 }
 
 /// Production shell adapter for worktree lifecycle hooks.

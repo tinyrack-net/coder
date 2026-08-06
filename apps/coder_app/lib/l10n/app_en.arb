@@ -1402,6 +1402,76 @@
       }
     }
   },
+  "toolMatchesTruncated": "{matches}+ matches in {files} files",
+  "@toolMatchesTruncated": {
+    "description": "Search result summary when the result cap was reached.",
+    "placeholders": {
+      "matches": {
+        "type": "int"
+      },
+      "files": {
+        "type": "int"
+      }
+    }
+  },
+  "toolNoPaths": "No files",
+  "@toolNoPaths": {
+    "description": "File-name search result with nothing found."
+  },
+  "toolPaths": "{count} files",
+  "@toolPaths": {
+    "description": "File-name search result summary.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "toolPathsTruncated": "{count}+ files",
+  "@toolPathsTruncated": {
+    "description": "File-name search summary when the result cap was reached.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "toolAttached": "Attached {name}",
+  "@toolAttached": {
+    "description": "Result line after a workspace file is attached.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "toolSkillLoaded": "Loaded {name}",
+  "@toolSkillLoaded": {
+    "description": "Result line after a skill's instructions are loaded.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "toolSkills": "{count} skills",
+  "@toolSkills": {
+    "description": "Skill listing result summary.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "toolSkillsTruncated": "{count}+ skills",
+  "@toolSkillsTruncated": {
+    "description": "Skill listing summary when a page boundary was reached.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "toolEditFiles": "Edit({count} files)",
   "@toolEditFiles": {
     "description": "Edit call summary across several files.",

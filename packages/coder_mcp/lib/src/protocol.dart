@@ -328,6 +328,7 @@ class McpToolDescriptor {
     this.title,
     this.description,
     this.inputSchema,
+    this.annotations = const McpToolAnnotations(),
   });
 
   /// Decodes one entry of a `tools/list` result.
@@ -345,6 +346,11 @@ class McpToolDescriptor {
       inputSchema: json['inputSchema'] is Map<String, dynamic>
           ? Map<String, dynamic>.from(json['inputSchema'] as Map)
           : null,
+      annotations: json['annotations'] is Map<String, dynamic>
+          ? McpToolAnnotations.fromJson(
+              json['annotations'] as Map<String, dynamic>,
+            )
+          : const McpToolAnnotations(),
     );
   }
 
@@ -359,6 +365,50 @@ class McpToolDescriptor {
 
   /// The JSON Schema describing the tool arguments.
   final Map<String, dynamic>? inputSchema;
+
+  /// What the server claims about the tool's effects.
+  final McpToolAnnotations annotations;
+}
+
+/// What a server claims about the effects of calling one of its tools.
+///
+/// Every field is a hint, not a guarantee: the server is the only one who
+/// knows, and it is also the only one who can be wrong. They are used to
+/// relax an approval prompt, never to grant something a policy withheld.
+class McpToolAnnotations {
+  /// Creates [McpToolAnnotations].
+  const McpToolAnnotations({
+    this.readOnlyHint = false,
+    this.destructiveHint,
+    this.idempotentHint,
+    this.openWorldHint,
+  });
+
+  /// Decodes the `annotations` object of a tool descriptor.
+  factory McpToolAnnotations.fromJson(Map<String, dynamic> json) {
+    bool? flag(String key) => json[key] is bool ? json[key] as bool : null;
+    return McpToolAnnotations(
+      readOnlyHint: flag('readOnlyHint') ?? false,
+      destructiveHint: flag('destructiveHint'),
+      idempotentHint: flag('idempotentHint'),
+      openWorldHint: flag('openWorldHint'),
+    );
+  }
+
+  /// Whether the tool only reads, making no modification of any kind.
+  final bool readOnlyHint;
+
+  /// Whether the tool may perform destructive updates.
+  ///
+  /// The specification defaults this to true, but only for a tool that is not
+  /// read-only; null means the server said nothing.
+  final bool? destructiveHint;
+
+  /// Whether repeating the call with the same arguments adds no further effect.
+  final bool? idempotentHint;
+
+  /// Whether the tool touches entities outside its own closed world.
+  final bool? openWorldHint;
 }
 
 /// One block of a `tools/call` result.

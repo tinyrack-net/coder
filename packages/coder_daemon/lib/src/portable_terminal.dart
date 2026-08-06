@@ -42,6 +42,12 @@ final class _TinyrackTerminalProcess implements TerminalProcess {
   Future<void> write(String data) => _process.write(utf8.encode(data));
 
   @override
+  Future<void> interrupt() =>
+      // ETX is what Ctrl-C sends; the terminal's line discipline turns it into
+      // SIGINT for the foreground command and leaves the shell running.
+      _process.write(utf8.encode(String.fromCharCode(0x03)));
+
+  @override
   Future<void> resize(int columns, int rows) async =>
       _process.resize(columns: columns, rows: rows);
 

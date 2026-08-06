@@ -805,96 +805,103 @@ void main() {
     ],
   );
 
-  test(
-    'exec_command drives a real pseudo-terminal across two tool calls',
-    () async {
-      final home = await Directory.systemTemp.createTemp('coder-exec-home-');
-      final workspace = await Directory.systemTemp.createTemp(
-        'coder-exec-workspace-',
-      );
-      const bearerToken = 'exec-command-token-0123456789abcdef012';
-      final provider = _ExecProvider();
-      final handle = await DaemonApplication.start(
-        DaemonConfig(
-          homeDirectory: home.path,
-          port: 0,
-          bearerToken: bearerToken,
-          useEnvironmentCredentials: false,
-        ),
-        provider: provider,
-      );
-      addTearDown(() async {
-        await handle.stop();
-        await home.delete(recursive: true);
-        await workspace.delete(recursive: true);
-      });
-      final client = await CoderClient.connect(
-        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
-        credentials: const DaemonCredentials(bearerToken: bearerToken),
-        clientId: 'exec-command-test',
-        clientKind: 'test',
-      );
-      addTearDown(client.close);
+  // Both transports are production paths — pipes for ordinary commands, a
+  // pseudo-terminal for the interactive ones — so both are proved against a
+  // real daemon and a real process rather than only the default.
+  for (final tty in <bool>[false, true]) {
+    final transport = tty ? 'pseudo-terminal' : 'pipes';
+    test(
+      'exec_command drives a real $transport across two tool calls',
+      () async {
+        final home = await Directory.systemTemp.createTemp('coder-exec-home-');
+        final workspace = await Directory.systemTemp.createTemp(
+          'coder-exec-workspace-',
+        );
+        const bearerToken = 'exec-command-token-0123456789abcdef012';
+        final provider = _ExecProvider(tty: tty);
+        final handle = await DaemonApplication.start(
+          DaemonConfig(
+            homeDirectory: home.path,
+            port: 0,
+            bearerToken: bearerToken,
+            useEnvironmentCredentials: false,
+          ),
+          provider: provider,
+        );
+        addTearDown(() async {
+          await handle.stop();
+          await home.delete(recursive: true);
+          await workspace.delete(recursive: true);
+        });
+        final client = await CoderClient.connect(
+          endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+          credentials: const DaemonCredentials(bearerToken: bearerToken),
+          clientId: 'exec-command-test',
+          clientKind: 'test',
+        );
+        addTearDown(client.close);
 
-      final registered = await client.registerWorkspace(
-        workspaceId: 'workspace',
-        checkoutId: 'checkout',
-        rootPath: workspace.path,
-        name: 'Workspace',
-      );
-      final coder = (await client.listAgentDefinitions()).single;
-      await client.updateAgentDefinition(
-        coder.copyWith(permissionMode: PermissionMode.workspaceWrite),
-        expectedContentHash: coder.contentHash,
-      );
-      final session = await client.createSession(
-        id: 'exec-session',
-        worktreeId: registered.worktrees.single.id,
-        title: 'Exec',
-        agentDefinitionId: 'coder',
-        model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
-        ),
-      );
-      await client.subscribeTimeline(session.id);
-      // Running a command always asks; approving the first one is what makes
-      // every later write into that same session pass without another dialog.
-      final approvals = <String>[];
-      final approvalSubscription = client.events
-          .where((event) => event is ApprovalRequestedClientEvent)
-          .cast<ApprovalRequestedClientEvent>()
-          .listen((event) {
-            approvals.add(event.approval.toolName);
-            unawaited(
-              client.resolveApproval(
-                approvalId: event.approval.id,
-                approved: true,
-              ),
-            );
-          });
-      addTearDown(approvalSubscription.cancel);
-      await client.startTurn(
-        sessionId: session.id,
-        turnId: 'exec-turn',
-        prompt: 'Run the shell',
-      );
+        final registered = await client.registerWorkspace(
+          workspaceId: 'workspace',
+          checkoutId: 'checkout',
+          rootPath: workspace.path,
+          name: 'Workspace',
+        );
+        final coder = (await client.listAgentDefinitions()).single;
+        await client.updateAgentDefinition(
+          coder.copyWith(permissionMode: PermissionMode.workspaceWrite),
+          expectedContentHash: coder.contentHash,
+        );
+        final session = await client.createSession(
+          id: 'exec-session',
+          worktreeId: registered.worktrees.single.id,
+          title: 'Exec',
+          agentDefinitionId: 'coder',
+          model: const SessionModelSelectionDto(
+            providerConnectionId: 'openai',
+            modelId: 'gpt-5.6-sol',
+          ),
+        );
+        await client.subscribeTimeline(session.id);
+        // Running a command always asks; approving the first one is what makes
+        // every later write into that same session pass without another dialog.
+        final approvals = <String>[];
+        final approvalSubscription = client.events
+            .where((event) => event is ApprovalRequestedClientEvent)
+            .cast<ApprovalRequestedClientEvent>()
+            .listen((event) {
+              approvals.add(event.approval.toolName);
+              unawaited(
+                client.resolveApproval(
+                  approvalId: event.approval.id,
+                  approved: true,
+                ),
+              );
+            });
+        addTearDown(approvalSubscription.cancel);
+        await client.startTurn(
+          sessionId: session.id,
+          turnId: 'exec-turn',
+          prompt: 'Run the shell',
+        );
 
-      // A shell that outlives the first call hands back an id the second call
-      // writes into, and the echoed text proves the same PTY answered.
-      final seen = await provider.echoed.future.timeout(_eventTimeout);
-      expect(seen, contains('tinyrack-exec-probe'));
-      expect(approvals, <String>['exec_command']);
-      await _waitForIdleSession(
-        client,
-        registered.worktrees.single.id,
-        session.id,
-      );
-    },
-    tags: const <String>['feature_test__tool_exec_session__verticalSlice'],
-    // The pseudo-terminal is a POSIX shell; Windows uses PowerShell instead.
-    testOn: '!windows',
-  );
+        // A command that outlives the first call hands back an id the second
+        // call writes into, and the echoed text proves the same process
+        // answered.
+        final seen = await provider.echoed.future.timeout(_eventTimeout);
+        expect(seen, contains('tinyrack-exec-probe'));
+        expect(approvals, <String>['exec_command']);
+        await _waitForIdleSession(
+          client,
+          registered.worktrees.single.id,
+          session.id,
+        );
+      },
+      tags: const <String>['feature_test__tool_exec_session__verticalSlice'],
+      // Both transports run a POSIX shell; Windows uses PowerShell instead.
+      testOn: '!windows',
+    );
+  }
 
   test(
     'view_image puts a hydrated workspace image into the model context',
@@ -1152,6 +1159,95 @@ void main() {
       );
     },
     tags: const <String>['feature_test__tool_context_budget__verticalSlice'],
+  );
+
+  test(
+    'search_text and glob honour a real .gitignore in a real workspace',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-search-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-search-workspace-',
+      );
+      await Directory(p.join(workspace.path, 'generated')).create();
+      await File(
+        p.join(workspace.path, '.gitignore'),
+      ).writeAsString('generated/\n*.log\n');
+      await File(
+        p.join(workspace.path, 'main.dart'),
+      ).writeAsString('const marker = 1;\n');
+      await File(
+        p.join(workspace.path, 'generated', 'out.dart'),
+      ).writeAsString('const marker = 2;\n');
+      await File(
+        p.join(workspace.path, 'notes.log'),
+      ).writeAsString('marker\n');
+      const bearerToken = 'search-tool-token-0123456789abcdef0123';
+      final provider = _SearchProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+        // Without this the daemon would consult whatever global git excludes
+        // the machine running the test happens to have.
+        gitignoreEnvironment: const GitignoreEnvironment.none(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'search-tool-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final session = await client.createSession(
+        id: 'search-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Search',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'search-turn',
+        prompt: 'Find the marker',
+      );
+
+      final results = await provider.results.future.timeout(_eventTimeout);
+      final matches = results.search['matches']! as List;
+      // The ignored copies of the marker are not reachable, so the model sees
+      // exactly the file a developer would expect.
+      expect(
+        matches.map((match) => (match! as Map<String, dynamic>)['path']),
+        <String>['main.dart'],
+      );
+      expect(results.search['truncated'], isFalse);
+      expect(results.glob['paths'], <String>['main.dart']);
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+    },
+    tags: const <String>['feature_test__tool_search__verticalSlice'],
   );
 
   test(
@@ -1535,8 +1631,7 @@ void main() {
       final timeline = await client.subscribeTimeline(session.id);
       final loaded = timeline
           .where((event) => event.type == 'tool.completed')
-          .single;
-      expect(loaded.data['name'], 'skill');
+          .firstWhere((event) => event.data['name'] == 'skill');
       expect(loaded.data['isError'], isFalse);
       // The worktree is the checkout itself, so the project skill wins.
       final output = loaded.data['output']! as String;
@@ -3032,6 +3127,11 @@ final class _AttachmentProvider implements ModelProvider {
 }
 
 class _ExecProvider implements ModelProvider {
+  _ExecProvider({required this.tty});
+
+  /// Whether the command is asked for a pseudo-terminal or plain pipes.
+  final bool tty;
+
   /// Completes with the shell's output once stdin has been echoed back.
   final Completer<String> echoed = Completer<String>();
 
@@ -3059,17 +3159,19 @@ class _ExecProvider implements ModelProvider {
     if (_round++ == 0) {
       // `cat` keeps running with no arguments, so the session survives the
       // call and the next one can write into it.
-      const arguments = <String, dynamic>{
+      final arguments = <String, dynamic>{
         'command': 'cat',
+        'workdir': null,
+        'tty': tty,
         'yield_time_ms': 300,
         'max_output_tokens': null,
       };
-      yield const ModelFunctionCall(
+      yield ModelFunctionCall(
         callId: 'exec-call',
         name: 'exec_command',
         arguments: arguments,
       );
-      yield const ModelResponseCompleted(
+      yield ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
@@ -3163,6 +3265,103 @@ final class _ViewImageProvider implements ModelProvider {
     yield const ModelTextDelta('I can see it.');
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'I can see it.'),
+    );
+  }
+}
+
+/// The two tool results the search vertical slice inspects.
+final class _SearchResults {
+  const _SearchResults({required this.search, required this.glob});
+
+  final Map<String, dynamic> search;
+  final Map<String, dynamic> glob;
+}
+
+final class _SearchProvider implements ModelProvider {
+  /// Completes once both tools have answered.
+  final Completer<_SearchResults> results = Completer<_SearchResults>();
+
+  @override
+  String get id => 'search-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    Map<String, dynamic>? resultFor(String callId) {
+      for (final item
+          in request.history.whereType<ToolResultConversationItem>()) {
+        if (item.callId == callId) {
+          return jsonDecode(item.output) as Map<String, dynamic>;
+        }
+      }
+      return null;
+    }
+
+    final search = resultFor('search-call');
+    if (search == null) {
+      const arguments = <String, dynamic>{
+        'query': 'marker',
+        'path': null,
+        'regex': null,
+        'case_sensitive': null,
+        'context_lines': null,
+        'include_ignored': null,
+        'max_results': null,
+      };
+      yield const ModelFunctionCall(
+        callId: 'search-call',
+        name: 'search_text',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'search-call',
+              name: 'search_text',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    final glob = resultFor('glob-call');
+    if (glob == null) {
+      const arguments = <String, dynamic>{
+        'pattern': '**/*.dart',
+        'path': null,
+        'include_ignored': null,
+        'max_results': null,
+      };
+      yield const ModelFunctionCall(
+        callId: 'glob-call',
+        name: 'glob',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'glob-call',
+              name: 'glob',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (!results.isCompleted) {
+      results.complete(_SearchResults(search: search, glob: glob));
+    }
+    yield const ModelTextDelta('Found it.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Found it.'),
     );
   }
 }
@@ -3266,32 +3465,61 @@ final class _SkillProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
-    final hasToolResult = request.history.any(
-      (item) => item is ToolResultConversationItem,
-    );
-    if (!hasToolResult) {
-      // The catalog is advertised in the instructions, and a disabled skill
-      // must not appear there.
-      expect(request.instructions, contains('- shared: From the project.'));
-      expect(request.instructions, isNot(contains('- commit:')));
-      const arguments = <String, dynamic>{'name': 'shared', 'resource': null};
-      yield const ModelFunctionCall(
-        callId: 'skill-call',
-        name: 'skill',
+    String? outputFor(String callId) {
+      for (final item
+          in request.history.whereType<ToolResultConversationItem>()) {
+        if (item.callId == callId) return item.output;
+      }
+      return null;
+    }
+
+    Stream<ModelEvent> call(
+      String callId,
+      String name,
+      Map<String, dynamic> arguments,
+    ) async* {
+      yield ModelFunctionCall(
+        callId: callId,
+        name: name,
         arguments: arguments,
       );
-      yield const ModelResponseCompleted(
+      yield ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
             ConversationToolCall(
-              callId: 'skill-call',
-              name: 'skill',
+              callId: callId,
+              name: name,
               arguments: arguments,
             ),
           ],
         ),
       );
+    }
+
+    final listed = outputFor('list-call');
+    if (listed == null) {
+      // The prompt no longer names the skills, only how many there are and
+      // which tool finds them.
+      yield* call('list-call', 'list_skills', <String, dynamic>{
+        'cursor': null,
+      });
+      return;
+    }
+    if (outputFor('skill-call') == null) {
+      // A disabled skill must not reach the model through the listing either,
+      // which is where the catalog now lives.
+      final page = jsonDecode(listed) as Map<String, dynamic>;
+      final names = (page['skills']! as List)
+          .map((skill) => (skill! as Map<String, dynamic>)['name'])
+          .toList();
+      expect(names, contains('shared'));
+      expect(names, isNot(contains('commit')));
+      expect(page['total'], names.length);
+      yield* call('skill-call', 'skill', <String, dynamic>{
+        'name': 'shared',
+        'resource': null,
+      });
       return;
     }
     yield const ModelTextDelta('Loaded the skill.');

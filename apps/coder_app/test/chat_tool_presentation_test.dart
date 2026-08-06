@@ -113,31 +113,6 @@ void main() {
       expect(list.title, 'List(lib)');
       expect(list.resultLine, '디렉터리 1 · 파일 1');
 
-      final search = describeToolActivity(
-        testL10n,
-        activity(
-          'search_text',
-          arguments: <String, dynamic>{'query': 'TODO', 'path': 'lib'},
-          output:
-              '[{"path":"a.dart","line":1,"text":"TODO"},'
-              '{"path":"a.dart","line":9,"text":"TODO"},'
-              '{"path":"b.dart","line":2,"text":"TODO"}]',
-        ),
-      );
-      expect(search.title, 'Search(TODO in lib)');
-      expect(search.resultLine, '2개 파일에서 3건');
-      expect(
-        describeToolActivity(
-          testL10n,
-          activity(
-            'search_text',
-            arguments: <String, dynamic>{'query': 'nothing'},
-            output: '[]',
-          ),
-        ).resultLine,
-        '일치 없음',
-      );
-
       final edit = describeToolActivity(
         testL10n,
         activity(
@@ -202,6 +177,236 @@ void main() {
       );
       expect(task.title, 'Task(reviewer)');
       expect(task.resultLine, 'completed · Looks good');
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'search and glob render counts, caps, and correctable errors',
+    () {
+      final search = describeToolActivity(
+        testL10n,
+        activity(
+          'search_text',
+          arguments: <String, dynamic>{'query': 'TODO', 'path': 'lib'},
+          output:
+              '{"matches":['
+              '{"path":"a.dart","line":1,"text":"TODO"},'
+              '{"path":"a.dart","line":9,"text":"TODO"},'
+              '{"path":"b.dart","line":2,"text":"TODO"}],'
+              '"matchCount":3,"filesSearched":9,"truncated":false}',
+        ),
+      );
+      expect(search.title, 'Search(TODO in lib)');
+      expect(search.resultLine, '2개 파일에서 3건');
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'search_text',
+            arguments: <String, dynamic>{'query': 'nothing'},
+            output:
+                '{"matches":[],"matchCount":0,"filesSearched":9,'
+                '"truncated":false}',
+          ),
+        ).resultLine,
+        '일치 없음',
+      );
+      // A capped run has to read as "at least", not as a total.
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'search_text',
+            arguments: <String, dynamic>{'query': 'TODO'},
+            output:
+                '{"matches":[{"path":"a.dart","line":1,"text":"TODO"}],'
+                '"matchCount":1,"filesSearched":9,"truncated":true}',
+          ),
+        ).resultLine,
+        '1개 파일에서 1건 이상',
+      );
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'search_text',
+            arguments: <String, dynamic>{'query': '([', 'regex': true},
+            output: '{"error":"query is not a valid regular expression."}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.isFailure, 'isFailure', isTrue)
+            .having(
+              (value) => value.resultLine,
+              'result',
+              'query is not a valid regular expression.',
+            ),
+      );
+
+      final globbed = describeToolActivity(
+        testL10n,
+        activity(
+          'glob',
+          arguments: <String, dynamic>{'pattern': '**/*.dart', 'path': 'lib'},
+          output: '{"paths":["lib/a.dart","lib/b.dart"],"truncated":false}',
+        ),
+      );
+      expect(globbed.title, 'Glob(**/*.dart in lib)');
+      expect(globbed.resultLine, '파일 2개');
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'glob',
+            arguments: <String, dynamic>{'pattern': '**/*.rs'},
+            output: '{"paths":[],"truncated":false}',
+          ),
+        ).resultLine,
+        '파일 없음',
+      );
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'glob',
+            arguments: <String, dynamic>{'pattern': '**/*.dart'},
+            output: '{"paths":["lib/a.dart"],"truncated":true}',
+          ),
+        ).resultLine,
+        '파일 1개 이상',
+      );
+    },
+    tags: const <String>['feature_test__tool_search__widget'],
+  );
+
+  test(
+    'skill tools render their catalog and loaded instructions',
+    () {
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'list_skills',
+            arguments: <String, dynamic>{'cursor': null},
+            output:
+                '{"skills":[{"name":"commit"},{"name":"review"}],'
+                '"total":2}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.title, 'title', 'Skills()')
+            .having((value) => value.resultLine, 'result', '스킬 2개'),
+      );
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'list_skills',
+            arguments: <String, dynamic>{'cursor': null},
+            output: '{"skills":[{"name":"commit"}],"total":9,"nextCursor":"1"}',
+          ),
+        ).resultLine,
+        '스킬 1개 이상',
+      );
+
+      final skill = describeToolActivity(
+        testL10n,
+        activity(
+          'skill',
+          arguments: <String, dynamic>{'name': 'commit', 'resource': null},
+          output: '{"name":"commit","instructions":"Stage related changes."}',
+        ),
+      );
+      expect(skill.title, 'Skill(commit)');
+      expect(skill.resultLine, 'commit 불러옴');
+      expect(
+        skill.body,
+        isA<ChatToolTextBody>().having(
+          (value) => value.text,
+          'text',
+          'Stage related changes.',
+        ),
+      );
+      // A bundled file is part of what was asked for, so the title says so.
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'skill',
+            arguments: <String, dynamic>{
+              'name': 'commit',
+              'resource': 'scripts/split.sh',
+            },
+            output: '{"name":"commit","content":"echo split"}',
+          ),
+        ).title,
+        'Skill(commit:scripts/split.sh)',
+      );
+    },
+    tags: const <String>['feature_test__skill_invocation__widget'],
+  );
+
+  test(
+    'attachment and MCP tools no longer fall back to generic text',
+    () {
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'attach_file',
+            arguments: <String, dynamic>{'path': 'docs/spec.pdf'},
+            output: '{"attachmentId":"a1","fileName":"spec.pdf"}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.title, 'title', 'Attach(docs/spec.pdf)')
+            .having((value) => value.resultLine, 'result', 'spec.pdf 첨부'),
+      );
+
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'read_attachment',
+            arguments: <String, dynamic>{'id': 'a1'},
+            output: '{"attachmentId":"a1","fileName":"spec.pdf"}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.title, 'title', 'Attachment(a1)')
+            .having((value) => value.resultLine, 'result', 'spec.pdf 첨부'),
+      );
+
+      // An MCP tool name is invented at runtime, so it cannot be in the spec
+      // map; it still gets a readable title instead of the generic fallback.
+      final mcp = describeToolActivity(
+        testL10n,
+        activity(
+          'mcp__github__create_issue',
+          arguments: <String, dynamic>{'title': 'Bug'},
+          output: 'Created issue #1',
+        ),
+      );
+      expect(mcp.title, 'github.create_issue');
+      expect(mcp.isFailure, isFalse);
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'mcp__github__create_issue',
+            arguments: <String, dynamic>{'title': 'Bug'},
+            output: r'{"error":"MCP server \"github\" is not connected."}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.isFailure, 'isFailure', isTrue)
+            .having(
+              (value) => value.resultLine,
+              'result',
+              'MCP server "github" is not connected.',
+            ),
+      );
     },
     tags: const <String>['feature_test__turn_execution__unit'],
   );

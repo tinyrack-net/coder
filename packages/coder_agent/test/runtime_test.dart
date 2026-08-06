@@ -217,7 +217,7 @@ void main() {
   });
 
   test(
-    'the skill catalog is injected in name order before the agent prompt',
+    'the skill prompt points at the tools instead of listing every skill',
     () async {
       final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
       await _RunnerHarness(provider).runner.startTurn(
@@ -233,31 +233,31 @@ void main() {
 
       final instructions = provider.requests.single.instructions;
       expect(instructions, contains('## Available skills'));
-      expect(instructions, contains('- commit: Writes commits.'));
-      expect(instructions, contains('- dataviz: Draws charts.'));
-      expect(
-        instructions.indexOf('- commit:'),
-        lessThan(instructions.indexOf('- dataviz:')),
-      );
+      // The count is one number whatever the catalog size, and it is what
+      // tells the agent whether looking is worth a call.
+      expect(instructions, contains('2 skills are available'));
+      expect(instructions, contains(listSkillsToolName));
+      // No per-skill line survives, which is the whole point: the prompt cost
+      // no longer grows with the catalog.
+      expect(instructions, isNot(contains('Writes commits.')));
+      expect(instructions, isNot(contains('Draws charts.')));
       expect(
         instructions.indexOf('## Available skills'),
         lessThan(instructions.indexOf('Review every security boundary.')),
       );
 
-      final unsorted = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
-      await _RunnerHarness(unsorted).runner.startTurn(
+      final single = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
+      await _RunnerHarness(single).runner.startTurn(
         _request(
           skills: const <SkillSummary>[
-            SkillSummary(name: 'dataviz', description: 'Draws charts.'),
             SkillSummary(name: 'commit', description: 'Writes commits.'),
           ],
         ),
         CancellationToken(),
       );
-      final sorted = unsorted.requests.single.instructions;
       expect(
-        sorted.indexOf('- commit:'),
-        lessThan(sorted.indexOf('- dataviz:')),
+        single.requests.single.instructions,
+        contains('1 skill is available'),
       );
     },
     tags: const <String>['feature_test__skill_invocation__unit'],

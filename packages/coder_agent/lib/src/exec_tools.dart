@@ -1,14 +1,18 @@
 import 'dart:convert';
+import 'dart:io' show FileSystemException;
 
 import 'package:coder_agent/src/exec_sessions.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:file/file.dart' as file_api;
+import 'package:file/local.dart';
+import 'package:platform/platform.dart';
 
-/// Name of the tool that starts a pseudo-terminal command.
+/// Name of the tool that starts a command session.
 const String execCommandToolName = 'exec_command';
 
-/// Name of the tool that writes into a live pseudo-terminal.
+/// Name of the tool that writes into a live command session.
 const String writeStdinToolName = 'write_stdin';
 
 /// How long a call waits for output before returning, unless overridden.
@@ -19,6 +23,19 @@ const Duration minExecYieldTime = Duration(milliseconds: 100);
 
 /// Longest wait a call may request.
 const Duration maxExecYieldTime = Duration(seconds: 60);
+
+/// How long a write waits for the program to answer, unless overridden.
+///
+/// A write is a turn in a conversation with a program that is already warm, so
+/// it usually answers immediately. Waiting the full [defaultExecYieldTime] for
+/// a shell that already printed its prompt only burns wall-clock time.
+const Duration defaultWriteYieldTime = Duration(milliseconds: 250);
+
+/// Shortest wait an output-only poll may request.
+///
+/// Polling with no input to send produces nothing new until the program does,
+/// so a sub-second poll is a busy loop that spends a tool call per round trip.
+const Duration minPollYieldTime = Duration(seconds: 5);
 
 /// Output budget one call returns, unless overridden.
 const int defaultExecOutputTokens = 10000;
@@ -51,12 +68,14 @@ String truncateToTokenBudget(String output, int maxTokens) {
   return '[… $elided bytes elided …]\n${utf8.decode(bytes.sublist(start))}';
 }
 
-Map<String, dynamic> _yieldTimeSchema() => <String, dynamic>{
+Map<String, dynamic> _yieldTimeSchema({
+  required Duration fallback,
+  required String clamping,
+}) => <String, dynamic>{
   'type': <String>['integer', 'null'],
   'description':
       'How long to wait for output, in milliseconds. Null uses '
-      '${defaultExecYieldTime.inMilliseconds}; values are clamped to '
-      '${minExecYieldTime.inMilliseconds}…${maxExecYieldTime.inMilliseconds}.',
+      '${fallback.inMilliseconds}. $clamping',
 };
 
 Map<String, dynamic> _outputTokensSchema() => <String, dynamic>{
@@ -67,11 +86,15 @@ Map<String, dynamic> _outputTokensSchema() => <String, dynamic>{
       '$minExecOutputTokens…$maxExecOutputTokens. The tail is kept.',
 };
 
-Duration _yieldTime(Object? raw) {
-  if (raw is! int) return defaultExecYieldTime;
+Duration _yieldTime(
+  Object? raw, {
+  required Duration fallback,
+  required Duration floor,
+}) {
+  if (raw is! int) return fallback;
   return Duration(
     milliseconds: raw.clamp(
-      minExecYieldTime.inMilliseconds,
+      floor.inMilliseconds,
       maxExecYieldTime.inMilliseconds,
     ),
   );
@@ -80,6 +103,10 @@ Duration _yieldTime(Object? raw) {
 int _outputTokens(Object? raw) => raw is int
     ? raw.clamp(minExecOutputTokens, maxExecOutputTokens)
     : defaultExecOutputTokens;
+
+/// Estimated token count of [output] before any budget was applied.
+int estimateTokenCount(String output) =>
+    (utf8.encode(output).length / bytesPerToken).ceil();
 
 String _encodeChunk(
   ExecSessionChunk chunk,
@@ -95,32 +122,39 @@ String _encodeChunk(
       'isRunning': chunk.isRunning,
       if (chunk.exitCode != null) 'exitCode': chunk.exitCode,
       'truncated': truncated.length != chunk.output.length,
+      // Both are what let the model reason about what it did not get: how much
+      // output was dropped, and whether the wait was actually consumed.
+      'originalTokenCount': estimateTokenCount(chunk.output),
+      'wallTimeSeconds': chunk.wallTime.inMilliseconds / 1000,
     }),
   );
 }
 
-/// Runs a command in a pseudo-terminal that outlives the call.
+/// Runs a command in a session that outlives the call.
 ///
 /// Subsumes one-shot execution: a command that finishes inside the wait
 /// returns its output and exit code with no session to clean up.
 class ExecCommandTool extends AgentTool {
   /// Creates an [ExecCommandTool].
-  factory ExecCommandTool({required ExecSessionHost host}) =>
-      ExecCommandTool._(host);
-
-  ExecCommandTool._(this._host);
+  ExecCommandTool({
+    required this._host,
+    this._fileSystem = const LocalFileSystem(),
+    this._platform = const LocalPlatform(),
+  });
 
   final ExecSessionHost _host;
+  final file_api.FileSystem _fileSystem;
+  final Platform _platform;
 
   @override
   String get name => execCommandToolName;
 
   @override
   String get description =>
-      'Run a shell command in a pseudo-terminal. If it finishes in time you '
-      'get its output and exit code; if it is still running you get a '
-      'sessionId to drive with $writeStdinToolName. Use it for one-off '
-      'commands as well as for REPLs and servers you want to keep alive.';
+      'Run a shell command. If it finishes in time you get its output and exit '
+      'code; if it is still running you get a sessionId to drive with '
+      '$writeStdinToolName. Use it for one-off commands as well as for REPLs '
+      'and servers you want to keep alive.';
 
   @override
   ToolRisk get risk => ToolRisk.command;
@@ -132,7 +166,26 @@ class ExecCommandTool extends AgentTool {
           'type': 'string',
           'description': 'The shell command to run.',
         },
-        'yield_time_ms': _yieldTimeSchema(),
+        'workdir': <String, dynamic>{
+          'type': <String>['string', 'null'],
+          'description':
+              'Directory to run in, relative to the workspace root. Null runs '
+              'at the root. Must stay inside the workspace.',
+        },
+        'tty': <String, dynamic>{
+          'type': <String>['boolean', 'null'],
+          'description':
+              'Whether to allocate a pseudo-terminal. Null and false use plain '
+              'pipes, which is what you want for ordinary commands: no escape '
+              'sequences and no echoed input. Pass true only for programs that '
+              'need a terminal, such as REPLs and full-screen tools.',
+        },
+        'yield_time_ms': _yieldTimeSchema(
+          fallback: defaultExecYieldTime,
+          clamping:
+              'Values are clamped to ${minExecYieldTime.inMilliseconds}…'
+              '${maxExecYieldTime.inMilliseconds}.',
+        ),
         'max_output_tokens': _outputTokensSchema(),
       });
 
@@ -142,7 +195,13 @@ class ExecCommandTool extends AgentTool {
     ToolExecutionContext context,
   ) async {
     final command = arguments['command'];
-    return command is String ? command : null;
+    if (command is! String) return null;
+    final workdir = arguments['workdir'];
+    // The directory is part of what the user is approving, so it belongs in
+    // the preview whenever it is not simply the workspace root.
+    return workdir is String && workdir.trim().isNotEmpty
+        ? '$command  (in $workdir)'
+        : command;
   }
 
   @override
@@ -159,14 +218,39 @@ class ExecCommandTool extends AgentTool {
         isError: true,
       );
     }
+    final String workingDirectory;
+    try {
+      workingDirectory = _resolveWorkdir(
+        arguments['workdir'],
+        context.workspaceRoot,
+      );
+    } on FileSystemException catch (error) {
+      // A bad directory is something the model can fix on the next call, so it
+      // is reported as tool output rather than failing the turn.
+      return ToolResult(
+        output: jsonEncode(<String, dynamic>{
+          'error': 'workdir is not a usable directory inside the workspace.',
+          'detail': error.message,
+        }),
+        isError: true,
+      );
+    }
     context.cancellation.throwIfCancelled();
-    final session = await _host.start(command, context.workspaceRoot);
+    final session = await _host.start(
+      command: command,
+      workingDirectory: workingDirectory,
+      tty: arguments['tty'] == true,
+    );
     // Reaching this line means the approval gate already passed, which is how
     // a session the user allowed becomes writable without re-asking.
     _host.markApproved(session.id);
     final chunk = await _readWithCancellation(
       session,
-      _yieldTime(arguments['yield_time_ms']),
+      _yieldTime(
+        arguments['yield_time_ms'],
+        fallback: defaultExecYieldTime,
+        floor: minExecYieldTime,
+      ),
       context.cancellation,
     );
     return ToolResult(
@@ -177,6 +261,19 @@ class ExecCommandTool extends AgentTool {
       ),
       isError: chunk.exitCode != null && chunk.exitCode != 0,
     );
+  }
+
+  String _resolveWorkdir(Object? raw, String workspaceRoot) {
+    if (raw is! String || raw.trim().isEmpty) return workspaceRoot;
+    final resolved = WorkspacePathGuard(
+      workspaceRoot,
+      fileSystem: _fileSystem,
+      platform: _platform,
+    ).resolveExisting(raw);
+    if (!_fileSystem.directory(resolved).existsSync()) {
+      throw FileSystemException('Not a directory.', resolved);
+    }
+    return resolved;
   }
 }
 
@@ -213,7 +310,15 @@ class WriteStdinTool extends AgentTool {
           'type': 'string',
           'description': 'Characters to write; empty polls for output.',
         },
-        'yield_time_ms': _yieldTimeSchema(),
+        'yield_time_ms': _yieldTimeSchema(
+          fallback: defaultWriteYieldTime,
+          clamping:
+              'An empty poll waits at least '
+              '${minPollYieldTime.inMilliseconds} and defaults to '
+              '${defaultExecYieldTime.inMilliseconds}; a write waits at least '
+              '${minExecYieldTime.inMilliseconds}. Both cap at '
+              '${maxExecYieldTime.inMilliseconds}.',
+        ),
         'max_output_tokens': _outputTokensSchema(),
       });
 
@@ -260,7 +365,19 @@ class WriteStdinTool extends AgentTool {
     if (chars.isNotEmpty) await session.write(chars);
     final chunk = await _readWithCancellation(
       session,
-      _yieldTime(arguments['yield_time_ms']),
+      // A write and a poll are different questions: a write asks a warm program
+      // to answer now, a poll waits for one that has nothing to say yet.
+      chars.isEmpty
+          ? _yieldTime(
+              arguments['yield_time_ms'],
+              fallback: defaultExecYieldTime,
+              floor: minPollYieldTime,
+            )
+          : _yieldTime(
+              arguments['yield_time_ms'],
+              fallback: defaultWriteYieldTime,
+              floor: minExecYieldTime,
+            ),
       context.cancellation,
     );
     return ToolResult(

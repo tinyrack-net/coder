@@ -22,12 +22,14 @@ class ExecSessionService {
   /// Creates an [ExecSessionService].
   ExecSessionService({
     required this._gateway,
+    required this._pipes,
     required this._ids,
     required this._clock,
     bool? isWindows,
   }) : isWindows = isWindows ?? Platform.isWindows;
 
   final TerminalGateway _gateway;
+  final PipeGateway _pipes;
   final IdGenerator _ids;
   final Clock _clock;
 
@@ -43,10 +45,14 @@ class ExecSessionService {
         ..sort((left, right) => left.lastUsed.compareTo(right.lastUsed));
 
   /// Starts [command] for the coder session [owner].
+  ///
+  /// [tty] chooses between a pseudo-terminal and plain pipes. Pipes are the
+  /// ordinary case; a terminal is what a REPL or a full-screen tool needs.
   Future<ExecSession> start({
     required String owner,
     required String command,
-    required String workspaceRoot,
+    required String workingDirectory,
+    required bool tty,
   }) async {
     sweepIdle();
     final existing = _ownedBy(owner);
@@ -69,12 +75,14 @@ class ExecSessionService {
             executable: '/bin/sh',
             arguments: <String>['-lc', command],
           );
-    final process = await _gateway.start(
-      shell: shell,
-      workingDirectory: workspaceRoot,
-      columns: 120,
-      rows: 40,
-    );
+    final process = tty
+        ? await _gateway.start(
+            shell: shell,
+            workingDirectory: workingDirectory,
+            columns: 120,
+            rows: 40,
+          )
+        : await _pipes.start(shell: shell, workingDirectory: workingDirectory);
     final session = _LiveExecSession(
       id: 'exec-${_ids.generate()}',
       owner: owner,
@@ -140,12 +148,16 @@ class SessionExecHost implements ExecSessionHost {
   final String _sessionId;
 
   @override
-  Future<ExecSession> start(String command, String workspaceRoot) =>
-      _service.start(
-        owner: _sessionId,
-        command: command,
-        workspaceRoot: workspaceRoot,
-      );
+  Future<ExecSession> start({
+    required String command,
+    required String workingDirectory,
+    required bool tty,
+  }) => _service.start(
+    owner: _sessionId,
+    command: command,
+    workingDirectory: workingDirectory,
+    tty: tty,
+  );
 
   @override
   ExecSession? lookup(String sessionId) =>
@@ -162,7 +174,7 @@ class _LiveExecSession implements ExecSession {
   _LiveExecSession({
     required this.id,
     required this.owner,
-    required TerminalProcess process,
+    required ExecProcess process,
     required Clock clock,
   }) : _process = process,
        _clock = clock,
@@ -187,7 +199,7 @@ class _LiveExecSession implements ExecSession {
   /// Coder session that owns this pseudo-terminal.
   final String owner;
 
-  final TerminalProcess _process;
+  final ExecProcess _process;
   final Clock _clock;
   final Completer<int> _finished = Completer<int>();
 
@@ -207,8 +219,9 @@ class _LiveExecSession implements ExecSession {
 
   @override
   Future<ExecSessionChunk> read(Duration yieldTime) async {
+    final startedAt = _clock.nowUtc();
     // Return as soon as the command exits, or when the wait elapses, whichever
-    // comes first. Anything the PTY produced meanwhile is already buffered.
+    // comes first. Anything the process produced meanwhile is already buffered.
     if (_exitCode == null) {
       await _finished.future
           .timeout(yieldTime)
@@ -224,15 +237,16 @@ class _LiveExecSession implements ExecSession {
       output: output,
       isRunning: _exitCode == null,
       exitCode: _exitCode,
+      wallTime: lastUsed.difference(startedAt),
     );
   }
 
   @override
   Future<void> interrupt() async {
     lastUsed = _clock.nowUtc();
-    // ETX is what Ctrl-C sends, so the foreground command stops and the shell
-    // itself keeps running.
-    await _process.write(String.fromCharCode(0x03));
+    // The transport decides what stopping means; either way the foreground
+    // command stops and the session itself keeps running.
+    await _process.interrupt();
   }
 
   /// Appends PTY output, dropping the oldest bytes once the buffer is full.
