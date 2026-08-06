@@ -1135,15 +1135,6 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   }
 }
 
-/// Height of the strip that holds the session and terminal tabs.
-///
-/// One medium control plus an extra-small inset on each side. A tab's dense
-/// row is exactly that tall once it holds its medium close button, so the tabs
-/// fill the strip instead of floating in leftover space, and the two menu
-/// commands beside them land on the same baseline.
-final double sessionTabBarHeight =
-    TRControlMetrics.heightOf(TRUiSize.md) + TRSpacing.extraSmall * 2;
-
 class _SessionArea extends ConsumerStatefulWidget {
   const _SessionArea({
     required this.selection,
@@ -1209,45 +1200,40 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     }
     return Column(
       children: <Widget>[
-        SizedBox(
+        TRTabs.bar(
           key: const ValueKey<String>('session-tab-strip'),
-          height: sessionTabBarHeight,
-          child: Row(
-            children: <Widget>[
-              if (widget.showBack)
-                TRIconButton(
+          semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
+          value: state?.selectedTerminalId ?? state?.selectedAgentId,
+          onValueChange: _selectTab,
+          leading: widget.showBack
+              ? TRIconButton(
                   appearance: TRAppearance.ghost,
                   label: MaterialLocalizations.of(context).backButtonTooltip,
                   onPressed: () => const WorkspaceHomeRoute().replace(context),
                   icon: const Icon(CoderIcons.back),
+                )
+              : null,
+          tabs: <TRTabsTab>[
+            if (state != null) ...<TRTabsTab>[
+              for (final id in state.openAgentIds)
+                _sessionTab(
+                  context,
+                  state.sessions.where((item) => item.id == id).first,
                 ),
-              Expanded(
-                child: state == null
-                    ? const TRProgress()
-                    : ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: <Widget>[
-                          for (final id in state.openAgentIds)
-                            _SessionTab(
-                              agent: state.sessions
-                                  .where((item) => item.id == id)
-                                  .first,
-                              selected: state.selectedAgentId == id,
-                              onSelect: () => _select(id),
-                              onClose: () => _close(id),
-                            ),
-                          for (final id in state.openTerminalIds)
-                            _TerminalTab(
-                              terminal: state.terminals
-                                  .where((item) => item.id == id)
-                                  .first,
-                              selected: state.selectedTerminalId == id,
-                              onSelect: () => _selectTerminal(id),
-                              onClose: () => _closeTerminal(id),
-                            ),
-                        ],
-                      ),
-              ),
+              for (final id in state.openTerminalIds)
+                _terminalTab(
+                  context,
+                  state.terminals.where((item) => item.id == id).first,
+                ),
+            ],
+          ],
+          actions: <Widget>[
+            // Until the tabs load there is nothing to command, so the strip
+            // spins where the menus will be rather than offering menus that
+            // would open onto an empty list.
+            if (state == null)
+              const TRSpinner()
+            else ...<Widget>[
               TRMenu.icon(
                 key: const ValueKey<String>('workspace-new-tab-menu'),
                 icon: const Icon(CoderIcons.add),
@@ -1271,37 +1257,31 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                   ),
                 ],
               ),
-              if (state != null)
-                TRMenu.icon(
-                  key: const ValueKey('workspace-all-sessions-menu'),
-                  icon: const Icon(CoderIcons.more),
-                  label: AppLocalizations.of(context).workspaceAllSessions,
-                  menuChildren: <Widget>[
-                    // Subagent sessions open through the subagent track of
-                    // their root conversation, never from the tab menu.
-                    for (final agent in state.sessions.where(
-                      (session) => !isSubagentSession(session),
-                    ))
-                      TRMenuItem(
-                        onPressed: () => _open(agent.id),
-                        child: TRText.inherit(agent.title),
-                      ),
-                    for (final terminal in state.terminals)
-                      TRMenuItem(
-                        leadingIcon: const Icon(CoderIcons.terminal),
-                        onPressed: () => _openTerminal(terminal.id),
-                        child: TRText.inherit(terminal.title),
-                      ),
-                  ],
-                ),
-              // The two commands end the strip, so without this their square
-              // hover and focus backgrounds would sit flush against the window
-              // edge and read as clipped.
-              const SizedBox(width: TRSpacing.extraSmall),
+              TRMenu.icon(
+                key: const ValueKey('workspace-all-sessions-menu'),
+                icon: const Icon(CoderIcons.more),
+                label: AppLocalizations.of(context).workspaceAllSessions,
+                menuChildren: <Widget>[
+                  // Subagent sessions open through the subagent track of
+                  // their root conversation, never from the tab menu.
+                  for (final agent in state.sessions.where(
+                    (session) => !isSubagentSession(session),
+                  ))
+                    TRMenuItem(
+                      onPressed: () => _open(agent.id),
+                      child: TRText.inherit(agent.title),
+                    ),
+                  for (final terminal in state.terminals)
+                    TRMenuItem(
+                      leadingIcon: const Icon(CoderIcons.terminal),
+                      onPressed: () => _openTerminal(terminal.id),
+                      child: TRText.inherit(terminal.title),
+                    ),
+                ],
+              ),
             ],
-          ),
+          ],
         ),
-        const TRSeparator(),
         Expanded(
           child: switch ((
             state?.selectedTerminalId,
@@ -1330,6 +1310,42 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           },
         ),
       ],
+    );
+  }
+
+  TRTabsTab _sessionTab(BuildContext context, SessionDto agent) {
+    final subagent = isSubagentSession(agent);
+    return TRTabsTab(
+      value: agent.id,
+      label: subagent ? agent.taskName ?? agent.title : agent.title,
+      leading: subagent ? SubagentStatusIcon(lifecycle: agent.lifecycle) : null,
+      onClose: () => unawaited(_close(agent.id)),
+      closeLabel: AppLocalizations.of(context).workspaceCloseTab,
+    );
+  }
+
+  TRTabsTab _terminalTab(BuildContext context, TerminalDto terminal) =>
+      TRTabsTab(
+        value: terminal.id,
+        label: terminal.title,
+        leading: const Icon(CoderIcons.terminal),
+        onClose: () => unawaited(_closeTerminal(terminal.id)),
+        closeLabel: AppLocalizations.of(context).workspaceCloseTab,
+      );
+
+  /// Routes a tab id to the right selector.
+  ///
+  /// Sessions and terminals share one strip, so the strip reports an id
+  /// without knowing which kind it names.
+  void _selectTab(String id) {
+    final state = ref
+        .read(sessionTabsControllerProvider(widget.selection))
+        .value;
+    if (state == null) return;
+    unawaited(
+      state.terminals.any((terminal) => terminal.id == id)
+          ? _selectTerminal(id)
+          : _select(id),
     );
   }
 
@@ -1438,82 +1454,6 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         .read(sessionTabsControllerProvider(widget.selection).notifier)
         .closeTerminal(id);
   }
-}
-
-class _SessionTab extends StatelessWidget {
-  const _SessionTab({
-    required this.agent,
-    required this.selected,
-    required this.onSelect,
-    required this.onClose,
-  });
-
-  final SessionDto agent;
-  final bool selected;
-  final VoidCallback onSelect;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 180,
-    child: CoderListRow(
-      dense: true,
-      selected: selected,
-      onTap: onSelect,
-      leading: isSubagentSession(agent)
-          ? SubagentStatusIcon(lifecycle: agent.lifecycle)
-          : null,
-      title: TRText.inherit(
-        isSubagentSession(agent) ? agent.taskName ?? agent.title : agent.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: TRIconButton(
-        key: ValueKey('session-tab-close-${agent.id}'),
-        appearance: TRAppearance.ghost,
-        label: AppLocalizations.of(context).workspaceCloseTab,
-        onPressed: onClose,
-        icon: const Icon(CoderIcons.close),
-      ),
-    ),
-  );
-}
-
-class _TerminalTab extends StatelessWidget {
-  const _TerminalTab({
-    required this.terminal,
-    required this.selected,
-    required this.onSelect,
-    required this.onClose,
-  });
-
-  final TerminalDto terminal;
-  final bool selected;
-  final VoidCallback onSelect;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 180,
-    child: CoderListRow(
-      dense: true,
-      selected: selected,
-      onTap: onSelect,
-      leading: const Icon(CoderIcons.terminal),
-      title: TRText.inherit(
-        terminal.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: TRIconButton(
-        key: ValueKey<String>('terminal-tab-close-${terminal.id}'),
-        appearance: TRAppearance.ghost,
-        label: AppLocalizations.of(context).workspaceCloseTab,
-        onPressed: onClose,
-        icon: const Icon(CoderIcons.close),
-      ),
-    ),
-  );
 }
 
 class _TerminalPane extends ConsumerStatefulWidget {

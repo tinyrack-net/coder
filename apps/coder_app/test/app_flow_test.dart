@@ -375,7 +375,7 @@ void main() {
   );
 
   testWidgets(
-    'session tab strip is one control tall and its commands are square',
+    'session tab strip is a TRTabs bar whose commands stay square',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -397,9 +397,19 @@ void main() {
       );
       addTearDown(router.dispose);
 
+      // The strip is the design system's tab bar, so its inset, its height,
+      // and the tone of the rule below it are upstream contracts covered by
+      // upstream tests. What Coder owns is that the open session reaches it as
+      // a closable tab.
+      final strip = find.byKey(const ValueKey('session-tab-strip'));
+      expect(strip, findsOneWidget);
+      expect(tester.widget<TRTabs>(strip).value, first.id);
       expect(
-        tester.getSize(find.byKey(const ValueKey('session-tab-strip'))).height,
-        sessionTabBarHeight,
+        find.descendant(
+          of: strip,
+          matching: find.byKey(const ValueKey<String>('tr-tabs-close-one')),
+        ),
+        findsOneWidget,
       );
 
       // The two menu commands sit beside the square close buttons on each tab,
@@ -445,7 +455,7 @@ void main() {
       addTearDown(router.dispose);
 
       await tester.tap(
-        find.byKey(const ValueKey('session-tab-close-one')),
+        find.byKey(const ValueKey('tr-tabs-close-one')),
       );
       await tester.pumpAndSettle();
       expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
@@ -460,7 +470,7 @@ void main() {
       await tester.tap(find.text('Session one'));
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('session-tab-close-one')),
+        find.byKey(const ValueKey('tr-tabs-close-one')),
         findsOneWidget,
       );
     },
@@ -497,7 +507,7 @@ void main() {
       expect(find.text('Terminal 1'), findsOneWidget);
       final terminal = (await api.listTerminals(checkout.id)).single;
       await tester.tap(
-        find.byKey(ValueKey<String>('terminal-tab-close-${terminal.id}')),
+        find.byKey(ValueKey<String>('tr-tabs-close-${terminal.id}')),
       );
       await tester.pumpAndSettle();
       expect(find.text('터미널을 종료할까요?'), findsOneWidget);
@@ -505,7 +515,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TRTerminalView), findsOneWidget);
       await tester.tap(
-        find.byKey(ValueKey<String>('terminal-tab-close-${terminal.id}')),
+        find.byKey(ValueKey<String>('tr-tabs-close-${terminal.id}')),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('terminal-close-confirm')));
@@ -555,7 +565,7 @@ void main() {
     expect(find.text('터미널 연결에 실패했어요'), findsOneWidget);
     expect(find.textContaining('host disconnected'), findsOneWidget);
     await tester.tap(
-      find.byKey(ValueKey<String>('terminal-tab-close-${terminal.id}')),
+      find.byKey(ValueKey<String>('tr-tabs-close-${terminal.id}')),
     );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('terminal-close-dialog')), findsNothing);
