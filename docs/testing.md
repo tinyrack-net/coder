@@ -128,6 +128,19 @@ is the Linux execution of the full suite; macOS and Windows run the non-coverage
 Dart and Flutter suites independently. The `Quality Gate` job requires every
 job to succeed and is the sole required branch-protection check.
 
+Merging goes through a merge queue. A pull request is not merged on the commit
+it was tested at: the queue rebuilds it on top of whatever `main` has become,
+runs the same quality set against that projected merge, and squashes it in.
+Nothing has to be rebased by hand to stay current, and a green pull request no
+longer goes stale because another one landed first. Enable auto-merge and the
+queue takes it from there.
+
+Two consequences worth knowing. A queue run reports as the `merge_group` event
+rather than `pull_request`, so a job that must run before merging cannot be
+gated on `pull_request` alone. And a cancelled queue check counts as a failure
+that ejects the pull request, which is why merge-queue runs opt out of
+`cancel-in-progress`.
+
 Nightly runs the same desktop shard matrix on macOS and Windows. Android and
 iOS run the remote-only bootstrap and provider suites; desktop-owned daemon,
 tray, window, and local Git-process scenarios remain desktop-only. Release
