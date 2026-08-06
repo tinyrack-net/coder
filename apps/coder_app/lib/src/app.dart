@@ -1137,6 +1137,15 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   }
 }
 
+/// Height of the strip that holds the session and terminal tabs.
+///
+/// One medium control plus an extra-small inset on each side. A tab's dense
+/// row is exactly that tall once it holds its medium close button, so the tabs
+/// fill the strip instead of floating in leftover space, and the two menu
+/// commands beside them land on the same baseline.
+final double sessionTabBarHeight =
+    TRControlMetrics.heightOf(TRUiSize.md) + TRSpacing.extraSmall * 2;
+
 class _SessionArea extends ConsumerStatefulWidget {
   const _SessionArea({
     required this.selection,
@@ -1203,7 +1212,8 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     return Column(
       children: <Widget>[
         SizedBox(
-          height: 48,
+          key: const ValueKey<String>('session-tab-strip'),
+          height: sessionTabBarHeight,
           child: Row(
             children: <Widget>[
               if (widget.showBack)
@@ -1240,12 +1250,10 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                         ],
                       ),
               ),
-              TRMenu(
+              TRMenu.icon(
                 key: const ValueKey<String>('workspace-new-tab-menu'),
-                trigger: Icon(
-                  CoderIcons.add,
-                  semanticLabel: AppLocalizations.of(context).workspaceNewTab,
-                ),
+                icon: const Icon(CoderIcons.add),
+                label: AppLocalizations.of(context).workspaceNewTab,
                 menuChildren: <Widget>[
                   TRMenuItem(
                     key: const ValueKey<String>('workspace-new-session'),
@@ -1266,14 +1274,10 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                 ],
               ),
               if (state != null)
-                TRMenu(
+                TRMenu.icon(
                   key: const ValueKey('workspace-all-sessions-menu'),
-                  trigger: Icon(
-                    CoderIcons.more,
-                    semanticLabel: AppLocalizations.of(
-                      context,
-                    ).workspaceAllSessions,
-                  ),
+                  icon: const Icon(CoderIcons.more),
+                  label: AppLocalizations.of(context).workspaceAllSessions,
                   menuChildren: <Widget>[
                     for (final agent in state.sessions)
                       TRMenuItem(
@@ -1288,6 +1292,10 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                       ),
                   ],
                 ),
+              // The two commands end the strip, so without this their square
+              // hover and focus backgrounds would sit flush against the window
+              // edge and read as clipped.
+              const SizedBox(width: TRSpacing.extraSmall),
             ],
           ),
         ),
