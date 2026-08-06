@@ -18,6 +18,9 @@ Future<GoRouter> pumpRoutedApp(
   FakeCoderApi api, {
   required String initialLocation,
   MemoryAppStore? store,
+  // A screen with a perpetual animation (a running subagent spinner, for
+  // instance) never settles; such tests pump fixed frames instead.
+  bool settle = true,
 }) async {
   final router = GoRouter(initialLocation: initialLocation, routes: $appRoutes);
   await tester.pumpWidget(
@@ -37,7 +40,13 @@ Future<GoRouter> pumpRoutedApp(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    for (var frame = 0; frame < 8; frame += 1) {
+      await tester.pump(const Duration(milliseconds: 250));
+    }
+  }
   return router;
 }
 

@@ -420,6 +420,15 @@ void main() {
       expect(await client.listSessions(worktreeId: worktree.id), <SessionDto>[
         agent,
       ]);
+      expect(await client.listSubagents(agent.id), <SessionDto>[agent]);
+      expect(
+        connector.requests
+            .lastWhere(
+              (request) => request.method == RpcMethod.sessionSubagentList,
+            )
+            .payload,
+        SessionSubagentListParamsDto(sessionId: agent.id).toJson(),
+      );
       expect(
         await client.createSession(
           id: agent.id,
@@ -742,6 +751,7 @@ void main() {
           RpcMethod.projectSettingsGet,
           RpcMethod.projectSettingsSave,
           RpcMethod.sessionList,
+          RpcMethod.sessionSubagentList,
           RpcMethod.sessionCreate,
           RpcMethod.sessionModelSet,
           RpcMethod.sessionModeSet,
@@ -1157,6 +1167,9 @@ void _registerFixtureMethods(
       sourcePath: '/workspace/coder.json',
     ).toJson(),
     RpcMethod.sessionList: SessionListResultDto(
+      sessions: <SessionDto>[agent],
+    ).toJson(),
+    RpcMethod.sessionSubagentList: SessionListResultDto(
       sessions: <SessionDto>[agent],
     ).toJson(),
     RpcMethod.sessionCreate: SessionResultDto(session: agent).toJson(),

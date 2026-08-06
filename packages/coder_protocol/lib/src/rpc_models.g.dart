@@ -144,6 +144,14 @@ Map<String, dynamic> _$SessionListParamsDtoToJson(
   _SessionListParamsDto instance,
 ) => <String, dynamic>{'worktreeId': instance.worktreeId};
 
+_SessionSubagentListParamsDto _$SessionSubagentListParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionSubagentListParamsDto(sessionId: json['sessionId'] as String);
+
+Map<String, dynamic> _$SessionSubagentListParamsDtoToJson(
+  _SessionSubagentListParamsDto instance,
+) => <String, dynamic>{'sessionId': instance.sessionId};
+
 _SessionCreateParamsDto _$SessionCreateParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _SessionCreateParamsDto(

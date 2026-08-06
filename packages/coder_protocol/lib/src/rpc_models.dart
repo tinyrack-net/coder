@@ -159,6 +159,19 @@ abstract class SessionListParamsDto with _$SessionListParamsDto {
 }
 
 @freezed
+/// Selects the collaboration tree containing one session.
+abstract class SessionSubagentListParamsDto
+    with _$SessionSubagentListParamsDto {
+  /// Creates subagent list parameters.
+  const factory SessionSubagentListParamsDto({required String sessionId}) =
+      _SessionSubagentListParamsDto;
+
+  /// Decodes subagent list parameters.
+  factory SessionSubagentListParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionSubagentListParamsDtoFromJson(json);
+}
+
+@freezed
 /// Creates a user-visible session from a primary agent definition.
 abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
   /// Creates session creation parameters.

@@ -742,29 +742,71 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
     },
     isFailure: _execIsFailure,
   ),
-  'delegate_agent': _ToolSpec(
+  'spawn_agent': _ToolSpec(
     glyph: ChatToolGlyph.delegate,
     title: (l10n, activity) =>
-        'Task(${_stringArg(activity, 'agentDefinitionId') ?? '?'})',
-    argumentBody: (activity) {
-      final prompt = _stringArg(activity, 'prompt');
-      return prompt == null || prompt.isEmpty
-          ? const ChatToolEmptyBody()
-          : ChatToolTextBody(prompt);
-    },
+        'Spawn(${_stringArg(activity, 'task_name') ?? '?'})',
+    argumentBody: _messageArgumentBody,
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
-      final status = output.value['status'];
-      final finalText = output.value['finalText'];
-      if (status is! String) return _genericResult(l10n, output);
-      if (finalText is! String || finalText.isEmpty) return status;
-      return '$status · ${_truncate(_firstLine(finalText), 80)}';
+      final error = output.value['error'];
+      if (error is String) return error;
+      final path = output.value['task_name'];
+      return path is String ? path : _genericResult(l10n, output);
     },
-    body: (activity, output) {
-      if (output is ChatToolJsonObject && output.value['finalText'] is String) {
-        return ChatToolTextBody(output.value['finalText']! as String);
-      }
-      return _plainBody(activity, output);
+  ),
+  'send_message': _ToolSpec(
+    glyph: ChatToolGlyph.delegate,
+    title: (l10n, activity) => 'Send(${_stringArg(activity, 'target') ?? '?'})',
+    argumentBody: _messageArgumentBody,
+    result: (l10n, activity, output) => l10n.chatToolSubagentQueued,
+  ),
+  'followup_task': _ToolSpec(
+    glyph: ChatToolGlyph.delegate,
+    title: (l10n, activity) =>
+        'Followup(${_stringArg(activity, 'target') ?? '?'})',
+    argumentBody: _messageArgumentBody,
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final delivery = output.value['delivery'];
+      return delivery is String ? delivery : _genericResult(l10n, output);
+    },
+  ),
+  'wait_agent': _ToolSpec(
+    glyph: ChatToolGlyph.delegate,
+    title: (l10n, activity) => 'Wait()',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final message = output.value['message'];
+      return message is String ? message : _genericResult(l10n, output);
+    },
+  ),
+  'interrupt_agent': _ToolSpec(
+    glyph: ChatToolGlyph.delegate,
+    title: (l10n, activity) =>
+        'Interrupt(${_stringArg(activity, 'target') ?? '?'})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final previous = output.value['previous_status'];
+      return previous is String ? previous : _genericResult(l10n, output);
+    },
+  ),
+  'list_agents': _ToolSpec(
+    glyph: ChatToolGlyph.delegate,
+    title: (l10n, activity) => 'Agents()',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final agents = output.value['agents'];
+      if (agents is! List) return _genericResult(l10n, output);
+      return l10n.chatToolSubagentCount(agents.length);
     },
   ),
 };
@@ -793,6 +835,13 @@ final _ToolSpec _mcpSpec = _ToolSpec(
   },
   isFailure: _hasErrorKey,
 );
+
+ChatToolBody _messageArgumentBody(ChatToolActivity activity) {
+  final message = _stringArg(activity, 'message');
+  return message == null || message.isEmpty
+      ? const ChatToolEmptyBody()
+      : ChatToolTextBody(message);
+}
 
 final _ToolSpec _genericSpec = _ToolSpec(
   glyph: ChatToolGlyph.generic,

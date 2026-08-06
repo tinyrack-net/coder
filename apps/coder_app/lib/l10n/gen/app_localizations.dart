@@ -1850,6 +1850,60 @@ abstract class AppLocalizations {
   /// **'{found} loaded · {remaining} still hidden'**
   String toolSearchFound(int found, int remaining);
 
+  /// Header of the collapsible subagent track.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 subagent} other{{count} subagents}}'**
+  String subagentTrackHeader(int count);
+
+  /// Running-count badge on the subagent track header.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} running'**
+  String subagentTrackRunning(int count);
+
+  /// Semantics label of a running subagent.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get subagentStatusRunning;
+
+  /// Semantics label of a completed subagent.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get subagentStatusCompleted;
+
+  /// Semantics label of an interrupted subagent.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted'**
+  String get subagentStatusInterrupted;
+
+  /// Semantics label of a failed subagent.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get subagentStatusErrored;
+
+  /// Subtitle notice on the read-only subagent pane.
+  ///
+  /// In en, this message translates to:
+  /// **'Subagent conversation · read-only'**
+  String get subagentReadOnlyNotice;
+
+  /// Result line of a queued inter-agent message.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get chatToolSubagentQueued;
+
+  /// Result line of the collaboration agent list.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} agents'**
+  String chatToolSubagentCount(int count);
+
   /// Notice that some tools were not advertised up front.
   ///
   /// In en, this message translates to:

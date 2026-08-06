@@ -162,21 +162,80 @@ void main() {
       expect(failedRun.resultLine, '종료 코드 3 · 0줄');
       expect(failedRun.isFailure, isTrue);
 
-      final task = describeToolActivity(
+      final spawn = describeToolActivity(
         testL10n,
         activity(
-          'delegate_agent',
+          'spawn_agent',
           arguments: <String, dynamic>{
-            'agentDefinitionId': 'reviewer',
-            'prompt': 'Review the diff',
+            'task_name': 'review_task',
+            'message': 'Review the diff',
           },
-          output:
-              '{"childSessionId":"s","status":"completed",'
-              '"finalText":"Looks good"}',
+          output: '{"task_name":"/root/review_task"}',
         ),
       );
-      expect(task.title, 'Task(reviewer)');
-      expect(task.resultLine, 'completed · Looks good');
+      expect(spawn.title, 'Spawn(review_task)');
+      expect(spawn.resultLine, '/root/review_task');
+
+      final send = describeToolActivity(
+        testL10n,
+        activity(
+          'send_message',
+          arguments: <String, dynamic>{
+            'target': 'review_task',
+            'message': 'Status?',
+          },
+          output: '{"queued":true}',
+        ),
+      );
+      expect(send.title, 'Send(review_task)');
+
+      final followup = describeToolActivity(
+        testL10n,
+        activity(
+          'followup_task',
+          arguments: <String, dynamic>{
+            'target': 'review_task',
+            'message': 'Also check tests',
+          },
+          output: '{"delivery":"triggered"}',
+        ),
+      );
+      expect(followup.title, 'Followup(review_task)');
+      expect(followup.resultLine, 'triggered');
+
+      final wait = describeToolActivity(
+        testL10n,
+        activity(
+          'wait_agent',
+          arguments: <String, dynamic>{'timeout_ms': 30000},
+          output: '{"message":"Wait timed out.","timed_out":true}',
+        ),
+      );
+      expect(wait.title, 'Wait()');
+      expect(wait.resultLine, 'Wait timed out.');
+
+      final interrupt = describeToolActivity(
+        testL10n,
+        activity(
+          'interrupt_agent',
+          arguments: <String, dynamic>{'target': 'review_task'},
+          output: '{"previous_status":"running"}',
+        ),
+      );
+      expect(interrupt.title, 'Interrupt(review_task)');
+      expect(interrupt.resultLine, 'running');
+
+      final agentList = describeToolActivity(
+        testL10n,
+        activity(
+          'list_agents',
+          arguments: <String, dynamic>{'path_prefix': null},
+          output:
+              '{"agents":[{"agent_name":"/root",'
+              '"agent_status":"completed"}]}',
+        ),
+      );
+      expect(agentList.title, 'Agents()');
     },
     tags: const <String>['feature_test__turn_execution__unit'],
   );

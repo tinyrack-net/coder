@@ -1259,6 +1259,57 @@
       }
     }
   },
+  "subagentTrackHeader": "{count, plural, =1{1 subagent} other{{count} subagents}}",
+  "@subagentTrackHeader": {
+    "description": "Header of the collapsible subagent track.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subagentTrackRunning": "{count} running",
+  "@subagentTrackRunning": {
+    "description": "Running-count badge on the subagent track header.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subagentStatusRunning": "Running",
+  "@subagentStatusRunning": {
+    "description": "Semantics label of a running subagent."
+  },
+  "subagentStatusCompleted": "Completed",
+  "@subagentStatusCompleted": {
+    "description": "Semantics label of a completed subagent."
+  },
+  "subagentStatusInterrupted": "Interrupted",
+  "@subagentStatusInterrupted": {
+    "description": "Semantics label of an interrupted subagent."
+  },
+  "subagentStatusErrored": "Failed",
+  "@subagentStatusErrored": {
+    "description": "Semantics label of a failed subagent."
+  },
+  "subagentReadOnlyNotice": "Subagent conversation · read-only",
+  "@subagentReadOnlyNotice": {
+    "description": "Subtitle notice on the read-only subagent pane."
+  },
+  "chatToolSubagentQueued": "Queued",
+  "@chatToolSubagentQueued": {
+    "description": "Result line of a queued inter-agent message."
+  },
+  "chatToolSubagentCount": "{count} agents",
+  "@chatToolSubagentCount": {
+    "description": "Result line of the collaboration agent list.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "chatDeferredTools": "{count} tools are available through search",
   "@chatDeferredTools": {
     "description": "Notice that some tools were not advertised up front.",

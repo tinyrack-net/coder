@@ -442,6 +442,15 @@ class CoderClient implements CoderApi {
   }
 
   @override
+  Future<List<SessionDto>> listSubagents(String sessionId) async {
+    final response = await _request(
+      RpcMethod.sessionSubagentList,
+      SessionSubagentListParamsDto(sessionId: sessionId).toJson(),
+    );
+    return SessionListResultDto.fromJson(response).sessions;
+  }
+
+  @override
   Future<SessionDto> createSession({
     required String id,
     required String worktreeId,

@@ -2954,6 +2954,269 @@ as String?,
 
 
 /// @nodoc
+mixin _$SessionSubagentListParamsDto {
+
+ String get sessionId;
+/// Create a copy of SessionSubagentListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SessionSubagentListParamsDtoCopyWith<SessionSubagentListParamsDto> get copyWith => _$SessionSubagentListParamsDtoCopyWithImpl<SessionSubagentListParamsDto>(this as SessionSubagentListParamsDto, _$identity);
+
+  /// Serializes this SessionSubagentListParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSubagentListParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId);
+
+@override
+String toString() {
+  return 'SessionSubagentListParamsDto(sessionId: $sessionId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SessionSubagentListParamsDtoCopyWith<$Res>  {
+  factory $SessionSubagentListParamsDtoCopyWith(SessionSubagentListParamsDto value, $Res Function(SessionSubagentListParamsDto) _then) = _$SessionSubagentListParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SessionSubagentListParamsDtoCopyWithImpl<$Res>
+    implements $SessionSubagentListParamsDtoCopyWith<$Res> {
+  _$SessionSubagentListParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SessionSubagentListParamsDto _self;
+  final $Res Function(SessionSubagentListParamsDto) _then;
+
+/// Create a copy of SessionSubagentListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SessionSubagentListParamsDto].
+extension SessionSubagentListParamsDtoPatterns on SessionSubagentListParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionSubagentListParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SessionSubagentListParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionSubagentListParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SessionSubagentListParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionSubagentListParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SessionSubagentListParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SessionSubagentListParamsDto() when $default != null:
+return $default(_that.sessionId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId)  $default,) {final _that = this;
+switch (_that) {
+case _SessionSubagentListParamsDto():
+return $default(_that.sessionId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId)?  $default,) {final _that = this;
+switch (_that) {
+case _SessionSubagentListParamsDto() when $default != null:
+return $default(_that.sessionId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SessionSubagentListParamsDto implements SessionSubagentListParamsDto {
+  const _SessionSubagentListParamsDto({required this.sessionId});
+  factory _SessionSubagentListParamsDto.fromJson(Map<String, dynamic> json) => _$SessionSubagentListParamsDtoFromJson(json);
+
+@override final  String sessionId;
+
+/// Create a copy of SessionSubagentListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SessionSubagentListParamsDtoCopyWith<_SessionSubagentListParamsDto> get copyWith => __$SessionSubagentListParamsDtoCopyWithImpl<_SessionSubagentListParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SessionSubagentListParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSubagentListParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId);
+
+@override
+String toString() {
+  return 'SessionSubagentListParamsDto(sessionId: $sessionId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SessionSubagentListParamsDtoCopyWith<$Res> implements $SessionSubagentListParamsDtoCopyWith<$Res> {
+  factory _$SessionSubagentListParamsDtoCopyWith(_SessionSubagentListParamsDto value, $Res Function(_SessionSubagentListParamsDto) _then) = __$SessionSubagentListParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId
+});
+
+
+
+
+}
+/// @nodoc
+class __$SessionSubagentListParamsDtoCopyWithImpl<$Res>
+    implements _$SessionSubagentListParamsDtoCopyWith<$Res> {
+  __$SessionSubagentListParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _SessionSubagentListParamsDto _self;
+  final $Res Function(_SessionSubagentListParamsDto) _then;
+
+/// Create a copy of SessionSubagentListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,}) {
+  return _then(_SessionSubagentListParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$SessionCreateParamsDto {
 
  String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; SessionModelSelectionDto? get model; String? get reasoningEffort; PermissionMode? get permissionMode; String? get serviceTier;

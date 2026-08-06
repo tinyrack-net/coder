@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/agent_clock.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
+import 'package:coder_daemon/src/multi_agent.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
@@ -27,7 +27,7 @@ typedef AgentToolsFactory =
 typedef ExecHostFactory = ExecSessionHost Function(String sessionId);
 
 /// SessionService defines a public contract.
-class SessionService {
+class SessionService implements SessionRuntimePort {
   /// Creates a [SessionService].
   SessionService({
     required this._sessions,
@@ -70,7 +70,14 @@ class SessionService {
   final Map<String, Completer<AgentRunResult>> _turnCompletions =
       <String, Completer<AgentRunResult>>{};
 
+  /// The collaboration layer, bound once from the composition root.
+  MultiAgentService? multiAgent;
+
+  @override
+  bool hasActiveTurn(String sessionId) => _activeTurns.containsKey(sessionId);
+
   /// The startTurn public API member.
+  @override
   Future<bool> startTurn({
     required String sessionId,
     required String turnId,
@@ -96,6 +103,41 @@ class SessionService {
     if (worktree == null || worktree.archivedAt != null) {
       throw StateError('Worktree not found: ${session.worktreeId}');
     }
+    // Subagent turns hold a per-tree concurrency slot from here on; the slot
+    // is released by `onTurnFinished` once the launched run terminates, or in
+    // the `finally` below when the turn never launches.
+    multiAgent?.acquireTurnSlot(session);
+    var launched = false;
+    try {
+      return await _startAcquiredTurn(
+        session: session,
+        definition: definition,
+        resolvedModel: resolvedModel,
+        worktree: worktree,
+        sessionId: sessionId,
+        turnId: turnId,
+        prompt: prompt,
+        attachmentIds: attachmentIds,
+        trackCompletion: trackCompletion,
+        onLaunched: () => launched = true,
+      );
+    } finally {
+      if (!launched) multiAgent?.releaseTurnSlot(session);
+    }
+  }
+
+  Future<bool> _startAcquiredTurn({
+    required SessionDto session,
+    required AgentDefinitionDto definition,
+    required ResolvedAgentModel resolvedModel,
+    required WorktreeDto worktree,
+    required String sessionId,
+    required String turnId,
+    required String prompt,
+    required List<String> attachmentIds,
+    required bool trackCompletion,
+    required void Function() onLaunched,
+  }) async {
     final created = await _sessions.createTurn(
       id: turnId,
       sessionId: sessionId,
@@ -117,6 +159,7 @@ class SessionService {
       SessionStatus.running,
       activeTurnId: turnId,
     );
+    await multiAgent?.onTurnStarted(session);
     // Cached on the row so the context meter reads the same window the turn
     // runs against, without a catalog lookup on every session read.
     _emitSession(
@@ -185,15 +228,7 @@ class SessionService {
         ListSkillsTool(skills),
         SkillTool(skills),
       ],
-      if (definition.mode == AgentMode.primary &&
-          definition.callableAgentIds.isNotEmpty)
-        DelegateAgentTool(
-          gateway: _SessionDelegationGateway(
-            parentSession: session,
-            parentDefinition: definition,
-            service: this,
-          ),
-        ),
+      ...?multiAgent?.collaborationToolsFor(session, definition, turnId),
     ];
 
     final runner = AgentRunner(
@@ -229,6 +264,7 @@ class SessionService {
       onStatus: reportStatus,
       onProviderItems: (items) =>
           _timeline.appendProviderItems(sessionId, items),
+      pendingTurnInput: multiAgent?.drainSourceFor(sessionId),
       // The runner emits `context.reset` itself; this only makes the discard
       // durable so a reconnect does not replay the retired window.
       contextResets: _DatabaseContextResetCoordinator(
@@ -269,16 +305,27 @@ class SessionService {
           attachments: turnAttachments,
           safetyIdentifier: _safetyIdentifier,
           sessionMode: session.mode,
-          customSystemPrompt: definition.promptEnabled
-              ? definition.systemPrompt
-              : null,
+          customSystemPrompt: _composeCustomPrompt(
+            definition.promptEnabled ? definition.systemPrompt : null,
+            multiAgent?.usageHintFor(session, definition),
+          ),
           skills: skillSummaries,
           contextWindowTokens: resolvedModel.limits?.context,
         ),
         cancellation,
       ),
     );
+    onLaunched();
     return true;
+  }
+
+  String? _composeCustomPrompt(String? definitionPrompt, String? collabHint) {
+    final trimmedDefinition =
+        definitionPrompt != null && definitionPrompt.trim().isNotEmpty
+        ? definitionPrompt
+        : null;
+    final parts = <String>[?trimmedDefinition, ?collabHint];
+    return parts.isEmpty ? null : parts.join('\n\n');
   }
 
   Future<List<ConversationItem>> _hydrateHistory(
@@ -303,20 +350,54 @@ class SessionService {
     AgentRunRequest request,
     CancellationToken cancellation,
   ) async {
+    TurnStatus outcome;
+    String? finalText;
+    String? failure;
     try {
       final result = await runner.startTurn(request, cancellation);
       await _sessions.updateTurn(request.turnId, TurnStatus.completed);
       _completeTurn(request.turnId, result);
+      outcome = TurnStatus.completed;
+      finalText = result.conversationItems
+          .whereType<AssistantConversationItem>()
+          .map((item) => item.text)
+          .where((text) => text.isNotEmpty)
+          .lastOrNull;
     } on AgentCancelledException {
       await _sessions.updateTurn(request.turnId, TurnStatus.cancelled);
       _failTurnCompletion(request.turnId, const AgentCancelledException());
+      outcome = TurnStatus.cancelled;
     } on Exception catch (error) {
       await _markTurnFailed(request.turnId, error);
       _failTurnCompletion(request.turnId, error);
+      outcome = TurnStatus.failed;
+      failure = '$error';
     } finally {
       if (identical(_activeTurns[request.sessionId], cancellation)) {
         _activeTurns.remove(request.sessionId);
       }
+    }
+    // Runs after the turn slot is free so collaboration follow-ups can start
+    // the session's next turn immediately.
+    try {
+      await multiAgent?.onTurnFinished(
+        sessionId: request.sessionId,
+        outcome: outcome,
+        finalText: finalText,
+        error: failure,
+      );
+    } on Exception {
+      // See the StateError clause below: this runner is detached, so an
+      // escaping failure has no handler above it.
+    }
+    // The daemon closes its database while turns may still be settling, and
+    // drift reports a query that outlives it as a StateError. Restart
+    // recovery reconciles session state and queued mail is durable, so
+    // there is nothing to salvage — but letting it escape a detached runner
+    // would surface as an unhandled error.
+    // ignore: avoid_catching_errors
+    on StateError {
+      // Nothing to salvage; see above.
     }
   }
 
@@ -324,6 +405,7 @@ class SessionService {
       _sessions.updateTurn(turnId, TurnStatus.failed, error: '$error');
 
   /// The cancelTurn public API member.
+  @override
   Future<void> cancelTurn(String sessionId) async =>
       _activeTurns[sessionId]?.cancel();
 
@@ -464,6 +546,7 @@ class SessionService {
   /// The notice is sticky: a client that queues something before the agent
   /// starts waiting would otherwise have its signal dropped, and the next
   /// sleep would run its full duration.
+  @override
   Future<void> pendingInput(String sessionId) {
     if (_notedInput.remove(sessionId)) return Future<void>.value();
     return _pendingInput.putIfAbsent(sessionId, Completer<void>.new).future;
@@ -562,124 +645,24 @@ class SessionService {
     SessionDto session,
     AgentDefinitionDto definition,
   ) async {
-    final own = session.permissionMode ?? definition.permissionMode;
-    final parentId = session.parentSessionId;
-    if (parentId == null) return own;
-    final parent = await _sessions.getById(parentId);
-    if (parent == null) return PermissionMode.readOnly;
-    final parentDefinition = await _definitions.resolve(
-      parent.agentDefinitionId,
-    );
-    // A session override may narrow the parent's permissions but never widen
-    // them, so a delegated agent cannot escalate past its caller.
-    return _moreRestrictive(
-      parent.permissionMode ?? parentDefinition.permissionMode,
-      own,
-    );
-  }
-
-  Future<ToolResult> _delegate({
-    required SessionDto parentSession,
-    required AgentDefinitionDto parentDefinition,
-    required String agentDefinitionId,
-    required String prompt,
-    required CancellationToken cancellation,
-  }) async {
-    if (parentSession.parentSessionId != null ||
-        !parentDefinition.callableAgentIds.contains(agentDefinitionId)) {
-      throw StateError('Agent delegation is not allowed: $agentDefinitionId');
-    }
-    final childDefinition = await _definitions.get(agentDefinitionId);
-    if (childDefinition.mode != AgentMode.subagent ||
-        childDefinition.isArchived ||
-        childDefinition.isStale) {
-      throw StateError('Callable subagent is unavailable: $agentDefinitionId');
-    }
-    final now = _clock.nowUtc();
-    final childModel = childDefinition.model.source == AgentModelSource.session
-        ? await _effectiveSessionModel(parentSession, parentDefinition)
-        : null;
-    final child = await _sessions.create(
-      SessionDto(
-        id: _ids.generate(),
-        worktreeId: parentSession.worktreeId,
-        title: childDefinition.name,
-        agentDefinitionId: childDefinition.id,
-        parentSessionId: parentSession.id,
-        origin: SessionOrigin.delegated,
-        // A planning parent must not delegate work that mutates the workspace.
-        mode: parentSession.mode,
-        status: SessionStatus.idle,
-        model: childModel,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
-    _emitSession(child);
-    final childTurnId = _ids.generate();
-    await _sessions.updateStatus(
-      parentSession.id,
-      SessionStatus.waitingForSubagent,
-    );
-    _emitSession(await _sessions.getById(parentSession.id));
-    try {
-      if (!await startTurn(
-        sessionId: child.id,
-        turnId: childTurnId,
-        prompt: prompt,
-        trackCompletion: true,
-      )) {
-        throw StateError('Delegated turn ID already exists.');
-      }
-      cancellation.onCancel(() {
-        unawaited(cancelTurn(child.id));
-      });
-      final completion = _turnCompletions[childTurnId];
-      if (completion == null) {
-        throw StateError('Delegated turn completion is unavailable.');
-      }
-      final result = await completion.future;
-      final finalText = result.conversationItems
-          .whereType<AssistantConversationItem>()
-          .map((item) => item.text)
-          .where((text) => text.isNotEmpty)
-          .lastOrNull;
-      return ToolResult(
-        output:
-            '{"childSessionId":"${child.id}",'
-            '"status":"completed",'
-            '"finalText":${jsonEncode(finalText ?? '')}}',
+    // A session override may narrow an ancestor's permissions but never widen
+    // them, so no agent in a nested tree can escalate past any ancestor.
+    var mode = session.permissionMode ?? definition.permissionMode;
+    var parentId = session.parentSessionId;
+    final visited = <String>{session.id};
+    while (parentId != null && visited.add(parentId)) {
+      final parent = await _sessions.getById(parentId);
+      if (parent == null) return PermissionMode.readOnly;
+      final parentDefinition = await _definitions.resolve(
+        parent.agentDefinitionId,
       );
-    } finally {
-      _turnCompletions.remove(childTurnId);
-      if (!cancellation.isCancelled) {
-        await _sessions.updateStatus(parentSession.id, SessionStatus.running);
-        _emitSession(await _sessions.getById(parentSession.id));
-      }
-    }
-  }
-
-  /// Resolves the model a session runs on for inheritance by a subagent.
-  ///
-  /// Returns null when nothing resolves, which is safe: the child re-runs the
-  /// full chain at turn start.
-  Future<SessionModelSelectionDto?> _effectiveSessionModel(
-    SessionDto session,
-    AgentDefinitionDto definition,
-  ) async {
-    final selected = session.model;
-    if (selected != null) return selected;
-    final providerConnectionId = definition.model.providerConnectionId;
-    final modelId = definition.model.modelId;
-    if (definition.model.source == AgentModelSource.fixed &&
-        providerConnectionId != null &&
-        modelId != null) {
-      return SessionModelSelectionDto(
-        providerConnectionId: providerConnectionId,
-        modelId: modelId,
+      mode = _moreRestrictive(
+        parent.permissionMode ?? parentDefinition.permissionMode,
+        mode,
       );
+      parentId = parent.parentSessionId;
     }
-    return _providers.fallbackModel();
+    return mode;
   }
 
   void _completeTurn(String turnId, AgentRunResult result) {
@@ -704,110 +687,6 @@ PermissionMode _moreRestrictive(PermissionMode left, PermissionMode right) {
     PermissionMode.workspaceWrite: 2,
   };
   return rank[left]! <= rank[right]! ? left : right;
-}
-
-/// Runs one delegated turn on behalf of a parent session.
-///
-/// A port rather than a direct call into [SessionService], so the tool's own
-/// contract — argument validation, what it reports, how it fails — can be
-/// exercised without standing up a database, a provider, and a turn loop.
-abstract interface class AgentDelegationGateway {
-  /// Starts the child turn and waits for its result.
-  Future<ToolResult> delegate({
-    required String agentDefinitionId,
-    required String prompt,
-    required CancellationToken cancellation,
-  });
-}
-
-/// Delegates a bounded task to one allowed subagent.
-final class DelegateAgentTool extends AgentTool {
-  /// Creates a [DelegateAgentTool].
-  DelegateAgentTool({required this._gateway});
-
-  final AgentDelegationGateway _gateway;
-
-  @override
-  String get name => 'delegate_agent';
-
-  @override
-  String get description =>
-      'Delegate a bounded task to one allowed subagent and wait for its '
-      'result.';
-
-  @override
-  ToolRisk get risk => ToolRisk.read;
-
-  @override
-  Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
-    'type': 'object',
-    'properties': <String, dynamic>{
-      'agentDefinitionId': <String, dynamic>{'type': 'string'},
-      'prompt': <String, dynamic>{'type': 'string'},
-    },
-    'required': <String>['agentDefinitionId', 'prompt'],
-    'additionalProperties': false,
-  };
-
-  @override
-  Future<String?> preview(
-    Map<String, dynamic> arguments,
-    ToolExecutionContext context,
-  ) async {
-    final id = arguments['agentDefinitionId'];
-    return id is String ? id : null;
-  }
-
-  @override
-  Future<ToolResult> execute(
-    Map<String, dynamic> arguments,
-    ToolExecutionContext context,
-  ) async {
-    final agentDefinitionId = arguments['agentDefinitionId'];
-    final prompt = arguments['prompt'];
-    if (agentDefinitionId is! String || agentDefinitionId.isEmpty) {
-      return _reject('agentDefinitionId must be a non-empty string.');
-    }
-    if (prompt is! String || prompt.trim().isEmpty) {
-      return _reject('prompt must be a non-empty string.');
-    }
-    return _gateway.delegate(
-      agentDefinitionId: agentDefinitionId,
-      prompt: prompt,
-      cancellation: context.cancellation,
-    );
-  }
-
-  static ToolResult _reject(String reason) => ToolResult(
-    output: jsonEncode(<String, dynamic>{'error': reason}),
-    isError: true,
-  );
-}
-
-/// Binds one parent session to the service that runs its delegated turns.
-final class _SessionDelegationGateway implements AgentDelegationGateway {
-  const _SessionDelegationGateway({
-    required this.parentSession,
-    required this.parentDefinition,
-    required this.service,
-  });
-
-  final SessionDto parentSession;
-  final AgentDefinitionDto parentDefinition;
-  final SessionService service;
-
-  @override
-  Future<ToolResult> delegate({
-    required String agentDefinitionId,
-    required String prompt,
-    required CancellationToken cancellation,
-  }) => service._delegate(
-    parentSession: parentSession,
-    parentDefinition: parentDefinition,
-    agentDefinitionId: agentDefinitionId,
-    prompt: prompt,
-    cancellation: cancellation,
-  );
 }
 
 /// Makes a `new_context` reset durable.

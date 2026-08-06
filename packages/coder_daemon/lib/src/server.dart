@@ -463,6 +463,7 @@ class _ClientSession {
       RpcMethod.skillDelete,
       RpcMethod.skillSetEnabled,
       RpcMethod.sessionList,
+      RpcMethod.sessionSubagentList,
       RpcMethod.sessionCreate,
       RpcMethod.sessionModelSet,
       RpcMethod.sessionModeSet,
@@ -818,6 +819,17 @@ class _ClientSession {
           worktreeId: request.worktreeId,
         );
         return SessionListResultDto(sessions: items).toJson();
+      case RpcMethod.sessionSubagentList:
+        final request = SessionSubagentListParamsDto.fromJson(payload);
+        final session = await sessionRepository.getById(request.sessionId);
+        if (session == null) {
+          throw const FormatException('Session not found.');
+        }
+        return SessionListResultDto(
+          sessions: await sessionRepository.listByRoot(
+            session.rootSessionId ?? session.id,
+          ),
+        ).toJson();
       case RpcMethod.sessionCreate:
         final request = SessionCreateParamsDto.fromJson(payload);
         final definition = await agentDefinitions.get(

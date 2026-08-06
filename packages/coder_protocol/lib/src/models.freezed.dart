@@ -7701,7 +7701,12 @@ mixin _$SessionDto {
  String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; SessionMode get mode; SessionModelSelectionDto? get model;/// Overrides the reasoning effort of the agent definition; null inherits.
  String? get reasoningEffort;/// Overrides the permission mode of the agent definition; null inherits.
  PermissionMode? get permissionMode;/// Provider service tier for this session; null uses the provider default.
- String? get serviceTier; String? get parentSessionId; String? get activeTurnId; String? get lastError;/// Tokens the last response reported for the live context window.
+ String? get serviceTier; String? get parentSessionId;/// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
+ String? get taskName;/// Canonical collaboration path, e.g. `/root/task1/task_3`; null for
+/// manually created root sessions (implicitly `/root`).
+ String? get agentPath;/// Root session of the collaboration tree; null for root sessions.
+ String? get rootSessionId;/// Collaboration lifecycle; null for sessions outside a tree.
+ AgentLifecycle? get lifecycle; String? get activeTurnId; String? get lastError;/// Tokens the last response reported for the live context window.
  int get contextTokens;/// Context window of the resolved model; null when it is not advertised.
  int? get contextWindow;
 /// Create a copy of SessionDto
@@ -7716,16 +7721,16 @@ $SessionDtoCopyWith<SessionDto> get copyWith => _$SessionDtoCopyWithImpl<Session
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError,contextTokens,contextWindow);
+int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow]);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
 }
 
 
@@ -7736,7 +7741,7 @@ abstract mixin class $SessionDtoCopyWith<$Res>  {
   factory $SessionDtoCopyWith(SessionDto value, $Res Function(SessionDto) _then) = _$SessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
 });
 
 
@@ -7753,7 +7758,7 @@ class _$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -7769,7 +7774,11 @@ as SessionModelSelectionDto?,reasoningEffort: freezed == reasoningEffort ? _self
 as String?,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
 as String?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
-as String?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
+as String?,taskName: freezed == taskName ? _self.taskName : taskName // ignore: cast_nullable_to_non_nullable
+as String?,agentPath: freezed == agentPath ? _self.agentPath : agentPath // ignore: cast_nullable_to_non_nullable
+as String?,rootSessionId: freezed == rootSessionId ? _self.rootSessionId : rootSessionId // ignore: cast_nullable_to_non_nullable
+as String?,lifecycle: freezed == lifecycle ? _self.lifecycle : lifecycle // ignore: cast_nullable_to_non_nullable
+as AgentLifecycle?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,contextTokens: null == contextTokens ? _self.contextTokens : contextTokens // ignore: cast_nullable_to_non_nullable
 as int,contextWindow: freezed == contextWindow ? _self.contextWindow : contextWindow // ignore: cast_nullable_to_non_nullable
@@ -7870,10 +7879,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   return orElse();
 
 }
@@ -7891,10 +7900,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7911,10 +7920,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
   return null;
 
 }
@@ -7926,7 +7935,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionDto implements SessionDto {
-  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier, this.parentSessionId, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow});
+  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow});
   factory _SessionDto.fromJson(Map<String, dynamic> json) => _$SessionDtoFromJson(json);
 
 @override final  String id;
@@ -7946,6 +7955,15 @@ class _SessionDto implements SessionDto {
 /// Provider service tier for this session; null uses the provider default.
 @override final  String? serviceTier;
 @override final  String? parentSessionId;
+/// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
+@override final  String? taskName;
+/// Canonical collaboration path, e.g. `/root/task1/task_3`; null for
+/// manually created root sessions (implicitly `/root`).
+@override final  String? agentPath;
+/// Root session of the collaboration tree; null for root sessions.
+@override final  String? rootSessionId;
+/// Collaboration lifecycle; null for sessions outside a tree.
+@override final  AgentLifecycle? lifecycle;
 @override final  String? activeTurnId;
 @override final  String? lastError;
 /// Tokens the last response reported for the live context window.
@@ -7966,16 +7984,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,activeTurnId,lastError,contextTokens,contextWindow);
+int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,reasoningEffort,permissionMode,serviceTier,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow]);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
 }
 
 
@@ -7986,7 +8004,7 @@ abstract mixin class _$SessionDtoCopyWith<$Res> implements $SessionDtoCopyWith<$
   factory _$SessionDtoCopyWith(_SessionDto value, $Res Function(_SessionDto) _then) = __$SessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
 });
 
 
@@ -8003,7 +8021,7 @@ class __$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
   return _then(_SessionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -8019,7 +8037,11 @@ as SessionModelSelectionDto?,reasoningEffort: freezed == reasoningEffort ? _self
 as String?,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
 as String?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
-as String?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
+as String?,taskName: freezed == taskName ? _self.taskName : taskName // ignore: cast_nullable_to_non_nullable
+as String?,agentPath: freezed == agentPath ? _self.agentPath : agentPath // ignore: cast_nullable_to_non_nullable
+as String?,rootSessionId: freezed == rootSessionId ? _self.rootSessionId : rootSessionId // ignore: cast_nullable_to_non_nullable
+as String?,lifecycle: freezed == lifecycle ? _self.lifecycle : lifecycle // ignore: cast_nullable_to_non_nullable
+as AgentLifecycle?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : activeTurnId // ignore: cast_nullable_to_non_nullable
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,contextTokens: null == contextTokens ? _self.contextTokens : contextTokens // ignore: cast_nullable_to_non_nullable
 as int,contextWindow: freezed == contextWindow ? _self.contextWindow : contextWindow // ignore: cast_nullable_to_non_nullable
@@ -8040,6 +8062,299 @@ $SessionModelSelectionDtoCopyWith<$Res>? get model {
     return _then(_self.copyWith(model: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$AgentMailboxMessageDto {
+
+ String get id;/// Recipient session.
+ String get sessionId; String get senderPath; String get recipientPath; InterAgentMessageType get type; String get payload; DateTime get createdAt;/// Sender session; null when the daemon itself authored the message.
+ String? get senderSessionId;/// When the message was folded into a recipient turn; null while queued.
+ DateTime? get deliveredAt;
+/// Create a copy of AgentMailboxMessageDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentMailboxMessageDtoCopyWith<AgentMailboxMessageDto> get copyWith => _$AgentMailboxMessageDtoCopyWithImpl<AgentMailboxMessageDto>(this as AgentMailboxMessageDto, _$identity);
+
+  /// Serializes this AgentMailboxMessageDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentMailboxMessageDto&&(identical(other.id, id) || other.id == id)&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.senderPath, senderPath) || other.senderPath == senderPath)&&(identical(other.recipientPath, recipientPath) || other.recipientPath == recipientPath)&&(identical(other.type, type) || other.type == type)&&(identical(other.payload, payload) || other.payload == payload)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.senderSessionId, senderSessionId) || other.senderSessionId == senderSessionId)&&(identical(other.deliveredAt, deliveredAt) || other.deliveredAt == deliveredAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,sessionId,senderPath,recipientPath,type,payload,createdAt,senderSessionId,deliveredAt);
+
+@override
+String toString() {
+  return 'AgentMailboxMessageDto(id: $id, sessionId: $sessionId, senderPath: $senderPath, recipientPath: $recipientPath, type: $type, payload: $payload, createdAt: $createdAt, senderSessionId: $senderSessionId, deliveredAt: $deliveredAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentMailboxMessageDtoCopyWith<$Res>  {
+  factory $AgentMailboxMessageDtoCopyWith(AgentMailboxMessageDto value, $Res Function(AgentMailboxMessageDto) _then) = _$AgentMailboxMessageDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String sessionId, String senderPath, String recipientPath, InterAgentMessageType type, String payload, DateTime createdAt, String? senderSessionId, DateTime? deliveredAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentMailboxMessageDtoCopyWithImpl<$Res>
+    implements $AgentMailboxMessageDtoCopyWith<$Res> {
+  _$AgentMailboxMessageDtoCopyWithImpl(this._self, this._then);
+
+  final AgentMailboxMessageDto _self;
+  final $Res Function(AgentMailboxMessageDto) _then;
+
+/// Create a copy of AgentMailboxMessageDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? sessionId = null,Object? senderPath = null,Object? recipientPath = null,Object? type = null,Object? payload = null,Object? createdAt = null,Object? senderSessionId = freezed,Object? deliveredAt = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,senderPath: null == senderPath ? _self.senderPath : senderPath // ignore: cast_nullable_to_non_nullable
+as String,recipientPath: null == recipientPath ? _self.recipientPath : recipientPath // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as InterAgentMessageType,payload: null == payload ? _self.payload : payload // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,senderSessionId: freezed == senderSessionId ? _self.senderSessionId : senderSessionId // ignore: cast_nullable_to_non_nullable
+as String?,deliveredAt: freezed == deliveredAt ? _self.deliveredAt : deliveredAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentMailboxMessageDto].
+extension AgentMailboxMessageDtoPatterns on AgentMailboxMessageDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentMailboxMessageDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentMailboxMessageDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentMailboxMessageDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentMailboxMessageDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentMailboxMessageDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentMailboxMessageDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String sessionId,  String senderPath,  String recipientPath,  InterAgentMessageType type,  String payload,  DateTime createdAt,  String? senderSessionId,  DateTime? deliveredAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentMailboxMessageDto() when $default != null:
+return $default(_that.id,_that.sessionId,_that.senderPath,_that.recipientPath,_that.type,_that.payload,_that.createdAt,_that.senderSessionId,_that.deliveredAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String sessionId,  String senderPath,  String recipientPath,  InterAgentMessageType type,  String payload,  DateTime createdAt,  String? senderSessionId,  DateTime? deliveredAt)  $default,) {final _that = this;
+switch (_that) {
+case _AgentMailboxMessageDto():
+return $default(_that.id,_that.sessionId,_that.senderPath,_that.recipientPath,_that.type,_that.payload,_that.createdAt,_that.senderSessionId,_that.deliveredAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String sessionId,  String senderPath,  String recipientPath,  InterAgentMessageType type,  String payload,  DateTime createdAt,  String? senderSessionId,  DateTime? deliveredAt)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentMailboxMessageDto() when $default != null:
+return $default(_that.id,_that.sessionId,_that.senderPath,_that.recipientPath,_that.type,_that.payload,_that.createdAt,_that.senderSessionId,_that.deliveredAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentMailboxMessageDto implements AgentMailboxMessageDto {
+  const _AgentMailboxMessageDto({required this.id, required this.sessionId, required this.senderPath, required this.recipientPath, required this.type, required this.payload, required this.createdAt, this.senderSessionId, this.deliveredAt});
+  factory _AgentMailboxMessageDto.fromJson(Map<String, dynamic> json) => _$AgentMailboxMessageDtoFromJson(json);
+
+@override final  String id;
+/// Recipient session.
+@override final  String sessionId;
+@override final  String senderPath;
+@override final  String recipientPath;
+@override final  InterAgentMessageType type;
+@override final  String payload;
+@override final  DateTime createdAt;
+/// Sender session; null when the daemon itself authored the message.
+@override final  String? senderSessionId;
+/// When the message was folded into a recipient turn; null while queued.
+@override final  DateTime? deliveredAt;
+
+/// Create a copy of AgentMailboxMessageDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentMailboxMessageDtoCopyWith<_AgentMailboxMessageDto> get copyWith => __$AgentMailboxMessageDtoCopyWithImpl<_AgentMailboxMessageDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentMailboxMessageDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentMailboxMessageDto&&(identical(other.id, id) || other.id == id)&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.senderPath, senderPath) || other.senderPath == senderPath)&&(identical(other.recipientPath, recipientPath) || other.recipientPath == recipientPath)&&(identical(other.type, type) || other.type == type)&&(identical(other.payload, payload) || other.payload == payload)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.senderSessionId, senderSessionId) || other.senderSessionId == senderSessionId)&&(identical(other.deliveredAt, deliveredAt) || other.deliveredAt == deliveredAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,sessionId,senderPath,recipientPath,type,payload,createdAt,senderSessionId,deliveredAt);
+
+@override
+String toString() {
+  return 'AgentMailboxMessageDto(id: $id, sessionId: $sessionId, senderPath: $senderPath, recipientPath: $recipientPath, type: $type, payload: $payload, createdAt: $createdAt, senderSessionId: $senderSessionId, deliveredAt: $deliveredAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentMailboxMessageDtoCopyWith<$Res> implements $AgentMailboxMessageDtoCopyWith<$Res> {
+  factory _$AgentMailboxMessageDtoCopyWith(_AgentMailboxMessageDto value, $Res Function(_AgentMailboxMessageDto) _then) = __$AgentMailboxMessageDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String sessionId, String senderPath, String recipientPath, InterAgentMessageType type, String payload, DateTime createdAt, String? senderSessionId, DateTime? deliveredAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentMailboxMessageDtoCopyWithImpl<$Res>
+    implements _$AgentMailboxMessageDtoCopyWith<$Res> {
+  __$AgentMailboxMessageDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentMailboxMessageDto _self;
+  final $Res Function(_AgentMailboxMessageDto) _then;
+
+/// Create a copy of AgentMailboxMessageDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sessionId = null,Object? senderPath = null,Object? recipientPath = null,Object? type = null,Object? payload = null,Object? createdAt = null,Object? senderSessionId = freezed,Object? deliveredAt = freezed,}) {
+  return _then(_AgentMailboxMessageDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,senderPath: null == senderPath ? _self.senderPath : senderPath // ignore: cast_nullable_to_non_nullable
+as String,recipientPath: null == recipientPath ? _self.recipientPath : recipientPath // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as InterAgentMessageType,payload: null == payload ? _self.payload : payload // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,senderSessionId: freezed == senderSessionId ? _self.senderSessionId : senderSessionId // ignore: cast_nullable_to_non_nullable
+as String?,deliveredAt: freezed == deliveredAt ? _self.deliveredAt : deliveredAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
 }
 
 

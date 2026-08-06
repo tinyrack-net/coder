@@ -448,22 +448,21 @@ void main() {
   );
 
   test(
-    'primary agents delegate to allowlisted Markdown subagents at depth one',
+    'spawn_agent runs a subagent asynchronously and mails back a final answer',
     () async {
-      final home = await Directory.systemTemp.createTemp(
-        'coder-delegate-home-',
-      );
+      final home = await Directory.systemTemp.createTemp('coder-spawn-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-delegate-workspace-',
+        'coder-spawn-workspace-',
       );
+      final provider = _CollaboratingProvider();
       final handle = await DaemonApplication.start(
         DaemonConfig(
           homeDirectory: home.path,
           port: 0,
-          bearerToken: 'delegate-token-0123456789abcdef012345',
+          bearerToken: 'spawn-token-0123456789abcdef01234567',
           useEnvironmentCredentials: false,
         ),
-        provider: _DelegatingProvider(),
+        provider: provider,
       );
       addTearDown(() async {
         await handle.stop();
@@ -473,9 +472,9 @@ void main() {
       final client = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(
-          bearerToken: 'delegate-token-0123456789abcdef012345',
+          bearerToken: 'spawn-token-0123456789abcdef01234567',
         ),
-        clientId: 'delegate-test',
+        clientId: 'spawn-test',
         clientKind: 'test',
       );
       addTearDown(client.close);
@@ -497,8 +496,160 @@ void main() {
       await client.updateAgentDefinition(
         coder.copyWith(
           permissionMode: PermissionMode.workspaceWrite,
+          toolIds: <String>[...coder.toolIds, 'collaboration'],
           callableAgentIds: <String>[reviewer.id],
         ),
+        expectedContentHash: coder.contentHash,
+      );
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final parent = await client.createSession(
+        id: 'parent',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Parent',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      final timelineEvents = client.events
+          .where((event) => event is TimelineClientEvent)
+          .cast<TimelineClientEvent>()
+          .map((event) => event.event);
+      final parentCompleted = timelineEvents
+          .firstWhere(
+            (event) =>
+                event.sessionId == parent.id && event.type == 'turn.completed',
+          )
+          .timeout(_eventTimeout);
+      // The child session ID is unknown before the spawn, so completion is
+      // detected through the parent's FINAL_ANSWER mail event.
+      final finalAnswerMailed = timelineEvents
+          .firstWhere(
+            (event) =>
+                event.sessionId == parent.id &&
+                event.type == 'agent.mail' &&
+                ((event.data['mail'] as Map<String, dynamic>?)?['type']
+                        as String?) ==
+                    'finalAnswer',
+          )
+          .timeout(_eventTimeout);
+      await client.subscribeTimeline(parent.id);
+      await client.startTurn(
+        sessionId: parent.id,
+        turnId: 'parent-turn',
+        prompt: 'Review this workspace.',
+      );
+      // The parent turn completes without blocking on the child.
+      await parentCompleted;
+      await finalAnswerMailed;
+
+      final tree = await client.listSubagents(parent.id);
+      expect(tree.first.id, parent.id);
+      final child = tree.singleWhere(
+        (session) => session.origin == SessionOrigin.delegated,
+      );
+      expect(child.parentSessionId, parent.id);
+      expect(child.rootSessionId, parent.id);
+      expect(child.taskName, 'review_task');
+      expect(child.agentPath, '/root/review_task');
+      expect(child.lifecycle, AgentLifecycle.completed);
+      expect(child.agentDefinitionId, reviewer.id);
+      expect(child.model, parent.model);
+
+      // The read-only clamp still denies the child's write attempt.
+      final childTimeline = await client.subscribeTimeline(child.id);
+      expect(childTimeline.map((event) => event.type), contains('agent.mail'));
+      expect(childTimeline.map((event) => event.type), contains('tool.denied'));
+      expect(
+        childTimeline
+            .where((event) => event.type == 'tool.requested')
+            .single
+            .data['name'],
+        'apply_patch',
+      );
+      final parentTimeline = await client.subscribeTimeline(parent.id);
+      expect(
+        parentTimeline
+            .where((event) => event.type == 'agent.spawned')
+            .single
+            .data['agentPath'],
+        '/root/review_task',
+      );
+
+      // The parent's next turn folds the FINAL_ANSWER envelope into the
+      // model request at its first message boundary.
+      final secondCompleted = timelineEvents
+          .firstWhere(
+            (event) =>
+                event.sessionId == parent.id && event.type == 'turn.completed',
+          )
+          .timeout(_eventTimeout);
+      await client.startTurn(
+        sessionId: parent.id,
+        turnId: 'parent-turn-2',
+        prompt: 'What did the reviewer say?',
+      );
+      await secondCompleted;
+      expect(
+        provider.requests.any(
+          (request) => request.history.whereType<UserConversationItem>().any(
+            (item) =>
+                item.text.startsWith('Message Type: FINAL_ANSWER') &&
+                item.text.contains('Review completed.'),
+          ),
+        ),
+        isTrue,
+      );
+
+      // `turn.completed` is emitted before the runner reports the idle
+      // status, so the tree has to be observed at rest before teardown
+      // closes the database under a turn that is still writing.
+      final worktreeId = registered.worktrees.single.id;
+      await _waitForIdleSession(client, worktreeId, parent.id);
+      await _waitForIdleSession(client, worktreeId, child.id);
+    },
+    tags: const <String>['feature_test__agent_collaboration__verticalSlice'],
+  );
+
+  test(
+    'spawn_agent rejects an agent_type outside the caller allowlist',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-reject-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-reject-workspace-',
+      );
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'reject-token-0123456789abcdef0123456',
+          useEnvironmentCredentials: false,
+        ),
+        provider: _CollaboratingProvider(agentType: 'stranger'),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'reject-token-0123456789abcdef0123456',
+        ),
+        clientId: 'reject-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+      final coder = (await client.listAgentDefinitions()).single;
+      await client.updateAgentDefinition(
+        coder.copyWith(toolIds: <String>[...coder.toolIds, 'collaboration']),
         expectedContentHash: coder.contentHash,
       );
       final registered = await client.registerWorkspace(
@@ -534,26 +685,21 @@ void main() {
       );
       await completed;
 
-      final sessions = await client.listSessions(
-        worktreeId: registered.worktrees.single.id,
-      );
-      final child = sessions.singleWhere(
-        (session) => session.origin == SessionOrigin.delegated,
-      );
-      expect(child.parentSessionId, parent.id);
-      expect(child.agentDefinitionId, reviewer.id);
-      expect(child.model, parent.model);
-      final childTimeline = await client.subscribeTimeline(child.id);
-      expect(childTimeline.map((event) => event.type), contains('tool.denied'));
-      expect(
-        childTimeline
-            .where((event) => event.type == 'tool.requested')
-            .single
-            .data['name'],
-        'apply_patch',
+      expect(await client.listSubagents(parent.id), hasLength(1));
+      final timeline = await client.subscribeTimeline(parent.id);
+      final spawnResult = timeline
+          .where((event) => event.type == 'tool.completed')
+          .single;
+      expect(spawnResult.data['isError'], isTrue);
+      expect(spawnResult.data['output'], contains('not allowed'));
+
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        parent.id,
       );
     },
-    tags: const <String>['feature_test__agent_delegation__verticalSlice'],
+    tags: const <String>['feature_test__agent_collaboration__verticalSlice'],
   );
 
   test(
@@ -3366,9 +3512,37 @@ final class _SearchProvider implements ModelProvider {
   }
 }
 
-final class _DelegatingProvider implements ModelProvider {
+final class _CollaboratingProvider implements ModelProvider {
+  _CollaboratingProvider({this.agentType = 'reviewer'});
+
+  /// The `agent_type` the scripted root passes to `spawn_agent`.
+  final String agentType;
+
+  /// Every request the daemon sent, for envelope assertions.
+  final List<ModelRequest> requests = <ModelRequest>[];
+
+  static List<ModelEvent> _toolCall(
+    String callId,
+    String name,
+    Map<String, dynamic> arguments,
+  ) => <ModelEvent>[
+    ModelFunctionCall(callId: callId, name: name, arguments: arguments),
+    ModelResponseCompleted(
+      assistant: AssistantConversationItem(
+        text: '',
+        toolCalls: <ConversationToolCall>[
+          ConversationToolCall(
+            callId: callId,
+            name: name,
+            arguments: arguments,
+          ),
+        ],
+      ),
+    ),
+  ];
+
   @override
-  String get id => 'delegate-fake';
+  String get id => 'collab-fake';
 
   @override
   Stream<ModelEvent> stream(
@@ -3376,65 +3550,51 @@ final class _DelegatingProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
-    final delegateEnabled = request.tools.any(
-      (tool) => tool.name == 'delegate_agent',
+    requests.add(request);
+    final userTexts = request.history
+        .whereType<UserConversationItem>()
+        .map((item) => item.text)
+        .toList(growable: false);
+    final isSubagent = userTexts.any(
+      (text) => text.startsWith('Message Type: NEW_TASK'),
     );
     final hasToolResult = request.history.any(
       (item) => item is ToolResultConversationItem,
     );
-    if (delegateEnabled && !hasToolResult) {
-      const arguments = <String, dynamic>{
-        'agentDefinitionId': 'reviewer',
-        'prompt': 'Review without changing files.',
-      };
-      yield const ModelFunctionCall(
-        callId: 'delegate-call',
-        name: 'delegate_agent',
-        arguments: arguments,
-      );
+    if (isSubagent) {
+      if (!hasToolResult) {
+        yield* Stream<ModelEvent>.fromIterable(
+          _toolCall('write-call', 'apply_patch', const <String, dynamic>{
+            'patch':
+                '--- /dev/null\n+++ b/forbidden.txt\n'
+                '@@ -0,0 +1,1 @@\n+forbidden\n',
+          }),
+        );
+        return;
+      }
+      yield const ModelTextDelta('Review completed.');
       yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(
-          text: '',
-          toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
-              callId: 'delegate-call',
-              name: 'delegate_agent',
-              arguments: arguments,
-            ),
-          ],
-        ),
+        assistant: AssistantConversationItem(text: 'Review completed.'),
       );
       return;
     }
-    if (!delegateEnabled && !hasToolResult) {
-      const arguments = <String, dynamic>{
-        'patch':
-            '--- /dev/null\n+++ b/forbidden.txt\n'
-            '@@ -0,0 +1,1 @@\n+forbidden\n',
-      };
-      yield const ModelFunctionCall(
-        callId: 'write-call',
-        name: 'apply_patch',
-        arguments: arguments,
-      );
-      yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(
-          text: '',
-          toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
-              callId: 'write-call',
-              name: 'apply_patch',
-              arguments: arguments,
-            ),
-          ],
-        ),
+    if (!hasToolResult &&
+        request.tools.any((tool) => tool.name == 'spawn_agent')) {
+      yield* Stream<ModelEvent>.fromIterable(
+        _toolCall('spawn-call', 'spawn_agent', <String, dynamic>{
+          'task_name': 'review_task',
+          'message': 'Review without changing files.',
+          'agent_type': agentType,
+          'fork_turns': null,
+          'model': null,
+          'reasoning_effort': null,
+        }),
       );
       return;
     }
-    final text = delegateEnabled ? 'Parent completed.' : 'Review completed.';
-    yield ModelTextDelta(text);
-    yield ModelResponseCompleted(
-      assistant: AssistantConversationItem(text: text),
+    yield const ModelTextDelta('Parent completed.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Parent completed.'),
     );
   }
 }

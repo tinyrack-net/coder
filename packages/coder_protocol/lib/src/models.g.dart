@@ -728,6 +728,10 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   ),
   serviceTier: json['serviceTier'] as String?,
   parentSessionId: json['parentSessionId'] as String?,
+  taskName: json['taskName'] as String?,
+  agentPath: json['agentPath'] as String?,
+  rootSessionId: json['rootSessionId'] as String?,
+  lifecycle: $enumDecodeNullable(_$AgentLifecycleEnumMap, json['lifecycle']),
   activeTurnId: json['activeTurnId'] as String?,
   lastError: json['lastError'] as String?,
   contextTokens: (json['contextTokens'] as num?)?.toInt() ?? 0,
@@ -750,6 +754,10 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
       'serviceTier': instance.serviceTier,
       'parentSessionId': instance.parentSessionId,
+      'taskName': instance.taskName,
+      'agentPath': instance.agentPath,
+      'rootSessionId': instance.rootSessionId,
+      'lifecycle': _$AgentLifecycleEnumMap[instance.lifecycle],
       'activeTurnId': instance.activeTurnId,
       'lastError': instance.lastError,
       'contextTokens': instance.contextTokens,
@@ -767,7 +775,6 @@ const _$SessionStatusEnumMap = {
   SessionStatus.running: 'running',
   SessionStatus.waitingForApproval: 'waitingForApproval',
   SessionStatus.waitingForInput: 'waitingForInput',
-  SessionStatus.waitingForSubagent: 'waitingForSubagent',
   SessionStatus.failed: 'failed',
   SessionStatus.closed: 'closed',
 };
@@ -775,6 +782,50 @@ const _$SessionStatusEnumMap = {
 const _$SessionModeEnumMap = {
   SessionMode.plan: 'plan',
   SessionMode.normal: 'normal',
+};
+
+const _$AgentLifecycleEnumMap = {
+  AgentLifecycle.pendingInit: 'pendingInit',
+  AgentLifecycle.running: 'running',
+  AgentLifecycle.interrupted: 'interrupted',
+  AgentLifecycle.completed: 'completed',
+  AgentLifecycle.errored: 'errored',
+};
+
+_AgentMailboxMessageDto _$AgentMailboxMessageDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentMailboxMessageDto(
+  id: json['id'] as String,
+  sessionId: json['sessionId'] as String,
+  senderPath: json['senderPath'] as String,
+  recipientPath: json['recipientPath'] as String,
+  type: $enumDecode(_$InterAgentMessageTypeEnumMap, json['type']),
+  payload: json['payload'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  senderSessionId: json['senderSessionId'] as String?,
+  deliveredAt: json['deliveredAt'] == null
+      ? null
+      : DateTime.parse(json['deliveredAt'] as String),
+);
+
+Map<String, dynamic> _$AgentMailboxMessageDtoToJson(
+  _AgentMailboxMessageDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'sessionId': instance.sessionId,
+  'senderPath': instance.senderPath,
+  'recipientPath': instance.recipientPath,
+  'type': _$InterAgentMessageTypeEnumMap[instance.type]!,
+  'payload': instance.payload,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'senderSessionId': instance.senderSessionId,
+  'deliveredAt': instance.deliveredAt?.toIso8601String(),
+};
+
+const _$InterAgentMessageTypeEnumMap = {
+  InterAgentMessageType.message: 'message',
+  InterAgentMessageType.newTask: 'newTask',
+  InterAgentMessageType.finalAnswer: 'finalAnswer',
 };
 
 _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(

@@ -2167,7 +2167,7 @@ void main() {
         isNot(contains('reviewer')),
       );
     },
-    tags: const <String>['feature_test__agent_delegation__widget'],
+    tags: const <String>['feature_test__agent_collaboration__widget'],
   );
 
   testWidgets('remote agent settings stays editable and exposes load errors', (

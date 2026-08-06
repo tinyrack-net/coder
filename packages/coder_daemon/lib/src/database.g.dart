@@ -1072,6 +1072,53 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       'REFERENCES sessions (id)',
     ),
   );
+  static const VerificationMeta _taskNameMeta = const VerificationMeta(
+    'taskName',
+  );
+  @override
+  late final GeneratedColumn<String> taskName = GeneratedColumn<String>(
+    'task_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _agentPathMeta = const VerificationMeta(
+    'agentPath',
+  );
+  @override
+  late final GeneratedColumn<String> agentPath = GeneratedColumn<String>(
+    'agent_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rootSessionIdMeta = const VerificationMeta(
+    'rootSessionId',
+  );
+  @override
+  late final GeneratedColumn<String> rootSessionId = GeneratedColumn<String>(
+    'root_session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sessions (id)',
+    ),
+  );
+  static const VerificationMeta _lifecycleMeta = const VerificationMeta(
+    'lifecycle',
+  );
+  @override
+  late final GeneratedColumn<String> lifecycle = GeneratedColumn<String>(
+    'lifecycle',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -1232,6 +1279,10 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     agentDefinitionId,
     origin,
     parentSessionId,
+    taskName,
+    agentPath,
+    rootSessionId,
+    lifecycle,
     status,
     activeTurnId,
     lastError,
@@ -1306,6 +1357,33 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
           data['parent_session_id']!,
           _parentSessionIdMeta,
         ),
+      );
+    }
+    if (data.containsKey('task_name')) {
+      context.handle(
+        _taskNameMeta,
+        taskName.isAcceptableOrUnknown(data['task_name']!, _taskNameMeta),
+      );
+    }
+    if (data.containsKey('agent_path')) {
+      context.handle(
+        _agentPathMeta,
+        agentPath.isAcceptableOrUnknown(data['agent_path']!, _agentPathMeta),
+      );
+    }
+    if (data.containsKey('root_session_id')) {
+      context.handle(
+        _rootSessionIdMeta,
+        rootSessionId.isAcceptableOrUnknown(
+          data['root_session_id']!,
+          _rootSessionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lifecycle')) {
+      context.handle(
+        _lifecycleMeta,
+        lifecycle.isAcceptableOrUnknown(data['lifecycle']!, _lifecycleMeta),
       );
     }
     if (data.containsKey('status')) {
@@ -1455,6 +1533,22 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}parent_session_id'],
       ),
+      taskName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_name'],
+      ),
+      agentPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_path'],
+      ),
+      rootSessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}root_session_id'],
+      ),
+      lifecycle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lifecycle'],
+      ),
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}status'],
@@ -1539,6 +1633,18 @@ class Session extends DataClass implements Insertable<Session> {
   /// Parent session for delegated subagents.
   final String? parentSessionId;
 
+  /// Leaf task name of a spawned subagent; null for root sessions.
+  final String? taskName;
+
+  /// Canonical collaboration path, e.g. `/root/task1/task_3`.
+  final String? agentPath;
+
+  /// Root session of the collaboration tree; null for root sessions.
+  final String? rootSessionId;
+
+  /// Collaboration lifecycle; null outside a collaboration tree.
+  final String? lifecycle;
+
   /// The status public API member.
   final String status;
 
@@ -1590,6 +1696,10 @@ class Session extends DataClass implements Insertable<Session> {
     required this.agentDefinitionId,
     required this.origin,
     this.parentSessionId,
+    this.taskName,
+    this.agentPath,
+    this.rootSessionId,
+    this.lifecycle,
     required this.status,
     this.activeTurnId,
     this.lastError,
@@ -1615,6 +1725,18 @@ class Session extends DataClass implements Insertable<Session> {
     map['origin'] = Variable<String>(origin);
     if (!nullToAbsent || parentSessionId != null) {
       map['parent_session_id'] = Variable<String>(parentSessionId);
+    }
+    if (!nullToAbsent || taskName != null) {
+      map['task_name'] = Variable<String>(taskName);
+    }
+    if (!nullToAbsent || agentPath != null) {
+      map['agent_path'] = Variable<String>(agentPath);
+    }
+    if (!nullToAbsent || rootSessionId != null) {
+      map['root_session_id'] = Variable<String>(rootSessionId);
+    }
+    if (!nullToAbsent || lifecycle != null) {
+      map['lifecycle'] = Variable<String>(lifecycle);
     }
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || activeTurnId != null) {
@@ -1659,6 +1781,18 @@ class Session extends DataClass implements Insertable<Session> {
       parentSessionId: parentSessionId == null && nullToAbsent
           ? const Value.absent()
           : Value(parentSessionId),
+      taskName: taskName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskName),
+      agentPath: agentPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(agentPath),
+      rootSessionId: rootSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rootSessionId),
+      lifecycle: lifecycle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lifecycle),
       status: Value(status),
       activeTurnId: activeTurnId == null && nullToAbsent
           ? const Value.absent()
@@ -1704,6 +1838,10 @@ class Session extends DataClass implements Insertable<Session> {
       agentDefinitionId: serializer.fromJson<String>(json['agentDefinitionId']),
       origin: serializer.fromJson<String>(json['origin']),
       parentSessionId: serializer.fromJson<String?>(json['parentSessionId']),
+      taskName: serializer.fromJson<String?>(json['taskName']),
+      agentPath: serializer.fromJson<String?>(json['agentPath']),
+      rootSessionId: serializer.fromJson<String?>(json['rootSessionId']),
+      lifecycle: serializer.fromJson<String?>(json['lifecycle']),
       status: serializer.fromJson<String>(json['status']),
       activeTurnId: serializer.fromJson<String?>(json['activeTurnId']),
       lastError: serializer.fromJson<String?>(json['lastError']),
@@ -1736,6 +1874,10 @@ class Session extends DataClass implements Insertable<Session> {
       'agentDefinitionId': serializer.toJson<String>(agentDefinitionId),
       'origin': serializer.toJson<String>(origin),
       'parentSessionId': serializer.toJson<String?>(parentSessionId),
+      'taskName': serializer.toJson<String?>(taskName),
+      'agentPath': serializer.toJson<String?>(agentPath),
+      'rootSessionId': serializer.toJson<String?>(rootSessionId),
+      'lifecycle': serializer.toJson<String?>(lifecycle),
       'status': serializer.toJson<String>(status),
       'activeTurnId': serializer.toJson<String?>(activeTurnId),
       'lastError': serializer.toJson<String?>(lastError),
@@ -1760,6 +1902,10 @@ class Session extends DataClass implements Insertable<Session> {
     String? agentDefinitionId,
     String? origin,
     Value<String?> parentSessionId = const Value.absent(),
+    Value<String?> taskName = const Value.absent(),
+    Value<String?> agentPath = const Value.absent(),
+    Value<String?> rootSessionId = const Value.absent(),
+    Value<String?> lifecycle = const Value.absent(),
     String? status,
     Value<String?> activeTurnId = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
@@ -1783,6 +1929,12 @@ class Session extends DataClass implements Insertable<Session> {
     parentSessionId: parentSessionId.present
         ? parentSessionId.value
         : this.parentSessionId,
+    taskName: taskName.present ? taskName.value : this.taskName,
+    agentPath: agentPath.present ? agentPath.value : this.agentPath,
+    rootSessionId: rootSessionId.present
+        ? rootSessionId.value
+        : this.rootSessionId,
+    lifecycle: lifecycle.present ? lifecycle.value : this.lifecycle,
     status: status ?? this.status,
     activeTurnId: activeTurnId.present ? activeTurnId.value : this.activeTurnId,
     lastError: lastError.present ? lastError.value : this.lastError,
@@ -1820,6 +1972,12 @@ class Session extends DataClass implements Insertable<Session> {
       parentSessionId: data.parentSessionId.present
           ? data.parentSessionId.value
           : this.parentSessionId,
+      taskName: data.taskName.present ? data.taskName.value : this.taskName,
+      agentPath: data.agentPath.present ? data.agentPath.value : this.agentPath,
+      rootSessionId: data.rootSessionId.present
+          ? data.rootSessionId.value
+          : this.rootSessionId,
+      lifecycle: data.lifecycle.present ? data.lifecycle.value : this.lifecycle,
       status: data.status.present ? data.status.value : this.status,
       activeTurnId: data.activeTurnId.present
           ? data.activeTurnId.value
@@ -1862,6 +2020,10 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('agentDefinitionId: $agentDefinitionId, ')
           ..write('origin: $origin, ')
           ..write('parentSessionId: $parentSessionId, ')
+          ..write('taskName: $taskName, ')
+          ..write('agentPath: $agentPath, ')
+          ..write('rootSessionId: $rootSessionId, ')
+          ..write('lifecycle: $lifecycle, ')
           ..write('status: $status, ')
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
@@ -1881,13 +2043,17 @@ class Session extends DataClass implements Insertable<Session> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     worktreeId,
     title,
     agentDefinitionId,
     origin,
     parentSessionId,
+    taskName,
+    agentPath,
+    rootSessionId,
+    lifecycle,
     status,
     activeTurnId,
     lastError,
@@ -1902,7 +2068,7 @@ class Session extends DataClass implements Insertable<Session> {
     contextWindowTokens,
     createdAt,
     updatedAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1913,6 +2079,10 @@ class Session extends DataClass implements Insertable<Session> {
           other.agentDefinitionId == this.agentDefinitionId &&
           other.origin == this.origin &&
           other.parentSessionId == this.parentSessionId &&
+          other.taskName == this.taskName &&
+          other.agentPath == this.agentPath &&
+          other.rootSessionId == this.rootSessionId &&
+          other.lifecycle == this.lifecycle &&
           other.status == this.status &&
           other.activeTurnId == this.activeTurnId &&
           other.lastError == this.lastError &&
@@ -1936,6 +2106,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String> agentDefinitionId;
   final Value<String> origin;
   final Value<String?> parentSessionId;
+  final Value<String?> taskName;
+  final Value<String?> agentPath;
+  final Value<String?> rootSessionId;
+  final Value<String?> lifecycle;
   final Value<String> status;
   final Value<String?> activeTurnId;
   final Value<String?> lastError;
@@ -1958,6 +2132,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.agentDefinitionId = const Value.absent(),
     this.origin = const Value.absent(),
     this.parentSessionId = const Value.absent(),
+    this.taskName = const Value.absent(),
+    this.agentPath = const Value.absent(),
+    this.rootSessionId = const Value.absent(),
+    this.lifecycle = const Value.absent(),
     this.status = const Value.absent(),
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
@@ -1981,6 +2159,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     required String agentDefinitionId,
     required String origin,
     this.parentSessionId = const Value.absent(),
+    this.taskName = const Value.absent(),
+    this.agentPath = const Value.absent(),
+    this.rootSessionId = const Value.absent(),
+    this.lifecycle = const Value.absent(),
     required String status,
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
@@ -2011,6 +2193,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? agentDefinitionId,
     Expression<String>? origin,
     Expression<String>? parentSessionId,
+    Expression<String>? taskName,
+    Expression<String>? agentPath,
+    Expression<String>? rootSessionId,
+    Expression<String>? lifecycle,
     Expression<String>? status,
     Expression<String>? activeTurnId,
     Expression<String>? lastError,
@@ -2034,6 +2220,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (agentDefinitionId != null) 'agent_definition_id': agentDefinitionId,
       if (origin != null) 'origin': origin,
       if (parentSessionId != null) 'parent_session_id': parentSessionId,
+      if (taskName != null) 'task_name': taskName,
+      if (agentPath != null) 'agent_path': agentPath,
+      if (rootSessionId != null) 'root_session_id': rootSessionId,
+      if (lifecycle != null) 'lifecycle': lifecycle,
       if (status != null) 'status': status,
       if (activeTurnId != null) 'active_turn_id': activeTurnId,
       if (lastError != null) 'last_error': lastError,
@@ -2061,6 +2251,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String>? agentDefinitionId,
     Value<String>? origin,
     Value<String?>? parentSessionId,
+    Value<String?>? taskName,
+    Value<String?>? agentPath,
+    Value<String?>? rootSessionId,
+    Value<String?>? lifecycle,
     Value<String>? status,
     Value<String?>? activeTurnId,
     Value<String?>? lastError,
@@ -2084,6 +2278,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       agentDefinitionId: agentDefinitionId ?? this.agentDefinitionId,
       origin: origin ?? this.origin,
       parentSessionId: parentSessionId ?? this.parentSessionId,
+      taskName: taskName ?? this.taskName,
+      agentPath: agentPath ?? this.agentPath,
+      rootSessionId: rootSessionId ?? this.rootSessionId,
+      lifecycle: lifecycle ?? this.lifecycle,
       status: status ?? this.status,
       activeTurnId: activeTurnId ?? this.activeTurnId,
       lastError: lastError ?? this.lastError,
@@ -2122,6 +2320,18 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     }
     if (parentSessionId.present) {
       map['parent_session_id'] = Variable<String>(parentSessionId.value);
+    }
+    if (taskName.present) {
+      map['task_name'] = Variable<String>(taskName.value);
+    }
+    if (agentPath.present) {
+      map['agent_path'] = Variable<String>(agentPath.value);
+    }
+    if (rootSessionId.present) {
+      map['root_session_id'] = Variable<String>(rootSessionId.value);
+    }
+    if (lifecycle.present) {
+      map['lifecycle'] = Variable<String>(lifecycle.value);
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
@@ -2180,6 +2390,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('agentDefinitionId: $agentDefinitionId, ')
           ..write('origin: $origin, ')
           ..write('parentSessionId: $parentSessionId, ')
+          ..write('taskName: $taskName, ')
+          ..write('agentPath: $agentPath, ')
+          ..write('rootSessionId: $rootSessionId, ')
+          ..write('lifecycle: $lifecycle, ')
           ..write('status: $status, ')
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
@@ -2661,6 +2875,672 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
           ..write('error: $error, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AgentMailboxMessagesTable extends AgentMailboxMessages
+    with TableInfo<$AgentMailboxMessagesTable, AgentMailboxMessage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AgentMailboxMessagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sessions (id)',
+    ),
+  );
+  static const VerificationMeta _senderSessionIdMeta = const VerificationMeta(
+    'senderSessionId',
+  );
+  @override
+  late final GeneratedColumn<String> senderSessionId = GeneratedColumn<String>(
+    'sender_session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _senderPathMeta = const VerificationMeta(
+    'senderPath',
+  );
+  @override
+  late final GeneratedColumn<String> senderPath = GeneratedColumn<String>(
+    'sender_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipientPathMeta = const VerificationMeta(
+    'recipientPath',
+  );
+  @override
+  late final GeneratedColumn<String> recipientPath = GeneratedColumn<String>(
+    'recipient_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageTypeMeta = const VerificationMeta(
+    'messageType',
+  );
+  @override
+  late final GeneratedColumn<String> messageType = GeneratedColumn<String>(
+    'message_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _triggerTurnMeta = const VerificationMeta(
+    'triggerTurn',
+  );
+  @override
+  late final GeneratedColumn<bool> triggerTurn = GeneratedColumn<bool>(
+    'trigger_turn',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("trigger_turn" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deliveredAtMeta = const VerificationMeta(
+    'deliveredAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deliveredAt = GeneratedColumn<DateTime>(
+    'delivered_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    senderSessionId,
+    senderPath,
+    recipientPath,
+    messageType,
+    payload,
+    triggerTurn,
+    createdAt,
+    deliveredAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'agent_mailbox_messages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AgentMailboxMessage> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('sender_session_id')) {
+      context.handle(
+        _senderSessionIdMeta,
+        senderSessionId.isAcceptableOrUnknown(
+          data['sender_session_id']!,
+          _senderSessionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sender_path')) {
+      context.handle(
+        _senderPathMeta,
+        senderPath.isAcceptableOrUnknown(data['sender_path']!, _senderPathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_senderPathMeta);
+    }
+    if (data.containsKey('recipient_path')) {
+      context.handle(
+        _recipientPathMeta,
+        recipientPath.isAcceptableOrUnknown(
+          data['recipient_path']!,
+          _recipientPathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recipientPathMeta);
+    }
+    if (data.containsKey('message_type')) {
+      context.handle(
+        _messageTypeMeta,
+        messageType.isAcceptableOrUnknown(
+          data['message_type']!,
+          _messageTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_messageTypeMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('trigger_turn')) {
+      context.handle(
+        _triggerTurnMeta,
+        triggerTurn.isAcceptableOrUnknown(
+          data['trigger_turn']!,
+          _triggerTurnMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_triggerTurnMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('delivered_at')) {
+      context.handle(
+        _deliveredAtMeta,
+        deliveredAt.isAcceptableOrUnknown(
+          data['delivered_at']!,
+          _deliveredAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AgentMailboxMessage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AgentMailboxMessage(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      senderSessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_session_id'],
+      ),
+      senderPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_path'],
+      )!,
+      recipientPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_path'],
+      )!,
+      messageType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_type'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      triggerTurn: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}trigger_turn'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      deliveredAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}delivered_at'],
+      ),
+    );
+  }
+
+  @override
+  $AgentMailboxMessagesTable createAlias(String alias) {
+    return $AgentMailboxMessagesTable(attachedDatabase, alias);
+  }
+}
+
+class AgentMailboxMessage extends DataClass
+    implements Insertable<AgentMailboxMessage> {
+  /// The id public API member.
+  final String id;
+
+  /// Recipient session.
+  final String sessionId;
+
+  /// Sender session; null when the daemon itself authored the message.
+  final String? senderSessionId;
+
+  /// Canonical path of the sender agent.
+  final String senderPath;
+
+  /// Canonical path of the recipient agent.
+  final String recipientPath;
+
+  /// Wire name of the protocol `InterAgentMessageType` enum value.
+  final String messageType;
+
+  /// Message body delivered inside the collaboration envelope.
+  final String payload;
+
+  /// Whether this message should start a turn on an idle recipient.
+  final bool triggerTurn;
+
+  /// The createdAt public API member.
+  final DateTime createdAt;
+
+  /// When the message was folded into a recipient turn; null while queued.
+  final DateTime? deliveredAt;
+  const AgentMailboxMessage({
+    required this.id,
+    required this.sessionId,
+    this.senderSessionId,
+    required this.senderPath,
+    required this.recipientPath,
+    required this.messageType,
+    required this.payload,
+    required this.triggerTurn,
+    required this.createdAt,
+    this.deliveredAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    if (!nullToAbsent || senderSessionId != null) {
+      map['sender_session_id'] = Variable<String>(senderSessionId);
+    }
+    map['sender_path'] = Variable<String>(senderPath);
+    map['recipient_path'] = Variable<String>(recipientPath);
+    map['message_type'] = Variable<String>(messageType);
+    map['payload'] = Variable<String>(payload);
+    map['trigger_turn'] = Variable<bool>(triggerTurn);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || deliveredAt != null) {
+      map['delivered_at'] = Variable<DateTime>(deliveredAt);
+    }
+    return map;
+  }
+
+  AgentMailboxMessagesCompanion toCompanion(bool nullToAbsent) {
+    return AgentMailboxMessagesCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      senderSessionId: senderSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(senderSessionId),
+      senderPath: Value(senderPath),
+      recipientPath: Value(recipientPath),
+      messageType: Value(messageType),
+      payload: Value(payload),
+      triggerTurn: Value(triggerTurn),
+      createdAt: Value(createdAt),
+      deliveredAt: deliveredAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deliveredAt),
+    );
+  }
+
+  factory AgentMailboxMessage.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AgentMailboxMessage(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      senderSessionId: serializer.fromJson<String?>(json['senderSessionId']),
+      senderPath: serializer.fromJson<String>(json['senderPath']),
+      recipientPath: serializer.fromJson<String>(json['recipientPath']),
+      messageType: serializer.fromJson<String>(json['messageType']),
+      payload: serializer.fromJson<String>(json['payload']),
+      triggerTurn: serializer.fromJson<bool>(json['triggerTurn']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      deliveredAt: serializer.fromJson<DateTime?>(json['deliveredAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'senderSessionId': serializer.toJson<String?>(senderSessionId),
+      'senderPath': serializer.toJson<String>(senderPath),
+      'recipientPath': serializer.toJson<String>(recipientPath),
+      'messageType': serializer.toJson<String>(messageType),
+      'payload': serializer.toJson<String>(payload),
+      'triggerTurn': serializer.toJson<bool>(triggerTurn),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'deliveredAt': serializer.toJson<DateTime?>(deliveredAt),
+    };
+  }
+
+  AgentMailboxMessage copyWith({
+    String? id,
+    String? sessionId,
+    Value<String?> senderSessionId = const Value.absent(),
+    String? senderPath,
+    String? recipientPath,
+    String? messageType,
+    String? payload,
+    bool? triggerTurn,
+    DateTime? createdAt,
+    Value<DateTime?> deliveredAt = const Value.absent(),
+  }) => AgentMailboxMessage(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    senderSessionId: senderSessionId.present
+        ? senderSessionId.value
+        : this.senderSessionId,
+    senderPath: senderPath ?? this.senderPath,
+    recipientPath: recipientPath ?? this.recipientPath,
+    messageType: messageType ?? this.messageType,
+    payload: payload ?? this.payload,
+    triggerTurn: triggerTurn ?? this.triggerTurn,
+    createdAt: createdAt ?? this.createdAt,
+    deliveredAt: deliveredAt.present ? deliveredAt.value : this.deliveredAt,
+  );
+  AgentMailboxMessage copyWithCompanion(AgentMailboxMessagesCompanion data) {
+    return AgentMailboxMessage(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      senderSessionId: data.senderSessionId.present
+          ? data.senderSessionId.value
+          : this.senderSessionId,
+      senderPath: data.senderPath.present
+          ? data.senderPath.value
+          : this.senderPath,
+      recipientPath: data.recipientPath.present
+          ? data.recipientPath.value
+          : this.recipientPath,
+      messageType: data.messageType.present
+          ? data.messageType.value
+          : this.messageType,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      triggerTurn: data.triggerTurn.present
+          ? data.triggerTurn.value
+          : this.triggerTurn,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      deliveredAt: data.deliveredAt.present
+          ? data.deliveredAt.value
+          : this.deliveredAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgentMailboxMessage(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('senderSessionId: $senderSessionId, ')
+          ..write('senderPath: $senderPath, ')
+          ..write('recipientPath: $recipientPath, ')
+          ..write('messageType: $messageType, ')
+          ..write('payload: $payload, ')
+          ..write('triggerTurn: $triggerTurn, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('deliveredAt: $deliveredAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    senderSessionId,
+    senderPath,
+    recipientPath,
+    messageType,
+    payload,
+    triggerTurn,
+    createdAt,
+    deliveredAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AgentMailboxMessage &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.senderSessionId == this.senderSessionId &&
+          other.senderPath == this.senderPath &&
+          other.recipientPath == this.recipientPath &&
+          other.messageType == this.messageType &&
+          other.payload == this.payload &&
+          other.triggerTurn == this.triggerTurn &&
+          other.createdAt == this.createdAt &&
+          other.deliveredAt == this.deliveredAt);
+}
+
+class AgentMailboxMessagesCompanion
+    extends UpdateCompanion<AgentMailboxMessage> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<String?> senderSessionId;
+  final Value<String> senderPath;
+  final Value<String> recipientPath;
+  final Value<String> messageType;
+  final Value<String> payload;
+  final Value<bool> triggerTurn;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> deliveredAt;
+  final Value<int> rowid;
+  const AgentMailboxMessagesCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.senderSessionId = const Value.absent(),
+    this.senderPath = const Value.absent(),
+    this.recipientPath = const Value.absent(),
+    this.messageType = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.triggerTurn = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.deliveredAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AgentMailboxMessagesCompanion.insert({
+    required String id,
+    required String sessionId,
+    this.senderSessionId = const Value.absent(),
+    required String senderPath,
+    required String recipientPath,
+    required String messageType,
+    required String payload,
+    required bool triggerTurn,
+    required DateTime createdAt,
+    this.deliveredAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       senderPath = Value(senderPath),
+       recipientPath = Value(recipientPath),
+       messageType = Value(messageType),
+       payload = Value(payload),
+       triggerTurn = Value(triggerTurn),
+       createdAt = Value(createdAt);
+  static Insertable<AgentMailboxMessage> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<String>? senderSessionId,
+    Expression<String>? senderPath,
+    Expression<String>? recipientPath,
+    Expression<String>? messageType,
+    Expression<String>? payload,
+    Expression<bool>? triggerTurn,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? deliveredAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (senderSessionId != null) 'sender_session_id': senderSessionId,
+      if (senderPath != null) 'sender_path': senderPath,
+      if (recipientPath != null) 'recipient_path': recipientPath,
+      if (messageType != null) 'message_type': messageType,
+      if (payload != null) 'payload': payload,
+      if (triggerTurn != null) 'trigger_turn': triggerTurn,
+      if (createdAt != null) 'created_at': createdAt,
+      if (deliveredAt != null) 'delivered_at': deliveredAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AgentMailboxMessagesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<String?>? senderSessionId,
+    Value<String>? senderPath,
+    Value<String>? recipientPath,
+    Value<String>? messageType,
+    Value<String>? payload,
+    Value<bool>? triggerTurn,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? deliveredAt,
+    Value<int>? rowid,
+  }) {
+    return AgentMailboxMessagesCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      senderSessionId: senderSessionId ?? this.senderSessionId,
+      senderPath: senderPath ?? this.senderPath,
+      recipientPath: recipientPath ?? this.recipientPath,
+      messageType: messageType ?? this.messageType,
+      payload: payload ?? this.payload,
+      triggerTurn: triggerTurn ?? this.triggerTurn,
+      createdAt: createdAt ?? this.createdAt,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (senderSessionId.present) {
+      map['sender_session_id'] = Variable<String>(senderSessionId.value);
+    }
+    if (senderPath.present) {
+      map['sender_path'] = Variable<String>(senderPath.value);
+    }
+    if (recipientPath.present) {
+      map['recipient_path'] = Variable<String>(recipientPath.value);
+    }
+    if (messageType.present) {
+      map['message_type'] = Variable<String>(messageType.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (triggerTurn.present) {
+      map['trigger_turn'] = Variable<bool>(triggerTurn.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (deliveredAt.present) {
+      map['delivered_at'] = Variable<DateTime>(deliveredAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgentMailboxMessagesCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('senderSessionId: $senderSessionId, ')
+          ..write('senderPath: $senderPath, ')
+          ..write('recipientPath: $recipientPath, ')
+          ..write('messageType: $messageType, ')
+          ..write('payload: $payload, ')
+          ..write('triggerTurn: $triggerTurn, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('deliveredAt: $deliveredAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6987,6 +7867,8 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final $WorktreesTable worktrees = $WorktreesTable(this);
   late final $SessionsTable sessions = $SessionsTable(this);
   late final $TurnsTable turns = $TurnsTable(this);
+  late final $AgentMailboxMessagesTable agentMailboxMessages =
+      $AgentMailboxMessagesTable(this);
   late final $AttachmentsTable attachments = $AttachmentsTable(this);
   late final $TurnAttachmentsTable turnAttachments = $TurnAttachmentsTable(
     this,
@@ -7005,6 +7887,9 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final WorkspaceDao workspaceDao = WorkspaceDao(this as CoderDatabase);
   late final WorktreeDao worktreeDao = WorktreeDao(this as CoderDatabase);
   late final SessionDao sessionDao = SessionDao(this as CoderDatabase);
+  late final AgentMailboxDao agentMailboxDao = AgentMailboxDao(
+    this as CoderDatabase,
+  );
   late final AttachmentDao attachmentDao = AttachmentDao(this as CoderDatabase);
   late final TimelineDao timelineDao = TimelineDao(this as CoderDatabase);
   late final ProviderDao providerDao = ProviderDao(this as CoderDatabase);
@@ -7018,6 +7903,7 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
     worktrees,
     sessions,
     turns,
+    agentMailboxMessages,
     attachments,
     turnAttachments,
     timelineEvents,
@@ -7846,6 +8732,10 @@ typedef $$SessionsTableCreateCompanionBuilder =
       required String agentDefinitionId,
       required String origin,
       Value<String?> parentSessionId,
+      Value<String?> taskName,
+      Value<String?> agentPath,
+      Value<String?> rootSessionId,
+      Value<String?> lifecycle,
       required String status,
       Value<String?> activeTurnId,
       Value<String?> lastError,
@@ -7870,6 +8760,10 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String> agentDefinitionId,
       Value<String> origin,
       Value<String?> parentSessionId,
+      Value<String?> taskName,
+      Value<String?> agentPath,
+      Value<String?> rootSessionId,
+      Value<String?> lifecycle,
       Value<String> status,
       Value<String?> activeTurnId,
       Value<String?> lastError,
@@ -7925,6 +8819,23 @@ final class $$SessionsTableReferences
     );
   }
 
+  static $SessionsTable _rootSessionIdTable(_$CoderDatabase db) =>
+      db.sessions.createAlias('sessions__root_session_id__sessions__id');
+
+  $$SessionsTableProcessedTableManager? get rootSessionId {
+    final $_column = $_itemColumn<String>('root_session_id');
+    if ($_column == null) return null;
+    final manager = $$SessionsTableTableManager(
+      $_db,
+      $_db.sessions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_rootSessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
   static MultiTypedResultKey<$TurnsTable, List<Turn>> _turnsRefsTable(
     _$CoderDatabase db,
   ) => MultiTypedResultKey.fromTable(
@@ -7939,6 +8850,31 @@ final class $$SessionsTableReferences
     ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_turnsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $AgentMailboxMessagesTable,
+    List<AgentMailboxMessage>
+  >
+  _agentMailboxMessagesRefsTable(_$CoderDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.agentMailboxMessages,
+        aliasName: 'sessions__id__agent_mailbox_messages__session_id',
+      );
+
+  $$AgentMailboxMessagesTableProcessedTableManager
+  get agentMailboxMessagesRefs {
+    final manager = $$AgentMailboxMessagesTableTableManager(
+      $_db,
+      $_db.agentMailboxMessages,
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _agentMailboxMessagesRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -8046,6 +8982,21 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get origin => $composableBuilder(
     column: $table.origin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskName => $composableBuilder(
+    column: $table.taskName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agentPath => $composableBuilder(
+    column: $table.agentPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lifecycle => $composableBuilder(
+    column: $table.lifecycle,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8165,6 +9116,29 @@ class $$SessionsTableFilterComposer
     return composer;
   }
 
+  $$SessionsTableFilterComposer get rootSessionId {
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.rootSessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<bool> turnsRefs(
     Expression<bool> Function($$TurnsTableFilterComposer f) f,
   ) {
@@ -8181,6 +9155,31 @@ class $$SessionsTableFilterComposer
           }) => $$TurnsTableFilterComposer(
             $db: $db,
             $table: $db.turns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> agentMailboxMessagesRefs(
+    Expression<bool> Function($$AgentMailboxMessagesTableFilterComposer f) f,
+  ) {
+    final $$AgentMailboxMessagesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.agentMailboxMessages,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentMailboxMessagesTableFilterComposer(
+            $db: $db,
+            $table: $db.agentMailboxMessages,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8320,6 +9319,21 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get taskName => $composableBuilder(
+    column: $table.taskName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agentPath => $composableBuilder(
+    column: $table.agentPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lifecycle => $composableBuilder(
+    column: $table.lifecycle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
@@ -8435,6 +9449,29 @@ class $$SessionsTableOrderingComposer
     );
     return composer;
   }
+
+  $$SessionsTableOrderingComposer get rootSessionId {
+    final $$SessionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.rootSessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$SessionsTableAnnotationComposer
@@ -8459,6 +9496,15 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<String> get origin =>
       $composableBuilder(column: $table.origin, builder: (column) => column);
+
+  GeneratedColumn<String> get taskName =>
+      $composableBuilder(column: $table.taskName, builder: (column) => column);
+
+  GeneratedColumn<String> get agentPath =>
+      $composableBuilder(column: $table.agentPath, builder: (column) => column);
+
+  GeneratedColumn<String> get lifecycle =>
+      $composableBuilder(column: $table.lifecycle, builder: (column) => column);
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
@@ -8564,6 +9610,29 @@ class $$SessionsTableAnnotationComposer
     return composer;
   }
 
+  $$SessionsTableAnnotationComposer get rootSessionId {
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.rootSessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> turnsRefs<T extends Object>(
     Expression<T> Function($$TurnsTableAnnotationComposer a) f,
   ) {
@@ -8586,6 +9655,32 @@ class $$SessionsTableAnnotationComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<T> agentMailboxMessagesRefs<T extends Object>(
+    Expression<T> Function($$AgentMailboxMessagesTableAnnotationComposer a) f,
+  ) {
+    final $$AgentMailboxMessagesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.agentMailboxMessages,
+          getReferencedColumn: (t) => t.sessionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AgentMailboxMessagesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.agentMailboxMessages,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
@@ -8706,7 +9801,9 @@ class $$SessionsTableTableManager
           PrefetchHooks Function({
             bool worktreeId,
             bool parentSessionId,
+            bool rootSessionId,
             bool turnsRefs,
+            bool agentMailboxMessagesRefs,
             bool timelineEventsRefs,
             bool approvalRequestsRefs,
             bool userQuestionsRefs,
@@ -8732,6 +9829,10 @@ class $$SessionsTableTableManager
                 Value<String> agentDefinitionId = const Value.absent(),
                 Value<String> origin = const Value.absent(),
                 Value<String?> parentSessionId = const Value.absent(),
+                Value<String?> taskName = const Value.absent(),
+                Value<String?> agentPath = const Value.absent(),
+                Value<String?> rootSessionId = const Value.absent(),
+                Value<String?> lifecycle = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
@@ -8754,6 +9855,10 @@ class $$SessionsTableTableManager
                 agentDefinitionId: agentDefinitionId,
                 origin: origin,
                 parentSessionId: parentSessionId,
+                taskName: taskName,
+                agentPath: agentPath,
+                rootSessionId: rootSessionId,
+                lifecycle: lifecycle,
                 status: status,
                 activeTurnId: activeTurnId,
                 lastError: lastError,
@@ -8778,6 +9883,10 @@ class $$SessionsTableTableManager
                 required String agentDefinitionId,
                 required String origin,
                 Value<String?> parentSessionId = const Value.absent(),
+                Value<String?> taskName = const Value.absent(),
+                Value<String?> agentPath = const Value.absent(),
+                Value<String?> rootSessionId = const Value.absent(),
+                Value<String?> lifecycle = const Value.absent(),
                 required String status,
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
@@ -8800,6 +9909,10 @@ class $$SessionsTableTableManager
                 agentDefinitionId: agentDefinitionId,
                 origin: origin,
                 parentSessionId: parentSessionId,
+                taskName: taskName,
+                agentPath: agentPath,
+                rootSessionId: rootSessionId,
+                lifecycle: lifecycle,
                 status: status,
                 activeTurnId: activeTurnId,
                 lastError: lastError,
@@ -8828,7 +9941,9 @@ class $$SessionsTableTableManager
               ({
                 worktreeId = false,
                 parentSessionId = false,
+                rootSessionId = false,
                 turnsRefs = false,
+                agentMailboxMessagesRefs = false,
                 timelineEventsRefs = false,
                 approvalRequestsRefs = false,
                 userQuestionsRefs = false,
@@ -8838,6 +9953,7 @@ class $$SessionsTableTableManager
                   db: db,
                   explicitlyWatchedTables: [
                     if (turnsRefs) db.turns,
+                    if (agentMailboxMessagesRefs) db.agentMailboxMessages,
                     if (timelineEventsRefs) db.timelineEvents,
                     if (approvalRequestsRefs) db.approvalRequests,
                     if (userQuestionsRefs) db.userQuestions,
@@ -8885,6 +10001,19 @@ class $$SessionsTableTableManager
                                   )
                                   as T;
                         }
+                        if (rootSessionId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.rootSessionId,
+                                    referencedTable: $$SessionsTableReferences
+                                        ._rootSessionIdTable(db),
+                                    referencedColumn: $$SessionsTableReferences
+                                        ._rootSessionIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
                         return state;
                       },
@@ -8905,6 +10034,27 @@ class $$SessionsTableTableManager
                                 table,
                                 p0,
                               ).turnsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sessionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (agentMailboxMessagesRefs)
+                        await $_getPrefetchedData<
+                          Session,
+                          $SessionsTable,
+                          AgentMailboxMessage
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SessionsTableReferences
+                              ._agentMailboxMessagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SessionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).agentMailboxMessagesRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sessionId == item.id,
@@ -9018,7 +10168,9 @@ typedef $$SessionsTableProcessedTableManager =
       PrefetchHooks Function({
         bool worktreeId,
         bool parentSessionId,
+        bool rootSessionId,
         bool turnsRefs,
+        bool agentMailboxMessagesRefs,
         bool timelineEventsRefs,
         bool approvalRequestsRefs,
         bool userQuestionsRefs,
@@ -9671,6 +10823,449 @@ typedef $$TurnsTableProcessedTableManager =
         bool approvalRequestsRefs,
         bool userQuestionsRefs,
       })
+    >;
+typedef $$AgentMailboxMessagesTableCreateCompanionBuilder =
+    AgentMailboxMessagesCompanion Function({
+      required String id,
+      required String sessionId,
+      Value<String?> senderSessionId,
+      required String senderPath,
+      required String recipientPath,
+      required String messageType,
+      required String payload,
+      required bool triggerTurn,
+      required DateTime createdAt,
+      Value<DateTime?> deliveredAt,
+      Value<int> rowid,
+    });
+typedef $$AgentMailboxMessagesTableUpdateCompanionBuilder =
+    AgentMailboxMessagesCompanion Function({
+      Value<String> id,
+      Value<String> sessionId,
+      Value<String?> senderSessionId,
+      Value<String> senderPath,
+      Value<String> recipientPath,
+      Value<String> messageType,
+      Value<String> payload,
+      Value<bool> triggerTurn,
+      Value<DateTime> createdAt,
+      Value<DateTime?> deliveredAt,
+      Value<int> rowid,
+    });
+
+final class $$AgentMailboxMessagesTableReferences
+    extends
+        BaseReferences<
+          _$CoderDatabase,
+          $AgentMailboxMessagesTable,
+          AgentMailboxMessage
+        > {
+  $$AgentMailboxMessagesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $SessionsTable _sessionIdTable(_$CoderDatabase db) => db.sessions
+      .createAlias('agent_mailbox_messages__session_id__sessions__id');
+
+  $$SessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
+
+    final manager = $$SessionsTableTableManager(
+      $_db,
+      $_db.sessions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AgentMailboxMessagesTableFilterComposer
+    extends Composer<_$CoderDatabase, $AgentMailboxMessagesTable> {
+  $$AgentMailboxMessagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senderSessionId => $composableBuilder(
+    column: $table.senderSessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senderPath => $composableBuilder(
+    column: $table.senderPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientPath => $composableBuilder(
+    column: $table.recipientPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageType => $composableBuilder(
+    column: $table.messageType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get triggerTurn => $composableBuilder(
+    column: $table.triggerTurn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deliveredAt => $composableBuilder(
+    column: $table.deliveredAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentMailboxMessagesTableOrderingComposer
+    extends Composer<_$CoderDatabase, $AgentMailboxMessagesTable> {
+  $$AgentMailboxMessagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senderSessionId => $composableBuilder(
+    column: $table.senderSessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senderPath => $composableBuilder(
+    column: $table.senderPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientPath => $composableBuilder(
+    column: $table.recipientPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageType => $composableBuilder(
+    column: $table.messageType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get triggerTurn => $composableBuilder(
+    column: $table.triggerTurn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deliveredAt => $composableBuilder(
+    column: $table.deliveredAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentMailboxMessagesTableAnnotationComposer
+    extends Composer<_$CoderDatabase, $AgentMailboxMessagesTable> {
+  $$AgentMailboxMessagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get senderSessionId => $composableBuilder(
+    column: $table.senderSessionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get senderPath => $composableBuilder(
+    column: $table.senderPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientPath => $composableBuilder(
+    column: $table.recipientPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get messageType => $composableBuilder(
+    column: $table.messageType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<bool> get triggerTurn => $composableBuilder(
+    column: $table.triggerTurn,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deliveredAt => $composableBuilder(
+    column: $table.deliveredAt,
+    builder: (column) => column,
+  );
+
+  $$SessionsTableAnnotationComposer get sessionId {
+    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentMailboxMessagesTableTableManager
+    extends
+        RootTableManager<
+          _$CoderDatabase,
+          $AgentMailboxMessagesTable,
+          AgentMailboxMessage,
+          $$AgentMailboxMessagesTableFilterComposer,
+          $$AgentMailboxMessagesTableOrderingComposer,
+          $$AgentMailboxMessagesTableAnnotationComposer,
+          $$AgentMailboxMessagesTableCreateCompanionBuilder,
+          $$AgentMailboxMessagesTableUpdateCompanionBuilder,
+          (AgentMailboxMessage, $$AgentMailboxMessagesTableReferences),
+          AgentMailboxMessage,
+          PrefetchHooks Function({bool sessionId})
+        > {
+  $$AgentMailboxMessagesTableTableManager(
+    _$CoderDatabase db,
+    $AgentMailboxMessagesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AgentMailboxMessagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AgentMailboxMessagesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$AgentMailboxMessagesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String?> senderSessionId = const Value.absent(),
+                Value<String> senderPath = const Value.absent(),
+                Value<String> recipientPath = const Value.absent(),
+                Value<String> messageType = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<bool> triggerTurn = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> deliveredAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentMailboxMessagesCompanion(
+                id: id,
+                sessionId: sessionId,
+                senderSessionId: senderSessionId,
+                senderPath: senderPath,
+                recipientPath: recipientPath,
+                messageType: messageType,
+                payload: payload,
+                triggerTurn: triggerTurn,
+                createdAt: createdAt,
+                deliveredAt: deliveredAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sessionId,
+                Value<String?> senderSessionId = const Value.absent(),
+                required String senderPath,
+                required String recipientPath,
+                required String messageType,
+                required String payload,
+                required bool triggerTurn,
+                required DateTime createdAt,
+                Value<DateTime?> deliveredAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentMailboxMessagesCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                senderSessionId: senderSessionId,
+                senderPath: senderPath,
+                recipientPath: recipientPath,
+                messageType: messageType,
+                payload: payload,
+                triggerTurn: triggerTurn,
+                createdAt: createdAt,
+                deliveredAt: deliveredAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AgentMailboxMessagesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({sessionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (sessionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.sessionId,
+                                referencedTable:
+                                    $$AgentMailboxMessagesTableReferences
+                                        ._sessionIdTable(db),
+                                referencedColumn:
+                                    $$AgentMailboxMessagesTableReferences
+                                        ._sessionIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AgentMailboxMessagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$CoderDatabase,
+      $AgentMailboxMessagesTable,
+      AgentMailboxMessage,
+      $$AgentMailboxMessagesTableFilterComposer,
+      $$AgentMailboxMessagesTableOrderingComposer,
+      $$AgentMailboxMessagesTableAnnotationComposer,
+      $$AgentMailboxMessagesTableCreateCompanionBuilder,
+      $$AgentMailboxMessagesTableUpdateCompanionBuilder,
+      (AgentMailboxMessage, $$AgentMailboxMessagesTableReferences),
+      AgentMailboxMessage,
+      PrefetchHooks Function({bool sessionId})
     >;
 typedef $$AttachmentsTableCreateCompanionBuilder =
     AttachmentsCompanion Function({
@@ -13080,6 +14675,8 @@ class $CoderDatabaseManager {
       $$SessionsTableTableManager(_db, _db.sessions);
   $$TurnsTableTableManager get turns =>
       $$TurnsTableTableManager(_db, _db.turns);
+  $$AgentMailboxMessagesTableTableManager get agentMailboxMessages =>
+      $$AgentMailboxMessagesTableTableManager(_db, _db.agentMailboxMessages);
   $$AttachmentsTableTableManager get attachments =>
       $$AttachmentsTableTableManager(_db, _db.attachments);
   $$TurnAttachmentsTableTableManager get turnAttachments =>

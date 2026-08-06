@@ -36,8 +36,8 @@ tags:
   feature_test__skill_management__verticalSlice:
   feature_test__skill_invocation__unit:
   feature_test__skill_invocation__verticalSlice:
-  feature_test__agent_delegation__unit:
-  feature_test__agent_delegation__verticalSlice:
+  feature_test__agent_collaboration__unit:
+  feature_test__agent_collaboration__verticalSlice:
   feature_test__provider_catalog__unit:
   feature_test__provider_catalog__verticalSlice:
   feature_test__provider_connection_management__unit:

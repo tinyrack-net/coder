@@ -85,6 +85,18 @@ class Sessions extends Table {
   TextColumn get parentSessionId =>
       text().nullable().references(Sessions, #id)();
 
+  /// Leaf task name of a spawned subagent; null for root sessions.
+  TextColumn get taskName => text().nullable()();
+
+  /// Canonical collaboration path, e.g. `/root/task1/task_3`.
+  TextColumn get agentPath => text().nullable()();
+
+  /// Root session of the collaboration tree; null for root sessions.
+  TextColumn get rootSessionId => text().nullable().references(Sessions, #id)();
+
+  /// Collaboration lifecycle; null outside a collaboration tree.
+  TextColumn get lifecycle => text().nullable()();
+
   /// The status public API member.
   TextColumn get status => text()();
 
@@ -209,6 +221,42 @@ class TurnAttachments extends Table {
     direction,
     ordinal,
   };
+}
+
+/// Queued inter-agent mailbox messages for collaborating sessions.
+class AgentMailboxMessages extends Table {
+  /// The id public API member.
+  TextColumn get id => text()();
+
+  /// Recipient session.
+  TextColumn get sessionId => text().references(Sessions, #id)();
+
+  /// Sender session; null when the daemon itself authored the message.
+  TextColumn get senderSessionId => text().nullable()();
+
+  /// Canonical path of the sender agent.
+  TextColumn get senderPath => text()();
+
+  /// Canonical path of the recipient agent.
+  TextColumn get recipientPath => text()();
+
+  /// Wire name of the protocol `InterAgentMessageType` enum value.
+  TextColumn get messageType => text()();
+
+  /// Message body delivered inside the collaboration envelope.
+  TextColumn get payload => text()();
+
+  /// Whether this message should start a turn on an idle recipient.
+  BoolColumn get triggerTurn => boolean()();
+
+  /// The createdAt public API member.
+  DateTimeColumn get createdAt => dateTime()();
+
+  /// When the message was folded into a recipient turn; null while queued.
+  DateTimeColumn get deliveredAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
 /// TimelineEvents defines a public contract.
@@ -417,6 +465,7 @@ class ProviderModels extends Table {
     Worktrees,
     Sessions,
     Turns,
+    AgentMailboxMessages,
     Attachments,
     TurnAttachments,
     TimelineEvents,
@@ -432,6 +481,7 @@ class ProviderModels extends Table {
     WorkspaceDao,
     WorktreeDao,
     SessionDao,
+    AgentMailboxDao,
     AttachmentDao,
     TimelineDao,
     ProviderDao,
@@ -456,7 +506,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

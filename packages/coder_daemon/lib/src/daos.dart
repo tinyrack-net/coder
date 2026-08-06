@@ -223,7 +223,6 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
             sessions.status.isIn(<String>[
               SessionStatus.running.name,
               SessionStatus.waitingForApproval.name,
-              SessionStatus.waitingForSubagent.name,
               SessionStatus.initializing.name,
             ]),
       );
@@ -242,6 +241,10 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
         agentDefinitionId: session.agentDefinitionId,
         origin: session.origin.name,
         parentSessionId: Value<String?>(session.parentSessionId),
+        taskName: Value<String?>(session.taskName),
+        agentPath: Value<String?>(session.agentPath),
+        rootSessionId: Value<String?>(session.rootSessionId),
+        lifecycle: Value<String?>(session.lifecycle?.name),
         status: session.status.name,
         activeTurnId: Value<String?>(session.activeTurnId),
         lastError: Value<String?>(session.lastError),
@@ -420,6 +423,52 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
         ),
       );
 
+  @override
+  Future<List<SessionDto>> listByRoot(String rootSessionId) async {
+    final query = select(sessions)
+      ..where(
+        (row) =>
+            row.id.equals(rootSessionId) |
+            row.rootSessionId.equals(rootSessionId),
+      )
+      ..orderBy(<OrderClauseGenerator<$SessionsTable>>[
+        // The root's null path sorts before every '/root/...' descendant.
+        (row) => OrderingTerm.asc(row.agentPath),
+        (row) => OrderingTerm.asc(row.createdAt),
+      ]);
+    return (await query.get()).map(_toDto).toList(growable: false);
+  }
+
+  @override
+  Future<SessionDto?> getByAgentPath(
+    String rootSessionId,
+    String agentPath,
+  ) async {
+    if (agentPath == '/root') return getById(rootSessionId);
+    final row =
+        await (select(sessions)..where(
+              (table) =>
+                  table.rootSessionId.equals(rootSessionId) &
+                  table.agentPath.equals(agentPath),
+            ))
+            .getSingleOrNull();
+    return row == null ? null : _toDto(row);
+  }
+
+  @override
+  Future<SessionDto> updateLifecycle(
+    String id,
+    AgentLifecycle lifecycle,
+  ) async {
+    await (update(sessions)..where((row) => row.id.equals(id))).write(
+      SessionsCompanion(
+        lifecycle: Value<String?>(lifecycle.name),
+        updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
+      ),
+    );
+    return (await getById(id))!;
+  }
+
   SessionDto _toDto(Session row) {
     final connectionId = row.modelConnectionId;
     final modelId = row.modelId;
@@ -430,6 +479,13 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
       agentDefinitionId: row.agentDefinitionId,
       origin: SessionOrigin.values.byName(row.origin),
       parentSessionId: row.parentSessionId,
+      taskName: row.taskName,
+      agentPath: row.agentPath,
+      rootSessionId: row.rootSessionId,
+      // A row written by a newer build must still render as a session.
+      lifecycle: AgentLifecycle.values
+          .where((value) => value.name == row.lifecycle)
+          .firstOrNull,
       status: SessionStatus.values.byName(row.status),
       // A row written by a newer build must still render as a session.
       mode:
@@ -457,6 +513,91 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
+  }
+}
+
+@DriftAccessor(tables: <Type>[AgentMailboxMessages])
+/// Drift inter-agent mailbox repository.
+class AgentMailboxDao extends DatabaseAccessor<CoderDatabase>
+    with _$AgentMailboxDaoMixin
+    implements AgentMailboxRepository {
+  /// Creates an agent mailbox DAO.
+  AgentMailboxDao(super.attachedDatabase);
+
+  @override
+  Future<void> enqueue(
+    AgentMailboxMessageDto message, {
+    required bool triggerTurn,
+  }) => into(agentMailboxMessages).insert(
+    AgentMailboxMessagesCompanion.insert(
+      id: message.id,
+      sessionId: message.sessionId,
+      senderSessionId: Value<String?>(message.senderSessionId),
+      senderPath: message.senderPath,
+      recipientPath: message.recipientPath,
+      messageType: message.type.name,
+      payload: message.payload,
+      triggerTurn: triggerTurn,
+      createdAt: message.createdAt,
+      deliveredAt: Value<DateTime?>(message.deliveredAt),
+    ),
+  );
+
+  @override
+  Future<List<QueuedAgentMail>> undeliveredFor(String sessionId) async {
+    final query = select(agentMailboxMessages)
+      ..where(
+        (row) => row.sessionId.equals(sessionId) & row.deliveredAt.isNull(),
+      )
+      ..orderBy(<OrderClauseGenerator<$AgentMailboxMessagesTable>>[
+        (row) => OrderingTerm.asc(row.createdAt),
+        (row) => OrderingTerm.asc(row.id),
+      ]);
+    return (await query.get())
+        .map(
+          (row) => (
+            message: AgentMailboxMessageDto(
+              id: row.id,
+              sessionId: row.sessionId,
+              senderSessionId: row.senderSessionId,
+              senderPath: row.senderPath,
+              recipientPath: row.recipientPath,
+              type: InterAgentMessageType.values.byName(row.messageType),
+              payload: row.payload,
+              createdAt: row.createdAt,
+              deliveredAt: row.deliveredAt,
+            ),
+            triggerTurn: row.triggerTurn,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> markDelivered(List<String> ids, DateTime deliveredAt) async {
+    if (ids.isEmpty) return;
+    await (update(
+      agentMailboxMessages,
+    )..where((row) => row.id.isIn(ids))).write(
+      AgentMailboxMessagesCompanion(
+        deliveredAt: Value<DateTime?>(deliveredAt),
+      ),
+    );
+  }
+
+  @override
+  Future<bool> hasUndeliveredTrigger(String sessionId) async {
+    final row =
+        await (select(agentMailboxMessages)
+              ..where(
+                (table) =>
+                    table.sessionId.equals(sessionId) &
+                    table.deliveredAt.isNull() &
+                    table.triggerTurn.equals(true),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
   }
 }
 
@@ -1064,7 +1205,6 @@ class RuntimeDao extends DatabaseAccessor<CoderDatabase>
             (row) => row.status.isIn(<String>[
               SessionStatus.running.name,
               SessionStatus.waitingForApproval.name,
-              SessionStatus.waitingForSubagent.name,
               SessionStatus.initializing.name,
             ]),
           ))

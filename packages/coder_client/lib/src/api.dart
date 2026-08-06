@@ -206,6 +206,10 @@ abstract interface class CoderApi {
   /// The listSessions public API member.
   Future<List<SessionDto>> listSessions({String? worktreeId});
 
+  /// Lists the collaboration tree containing [sessionId], root first,
+  /// ordered by agent path.
+  Future<List<SessionDto>> listSubagents(String sessionId);
+
   /// The createSession public API member.
   ///
   /// A non-null [model] pins the session to one provider connection and model

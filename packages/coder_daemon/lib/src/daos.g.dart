@@ -75,6 +75,31 @@ class SessionDaoManager {
       );
 }
 
+mixin _$AgentMailboxDaoMixin on DatabaseAccessor<CoderDatabase> {
+  $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
+  $SessionsTable get sessions => attachedDatabase.sessions;
+  $AgentMailboxMessagesTable get agentMailboxMessages =>
+      attachedDatabase.agentMailboxMessages;
+  AgentMailboxDaoManager get managers => AgentMailboxDaoManager(this);
+}
+
+class AgentMailboxDaoManager {
+  final _$AgentMailboxDaoMixin _db;
+  AgentMailboxDaoManager(this._db);
+  $$WorkspacesTableTableManager get workspaces =>
+      $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
+  $$SessionsTableTableManager get sessions =>
+      $$SessionsTableTableManager(_db.attachedDatabase, _db.sessions);
+  $$AgentMailboxMessagesTableTableManager get agentMailboxMessages =>
+      $$AgentMailboxMessagesTableTableManager(
+        _db.attachedDatabase,
+        _db.agentMailboxMessages,
+      );
+}
+
 mixin _$AttachmentDaoMixin on DatabaseAccessor<CoderDatabase> {
   $AttachmentsTable get attachments => attachedDatabase.attachments;
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;

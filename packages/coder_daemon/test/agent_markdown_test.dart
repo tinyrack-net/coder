@@ -339,7 +339,7 @@ Review the requested code without modifying it.
       expect((await service.get('coder')).callableAgentIds, isEmpty);
       await expectLater(service.archive('coder'), throwsA(isA<StateError>()));
     },
-    tags: const <String>['feature_test__agent_delegation__unit'],
+    tags: const <String>['feature_test__agent_collaboration__unit'],
   );
 
   test(

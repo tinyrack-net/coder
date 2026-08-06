@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v18 exposes terminals and existing typed contracts', () {
-    expect(coderProtocolVersion, 19);
+  test('protocol v20 exposes terminals and existing typed contracts', () {
+    expect(coderProtocolVersion, 20);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -152,6 +152,103 @@ void main() {
       isNull,
     );
   });
+
+  test(
+    'multi-agent collaboration contracts round-trip',
+    () {
+      expect(RpcMethod.sessionSubagentList, 'session.subagents.list');
+      expect(
+        SessionStatus.values.map((value) => value.name),
+        isNot(contains('waitingForSubagent')),
+      );
+
+      final subagent = SessionDto(
+        id: 'child',
+        worktreeId: 'worktree',
+        title: 'explore_auth',
+        agentDefinitionId: 'explorer',
+        origin: SessionOrigin.delegated,
+        status: SessionStatus.running,
+        createdAt: now,
+        updatedAt: now,
+        parentSessionId: 'root',
+        taskName: 'explore_auth',
+        agentPath: '/root/explore_auth',
+        rootSessionId: 'root',
+        lifecycle: AgentLifecycle.running,
+      );
+      _roundTrip(subagent, (value) => value.toJson(), SessionDto.fromJson);
+      final decoded = SessionDto.fromJson(
+        json.decode(json.encode(subagent.toJson())) as Map<String, dynamic>,
+      );
+      expect(decoded.taskName, 'explore_auth');
+      expect(decoded.agentPath, '/root/explore_auth');
+      expect(decoded.rootSessionId, 'root');
+      expect(decoded.lifecycle, AgentLifecycle.running);
+
+      final root = SessionDto(
+        id: 'root',
+        worktreeId: 'worktree',
+        title: 'Root',
+        agentDefinitionId: 'coder',
+        origin: SessionOrigin.manual,
+        status: SessionStatus.idle,
+        createdAt: now,
+        updatedAt: now,
+      );
+      expect(root.taskName, isNull);
+      expect(root.agentPath, isNull);
+      expect(root.rootSessionId, isNull);
+      expect(root.lifecycle, isNull);
+
+      final mail = AgentMailboxMessageDto(
+        id: 'mail-1',
+        sessionId: 'root',
+        senderPath: '/root/explore_auth',
+        recipientPath: '/root',
+        type: InterAgentMessageType.finalAnswer,
+        payload: 'The auth flow uses JWT.',
+        createdAt: now,
+        senderSessionId: 'child',
+      );
+      _roundTrip(
+        mail,
+        (value) => value.toJson(),
+        AgentMailboxMessageDto.fromJson,
+      );
+      expect(mail.deliveredAt, isNull);
+      for (final type in InterAgentMessageType.values) {
+        final copy = mail.copyWith(type: type);
+        expect(
+          AgentMailboxMessageDto.fromJson(
+            json.decode(json.encode(copy.toJson())) as Map<String, dynamic>,
+          ).type,
+          type,
+        );
+      }
+      for (final lifecycle in AgentLifecycle.values) {
+        final copy = subagent.copyWith(lifecycle: lifecycle);
+        expect(
+          SessionDto.fromJson(
+            json.decode(json.encode(copy.toJson())) as Map<String, dynamic>,
+          ).lifecycle,
+          lifecycle,
+        );
+      }
+
+      _roundTrip(
+        const SessionSubagentListParamsDto(sessionId: 'root'),
+        (value) => value.toJson(),
+        SessionSubagentListParamsDto.fromJson,
+      );
+      _roundTrip(
+        SessionListResultDto(sessions: <SessionDto>[root, subagent]),
+        (value) => value.toJson(),
+        SessionListResultDto.fromJson,
+      );
+    },
+    tags: const <String>['feature_test__agent_collaboration__contract'],
+  );
 
   test('agent definition and session contracts round-trip', () {
     const definition = AgentDefinitionDto(
@@ -587,7 +684,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 19);
+    expect(coderProtocolVersion, 20);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
