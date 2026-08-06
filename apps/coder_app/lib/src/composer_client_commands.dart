@@ -5,9 +5,11 @@ import 'package:flutter/widgets.dart';
 /// App commands a composer without a session cannot carry out.
 ///
 /// The home and draft composers create their session from the first prompt, so
-/// there is no current session for `/new` to be new relative to.
+/// there is no current session for `/new` to be new relative to, and no
+/// conversation for `/compact` to summarize.
 const Set<ClientCommandAction> sessionlessClientActions = <ClientCommandAction>{
   ClientCommandAction.newSession,
+  ClientCommandAction.compact,
 };
 
 /// Runs an app-owned command for a composer that has no session yet.
@@ -29,6 +31,7 @@ Future<bool> runSessionlessClientCommand(
     case ClientCommandAction.clear:
     case ClientCommandAction.help:
     case ClientCommandAction.newSession:
+    case ClientCommandAction.compact:
       break;
     case ClientCommandAction.toggleMode:
       onToggleMode();

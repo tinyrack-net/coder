@@ -1,4 +1,5 @@
 tags:
+  feature_test__context_compaction__verticalSlice:
   feature_test__conversation_turn_queue__verticalSlice:
   feature_test__conversation_attachments__unit:
   feature_test__conversation_attachments__verticalSlice:

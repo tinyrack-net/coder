@@ -2768,6 +2768,24 @@ abstract class AppLocalizations {
   /// **'New context window'**
   String get chatContextReset;
 
+  /// Divider marking where the model's history was replaced by a summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation summarized'**
+  String get chatContextCompacted;
+
+  /// Name of the composer command that summarizes the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'compact'**
+  String get composerCommandCompactLabel;
+
+  /// Description of the compact command.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize the conversation to free the context window.'**
+  String get composerCommandCompactDescription;
+
   /// Label of the composer context budget meter.
   ///
   /// In en, this message translates to:

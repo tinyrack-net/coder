@@ -414,6 +414,38 @@ class ChatContextResetLine extends StatelessWidget {
   final ChatContextReset reset;
 
   @override
+  Widget build(BuildContext context) => _ContextWindowDivider(
+    label: AppLocalizations.of(context).chatContextReset,
+    labelKey: const ValueKey<String>('chat-context-reset'),
+  );
+}
+
+/// Marks where the model's history was replaced by a summary.
+///
+/// It reads as a checkpoint rather than a loss: the work above was carried
+/// forward, so the agent still knows where it stood.
+class ChatContextCompactedLine extends StatelessWidget {
+  /// Creates a compaction divider.
+  const ChatContextCompactedLine({required this.compacted, super.key});
+
+  /// The compaction to render.
+  final ChatContextCompacted compacted;
+
+  @override
+  Widget build(BuildContext context) => _ContextWindowDivider(
+    label: AppLocalizations.of(context).chatContextCompacted,
+    labelKey: const ValueKey<String>('chat-context-compacted'),
+  );
+}
+
+/// The rule-and-caption divider both context window notices share.
+class _ContextWindowDivider extends StatelessWidget {
+  const _ContextWindowDivider({required this.label, required this.labelKey});
+
+  final String label;
+  final Key labelKey;
+
+  @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: TRSpacing.small),
     child: Row(
@@ -422,8 +454,8 @@ class ChatContextResetLine extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: TRSpacing.small),
           child: TRText(
-            AppLocalizations.of(context).chatContextReset,
-            key: const ValueKey<String>('chat-context-reset'),
+            label,
+            key: labelKey,
             variant: TRTextVariant.bodySm,
             color: TRTextColor.muted,
           ),

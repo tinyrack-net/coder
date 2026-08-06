@@ -475,6 +475,12 @@ abstract interface class CoderApi {
   /// The cancelTurn public API member.
   Future<void> cancelTurn(String sessionId);
 
+  /// Summarizes the session's conversation and starts a fresh context window.
+  ///
+  /// Only valid between turns: the running turn owns the live history, and
+  /// rewriting it underneath would strand a tool call mid-round.
+  Future<void> compactSession(String sessionId);
+
   /// The resolveApproval public API member.
   Future<void> resolveApproval({
     required String approvalId,

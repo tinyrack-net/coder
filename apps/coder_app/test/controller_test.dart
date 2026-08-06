@@ -155,6 +155,10 @@ void main() {
         SessionMode.plan,
       );
       expect(api.updatedSessionModes.single.mode, SessionMode.plan);
+      // `/compact` reaches the daemon; the meter waits for the session event
+      // rather than being patched optimistically.
+      await container.read(agentsProvider.notifier).compact(created.id);
+      expect(api.compactedSessions, <String>[created.id]);
       expect(
         container
             .read(agentsProvider)
@@ -189,7 +193,10 @@ void main() {
         isEmpty,
       );
     },
-    tags: const <String>['feature_test__session_lifecycle__unit'],
+    tags: const <String>[
+      'feature_test__session_lifecycle__unit',
+      'feature_test__context_compaction__widget',
+    ],
   );
 
   test(

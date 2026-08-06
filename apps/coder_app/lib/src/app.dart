@@ -1950,6 +1950,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         if (mounted) {
           SkillSettingsRoute(hostId: widget.selection.hostId).go(context);
         }
+      case ClientCommandAction.compact:
+        await _sessions(ref).compact(session.id);
       case ClientCommandAction.help:
         // Typing `/` already lists every command, so help only reopens it.
         break;

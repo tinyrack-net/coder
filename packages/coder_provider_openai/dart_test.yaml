@@ -1,3 +1,4 @@
 tags:
+  feature_test__context_compaction__unit:
   feature_test__conversation_attachments__unit:
   feature_test__tool_context_budget__unit:

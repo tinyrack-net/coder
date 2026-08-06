@@ -2058,6 +2058,18 @@
   "@chatContextReset": {
     "description": "Divider marking where the model's history was discarded."
   },
+  "chatContextCompacted": "Conversation summarized",
+  "@chatContextCompacted": {
+    "description": "Divider marking where the model's history was replaced by a summary."
+  },
+  "composerCommandCompactLabel": "compact",
+  "@composerCommandCompactLabel": {
+    "description": "Name of the composer command that summarizes the conversation."
+  },
+  "composerCommandCompactDescription": "Summarize the conversation to free the context window.",
+  "@composerCommandCompactDescription": {
+    "description": "Description of the compact command."
+  },
   "sessionContextMeter": "Context",
   "@sessionContextMeter": {
     "description": "Label of the composer context budget meter."

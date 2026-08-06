@@ -339,6 +339,9 @@ final class FakeCoderApi implements CoderApi {
   /// Agent identifiers cancelled through the fake.
   final List<String> cancelledAgents = <String>[];
 
+  /// Sessions the client asked to compact, in order.
+  final List<String> compactedSessions = <String>[];
+
   /// Provider credentials written through the fake.
   final Map<String, String> credentials = <String, String>{};
 
@@ -1404,6 +1407,11 @@ final class FakeCoderApi implements CoderApi {
   @override
   Future<void> cancelTurn(String sessionId) async {
     cancelledAgents.add(sessionId);
+  }
+
+  @override
+  Future<void> compactSession(String sessionId) async {
+    compactedSessions.add(sessionId);
   }
 
   @override

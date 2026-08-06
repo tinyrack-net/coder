@@ -31,6 +31,9 @@ enum ClientCommandAction {
   /// Opens the skill settings screen.
   openSkillSettings,
 
+  /// Summarizes the conversation and starts a fresh context window.
+  compact,
+
   /// Lists the available commands.
   help,
 }
@@ -139,6 +142,13 @@ const List<ComposerCommand> clientComposerCommands = <ComposerCommand>[
     description: 'Opens skill settings.',
     kind: ComposerCommandKind.client,
     action: ClientCommandAction.openSkillSettings,
+  ),
+  ComposerCommand(
+    id: 'client:compact',
+    name: 'compact',
+    description: 'Summarizes the conversation.',
+    kind: ComposerCommandKind.client,
+    action: ClientCommandAction.compact,
   ),
   ComposerCommand(
     id: 'client:help',

@@ -517,6 +517,216 @@ void main() {
   );
 
   test(
+    'an exhausted window is compacted once the round is done',
+    tags: const <String>['feature_test__context_compaction__unit'],
+    () async {
+      // The tool round reports 950 of a 1000 token window, which is past the
+      // 0.9 trigger, so the next request must run on a summarized history.
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _toolResponse('echo', usage: const ModelUsage(totalTokens: 950)),
+        _textResponse('a handoff summary'),
+        _textResponse('done'),
+      ]);
+      final resets = <List<ConversationItem>>[];
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_EchoTool()],
+        contextResets: resets.add,
+        compacts: true,
+      );
+
+      await harness.runner.startTurn(
+        _request(contextWindowTokens: 1000),
+        CancellationToken(),
+      );
+
+      // The summary request carries the work so far and advertises no tool.
+      expect(provider.requests[1].tools, isEmpty);
+
+      final resumed = provider.requests[2].history;
+      expect(
+        resumed.map((item) => (item as UserConversationItem).text),
+        <String>[
+          'history',
+          'test',
+          '${CompactionPolicy.summaryPrefix}\na handoff summary',
+        ],
+      );
+      // The tool round it replaced is gone, so nothing can orphan an output.
+      expect(resumed.whereType<ToolResultConversationItem>(), isEmpty);
+
+      expect(resets, hasLength(1));
+      expect(resets.single, hasLength(3));
+      expect(harness.events, contains('context.compacted'));
+    },
+  );
+
+  test(
+    'a window that stays over budget is not compacted every round',
+    tags: const <String>['feature_test__context_compaction__unit'],
+    () async {
+      // Usage never drops, so a second summary could not help either. Buying
+      // one per round for the rest of a long turn is pure waste.
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _toolResponse('echo', usage: const ModelUsage(totalTokens: 950)),
+        _textResponse('a handoff summary'),
+        _toolResponse('echo', usage: const ModelUsage(totalTokens: 990)),
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_EchoTool()],
+        contextResets: (_) {},
+        compacts: true,
+      );
+
+      await harness.runner.startTurn(
+        _request(contextWindowTokens: 1000),
+        CancellationToken(),
+      );
+
+      expect(
+        harness.events.where((type) => type == 'context.compacted').length,
+        1,
+      );
+    },
+  );
+
+  test(
+    'a window already spent is compacted before the turn samples',
+    tags: const <String>['feature_test__context_compaction__unit'],
+    () async {
+      // The previous turn left the window full, so the first request of this
+      // turn must already be the compacted one.
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _textResponse('a handoff summary'),
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        contextResets: (_) {},
+        compacts: true,
+      );
+
+      await harness.runner.startTurn(
+        _request(
+          contextWindowTokens: 1000,
+          priorUsage: const ModelUsage(totalTokens: 950),
+        ),
+        CancellationToken(),
+      );
+
+      expect(provider.requests, hasLength(2));
+      expect(provider.requests.first.tools, isEmpty);
+      expect(
+        provider.requests[1].history.map(
+          (item) => (item as UserConversationItem).text,
+        ),
+        <String>[
+          'history',
+          'test',
+          '${CompactionPolicy.summaryPrefix}\na handoff summary',
+        ],
+      );
+    },
+  );
+
+  test(
+    'a provider that rejects the history compacts and retries the round',
+    tags: const <String>['feature_test__context_compaction__unit'],
+    () async {
+      // The catalog window can be wrong or absent, so the provider's own
+      // refusal has to be recoverable too.
+      final provider = _OverflowingProvider(
+        <List<ModelEvent>>[
+          const <ModelEvent>[],
+          _textResponse('a handoff summary'),
+          _textResponse('done'),
+        ],
+        overflowAt: const <int>{0},
+      );
+      final harness = _RunnerHarness(
+        provider,
+        contextResets: (_) {},
+        compacts: true,
+      );
+
+      final result = await harness.runner.startTurn(
+        _request(),
+        CancellationToken(),
+      );
+
+      expect(provider.requests, hasLength(3));
+      expect(
+        provider.requests.last.history.map(
+          (item) => (item as UserConversationItem).text,
+        ),
+        <String>[
+          'history',
+          'test',
+          '${CompactionPolicy.summaryPrefix}\na handoff summary',
+        ],
+      );
+      expect(harness.events, contains('context.compacted'));
+      expect(
+        result.conversationItems
+            .whereType<AssistantConversationItem>()
+            .last
+            .text,
+        'done',
+      );
+    },
+  );
+
+  test(
+    'a history that still overflows after compacting fails the turn',
+    tags: const <String>['feature_test__context_compaction__unit'],
+    () async {
+      // Retrying a second time would spend a summary request per attempt
+      // without ever shrinking anything the runner controls.
+      final provider = _OverflowingProvider(
+        <List<ModelEvent>>[
+          const <ModelEvent>[],
+          _textResponse('a handoff summary'),
+          const <ModelEvent>[],
+        ],
+        overflowAt: const <int>{0, 2},
+      );
+      final harness = _RunnerHarness(
+        provider,
+        contextResets: (_) {},
+        compacts: true,
+      );
+
+      await expectLater(
+        harness.runner.startTurn(_request(), CancellationToken()),
+        throwsA(isA<ModelContextOverflowException>()),
+      );
+      expect(harness.statuses, contains(SessionStatus.failed));
+    },
+  );
+
+  test(
+    'a runner without a compactor leaves an overflow to the caller',
+    tags: const <String>['feature_test__context_compaction__unit'],
+    () async {
+      final provider = _OverflowingProvider(
+        <List<ModelEvent>>[
+          const <ModelEvent>[],
+        ],
+        overflowAt: const <int>{0},
+      );
+      final harness = _RunnerHarness(provider);
+
+      await expectLater(
+        harness.runner.startTurn(_request(), CancellationToken()),
+        throwsA(isA<ModelContextOverflowException>()),
+      );
+      expect(provider.requests, hasLength(1));
+    },
+  );
+
+  test(
     'the context budget reaches a tool from the turn request',
     tags: const <String>['feature_test__tool_context_budget__unit'],
     () async {
@@ -827,8 +1037,10 @@ AgentRunRequest _request({
     UserConversationItem('history'),
   ],
   int? contextWindowTokens,
+  ModelUsage priorUsage = const ModelUsage(),
 }) => AgentRunRequest(
   contextWindowTokens: contextWindowTokens,
+  priorUsage: priorUsage,
   sessionId: 'agent-1',
   turnId: 'turn-1',
   workspaceRoot: Directory.current.path,
@@ -843,7 +1055,10 @@ AgentRunRequest _request({
   skills: skills,
 );
 
-List<ModelEvent> _toolResponse(String name) => <ModelEvent>[
+List<ModelEvent> _toolResponse(
+  String name, {
+  ModelUsage usage = const ModelUsage(inputTokens: 10, totalTokens: 10),
+}) => <ModelEvent>[
   ModelFunctionCall(
     callId: 'call-$name',
     name: name,
@@ -860,7 +1075,7 @@ List<ModelEvent> _toolResponse(String name) => <ModelEvent>[
         ),
       ],
     ),
-    usage: const ModelUsage(inputTokens: 10, totalTokens: 10),
+    usage: usage,
   ),
 ];
 
@@ -928,11 +1143,15 @@ final class _RunnerHarness {
     ),
     void Function(List<ConversationItem> retain)? contextResets,
     TurnInputSource? pendingTurnInput,
+    bool compacts = false,
   }) {
     runner = AgentRunner(
       provider: provider,
       tools: tools,
       approvals: approvals,
+      // The compactor shares the turn's provider, as it does in the daemon:
+      // the summary is written by the model that produced the work.
+      compactor: compacts ? ConversationCompactor(provider) : null,
       contextResets: contextResets == null
           ? null
           : _RecordingContextReset(contextResets),
@@ -951,6 +1170,28 @@ final class _RunnerHarness {
   final List<SessionStatus> statuses = <SessionStatus>[];
   final List<String> statusErrors = <String>[];
   final List<ConversationItem> items = <ConversationItem>[];
+}
+
+/// Refuses the requests at [overflowAt] the way a full context window is
+/// refused, and answers the rest from the script.
+final class _OverflowingProvider extends _FakeProvider {
+  _OverflowingProvider(super.responses, {required this.overflowAt});
+
+  final Set<int> overflowAt;
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    final attempt = requests.length;
+    requests.add(request);
+    index += 1;
+    if (overflowAt.contains(attempt)) {
+      throw const ModelContextOverflowException('history too long');
+    }
+    yield* Stream<ModelEvent>.fromIterable(responses[attempt]);
+  }
 }
 
 final class _SnapshottingProvider extends _FakeProvider {

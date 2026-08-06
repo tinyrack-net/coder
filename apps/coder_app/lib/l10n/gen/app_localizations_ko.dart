@@ -1502,6 +1502,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatContextReset => '새 컨텍스트 창';
 
   @override
+  String get chatContextCompacted => '대화 요약됨';
+
+  @override
+  String get composerCommandCompactLabel => 'compact';
+
+  @override
+  String get composerCommandCompactDescription => '대화를 요약해 컨텍스트 창을 비웁니다.';
+
+  @override
   String get sessionContextMeter => '컨텍스트';
 
   @override
