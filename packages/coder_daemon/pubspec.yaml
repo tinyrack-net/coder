@@ -16,7 +16,7 @@ dependencies:
   coder_provider_openai: ^0.1.0
   crypto: ^3.0.6
   dio: ^5.11.0
-  drift: 2.34.0
+  drift: 2.34.3
   json_rpc_2: ^4.1.0
   path: ^1.9.1
   shelf: ^1.4.2
