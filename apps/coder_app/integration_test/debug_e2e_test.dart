@@ -820,7 +820,13 @@ void main() {
       await tester.enterText(find.byKey(composer), 'read @READ');
       await tester.pumpAndSettle();
       await pumpUntil(tester, find.text('README.md'));
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      // Picked with the pointer rather than Enter: the catalog is still
+      // streaming here, and a rebuild that takes focus sends the keystroke
+      // nowhere. This step is about the daemon's search reaching the composer,
+      // and `composer_input_test.dart` owns the keyboard contract.
+      // The row names the file and its worktree-relative path, which are the
+      // same string at the repository root, so both land in the same row.
+      await tester.tap(find.text('README.md').first);
       await tester.pumpAndSettle();
       expect(
         tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
@@ -922,8 +928,15 @@ void main() {
         of: find.byKey(composer),
         matching: find.byType(EditableText),
       );
+      // Enter is ignored until a model resolves, so typing before that leaves
+      // the draft sitting in the field.
+      await _waitForComposerReady(tester, send);
       await tester.tap(composerInput);
-      await tester.pump();
+      await pumpUntilCondition(
+        tester,
+        () => tester.widget<EditableText>(composerInput).focusNode.hasFocus,
+        'the composer to take focus',
+      );
       final sessionsBefore = (await setupClient.listSessions(
         worktreeId: 'checkout-e2e',
       )).length;
