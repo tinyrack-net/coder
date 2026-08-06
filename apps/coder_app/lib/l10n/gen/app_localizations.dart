@@ -782,6 +782,42 @@ abstract class AppLocalizations {
   /// **'No workspaces yet.'**
   String get workspaceNoWorkspaces;
 
+  /// Sidebar section listing sessions that belong to no project.
+  ///
+  /// In en, this message translates to:
+  /// **'No project'**
+  String get workspaceNoProjectSessions;
+
+  /// Composer choice that starts a session in the user home.
+  ///
+  /// In en, this message translates to:
+  /// **'No project (home folder)'**
+  String get workspaceNoProjectOption;
+
+  /// Composer hint when no project is registered.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a project first.'**
+  String get workspaceAddProjectFirst;
+
+  /// Composer hint when no project is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a project.'**
+  String get workspaceSelectProject;
+
+  /// Composer hint when a directory project has no checkout.
+  ///
+  /// In en, this message translates to:
+  /// **'No project checkout was found.'**
+  String get workspaceCheckoutMissing;
+
+  /// Composer error when no daemon is connected.
+  ///
+  /// In en, this message translates to:
+  /// **'A daemon connection is required.'**
+  String get workspaceDaemonRequired;
+
   /// Button that opens daemon settings from the empty sidebar.
   ///
   /// In en, this message translates to:

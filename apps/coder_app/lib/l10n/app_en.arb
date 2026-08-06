@@ -435,6 +435,30 @@
   "@workspaceNoWorkspaces": {
     "description": "Sidebar empty state when connected daemons have no workspace."
   },
+  "workspaceNoProjectSessions": "No project",
+  "@workspaceNoProjectSessions": {
+    "description": "Sidebar section listing sessions that belong to no project."
+  },
+  "workspaceNoProjectOption": "No project (home folder)",
+  "@workspaceNoProjectOption": {
+    "description": "Composer choice that starts a session in the user home."
+  },
+  "workspaceAddProjectFirst": "Add a project first.",
+  "@workspaceAddProjectFirst": {
+    "description": "Composer hint when no project is registered."
+  },
+  "workspaceSelectProject": "Select a project.",
+  "@workspaceSelectProject": {
+    "description": "Composer hint when no project is selected."
+  },
+  "workspaceCheckoutMissing": "No project checkout was found.",
+  "@workspaceCheckoutMissing": {
+    "description": "Composer hint when a directory project has no checkout."
+  },
+  "workspaceDaemonRequired": "A daemon connection is required.",
+  "@workspaceDaemonRequired": {
+    "description": "Composer error when no daemon is connected."
+  },
   "workspaceOpenDaemonSettings": "Daemon settings",
   "@workspaceOpenDaemonSettings": {
     "description": "Button that opens daemon settings from the empty sidebar."

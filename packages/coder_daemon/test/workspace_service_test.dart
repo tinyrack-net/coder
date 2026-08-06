@@ -9,6 +9,21 @@ import 'package:test/test.dart';
 
 import 'support/fake_file_index_gateway.dart';
 
+/// Builds a service over an in-memory database with the standard fakes.
+WorkspaceService _service(
+  CoderDatabase database, {
+  required GitWorkspaceGateway git,
+}) => WorkspaceService(
+  database.workspaceDao,
+  database.worktreeDao,
+  database.sessionDao,
+  _FakeWorkspacePaths(),
+  git,
+  _FixedClock(),
+  '/state/worktrees',
+  FakeFileIndexGateway(),
+);
+
 void main() {
   test('parses git worktree porcelain without shell-dependent output', () {
     final worktrees = parseGitWorktreePorcelain('''
@@ -195,6 +210,115 @@ branch refs/heads/feature/settings
       await service.unregister('directory-1');
       expect((await service.catalog()).workspaces, isEmpty);
     },
+  );
+
+  test(
+    'home provisioning is idempotent and yields one directory checkout',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final service = _service(database, git: _FakeGitGateway()..root = null);
+
+      final first = await service.provisionHome('/home/user');
+      expect(first, isNotNull);
+      expect(first!.kind, WorktreeKind.directory);
+      expect(first.path, '/home/user');
+      expect(first.isCoderOwned, isFalse);
+
+      // Every boot re-provisions, so a second call must not fork a second
+      // workspace or checkout.
+      final second = await service.provisionHome('/home/user');
+      expect(second!.id, first.id);
+      final catalog = await service.catalog();
+      expect(catalog.workspaces, hasLength(1));
+      expect(catalog.workspaces.single.kind, WorkspaceKind.home);
+      expect(catalog.worktrees, hasLength(1));
+    },
+    tags: const <String>['feature_test__session_home__unit'],
+  );
+
+  test(
+    'a daemon without a user home provisions no home workspace',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final service = _service(database, git: _FakeGitGateway()..root = null);
+
+      expect(await service.provisionHome(null), isNull);
+      expect((await service.catalog()).workspaces, isEmpty);
+    },
+    tags: const <String>['feature_test__session_home__unit'],
+  );
+
+  test(
+    'a workspace already registered at the home path becomes the home one',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final service = _service(database, git: _FakeGitGateway()..root = null);
+      await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'manual-home',
+          checkoutId: 'manual-home-checkout',
+          rootPath: '/home/user',
+          name: 'My home',
+        ),
+      );
+
+      await service.provisionHome('/home/user');
+
+      final catalog = await service.catalog();
+      expect(catalog.workspaces, hasLength(1));
+      expect(catalog.workspaces.single.id, 'manual-home');
+      expect(catalog.workspaces.single.kind, WorkspaceKind.home);
+    },
+    tags: const <String>['feature_test__session_home__unit'],
+  );
+
+  test(
+    'the home workspace and its checkout cannot be removed or re-registered',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final service = _service(database, git: _FakeGitGateway()..root = null);
+      final home = (await service.provisionHome('/home/user'))!;
+
+      await expectLater(
+        service.unregister(home.workspaceId),
+        throwsA(isA<StateError>()),
+      );
+      await expectLater(
+        service.archive(home.id, force: true),
+        throwsA(isA<StateError>()),
+      );
+      // Registering the home directory as a project would otherwise merge into
+      // the home workspace by root path and vanish from every project list.
+      await expectLater(
+        service.register(
+          const WorkspaceRegisterParamsDto(
+            workspaceId: 'shadow',
+            checkoutId: 'shadow-checkout',
+            rootPath: '/home/user',
+            name: 'Home again',
+          ),
+        ),
+        throwsA(isA<StateError>()),
+      );
+      expect((await service.catalog()).workspaces, hasLength(1));
+    },
+    tags: const <String>['feature_test__session_home__unit'],
   );
 
   test(

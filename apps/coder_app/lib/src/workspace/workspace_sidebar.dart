@@ -33,9 +33,11 @@ class WorkspaceSidebar extends ConsumerWidget {
   const WorkspaceSidebar({
     required this.registry,
     required this.catalog,
+    required this.homeSessions,
     required this.selected,
     required this.onNewWorkspace,
     required this.onSelect,
+    required this.onSelectSession,
     required this.onOpenDaemonSettings,
     required this.onArchivedSelection,
     super.key,
@@ -47,6 +49,9 @@ class WorkspaceSidebar extends ConsumerWidget {
   /// Catalog of repositories and worktrees per daemon.
   final AsyncValue<UnifiedWorkspaceCatalogState> catalog;
 
+  /// Sessions that belong to no project, across every daemon.
+  final AsyncValue<List<HomeSessionEntry>> homeSessions;
+
   /// Currently open checkout, when any.
   final WorkspaceSelection? selected;
 
@@ -55,6 +60,10 @@ class WorkspaceSidebar extends ConsumerWidget {
 
   /// Opens one checkout.
   final ValueChanged<WorkspaceSelection> onSelect;
+
+  /// Opens one session that belongs to no project.
+  final void Function(WorkspaceSelection selection, String sessionId)
+  onSelectSession;
 
   /// Opens daemon settings when no daemon is configured.
   final VoidCallback onOpenDaemonSettings;
@@ -78,6 +87,9 @@ class WorkspaceSidebar extends ConsumerWidget {
       if (hostCatalog == null) continue;
       final label = hostLabel(l10n, host);
       for (final workspace in hostCatalog.workspaces) {
+        // The home workspace only exists so project-less sessions have a
+        // working directory; it is never offered as a project.
+        if (workspace.kind == WorkspaceKind.home) continue;
         entries.add((
           hostId: host.id,
           hostLabel: label,
@@ -163,39 +175,71 @@ class WorkspaceSidebar extends ConsumerWidget {
         onSettings: onOpenDaemonSettings,
       );
     }
-    if (entries.isEmpty) {
+    final loose = homeSessions.value ?? const <HomeSessionEntry>[];
+    if (entries.isEmpty && loose.isEmpty) {
       return _SidebarEmptyState(message: l10n.workspaceNoWorkspaces);
     }
     return ListView(
       padding: const EdgeInsets.all(TRSpacing.extraSmall),
       children: <Widget>[
-        TRTreeNav<_WorkspaceNavValue>.controlled(
-          key: const ValueKey<String>('workspace-sidebar-tree'),
-          pageStorageId: 'workspace-sidebar-tree',
-          semanticLabel: l10n.workspacesTitle,
-          value: selected == null
-              ? null
-              : (
-                  hostId: selected!.hostId,
-                  workspaceId: selected!.workspaceId,
-                  worktreeId: selected!.worktreeId,
+        if (loose.isNotEmpty) ...<Widget>[
+          _SidebarSectionLabel(text: l10n.workspaceNoProjectSessions),
+          TRTreeNav<String>.controlled(
+            key: const ValueKey<String>('workspace-sidebar-home-sessions'),
+            pageStorageId: 'workspace-sidebar-home-sessions',
+            semanticLabel: l10n.workspaceNoProjectSessions,
+            value: null,
+            items: <TRTreeNavItem<String>>[
+              for (final entry in loose)
+                TRTreeNavLeaf<String>(
+                  value: entry.session.id,
+                  leading: const Icon(CoderIcons.chat),
+                  label: TRText.inherit(
+                    entry.session.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-          items: <TRTreeNavItem<_WorkspaceNavValue>>[
-            for (final entry in entries)
-              _treeItem(context, ref, l10n, entry, entries.length),
-          ],
-          onValueChange: (value) {
-            final worktreeId = value?.worktreeId;
-            if (value == null || worktreeId == null) return;
-            onSelect(
-              WorkspaceSelection(
-                hostId: value.hostId,
-                workspaceId: value.workspaceId,
-                worktreeId: worktreeId,
-              ),
-            );
-          },
-        ),
+            ],
+            onValueChange: (sessionId) {
+              if (sessionId == null) return;
+              final entry = loose
+                  .where((item) => item.session.id == sessionId)
+                  .firstOrNull;
+              if (entry == null) return;
+              onSelectSession(entry.selection, entry.session.id);
+            },
+          ),
+          const SizedBox(height: TRSpacing.medium),
+        ],
+        if (entries.isNotEmpty)
+          TRTreeNav<_WorkspaceNavValue>.controlled(
+            key: const ValueKey<String>('workspace-sidebar-tree'),
+            pageStorageId: 'workspace-sidebar-tree',
+            semanticLabel: l10n.workspacesTitle,
+            value: selected == null
+                ? null
+                : (
+                    hostId: selected!.hostId,
+                    workspaceId: selected!.workspaceId,
+                    worktreeId: selected!.worktreeId,
+                  ),
+            items: <TRTreeNavItem<_WorkspaceNavValue>>[
+              for (final entry in entries)
+                _treeItem(context, ref, l10n, entry, entries.length),
+            ],
+            onValueChange: (value) {
+              final worktreeId = value?.worktreeId;
+              if (value == null || worktreeId == null) return;
+              onSelect(
+                WorkspaceSelection(
+                  hostId: value.hostId,
+                  workspaceId: value.workspaceId,
+                  worktreeId: worktreeId,
+                ),
+              );
+            },
+          ),
       ],
     );
   }
@@ -392,6 +436,28 @@ class WorkspaceSidebar extends ConsumerWidget {
     ref.invalidate(workspaceCatalogControllerProvider);
     if (selected?.workspaceId == workspace.id) onArchivedSelection();
   }
+}
+
+/// Heading that separates the project tree from sessions without a project.
+class _SidebarSectionLabel extends StatelessWidget {
+  const _SidebarSectionLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      TRSpacing.small,
+      TRSpacing.small,
+      TRSpacing.small,
+      TRSpacing.extraSmall,
+    ),
+    child: TRText(
+      text,
+      variant: TRTextVariant.label,
+      color: TRTextColor.muted,
+    ),
+  );
 }
 
 class _SidebarEmptyState extends StatelessWidget {

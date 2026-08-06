@@ -117,6 +117,7 @@ Map<String, dynamic> _$WorkspaceDtoToJson(_WorkspaceDto instance) =>
 const _$WorkspaceKindEnumMap = {
   WorkspaceKind.git: 'git',
   WorkspaceKind.directory: 'directory',
+  WorkspaceKind.home: 'home',
 };
 
 _WorktreeDto _$WorktreeDtoFromJson(Map<String, dynamic> json) => _WorktreeDto(

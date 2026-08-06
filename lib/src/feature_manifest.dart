@@ -417,6 +417,29 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'session.home',
+    description:
+        'Starts a session without picking a project. The daemon provisions the '
+        'user home directory as an implicit home workspace that no project '
+        'list offers and that clients cannot unregister or archive, and the '
+        'sidebar lists these sessions outside every project.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'create_without_project',
+        description:
+            'Creates a session with no project and runs it in the home folder.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
     id: 'session.tabs',
     description: 'Opens, closes, restores, and switches session tabs.',
     requiredLayers: <FeatureVerificationLayer>{

@@ -1025,10 +1025,13 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
           final sidebar = WorkspaceSidebar(
             registry: registry.value,
             catalog: catalog,
+            homeSessions: _homeSessions(catalog.value),
             selected: widget.selection,
             onNewWorkspace: () =>
                 const WorkspaceHomeRoute(compose: true).replace(context),
             onSelect: (selection) => _goWorktree(context, selection),
+            onSelectSession: (selection, sessionId) =>
+                _goSession(context, selection, sessionId),
             onOpenDaemonSettings: () =>
                 unawaited(const DaemonSettingsRoute().push<void>(context)),
             onArchivedSelection: () =>
@@ -1073,6 +1076,31 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
         },
       ),
     );
+  }
+
+  /// Gathers the sessions that belong to no project across every daemon.
+  ///
+  /// Each daemon's home checkout is an ordinary checkout, so this reuses the
+  /// same per-checkout session family the session area does rather than adding
+  /// a second source of truth.
+  AsyncValue<List<HomeSessionEntry>> _homeSessions(
+    UnifiedWorkspaceCatalogState? catalog,
+  ) {
+    if (catalog == null) {
+      return const AsyncValue<List<HomeSessionEntry>>.loading();
+    }
+    final entries = <HomeSessionEntry>[];
+    for (final hostId in catalog.catalogs.keys) {
+      final selection = catalog.homeSelection(hostId);
+      if (selection == null) continue;
+      final sessions = ref.watch(
+        sessionsControllerProvider(hostId, selection.worktreeId),
+      );
+      for (final session in sessions.value ?? const <SessionDto>[]) {
+        entries.add((selection: selection, session: session));
+      }
+    }
+    return AsyncValue<List<HomeSessionEntry>>.data(sortedHomeSessions(entries));
   }
 
   Future<void> _setSidebarCollapsed(bool collapsed) => ref

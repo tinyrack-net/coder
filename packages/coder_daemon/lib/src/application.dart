@@ -418,6 +418,9 @@ abstract final class DaemonApplication {
         projectSettings,
         worktreeHooks,
       );
+      // Sessions that belong to no project run here, so the home checkout has
+      // to exist before the first client connects.
+      await workspaceService.provisionHome(config.userHomeDirectory);
       final terminals = TerminalService(
         gateway: const TinyrackTerminalGateway(),
         worktreePath: (worktreeId) async {

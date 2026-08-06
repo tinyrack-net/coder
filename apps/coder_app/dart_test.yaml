@@ -39,6 +39,7 @@ tags:
   feature_scenario__session_lifecycle__create_with_configuration__e2e:
   feature_scenario__session_lifecycle__update_model_and_mode__e2e:
   feature_scenario__session_lifecycle__reconnect_persistence__e2e:
+  feature_scenario__session_home__create_without_project__e2e:
   feature_scenario__session_tabs__open_switch_close_restore__e2e:
   feature_scenario__terminal_lifecycle__create_write_terminate__e2e:
   feature_scenario__turn_execution__stream_and_restore__e2e:
@@ -109,6 +110,9 @@ tags:
   feature_test__session_lifecycle__unit:
   feature_test__session_lifecycle__widget:
   feature_test__session_lifecycle__e2e:
+  feature_test__session_home__unit:
+  feature_test__session_home__widget:
+  feature_test__session_home__e2e:
   feature_test__session_tabs__unit:
   feature_test__session_tabs__widget:
   feature_test__session_tabs__e2e:
