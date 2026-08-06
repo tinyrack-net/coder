@@ -73,6 +73,10 @@ Local Network Access permission once. See
 Release builds, packaging, and the winget and Homebrew channels are described
 in [`docs/releasing.md`](docs/releasing.md).
 
+[`docs/dependencies.md`](docs/dependencies.md) explains how the single-lockfile
+workspace resolves, and which upgrades `flutter pub outdated` offers that are
+actually blocked by the Flutter SDK or an upstream package.
+
 The daemon intentionally does not implement TLS or certificate bypasses. Keep
 it bound to loopback when terminating TLS in a local reverse proxy. Binding to
 all interfaces exposes the plain daemon port, which must be isolated by the

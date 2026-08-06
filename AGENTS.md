@@ -13,6 +13,10 @@ Consume packages owned by `tinyrack-net`, including `tinyrack_ui`, `cliweave`,
 dependencies, or `dependency_overrides` for these packages. Run
 `dart run melos tinyrack-sources:check` after changing dependencies.
 
+Before upgrading anything, read [`docs/dependencies.md`](docs/dependencies.md).
+It records which packages `flutter pub outdated` reports as upgradable but are
+in fact pinned shut by the Flutter SDK or an upstream package, and why.
+
 ## UI design system
 
 For every Flutter UI implementation, modification, refactor, review, styling,
