@@ -3,11 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// A Coder content row composed exclusively from Tinyrack tokens.
+///
+/// The row rings itself only while it holds the primary focus. A row reports
+/// focus for its descendants as well, so a row that read plain focus painted
+/// its ring beside the one a focused trailing control was already painting,
+/// which showed two rings for one control.
+///
+/// A row whose [onTap] only repeats what its trailing control already does sets
+/// [controlOwnsFocus] so the control is the single tab stop for the setting.
 class CoderListRow extends StatefulWidget {
   /// Creates a content or navigation row.
   const CoderListRow({
     required this.title,
     this.contentPadding,
+    this.controlOwnsFocus = false,
     this.dense = false,
     this.enabled = true,
     this.isThreeLine = false,
@@ -49,15 +58,55 @@ class CoderListRow extends StatefulWidget {
   /// Overrides token-based content padding when layout requires it.
   final EdgeInsetsGeometry? contentPadding;
 
+  /// Whether the trailing control is the row's only tab stop.
+  ///
+  /// A switch row taps the switch and nothing else, so a stop on the row and
+  /// another on the switch cost two presses for one setting and announced the
+  /// setting twice. The row still activates from a pointer anywhere on it.
+  ///
+  /// A row whose trailing control does something the row does not, such as a
+  /// tab that selects and a button that closes it, leaves this off: those are
+  /// two actions and deserve two stops.
+  final bool controlOwnsFocus;
+
   @override
   State<CoderListRow> createState() => _CoderListRowState();
 }
 
 class _CoderListRowState extends State<CoderListRow> {
+  final FocusNode _focusNode = FocusNode();
   bool _hovered = false;
   bool _focused = false;
 
+  /// Whether a pointer on the row runs [CoderListRow.onTap].
   bool get _interactive => widget.enabled && widget.onTap != null;
+
+  /// Whether the row is a tab stop of its own.
+  bool get _focusable => _interactive && !widget.controlOwnsFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_handleFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_handleFocusChange)
+      ..dispose();
+    super.dispose();
+  }
+
+  /// Tracks the primary focus, not [FocusNode.hasFocus].
+  ///
+  /// A focused control inside the row is not a focused row: reading plain
+  /// focus is what put a ring around the row and around its select at once.
+  void _handleFocusChange() {
+    final focused = _focusNode.hasPrimaryFocus;
+    if (focused == _focused || !mounted) return;
+    setState(() => _focused = focused);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,20 +160,23 @@ class _CoderListRowState extends State<CoderListRow> {
     );
 
     return Semantics(
-      button: _interactive,
+      // A row that hands its focus to its control is not a control itself, so
+      // it stays out of the way and lets the control name the setting once.
+      button: _focusable,
       enabled: widget.enabled,
       selected: widget.selected,
-      onTap: _interactive ? widget.onTap : null,
+      onTap: _focusable ? widget.onTap : null,
       child: CallbackShortcuts(
-        bindings: _interactive
+        bindings: _focusable
             ? <ShortcutActivator, VoidCallback>{
                 const SingleActivator(LogicalKeyboardKey.enter): widget.onTap!,
                 const SingleActivator(LogicalKeyboardKey.space): widget.onTap!,
               }
             : const <ShortcutActivator, VoidCallback>{},
         child: Focus(
-          canRequestFocus: _interactive,
-          onFocusChange: (focused) => setState(() => _focused = focused),
+          focusNode: _focusNode,
+          canRequestFocus: _focusable,
+          skipTraversal: !_focusable,
           child: MouseRegion(
             cursor: _interactive ? SystemMouseCursors.click : MouseCursor.defer,
             onEnter: _interactive
@@ -141,12 +193,17 @@ class _CoderListRowState extends State<CoderListRow> {
                 curve: TRMotion.standard,
                 decoration: BoxDecoration(
                   color: background,
-                  border: _focused
-                      ? Border.all(
-                          color: colors.focus,
-                          width: TRControlMetrics.focusWidth,
-                        )
-                      : null,
+                  borderRadius: const BorderRadius.all(TRRadii.medium),
+                ),
+                // The ring is always present and only changes colour. Adding
+                // and removing a border inset the content box instead, which
+                // re-laid-out the trailing control and destroyed its focus
+                // node as traversal stepped onto it.
+                foregroundDecoration: BoxDecoration(
+                  border: Border.all(
+                    color: _focused ? colors.focus : Colors.transparent,
+                    width: TRControlMetrics.focusWidth,
+                  ),
                   borderRadius: const BorderRadius.all(TRRadii.medium),
                 ),
                 padding:

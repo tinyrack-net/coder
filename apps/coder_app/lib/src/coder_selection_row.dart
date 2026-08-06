@@ -40,6 +40,8 @@ class CoderSwitchRow extends StatelessWidget {
   Widget build(BuildContext context) => SettingsRow(
     enabled: onChanged != null,
     flush: flush,
+    // The row's tap is the switch's tap, so the switch is the tab stop.
+    controlOwnsFocus: true,
     onTap: onChanged == null ? null : () => onChanged!(!value),
     title: title,
     description: subtitle,
@@ -86,6 +88,8 @@ class CoderCheckboxRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SettingsRow(
     enabled: onChanged != null,
+    // The row's tap is the checkbox's tap, so the checkbox is the tab stop.
+    controlOwnsFocus: true,
     onTap: onChanged == null ? null : () => onChanged!(!value),
     leading: secondary,
     title: title,
