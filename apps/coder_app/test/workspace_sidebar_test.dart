@@ -3,7 +3,9 @@ import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/workspace/workspace_sidebar.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -380,6 +382,163 @@ void main() {
       await tester.pumpAndSettle();
 
       expect((await api.getWorkspaceCatalog()).workspaces, isEmpty);
+    },
+    tags: const <String>['feature_test__workspace_registration__widget'],
+  );
+
+  // The row paints its own background and focus ring, so both are read off the
+  // AnimatedContainer that wraps the row content rather than off a golden.
+  AnimatedContainer rowSurface(WidgetTester tester, String label) =>
+      tester.widget<AnimatedContainer>(
+        find
+            .ancestor(
+              of: find.text(label),
+              matching: find.byType(AnimatedContainer),
+            )
+            .first,
+      );
+
+  Color? rowBackground(WidgetTester tester, String label) =>
+      (rowSurface(tester, label).decoration! as BoxDecoration).color;
+
+  // The ring always sits in the tree so that showing it never restructures the
+  // row; an unfocused row draws it transparent.
+  Color rowFocusRing(WidgetTester tester, String label) =>
+      ((rowSurface(tester, label).foregroundDecoration! as BoxDecoration)
+                  .border!
+              as Border)
+          .top
+          .color;
+
+  Future<TestGesture> clickWithMouse(
+    WidgetTester tester,
+    Finder target, {
+    TestGesture? reuse,
+  }) async {
+    final gesture =
+        reuse ?? await tester.createGesture(kind: PointerDeviceKind.mouse);
+    if (reuse == null) {
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+    }
+    // A real pointer hovers the row before it presses, and frames render while
+    // the button is held. That is the state the reported defect appears in.
+    await gesture.moveTo(tester.getCenter(target));
+    await tester.pumpAndSettle();
+    await gesture.down(tester.getCenter(target));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+    return gesture;
+  }
+
+  Future<void> pumpProject(WidgetTester tester) async {
+    final project = workspace('project', 'Project');
+    await pump(
+      tester,
+      hosts: <HostRuntimeSnapshot>[host('up', 'Up daemon')],
+      catalogs: <String, WorkspaceCatalogDto>{
+        'up': WorkspaceCatalogDto(
+          workspaces: <WorkspaceDto>[project],
+          worktrees: <WorktreeDto>[
+            worktree('project-main', project.id, 'main'),
+          ],
+        ),
+      },
+    );
+  }
+
+  testWidgets(
+    'a row menu opens on a single pointer press',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpProject(tester);
+
+      await clickWithMouse(
+        tester,
+        find.byKey(const ValueKey<String>('workspace-menu-project')),
+      );
+
+      expect(find.text(testL10n.workspaceUnregister), findsOneWidget);
+    },
+    tags: const <String>['feature_test__workspace_registration__widget'],
+  );
+
+  testWidgets(
+    'a row menu opens on the first press while another row menu is open',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpProject(tester);
+
+      // The checkout menu opens downwards, which leaves the project trigger
+      // above it uncovered.
+      final mouse = await clickWithMouse(
+        tester,
+        find.byKey(const ValueKey<String>('worktree-menu-project-main')),
+      );
+      expect(find.text(testL10n.workspaceArchive), findsOneWidget);
+
+      // Moving from one row menu to the next is one press: the open menu
+      // closes and the pressed one opens.
+      await clickWithMouse(
+        tester,
+        find.byKey(const ValueKey<String>('workspace-menu-project')),
+        reuse: mouse,
+      );
+      expect(find.text(testL10n.workspaceArchive), findsNothing);
+      expect(find.text(testL10n.workspaceUnregister), findsOneWidget);
+    },
+    tags: const <String>['feature_test__workspace_registration__widget'],
+  );
+
+  testWidgets(
+    'a row menu leaves no focus ring or background on its row',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpProject(tester);
+
+      final idleGroupBackground = rowBackground(tester, 'Project');
+
+      final mouse = await clickWithMouse(
+        tester,
+        find.byKey(const ValueKey<String>('workspace-menu-project')),
+      );
+
+      // The trigger owns the focus ring; the row that hosts it does not.
+      expect(rowFocusRing(tester, 'Project'), Colors.transparent);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      // Leaving the row drops the hover surface with nothing else holding it.
+      await mouse.moveTo(const Offset(1, 700));
+      await tester.pumpAndSettle();
+
+      expect(rowFocusRing(tester, 'Project'), Colors.transparent);
+      expect(rowBackground(tester, 'Project'), idleGroupBackground);
+    },
+    tags: const <String>['feature_test__workspace_registration__widget'],
+  );
+
+  testWidgets(
+    'an unhovered workspace row keeps a transparent background',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpProject(tester);
+
+      // Only a hovered row, or a selected checkout, is filled. A workspace has
+      // no selected state of its own.
+      expect(rowBackground(tester, 'Project'), Colors.transparent);
+
+      await clickWithMouse(
+        tester,
+        find.byKey(const ValueKey<String>('worktree-menu-project-main')),
+      );
+
+      expect(rowBackground(tester, 'Project'), Colors.transparent);
     },
     tags: const <String>['feature_test__workspace_registration__widget'],
   );
