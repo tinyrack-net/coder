@@ -2012,6 +2012,12 @@ abstract class AppLocalizations {
   /// **'{count}+ files'**
   String toolPathsTruncated(int count);
 
+  /// Result line after a workspace file is attached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached {name}'**
+  String toolAttached(String name);
+
   /// Result line after a skill's instructions are loaded.
   ///
   /// In en, this message translates to:

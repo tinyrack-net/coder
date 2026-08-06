@@ -348,6 +348,70 @@ void main() {
   );
 
   test(
+    'attachment and MCP tools no longer fall back to generic text',
+    () {
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'attach_file',
+            arguments: <String, dynamic>{'path': 'docs/spec.pdf'},
+            output: '{"attachmentId":"a1","fileName":"spec.pdf"}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.title, 'title', 'Attach(docs/spec.pdf)')
+            .having((value) => value.resultLine, 'result', 'spec.pdf 첨부'),
+      );
+
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'read_attachment',
+            arguments: <String, dynamic>{'id': 'a1'},
+            output: '{"attachmentId":"a1","fileName":"spec.pdf"}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.title, 'title', 'Attachment(a1)')
+            .having((value) => value.resultLine, 'result', 'spec.pdf 첨부'),
+      );
+
+      // An MCP tool name is invented at runtime, so it cannot be in the spec
+      // map; it still gets a readable title instead of the generic fallback.
+      final mcp = describeToolActivity(
+        testL10n,
+        activity(
+          'mcp__github__create_issue',
+          arguments: <String, dynamic>{'title': 'Bug'},
+          output: 'Created issue #1',
+        ),
+      );
+      expect(mcp.title, 'github.create_issue');
+      expect(mcp.isFailure, isFalse);
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'mcp__github__create_issue',
+            arguments: <String, dynamic>{'title': 'Bug'},
+            output: r'{"error":"MCP server \"github\" is not connected."}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.isFailure, 'isFailure', isTrue)
+            .having(
+              (value) => value.resultLine,
+              'result',
+              'MCP server "github" is not connected.',
+            ),
+      );
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
     'unknown tools and malformed output fall back to generic summaries',
     () {
       final unknown = describeToolActivity(

@@ -1093,6 +1093,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String toolAttached(String name) {
+    return 'Attached $name';
+  }
+
+  @override
   String toolSkillLoaded(String name) {
     return 'Loaded $name';
   }

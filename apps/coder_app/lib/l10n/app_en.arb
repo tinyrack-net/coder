@@ -1436,6 +1436,15 @@
       }
     }
   },
+  "toolAttached": "Attached {name}",
+  "@toolAttached": {
+    "description": "Result line after a workspace file is attached.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolSkillLoaded": "Loaded {name}",
   "@toolSkillLoaded": {
     "description": "Result line after a skill's instructions are loaded.",

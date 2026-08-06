@@ -1077,6 +1077,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String toolAttached(String name) {
+    return '$name 첨부';
+  }
+
+  @override
   String toolSkillLoaded(String name) {
     return '$name 불러옴';
   }

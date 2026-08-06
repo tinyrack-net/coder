@@ -187,10 +187,12 @@ class SessionService {
       ],
       if (definition.mode == AgentMode.primary &&
           definition.callableAgentIds.isNotEmpty)
-        _DelegateAgentTool(
-          parentSession: session,
-          parentDefinition: definition,
-          service: this,
+        DelegateAgentTool(
+          gateway: _SessionDelegationGateway(
+            parentSession: session,
+            parentDefinition: definition,
+            service: this,
+          ),
         ),
     ];
 
@@ -704,16 +706,26 @@ PermissionMode _moreRestrictive(PermissionMode left, PermissionMode right) {
   return rank[left]! <= rank[right]! ? left : right;
 }
 
-final class _DelegateAgentTool extends AgentTool {
-  _DelegateAgentTool({
-    required this.parentSession,
-    required this.parentDefinition,
-    required this.service,
+/// Runs one delegated turn on behalf of a parent session.
+///
+/// A port rather than a direct call into [SessionService], so the tool's own
+/// contract — argument validation, what it reports, how it fails — can be
+/// exercised without standing up a database, a provider, and a turn loop.
+abstract interface class AgentDelegationGateway {
+  /// Starts the child turn and waits for its result.
+  Future<ToolResult> delegate({
+    required String agentDefinitionId,
+    required String prompt,
+    required CancellationToken cancellation,
   });
+}
 
-  final SessionDto parentSession;
-  final AgentDefinitionDto parentDefinition;
-  final SessionService service;
+/// Delegates a bounded task to one allowed subagent.
+final class DelegateAgentTool extends AgentTool {
+  /// Creates a [DelegateAgentTool].
+  DelegateAgentTool({required this._gateway});
+
+  final AgentDelegationGateway _gateway;
 
   @override
   String get name => 'delegate_agent';
@@ -738,15 +750,63 @@ final class _DelegateAgentTool extends AgentTool {
   };
 
   @override
+  Future<String?> preview(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final id = arguments['agentDefinitionId'];
+    return id is String ? id : null;
+  }
+
+  @override
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
-  ) => service._delegate(
+  ) async {
+    final agentDefinitionId = arguments['agentDefinitionId'];
+    final prompt = arguments['prompt'];
+    if (agentDefinitionId is! String || agentDefinitionId.isEmpty) {
+      return _reject('agentDefinitionId must be a non-empty string.');
+    }
+    if (prompt is! String || prompt.trim().isEmpty) {
+      return _reject('prompt must be a non-empty string.');
+    }
+    return _gateway.delegate(
+      agentDefinitionId: agentDefinitionId,
+      prompt: prompt,
+      cancellation: context.cancellation,
+    );
+  }
+
+  static ToolResult _reject(String reason) => ToolResult(
+    output: jsonEncode(<String, dynamic>{'error': reason}),
+    isError: true,
+  );
+}
+
+/// Binds one parent session to the service that runs its delegated turns.
+final class _SessionDelegationGateway implements AgentDelegationGateway {
+  const _SessionDelegationGateway({
+    required this.parentSession,
+    required this.parentDefinition,
+    required this.service,
+  });
+
+  final SessionDto parentSession;
+  final AgentDefinitionDto parentDefinition;
+  final SessionService service;
+
+  @override
+  Future<ToolResult> delegate({
+    required String agentDefinitionId,
+    required String prompt,
+    required CancellationToken cancellation,
+  }) => service._delegate(
     parentSession: parentSession,
     parentDefinition: parentDefinition,
-    agentDefinitionId: arguments['agentDefinitionId'] as String,
-    prompt: arguments['prompt'] as String,
-    cancellation: context.cancellation,
+    agentDefinitionId: agentDefinitionId,
+    prompt: prompt,
+    cancellation: cancellation,
   );
 }
 

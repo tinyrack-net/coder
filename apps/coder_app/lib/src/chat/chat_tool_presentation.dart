@@ -414,6 +414,30 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
     isFailure: (output) =>
         output is ChatToolJsonObject && output.value['error'] != null,
   ),
+  'attach_file': _ToolSpec(
+    glyph: ChatToolGlyph.read,
+    title: (l10n, activity) =>
+        'Attach(${_truncate(_stringArg(activity, 'path') ?? '?', 60)})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final name = output.value['fileName'];
+      return name is String
+          ? l10n.toolAttached(name)
+          : _genericResult(l10n, output);
+    },
+  ),
+  'read_attachment': _ToolSpec(
+    glyph: ChatToolGlyph.read,
+    title: (l10n, activity) =>
+        'Attachment(${_truncate(_stringArg(activity, 'id') ?? '?', 40)})',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final name = output.value['fileName'];
+      return name is String
+          ? l10n.toolAttached(name)
+          : _genericResult(l10n, output);
+    },
+  ),
   'list_skills': _ToolSpec(
     glyph: ChatToolGlyph.list,
     title: (l10n, activity) => 'Skills()',

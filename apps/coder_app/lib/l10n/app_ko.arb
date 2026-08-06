@@ -319,6 +319,7 @@
   "toolNoPaths": "파일 없음",
   "toolPaths": "파일 {count}개",
   "toolPathsTruncated": "파일 {count}개 이상",
+  "toolAttached": "{name} 첨부",
   "toolSkillLoaded": "{name} 불러옴",
   "toolSkills": "스킬 {count}개",
   "toolSkillsTruncated": "스킬 {count}개 이상",
