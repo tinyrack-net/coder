@@ -541,9 +541,12 @@ final class _RecordingTray implements TrayIcon {
   final List<String> calls;
   TrayMenuModel? menu;
   void Function(String itemKey)? _onSelected;
+  void Function()? _onActivated;
   int destroys = 0;
 
   void select(String itemKey) => _onSelected?.call(itemKey);
+
+  void activate() => _onActivated?.call();
 
   @override
   Future<void> destroy() async {
@@ -555,9 +558,11 @@ final class _RecordingTray implements TrayIcon {
   Future<void> install({
     required TrayMenuModel menu,
     required void Function(String itemKey) onSelected,
+    required void Function() onActivated,
   }) async {
     this.menu = menu;
     _onSelected = onSelected;
+    _onActivated = onActivated;
   }
 
   @override

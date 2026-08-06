@@ -180,7 +180,11 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
         return;
       }
       _installedTray = true;
-      await tray.install(menu: menu, onSelected: _onSelected);
+      await tray.install(
+        menu: menu,
+        onSelected: _onSelected,
+        onActivated: _onTrayActivated,
+      );
     });
     _pending = published.then(
       (_) {},
@@ -217,6 +221,20 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     }
   }
 
+  void _onTrayActivated() {
+    unawaited(_reveal());
+  }
+
+  /// Brings the window back, whatever state it was in.
+  ///
+  /// Deliberately not a toggle: Windows reports a double click on the icon as
+  /// two clicks, and a toggle would show and then hide, reading as nothing
+  /// happening at all. The menu's Show/Hide row is where toggling belongs.
+  Future<void> _reveal() async {
+    await _window?.show();
+    if (mounted) setState(() => _windowVisible = true);
+  }
+
   Future<void> _toggleWindow() async {
     final window = _window;
     if (window == null) return;
@@ -229,9 +247,8 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
   }
 
   Future<void> _openSettings() async {
-    await _window?.show();
+    await _reveal();
     if (!mounted) return;
-    setState(() => _windowVisible = true);
     openSettingsTask(widget.router);
   }
 

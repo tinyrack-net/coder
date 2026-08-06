@@ -1899,7 +1899,7 @@ void main() {
           TrayMenuEntry(key: trayItemQuit, label: 'Quit'),
         ],
       );
-      await tray.install(menu: menu, onSelected: (_) {});
+      await tray.install(menu: menu, onSelected: (_) {}, onActivated: () {});
       await tray.update(menu);
       expect(const NativeAttachmentInput(), isA<AttachmentInputPort>());
       expect(const NativeAttachmentExport(), isA<AttachmentExportPort>());

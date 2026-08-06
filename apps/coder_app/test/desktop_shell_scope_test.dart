@@ -113,6 +113,38 @@ void main() {
   );
 
   testWidgets(
+    'clicking the tray icon reveals the window and repeating it keeps it up',
+    (tester) async {
+      final harness = build();
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      harness.window.requestClose();
+      await tester.pumpAndSettle();
+      expect(harness.window.visible, isFalse);
+
+      harness.tray.activate();
+      await tester.pumpAndSettle();
+      expect(harness.window.visible, isTrue);
+      expect(harness.window.shows, 1);
+      expect(
+        harness.tray.menu.entries
+            .firstWhere((entry) => entry.key == trayItemToggleWindow)
+            .label,
+        testL10n.trayHideWindow,
+      );
+
+      // Windows reports a double click as two icon clicks. Showing has to be
+      // idempotent, or the second click would hide what the first revealed.
+      harness.tray.activate();
+      await tester.pumpAndSettle();
+      expect(harness.window.visible, isTrue);
+      expect(harness.window.hides, 1);
+    },
+    tags: const <String>['feature_test__desktop_residency__widget'],
+  );
+
+  testWidgets(
     'the tray settings row reveals the window on the general settings page',
     (tester) async {
       final harness = build();
