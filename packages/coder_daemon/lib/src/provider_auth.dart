@@ -49,6 +49,20 @@ final class OAuthRefreshFailure implements Exception {
   String toString() => 'OAuthRefreshFailure: $message';
 }
 
+/// Typed failure raised while authorizing, before any credential exists.
+final class OAuthAuthorizationFailure implements Exception {
+  /// Creates an authorization failure safe to show as attempt metadata.
+  const OAuthAuthorizationFailure(this.message);
+
+  /// Human-readable failure without credential material.
+  final String message;
+
+  /// The coordinator publishes `'$error'` straight to the attempt tile, so the
+  /// bare sentence is the user-facing text.
+  @override
+  String toString() => message;
+}
+
 /// Refreshes one connection credential while preserving token rotation.
 abstract interface class ProviderCredentialRefresher {
   /// Returns a fresh credential for one connection.

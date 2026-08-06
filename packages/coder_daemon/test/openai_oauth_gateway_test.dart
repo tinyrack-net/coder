@@ -103,37 +103,197 @@ void main() {
     );
   });
 
-  test(
-    'loopback callback binder falls back when its primary port is busy',
-    () async {
-      final occupied = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      final binder = LoopbackOAuthCallbackServerBinder(
-        primaryPort: occupied.port,
-        fallbackPort: 0,
-      );
+  test('a denied authorization fails the browser session', () async {
+    final gateway = OpenAIOAuthGateway(
+      clock: _Clock(now),
+      dio: Dio()..httpClientAdapter = _OAuthAdapter(now),
+      callbackServerBinder: const _EphemeralBinder(),
+    );
 
-      final server = await binder.bind();
-      try {
-        expect(server.port, isNot(occupied.port));
-        expect(server.port, greaterThan(0));
-      } finally {
-        await server.close(force: true);
-        await occupied.close(force: true);
-      }
+    final session = await gateway.start(ProviderAuthFlow.oauthBrowser);
+    final authorization = Uri.parse(session.authorizationUrl);
+    final redirect = Uri.parse(authorization.queryParameters['redirect_uri']!);
+
+    expect(
+      await _callback(
+        redirect,
+        state: authorization.queryParameters['state']!,
+        error: 'access_denied',
+        errorDescription: 'The user denied the request.',
+      ),
+      HttpStatus.badRequest,
+    );
+
+    await expectLater(
+      session.completion,
+      throwsA(
+        isA<OAuthAuthorizationFailure>().having(
+          (error) => error.message,
+          'message',
+          contains('The user denied the request.'),
+        ),
+      ),
+    );
+  });
+
+  test('the callback page escapes provider-supplied text', () async {
+    final gateway = OpenAIOAuthGateway(
+      clock: _Clock(now),
+      dio: Dio()..httpClientAdapter = _OAuthAdapter(now),
+      callbackServerBinder: const _EphemeralBinder(),
+    );
+
+    final session = await gateway.start(ProviderAuthFlow.oauthBrowser);
+    final authorization = Uri.parse(session.authorizationUrl);
+    final body = await _callbackBody(
+      Uri.parse(authorization.queryParameters['redirect_uri']!),
+      state: authorization.queryParameters['state']!,
+      error: 'access_denied',
+      errorDescription: '<script>alert(1)</script>',
+    );
+
+    expect(body, isNot(contains('<script>')));
+    expect(body, contains('&lt;script&gt;'));
+    await expectLater(
+      session.completion,
+      throwsA(isA<OAuthAuthorizationFailure>()),
+    );
+  });
+
+  test('a rejected token exchange reports the OAuth error, not Dio', () async {
+    final adapter = _OAuthAdapter(now)
+      ..exchangeError = <String, dynamic>{
+        'error': 'invalid_grant',
+        'error_description': 'The redirect URI is not registered.',
+      };
+    final gateway = OpenAIOAuthGateway(
+      clock: _Clock(now),
+      dio: Dio()..httpClientAdapter = adapter,
+      callbackServerBinder: const _EphemeralBinder(),
+    );
+
+    final session = await gateway.start(ProviderAuthFlow.oauthBrowser);
+    final authorization = Uri.parse(session.authorizationUrl);
+    // The browser must be told why sign in failed, not left on a reset socket.
+    expect(
+      await _callback(
+        Uri.parse(authorization.queryParameters['redirect_uri']!),
+        state: authorization.queryParameters['state']!,
+        code: 'authorization-code',
+      ),
+      HttpStatus.badRequest,
+    );
+
+    await expectLater(
+      session.completion,
+      throwsA(
+        isA<OAuthAuthorizationFailure>().having(
+          (error) => error.toString(),
+          'toString',
+          allOf(
+            contains('The redirect URI is not registered.'),
+            isNot(contains('status code')),
+            isNot(contains('DioException')),
+          ),
+        ),
+      ),
+    );
+  });
+
+  test('a rejected device exchange stops the polling loop', () async {
+    final adapter = _OAuthAdapter(now)
+      ..exchangeError = <String, dynamic>{'error': 'expired_token'};
+    var delays = 0;
+    final gateway = OpenAIOAuthGateway(
+      clock: _Clock(now),
+      dio: Dio()..httpClientAdapter = adapter,
+      delay: (_) async => delays += 1,
+    );
+
+    final session = await gateway.start(ProviderAuthFlow.oauthDevice);
+
+    await expectLater(
+      session.completion,
+      throwsA(
+        isA<OAuthAuthorizationFailure>().having(
+          (error) => error.message,
+          'message',
+          contains('expired_token'),
+        ),
+      ),
+    );
+    // A rejected exchange must not be mistaken for `authorization_pending`.
+    expect(delays, 0);
+  });
+
+  test(
+    'loopback callback binder refuses to move off the registered port',
+    () async {
+      // Port 0 asks the OS for any free port, so the success path never races
+      // another process for a specific number.
+      final server = await const LoopbackOAuthCallbackServerBinder(
+        port: 0,
+      ).bind();
+      addTearDown(() => server.close(force: true));
+      expect(server.port, greaterThan(0));
+
+      // The public Codex client registers exactly one redirect URI, so a busy
+      // port must fail loudly instead of silently binding somewhere else.
+      await expectLater(
+        LoopbackOAuthCallbackServerBinder(port: server.port).bind(),
+        throwsA(
+          isA<OAuthAuthorizationFailure>().having(
+            (error) => error.message,
+            'message',
+            contains('${server.port}'),
+          ),
+        ),
+      );
     },
   );
 }
 
-Future<int> _callback(
+Future<String> _callbackBody(
   Uri redirect, {
   required String state,
-  required String code,
+  required String error,
+  required String errorDescription,
 }) async {
   final client = HttpClient();
   try {
     final request = await client.getUrl(
       redirect.replace(
-        queryParameters: <String, String>{'state': state, 'code': code},
+        queryParameters: <String, String>{
+          'state': state,
+          'error': error,
+          'error_description': errorDescription,
+        },
+      ),
+    );
+    final response = await request.close();
+    return response.transform(utf8.decoder).join();
+  } finally {
+    client.close(force: true);
+  }
+}
+
+Future<int> _callback(
+  Uri redirect, {
+  required String state,
+  String? code,
+  String? error,
+  String? errorDescription,
+}) async {
+  final client = HttpClient();
+  try {
+    final request = await client.getUrl(
+      redirect.replace(
+        queryParameters: <String, String>{
+          'state': state,
+          'code': ?code,
+          'error': ?error,
+          'error_description': ?errorDescription,
+        },
       ),
     );
     final response = await request.close();
@@ -171,6 +331,7 @@ final class _OAuthAdapter implements HttpClientAdapter {
   final String accessToken;
   int pendingDevicePolls = 0;
   bool invalidGrant = false;
+  Map<String, dynamic>? exchangeError;
   Map<String, dynamic> exchangeData = <String, dynamic>{};
   Map<String, dynamic> refreshData = <String, dynamic>{};
 
@@ -206,6 +367,8 @@ final class _OAuthAdapter implements HttpClientAdapter {
         }
       } else {
         exchangeData = data;
+        final rejection = exchangeError;
+        if (rejection != null) return _json(rejection, 400);
       }
       return _json(<String, dynamic>{
         'access_token': accessToken,
