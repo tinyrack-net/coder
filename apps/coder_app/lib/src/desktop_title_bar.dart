@@ -190,7 +190,7 @@ class _ApplicationMenu extends StatelessWidget {
               child: TRText.inherit(l10n.trayQuit),
             ),
           ],
-          trigger: TRText(l10n.desktopMenuFile),
+          trigger: TRText.inherit(l10n.desktopMenuFile),
         ),
         TRMenubarMenu(
           menuChildren: <Widget>[
@@ -204,7 +204,7 @@ class _ApplicationMenu extends StatelessWidget {
               ),
             ),
           ],
-          trigger: TRText(l10n.desktopMenuView),
+          trigger: TRText.inherit(l10n.desktopMenuView),
         ),
         TRMenubarMenu(
           menuChildren: <Widget>[
@@ -213,7 +213,7 @@ class _ApplicationMenu extends StatelessWidget {
               child: TRText.inherit(l10n.desktopMenuAbout),
             ),
           ],
-          trigger: TRText(l10n.desktopMenuHelp),
+          trigger: TRText.inherit(l10n.desktopMenuHelp),
         ),
       ],
     );

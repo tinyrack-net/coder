@@ -5,6 +5,7 @@ import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -219,6 +220,31 @@ void main() {
         expect(button.uiSize, TRUiSize.sm);
         expect(button.intent, TRIntent.neutral);
         expect(button.appearance, TRAppearance.ghost);
+      }
+    },
+    tags: const <String>['feature_test__desktop_window_chrome__widget'],
+  );
+
+  testWidgets(
+    'menubar triggers render at the size the menubar styles its slots with',
+    (tester) async {
+      final harness = build();
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // The trigger label is a menubar slot, so it must render at the control
+      // size the bar resolves rather than naming a typography role of its own.
+      final menubar = tester.widget<TRMenubar>(find.byType(TRMenubar));
+      final expected = TRControlMetrics.fontSizeOf(menubar.uiSize);
+      for (final label in <String>['File', 'View', 'Help']) {
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.text(label),
+        );
+        expect(
+          paragraph.text.style?.fontSize,
+          expected,
+          reason: '$label must inherit the menubar slot style, not name a role',
+        );
       }
     },
     tags: const <String>['feature_test__desktop_window_chrome__widget'],
