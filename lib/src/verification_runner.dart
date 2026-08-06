@@ -148,6 +148,10 @@ abstract final class WorkspaceVerificationPlans {
     ),
     VerificationTask(name: 'architecture', script: 'architecture:check'),
     VerificationTask(name: 'features', script: 'features:check'),
+    VerificationTask(
+      name: 'embedded daemon ports',
+      script: 'embedded-ports:check',
+    ),
   ];
 
   static const _coverageTasks = <VerificationTask>[

@@ -97,6 +97,24 @@ daemon vertical slice exactly once; `test:flutter` is the single-pass aggregate
 for app unit and widget tests. Package processes use bounded concurrency so a
 parallel workspace run does not multiply each package's own test workers.
 
+## Machine-global resources
+
+Tests never bind a fixed port. The app-owned daemon binds whatever
+`AppSettings.embeddedDaemonPort` says and that value overrides the port in the
+injected `DaemonConfig`, so a test that leaves the setting at its default binds
+the product port for the whole machine. Every E2E file that starts the real
+`IsolateEmbeddedDaemonLauncher` therefore takes its port from
+`reserveEphemeralPort()` in `integration_test/support/ephemeral_port.dart` and
+pins it on every `MemoryAppStore` it builds, and passes `resolveConfig` with a
+temporary home so no run reaches the real daemon home or its exclusive
+`daemon.lock`. `embedded-ports:check` enforces all three and runs as part of
+`verify:fast` and `verify`.
+
+`test:e2e:linux` additionally points `TINYRACK_CODER_HOME` at a per-run
+temporary directory. Together these let two checkouts verify at the same time
+and let `verify:debug` pass while a developer's own `melos run:daemon` holds the
+product port. Give each concurrent run its own display with `xvfb-run -a`.
+
 Golden tests run in their own canonical Linux process. Coverage excludes the
 `golden` tag so font/rendering configuration from unrelated test isolates cannot
 make pixel comparisons nondeterministic; the same UI behavior remains covered by

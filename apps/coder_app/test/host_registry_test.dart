@@ -233,6 +233,38 @@ void main() {
     tags: const <String>['feature_test__settings_reset__unit'],
   );
 
+  test('reset restarts on the store factory defaults it is given', () async {
+    final store = MemoryAppStore(
+      settings: const AppSettings(embeddedDaemonPort: 9100),
+      factoryDefaults: const AppSettings(embeddedDaemonPort: 9200),
+    );
+    final calls = <String>[];
+    final launcher = _EmbeddedLauncher(calls: calls);
+    final registry = HostRegistry(
+      store: store,
+      clientFactory: _ClientFactory(<String, Future<CoderApi>>{
+        'embedded.test': Future<CoderApi>.value(
+          FakeCoderApi(serverInfo: _serverInfo('embedded-server')),
+        ),
+      }),
+      embeddedLauncher: launcher,
+      embeddedDataEraser: _DataEraser(calls: calls),
+      ids: const _Ids(),
+      clock: _Clock(now),
+      delay: const _NoDelay(),
+      clientKind: 'desktop',
+    );
+    addTearDown(registry.close);
+
+    await registry.load();
+    await _flush();
+    await registry.resetToFactoryDefaults();
+    await _flush();
+
+    expect(store.settings.embeddedDaemonPort, 9200);
+    expect(launcher.ports, <int>[9100, 9200]);
+  });
+
   test(
     'a failed erase keeps every stored value and restarts the daemon',
     () async {
