@@ -1326,15 +1326,33 @@ void main() {
       await tester.pump();
       // The chip returning to 실행 proves the session left plan mode.
       await pumpUntil(tester, find.text('실행'));
-      await pumpUntilGone(tester, find.textContaining('Plan 모드'));
+      // The chip only reflects what the app asked for, so confirm the daemon
+      // agrees before sending a prompt that must not be planned again.
+      await pumpUntilCondition(
+        tester,
+        () async =>
+            (await setupClient.listSessions(
+                  worktreeId: 'checkout-e2e',
+                ))
+                .singleWhere((session) => session.id == attachmentSession.id)
+                .mode ==
+            SessionMode.normal,
+        'the attachment session to leave plan mode',
+      );
 
       // A blocking agent question stops the turn until the user answers it,
-      // and the chosen answer reaches the model.
+      // and the chosen answer reaches the model. Implementing the plan started
+      // a turn of its own, so this prompt may queue behind it; the wait spans
+      // both turns.
       await _waitForComposerReady(tester, send);
       await tester.enterText(find.byKey(composer), 'Ask me about storage');
       await tester.pump();
       await tester.tap(find.byKey(send));
-      await pumpUntil(tester, find.text('Storage'));
+      await _pumpUntilWithSessionDiagnostics(
+        tester,
+        find.text('Storage'),
+        setupClient,
+      );
       expect(find.text('Which store should the cache use?'), findsOneWidget);
       final questionSubmit = find.byKey(
         const ValueKey<String>('chat-question-submit'),
@@ -2112,13 +2130,18 @@ String _dartExecutable() {
   );
 }
 
+/// Waits for the composer to have a model, which is all that gates sending.
+///
+/// A running turn never disables the button; the prompt queues instead. So
+/// this is not a barrier on the previous turn, and a caller that needs one has
+/// to wait on daemon state itself.
 Future<void> _waitForComposerReady(
   WidgetTester tester,
   ValueKey<String> sendKey,
 ) => pumpUntilCondition(
   tester,
   () => tester.widget<TRIconButton>(find.byKey(sendKey)).onPressed != null,
-  'the composer to accept another turn',
+  'the composer to have a model selected',
 );
 
 Future<void> _submitComposerPrompt(

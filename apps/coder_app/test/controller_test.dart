@@ -518,11 +518,19 @@ void main() {
       final listener = container.listen(provider, (_, _) {});
       addTearDown(listener.close);
       await container.read(provider.future);
+      // A prompt only queues because a turn is running.
+      api.emit(
+        SessionUpdatedClientEvent(
+          agent.copyWith(status: SessionStatus.running),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
       container.read(provider.notifier)
         ..enqueueTurn('  first  ')
         ..enqueueTurn('second')
         // Neither empty text nor empty attachments is worth a turn.
         ..enqueueTurn('   ');
+      await Future<void>.delayed(Duration.zero);
       expect(
         container.read(provider).value!.queued.map((item) => item.text),
         <String>['first', 'second'],
@@ -563,6 +571,36 @@ void main() {
         );
       await Future<void>.delayed(Duration.zero);
       expect(api.startedPrompts, <String>['first', 'second']);
+      expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a prompt queued after the turn already settled still starts',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          appIdGeneratorProvider.overrideWithValue(_SequentialIdGenerator()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+
+      // The composer reads a rendered flag that trails the daemon, so it can
+      // queue one frame after the session went idle. No further session update
+      // is coming, so nothing but the enqueue itself can release the prompt.
+      container.read(provider.notifier).enqueueTurn('late');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(api.startedPrompts, <String>['late']);
       expect(container.read(provider).value!.queued, isEmpty);
     },
     tags: const <String>['feature_test__conversation_turn_queue__unit'],

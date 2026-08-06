@@ -1672,8 +1672,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
       await tester.pumpAndSettle();
+      // The chip label is the whole mode indicator, so the run label is gone.
       expect(find.text('Plan'), findsOneWidget);
-      expect(find.textContaining('Plan 모드'), findsNothing);
+      expect(find.text('실행'), findsNothing);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -1684,7 +1685,9 @@ void main() {
 
       final created = api.createdSessions.single;
       expect(created.mode, SessionMode.plan);
-      expect(find.textContaining('Plan 모드'), findsNothing);
+      // Sending a prompt keeps the session in plan mode.
+      expect(find.text('Plan'), findsOneWidget);
+      expect(find.text('실행'), findsNothing);
 
       api
         ..emitTimeline(

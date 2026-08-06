@@ -373,7 +373,16 @@ final class FakeCoderApi implements CoderApi {
   }
 
   /// Emits a typed daemon notification.
-  void emit(ClientEvent event) => _events.add(event);
+  ///
+  /// A session update also lands in the stored sessions, so a later
+  /// [listSessions] agrees with what subscribers were told.
+  void emit(ClientEvent event) {
+    if (event is SessionUpdatedClientEvent) {
+      final index = _agents.indexWhere((agent) => agent.id == event.session.id);
+      if (index >= 0) _agents[index] = event.session;
+    }
+    _events.add(event);
+  }
 
   /// Appends and broadcasts one timeline event for a session.
   void emitTimeline(

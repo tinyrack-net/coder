@@ -1381,8 +1381,27 @@ class ConversationController extends _$ConversationController {
     try {
       final api = await _requireHostApi(ref, hostId);
       await api.notePendingInput(sessionId);
+      await _drainIfAlreadySettled(api, sessionId);
     } on Object {
       // Not state, so a lost notice is not worth surfacing.
+    }
+  }
+
+  /// Releases the queue when the turn it was waiting on has already finished.
+  ///
+  /// The composer chooses between sending and queueing from a rendered flag
+  /// that trails the daemon by one event, so a prompt can land in the queue
+  /// after the session settled. [drainQueue] otherwise runs only from a later
+  /// session update, and no such update is coming, which strands the prompt.
+  Future<void> _drainIfAlreadySettled(CoderApi api, String sessionId) async {
+    if (state.asData?.value.queued.isEmpty ?? true) return;
+    final session = (await api.listSessions())
+        .where((session) => session.id == sessionId)
+        .firstOrNull;
+    if (session == null) return;
+    if (session.status == SessionStatus.idle ||
+        session.status == SessionStatus.failed) {
+      await drainQueue();
     }
   }
 
