@@ -42,9 +42,19 @@ abstract interface class DesktopWindow {
 
   /// Stops intercepting so a later close really does end the process.
   Future<void> releaseClose();
+}
 
-  /// Ends the process after the app has torn itself down.
-  Future<void> destroy();
+/// Ends the host process once the app has torn itself down.
+///
+/// Quitting cannot be left to the native window teardown. On Windows
+/// `windowManager.destroy` only posts `WM_QUIT`, and the runner then blocks in
+/// its window destructor waiting for the Flutter engine and the Dart VM to
+/// shut down, with the window still on screen and no message pump left to
+/// service it. An embedded daemon isolate that has not finished exiting turns
+/// that wait into a frozen, unkillable window.
+abstract interface class AppTerminator {
+  /// Ends the process immediately and successfully.
+  Future<void> terminate();
 }
 
 /// Owns the platform tray, menu-bar, or notification-area icon.
@@ -86,6 +96,12 @@ final trayIconProvider = Provider<TrayIcon?>((ref) => null);
 /// Login-item registration supplied by the desktop composition root.
 final autostartProvider = Provider<AutostartRegistration?>((ref) => null);
 
+/// Process terminator supplied by the desktop composition root.
+///
+/// Null means this build has no process of its own to end, which is the honest
+/// value for the mobile and web builds rather than an error.
+final appTerminatorProvider = Provider<AppTerminator?>((ref) => null);
+
 /// Asset path of the tray icon for the current platform.
 ///
 /// Windows renders only `.ico`, and macOS wants a monochrome template image
@@ -115,7 +131,6 @@ final class PluginDesktopWindow implements DesktopWindow {
     this.preventClose = _setPreventClose,
     this.addWindowListener = _addWindowListener,
     this.removeWindowListener = _removeWindowListener,
-    this.destroyWindow = _destroyWindow,
   }) : platform = platform ?? defaultTargetPlatform;
 
   /// Platform used to select native or custom window chrome.
@@ -168,9 +183,6 @@ final class PluginDesktopWindow implements DesktopWindow {
 
   /// Injected listener removal.
   final void Function(WindowListener) removeWindowListener;
-
-  /// Injected window destruction.
-  final Future<void> Function() destroyWindow;
 
   _WindowCloseRelay? _relay;
 
@@ -233,9 +245,6 @@ final class PluginDesktopWindow implements DesktopWindow {
     removeWindowListener(relay);
     await preventClose(prevent: false);
   }
-
-  @override
-  Future<void> destroy() => destroyWindow();
 
   void _setMaximized(bool value) {
     if (_maximized.value != value) _maximized.value = value;
@@ -326,6 +335,18 @@ final class PluginTrayIcon implements TrayIcon {
     removeTrayListener(relay);
     await destroyTray();
   }
+}
+
+/// Production terminator that ends this process.
+final class ProcessAppTerminator implements AppTerminator {
+  /// Creates the production terminator.
+  const ProcessAppTerminator({this.exitProcess = exit});
+
+  /// Injected process exit, which is the only part a test can drive.
+  final Never Function(int code) exitProcess;
+
+  @override
+  Future<void> terminate() async => exitProcess(0);
 }
 
 /// Converts the app's tray presentation into a native menu.
@@ -437,8 +458,6 @@ void _addWindowListener(WindowListener listener) =>
 
 void _removeWindowListener(WindowListener listener) =>
     windowManager.removeListener(listener);
-
-Future<void> _destroyWindow() => windowManager.destroy();
 
 Future<void> _setTrayIcon(String path, {required bool isTemplate}) =>
     trayManager.setIcon(path, isTemplate: isTemplate);

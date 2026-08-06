@@ -15,6 +15,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+/// How long quitting waits for the app and its daemon to tear themselves down.
+///
+/// The process ends when this elapses either way: a daemon that will not stop
+/// must not keep a hidden, unquittable process alive.
+const Duration quitBudget = Duration(seconds: 5);
+
 /// Keeps the desktop app resident in the tray around [child].
 ///
 /// It is mounted below `Localizations` and the router so tray labels follow
@@ -238,14 +244,35 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
   Future<void> _quit() async {
     if (_quitting) return;
     _quitting = true;
-    final tray = _tray;
-    final window = _window;
-    final controller = ref.read(hostRegistryControllerProvider.notifier);
-    // Stop answering the user before tearing down, then stop the daemon
-    // before the process goes away so no turn is killed mid-write.
+    final terminator = ref.read(appTerminatorProvider);
+    final teardown = _teardown(
+      tray: _tray,
+      window: _window,
+      controller: ref.read(hostRegistryControllerProvider.notifier),
+    );
+    try {
+      await teardown.timeout(quitBudget);
+    } on Object catch (_) {
+      // Deliberately broad. The window is already gone and the tray icon is
+      // already destroyed by this point, so a teardown that fails or overruns
+      // must still reach the terminator below; anything else leaves a process
+      // the user can no longer see, reach, or quit.
+    } finally {
+      await terminator?.terminate();
+    }
+  }
+
+  Future<void> _teardown({
+    required TrayIcon? tray,
+    required DesktopWindow? window,
+    required HostRegistryController controller,
+  }) async {
+    // The window leaves the screen first so quit feels immediate, then the
+    // daemon is stopped before the process goes away so no turn is killed
+    // mid-write.
+    await window?.hide();
     await tray?.destroy();
     await window?.releaseClose();
     await controller.shutdown();
-    await window?.destroy();
   }
 }

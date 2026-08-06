@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/app_services.dart';
+import 'package:coder_app/src/desktop_shell_scope.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/tray_menu_model.dart';
@@ -17,21 +18,24 @@ void main() {
     Widget app,
     FakeDesktopWindow window,
     FakeTrayIcon tray,
+    FakeAppTerminator terminator,
     MemoryAppStore store,
   })
   build({
     String? localeTag,
     bool startHidden = false,
     Completer<void>? installGate,
+    EmbeddedDaemonLauncher? embeddedLauncher,
   }) {
     final store = MemoryAppStore(
       settings: AppSettings(
-        embeddedDaemonEnabled: false,
+        embeddedDaemonEnabled: embeddedLauncher != null,
         localeTag: localeTag,
       ),
     );
     final window = FakeDesktopWindow();
     final tray = FakeTrayIcon(installGate: installGate)..calls = window.calls;
+    final terminator = FakeAppTerminator(calls: window.calls);
     return (
       app: CoderApp(
         services: AppServices(
@@ -40,14 +44,17 @@ void main() {
           credentials: store,
           clients: const _OfflineClients(),
           clientKind: 'test',
+          embeddedLauncher: embeddedLauncher,
         ),
         desktopWindow: window,
         trayIcon: tray,
+        terminator: terminator,
         autostart: FakeAutostartRegistration(),
         startHidden: startHidden,
       ),
       window: window,
       tray: tray,
+      terminator: terminator,
       store: store,
     );
   }
@@ -72,7 +79,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(harness.window.hides, 1);
-      expect(harness.window.destroys, 0);
+      expect(harness.terminator.terminations, 0);
       expect(harness.window.visible, isFalse);
       // The tray now offers to bring the window back.
       expect(
@@ -107,7 +114,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(harness.window.hides, 1);
       expect(harness.window.shows, 1);
-      expect(harness.window.destroys, 0);
+      expect(harness.terminator.terminations, 0);
     },
     tags: const <String>['feature_test__desktop_residency__widget'],
   );
@@ -134,7 +141,7 @@ void main() {
   );
 
   testWidgets(
-    'quitting stops the tray, the daemon, and then the window in order',
+    'quitting hides the window, stops the daemon, and ends the process',
     (tester) async {
       final harness = build();
       await tester.pumpWidget(harness.app);
@@ -144,22 +151,62 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(harness.tray.destroys, 1);
-      expect(harness.window.destroys, 1);
+      expect(harness.terminator.terminations, 1);
+      expect(harness.window.visible, isFalse);
       expect(harness.window.preventingClose, isFalse);
-      // The window must outlive the teardown that needs it to still exist.
+      // The window leaves the screen first so quit feels immediate, and the
+      // process only ends once the teardown that needs it has run.
       expect(
         harness.window.calls,
         containsAllInOrder(<String>[
+          'hide',
           'destroyTray',
           'releaseClose',
-          'destroyWindow',
+          'terminate',
         ]),
       );
 
       // A second selection must not tear anything down twice.
       harness.tray.select(trayItemQuit);
       await tester.pumpAndSettle();
-      expect(harness.window.destroys, 1);
+      expect(harness.terminator.terminations, 1);
+    },
+    tags: const <String>['feature_test__desktop_residency__widget'],
+  );
+
+  testWidgets(
+    'quitting ends the process even when stopping the daemon fails',
+    (tester) async {
+      final harness = build(
+        embeddedLauncher: const _StubLauncher(_StubSession.failing()),
+      );
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      harness.tray.select(trayItemQuit);
+      await tester.pumpAndSettle();
+
+      expect(harness.terminator.terminations, 1);
+    },
+    tags: const <String>['feature_test__desktop_residency__widget'],
+  );
+
+  testWidgets(
+    'quitting ends the process when the daemon never stops',
+    (tester) async {
+      final harness = build(
+        embeddedLauncher: const _StubLauncher(_StubSession.hanging()),
+      );
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      harness.tray.select(trayItemQuit);
+      await tester.pump();
+      // A daemon that will not stop must not hold the app on screen forever.
+      expect(harness.terminator.terminations, 0);
+
+      await tester.pump(quitBudget);
+      expect(harness.terminator.terminations, 1);
     },
     tags: const <String>['feature_test__desktop_residency__widget'],
   );
@@ -248,4 +295,41 @@ final class _OfflineClients implements HostClientFactory {
     required String clientId,
     required String clientKind,
   }) => Future<CoderApi>.error(const HostConnectionFailure.network('offline'));
+}
+
+final class _StubLauncher implements EmbeddedDaemonLauncher {
+  const _StubLauncher(this.session);
+
+  final EmbeddedDaemonSession session;
+
+  @override
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+    required int port,
+  }) async => session;
+}
+
+/// An embedded session whose stop misbehaves the way a wedged daemon does.
+final class _StubSession implements EmbeddedDaemonSession {
+  const _StubSession.failing() : _hangs = false;
+
+  const _StubSession.hanging() : _hangs = true;
+
+  final bool _hangs;
+
+  @override
+  HostEndpoint get endpoint => HostEndpoint.parse('ws://embedded.test/ws');
+
+  @override
+  DaemonCredentials get credentials => const DaemonCredentials(
+    bearerToken: 'embedded-bearer',
+  );
+
+  @override
+  String get serverId => 'embedded-server';
+
+  @override
+  Future<void> stop() => _hangs
+      ? Completer<void>().future
+      : Future<void>.error(StateError('The daemon refused to stop.'));
 }
