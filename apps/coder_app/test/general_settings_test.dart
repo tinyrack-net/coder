@@ -38,7 +38,7 @@ void main() {
 
       expect(store.settings.localeTag, 'en');
       expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('DISPLAY LANGUAGE'), findsOneWidget);
+      expect(find.text('Display language'), findsOneWidget);
       expect(find.text('설정'), findsNothing);
 
       // Returning to the system default clears the stored tag rather than

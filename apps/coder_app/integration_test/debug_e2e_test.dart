@@ -11,6 +11,7 @@ import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:coder_app/src/tray_menu_model.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
@@ -381,7 +382,7 @@ void main() {
       final reviewerFile = File(reviewer.sourcePath);
       expect(reviewerFile.existsSync(), isTrue);
 
-      final promptField = _trTextInput('System prompt (Markdown)');
+      final promptField = _trTextInput('시스템 프롬프트 (Markdown)');
       await tester.enterText(promptField, 'Review the current change.');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await _waitForAgentPrompt(
@@ -449,18 +450,34 @@ void main() {
       final editorScrollable = find
           .descendant(of: editorList, matching: find.byType(Scrollable))
           .first;
+      // Two steps, and both are needed. scrollUntilVisible builds the section
+      // the row lives in, but stops as soon as the row exists rather than when
+      // it is on screen; ensureVisible then brings it fully into view. The row
+      // is addressed by key because a section builds as a unit, so a text match
+      // can resolve to an occurrence far below the fold.
+      final collaborationTool = find.byKey(
+        const ValueKey<String>('agent-tool-tile-collaboration'),
+      );
       await tester.scrollUntilVisible(
-        find.text('collaboration'),
+        collaborationTool,
         400,
         scrollable: editorScrollable,
       );
-      await tester.tap(find.text('collaboration').last);
+      await tester.ensureVisible(collaborationTool);
+      await tester.pumpAndSettle();
+      await tester.tap(collaborationTool);
+      await tester.pumpAndSettle();
+
       await tester.scrollUntilVisible(
         find.text('호출 가능한 Subagent'),
         400,
         scrollable: editorScrollable,
       );
-      await tester.tap(find.text('Reviewer').last);
+      final reviewerSubagent = find.text('Reviewer').last;
+      await tester.ensureVisible(reviewerSubagent);
+      await tester.pumpAndSettle();
+      await tester.tap(reviewerSubagent);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       final collaboratingCoder = await setupClient.getAgentDefinition('coder');
@@ -1513,13 +1530,11 @@ void main() {
           .singleWhere((item) => item.displayName == 'E2E Provider');
       expect(degradedProvider.status, ProviderConnectionStatus.degraded);
 
-      var providerCard = find.ancestor(
-        of: find.text('E2E Provider'),
-        matching: find.byType(TRCard),
-      );
-      var providerMenu = find.descendant(
-        of: providerCard.first,
-        matching: find.byType(TRMenu),
+      // Connections share one card, so the menu is addressed by the key its
+      // own row carries rather than by walking up to a card that holds every
+      // connection.
+      final providerMenu = find.byKey(
+        const ValueKey<String>('provider-actions-custom'),
       );
       await tester.tap(providerMenu);
       await tester.pumpAndSettle();
@@ -1556,14 +1571,7 @@ void main() {
         tester.getBottomRight(connectedSection).dy,
         lessThanOrEqualTo(tester.getTopLeft(addSection).dy),
       );
-      providerCard = find.ancestor(
-        of: find.text('E2E Provider Edited'),
-        matching: find.byType(TRCard),
-      );
-      providerMenu = find.descendant(
-        of: providerCard.first,
-        matching: find.byType(TRMenu),
-      );
+      expect(find.text('E2E Provider Edited'), findsOneWidget);
       await Scrollable.ensureVisible(
         tester.element(providerMenu),
         alignment: 0.3,
@@ -2033,11 +2041,13 @@ Future<void> _disconnectProviderCard(
   WidgetTester tester,
   String displayName,
 ) async {
-  final card = find.ancestor(
+  // Connections share one card, so the menu is scoped to the connection's own
+  // row rather than to a card that holds every connection.
+  final row = find.ancestor(
     of: find.text(displayName),
-    matching: find.byType(TRCard),
+    matching: find.byType(SettingsRow),
   );
-  final menu = find.descendant(of: card.first, matching: find.byType(TRMenu));
+  final menu = find.descendant(of: row.first, matching: find.byType(TRMenu));
   await pumpUntil(tester, menu);
   await Scrollable.ensureVisible(tester.element(menu), alignment: 0.3);
   await tester.pumpAndSettle();

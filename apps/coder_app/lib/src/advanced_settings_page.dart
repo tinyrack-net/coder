@@ -1,11 +1,11 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/coder_icons.dart';
-import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/coder_page_shell.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -21,10 +21,7 @@ class AdvancedSettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final body = ListView(
-      padding: const EdgeInsets.all(TRSpacing.extraLarge),
-      children: const <Widget>[_ResetCard()],
-    );
+    const body = SettingsScaffold(children: <Widget>[_ResetSection()]);
     if (embedded) return body;
     return CoderPageShell(
       appBar: CoderPageHeader(
@@ -35,14 +32,14 @@ class AdvancedSettingsPage extends ConsumerWidget {
   }
 }
 
-class _ResetCard extends ConsumerStatefulWidget {
-  const _ResetCard();
+class _ResetSection extends ConsumerStatefulWidget {
+  const _ResetSection();
 
   @override
-  ConsumerState<_ResetCard> createState() => _ResetCardState();
+  ConsumerState<_ResetSection> createState() => _ResetSectionState();
 }
 
-class _ResetCardState extends ConsumerState<_ResetCard> {
+class _ResetSectionState extends ConsumerState<_ResetSection> {
   bool _busy = false;
   String? _error;
 
@@ -53,41 +50,32 @@ class _ResetCardState extends ConsumerState<_ResetCard> {
         .watch(appServicesProvider)
         .erasesEmbeddedDaemonData;
     final error = _error;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        TRText(
-          l10n.advancedResetSection,
-          variant: TRTextVariant.headingLg,
-        ),
-        const SizedBox(height: TRSpacing.small),
-        if (error != null) ...<Widget>[
-          TRAlert(
-            key: const ValueKey<String>('advanced-settings-reset-error'),
-            title: TRText.inherit(l10n.advancedResetFailedTitle),
-            description: TRText.inherit(error),
-            icon: const Icon(CoderIcons.error),
-            variant: TRStatusVariant.danger,
-          ),
-          const SizedBox(height: TRSpacing.medium),
-        ],
-        TRCard(
-          padding: TRCardPadding.none,
-          child: CoderListRow(
-            title: TRText.inherit(l10n.advancedResetTitle),
-            subtitle: TRText.inherit(
-              erasesDaemonData
-                  ? l10n.advancedResetDescription
-                  : l10n.advancedResetDescriptionAppOnly,
+    return SettingsSection(
+      title: l10n.advancedResetSection,
+      banner: error == null
+          ? null
+          : TRAlert(
+              key: const ValueKey<String>('advanced-settings-reset-error'),
+              title: TRText.inherit(l10n.advancedResetFailedTitle),
+              description: TRText.inherit(error),
+              icon: const Icon(CoderIcons.error),
+              variant: TRStatusVariant.danger,
             ),
-            isThreeLine: true,
-            trailing: TRButton(
-              key: const ValueKey<String>('advanced-settings-reset-button'),
-              appearance: TRAppearance.outline,
-              onPressed: _busy ? null : _confirmAndReset,
-              child: TRText.inherit(
-                _busy ? l10n.advancedResetRunning : l10n.advancedResetAction,
-              ),
+      children: <Widget>[
+        SettingsRow(
+          title: TRText.inherit(l10n.advancedResetTitle),
+          description: TRText.inherit(
+            erasesDaemonData
+                ? l10n.advancedResetDescription
+                : l10n.advancedResetDescriptionAppOnly,
+          ),
+          wrapsDescription: true,
+          control: TRButton(
+            key: const ValueKey<String>('advanced-settings-reset-button'),
+            appearance: TRAppearance.outline,
+            onPressed: _busy ? null : _confirmAndReset,
+            child: TRText.inherit(
+              _busy ? l10n.advancedResetRunning : l10n.advancedResetAction,
             ),
           ),
         ),

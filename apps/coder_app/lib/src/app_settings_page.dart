@@ -4,12 +4,12 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 // The typed routes and the shared navigation verbs live beside the router.
 import 'package:coder_app/src/app.dart';
 import 'package:coder_app/src/coder_icons.dart';
-import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/coder_page_shell.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
+import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -64,133 +64,115 @@ class AppSettingsPage extends ConsumerWidget {
   }) {
     final l10n = AppLocalizations.of(context);
     final embeddedRuntime = registry.runtimes[embeddedHostId];
-    return ListView(
-      padding: const EdgeInsets.all(TRSpacing.extraLarge),
+    return SettingsScaffold(
       children: <Widget>[
-        if (supportsEmbedded) ...<Widget>[
-          TRText(
-            l10n.appSettingsLocalSection,
-            variant: TRTextVariant.headingLg,
-          ),
-          const SizedBox(height: TRSpacing.small),
-          if (embeddedRuntime != null &&
-              embeddedRuntime.status == HostRuntimeStatus.error) ...<Widget>[
-            TRAlert(
-              key: const ValueKey<String>('embedded-daemon-error'),
-              title: TRText.inherit(l10n.appSettingsEmbeddedFailureTitle),
-              description: TRText.inherit(
-                embeddedRuntime.errorReason ==
-                        HostFailureReason.embeddedPortInUse
-                    ? l10n.appSettingsEmbeddedPortConflict(
-                        registry.settings.embeddedDaemonPort,
-                      )
-                    : hostErrorText(l10n, embeddedRuntime) ??
-                          l10n.hostStatusError,
-              ),
-              icon: const Icon(CoderIcons.error),
-              variant: TRStatusVariant.danger,
-              actions: <Widget>[
-                TRButton(
-                  appearance: TRAppearance.outline,
-                  onPressed: () => ref
-                      .read(hostRegistryControllerProvider.notifier)
-                      .reconnect(embeddedHostId),
-                  child: TRText.inherit(l10n.commonRetry),
-                ),
-              ],
-            ),
-            const SizedBox(height: TRSpacing.medium),
-          ],
-          TRCard(
-            padding: TRCardPadding.none,
-            child: Column(
-              children: <Widget>[
-                CoderSwitchRow(
-                  title: TRText.inherit(l10n.embeddedDaemonName),
-                  subtitle: TRText.inherit(
-                    <String>[
-                      l10n.appSettingsEmbeddedSubtitle,
-                      if (embeddedRuntime != null &&
-                          embeddedRuntime.status != HostRuntimeStatus.error)
-                        hostStatusText(l10n, embeddedRuntime),
-                    ].join('\n'),
-                  ),
-                  value: registry.settings.embeddedDaemonEnabled,
-                  onChanged: (enabled) => _toggleEmbedded(
-                    context,
-                    ref,
-                    currentlyEnabled: registry.settings.embeddedDaemonEnabled,
-                    enabled: enabled,
-                  ),
-                ),
-                const TRSeparator(),
-                CoderSwitchRow(
-                  key: const ValueKey<String>('embedded-daemon-exposure'),
-                  title: TRText.inherit(l10n.appSettingsExposure),
-                  subtitle: TRText.inherit(l10n.appSettingsExposureSubtitle),
-                  value:
-                      registry.settings.embeddedDaemonExposure ==
-                      EmbeddedDaemonExposure.allInterfaces,
-                  onChanged: _embeddedRestarting(registry)
-                      ? null
-                      : (enabled) => ref
+        if (supportsEmbedded)
+          SettingsSection(
+            title: l10n.appSettingsLocalSection,
+            banner:
+                embeddedRuntime != null &&
+                    embeddedRuntime.status == HostRuntimeStatus.error
+                ? TRAlert(
+                    key: const ValueKey<String>('embedded-daemon-error'),
+                    title: TRText.inherit(
+                      l10n.appSettingsEmbeddedFailureTitle,
+                    ),
+                    description: TRText.inherit(
+                      embeddedRuntime.errorReason ==
+                              HostFailureReason.embeddedPortInUse
+                          ? l10n.appSettingsEmbeddedPortConflict(
+                              registry.settings.embeddedDaemonPort,
+                            )
+                          : hostErrorText(l10n, embeddedRuntime) ??
+                                l10n.hostStatusError,
+                    ),
+                    icon: const Icon(CoderIcons.error),
+                    variant: TRStatusVariant.danger,
+                    actions: <Widget>[
+                      TRButton(
+                        appearance: TRAppearance.outline,
+                        onPressed: () => ref
                             .read(hostRegistryControllerProvider.notifier)
-                            .setEmbeddedDaemonExposure(
-                              enabled
-                                  ? EmbeddedDaemonExposure.allInterfaces
-                                  : EmbeddedDaemonExposure.loopback,
-                            ),
+                            .reconnect(embeddedHostId),
+                        child: TRText.inherit(l10n.commonRetry),
+                      ),
+                    ],
+                  )
+                : null,
+            children: <Widget>[
+              CoderSwitchRow(
+                title: TRText.inherit(l10n.embeddedDaemonName),
+                subtitle: TRText.inherit(
+                  <String>[
+                    l10n.appSettingsEmbeddedSubtitle,
+                    if (embeddedRuntime != null &&
+                        embeddedRuntime.status != HostRuntimeStatus.error)
+                      hostStatusText(l10n, embeddedRuntime),
+                  ].join('\n'),
                 ),
-                const TRSeparator(),
-                _EmbeddedPortEditor(
-                  port: registry.settings.embeddedDaemonPort,
-                  restarting: _embeddedRestarting(registry),
+                wrapsSubtitle: true,
+                value: registry.settings.embeddedDaemonEnabled,
+                onChanged: (enabled) => _toggleEmbedded(
+                  context,
+                  ref,
+                  currentlyEnabled: registry.settings.embeddedDaemonEnabled,
+                  enabled: enabled,
                 ),
+              ),
+              CoderSwitchRow(
+                key: const ValueKey<String>('embedded-daemon-exposure'),
+                title: TRText.inherit(l10n.appSettingsExposure),
+                subtitle: TRText.inherit(l10n.appSettingsExposureSubtitle),
+                value:
+                    registry.settings.embeddedDaemonExposure ==
+                    EmbeddedDaemonExposure.allInterfaces,
+                onChanged: _embeddedRestarting(registry)
+                    ? null
+                    : (enabled) => ref
+                          .read(hostRegistryControllerProvider.notifier)
+                          .setEmbeddedDaemonExposure(
+                            enabled
+                                ? EmbeddedDaemonExposure.allInterfaces
+                                : EmbeddedDaemonExposure.loopback,
+                          ),
+              ),
+              _EmbeddedPortEditor(
+                port: registry.settings.embeddedDaemonPort,
+                restarting: _embeddedRestarting(registry),
+              ),
+            ],
+          ),
+        SettingsSection.form(
+          title: l10n.appSettingsRemoteSection,
+          action: TRButton(
+            key: const ValueKey<String>('app-settings-add-remote'),
+            intent: TRIntent.primary,
+            onPressed: () =>
+                unawaited(const NewHostRoute().push<void>(context)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(CoderIcons.add),
+                const SizedBox(width: TRSpacing.extraSmall),
+                TRText(l10n.appSettingsAddRemote),
               ],
             ),
           ),
-          const SizedBox(height: TRSpacing.extraLarge),
-        ],
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          runSpacing: 8,
           children: <Widget>[
-            TRText(
-              l10n.appSettingsRemoteSection,
-              variant: TRTextVariant.headingLg,
-            ),
-            TRButton(
-              key: const ValueKey<String>('app-settings-add-remote'),
-              intent: TRIntent.primary,
-              onPressed: () =>
-                  unawaited(const NewHostRoute().push<void>(context)),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Icon(CoderIcons.add),
-                  const SizedBox(width: TRSpacing.extraSmall),
-                  TRText(l10n.appSettingsAddRemote),
-                ],
+            if (registry.profiles.isEmpty)
+              TRCard(
+                padding: TRCardPadding.none,
+                child: SettingsRow(
+                  title: TRText.inherit(l10n.appSettingsNoRemotes),
+                ),
               ),
-            ),
+            for (final profile in registry.profiles)
+              _RemoteHostCard(
+                profile: profile,
+                runtime: registry.runtimes[profile.id],
+              ),
           ],
         ),
-        const SizedBox(height: TRSpacing.small),
-        if (registry.profiles.isEmpty)
-          TRCard(
-            padding: TRCardPadding.none,
-            child: Padding(
-              padding: const EdgeInsets.all(TRSpacing.extraLarge),
-              child: TRText.inherit(l10n.appSettingsNoRemotes),
-            ),
-          ),
-        for (final profile in registry.profiles)
-          _RemoteHostCard(
-            profile: profile,
-            runtime: registry.runtimes[profile.id],
-          ),
       ],
     );
   }
@@ -276,7 +258,7 @@ class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
     final port = _validPort;
     final changed = port != null && port != widget.port;
     return Padding(
-      padding: const EdgeInsets.all(TRSpacing.medium),
+      padding: SettingsRow.contentPadding,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: <Widget>[
@@ -321,6 +303,11 @@ class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
   }
 }
 
+/// One remote daemon: its address, its auto-connect choice, and its actions.
+///
+/// A daemon is a compound entity with actions of its own, so it keeps its own
+/// card. Sharing one card across every daemon leaves no boundary between them
+/// and makes "the reconnect button of this daemon" unaddressable.
 class _RemoteHostCard extends ConsumerWidget {
   const _RemoteHostCard({required this.profile, required this.runtime});
 
@@ -332,38 +319,43 @@ class _RemoteHostCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return TRCard(
       padding: TRCardPadding.none,
-      child: Padding(
-        padding: const EdgeInsets.all(TRSpacing.medium),
-        child: Column(
-          children: <Widget>[
-            CoderListRow(
-              leading: Icon(hostStatusIcon(runtime?.status)),
-              title: TRText.inherit(profile.label),
-              subtitle: TRText.inherit(
-                '${profile.websocketUri}\n${hostStatusText(l10n, runtime)}',
-              ),
-              isThreeLine: true,
-              trailing: TRIconButton(
-                appearance: TRAppearance.ghost,
-                label: l10n.appSettingsEditConnection,
-                onPressed: () => unawaited(
-                  EditHostRoute(hostId: profile.id).push<void>(context),
-                ),
-                icon: const Icon(CoderIcons.edit),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          SettingsRow(
+            leading: Icon(hostStatusIcon(runtime?.status)),
+            title: TRText.inherit(profile.label),
+            description: TRText.inherit(
+              '${profile.websocketUri}\n${hostStatusText(l10n, runtime)}',
             ),
-            CoderSwitchRow(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              title: TRText.inherit(l10n.appSettingsAutoConnect),
-              value: profile.autoConnect,
-              onChanged: (enabled) => ref
-                  .read(hostRegistryControllerProvider.notifier)
-                  .setRemoteAutoConnect(profile.id, enabled: enabled),
+            wrapsDescription: true,
+            control: TRIconButton(
+              appearance: TRAppearance.ghost,
+              label: l10n.appSettingsEditConnection,
+              onPressed: () => unawaited(
+                EditHostRoute(hostId: profile.id).push<void>(context),
+              ),
+              icon: const Icon(CoderIcons.edit),
             ),
-            Wrap(
+          ),
+          CoderSwitchRow(
+            title: TRText.inherit(l10n.appSettingsAutoConnect),
+            value: profile.autoConnect,
+            onChanged: (enabled) => ref
+                .read(hostRegistryControllerProvider.notifier)
+                .setRemoteAutoConnect(profile.id, enabled: enabled),
+          ),
+          Padding(
+            // Sharing the row inset keeps the actions on the same trailing edge
+            // as the controls above them.
+            padding: SettingsRow.contentPadding,
+            // A Wrap rather than a Row: on a narrow window the two actions do
+            // not fit on one line. It right-aligns correctly here because the
+            // surrounding column stretches it to the card width.
+            child: Wrap(
               alignment: WrapAlignment.end,
-              spacing: 8,
-              runSpacing: 4,
+              spacing: TRSpacing.small,
+              runSpacing: TRSpacing.extraSmall,
               children: <Widget>[
                 TRButton(
                   appearance: TRAppearance.ghost,
@@ -396,8 +388,8 @@ class _RemoteHostCard extends ConsumerWidget {
                   ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -476,11 +468,20 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               : l10n.appSettingsEditRemoteTitle,
         ),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 620),
-          child: ListView(
-            padding: const EdgeInsets.all(TRSpacing.extraLarge),
+      body: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection.form(
+            title: existing == null
+                ? l10n.appSettingsAddRemoteTitle
+                : l10n.appSettingsEditRemoteTitle,
+            banner: _error == null
+                ? null
+                : TRAlert(
+                    title: TRText.inherit(l10n.appSettingsConnectionFailed),
+                    description: TRText.inherit(_error!),
+                    icon: const Icon(CoderIcons.error),
+                    variant: TRStatusVariant.danger,
+                  ),
             children: <Widget>[
               TRTextField(
                 key: const ValueKey<String>('remote-host-label'),
@@ -488,7 +489,6 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 label: l10n.commonName,
                 placeholder: 'Production daemon',
               ),
-              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 key: const ValueKey<String>('remote-host-address'),
                 controller: _address,
@@ -496,50 +496,47 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                 label: l10n.appSettingsAddress,
                 placeholder: 'wss://coder.example.com/ws',
               ),
-              const SizedBox(height: TRSpacing.medium),
               TRTextField(
                 key: const ValueKey<String>('remote-host-token'),
                 controller: _token,
                 obscureText: true,
                 label: existing == null
-                    ? 'Bearer token'
+                    ? l10n.appSettingsBearerToken
                     : l10n.appSettingsNewToken,
               ),
-              const SizedBox(height: TRSpacing.small),
+            ],
+          ),
+          SettingsSection(
+            title: l10n.appSettingsConnectionBehaviour,
+            children: <Widget>[
               CoderSwitchRow(
-                contentPadding: EdgeInsets.zero,
                 title: TRText.inherit(l10n.appSettingsAutoConnect),
                 value: _autoConnect,
                 onChanged: (value) => setState(() => _autoConnect = value),
               ),
-              if (_error case final error?)
-                TRText(
-                  error,
-                  color: TRTextColor.danger,
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: <Widget>[
+              if (existing != null) ...<Widget>[
+                TRButton(
+                  appearance: TRAppearance.ghost,
+                  onPressed: _saving ? null : () => _delete(existing),
+                  child: TRText.inherit(l10n.commonDelete),
                 ),
-              const SizedBox(height: TRSpacing.extraLarge),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  if (existing != null)
-                    TRButton(
-                      appearance: TRAppearance.ghost,
-                      onPressed: _saving ? null : () => _delete(existing),
-                      child: TRText.inherit(l10n.commonDelete),
-                    ),
-                  const SizedBox(width: TRSpacing.small),
-                  TRButton(
-                    intent: TRIntent.primary,
-                    onPressed: _saving ? null : () => _save(existing),
-                    child: TRText.inherit(
-                      _saving ? l10n.commonSaving : l10n.commonSave,
-                    ),
-                  ),
-                ],
+                const SizedBox(width: TRSpacing.small),
+              ],
+              TRButton(
+                intent: TRIntent.primary,
+                onPressed: _saving ? null : () => _save(existing),
+                child: TRText.inherit(
+                  _saving ? l10n.commonSaving : l10n.commonSave,
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

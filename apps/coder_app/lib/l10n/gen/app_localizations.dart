@@ -626,6 +626,12 @@ abstract class AppLocalizations {
   /// **'Clear screen'**
   String get terminalMenuClearScreen;
 
+  /// Section heading for the per-project worktree hooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Worktree lifecycle hooks'**
+  String get projectSettingsHookHeading;
+
   /// No description provided for @projectSettingsShellHeading.
   ///
   /// In en, this message translates to:
@@ -1058,6 +1064,24 @@ abstract class AppLocalizations {
   /// **'New bearer token (only when changing it)'**
   String get appSettingsNewToken;
 
+  /// Text field label for the token of a new remote daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearer token'**
+  String get appSettingsBearerToken;
+
+  /// Section heading for how the app connects to a daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get appSettingsConnectionBehaviour;
+
+  /// Alert title shown when a remote daemon fails to save.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the connection'**
+  String get appSettingsConnectionFailed;
+
   /// Confirmation title for removing a remote daemon profile.
   ///
   /// In en, this message translates to:
@@ -1189,6 +1213,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pinned provider/model'**
   String get agentSettingsPinnedModel;
+
+  /// Section heading for an agent's identity fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Definition'**
+  String get agentSettingsDefinitionHeading;
+
+  /// Section heading for the custom prompt toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'System prompt'**
+  String get agentSettingsPromptHeading;
+
+  /// Text field label for an agent's system prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'System prompt (Markdown)'**
+  String get agentSettingsSystemPrompt;
+
+  /// Section heading for an agent's model choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get agentSettingsModelHeading;
+
+  /// Text field label for a pinned provider connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider connection ID'**
+  String get agentSettingsProviderConnectionId;
+
+  /// Text field label for a pinned model.
+  ///
+  /// In en, this message translates to:
+  /// **'Model ID'**
+  String get agentSettingsModelId;
+
+  /// Section heading for reasoning and permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Behaviour'**
+  String get agentSettingsBehaviourHeading;
+
+  /// Row label for the reasoning effort select.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning effort'**
+  String get agentSettingsReasoning;
+
+  /// Row label for the permission mode select.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission mode'**
+  String get agentSettingsPermission;
 
   /// Heading of the tool permission list.
   ///
@@ -1393,6 +1471,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Advanced: connect your own endpoint'**
   String get providerSettingsCustomSubtitle;
+
+  /// Title of the custom provider catalog entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom OpenAI Compatible'**
+  String get providerSettingsCustomName;
+
+  /// Alert title shown when the provider catalog fails to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not refresh the catalog'**
+  String get providerSettingsRefreshFailed;
 
   /// Title of the pending OAuth attempt bar.
   ///
@@ -2270,6 +2360,18 @@ abstract class AppLocalizations {
   /// **'Instructions (Markdown)'**
   String get skillSettingsInstructions;
 
+  /// Section heading for whether a skill is enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability'**
+  String get skillSettingsStateHeading;
+
+  /// Section heading for a skill's editable fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Definition'**
+  String get skillSettingsDefinitionHeading;
+
   /// Heading above the bundled file list.
   ///
   /// In en, this message translates to:
@@ -2485,6 +2587,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Headers (Name: value, one per line)'**
   String get mcpSettingsHeaders;
+
+  /// Section heading for an MCP server's transport fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get mcpSettingsConnectionHeading;
+
+  /// Section heading for whether an MCP server is enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability'**
+  String get mcpSettingsStateHeading;
 
   /// Label of the enable switch.
   ///

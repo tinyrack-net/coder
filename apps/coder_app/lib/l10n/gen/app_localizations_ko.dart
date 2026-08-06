@@ -285,6 +285,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get terminalMenuClearScreen => '화면 지우기';
 
   @override
+  String get projectSettingsHookHeading => 'Worktree 수명주기 훅';
+
+  @override
   String get projectSettingsShellHeading => '프로젝트 터미널 셸';
 
   @override
@@ -520,6 +523,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appSettingsNewToken => '새 Bearer token (변경할 때만 입력)';
 
   @override
+  String get appSettingsBearerToken => 'Bearer token';
+
+  @override
+  String get appSettingsConnectionBehaviour => '연결';
+
+  @override
+  String get appSettingsConnectionFailed => '연결을 저장하지 못했어요';
+
+  @override
   String appSettingsDeleteTitle(String label) {
     return '$label을 삭제할까요?';
   }
@@ -591,6 +603,33 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get agentSettingsPinnedModel => '고정 provider/model';
+
+  @override
+  String get agentSettingsDefinitionHeading => '정의';
+
+  @override
+  String get agentSettingsPromptHeading => '시스템 프롬프트';
+
+  @override
+  String get agentSettingsSystemPrompt => '시스템 프롬프트 (Markdown)';
+
+  @override
+  String get agentSettingsModelHeading => '모델';
+
+  @override
+  String get agentSettingsProviderConnectionId => 'Provider 연결 ID';
+
+  @override
+  String get agentSettingsModelId => 'Model ID';
+
+  @override
+  String get agentSettingsBehaviourHeading => '동작';
+
+  @override
+  String get agentSettingsReasoning => '추론 강도';
+
+  @override
+  String get agentSettingsPermission => '권한 모드';
 
   @override
   String get agentSettingsBuiltinTools => '내장 도구';
@@ -701,6 +740,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerSettingsCustomSubtitle => '고급 설정: 자체 endpoint 연결';
+
+  @override
+  String get providerSettingsCustomName => 'Custom OpenAI Compatible';
+
+  @override
+  String get providerSettingsRefreshFailed => 'Catalog를 갱신하지 못했어요';
 
   @override
   String get providerSettingsOAuthPending => 'ChatGPT 로그인 대기 중';
@@ -1239,6 +1284,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get skillSettingsInstructions => '지시문 (Markdown)';
 
   @override
+  String get skillSettingsStateHeading => '사용 여부';
+
+  @override
+  String get skillSettingsDefinitionHeading => '정의';
+
+  @override
   String get skillSettingsResources => '포함된 파일';
 
   @override
@@ -1347,6 +1398,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get mcpSettingsHeaders => '헤더 (Name: value, 한 줄에 하나)';
+
+  @override
+  String get mcpSettingsConnectionHeading => '연결';
+
+  @override
+  String get mcpSettingsStateHeading => '사용 여부';
 
   @override
   String get mcpSettingsEnabled => '사용';

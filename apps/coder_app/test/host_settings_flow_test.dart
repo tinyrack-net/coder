@@ -404,8 +404,11 @@ void main() {
       findsOneWidget,
     );
     // A failed daemon reports its own message in place of the generic status.
-    expect(find.textContaining('연결 중'), findsOneWidget);
-    expect(find.textContaining('재연결 중'), findsOneWidget);
+    // The status sits on its own line under the address, and the assertions
+    // anchor to that break: "재연결 중" contains "연결 중", so an unanchored
+    // match reports whichever daemons happen to be built.
+    expect(find.textContaining('\n연결 중'), findsOneWidget);
+    expect(find.textContaining('\n재연결 중'), findsOneWidget);
     expect(find.textContaining('bad token'), findsOneWidget);
     // The idle daemon sits below the fold of the settings list.
     await tester.drag(find.byType(ListView).last, const Offset(0, -1000));

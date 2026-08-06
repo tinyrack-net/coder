@@ -326,6 +326,10 @@
   "terminalMenuSelectAll": "Select all",
   "terminalMenuClearSelection": "Clear selection",
   "terminalMenuClearScreen": "Clear screen",
+  "projectSettingsHookHeading": "Worktree lifecycle hooks",
+  "@projectSettingsHookHeading": {
+    "description": "Section heading for the per-project worktree hooks."
+  },
   "projectSettingsShellHeading": "Project terminal shell",
   "projectSettingsShellHelp": "Overrides the daemon host shell for terminals opened in this project. Leave the executable empty to inherit the host default.",
   "projectSettingsShellExecutable": "Shell executable",
@@ -624,6 +628,18 @@
   "@appSettingsNewToken": {
     "description": "Text field label for replacing a stored token."
   },
+  "appSettingsBearerToken": "Bearer token",
+  "@appSettingsBearerToken": {
+    "description": "Text field label for the token of a new remote daemon."
+  },
+  "appSettingsConnectionBehaviour": "Connection",
+  "@appSettingsConnectionBehaviour": {
+    "description": "Section heading for how the app connects to a daemon."
+  },
+  "appSettingsConnectionFailed": "Could not save the connection",
+  "@appSettingsConnectionFailed": {
+    "description": "Alert title shown when a remote daemon fails to save."
+  },
   "appSettingsDeleteTitle": "Delete {label}?",
   "@appSettingsDeleteTitle": {
     "description": "Confirmation title for removing a remote daemon profile.",
@@ -726,6 +742,42 @@
   "agentSettingsPinnedModel": "Pinned provider/model",
   "@agentSettingsPinnedModel": {
     "description": "Model mode that pins one provider and model."
+  },
+  "agentSettingsDefinitionHeading": "Definition",
+  "@agentSettingsDefinitionHeading": {
+    "description": "Section heading for an agent's identity fields."
+  },
+  "agentSettingsPromptHeading": "System prompt",
+  "@agentSettingsPromptHeading": {
+    "description": "Section heading for the custom prompt toggle."
+  },
+  "agentSettingsSystemPrompt": "System prompt (Markdown)",
+  "@agentSettingsSystemPrompt": {
+    "description": "Text field label for an agent's system prompt."
+  },
+  "agentSettingsModelHeading": "Model",
+  "@agentSettingsModelHeading": {
+    "description": "Section heading for an agent's model choice."
+  },
+  "agentSettingsProviderConnectionId": "Provider connection ID",
+  "@agentSettingsProviderConnectionId": {
+    "description": "Text field label for a pinned provider connection."
+  },
+  "agentSettingsModelId": "Model ID",
+  "@agentSettingsModelId": {
+    "description": "Text field label for a pinned model."
+  },
+  "agentSettingsBehaviourHeading": "Behaviour",
+  "@agentSettingsBehaviourHeading": {
+    "description": "Section heading for reasoning and permission."
+  },
+  "agentSettingsReasoning": "Reasoning effort",
+  "@agentSettingsReasoning": {
+    "description": "Row label for the reasoning effort select."
+  },
+  "agentSettingsPermission": "Permission mode",
+  "@agentSettingsPermission": {
+    "description": "Row label for the permission mode select."
   },
   "agentSettingsBuiltinTools": "Built-in tools",
   "@agentSettingsBuiltinTools": {
@@ -869,6 +921,14 @@
   "providerSettingsCustomSubtitle": "Advanced: connect your own endpoint",
   "@providerSettingsCustomSubtitle": {
     "description": "Subtitle of the custom provider catalog entry."
+  },
+  "providerSettingsCustomName": "Custom OpenAI Compatible",
+  "@providerSettingsCustomName": {
+    "description": "Title of the custom provider catalog entry."
+  },
+  "providerSettingsRefreshFailed": "Could not refresh the catalog",
+  "@providerSettingsRefreshFailed": {
+    "description": "Alert title shown when the provider catalog fails to load."
   },
   "providerSettingsOAuthPending": "Waiting for ChatGPT sign-in",
   "@providerSettingsOAuthPending": {
@@ -1693,6 +1753,14 @@
   "@skillSettingsInstructions": {
     "description": "Label for the skill body editor."
   },
+  "skillSettingsStateHeading": "Availability",
+  "@skillSettingsStateHeading": {
+    "description": "Section heading for whether a skill is enabled."
+  },
+  "skillSettingsDefinitionHeading": "Definition",
+  "@skillSettingsDefinitionHeading": {
+    "description": "Section heading for a skill's editable fields."
+  },
   "skillSettingsResources": "Bundled files",
   "@skillSettingsResources": {
     "description": "Heading above the bundled file list."
@@ -1841,6 +1909,14 @@
   "mcpSettingsHeaders": "Headers (Name: value, one per line)",
   "@mcpSettingsHeaders": {
     "description": "Label of the headers field."
+  },
+  "mcpSettingsConnectionHeading": "Connection",
+  "@mcpSettingsConnectionHeading": {
+    "description": "Section heading for an MCP server's transport fields."
+  },
+  "mcpSettingsStateHeading": "Availability",
+  "@mcpSettingsStateHeading": {
+    "description": "Section heading for whether an MCP server is enabled."
   },
   "mcpSettingsEnabled": "Enabled",
   "@mcpSettingsEnabled": {

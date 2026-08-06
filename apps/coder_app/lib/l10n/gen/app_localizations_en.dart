@@ -288,6 +288,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get terminalMenuClearScreen => 'Clear screen';
 
   @override
+  String get projectSettingsHookHeading => 'Worktree lifecycle hooks';
+
+  @override
   String get projectSettingsShellHeading => 'Project terminal shell';
 
   @override
@@ -527,6 +530,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appSettingsNewToken => 'New bearer token (only when changing it)';
 
   @override
+  String get appSettingsBearerToken => 'Bearer token';
+
+  @override
+  String get appSettingsConnectionBehaviour => 'Connection';
+
+  @override
+  String get appSettingsConnectionFailed => 'Could not save the connection';
+
+  @override
   String appSettingsDeleteTitle(String label) {
     return 'Delete $label?';
   }
@@ -600,6 +612,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSettingsPinnedModel => 'Pinned provider/model';
+
+  @override
+  String get agentSettingsDefinitionHeading => 'Definition';
+
+  @override
+  String get agentSettingsPromptHeading => 'System prompt';
+
+  @override
+  String get agentSettingsSystemPrompt => 'System prompt (Markdown)';
+
+  @override
+  String get agentSettingsModelHeading => 'Model';
+
+  @override
+  String get agentSettingsProviderConnectionId => 'Provider connection ID';
+
+  @override
+  String get agentSettingsModelId => 'Model ID';
+
+  @override
+  String get agentSettingsBehaviourHeading => 'Behaviour';
+
+  @override
+  String get agentSettingsReasoning => 'Reasoning effort';
+
+  @override
+  String get agentSettingsPermission => 'Permission mode';
 
   @override
   String get agentSettingsBuiltinTools => 'Built-in tools';
@@ -712,6 +751,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get providerSettingsCustomSubtitle =>
       'Advanced: connect your own endpoint';
+
+  @override
+  String get providerSettingsCustomName => 'Custom OpenAI Compatible';
+
+  @override
+  String get providerSettingsRefreshFailed => 'Could not refresh the catalog';
 
   @override
   String get providerSettingsOAuthPending => 'Waiting for ChatGPT sign-in';
@@ -1259,6 +1304,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get skillSettingsInstructions => 'Instructions (Markdown)';
 
   @override
+  String get skillSettingsStateHeading => 'Availability';
+
+  @override
+  String get skillSettingsDefinitionHeading => 'Definition';
+
+  @override
   String get skillSettingsResources => 'Bundled files';
 
   @override
@@ -1372,6 +1423,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpSettingsHeaders => 'Headers (Name: value, one per line)';
+
+  @override
+  String get mcpSettingsConnectionHeading => 'Connection';
+
+  @override
+  String get mcpSettingsStateHeading => 'Availability';
 
   @override
   String get mcpSettingsEnabled => 'Enabled';

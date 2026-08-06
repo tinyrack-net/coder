@@ -10,6 +10,7 @@ import 'package:coder_app/src/external_url_opener.dart';
 import 'package:coder_app/src/model_picker.dart';
 import 'package:coder_app/src/model_picker_options.dart';
 import 'package:coder_app/src/session_model_options.dart';
+import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,83 +76,41 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               connection.status != ProviderConnectionStatus.disconnected,
         )
         .toList(growable: false);
-    final connected = _ConnectedProviders(
-      connections: activeConnections,
-      onDisconnect: _disconnect,
-      onEditCustom: _editCustom,
-      onDeleteCustom: _deleteCustom,
-    );
-    final catalog = _ProviderCatalog(
-      definitions: state.catalog.definitions
-          .where(
-            (definition) => !activeConnections.any(
-              (connection) => connection.definitionId == definition.id,
-            ),
-          )
-          .toList(growable: false),
-      onAdd: _addDefinition,
-      onAddCustom: _addCustom,
-    );
     return Column(
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            TRSpacing.extraLarge,
-            TRSpacing.medium,
-            TRSpacing.extraLarge,
-            0,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+        Expanded(
+          child: SettingsScaffold(
             children: <Widget>[
-              if (_catalogRefreshError case final error?) ...<Widget>[
-                Expanded(
-                  child: TRText(
-                    '$error',
-                    key: const ValueKey<String>(
-                      'provider-catalog-refresh-error',
-                    ),
-                    color: TRTextColor.danger,
-                  ),
-                ),
-                const SizedBox(width: TRSpacing.medium),
-              ],
-              TRButton(
-                key: const ValueKey<String>('provider-catalog-refresh'),
-                appearance: TRAppearance.outline,
-                onPressed: _refreshingCatalog
+              _DefaultModel(
+                selection: state.defaultModel,
+                connections: state.connections,
+                models: state.models,
+                onChoose: () => unawaited(_chooseDefaultModel()),
+              ),
+              _ConnectedProviders(
+                connections: activeConnections,
+                onDisconnect: _disconnect,
+                onEditCustom: _editCustom,
+                onDeleteCustom: _deleteCustom,
+              ),
+              _ProviderCatalog(
+                definitions: state.catalog.definitions
+                    .where(
+                      (definition) => !activeConnections.any(
+                        (connection) =>
+                            connection.definitionId == definition.id,
+                      ),
+                    )
+                    .toList(growable: false),
+                onAdd: _addDefinition,
+                onAddCustom: _addCustom,
+                // Refreshing the catalog is what fills this section, so the
+                // control belongs to it rather than floating above the page.
+                onRefresh: _refreshingCatalog
                     ? null
                     : () => unawaited(_refreshCatalog()),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const Icon(CoderIcons.refresh),
-                    const SizedBox(width: TRSpacing.extraSmall),
-                    TRText(
-                      AppLocalizations.of(
-                        context,
-                      ).providerSettingsRefreshCatalog,
-                    ),
-                  ],
-                ),
+                refreshError: _catalogRefreshError,
               ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: CustomScrollView(
-            slivers: <Widget>[
-              SliverToBoxAdapter(
-                child: _DefaultModel(
-                  selection: state.defaultModel,
-                  connections: state.connections,
-                  models: state.models,
-                  onChoose: () => unawaited(_chooseDefaultModel()),
-                ),
-              ),
-              SliverToBoxAdapter(child: connected),
-              const SliverToBoxAdapter(child: TRSeparator()),
-              SliverToBoxAdapter(child: catalog),
             ],
           ),
         ),
@@ -403,62 +362,44 @@ class _DefaultModel extends StatelessWidget {
     final shown = stale
         ? null
         : stored ?? firstUsableModel(connections, models);
-    return Padding(
+    return SettingsSection(
       key: const ValueKey('provider-settings-default-model'),
-      padding: const EdgeInsets.fromLTRB(
-        TRSpacing.extraLarge,
-        TRSpacing.extraLarge,
-        TRSpacing.extraLarge,
-        0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          TRText(
-            l10n.providerSettingsDefaultModelTitle,
-            variant: TRTextVariant.headingLg,
+      title: l10n.providerSettingsDefaultModelTitle,
+      children: <Widget>[
+        SettingsRow(
+          key: const ValueKey('provider-default-model-row'),
+          title: TRText.inherit(
+            stored == null
+                ? l10n.providerSettingsDefaultModelAutomatic
+                : _label(stored),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: TRSpacing.medium),
-          TRCard(
-            padding: TRCardPadding.none,
-            child: CoderListRow(
-              key: const ValueKey('provider-default-model-row'),
-              title: TRText.inherit(
-                stored == null
-                    ? l10n.providerSettingsDefaultModelAutomatic
-                    : _label(stored),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: stale
-                  ? TRText(
-                      l10n.providerSettingsDefaultModelUnavailable,
-                      key: const ValueKey('provider-default-model-stale'),
-                      color: TRTextColor.danger,
-                      maxLines: 1,
-                      truncate: true,
-                    )
-                  : TRText.inherit(
-                      stored != null
-                          ? l10n.providerSettingsDefaultModelDescription
-                          : shown == null
-                          ? l10n.providerSettingsDefaultModelNone
-                          : _label(shown),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-              trailing: TRButton(
-                key: const ValueKey('provider-default-model-choose'),
-                appearance: TRAppearance.outline,
-                onPressed: onChoose,
-                child: TRText.inherit(
-                  l10n.providerSettingsDefaultModelChoose,
+          description: stale
+              ? TRText(
+                  l10n.providerSettingsDefaultModelUnavailable,
+                  key: const ValueKey('provider-default-model-stale'),
+                  color: TRTextColor.danger,
+                  maxLines: 1,
+                  truncate: true,
+                )
+              : TRText.inherit(
+                  stored != null
+                      ? l10n.providerSettingsDefaultModelDescription
+                      : shown == null
+                      ? l10n.providerSettingsDefaultModelNone
+                      : _label(shown),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ),
+          control: TRButton(
+            key: const ValueKey('provider-default-model-choose'),
+            appearance: TRAppearance.outline,
+            onPressed: onChoose,
+            child: TRText.inherit(l10n.providerSettingsDefaultModelChoose),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -493,40 +434,28 @@ class _ConnectedProviders extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Padding(
+    return SettingsSection(
       key: const ValueKey('provider-settings-connected'),
-      padding: const EdgeInsets.all(TRSpacing.extraLarge),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          TRText(
-            l10n.providerSettingsConnected,
-            variant: TRTextVariant.headingLg,
+      title: l10n.providerSettingsConnected,
+      children: <Widget>[
+        if (connections.isEmpty)
+          SettingsRow(
+            title: TRText.inherit(l10n.providerSettingsNoConnections),
           ),
-          const SizedBox(height: TRSpacing.medium),
-          if (connections.isEmpty)
-            TRCard(
-              padding: TRCardPadding.none,
-              child: Padding(
-                padding: const EdgeInsets.all(TRSpacing.extraLarge),
-                child: TRText.inherit(l10n.providerSettingsNoConnections),
-              ),
-            ),
-          for (final connection in connections)
-            _ProviderConnectionCard(
-              connection: connection,
-              onDisconnect: onDisconnect,
-              onEditCustom: onEditCustom,
-              onDeleteCustom: onDeleteCustom,
-            ),
-        ],
-      ),
+        for (final connection in connections)
+          _ProviderConnectionRow(
+            connection: connection,
+            onDisconnect: onDisconnect,
+            onEditCustom: onEditCustom,
+            onDeleteCustom: onDeleteCustom,
+          ),
+      ],
     );
   }
 }
 
-class _ProviderConnectionCard extends StatelessWidget {
-  const _ProviderConnectionCard({
+class _ProviderConnectionRow extends StatelessWidget {
+  const _ProviderConnectionRow({
     required this.connection,
     required this.onDisconnect,
     required this.onEditCustom,
@@ -541,60 +470,46 @@ class _ProviderConnectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return TRCard(
-      padding: TRCardPadding.none,
-      child: Padding(
-        padding: const EdgeInsets.all(TRSpacing.large),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: TRText(
-                    connection.displayName,
-                    variant: TRTextVariant.headingMd,
-                    truncate: true,
-                  ),
-                ),
-                TRMenu.icon(
-                  key: ValueKey<String>(
-                    'provider-actions-${connection.definitionId}',
-                  ),
-                  icon: const Icon(CoderIcons.more),
-                  label: l10n.providerSettingsActions,
-                  menuChildren: <Widget>[
-                    if (connection.definitionId == 'custom')
-                      TRMenuItem(
-                        onPressed: () => onEditCustom(connection),
-                        child: TRText.inherit(
-                          l10n.providerSettingsEditAdvanced,
-                        ),
-                      ),
-                    if (connection.definitionId == 'custom')
-                      TRMenuItem(
-                        onPressed: () => onDeleteCustom(connection),
-                        child: TRText.inherit(l10n.commonDelete),
-                      ),
-                    TRMenuItem(
-                      onPressed: () => onDisconnect(connection),
-                      child: TRText.inherit(l10n.providerSettingsDisconnect),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            TRText(
-              '${_statusLabel(l10n, connection.status)} · '
-              '${_authLabel(l10n, connection.credentialOrigin)}',
-            ),
-            if (connection.error != null)
-              TRText(
-                connection.error!,
-                color: TRTextColor.danger,
-              ),
-          ],
+    final error = connection.error;
+    return SettingsRow(
+      title: TRText.inherit(connection.displayName, truncate: true),
+      // The status line and the failure reason are separate facts, so the
+      // reason keeps its own line and its own colour rather than being
+      // concatenated into the status string.
+      description: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          TRText.inherit(
+            '${_statusLabel(l10n, connection.status)} · '
+            '${_authLabel(l10n, connection.credentialOrigin)}',
+          ),
+          if (error != null) TRText(error, color: TRTextColor.danger),
+        ],
+      ),
+      wrapsDescription: error != null,
+      control: TRMenu.icon(
+        key: ValueKey<String>(
+          'provider-actions-${connection.definitionId}',
         ),
+        icon: const Icon(CoderIcons.more),
+        label: l10n.providerSettingsActions,
+        menuChildren: <Widget>[
+          if (connection.definitionId == 'custom')
+            TRMenuItem(
+              onPressed: () => onEditCustom(connection),
+              child: TRText.inherit(l10n.providerSettingsEditAdvanced),
+            ),
+          if (connection.definitionId == 'custom')
+            TRMenuItem(
+              onPressed: () => onDeleteCustom(connection),
+              child: TRText.inherit(l10n.commonDelete),
+            ),
+          TRMenuItem(
+            onPressed: () => onDisconnect(connection),
+            child: TRText.inherit(l10n.providerSettingsDisconnect),
+          ),
+        ],
       ),
     );
   }
@@ -605,59 +520,65 @@ class _ProviderCatalog extends StatelessWidget {
     required this.definitions,
     required this.onAdd,
     required this.onAddCustom,
+    required this.onRefresh,
+    required this.refreshError,
   });
 
   final List<ProviderDefinitionDto> definitions;
   final ValueChanged<ProviderDefinitionDto> onAdd;
   final VoidCallback onAddCustom;
+  final VoidCallback? onRefresh;
+  final Object? refreshError;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Padding(
+    return SettingsSection(
       key: const ValueKey('provider-settings-add'),
-      padding: const EdgeInsets.all(TRSpacing.extraLarge),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          TRText(
-            l10n.providerSettingsAdd,
-            variant: TRTextVariant.headingLg,
-          ),
-          const SizedBox(height: TRSpacing.medium),
-          if (definitions.isEmpty)
-            TRCard(
-              padding: TRCardPadding.none,
-              child: Padding(
-                padding: const EdgeInsets.all(TRSpacing.extraLarge),
-                child: TRText.inherit(l10n.providerSettingsNoPresets),
-              ),
-            ),
-          for (final definition in definitions)
-            TRCard(
-              padding: TRCardPadding.none,
-              child: CoderListRow(
-                key: ValueKey('provider-add-${definition.id}'),
-                leading: const Icon(CoderIcons.network),
-                title: TRText.inherit(definition.name),
-                subtitle: TRText.inherit(definition.description),
-                trailing: const Icon(CoderIcons.addCircle),
-                onTap: () => onAdd(definition),
-              ),
-            ),
-          TRCard(
-            padding: TRCardPadding.none,
-            child: CoderListRow(
-              key: const ValueKey('provider-add-custom'),
-              leading: const Icon(CoderIcons.tune),
-              title: const TRText.inherit('Custom OpenAI Compatible'),
-              subtitle: TRText.inherit(l10n.providerSettingsCustomSubtitle),
-              trailing: const Icon(CoderIcons.chevronRight),
-              onTap: onAddCustom,
-            ),
-          ),
-        ],
+      title: l10n.providerSettingsAdd,
+      action: TRButton(
+        key: const ValueKey<String>('provider-catalog-refresh'),
+        appearance: TRAppearance.outline,
+        onPressed: onRefresh,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Icon(CoderIcons.refresh),
+            const SizedBox(width: TRSpacing.extraSmall),
+            TRText(l10n.providerSettingsRefreshCatalog),
+          ],
+        ),
       ),
+      banner: refreshError == null
+          ? null
+          : TRAlert(
+              key: const ValueKey<String>('provider-catalog-refresh-error'),
+              title: TRText.inherit(l10n.providerSettingsRefreshFailed),
+              description: TRText.inherit('$refreshError'),
+              icon: const Icon(CoderIcons.error),
+              variant: TRStatusVariant.danger,
+            ),
+      children: <Widget>[
+        if (definitions.isEmpty)
+          SettingsRow(title: TRText.inherit(l10n.providerSettingsNoPresets)),
+        for (final definition in definitions)
+          SettingsRow(
+            key: ValueKey('provider-add-${definition.id}'),
+            leading: const Icon(CoderIcons.network),
+            title: TRText.inherit(definition.name),
+            description: TRText.inherit(definition.description),
+            control: const Icon(CoderIcons.addCircle),
+            onTap: () => onAdd(definition),
+          ),
+        SettingsRow(
+          key: const ValueKey('provider-add-custom'),
+          leading: const Icon(CoderIcons.tune),
+          title: TRText.inherit(l10n.providerSettingsCustomName),
+          description: TRText.inherit(l10n.providerSettingsCustomSubtitle),
+          control: const Icon(CoderIcons.chevronRight),
+          onTap: onAddCustom,
+        ),
+      ],
     );
   }
 }
@@ -804,7 +725,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
     return TRAlertDialog(
       title: TRText.inherit(l10n.providerSettingsCustomTitle),
       content: SizedBox(
-        width: 520,
+        width: TRMeasurements.overlayWidthMd,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -835,7 +756,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                 },
               ),
               CoderSwitchRow(
-                contentPadding: EdgeInsets.zero,
+                flush: true,
                 title: TRText.inherit(l10n.providerSettingsRequiresApiKey),
                 value: _authenticationRequired,
                 onChanged: (value) =>
@@ -924,7 +845,7 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
     return TRAlertDialog(
       title: TRText.inherit(l10n.providerSettingsModelLookupFailedTitle),
       content: SizedBox(
-        width: 480,
+        width: TRMeasurements.overlayWidthMd,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

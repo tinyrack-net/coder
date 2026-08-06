@@ -142,7 +142,10 @@ class _CoderListRowState extends State<CoderListRow> {
                 decoration: BoxDecoration(
                   color: background,
                   border: _focused
-                      ? Border.all(color: colors.focus, width: 2)
+                      ? Border.all(
+                          color: colors.focus,
+                          width: TRControlMetrics.focusWidth,
+                        )
                       : null,
                   borderRadius: const BorderRadius.all(TRRadii.medium),
                 ),
