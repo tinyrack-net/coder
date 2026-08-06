@@ -598,35 +598,41 @@ final class ProviderService implements ProviderOAuthConnector {
     final models = _seedModels(connection);
     ProviderConnectionStatus status;
     String? error;
-    try {
-      final discovered = await _modelDiscovery.fetchModelIds(
-        runtime,
-        credential,
-      );
-      for (final modelId in discovered) {
-        models.putIfAbsent(
-          modelId,
-          () => ProviderModelDto(
-            connectionId: connection.id,
-            id: modelId,
-            label: modelId,
-            source: ProviderModelSource.discovered,
-            capabilities: _catalogCapabilities(
-              connection.definitionId,
-              modelId,
-            ),
-          ),
-        );
-      }
+    if (!runtime.supportsModelDiscovery) {
+      // The bundled catalog is already the complete model set for endpoints
+      // without a `/models` listing, so a discovery request would only fail.
       status = ProviderConnectionStatus.connected;
-    } on ProviderDiscoveryFailure catch (failure) {
-      error = failure.message;
-      status = switch (failure.kind) {
-        ProviderDiscoveryFailureKind.invalidCredential =>
-          ProviderConnectionStatus.error,
-        ProviderDiscoveryFailureKind.unavailable =>
-          ProviderConnectionStatus.degraded,
-      };
+    } else {
+      try {
+        final discovered = await _modelDiscovery.fetchModelIds(
+          runtime,
+          credential,
+        );
+        for (final modelId in discovered) {
+          models.putIfAbsent(
+            modelId,
+            () => ProviderModelDto(
+              connectionId: connection.id,
+              id: modelId,
+              label: modelId,
+              source: ProviderModelSource.discovered,
+              capabilities: _catalogCapabilities(
+                connection.definitionId,
+                modelId,
+              ),
+            ),
+          );
+        }
+        status = ProviderConnectionStatus.connected;
+      } on ProviderDiscoveryFailure catch (failure) {
+        error = failure.message;
+        status = switch (failure.kind) {
+          ProviderDiscoveryFailureKind.invalidCredential =>
+            ProviderConnectionStatus.error,
+          ProviderDiscoveryFailureKind.unavailable =>
+            ProviderConnectionStatus.degraded,
+        };
+      }
     }
     await _repository.replaceModels(connection.id, models.values);
     final saved = connection.copyWith(
@@ -703,6 +709,7 @@ final class ProviderService implements ProviderOAuthConnector {
         baseUrl: 'https://chatgpt.com/backend-api/codex',
         apiFormat: ProviderApiFormat.responses,
         strictToolSchema: true,
+        supportsModelDiscovery: false,
       );
     }
     return ProviderRuntimeConfig(

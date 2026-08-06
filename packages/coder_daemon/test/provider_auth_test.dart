@@ -173,13 +173,13 @@ void main() {
         methodId: 'chatgpt-browser',
       );
       gateway.session.completer.completeError(
-        Exception('authorization failed'),
+        const OAuthAuthorizationFailure('The user denied the request.'),
       );
       await Future<void>.delayed(Duration.zero);
-      expect(
-        (await coordinator.status(attempt.id)).status,
-        ProviderAuthAttemptStatus.failed,
-      );
+      final failed = await coordinator.status(attempt.id);
+      expect(failed.status, ProviderAuthAttemptStatus.failed);
+      // The attempt tile shows this verbatim, so it must stay a plain sentence.
+      expect(failed.error, 'The user denied the request.');
       await coordinator.cancel(attempt.id);
       expect(gateway.session.cancelled, isFalse);
     },

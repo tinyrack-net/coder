@@ -83,6 +83,8 @@ void main() {
             .isNotEmpty,
         'the failed authorization message',
       );
+      // The tile shows the reason itself, never a transport exception name.
+      expect(find.textContaining('Exception'), findsNothing);
 
       await _startDeviceOAuth(tester);
       final cancelled = oauth.sessions.last;
@@ -122,12 +124,13 @@ void main() {
           .singleWhere((item) => item.definitionId == 'openai');
       expect(connection.credentialOrigin, ProviderCredentialOrigin.oauth);
       expect(connection.status, ProviderConnectionStatus.connected);
-      expect(
-        (await assertions.listProviderModels(connection.id)).map(
-          (model) => model.id,
-        ),
-        contains('oauth-e2e-model'),
-      );
+      // The ChatGPT endpoint has no `/models` listing, so the connected
+      // catalog is the bundled one and discovery never runs.
+      final oauthModels = (await assertions.listProviderModels(
+        connection.id,
+      )).map((model) => model.id);
+      expect(oauthModels, contains('gpt-5.6-sol'));
+      expect(oauthModels, isNot(contains('oauth-e2e-model')));
 
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-catalog-refresh')),
@@ -263,7 +266,9 @@ final class _ControlledOAuthSession implements ProviderOAuthSession {
   @override
   Future<OAuthCredential> get completion async {
     final result = await _result.future;
-    if (result.error case final error?) throw FormatException(error);
+    // Mirrors the real gateway, which reports a plain sentence rather than a
+    // transport exception the user cannot act on.
+    if (result.error case final error?) throw OAuthAuthorizationFailure(error);
     return result.credential!;
   }
 

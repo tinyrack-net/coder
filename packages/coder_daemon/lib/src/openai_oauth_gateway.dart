@@ -19,30 +19,27 @@ abstract interface class OAuthCallbackServerBinder {
   Future<HttpServer> bind();
 }
 
-/// Production callback binder with the public Codex fallback ports.
+/// Production callback binder on the single registered Codex callback port.
 final class LoopbackOAuthCallbackServerBinder
     implements OAuthCallbackServerBinder {
   /// Creates the production callback binder.
-  const LoopbackOAuthCallbackServerBinder({
-    this.primaryPort = 1455,
-    this.fallbackPort = 1457,
-  });
+  const LoopbackOAuthCallbackServerBinder({this.port = 1455});
 
-  /// Preferred public Codex callback port.
-  final int primaryPort;
-
-  /// Fallback callback port used when [primaryPort] is unavailable.
-  final int fallbackPort;
+  /// The only loopback port registered for the public Codex OAuth client.
+  final int port;
 
   @override
   Future<HttpServer> bind() async {
     try {
-      return await HttpServer.bind(
-        InternetAddress.loopbackIPv4,
-        primaryPort,
-      );
+      return await HttpServer.bind(InternetAddress.loopbackIPv4, port);
     } on SocketException {
-      return HttpServer.bind(InternetAddress.loopbackIPv4, fallbackPort);
+      // Any other port yields a redirect_uri the public Codex client has not
+      // registered, which fails the exchange with an opaque 400. Failing here
+      // instead names the actual problem while the user can still act on it.
+      throw OAuthAuthorizationFailure(
+        'The ChatGPT sign-in callback port $port is already in use. Close the '
+        'other Codex or ChatGPT sign-in and try again.',
+      );
     }
   }
 }
@@ -210,6 +207,18 @@ final class OpenAIOAuthGateway implements ProviderOAuthGateway {
           await _respond(request, HttpStatus.badRequest, 'State mismatch');
           continue;
         }
+        // A denied or failed authorization redirects back with `error` and no
+        // `code`. Fail the attempt instead of waiting for a code that the
+        // identity provider will never send.
+        final failure = request.uri.queryParameters['error'];
+        if (failure != null && failure.isNotEmpty) {
+          final description =
+              request.uri.queryParameters['error_description'] ?? failure;
+          await _respond(request, HttpStatus.badRequest, description);
+          throw OAuthAuthorizationFailure(
+            'ChatGPT sign in failed: $description',
+          );
+        }
         final code = request.uri.queryParameters['code'];
         if (code == null || code.isEmpty) {
           await _respond(
@@ -219,11 +228,19 @@ final class OpenAIOAuthGateway implements ProviderOAuthGateway {
           );
           continue;
         }
-        final credential = await _exchangeCode(
-          code: code,
-          verifier: verifier,
-          redirectUri: redirectUri,
-        );
+        final OAuthCredential credential;
+        try {
+          credential = await _exchangeCode(
+            code: code,
+            verifier: verifier,
+            redirectUri: redirectUri,
+          );
+        } on OAuthAuthorizationFailure catch (failure) {
+          // Answer the browser before closing, otherwise the tab shows a
+          // connection reset instead of the reason the exchange failed.
+          await _respond(request, HttpStatus.badRequest, failure.message);
+          rethrow;
+        }
         await _respond(request, HttpStatus.ok, 'Sign in complete.');
         return credential;
       }
@@ -277,18 +294,31 @@ final class OpenAIOAuthGateway implements ProviderOAuthGateway {
     required String verifier,
     required String redirectUri,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '$_issuer/oauth/token',
-      data: <String, String>{
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': redirectUri,
-        'client_id': openAICodexOAuthClientId,
-        'code_verifier': verifier,
-      },
-      options: Options(contentType: Headers.formUrlEncodedContentType),
-    );
-    return _credentialFromTokens(response.data ?? const <String, dynamic>{});
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '$_issuer/oauth/token',
+        data: <String, String>{
+          'grant_type': 'authorization_code',
+          'code': code,
+          'redirect_uri': redirectUri,
+          'client_id': openAICodexOAuthClientId,
+          'code_verifier': verifier,
+        },
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+      );
+      return _credentialFromTokens(response.data ?? const <String, dynamic>{});
+    } on DioException catch (error) {
+      // A raw Dio message names a status code the user cannot act on, so
+      // report the OAuth error code the token endpoint actually returned.
+      final data = error.response?.data;
+      final reason = data is Map<String, dynamic>
+          ? data['error_description'] ?? data['error']
+          : null;
+      throw OAuthAuthorizationFailure(
+        'ChatGPT sign in could not be completed: '
+        '${reason is String ? reason : 'the token exchange was rejected.'}',
+      );
+    }
   }
 
   OAuthCredential _credentialFromTokens(
@@ -323,10 +353,13 @@ final class OpenAIOAuthGateway implements ProviderOAuthGateway {
     int status,
     String message,
   ) async {
+    // The identity provider controls `error_description`, so escape it rather
+    // than reflect remote text into the local callback page verbatim.
+    final body = htmlEscape.convert(message);
     request.response
       ..statusCode = status
       ..headers.contentType = ContentType.html
-      ..write('<!doctype html><title>Tinyrack Coder</title><p>$message</p>');
+      ..write('<!doctype html><title>Tinyrack Coder</title><p>$body</p>');
     await request.response.close();
   }
 

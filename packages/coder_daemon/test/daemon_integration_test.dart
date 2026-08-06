@@ -2253,10 +2253,17 @@ void main() {
         completed.id,
         ProviderAuthAttemptStatus.succeeded,
       );
-      expect(
-        (await client.listProviderConnections()).single.credentialOrigin,
-        ProviderCredentialOrigin.oauth,
-      );
+      final connected = (await client.listProviderConnections()).single;
+      expect(connected.credentialOrigin, ProviderCredentialOrigin.oauth);
+      // The Codex endpoint has no `/models` listing, so the connection must
+      // settle on the bundled catalog instead of degrading on a discovery 400.
+      expect(connected.status, ProviderConnectionStatus.connected);
+      expect(connected.error, isNull);
+      final oauthModels = (await client.listProviderModels(
+        connected.id,
+      )).map((model) => model.id);
+      expect(oauthModels, contains('gpt-5.6-sol'));
+      expect(oauthModels, isNot(contains('gpt-test')));
 
       final cancelled = await client.startProviderAuth(
         'openai',

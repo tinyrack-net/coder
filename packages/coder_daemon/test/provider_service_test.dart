@@ -223,6 +223,58 @@ void main() {
   );
 
   test(
+    'ChatGPT OAuth connects on the bundled catalog without model discovery',
+    () async {
+      final fixture = _ServiceFixture(now);
+      // The Codex endpoint answers 400 for `/models`; discovery must not run.
+      fixture.discovery.failure = const ProviderDiscoveryFailure(
+        ProviderDiscoveryFailureKind.unavailable,
+        'status code of 400',
+      );
+
+      await fixture.service.connectOAuth(
+        'openai',
+        OAuthCredential(
+          accessToken: 'access',
+          refreshToken: 'refresh',
+          expiresAt: now.add(const Duration(hours: 1)),
+          accountId: 'account',
+        ),
+      );
+
+      final connection = await fixture.service.get('openai');
+      expect(fixture.discovery.calls, 0);
+      expect(connection.status, ProviderConnectionStatus.connected);
+      expect(connection.error, isNull);
+      expect(
+        (await fixture.service.listModels('openai')).map((model) => model.id),
+        containsAll(<String>['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna']),
+      );
+    },
+    tags: const <String>['feature_test__provider_oauth__unit'],
+  );
+
+  test(
+    'API key connections still discover models and degrade on failure',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.failure = const ProviderDiscoveryFailure(
+        ProviderDiscoveryFailureKind.unavailable,
+        'discovery unavailable',
+      );
+
+      final connection = await fixture.service.connectApiKey(
+        'openai',
+        'secret',
+      );
+
+      expect(fixture.discovery.calls, 1);
+      expect(connection.status, ProviderConnectionStatus.degraded);
+      expect(connection.error, 'discovery unavailable');
+    },
+  );
+
+  test(
     'OAuth runtime refreshes once and persists rotated credentials',
     () async {
       final fixture = _ServiceFixture(now);
@@ -829,12 +881,14 @@ final class _Discovery implements ProviderModelDiscovery {
   List<String> ids = <String>[];
   ProviderDiscoveryFailure? failure;
   String? lastSecret;
+  int calls = 0;
 
   @override
   Future<List<String>> fetchModelIds(
     ProviderRuntimeConfig config,
     ProviderCredential? credential,
   ) async {
+    calls += 1;
     lastSecret = switch (credential) {
       ApiKeyCredential(:final key) => key,
       OAuthCredential(:final accessToken) => accessToken,
