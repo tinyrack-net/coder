@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/composer_commands.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
@@ -1047,38 +1046,6 @@ void main() {
       expect(
         container.read(provider).value!.map((item) => item.name),
         <String>['review', 'ship'],
-      );
-      unawaited(api.close());
-    },
-    tags: const <String>['feature_test__composer_slash_command__unit'],
-  );
-
-  test(
-    'the composer catalog merges app, agent, and skill commands',
-    () async {
-      final api = FakeCoderApi(
-        commands: <AgentCommandDto>[_agentCommand('review')],
-      );
-      final container = _container(api);
-      addTearDown(container.dispose);
-      await container.read(hostRegistryControllerProvider.future);
-      await Future<void>.delayed(Duration.zero);
-
-      final commands = await container.read(
-        composerCommandsProvider('server', null).future,
-      );
-
-      expect(
-        commands.map((command) => command.kind).toSet(),
-        containsAll(<ComposerCommandKind>[
-          ComposerCommandKind.client,
-          ComposerCommandKind.agent,
-          ComposerCommandKind.skill,
-        ]),
-      );
-      expect(
-        commands.singleWhere((command) => command.name == 'review').kind,
-        ComposerCommandKind.agent,
       );
       unawaited(api.close());
     },

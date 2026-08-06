@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/attachment_ports.dart';
-import 'package:coder_app/src/composer_commands.dart';
 import 'package:coder_app/src/composer_suggestions.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
@@ -792,22 +791,6 @@ class AgentCommandsController extends _$AgentCommandsController {
     state = AsyncData<List<AgentCommandDto>>(commands);
   }
 }
-
-@riverpod
-/// Merges the app, agent, and skill sources into the composer's `/` catalog.
-Future<List<ComposerCommand>> composerCommands(
-  Ref ref,
-  String hostId,
-  String? workspaceId,
-) async => mergeComposerCommands(
-  client: clientComposerCommands,
-  agent: await ref.watch(
-    agentCommandsControllerProvider(hostId, workspaceId).future,
-  ),
-  skills: await ref.watch(
-    skillsControllerProvider(hostId, workspaceId).future,
-  ),
-);
 
 /// How long an `@` query rests before the daemon index is asked.
 const Duration composerFileSearchDebounce = Duration(milliseconds: 120);

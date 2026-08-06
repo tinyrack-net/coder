@@ -6,6 +6,10 @@ import 'package:coder_app/src/branch_defaults.dart';
 import 'package:coder_app/src/branch_name.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/composer_client_commands.dart';
+import 'package:coder_app/src/composer_commands.dart';
+import 'package:coder_app/src/composer_completion_scope.dart';
+import 'package:coder_app/src/composer_suggestions_overlay.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
@@ -199,6 +203,69 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         agent != null &&
         effective != null &&
         !_submitting;
+    void toggleMode() => _notifier(hostId)?.selectMode(
+      draft?.mode == SessionMode.plan ? SessionMode.normal : SessionMode.plan,
+    );
+    // The completion is null only while no daemon is chosen, which is also the
+    // state where the composer is disabled and has nothing to complete.
+    Widget composer(ComposerCompletion? completion) => SessionComposer(
+      enabled: ready,
+      hint: _hint(
+        AppLocalizations.of(context),
+        projects,
+        project,
+        worktree,
+        agent,
+        effective,
+        home: home,
+        loading: catalogLoading || agentsLoading || connectionsLoading,
+      ),
+      header: _targets(
+        projects: projects,
+        project: project,
+        home: home,
+        worktree: worktree,
+        branches: branches,
+        showGitTargets: showGitTargets,
+        baseBranch: baseBranch,
+        anyDaemonConnected: anyDaemonConnected,
+      ),
+      bar: SessionComposerBar(
+        hostId: hostId ?? '',
+        definitions: definitions,
+        agentDefinitionId: agent?.id,
+        selection: effective,
+        enabled: hostId != null && !_submitting,
+        mode: draft?.mode ?? SessionMode.normal,
+        onAgentChanged: (id) => _notifier(hostId)?.selectAgent(id),
+        onModelChanged: (model) => _notifier(hostId)?.selectModel(model),
+        onModeChanged: (mode) => _notifier(hostId)?.selectMode(mode),
+        reasoningEffort: draft?.reasoningEffort,
+        onReasoningEffortChanged: (effort) =>
+            _notifier(hostId)?.selectReasoningEffort(effort),
+        permissionMode: draft?.permissionMode,
+        onPermissionModeChanged: (mode) =>
+            _notifier(hostId)?.selectPermissionMode(mode),
+        serviceTier: draft?.serviceTier,
+        onServiceTierChanged: (tier) =>
+            _notifier(hostId)?.selectServiceTier(tier),
+      ),
+      onModeToggled: hostId == null ? null : toggleMode,
+      attachmentInput: ref.read(attachmentInputProvider),
+      commands: completion?.commands ?? const <ComposerCommand>[],
+      suggestions: completion?.suggestions ?? ComposerSuggestionsState.closed,
+      onCompletionQueryChanged: completion?.onQueryChanged,
+      onClientCommand: completion == null
+          ? null
+          : (invocation) => runSessionlessClientCommand(
+              context,
+              invocation,
+              hostId: hostId!,
+              onToggleMode: toggleMode,
+            ),
+      onSubmit: (submission) =>
+          _submit(submission, project, home, worktree, agent!, draft!),
+    );
     return Column(
       children: <Widget>[
         if (widget.showBack)
@@ -227,70 +294,20 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       variant: TRTextVariant.headingLg,
                     ),
                   ),
-                  SessionComposer(
-                    enabled: ready,
-                    hint: _hint(
-                      AppLocalizations.of(context),
-                      projects,
-                      project,
-                      worktree,
-                      agent,
-                      effective,
-                      home: home,
-                      loading:
-                          catalogLoading || agentsLoading || connectionsLoading,
+                  if (hostId == null)
+                    composer(null)
+                  else
+                    ComposerCompletionScope(
+                      hostId: hostId,
+                      workspaceId: project?.workspace.id ?? home?.workspaceId,
+                      // A Git project whose checkout is still to be created has
+                      // no worktree to search, so it offers commands only.
+                      worktreeId:
+                          worktree?.id ??
+                          (project == null ? home?.worktreeId : null),
+                      excludedClientActions: sessionlessClientActions,
+                      builder: (context, completion) => composer(completion),
                     ),
-                    header: _targets(
-                      projects: projects,
-                      project: project,
-                      home: home,
-                      worktree: worktree,
-                      branches: branches,
-                      showGitTargets: showGitTargets,
-                      baseBranch: baseBranch,
-                      anyDaemonConnected: anyDaemonConnected,
-                    ),
-                    bar: SessionComposerBar(
-                      hostId: hostId ?? '',
-                      definitions: definitions,
-                      agentDefinitionId: agent?.id,
-                      selection: effective,
-                      enabled: hostId != null && !_submitting,
-                      mode: draft?.mode ?? SessionMode.normal,
-                      onAgentChanged: (id) =>
-                          _notifier(hostId)?.selectAgent(id),
-                      onModelChanged: (model) =>
-                          _notifier(hostId)?.selectModel(model),
-                      onModeChanged: (mode) => _notifier(hostId)?.selectMode(
-                        mode,
-                      ),
-                      reasoningEffort: draft?.reasoningEffort,
-                      onReasoningEffortChanged: (effort) =>
-                          _notifier(hostId)?.selectReasoningEffort(effort),
-                      permissionMode: draft?.permissionMode,
-                      onPermissionModeChanged: (mode) =>
-                          _notifier(hostId)?.selectPermissionMode(mode),
-                      serviceTier: draft?.serviceTier,
-                      onServiceTierChanged: (tier) =>
-                          _notifier(hostId)?.selectServiceTier(tier),
-                    ),
-                    onModeToggled: hostId == null
-                        ? null
-                        : () => _notifier(hostId)?.selectMode(
-                            draft?.mode == SessionMode.plan
-                                ? SessionMode.normal
-                                : SessionMode.plan,
-                          ),
-                    attachmentInput: ref.read(attachmentInputProvider),
-                    onSubmit: (submission) => _submit(
-                      submission,
-                      project,
-                      home,
-                      worktree,
-                      agent!,
-                      draft!,
-                    ),
-                  ),
                 ],
               ),
             ),

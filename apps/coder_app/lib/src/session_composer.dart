@@ -6,6 +6,7 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/attachment_ports.dart';
 import 'package:coder_app/src/chat/chat_plan_actions.dart';
 import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/composer_client_commands.dart';
 import 'package:coder_app/src/composer_commands.dart';
 import 'package:coder_app/src/composer_completion_scope.dart';
 import 'package:coder_app/src/composer_suggestions.dart';
@@ -786,10 +787,21 @@ class DraftSessionPane extends ConsumerWidget {
           hostId: selection.hostId,
           workspaceId: selection.workspaceId,
           worktreeId: selection.worktreeId,
+          excludedClientActions: sessionlessClientActions,
           builder: (context, completion) => SessionComposer(
             commands: completion.commands,
             suggestions: completion.suggestions,
             onCompletionQueryChanged: completion.onQueryChanged,
+            onClientCommand: (invocation) => runSessionlessClientCommand(
+              context,
+              invocation,
+              hostId: selection.hostId,
+              onToggleMode: () => notifier.selectMode(
+                draft.mode == SessionMode.plan
+                    ? SessionMode.normal
+                    : SessionMode.plan,
+              ),
+            ),
             enabled: agent != null && effective != null,
             hint: (agentsLoading || providersLoading)
                 ? null
@@ -943,7 +955,7 @@ class SessionComposer extends StatefulWidget {
   /// Runs an app-owned command, reporting whether it consumed the submission.
   ///
   /// A null handler leaves the message to submit as ordinary text, which is
-  /// what the draft and new-workspace composers want.
+  /// what a composer with no completion catalog wants.
   final Future<bool> Function(ComposerCommandInvocation invocation)?
   onClientCommand;
 
