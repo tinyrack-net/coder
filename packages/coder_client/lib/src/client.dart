@@ -1151,6 +1151,14 @@ class CoderClient implements CoderApi {
   }
 
   @override
+  Future<void> compactSession(String sessionId) async {
+    await _request(
+      RpcMethod.sessionCompact,
+      SessionIdParamsDto(sessionId: sessionId).toJson(),
+    );
+  }
+
+  @override
   Future<void> resolveApproval({
     required String approvalId,
     required bool approved,

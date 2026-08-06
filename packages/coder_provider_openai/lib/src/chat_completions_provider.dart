@@ -56,10 +56,11 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
     } on DioException catch (error) {
       if (CancelToken.isCancel(error)) throw const AgentCancelledException();
       final body = error.response?.data;
-      throw OpenAIProviderException(
-        body == null ? error.message ?? '$error' : '$body',
-        retryable: _isRetryable(error),
-      );
+      final message = body == null ? error.message ?? '$error' : '$body';
+      if (isContextOverflowFailure(contextOverflowCode(body), message)) {
+        throw ModelContextOverflowException(message);
+      }
+      throw OpenAIProviderException(message, retryable: _isRetryable(error));
     }
   }
 

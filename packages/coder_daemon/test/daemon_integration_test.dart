@@ -1308,6 +1308,110 @@ void main() {
   );
 
   test(
+    'compacting a session replaces its window with a summary',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-compact-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-compact-workspace-',
+      );
+      const bearerToken = 'compact-token-0123456789abcdef0123456';
+      final provider = _CompactingProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'compact-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final worktreeId = registered.worktrees.single.id;
+      final session = await client.createSession(
+        id: 'compact-session',
+        worktreeId: worktreeId,
+        title: 'Compact',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'compact-turn-one',
+        prompt: 'Remember the release date.',
+      );
+      await _waitForIdleSession(client, worktreeId, session.id);
+
+      await client.compactSession(session.id);
+
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'compact-turn-two',
+        prompt: 'What was it?',
+      );
+      await _waitForIdleSession(client, worktreeId, session.id);
+
+      // Request 0 is the first turn, 1 is the summary request, 2 is the turn
+      // that resumes on the compacted window.
+      expect(provider.requests, hasLength(3));
+      expect(
+        provider.requests[1].last,
+        isA<UserConversationItem>().having(
+          (item) => item.text,
+          'text',
+          CompactionPolicy.summarizationPrompt,
+        ),
+      );
+
+      final resumed = provider.requests[2];
+      expect(
+        resumed.map((item) => (item as UserConversationItem).text),
+        <String>[
+          'Remember the release date.',
+          '${CompactionPolicy.summaryPrefix}\nThe release date is Tuesday.',
+          'What was it?',
+        ],
+      );
+      // The assistant turn it replaced is gone from the model's view.
+      expect(resumed.whereType<AssistantConversationItem>(), isEmpty);
+
+      // The user still sees the original exchange.
+      final timeline = await client.subscribeTimeline(session.id);
+      expect(
+        timeline.map((event) => event.type),
+        contains('context.compacted'),
+      );
+      expect(
+        timeline.map((event) => event.turnId),
+        contains('compact-turn-one'),
+      );
+    },
+    tags: const <String>['feature_test__context_compaction__verticalSlice'],
+  );
+
+  test(
     'search_text and glob honour a real .gitignore in a real workspace',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-search-home-');
@@ -3171,6 +3275,48 @@ class _ContextResetProvider implements ModelProvider {
         yield const ModelTextDelta('Fresh.');
         yield const ModelResponseCompleted(
           assistant: AssistantConversationItem(text: 'Fresh.'),
+        );
+    }
+  }
+}
+
+/// Answers a turn, then writes a summary when the compaction request arrives.
+class _CompactingProvider implements ModelProvider {
+  final List<List<ConversationItem>> requests = <List<ConversationItem>>[];
+
+  var _round = 0;
+
+  @override
+  String get id => 'compacting-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    requests.add(request.history);
+    switch (_round++) {
+      case 0:
+        yield const ModelTextDelta('Noted.');
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(text: 'Noted.'),
+          usage: ModelUsage(
+            inputTokens: 900,
+            outputTokens: 100,
+            totalTokens: 1000,
+          ),
+        );
+      case 1:
+        yield const ModelTextDelta('The release date is Tuesday.');
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: 'The release date is Tuesday.',
+          ),
+        );
+      default:
+        yield const ModelTextDelta('Tuesday.');
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(text: 'Tuesday.'),
         );
     }
   }

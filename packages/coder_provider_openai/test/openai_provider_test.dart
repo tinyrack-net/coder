@@ -823,6 +823,57 @@ data: [DONE]
       );
     },
   );
+
+  test(
+    'both adapters classify a context overflow refusal',
+    tags: const <String>['feature_test__context_compaction__unit'],
+    () async {
+      final streamed = Dio()
+        ..httpClientAdapter = _RecordingAdapter('''
+data: {"type":"response.failed","response":{"error":{"code":"context_length_exceeded","message":"Your input exceeds the context window."}}}
+
+''');
+      await expectLater(
+        OpenAIResponsesProvider(
+          const OpenAIProviderConfig(requiresApiKey: false),
+          dio: streamed,
+        ).stream(_request(), CancellationToken()).toList(),
+        throwsA(isA<ModelContextOverflowException>()),
+      );
+
+      final rejected = Dio()
+        ..httpClientAdapter = _BadRequestAdapter(<String, dynamic>{
+          'error': <String, dynamic>{
+            'code': 'context_length_exceeded',
+            'message': 'maximum context length is 128000 tokens',
+          },
+        });
+      await expectLater(
+        OpenAIChatCompletionsProvider(
+          const OpenAIProviderConfig(requiresApiKey: false),
+          dio: rejected,
+        ).stream(_request(), CancellationToken()).toList(),
+        throwsA(isA<ModelContextOverflowException>()),
+      );
+
+      // A Responses 400 that is not about the window must stay a plain
+      // transport failure so the turn still reports the provider's own words.
+      final unrelated = Dio()
+        ..httpClientAdapter = _BadRequestAdapter(<String, dynamic>{
+          'error': <String, dynamic>{'code': 'invalid_api_key'},
+        });
+      await expectLater(
+        OpenAIResponsesProvider(
+          const OpenAIProviderConfig(
+            requiresApiKey: false,
+            maxConnectAttempts: 1,
+          ),
+          dio: unrelated,
+        ).stream(_request(), CancellationToken()).toList(),
+        throwsA(isNot(isA<ModelContextOverflowException>())),
+      );
+    },
+  );
 }
 
 ModelRequest _request({
@@ -909,6 +960,33 @@ final class _SequenceAdapter implements HttpClientAdapter {
       );
     }
     return ResponseBody.fromString(fixture, 200);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// Rejects every request with a 400 carrying a decoded JSON error body.
+final class _BadRequestAdapter implements HttpClientAdapter {
+  _BadRequestAdapter(this.body);
+
+  final Map<String, dynamic> body;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    throw DioException(
+      requestOptions: options,
+      type: DioExceptionType.badResponse,
+      response: Response<Object?>(
+        requestOptions: options,
+        statusCode: 400,
+        data: body,
+      ),
+    );
   }
 
   @override

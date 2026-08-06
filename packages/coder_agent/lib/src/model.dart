@@ -43,6 +43,23 @@ class AgentCancelledException implements Exception {
   const AgentCancelledException();
 }
 
+/// A provider refused a request because the conversation outgrew its context
+/// window.
+///
+/// Every adapter classifies this one failure itself, because the runner has to
+/// tell "the history no longer fits" apart from every other transport error:
+/// the first is recoverable by compacting, the rest are not.
+class ModelContextOverflowException implements Exception {
+  /// Creates a [ModelContextOverflowException].
+  const ModelContextOverflowException(this.message);
+
+  /// The provider's own wording, kept for the failure surfaced to the user.
+  final String message;
+
+  @override
+  String toString() => 'ModelContextOverflowException: $message';
+}
+
 /// ModelToolDefinition defines a public contract.
 class ModelToolDefinition {
   /// Creates a [ModelToolDefinition].

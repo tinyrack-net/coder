@@ -1528,6 +1528,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatContextReset => 'New context window';
 
   @override
+  String get chatContextCompacted => 'Conversation summarized';
+
+  @override
+  String get composerCommandCompactLabel => 'compact';
+
+  @override
+  String get composerCommandCompactDescription =>
+      'Summarize the conversation to free the context window.';
+
+  @override
   String get sessionContextMeter => 'Context';
 
   @override

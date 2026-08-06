@@ -642,6 +642,7 @@ void main() {
         prompt: 'hello',
       );
       await client.cancelTurn(agent.id);
+      await client.compactSession(agent.id);
       await client.resolveApproval(approvalId: approval.id, approved: true);
       await client.notePendingInput(agent.id);
       expect(
@@ -794,6 +795,7 @@ void main() {
           RpcMethod.providerCustomDelete,
           RpcMethod.turnStart,
           RpcMethod.turnCancel,
+          RpcMethod.sessionCompact,
           RpcMethod.approvalResolve,
           RpcMethod.userQuestionAnswer,
           RpcMethod.sessionPendingInput,
@@ -803,6 +805,7 @@ void main() {
       expect(states, isNot(contains(ClientConnectionState.disconnected)));
     },
     tags: const <String>[
+      'feature_test__context_compaction__contract',
       'feature_test__daemon_management__contract',
       'feature_test__daemon_authentication__contract',
       'feature_test__workspace_catalog__contract',
@@ -1294,6 +1297,7 @@ void _registerFixtureMethods(
     RpcMethod.providerCustomDelete: const <String, dynamic>{},
     RpcMethod.turnStart: const TurnStartResultDto(created: true).toJson(),
     RpcMethod.turnCancel: const <String, dynamic>{},
+    RpcMethod.sessionCompact: const <String, dynamic>{},
     RpcMethod.approvalResolve: ApprovalResultDto(approval: approval).toJson(),
     RpcMethod.sessionPendingInput: const <String, dynamic>{},
     RpcMethod.userQuestionAnswer: UserQuestionResultDto(

@@ -72,6 +72,40 @@ class OpenAIProviderException implements Exception {
   String toString() => 'OpenAIProviderException: $message';
 }
 
+/// Error codes every OpenAI-compatible API uses for an oversized prompt.
+const Set<String> _contextOverflowCodes = <String>{
+  'context_length_exceeded',
+  'string_above_max_length',
+};
+
+/// Wordings used by servers that report the overflow without a code.
+const List<String> _contextOverflowPhrases = <String>[
+  'maximum context length',
+  'context window',
+  'too many tokens',
+];
+
+/// Decides whether a provider failure means the history no longer fits.
+///
+/// Both adapters share this so a compaction retry is triggered by the same
+/// signal regardless of which API the provider speaks. Matching is broader than
+/// the code alone because self-hosted runtimes report the same condition in
+/// prose only.
+bool isContextOverflowFailure(String? code, String message) {
+  if (code != null && _contextOverflowCodes.contains(code)) return true;
+  final lowered = message.toLowerCase();
+  return _contextOverflowPhrases.any(lowered.contains);
+}
+
+/// Reads the `error.code` out of an OpenAI error envelope.
+String? contextOverflowCode(Object? body) {
+  if (body is! Map) return null;
+  final error = body['error'];
+  if (error is! Map) return null;
+  final code = error['code'];
+  return code is String ? code : null;
+}
+
 /// OpenAIResponsesProvider defines a public contract.
 class OpenAIResponsesProvider implements ModelProvider {
   /// Creates a [OpenAIResponsesProvider].
@@ -121,6 +155,17 @@ class OpenAIResponsesProvider implements ModelProvider {
         break;
       } on DioException catch (error) {
         if (CancelToken.isCancel(error)) throw const AgentCancelledException();
+        final body = error.response?.data;
+        // An oversized prompt is rejected before the stream opens, so it has to
+        // be classified here rather than among the SSE events.
+        if (isContextOverflowFailure(
+          contextOverflowCode(body),
+          body == null ? error.message ?? '$error' : '$body',
+        )) {
+          throw ModelContextOverflowException(
+            body == null ? error.message ?? '$error' : '$body',
+          );
+        }
         lastError = error;
         if (!_isRetryable(error) || attempt == _config.maxConnectAttempts) {
           rethrow;
@@ -358,9 +403,8 @@ class OpenAIResponsesProvider implements ModelProvider {
             usage: _usage(responseMap['usage']),
           );
         case 'response.failed':
-          throw OpenAIProviderException(_errorMessage(event));
         case 'error':
-          throw OpenAIProviderException(_errorMessage(event));
+          throw _streamFailure(event);
       }
     }
   }
@@ -424,12 +468,36 @@ class OpenAIResponsesProvider implements ModelProvider {
       details is Map ? _count(details[key]) : 0;
 
   String _errorMessage(Map<String, dynamic> event) {
-    final error = event['error'];
+    final error = _errorEnvelope(event);
     if (error is Map && error['message'] is String) {
       return error['message'] as String;
     }
     return event['message'] as String? ??
         'OpenAI Responses API request failed.';
+  }
+
+  /// A failure the model context can no longer hold, or a plain adapter error.
+  ///
+  /// `response.failed` nests the envelope under `response`, while a bare
+  /// `error` event carries it at the top level.
+  Exception _streamFailure(Map<String, dynamic> event) {
+    final message = _errorMessage(event);
+    final envelope = _errorEnvelope(event);
+    final code = envelope is Map && envelope['code'] is String
+        ? envelope['code'] as String
+        : null;
+    if (isContextOverflowFailure(code, message)) {
+      return ModelContextOverflowException(message);
+    }
+    return OpenAIProviderException(message);
+  }
+
+  Object? _errorEnvelope(Map<String, dynamic> event) {
+    final direct = event['error'];
+    if (direct is Map) return direct;
+    final response = event['response'];
+    if (response is Map && response['error'] is Map) return response['error'];
+    return direct;
   }
 
   bool _isRetryable(DioException error) {

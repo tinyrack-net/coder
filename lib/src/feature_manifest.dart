@@ -618,6 +618,20 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'context.compaction',
+    description:
+        'Summarizes the conversation and replaces the model context window '
+        'when its token budget is spent, when the user asks, or when a '
+        'provider refuses the history as too long.',
+    apiMethods: <String>['compactSession'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'tool.context.budget',
     description:
         'Normalizes provider token counters, reports the tokens left in the '

@@ -496,6 +496,7 @@ class _ClientSession {
       RpcMethod.providerCustomDelete,
       RpcMethod.turnStart,
       RpcMethod.turnCancel,
+      RpcMethod.sessionCompact,
       RpcMethod.approvalResolve,
       RpcMethod.userQuestionAnswer,
       RpcMethod.sessionPendingInput,
@@ -1048,6 +1049,10 @@ class _ClientSession {
       case RpcMethod.turnCancel:
         final request = SessionIdParamsDto.fromJson(payload);
         await agents.cancelTurn(request.sessionId);
+        return const <String, dynamic>{};
+      case RpcMethod.sessionCompact:
+        final request = SessionIdParamsDto.fromJson(payload);
+        await agents.compactSession(request.sessionId);
         return const <String, dynamic>{};
       case RpcMethod.approvalResolve:
         final request = ApprovalResolveParamsDto.fromJson(payload);

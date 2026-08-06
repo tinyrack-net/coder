@@ -435,6 +435,31 @@ void main() {
   );
 
   testWidgets(
+    'a compaction draws its own divider',
+    (tester) async {
+      // It reads differently from a reset: the work above was carried forward
+      // as a summary rather than dropped.
+      await pump(tester, <TimelineEventDto>[
+        event('context.compacted', <String, dynamic>{
+          'retained': 3,
+          'trigger': 'auto',
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-context-compacted')),
+        findsOne,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('chat-context-reset')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__context_compaction__widget'],
+  );
+
+  testWidgets(
     'a rejected context reset stays visible as a tool row',
     (tester) async {
       await pump(tester, <TimelineEventDto>[

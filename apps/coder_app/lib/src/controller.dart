@@ -390,6 +390,15 @@ class SessionsController extends _$SessionsController {
     (api) => api.updateSessionMode(sessionId, mode),
   );
 
+  /// Summarizes one session's conversation and starts a fresh window.
+  ///
+  /// Nothing is patched optimistically: the meter only moves once the daemon
+  /// has actually replaced the window, and it emits the session itself.
+  Future<void> compact(String sessionId) async {
+    final api = await _requireHostApi(ref, hostId);
+    await api.compactSession(sessionId);
+  }
+
   /// Sets or clears the provider and model override of one session.
   Future<SessionDto> setModel(
     String sessionId,

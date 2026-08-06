@@ -151,6 +151,7 @@ class ChatItemView extends StatelessWidget {
       ChatSleep() => ChatSleepCard(sleep: value),
       ChatDeferredTools() => ChatDeferredToolsLine(notice: value),
       ChatContextReset() => ChatContextResetLine(reset: value),
+      ChatContextCompacted() => ChatContextCompactedLine(compacted: value),
       ChatUsage() => ChatUsageLine(usage: value),
       ChatUnknownEvent() => ChatUnknownEventLine(event: value),
     };

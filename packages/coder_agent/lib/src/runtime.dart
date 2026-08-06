@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_agent/src/compaction.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/plan_mode_prompt.dart';
 import 'package:coder_agent/src/skills.dart';
@@ -51,6 +52,7 @@ class AgentRunRequest {
     this.customSystemPrompt,
     this.skills = const <SkillSummary>[],
     this.contextWindowTokens,
+    this.priorUsage = const ModelUsage(),
   });
 
   /// Tokens this model's context window holds, when the catalog knows one.
@@ -58,6 +60,13 @@ class AgentRunRequest {
   /// A plain int rather than the provider DTO, so this package never learns
   /// about provider catalogs.
   final int? contextWindowTokens;
+
+  /// What the window already held when this turn started.
+  ///
+  /// A turn can begin on a window an earlier turn already filled, so the first
+  /// request has to be checked against the carried-over usage rather than
+  /// waiting for a response this turn may never get.
+  final ModelUsage priorUsage;
 
   /// The sessionId public API member.
   final String sessionId;
@@ -105,6 +114,9 @@ class AgentRunRequest {
   final List<SkillSummary> skills;
 }
 
+/// Stands in for "no compaction has happened yet" in a token comparison.
+const int _unbounded = 1 << 62;
+
 /// AgentRunResult defines a public contract.
 class AgentRunResult {
   /// Creates a [AgentRunResult].
@@ -132,6 +144,7 @@ class AgentRunner {
     required this._onProviderItems,
     this._contextResets,
     this._pendingTurnInput,
+    this._compactor,
     ApprovalPolicy Function(PermissionMode mode)? policyFactory,
   }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool},
        _policyFactory = policyFactory ?? DefaultApprovalPolicy.new {
@@ -158,6 +171,9 @@ class AgentRunner {
 
   /// Discards persisted history when a tool asks for a fresh window.
   final ContextResetCoordinator? _contextResets;
+
+  /// Summarizes the conversation when the window runs out; null disables it.
+  final ConversationCompactor? _compactor;
 
   /// Externally queued input drained at every message boundary.
   final TurnInputSource? _pendingTurnInput;
@@ -225,6 +241,9 @@ class AgentRunner {
     var toolRounds = 0;
     var turnUsage = const ModelUsage();
     var resetRequested = false;
+    // What the window held when it was last compacted, so a compaction that
+    // failed to shrink it is not repeated every round.
+    var lastCompactionTokens = _unbounded;
     _restoreSurfaced(request.history);
     await _onStatus(SessionStatus.running);
     if (_deferredCount > 0) {
@@ -242,6 +261,11 @@ class AgentRunner {
     await _onProviderItems(<ConversationItem>[userItem]);
 
     try {
+      // An earlier turn can have left the window full, in which case this turn
+      // would overflow on its very first request.
+      if (_shouldCompact(request.priorUsage, request)) {
+        await _compactWindow(input, persisted, request, cancellation, 'auto');
+      }
       while (true) {
         cancellation.throwIfCancelled();
 
@@ -257,41 +281,63 @@ class AgentRunner {
           });
         }
 
-        final functionCalls = <ModelFunctionCall>[];
+        var functionCalls = <ModelFunctionCall>[];
         ModelResponseCompleted? completed;
-        final modelRequest = ModelRequest(
-          model: request.model,
-          reasoningEffort: request.reasoningEffort,
-          serviceTier: request.serviceTier,
-          instructions: _instructions(request),
-          history: input,
-          safetyIdentifier: request.safetyIdentifier,
-          tools: _advertisedTools(),
-        );
+        // One recovery per round: a second refusal means compacting is not
+        // what is oversized, and retrying would only spend another summary.
+        var overflowRetried = false;
+        while (completed == null) {
+          functionCalls = <ModelFunctionCall>[];
+          var recovered = false;
+          final modelRequest = ModelRequest(
+            model: request.model,
+            reasoningEffort: request.reasoningEffort,
+            serviceTier: request.serviceTier,
+            instructions: _instructions(request),
+            history: List<ConversationItem>.unmodifiable(input),
+            safetyIdentifier: request.safetyIdentifier,
+            tools: _advertisedTools(),
+          );
 
-        await for (final event in _provider.stream(
-          modelRequest,
-          cancellation,
-        )) {
-          switch (event) {
-            case ModelTextDelta(:final delta):
-              await _onEvent('assistant.delta', <String, dynamic>{
-                'text': delta,
-              });
-            case ModelFunctionCall():
-              functionCalls.add(event);
-              await _onEvent('tool.requested', <String, dynamic>{
-                'callId': event.callId,
-                'name': event.name,
-                'arguments': event.arguments,
-              });
-            case ModelResponseCompleted():
-              completed = event;
+          try {
+            await for (final event in _provider.stream(
+              modelRequest,
+              cancellation,
+            )) {
+              switch (event) {
+                case ModelTextDelta(:final delta):
+                  await _onEvent('assistant.delta', <String, dynamic>{
+                    'text': delta,
+                  });
+                case ModelFunctionCall():
+                  functionCalls.add(event);
+                  await _onEvent('tool.requested', <String, dynamic>{
+                    'callId': event.callId,
+                    'name': event.name,
+                    'arguments': event.arguments,
+                  });
+                case ModelResponseCompleted():
+                  completed = event;
+              }
+            }
+          } on ModelContextOverflowException {
+            // The catalog window can be absent or wrong, so the provider's own
+            // refusal is the only reliable signal for some models.
+            if (overflowRetried || _compactor == null) rethrow;
+            overflowRetried = true;
+            recovered = true;
+            await _compactWindow(
+              input,
+              persisted,
+              request,
+              cancellation,
+              'overflow',
+            );
           }
-        }
 
-        if (completed == null) {
-          throw StateError('Model stream ended without response.completed.');
+          if (completed == null && !recovered) {
+            throw StateError('Model stream ended without response.completed.');
+          }
         }
         final assistant = completed.assistant;
         input.add(assistant);
@@ -436,6 +482,16 @@ class AgentRunner {
         if (resetRequested) {
           resetRequested = false;
           await _startNewContextWindow(input, persisted, request);
+        } else if (_shouldCompact(turnUsage, request) &&
+            turnUsage.contextTokens < lastCompactionTokens) {
+          // Like the reset above, this waits for the whole round: compacting
+          // between a tool call and its output would strand the output.
+          //
+          // A window still over budget after being compacted cannot be helped
+          // by compacting it again, so the comparison stops a long turn from
+          // buying one summary per round for no gain.
+          lastCompactionTokens = turnUsage.contextTokens;
+          await _compactWindow(input, persisted, request, cancellation, 'auto');
         }
       }
     } on AgentCancelledException {
@@ -447,6 +503,52 @@ class AgentRunner {
       await _onStatus(SessionStatus.failed, error: '$error');
       rethrow;
     }
+  }
+
+  /// Whether [usage] has spent enough of this turn's window to compact.
+  bool _shouldCompact(ModelUsage usage, AgentRunRequest request) =>
+      _compactor?.shouldCompact(
+        usage: usage,
+        contextWindowTokens: request.contextWindowTokens,
+      ) ??
+      false;
+
+  /// Replaces the live conversation with a summary of itself.
+  ///
+  /// Unlike `new_context`, nothing of the round survives verbatim, so there is
+  /// no `function_call` left whose output could be orphaned. The coordinator is
+  /// handed exactly what the live input kept, so the database and the in-memory
+  /// history cannot drift apart.
+  Future<void> _compactWindow(
+    List<ConversationItem> input,
+    List<ConversationItem> persisted,
+    AgentRunRequest request,
+    CancellationToken cancellation,
+    String trigger,
+  ) async {
+    final compactor = _compactor;
+    if (compactor == null) return;
+    final compacted = await compactor.compact(
+      history: List<ConversationItem>.unmodifiable(input),
+      target: CompactionTarget(
+        model: request.model,
+        reasoningEffort: request.reasoningEffort,
+        serviceTier: request.serviceTier,
+        safetyIdentifier: request.safetyIdentifier,
+      ),
+      cancellation: cancellation,
+    );
+    input
+      ..clear()
+      ..addAll(compacted);
+    persisted
+      ..clear()
+      ..addAll(compacted);
+    await _contextResets?.reset(compacted);
+    await _onEvent('context.compacted', <String, dynamic>{
+      'retained': compacted.length,
+      'trigger': trigger,
+    });
   }
 
   /// Discards the conversation, keeping only the round that asked for it.

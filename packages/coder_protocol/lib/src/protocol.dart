@@ -206,6 +206,9 @@ abstract final class RpcMethod {
   /// The turnCancel public API member.
   static const String turnCancel = 'turn.cancel';
 
+  /// Summarizes a session's context window and starts the next one.
+  static const String sessionCompact = 'session.compact';
+
   /// The approvalResolve public API member.
   static const String approvalResolve = 'approval.resolve';
 

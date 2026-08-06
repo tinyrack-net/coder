@@ -234,6 +234,9 @@ class SessionService implements SessionRuntimePort {
     final runner = AgentRunner(
       provider: resolvedModel.provider,
       tools: tools,
+      // The summary is written by the model that produced the work, so the
+      // compactor rides the same provider the turn already resolved.
+      compactor: ConversationCompactor(resolvedModel.provider),
       approvals: _DatabaseApprovalCoordinator(
         timeline: _timeline,
         events: _events,
@@ -311,6 +314,9 @@ class SessionService implements SessionRuntimePort {
           ),
           skills: skillSummaries,
           contextWindowTokens: resolvedModel.limits?.context,
+          // What the live window already holds, so a turn that starts on a
+          // full window compacts before it samples rather than failing.
+          priorUsage: ModelUsage(totalTokens: session.contextTokens),
         ),
         cancellation,
       ),
@@ -408,6 +414,58 @@ class SessionService implements SessionRuntimePort {
   @override
   Future<void> cancelTurn(String sessionId) async =>
       _activeTurns[sessionId]?.cancel();
+
+  /// Summarizes a session's context window on request and retires it.
+  ///
+  /// Only between turns: a running turn owns the live history, so rewriting it
+  /// underneath would strand a tool call halfway through its round. The
+  /// automatic trigger inside a turn goes through the runner instead.
+  Future<void> compactSession(String sessionId) async {
+    final session = await _sessions.getById(sessionId);
+    if (session == null) throw StateError('Session not found: $sessionId');
+    if (_activeTurns.containsKey(sessionId)) {
+      throw StateError('Cannot compact while a turn is running.');
+    }
+    final history = await _hydrateHistory(
+      await _timeline.providerHistory(sessionId),
+    );
+    // Nothing to hand off, and a summary request on an empty history would
+    // spend a model call to say so.
+    if (history.isEmpty) return;
+
+    final definition = await _definitions.resolve(session.agentDefinitionId);
+    final sessionModel = session.model;
+    final resolvedModel = sessionModel == null
+        ? await _providers.resolveAgentModel(definition.model)
+        : await _providers.resolveExplicitModel(
+            sessionModel.providerConnectionId,
+            sessionModel.modelId,
+          );
+    final compacted = await ConversationCompactor(resolvedModel.provider)
+        .compact(
+          history: history,
+          target: CompactionTarget(
+            model: resolvedModel.modelId,
+            reasoningEffort:
+                session.reasoningEffort ?? definition.reasoningEffort,
+            serviceTier: session.serviceTier,
+            safetyIdentifier: _safetyIdentifier,
+          ),
+          cancellation: CancellationToken(),
+        );
+
+    await _timeline.resetContextWindow(sessionId, compacted);
+    await _appendEvent(
+      sessionId: sessionId,
+      turnId: session.activeTurnId,
+      type: 'context.compacted',
+      data: <String, dynamic>{
+        'retained': compacted.length,
+        'trigger': 'manual',
+      },
+    );
+    _emitSession(await _sessions.getById(sessionId));
+  }
 
   /// Switches one session between planning and normal collaboration.
   ///
@@ -612,7 +670,7 @@ class SessionService implements SessionRuntimePort {
 
   Future<void> _appendEvent({
     required String sessionId,
-    required String turnId,
+    required String? turnId,
     required String type,
     required Map<String, dynamic> data,
   }) async {

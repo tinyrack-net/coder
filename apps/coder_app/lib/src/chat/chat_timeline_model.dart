@@ -299,6 +299,19 @@ final class ChatContextReset extends ChatItem {
   });
 }
 
+/// The point where the model's history was replaced by a summary of itself.
+///
+/// Unlike [ChatContextReset] the work above was carried forward rather than
+/// dropped, so the two read differently even though both retire a window.
+final class ChatContextCompacted extends ChatItem {
+  /// Creates a compaction divider.
+  const ChatContextCompacted({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+  });
+}
+
 /// A notice that some tools were withheld from the model's tool list.
 final class ChatDeferredTools extends ChatItem {
   /// Creates a deferred-tools notice.
@@ -567,6 +580,17 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           _StaticBuilder(
             ChatContextReset(
               key: 'context-reset-${event.sequence}',
+              turnId: turnId,
+              createdAt: event.createdAt,
+            ),
+          ),
+        );
+      case 'context.compacted':
+        closeAssistant(turnId);
+        builders.add(
+          _StaticBuilder(
+            ChatContextCompacted(
+              key: 'context-compacted-${event.sequence}',
               turnId: turnId,
               createdAt: event.createdAt,
             ),
