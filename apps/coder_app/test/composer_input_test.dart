@@ -252,6 +252,57 @@ void main() {
   );
 
   testWidgets(
+    'the card carries the focus of everything it frames',
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+    (tester) async {
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            onSubmit: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      bool ringed() => tester.widget<TRCard>(find.byType(TRCard)).focused;
+      Color inputBorder() => tester
+          .widgetList<AnimatedContainer>(
+            find.descendant(
+              of: find.byKey(inputKey),
+              matching: find.byType(AnimatedContainer),
+            ),
+          )
+          .map((container) => container.foregroundDecoration)
+          .whereType<BoxDecoration>()
+          .map((decoration) => decoration.border!.top.color)
+          .first;
+
+      expect(ringed(), isFalse);
+
+      await tester.tap(find.byKey(inputKey));
+      await tester.pumpAndSettle();
+      expect(ringed(), isTrue);
+      expect(
+        inputBorder(),
+        Colors.transparent,
+        reason: 'the card rings the group, so the field must not ring itself',
+      );
+
+      // Tabbing on to an action inside the card keeps the group ringed: the
+      // prompt and its controls are one control to the reader.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(ringed(), isTrue);
+
+      tester.binding.focusManager.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      expect(ringed(), isFalse);
+    },
+  );
+
+  testWidgets(
     'the settings toolbar drops labels, then chips, as width runs out',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
@@ -293,8 +344,8 @@ void main() {
         find.byKey(const ValueKey('session-composer-mode')),
       );
 
-      // Narrow: the chips are still all there, as icons.
-      await pumpAt(420);
+      // Narrow: the chips are still all there, the trailing ones as icons.
+      await pumpAt(300);
       expect(tester.takeException(), isNull);
       for (final chip in chips) {
         expect(find.byKey(ValueKey<String>(chip)), findsOneWidget);
