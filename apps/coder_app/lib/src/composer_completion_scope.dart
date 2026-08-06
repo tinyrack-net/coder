@@ -39,6 +39,7 @@ class ComposerCompletionScope extends ConsumerStatefulWidget {
     required this.builder,
     this.workspaceId,
     this.worktreeId,
+    this.excludedClientActions = const <ClientCommandAction>{},
     super.key,
   });
 
@@ -50,6 +51,9 @@ class ComposerCompletionScope extends ConsumerStatefulWidget {
 
   /// Worktree searched for file mentions; null offers commands only.
   final String? worktreeId;
+
+  /// App actions this composer cannot carry out, hidden from the catalog.
+  final Set<ClientCommandAction> excludedClientActions;
 
   /// Builds the composer with the resolved completion state.
   final Widget Function(BuildContext context, ComposerCompletion completion)
@@ -69,13 +73,38 @@ class _ComposerCompletionScopeState
     final l10n = AppLocalizations.of(context);
     // The app's own commands always exist; the daemon-provided ones layer on
     // once its catalogs load, so the list is never empty while offline.
-    final commands =
-        ref
-            .watch(
-              composerCommandsProvider(widget.hostId, widget.workspaceId),
-            )
-            .value ??
-        localizedClientCommands(l10n);
+    // Filtering here rather than at the call site keeps the offered rows and
+    // the catalog the composer parses a submission against in step.
+    //
+    // The two catalogs are merged here rather than behind a derived provider
+    // on purpose. A composer sits inside the page's LayoutBuilder, so this
+    // build can run during layout; a derived provider watching these two would
+    // invalidate itself as a host connects or disconnects and ask the scope to
+    // rebuild mid-layout, which Flutter rejects. Watching the sources directly
+    // keeps the invalidation on the widget side, where a rebuild is legal.
+    final commands = withoutClientActions(
+      mergeComposerCommands(
+        client: localizedClientCommands(l10n),
+        agent:
+            ref
+                .watch(
+                  agentCommandsControllerProvider(
+                    widget.hostId,
+                    widget.workspaceId,
+                  ),
+                )
+                .value ??
+            const <AgentCommandDto>[],
+        skills:
+            ref
+                .watch(
+                  skillsControllerProvider(widget.hostId, widget.workspaceId),
+                )
+                .value ??
+            const <SkillDto>[],
+      ),
+      widget.excludedClientActions,
+    );
 
     return widget.builder(
       context,

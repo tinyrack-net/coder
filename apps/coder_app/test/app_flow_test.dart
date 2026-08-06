@@ -2464,6 +2464,54 @@ void main() {
     },
     tags: const <String>['feature_test__turn_question__widget'],
   );
+
+  testWidgets(
+    'the draft composer runs a client command instead of sending it',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      // The draft pane creates its session from the first prompt, so `/new`
+      // has no session to be new relative to.
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        '/',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('mode'), findsOneWidget);
+      expect(find.text('new'), findsNothing);
+
+      expect(find.text('Plan'), findsNothing);
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        '/mode',
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Plan'), findsOneWidget);
+      expect(api.createdSessions, isEmpty);
+      expect(api.startedPrompts, isEmpty);
+    },
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+  );
 }
 
 Future<GoRouter> _pumpRoute(

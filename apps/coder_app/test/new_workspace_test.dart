@@ -8,6 +8,7 @@ import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -594,6 +595,190 @@ void main() {
       expect(find.text('먼저 프로젝트를 추가하세요.'), findsOneWidget);
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
+    'the home composer offers the commands it can carry out',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[_home],
+        worktrees: <WorktreeDto>[_homeCheckout],
+        commands: const <AgentCommandDto>[
+          AgentCommandDto(
+            id: 'review',
+            name: 'review',
+            description: 'Reviews the working diff.',
+            source: AgentCommandSource.config,
+            sourcePath: '/config/commands/review.md',
+            body: 'Review the diff.',
+          ),
+        ],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        '/',
+      );
+      await tester.pumpAndSettle();
+
+      // All three sources reach the one catalog: the app's own commands, the
+      // daemon's authored commands, and its enabled skills.
+      expect(find.text('mode'), findsOneWidget);
+      expect(find.text('agents'), findsOneWidget);
+      expect(find.text('review'), findsOneWidget);
+      expect(find.text('commit'), findsOneWidget);
+      // A session only exists once the first prompt starts one, so there is
+      // nothing for `/new` to be new relative to.
+      expect(find.text('new'), findsNothing);
+    },
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+  );
+
+  testWidgets(
+    'a client command typed in the home composer runs instead of sending',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[_home],
+        worktrees: <WorktreeDto>[_homeCheckout],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectModel(tester);
+
+      expect(find.text('Plan'), findsNothing);
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        '/mode',
+      );
+      await tester.pumpAndSettle();
+      // Escape hands the token back so Enter submits rather than completing.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Plan'), findsOneWidget);
+      expect(api.createdSessions, isEmpty);
+      expect(api.startedPrompts, isEmpty);
+    },
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+  );
+
+  testWidgets(
+    'a settings command from the home composer opens that screen',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[_home],
+        worktrees: <WorktreeDto>[_homeCheckout],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        '/agents',
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/settings/agents',
+      );
+      expect(api.createdSessions, isEmpty);
+    },
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+  );
+
+  testWidgets(
+    'the home composer completes a file mention from the home folder',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[_home],
+        worktrees: <WorktreeDto>[_homeCheckout],
+        files: <String, List<String>>{
+          _homeCheckout.id: <String>['notes/todo.md'],
+        },
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'read @todo',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('notes/todo.md'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<TRTextField>(
+              find.byKey(const ValueKey('session-composer-input')),
+            )
+            .controller!
+            .text,
+        'read @notes/todo.md ',
+      );
+      expect(api.startedPrompts, isEmpty);
+    },
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+  );
+
+  testWidgets(
+    'a project whose checkout does not exist yet offers no file mentions',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        files: <String, List<String>>{
+          checkout.id: <String>['lib/parser.dart'],
+        },
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Coder');
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'read @parser',
+      );
+      await tester.pumpAndSettle();
+
+      // The worktree is created on submit, so there is nothing to search yet.
+      expect(find.text('lib/parser.dart'), findsNothing);
+      expect(api.searchedQueries, isEmpty);
+
+      // Commands still complete without a checkout.
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        '/mo',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('mode'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__composer_file_mention__widget'],
   );
 }
 

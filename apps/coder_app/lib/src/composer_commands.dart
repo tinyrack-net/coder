@@ -194,6 +194,26 @@ List<ComposerCommand> mergeComposerCommands({
   return List<ComposerCommand>.unmodifiable(commands);
 }
 
+/// Hides the app commands a composer cannot carry out.
+///
+/// A composer that has no session yet cannot start another one, and offering
+/// an action that would do nothing is worse than not offering it. Only client
+/// commands are eligible: a skill or agent command named after an action is
+/// authored on disk and stays.
+List<ComposerCommand> withoutClientActions(
+  List<ComposerCommand> commands,
+  Set<ClientCommandAction> excluded,
+) {
+  if (excluded.isEmpty) return commands;
+  return List<ComposerCommand>.unmodifiable(
+    commands.where(
+      (command) =>
+          command.kind != ComposerCommandKind.client ||
+          !excluded.contains(command.action),
+    ),
+  );
+}
+
 /// One command ranked against a `/` query, with its highlight spans.
 @immutable
 final class RankedComposerCommand {

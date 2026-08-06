@@ -42,6 +42,72 @@ void main() {
     List<SkillDto> skills = const <SkillDto>[],
   }) => mergeComposerCommands(client: client, agent: agent, skills: skills);
 
+  group('withoutClientActions', () {
+    test(
+      'drops only the named app commands and keeps the order',
+      () {
+        final merged = merge(
+          client: clientComposerCommands,
+          agent: <AgentCommandDto>[agentCommand()],
+          skills: <SkillDto>[skill()],
+        );
+
+        final filtered = withoutClientActions(
+          merged,
+          const <ClientCommandAction>{ClientCommandAction.newSession},
+        );
+
+        expect(
+          filtered.map((command) => command.name),
+          isNot(contains('new')),
+        );
+        expect(
+          filtered.map((command) => command.name),
+          orderedEquals(
+            merged
+                .where((command) => command.name != 'new')
+                .map((command) => command.name),
+          ),
+        );
+      },
+      tags: const <String>['feature_test__composer_slash_command__unit'],
+    );
+
+    test(
+      'never drops a skill or agent command',
+      () {
+        final merged = merge(
+          agent: <AgentCommandDto>[agentCommand(name: 'new')],
+          skills: <SkillDto>[skill(id: 'clear', name: 'clear')],
+        );
+
+        final filtered = withoutClientActions(
+          merged,
+          ClientCommandAction.values.toSet(),
+        );
+
+        expect(
+          filtered.map((command) => command.name),
+          containsAll(<String>['new', 'clear']),
+        );
+      },
+      tags: const <String>['feature_test__composer_slash_command__unit'],
+    );
+
+    test(
+      'returns the same catalog when nothing is excluded',
+      () {
+        final merged = merge(client: clientComposerCommands);
+
+        expect(
+          withoutClientActions(merged, const <ClientCommandAction>{}),
+          orderedEquals(merged),
+        );
+      },
+      tags: const <String>['feature_test__composer_slash_command__unit'],
+    );
+  });
+
   group('mergeComposerCommands', () {
     test(
       'offers every source in one catalog sorted by name',
