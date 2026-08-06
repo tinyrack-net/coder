@@ -988,7 +988,11 @@ void main() {
       // Sending moved focus to the send button; the flow below types straight
       // into the field, so hand it back.
       await tester.tap(composerInput);
-      await tester.pump();
+      await pumpUntilCondition(
+        tester,
+        () => tester.widget<EditableText>(composerInput).focusNode.hasFocus,
+        'the composer to take focus',
+      );
 
       await tester.enterText(
         find.byKey(composer),
@@ -1705,6 +1709,12 @@ void main() {
       expect(
         find.byKey(const ValueKey('new-workspace-branch')),
         findsNothing,
+      );
+      // The send button is disabled until a model resolves, so tapping before
+      // that does nothing and no session is ever created.
+      await _waitForComposerReady(
+        tester,
+        const ValueKey<String>('session-composer-send'),
       );
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
