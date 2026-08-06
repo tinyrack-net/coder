@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:coder_app/src/desktop_startup.dart';
@@ -50,9 +51,13 @@ abstract interface class DesktopWindow {
 /// Owns the platform tray, menu-bar, or notification-area icon.
 abstract interface class TrayIcon {
   /// Creates the icon and menu, routing selections to [onSelected] by row key.
+  ///
+  /// [onActivated] runs when the user clicks the icon itself on the platforms
+  /// where that gesture means "bring the app back".
   Future<void> install({
     required TrayMenuModel menu,
     required void Function(String itemKey) onSelected,
+    required void Function() onActivated,
   });
 
   /// Replaces the menu and tooltip after a locale or daemon-state change.
@@ -266,6 +271,7 @@ final class PluginTrayIcon implements TrayIcon {
     this.setIcon = _setTrayIcon,
     this.setToolTip = _setTrayToolTip,
     this.setContextMenu = _setTrayContextMenu,
+    this.popUpMenu = _popUpTrayContextMenu,
     this.addTrayListener = _addTrayListener,
     this.removeTrayListener = _removeTrayListener,
     this.destroyTray = _destroyTray,
@@ -283,6 +289,9 @@ final class PluginTrayIcon implements TrayIcon {
   /// Injected context-menu assignment.
   final Future<void> Function(Menu) setContextMenu;
 
+  /// Injected context-menu popup.
+  final Future<void> Function({required bool bringAppToFront}) popUpMenu;
+
   /// Injected listener registration.
   final void Function(TrayListener) addTrayListener;
 
@@ -298,9 +307,14 @@ final class PluginTrayIcon implements TrayIcon {
   Future<void> install({
     required TrayMenuModel menu,
     required void Function(String itemKey) onSelected,
+    required void Function() onActivated,
   }) async {
     await destroy();
-    final relay = _TraySelectionRelay(onSelected);
+    final relay = _TraySelectionRelay(
+      onSelected: onSelected,
+      onLeftClick: _leftClick(onActivated),
+      onRightClick: _rightClick,
+    );
     _relay = relay;
     addTrayListener(relay);
     await setIcon(
@@ -326,6 +340,36 @@ final class PluginTrayIcon implements TrayIcon {
     removeTrayListener(relay);
     await destroyTray();
   }
+
+  /// What a left click on the icon means on this platform.
+  ///
+  /// Windows treats it as "bring the app back". macOS opens the menu from
+  /// either button, the way every other menu-bar item does. Linux never
+  /// reports icon clicks at all, because the app indicator owns the gesture.
+  void Function() _leftClick(void Function() onActivated) => switch (platform) {
+    TargetPlatform.windows => onActivated,
+    TargetPlatform.macOS => _rightClick,
+    _ => _ignoreClick,
+  };
+
+  /// Shows the menu the platform will not show on its own.
+  ///
+  /// Only the Linux plugin attaches the menu to the icon; on Windows and macOS
+  /// the plugin merely reports the click, so nothing appears unless the app
+  /// asks. Windows also needs the window foregrounded, or `TrackPopupMenu`
+  /// leaves a menu that a click elsewhere cannot dismiss.
+  void _rightClick() {
+    switch (platform) {
+      case TargetPlatform.windows:
+        unawaited(popUpMenu(bringAppToFront: true));
+      case TargetPlatform.macOS:
+        unawaited(popUpMenu(bringAppToFront: false));
+      case _:
+        break;
+    }
+  }
+
+  static void _ignoreClick() {}
 }
 
 /// Converts the app's tray presentation into a native menu.
@@ -342,15 +386,29 @@ Menu _nativeMenu(TrayMenuModel menu) => Menu(
 );
 
 final class _TraySelectionRelay with TrayListener {
-  _TraySelectionRelay(this.onSelected);
+  _TraySelectionRelay({
+    required this.onSelected,
+    required this.onLeftClick,
+    required this.onRightClick,
+  });
 
   final void Function(String itemKey) onSelected;
+  final void Function() onLeftClick;
+  final void Function() onRightClick;
 
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
     final key = menuItem.key;
     if (key != null) onSelected(key);
   }
+
+  // Windows reports a double click as two of these, so whatever they do has to
+  // be idempotent.
+  @override
+  void onTrayIconMouseDown() => onLeftClick();
+
+  @override
+  void onTrayIconRightMouseDown() => onRightClick();
 }
 
 /// Production login-item adapter backed by `launch_at_startup`.
@@ -446,6 +504,17 @@ Future<void> _setTrayIcon(String path, {required bool isTemplate}) =>
 Future<void> _setTrayToolTip(String tooltip) => trayManager.setToolTip(tooltip);
 
 Future<void> _setTrayContextMenu(Menu menu) => trayManager.setContextMenu(menu);
+
+Future<void> _popUpTrayContextMenu({required bool bringAppToFront}) {
+  if (!bringAppToFront) return trayManager.popUpContextMenu();
+  // The plugin marks this Windows-only flag deprecated, but it is the only
+  // way to reach the `SetForegroundWindow` that Win32 requires before
+  // `TrackPopupMenu`; without it a click elsewhere cannot dismiss the menu.
+  // It only foregrounds an existing window, so a tray-resident app stays
+  // hidden until the user asks for it.
+  // ignore: deprecated_member_use
+  return trayManager.popUpContextMenu(bringAppToFront: true);
+}
 
 void _addTrayListener(TrayListener listener) =>
     trayManager.addListener(listener);

@@ -171,6 +171,7 @@ void main() {
       List<Menu> menus,
       List<TrayListener> listeners,
       List<bool> templates,
+      List<bool> popUps,
     })
     build({TargetPlatform platform = TargetPlatform.linux}) {
       final icons = <String>[];
@@ -178,6 +179,7 @@ void main() {
       final tooltips = <String>[];
       final menus = <Menu>[];
       final listeners = <TrayListener>[];
+      final popUps = <bool>[];
       return (
         tray: PluginTrayIcon(
           platform: platform,
@@ -187,6 +189,8 @@ void main() {
           },
           setToolTip: (value) async => tooltips.add(value),
           setContextMenu: (value) async => menus.add(value),
+          popUpMenu: ({required bringAppToFront}) async =>
+              popUps.add(bringAppToFront),
           addTrayListener: listeners.add,
           removeTrayListener: listeners.remove,
           destroyTray: () async {},
@@ -196,6 +200,7 @@ void main() {
         menus: menus,
         listeners: listeners,
         templates: templates,
+        popUps: popUps,
       );
     }
 
@@ -218,7 +223,11 @@ void main() {
         final harness = build();
         final selected = <String>[];
 
-        await harness.tray.install(menu: model, onSelected: selected.add);
+        await harness.tray.install(
+          menu: model,
+          onSelected: selected.add,
+          onActivated: () {},
+        );
 
         expect(harness.icons, <String>['assets/tray/tray_icon.png']);
         expect(harness.templates, <bool>[false]);
@@ -252,7 +261,11 @@ void main() {
         expect(windows.tooltips, <String>['Coder']);
 
         final macos = build(platform: TargetPlatform.macOS);
-        await macos.tray.install(menu: model, onSelected: (_) {});
+        await macos.tray.install(
+          menu: model,
+          onSelected: (_) {},
+          onActivated: () {},
+        );
         expect(macos.icons, <String>['assets/tray/tray_icon_template.png']);
         expect(macos.templates, <bool>[true]);
         expect(
@@ -264,13 +277,84 @@ void main() {
     );
 
     test(
+      'Windows pops the menu on right click and activates on left click',
+      () async {
+        final harness = build(platform: TargetPlatform.windows);
+        var activations = 0;
+        await harness.tray.install(
+          menu: model,
+          onSelected: (_) {},
+          onActivated: () => activations += 1,
+        );
+
+        // The Windows plugin only reports the click; nothing shows the menu
+        // unless the app asks for it.
+        harness.listeners.single.onTrayIconRightMouseDown();
+        // Foregrounding the window is what lets a click elsewhere dismiss the
+        // popup, which `TrackPopupMenu` cannot do on a background window.
+        expect(harness.popUps, <bool>[true]);
+        expect(activations, 0);
+
+        // Windows reports a double click as two of these, and showing the
+        // window is idempotent, so both clicks land on the same result.
+        harness.listeners.single.onTrayIconMouseDown();
+        harness.listeners.single.onTrayIconMouseDown();
+        expect(activations, 2);
+        expect(harness.popUps, <bool>[true]);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
+      'macOS opens the menu from either button, as the menu bar does',
+      () async {
+        final harness = build(platform: TargetPlatform.macOS);
+        var activations = 0;
+        await harness.tray.install(
+          menu: model,
+          onSelected: (_) {},
+          onActivated: () => activations += 1,
+        );
+
+        harness.listeners.single.onTrayIconMouseDown();
+        harness.listeners.single.onTrayIconRightMouseDown();
+        expect(harness.popUps, <bool>[false, false]);
+        expect(activations, 0);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
+      'Linux leaves icon clicks to the app indicator, which owns the menu',
+      () async {
+        final harness = build();
+        var activations = 0;
+        await harness.tray.install(
+          menu: model,
+          onSelected: (_) {},
+          onActivated: () => activations += 1,
+        );
+
+        harness.listeners.single.onTrayIconMouseDown();
+        harness.listeners.single.onTrayIconRightMouseDown();
+        expect(harness.popUps, isEmpty);
+        expect(activations, 0);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
       'destroying removes the listener and is inert without an install',
       () async {
         final harness = build();
         await harness.tray.destroy();
         expect(harness.listeners, isEmpty);
 
-        await harness.tray.install(menu: model, onSelected: (_) {});
+        await harness.tray.install(
+          menu: model,
+          onSelected: (_) {},
+          onActivated: () {},
+        );
         expect(harness.listeners, hasLength(1));
         await harness.tray.destroy();
         expect(harness.listeners, isEmpty);

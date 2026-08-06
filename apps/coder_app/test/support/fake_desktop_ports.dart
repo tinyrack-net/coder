@@ -131,6 +131,7 @@ final class FakeTrayIcon implements TrayIcon {
   List<String>? calls;
 
   void Function(String itemKey)? _onSelected;
+  void Function()? _onActivated;
 
   /// The menu the tray is currently showing.
   TrayMenuModel get menu => menus.last;
@@ -138,14 +139,19 @@ final class FakeTrayIcon implements TrayIcon {
   /// Drives a tray selection from a test.
   void select(String itemKey) => _onSelected?.call(itemKey);
 
+  /// Drives a click on the tray icon itself from a test.
+  void activate() => _onActivated?.call();
+
   @override
   Future<void> install({
     required TrayMenuModel menu,
     required void Function(String itemKey) onSelected,
+    required void Function() onActivated,
   }) async {
     installs += 1;
     operations.add('install');
     _onSelected = onSelected;
+    _onActivated = onActivated;
     menus.add(menu);
     await installGate?.future;
   }
@@ -160,6 +166,7 @@ final class FakeTrayIcon implements TrayIcon {
   Future<void> destroy() async {
     destroys += 1;
     _onSelected = null;
+    _onActivated = null;
     calls?.add('destroyTray');
   }
 }
