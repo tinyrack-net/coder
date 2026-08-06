@@ -60,6 +60,9 @@ List<NewWorkspaceProject> collectProjects(
     final host = state.hosts[entry.key];
     final label = host == null ? entry.key : hostLabel(l10n, host);
     for (final workspace in entry.value.workspaces) {
+      // The home workspace exists only to give project-less sessions a working
+      // directory, so it is never one of the projects the user picks from.
+      if (workspace.kind == WorkspaceKind.home) continue;
       projects.add(
         NewWorkspaceProject(
           hostId: entry.key,
@@ -126,11 +129,17 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     final projects = catalog == null
         ? const <NewWorkspaceProject>[]
         : collectProjects(AppLocalizations.of(context), catalog);
-    final project =
-        projects.where((item) => item.key == _projectKey).firstOrNull ??
-        projects.firstOrNull;
+    // A null [_projectKey] means the user picked no project, which is the
+    // starting state: the composer never adopts a project on its own.
+    final project = projects
+        .where((item) => item.key == _projectKey)
+        .firstOrNull;
+    // Without a project the session runs in the home folder of the daemon the
+    // rest of the app is pointed at.
+    final hostId = project?.hostId ?? ref.watch(activeHostIdProvider);
+    final home = hostId == null ? null : catalog?.homeSelection(hostId);
     final isGitProject = project?.workspace.kind == WorkspaceKind.git;
-    final showGitTargets = project == null || isGitProject;
+    final showGitTargets = project != null && isGitProject;
     final branches = project == null || !isGitProject
         ? const <GitBranchDto>[]
         : ref
@@ -146,9 +155,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         : isGitProject
         ? project.worktrees.where((item) => item.id == _worktreeId).firstOrNull
         : _directoryCheckout(project);
-    final agentsAsync = project == null
+    final agentsAsync = hostId == null
         ? null
-        : ref.watch(agentDefinitionsControllerProvider(project.hostId));
+        : ref.watch(agentDefinitionsControllerProvider(hostId));
     final agents = agentsAsync?.value;
     final agentsLoading =
         agentsAsync != null && agentsAsync.isLoading && !agentsAsync.hasValue;
@@ -157,18 +166,18 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     );
     final agent =
         definitions
-            .where((item) => item.id == _draft(project)?.agentDefinitionId)
+            .where((item) => item.id == _draft(hostId)?.agentDefinitionId)
             .firstOrNull ??
         definitions.firstOrNull;
-    final connectionsAsync = project == null
+    final connectionsAsync = hostId == null
         ? null
-        : ref.watch(providerSettingsControllerProvider(project.hostId));
+        : ref.watch(providerSettingsControllerProvider(hostId));
     final connections = connectionsAsync?.value?.connections;
     final connectionsLoading =
         connectionsAsync != null &&
         connectionsAsync.isLoading &&
         !connectionsAsync.hasValue;
-    final draft = _draft(project);
+    final draft = _draft(hostId);
     final effective =
         draft?.model ??
         effectiveModelFor(
@@ -179,9 +188,14 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
               const <String, List<ProviderModelDto>>{},
           defaultModel: connectionsAsync?.value?.defaultModel,
         );
+    // A Git project can create the checkout on submit; every other target has
+    // to already exist.
+    final target = project == null
+        ? home != null
+        : isGitProject || worktree != null;
     final ready =
-        project != null &&
-        (isGitProject || worktree != null) &&
+        hostId != null &&
+        target &&
         agent != null &&
         effective != null &&
         !_submitting;
@@ -216,17 +230,20 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                   SessionComposer(
                     enabled: ready,
                     hint: _hint(
+                      AppLocalizations.of(context),
                       projects,
                       project,
                       worktree,
                       agent,
                       effective,
+                      home: home,
                       loading:
                           catalogLoading || agentsLoading || connectionsLoading,
                     ),
                     header: _targets(
                       projects: projects,
                       project: project,
+                      home: home,
                       worktree: worktree,
                       branches: branches,
                       showGitTargets: showGitTargets,
@@ -234,39 +251,45 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       anyDaemonConnected: anyDaemonConnected,
                     ),
                     bar: SessionComposerBar(
-                      hostId: project?.hostId ?? '',
+                      hostId: hostId ?? '',
                       definitions: definitions,
                       agentDefinitionId: agent?.id,
                       selection: effective,
-                      enabled: project != null && !_submitting,
+                      enabled: hostId != null && !_submitting,
                       mode: draft?.mode ?? SessionMode.normal,
                       onAgentChanged: (id) =>
-                          _notifier(project)?.selectAgent(id),
+                          _notifier(hostId)?.selectAgent(id),
                       onModelChanged: (model) =>
-                          _notifier(project)?.selectModel(model),
-                      onModeChanged: (mode) => _notifier(project)?.selectMode(
+                          _notifier(hostId)?.selectModel(model),
+                      onModeChanged: (mode) => _notifier(hostId)?.selectMode(
                         mode,
                       ),
                       reasoningEffort: draft?.reasoningEffort,
                       onReasoningEffortChanged: (effort) =>
-                          _notifier(project)?.selectReasoningEffort(effort),
+                          _notifier(hostId)?.selectReasoningEffort(effort),
                       permissionMode: draft?.permissionMode,
                       onPermissionModeChanged: (mode) =>
-                          _notifier(project)?.selectPermissionMode(mode),
+                          _notifier(hostId)?.selectPermissionMode(mode),
                       serviceTier: draft?.serviceTier,
                       onServiceTierChanged: (tier) =>
-                          _notifier(project)?.selectServiceTier(tier),
+                          _notifier(hostId)?.selectServiceTier(tier),
                     ),
-                    onModeToggled: project == null
+                    onModeToggled: hostId == null
                         ? null
-                        : () => _notifier(project)?.selectMode(
+                        : () => _notifier(hostId)?.selectMode(
                             draft?.mode == SessionMode.plan
                                 ? SessionMode.normal
                                 : SessionMode.plan,
                           ),
                     attachmentInput: ref.read(attachmentInputProvider),
-                    onSubmit: (submission) =>
-                        _submit(submission, project!, worktree, agent!, draft!),
+                    onSubmit: (submission) => _submit(
+                      submission,
+                      project,
+                      home,
+                      worktree,
+                      agent!,
+                      draft!,
+                    ),
                   ),
                 ],
               ),
@@ -277,31 +300,38 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     );
   }
 
-  SessionComposerDraft? _draft(NewWorkspaceProject? project) => project == null
+  SessionComposerDraft? _draft(String? hostId) => hostId == null
       ? null
-      : ref.watch(sessionComposerDraftControllerProvider(project.hostId, null));
+      : ref.watch(sessionComposerDraftControllerProvider(hostId, null));
 
-  SessionComposerDraftController? _notifier(NewWorkspaceProject? project) =>
-      project == null
+  SessionComposerDraftController? _notifier(String? hostId) => hostId == null
       ? null
       : ref.read(
-          sessionComposerDraftControllerProvider(project.hostId, null).notifier,
+          sessionComposerDraftControllerProvider(hostId, null).notifier,
         );
 
   String? _hint(
+    AppLocalizations l10n,
     List<NewWorkspaceProject> projects,
     NewWorkspaceProject? project,
     WorktreeDto? worktree,
     AgentDefinitionDto? agent,
     SessionModelSelectionDto? model, {
+    required WorkspaceSelection? home,
     required bool loading,
   }) {
     if (_error != null) return _error;
     if (loading) return null;
-    if (projects.isEmpty) return '먼저 프로젝트를 추가하세요.';
-    if (project == null) return '프로젝트를 선택하세요.';
+    if (project == null) {
+      // A daemon configured without a user home publishes no home workspace,
+      // so a project is the only thing left to start from.
+      if (home != null) return null;
+      return projects.isEmpty
+          ? l10n.workspaceAddProjectFirst
+          : l10n.workspaceSelectProject;
+    }
     if (project.workspace.kind == WorkspaceKind.directory && worktree == null) {
-      return '프로젝트 checkout을 찾을 수 없습니다.';
+      return l10n.workspaceCheckoutMissing;
     }
     if (agent == null) return '사용 가능한 primary Agent가 없습니다.';
     if (model == null) return '사용할 Provider와 모델을 먼저 선택하세요.';
@@ -311,6 +341,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
   Widget _targets({
     required List<NewWorkspaceProject> projects,
     required NewWorkspaceProject? project,
+    required WorkspaceSelection? home,
     required WorktreeDto? worktree,
     required List<GitBranchDto> branches,
     required bool showGitTargets,
@@ -323,11 +354,25 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         ComposerChip(
           valueKey: const ValueKey('new-workspace-project'),
           icon: CoderIcons.folder,
-          label: project?.workspace.name ?? '프로젝트',
+          // Without a home workspace the daemon cannot run a project-less
+          // session, so the chip must not offer or advertise one.
+          label:
+              project?.workspace.name ??
+              (home == null
+                  ? '프로젝트'
+                  : AppLocalizations.of(context).workspaceNoProjectOption),
           tooltip: '프로젝트 선택',
           menuChildren: _submitting || !anyDaemonConnected
               ? null
               : <Widget>[
+                  if (home != null)
+                    TRMenuItem(
+                      key: const ValueKey('new-workspace-project-none'),
+                      onPressed: () => _selectProject(null),
+                      child: TRText.inherit(
+                        AppLocalizations.of(context).workspaceNoProjectOption,
+                      ),
+                    ),
                   for (final item in projects)
                     TRMenuItem(
                       key: ValueKey('new-workspace-project-${item.key}'),
@@ -401,7 +446,8 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     ),
   );
 
-  void _selectProject(String chosen) {
+  /// Selects one project, or null to run the session in the home folder.
+  void _selectProject(String? chosen) {
     setState(() {
       _projectKey = chosen;
       _worktreeId = null;
@@ -465,7 +511,8 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
 
   Future<void> _submit(
     ComposerSubmission submission,
-    NewWorkspaceProject project,
+    NewWorkspaceProject? project,
+    WorkspaceSelection? home,
     WorktreeDto? worktree,
     AgentDefinitionDto agent,
     SessionComposerDraft draft,
@@ -478,11 +525,24 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       _error = null;
     });
     try {
+      if (project == null) {
+        // No project was picked, so the session runs in the home checkout the
+        // daemon provisioned; there is no worktree to create.
+        if (home == null) {
+          setState(() {
+            _error = AppLocalizations.of(context).workspaceDaemonRequired;
+            _submitting = false;
+          });
+          return;
+        }
+        await _start(home, agent, draft, submission, seed);
+        return;
+      }
       var worktreeId = worktree?.id;
       if (worktreeId == null) {
         if (project.workspace.kind != WorkspaceKind.git) {
           setState(() {
-            _error = '프로젝트 checkout을 찾을 수 없습니다.';
+            _error = AppLocalizations.of(context).workspaceCheckoutMissing;
             _submitting = false;
           });
           return;
@@ -490,7 +550,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         final api = _hostApi(project.hostId);
         if (api == null) {
           setState(() {
-            _error = 'Daemon 연결이 필요합니다.';
+            _error = AppLocalizations.of(context).workspaceDaemonRequired;
             _submitting = false;
           });
           return;
@@ -522,23 +582,17 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         }
         worktreeId = created.worktree.id;
       }
-      final selection = WorkspaceSelection(
-        hostId: project.hostId,
-        workspaceId: project.workspace.id,
-        worktreeId: worktreeId,
+      await _start(
+        WorkspaceSelection(
+          hostId: project.hostId,
+          workspaceId: project.workspace.id,
+          worktreeId: worktreeId,
+        ),
+        agent,
+        draft,
+        submission,
+        seed,
       );
-      final session = await startSessionWithPrompt(
-        ref,
-        selection: selection,
-        agentDefinitionId: agent.id,
-        title: deriveSessionTitle(seed),
-        prompt: submission.text,
-        attachments: submission.attachments,
-        mode: draft.mode,
-        model: draft.model,
-      );
-      if (!mounted) return;
-      widget.onStarted(selection, session);
     } on CoderClientException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -546,6 +600,28 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         _submitting = false;
       });
     }
+  }
+
+  /// Creates the session on [selection] and hands it to the caller.
+  Future<void> _start(
+    WorkspaceSelection selection,
+    AgentDefinitionDto agent,
+    SessionComposerDraft draft,
+    ComposerSubmission submission,
+    String seed,
+  ) async {
+    final session = await startSessionWithPrompt(
+      ref,
+      selection: selection,
+      agentDefinitionId: agent.id,
+      title: deriveSessionTitle(seed),
+      prompt: submission.text,
+      attachments: submission.attachments,
+      mode: draft.mode,
+      model: draft.model,
+    );
+    if (!mounted) return;
+    widget.onStarted(selection, session);
   }
 
   List<GitBranchDto> _branches(NewWorkspaceProject project) =>

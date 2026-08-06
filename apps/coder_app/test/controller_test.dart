@@ -193,6 +193,54 @@ void main() {
     tags: const <String>['feature_test__session_lifecycle__unit'],
   );
 
+  test(
+    'the home checkout resolves per host and is kept out of projects',
+    () {
+      final home = WorkspaceDto(
+        id: 'home',
+        name: 'user',
+        rootPath: '/home/user',
+        kind: WorkspaceKind.home,
+        createdAt: now,
+      );
+      final homeCheckout = WorktreeDto(
+        id: 'home-checkout',
+        workspaceId: home.id,
+        name: home.name,
+        path: home.rootPath,
+        kind: WorktreeKind.directory,
+        isCoderOwned: false,
+        createdAt: now,
+      );
+      final state = UnifiedWorkspaceCatalogState(
+        hosts: const <String, HostRuntimeSnapshot>{},
+        catalogs: <String, WorkspaceCatalogDto>{
+          'with-home': WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[workspace, home],
+            worktrees: <WorktreeDto>[worktree, homeCheckout],
+          ),
+          'without-home': WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[workspace],
+            worktrees: <WorktreeDto>[worktree],
+          ),
+        },
+      );
+
+      expect(
+        state.homeSelection('with-home'),
+        const WorkspaceSelection(
+          hostId: 'with-home',
+          workspaceId: 'home',
+          worktreeId: 'home-checkout',
+        ),
+      );
+      // A daemon configured without a user home offers no project-less start.
+      expect(state.homeSelection('without-home'), isNull);
+      expect(state.homeSelection('unknown'), isNull);
+    },
+    tags: const <String>['feature_test__session_home__unit'],
+  );
+
   test('feature families never mix state between connected hosts', () async {
     WorkspaceDto hostWorkspace(String host) => WorkspaceDto(
       id: 'workspace',

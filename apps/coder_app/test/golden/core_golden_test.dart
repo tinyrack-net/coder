@@ -18,6 +18,7 @@ import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
@@ -697,6 +698,15 @@ void main() {
       'directory new workspace hides Git targets',
       fileName: 'new_workspace_directory',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      // The composer starts in no project, so the directory project has to be
+      // chosen for this golden to show what it is named after.
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.textContaining('Plain folder ·').last);
+        await tester.pumpAndSettle();
+      },
       builder: () => SizedBox(
         width: 1100,
         height: 760,

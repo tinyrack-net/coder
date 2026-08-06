@@ -40,6 +40,58 @@ final class WorkspaceService {
     worktrees: await _worktrees.list(),
   );
 
+  /// Identity of the implicit home workspace when this daemon creates it.
+  ///
+  /// A workspace the user had already registered at the home path keeps its own
+  /// id and is adopted instead, so the guards below key on
+  /// [WorkspaceKind.home] rather than on this constant.
+  static const String homeWorkspaceId = 'home';
+
+  /// Identity of the sole checkout of the implicit home workspace.
+  static const String homeWorktreeId = 'home-checkout';
+
+  /// Registers the user home directory as the implicit home workspace.
+  ///
+  /// Sessions the user starts without picking a project run in this checkout,
+  /// which keeps every session bound to a real working directory. Runs on every
+  /// boot and is idempotent; a workspace already registered at [userHome] is
+  /// adopted rather than duplicated.
+  ///
+  /// Returns null when [userHome] is null, which is how tests and CI runs keep
+  /// the daemon away from any real home.
+  Future<WorktreeDto?> provisionHome(String? userHome) async {
+    if (userHome == null) return null;
+    final rootPath = _paths.canonicalizeExistingDirectory(userHome);
+    final existing =
+        await _workspaces.getByRootPath(rootPath) ?? await _homeWorkspace();
+    final workspace = await _workspaces.upsert(
+      WorkspaceDto(
+        id: existing?.id ?? homeWorkspaceId,
+        name: p.basename(rootPath),
+        rootPath: rootPath,
+        kind: WorkspaceKind.home,
+        createdAt: existing?.createdAt ?? _clock.nowUtc(),
+      ),
+    );
+    final checkout = await _worktrees.getByPath(rootPath);
+    return _worktrees.upsert(
+      WorktreeDto(
+        id: checkout?.id ?? homeWorktreeId,
+        workspaceId: workspace.id,
+        name: workspace.name,
+        path: rootPath,
+        kind: WorktreeKind.directory,
+        isCoderOwned: false,
+        createdAt: checkout?.createdAt ?? _clock.nowUtc(),
+      ),
+    );
+  }
+
+  /// Returns the implicit home workspace, when this daemon has one.
+  Future<WorkspaceDto?> _homeWorkspace() async => (await _workspaces.list())
+      .where((item) => item.kind == WorkspaceKind.home)
+      .firstOrNull;
+
   /// Registers a directory or Git repository and discovers its checkouts.
   Future<WorkspaceRegisterResultDto> register(
     WorkspaceRegisterParamsDto request,
@@ -47,6 +99,13 @@ final class WorkspaceService {
     final selectedPath = _paths.canonicalizeExistingDirectory(
       request.rootPath,
     );
+    // Registration merges by root path, so without this the home directory
+    // would silently return the home workspace, which every project list
+    // filters out.
+    if ((await _workspaces.getByRootPath(selectedPath))?.kind ==
+        WorkspaceKind.home) {
+      throw StateError('The home directory cannot be registered as a project.');
+    }
     final discoveredRoot = await _git.repositoryRoot(selectedPath);
     if (discoveredRoot == null) {
       final existing = await _workspaces.getByRootPath(selectedPath);
@@ -119,8 +178,16 @@ final class WorkspaceService {
   }
 
   /// Removes a workspace registration when no session history references it.
-  Future<void> unregister(String workspaceId) =>
-      _workspaces.unregister(workspaceId);
+  ///
+  /// The implicit home workspace is owned by the daemon and is never removable;
+  /// dropping it would orphan every session that belongs to no project.
+  Future<void> unregister(String workspaceId) async {
+    final workspace = await _requireWorkspace(workspaceId);
+    if (workspace.kind == WorkspaceKind.home) {
+      throw StateError('The home workspace cannot be unregistered.');
+    }
+    await _workspaces.unregister(workspaceId);
+  }
 
   /// Searches directories on the daemon host.
   Future<List<DirectorySuggestionDto>> suggestDirectories(
@@ -284,6 +351,10 @@ final class WorkspaceService {
     required bool force,
   }) async {
     final worktree = await _requireWorktree(worktreeId);
+    if ((await _workspaces.getById(worktree.workspaceId))?.kind ==
+        WorkspaceKind.home) {
+      throw StateError('The home checkout cannot be archived.');
+    }
     final preview = await previewArchive(worktreeId);
     if (preview.runningSessionCount > 0) {
       throw StateError('A session is still running in this worktree.');

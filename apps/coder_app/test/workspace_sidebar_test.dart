@@ -57,6 +57,9 @@ void main() {
     required List<HostRuntimeSnapshot> hosts,
     required Map<String, WorkspaceCatalogDto> catalogs,
     ValueChanged<WorkspaceSelection>? onSelect,
+    void Function(WorkspaceSelection selection, String sessionId)?
+    onSelectSession,
+    List<HomeSessionEntry> homeSessions = const <HomeSessionEntry>[],
     ThemeMode themeMode = ThemeMode.light,
   }) async {
     await tester.pumpWidget(
@@ -85,9 +88,13 @@ void main() {
                   catalogs: catalogs,
                 ),
               ),
+              homeSessions: AsyncValue<List<HomeSessionEntry>>.data(
+                homeSessions,
+              ),
               selected: null,
               onNewWorkspace: () {},
               onSelect: onSelect ?? (_) {},
+              onSelectSession: onSelectSession ?? (_, _) {},
               onOpenDaemonSettings: () {},
               onArchivedSelection: () {},
             ),
@@ -216,6 +223,108 @@ void main() {
       );
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
+    'sessions with no project list above the tree and hide the home workspace',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final project = workspace('project', 'Project');
+      final home = WorkspaceDto(
+        id: 'home',
+        name: 'user',
+        rootPath: '/home/user',
+        kind: WorkspaceKind.home,
+        createdAt: now,
+      );
+      const homeSelection = WorkspaceSelection(
+        hostId: 'up',
+        workspaceId: 'home',
+        worktreeId: 'home-checkout',
+      );
+      WorkspaceSelection? selectedSelection;
+      String? selectedSession;
+      await pump(
+        tester,
+        hosts: <HostRuntimeSnapshot>[host('up', 'Up daemon')],
+        catalogs: <String, WorkspaceCatalogDto>{
+          'up': WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[project, home],
+            worktrees: <WorktreeDto>[
+              worktree('project-main', project.id, 'main'),
+              WorktreeDto(
+                id: 'home-checkout',
+                workspaceId: home.id,
+                name: home.name,
+                path: home.rootPath,
+                kind: WorktreeKind.directory,
+                isCoderOwned: false,
+                createdAt: now,
+              ),
+            ],
+          ),
+        },
+        homeSessions: <HomeSessionEntry>[
+          (
+            selection: homeSelection,
+            session: SessionDto(
+              id: 'loose-session',
+              worktreeId: 'home-checkout',
+              title: 'Scratch work',
+              agentDefinitionId: 'coder',
+              origin: SessionOrigin.manual,
+              status: SessionStatus.idle,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ),
+        ],
+        onSelectSession: (selection, sessionId) {
+          selectedSelection = selection;
+          selectedSession = sessionId;
+        },
+      );
+
+      // The home workspace backs these sessions but is not a project, so it
+      // must never appear as one.
+      expect(find.text('user'), findsNothing);
+      expect(find.text('Project'), findsOneWidget);
+      expect(find.text('Scratch work'), findsOneWidget);
+
+      await tester.tap(find.text('Scratch work'));
+      await tester.pumpAndSettle();
+      expect(selectedSelection, homeSelection);
+      expect(selectedSession, 'loose-session');
+    },
+    tags: const <String>['feature_test__session_home__widget'],
+  );
+
+  testWidgets(
+    'the no-project section is absent when every session has one',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final project = workspace('project', 'Project');
+      await pump(
+        tester,
+        hosts: <HostRuntimeSnapshot>[host('up', 'Up daemon')],
+        catalogs: <String, WorkspaceCatalogDto>{
+          'up': WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[project],
+            worktrees: <WorktreeDto>[
+              worktree('project-main', project.id, 'main'),
+            ],
+          ),
+        },
+      );
+
+      expect(
+        find.byKey(const ValueKey<String>('workspace-sidebar-home-sessions')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__session_home__widget'],
   );
 
   testWidgets(

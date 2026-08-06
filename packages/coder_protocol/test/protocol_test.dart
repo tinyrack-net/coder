@@ -360,6 +360,34 @@ void main() {
     );
   });
 
+  test(
+    'the home workspace kind round-trips under a stable JSON name',
+    () {
+      final home = WorkspaceDto(
+        id: 'home',
+        name: 'Home',
+        rootPath: '/home/user',
+        kind: WorkspaceKind.home,
+        createdAt: now,
+      );
+      expect(home.toJson()['kind'], 'home');
+      _roundTrip(home, (value) => value.toJson(), WorkspaceDto.fromJson);
+      // The home checkout is an ordinary directory worktree, so nothing
+      // downstream of the session needs a second special case.
+      final checkout = WorktreeDto(
+        id: 'home-checkout',
+        workspaceId: home.id,
+        name: 'Home',
+        path: home.rootPath,
+        kind: WorktreeKind.directory,
+        isCoderOwned: false,
+        createdAt: now,
+      );
+      _roundTrip(checkout, (value) => value.toJson(), WorktreeDto.fromJson);
+    },
+    tags: const <String>['feature_test__session_home__contract'],
+  );
+
   final workspace = WorkspaceDto(
     id: 'workspace',
     name: 'Coder',

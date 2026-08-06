@@ -24,6 +24,12 @@ abstract interface class WorkspaceRepository {
   /// The register public API member.
   Future<WorkspaceDto> register(WorkspaceDto workspace);
 
+  /// Inserts one workspace or replaces the registration it already has.
+  ///
+  /// Unlike [register] this rewrites name, root path, and kind, which is what
+  /// re-provisioning the implicit home workspace on every boot needs.
+  Future<WorkspaceDto> upsert(WorkspaceDto workspace);
+
   /// Removes a workspace registration and its archived worktrees.
   Future<void> unregister(String id);
 }

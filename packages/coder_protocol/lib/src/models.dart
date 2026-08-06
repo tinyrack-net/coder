@@ -193,6 +193,14 @@ enum WorkspaceKind {
 
   /// A regular directory represented by one directory checkout.
   directory,
+
+  /// The user's home directory, provisioned by the daemon itself.
+  ///
+  /// Sessions that the user started without picking a project live here, so
+  /// they still resolve a working directory like every other session. Clients
+  /// present them as belonging to no project and keep this workspace out of
+  /// every project list.
+  home,
 }
 
 /// Broad rendering category of an attachment.

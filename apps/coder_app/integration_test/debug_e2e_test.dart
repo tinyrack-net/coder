@@ -42,6 +42,13 @@ void main() {
       final directoryWorkspace = await Directory.systemTemp.createTemp(
         'coder-e2e-directory-',
       );
+      // Stands in for the machine home the daemon turns into the implicit home
+      // workspace, so the run never touches the home of whoever runs it.
+      final userHome = Directory(
+        await (await Directory.systemTemp.createTemp(
+          'coder-e2e-user-home-',
+        )).resolveSymbolicLinks(),
+      );
       final remoteHome = await Directory.systemTemp.createTemp(
         'coder-e2e-remote-home-',
       );
@@ -84,6 +91,7 @@ void main() {
       final handle = await EmbeddedDaemonHandle.start(
         DaemonConfig(
           homeDirectory: home.path,
+          userHomeDirectory: userHome.path,
           port: 0,
           bearerToken: 'e2e-token-0123456789abcdef0123456789',
           useEnvironmentCredentials: false,
@@ -93,6 +101,7 @@ void main() {
       final embeddedLauncher = _RestartableLauncher(
         initialHandle: handle,
         homeDirectory: home.path,
+        userHomeDirectory: userHome.path,
         bearerToken: 'e2e-token-0123456789abcdef0123456789',
         provider: agentProvider,
       );
@@ -110,6 +119,7 @@ void main() {
         await embeddedLauncher.stopCurrent();
         await remoteHandle.stop();
         if (home.existsSync()) home.deleteSync(recursive: true);
+        if (userHome.existsSync()) userHome.deleteSync(recursive: true);
         if (remoteHome.existsSync()) remoteHome.deleteSync(recursive: true);
         if (workspace.existsSync()) workspace.deleteSync(recursive: true);
         if (directoryWorkspace.existsSync()) {
@@ -1616,6 +1626,55 @@ void main() {
           .worktrees
           .where((item) => item.workspaceId == 'directory-workspace-e2e');
       expect(directoryWorktrees.single.id, 'directory-checkout-e2e');
+
+      // A session can start without any project: the daemon provisioned the
+      // user home as an implicit workspace that no project list offers, and
+      // the sidebar lists the session outside every project.
+      final homeCatalog = await setupClient.getWorkspaceCatalog();
+      final homeWorkspace = homeCatalog.workspaces.singleWhere(
+        (item) => item.kind == WorkspaceKind.home,
+      );
+      expect(homeWorkspace.rootPath, userHome.path);
+      final homeCheckout = homeCatalog.worktrees.singleWhere(
+        (item) => item.workspaceId == homeWorkspace.id,
+      );
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey('workspace-new-button')),
+      );
+      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey('new-workspace-project')),
+      );
+      await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('new-workspace-project-none')),
+      );
+      await tester.pumpAndSettle();
+      // Without a project there is no branch to pick and no checkout to make.
+      expect(
+        find.byKey(const ValueKey('new-workspace-worktree')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('new-workspace-branch')), findsNothing);
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Home e2e',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await pumpUntilCondition(
+        tester,
+        () async => (await setupClient.listSessions(
+          worktreeId: homeCheckout.id,
+        )).any((session) => session.title == 'Home e2e'),
+        'the project-less session to start in the home folder',
+      );
+      // The home workspace backs the session but is never shown as a project.
+      await tester.tap(find.text('Workspaces').last);
+      await pumpUntil(tester, find.text('Home e2e'));
+      expect(find.text(homeWorkspace.name), findsNothing);
     },
     tags: const <String>[
       'feature_test__daemon_management__e2e',
@@ -1651,6 +1710,8 @@ void main() {
       'feature_scenario__session_lifecycle__create_with_configuration__e2e',
       'feature_scenario__session_lifecycle__update_model_and_mode__e2e',
       'feature_scenario__session_lifecycle__reconnect_persistence__e2e',
+      'feature_test__session_home__e2e',
+      'feature_scenario__session_home__create_without_project__e2e',
       'feature_scenario__session_tabs__open_switch_close_restore__e2e',
       'feature_scenario__turn_execution__stream_and_restore__e2e',
       'feature_scenario__turn_execution__cancel_stream__e2e',
@@ -2060,11 +2121,15 @@ final class _RestartableLauncher implements EmbeddedDaemonLauncher {
   _RestartableLauncher({
     required EmbeddedDaemonHandle initialHandle,
     required this.homeDirectory,
+    required this.userHomeDirectory,
     required this.bearerToken,
     required this.provider,
   }) : _current = initialHandle;
 
   final String homeDirectory;
+
+  /// Stands in for the machine home so a restart keeps the home workspace.
+  final String userHomeDirectory;
   final String bearerToken;
   final ModelProvider provider;
   final List<EmbeddedDaemonExposure> exposures = <EmbeddedDaemonExposure>[];
@@ -2082,6 +2147,7 @@ final class _RestartableLauncher implements EmbeddedDaemonLauncher {
         : await EmbeddedDaemonHandle.start(
             DaemonConfig(
               homeDirectory: homeDirectory,
+              userHomeDirectory: userHomeDirectory,
               host: exposure.bindHost,
               port: port,
               bearerToken: bearerToken,

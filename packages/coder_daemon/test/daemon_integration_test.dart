@@ -1709,6 +1709,144 @@ void main() {
   );
 
   test(
+    'real daemon runs a session that belongs to no project in the user home',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-home-state-');
+      // The daemon canonicalizes every workspace path, and macOS reaches its
+      // temporary directory through a /var symlink, so the fixture starts from
+      // the resolved path the daemon will report back.
+      final userHome = Directory(
+        await (await Directory.systemTemp.createTemp(
+          'coder-user-home-',
+        )).resolveSymbolicLinks(),
+      );
+      final modelServer = await HttpServer.bind(
+        InternetAddress.loopbackIPv4,
+        0,
+      );
+      modelServer.listen((request) async {
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(
+          jsonEncode(<String, dynamic>{
+            'object': 'list',
+            'data': <Map<String, dynamic>>[
+              <String, dynamic>{'id': 'test-model', 'owned_by': 'test'},
+            ],
+          }),
+        );
+        await request.response.close();
+      });
+      DaemonConfig config() => DaemonConfig(
+        homeDirectory: home.path,
+        userHomeDirectory: userHome.path,
+        port: 0,
+        bearerToken: 'home-token-0123456789abcdef0123456789',
+        useEnvironmentCredentials: false,
+      );
+      var handle = await DaemonApplication.start(
+        config(),
+        provider: _PatchProvider(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await userHome.delete(recursive: true);
+        await modelServer.close(force: true);
+      });
+      Future<CoderClient> connect() async {
+        final client = await CoderClient.connect(
+          endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+          credentials: DaemonCredentials(bearerToken: handle.bearerToken),
+          clientId: 'home-vertical-slice',
+          clientKind: 'test',
+        );
+        addTearDown(client.close);
+        return client;
+      }
+
+      var client = await connect();
+      final catalog = await client.getWorkspaceCatalog();
+      final homeWorkspace = catalog.workspaces.singleWhere(
+        (item) => item.kind == WorkspaceKind.home,
+      );
+      expect(homeWorkspace.rootPath, userHome.path);
+      final homeCheckout = catalog.worktrees.singleWhere(
+        (item) => item.workspaceId == homeWorkspace.id,
+      );
+      expect(homeCheckout.kind, WorktreeKind.directory);
+      expect(homeCheckout.path, userHome.path);
+      expect(homeCheckout.isCoderOwned, isFalse);
+
+      // The daemon owns this workspace, so clients must not be able to drop it
+      // and orphan every session that belongs to no project.
+      await expectLater(
+        client.unregisterWorkspace(homeWorkspace.id),
+        throwsA(isA<CoderClientException>()),
+      );
+      await expectLater(
+        client.archiveWorktree(homeCheckout.id, force: true),
+        throwsA(isA<CoderClientException>()),
+      );
+      await expectLater(
+        client.registerWorkspace(
+          workspaceId: 'shadow-home',
+          checkoutId: 'shadow-home-checkout',
+          rootPath: userHome.path,
+          name: 'Home again',
+        ),
+        throwsA(isA<CoderClientException>()),
+      );
+
+      await client.createCustomProvider(
+        'local-test',
+        CustomProviderConfigDto(
+          name: 'Local test',
+          baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
+          apiFormat: ProviderApiFormat.chatCompletions,
+          authenticationRequired: false,
+          manualModelIds: const <String>['test-model'],
+        ),
+      );
+      final session = await client.createSession(
+        id: 'home-session',
+        worktreeId: homeCheckout.id,
+        title: 'No project',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'local-test',
+          modelId: 'test-model',
+        ),
+      );
+      expect(session.worktreeId, homeCheckout.id);
+      expect(
+        (await client.listSessions(worktreeId: homeCheckout.id)).single.id,
+        'home-session',
+      );
+
+      // Re-provisioning happens on every boot, so a restart must reuse the same
+      // workspace and checkout rather than forking a second home.
+      await handle.stop();
+      handle = await DaemonApplication.start(
+        config(),
+        provider: _PatchProvider(),
+      );
+      client = await connect();
+      final restarted = await client.getWorkspaceCatalog();
+      expect(
+        restarted.workspaces.where((item) => item.kind == WorkspaceKind.home),
+        hasLength(1),
+      );
+      expect(restarted.workspaces.single.id, homeWorkspace.id);
+      expect(restarted.worktrees.single.id, homeCheckout.id);
+      expect(
+        (await client.listSessions(worktreeId: homeCheckout.id)).single.id,
+        'home-session',
+      );
+    },
+    tags: const <String>['feature_test__session_home__verticalSlice'],
+  );
+
+  test(
     'real daemon creates and archives a Git worktree over WebSocket',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-git-home-');

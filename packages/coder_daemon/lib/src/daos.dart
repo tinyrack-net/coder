@@ -78,6 +78,20 @@ class WorkspaceDao extends DatabaseAccessor<CoderDatabase>
   }
 
   @override
+  Future<WorkspaceDto> upsert(WorkspaceDto workspace) async {
+    await into(workspaces).insertOnConflictUpdate(
+      WorkspacesCompanion.insert(
+        id: workspace.id,
+        name: workspace.name,
+        rootPath: workspace.rootPath,
+        kind: workspace.kind.name,
+        createdAt: workspace.createdAt,
+      ),
+    );
+    return (await getById(workspace.id))!;
+  }
+
+  @override
   Future<void> unregister(String id) => transaction(() async {
     await (delete(
       worktrees,

@@ -375,6 +375,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceNoWorkspaces => '아직 workspace가 없습니다.';
 
   @override
+  String get workspaceNoProjectSessions => '프로젝트 없음';
+
+  @override
+  String get workspaceNoProjectOption => '프로젝트 없음 (홈 폴더)';
+
+  @override
+  String get workspaceAddProjectFirst => '먼저 프로젝트를 추가하세요.';
+
+  @override
+  String get workspaceSelectProject => '프로젝트를 선택하세요.';
+
+  @override
+  String get workspaceCheckoutMissing => '프로젝트 checkout을 찾을 수 없습니다.';
+
+  @override
+  String get workspaceDaemonRequired => 'Daemon 연결이 필요합니다.';
+
+  @override
   String get workspaceOpenDaemonSettings => 'Daemon 설정';
 
   @override

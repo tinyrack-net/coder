@@ -9,3 +9,4 @@ tags:
   feature_test__tool_context_budget__contract:
   feature_test__turn_question__contract:
   feature_test__mcp_resource_access__contract:
+  feature_test__session_home__contract:

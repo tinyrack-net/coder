@@ -216,6 +216,29 @@ final class UnifiedWorkspaceCatalogState {
 
   /// Online daemon catalogs keyed by host profile ID.
   final Map<String, WorkspaceCatalogDto> catalogs;
+
+  /// Resolves the implicit home checkout of [hostId], when its daemon has one.
+  ///
+  /// Sessions the user starts without picking a project live here. A daemon
+  /// configured without a user home publishes no home workspace, and callers
+  /// use that null to hide the project-less start entirely.
+  WorkspaceSelection? homeSelection(String hostId) {
+    final catalog = catalogs[hostId];
+    if (catalog == null) return null;
+    final workspace = catalog.workspaces
+        .where((item) => item.kind == WorkspaceKind.home)
+        .firstOrNull;
+    if (workspace == null) return null;
+    final worktree = catalog.worktrees
+        .where((item) => item.workspaceId == workspace.id)
+        .firstOrNull;
+    if (worktree == null) return null;
+    return WorkspaceSelection(
+      hostId: hostId,
+      workspaceId: workspace.id,
+      worktreeId: worktree.id,
+    );
+  }
 }
 
 @Riverpod(keepAlive: true)
@@ -285,6 +308,20 @@ Future<List<GitBranchDto>> gitBranches(
   final api = await _watchHostApi(ref, hostId);
   return api.listGitBranches(workspaceId);
 }
+
+/// One session that belongs to no project, with the checkout that runs it.
+typedef HomeSessionEntry = ({
+  WorkspaceSelection selection,
+  SessionDto session,
+});
+
+/// Orders home sessions newest first, so a fresh one leads the section.
+///
+/// Kept next to [HomeSessionEntry] because the sidebar and its tests both need
+/// the same order.
+List<HomeSessionEntry> sortedHomeSessions(List<HomeSessionEntry> entries) =>
+    entries.toList()
+      ..sort((a, b) => b.session.updatedAt.compareTo(a.session.updatedAt));
 
 @riverpod
 /// SessionsController defines a public contract.

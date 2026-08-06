@@ -379,6 +379,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceNoWorkspaces => 'No workspaces yet.';
 
   @override
+  String get workspaceNoProjectSessions => 'No project';
+
+  @override
+  String get workspaceNoProjectOption => 'No project (home folder)';
+
+  @override
+  String get workspaceAddProjectFirst => 'Add a project first.';
+
+  @override
+  String get workspaceSelectProject => 'Select a project.';
+
+  @override
+  String get workspaceCheckoutMissing => 'No project checkout was found.';
+
+  @override
+  String get workspaceDaemonRequired => 'A daemon connection is required.';
+
+  @override
   String get workspaceOpenDaemonSettings => 'Daemon settings';
 
   @override

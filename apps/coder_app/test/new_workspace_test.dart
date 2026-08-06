@@ -17,6 +17,25 @@ import 'support/fake_coder_api.dart';
 
 import 'support/localization.dart';
 
+/// The implicit home workspace a daemon provisions for project-less sessions.
+final _home = WorkspaceDto(
+  id: 'home',
+  name: 'user',
+  rootPath: '/home/user',
+  kind: WorkspaceKind.home,
+  createdAt: DateTime.utc(2026, 8, 3),
+);
+
+final _homeCheckout = WorktreeDto(
+  id: 'home-checkout',
+  workspaceId: _home.id,
+  name: _home.name,
+  path: _home.rootPath,
+  kind: WorktreeKind.directory,
+  isCoderOwned: false,
+  createdAt: DateTime.utc(2026, 8, 3),
+);
+
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
@@ -98,6 +117,7 @@ void main() {
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
+      await _selectProject(tester, 'Coder');
 
       expect(find.text('New workspace'), findsWidgets);
       expect(find.text('Coder'), findsWidgets);
@@ -138,6 +158,7 @@ void main() {
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
+      await _selectProject(tester, 'Coder');
 
       await tester.tap(find.byKey(const ValueKey('new-workspace-worktree')));
       await tester.pumpAndSettle();
@@ -176,6 +197,7 @@ void main() {
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
+      await _selectProject(tester, 'Coder');
       await _selectModel(tester);
 
       await tester.enterText(
@@ -219,6 +241,7 @@ void main() {
             ];
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
+      await _selectProject(tester, 'Coder');
       await _selectModel(tester);
 
       await tester.enterText(
@@ -250,6 +273,7 @@ void main() {
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
+      await _selectProject(tester, 'Coder');
 
       expect(find.text('origin/main'), findsOneWidget);
 
@@ -372,6 +396,70 @@ void main() {
   );
 
   testWidgets(
+    'a session starts in the home folder when no project is registered',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[_home],
+        worktrees: <WorktreeDto>[_homeCheckout],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+
+      // The home workspace is not a project, so it never appears as one.
+      expect(find.text('먼저 프로젝트를 추가하세요.'), findsNothing);
+      await _selectModel(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Tidy my notes',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      expect(api.createdWorktrees, isEmpty);
+      expect(api.createdSessions.single.worktreeId, _homeCheckout.id);
+      expect(api.createdSessions.single.title, 'Tidy my notes');
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        contains('/sessions/'),
+      );
+    },
+    tags: const <String>['feature_test__session_home__widget'],
+  );
+
+  testWidgets(
+    'no project is the default even when projects exist, and is switchable',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace, _home],
+        worktrees: <WorktreeDto>[checkout, _homeCheckout],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+
+      // Nothing was picked, so the composer stays out of every project rather
+      // than silently adopting whichever one sorts first.
+      expect(find.text('프로젝트 없음 (홈 폴더)'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('new-workspace-worktree')),
+        findsNothing,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Coder ·').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Coder'), findsWidgets);
+      expect(find.byKey(const ValueKey('new-workspace-worktree')), findsOne);
+    },
+    tags: const <String>['feature_test__session_home__widget'],
+  );
+
+  testWidgets(
     'a directory project skips Git targets and starts on its checkout',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
@@ -396,6 +484,7 @@ void main() {
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
+      await _selectProject(tester, 'Plain folder');
 
       expect(find.text('Plain folder'), findsWidgets);
       expect(
@@ -448,6 +537,7 @@ void main() {
       final api = FakeCoderApi(workspaces: <WorkspaceDto>[directory]);
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
+      await _selectProject(tester, 'Incomplete folder');
 
       expect(find.text('프로젝트 checkout을 찾을 수 없습니다.'), findsOne);
       expect(
@@ -548,6 +638,17 @@ Future<GoRouter> _pump(
     await tester.pump();
   }
   return router;
+}
+
+/// Picks [name] in the project chip menu.
+///
+/// The composer starts out in no project, so a test that exercises a project
+/// has to choose it the way the user does.
+Future<void> _selectProject(WidgetTester tester, String name) async {
+  await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.textContaining('$name ·').last);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _selectModel(WidgetTester tester) async {
