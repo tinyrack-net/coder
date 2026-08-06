@@ -325,6 +325,22 @@ final class _PendingDirectory {
   final int depth;
 }
 
+/// Joins a worktree root and a POSIX relative path into one native path.
+///
+/// Git reports a repository root with forward slashes even on Windows, so
+/// joining without normalizing leaves a path that mixes both separators.
+/// [context] exists so the Windows behaviour is testable from any host.
+String absolutePathFor(
+  String root,
+  String relativePath, {
+  p.Context? context,
+}) {
+  final resolved = context ?? p.context;
+  return resolved.normalize(
+    resolved.join(root, resolved.joinAll(p.posix.split(relativePath))),
+  );
+}
+
 final class _IndexedPath {
   _IndexedPath({
     required this.relativePath,
@@ -341,7 +357,7 @@ final class _IndexedPath {
 
   FileMatchDto toDto(int score) => FileMatchDto(
     relativePath: relativePath,
-    absolutePath: p.join(root, p.joinAll(p.posix.split(relativePath))),
+    absolutePath: absolutePathFor(root, relativePath),
     name: name,
     isDirectory: isDirectory,
     score: score,

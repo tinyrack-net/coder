@@ -74,9 +74,11 @@ void main() {
         final match = (await gateway.search(request('app.dart'))).matches.first;
 
         expect(match.relativePath, 'lib/src/app.dart');
+        // Normalized, not merely joined: a root that arrives in another
+        // separator must not survive into the result.
         expect(
           match.absolutePath,
-          p.join('/worktree', 'lib', 'src', 'app.dart'),
+          p.normalize(p.join('/worktree', 'lib', 'src', 'app.dart')),
         );
         expect(match.name, 'app.dart');
         expect(match.isDirectory, isFalse);
@@ -266,6 +268,40 @@ void main() {
       });
     },
   );
+
+  group('absolutePathFor', () {
+    test(
+      'keeps a Windows join in one separator',
+      () {
+        // Git reports the root with forward slashes even on Windows, which
+        // used to leave a path mixing both separators behind.
+        expect(
+          absolutePathFor(
+            'C:/repo',
+            'lib/app.dart',
+            context: p.Context(style: p.Style.windows),
+          ),
+          r'C:\repo\lib\app.dart',
+        );
+      },
+      tags: const <String>['feature_test__composer_file_mention__unit'],
+    );
+
+    test(
+      'keeps a POSIX join in one separator',
+      () {
+        expect(
+          absolutePathFor(
+            '/repo',
+            'lib/app.dart',
+            context: p.Context(style: p.Style.posix),
+          ),
+          '/repo/lib/app.dart',
+        );
+      },
+      tags: const <String>['feature_test__composer_file_mention__unit'],
+    );
+  });
 
   group(
     'GitAwareFileIndexGateway outside a repository',
