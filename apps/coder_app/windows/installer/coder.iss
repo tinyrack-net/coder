@@ -47,6 +47,15 @@ WizardStyle=modern
 ; Per-machine when elevated, per-user otherwise, so an unprivileged install
 ; still works.
 PrivilegesRequiredOverridesAllowed=dialog
+; Closing the window only hides the app to the tray, so a running copy would
+; otherwise survive the install, keep the exclusive lock on the daemon home,
+; and make the freshly launched copy fail to start its daemon. The mutex name
+; must match kMutexName in windows/runner/single_instance.cpp.
+AppMutex=Local\tinyrack-coder-single-instance
+CloseApplications=yes
+; The app restores itself through its login item, and restarting it from here
+; would run it with the installer's token.
+RestartApplications=no
 #if AppArch == "arm64"
 ArchitecturesAllowed=arm64
 ArchitecturesInstallIn64BitMode=arm64
@@ -73,9 +82,13 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; \
   Tasks: desktopicon
 
 [Run]
+; runasoriginaluser, because a per-machine install runs elevated and would
+; otherwise start the app with the administrator's token. The daemon home comes
+; from %LOCALAPPDATA%, so an elevated launch reads a different profile than
+; every later launch from the Start menu.
 Filename: "{app}\{#AppExeName}"; \
   Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; \
-  Flags: nowait postinstall skipifsilent
+  Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [Registry]
 ; The app registers itself to start at login by writing this Run value, so the

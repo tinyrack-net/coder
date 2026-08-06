@@ -446,6 +446,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The selected port is already in use.';
 
   @override
+  String get hostErrorEmbeddedAlreadyRunning =>
+      'Coder is already running on this computer and owns the local daemon. Open the running copy from the system tray, or quit it and retry.';
+
+  @override
   String get hostErrorLocalNetworkUnreachable =>
       'Could not reach the daemon. Check that it is running, and that you allowed this site to access your local network.';
 

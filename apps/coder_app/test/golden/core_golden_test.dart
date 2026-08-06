@@ -610,7 +610,7 @@ void main() {
     goldenTest(
       'daemon settings render embedded exposure and remote-only states',
       fileName: 'daemon_hosts',
-      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 1700),
       builder: () => GoldenTestGroup(
         columns: 2,
         children: <Widget>[
@@ -628,6 +628,24 @@ void main() {
               width: 390,
               height: 700,
               child: _globalSettings(ThemeMode.dark),
+            ),
+          ),
+          // The alert has to stay readable with the longest guidance the app
+          // can produce alongside both of its actions.
+          GoldenTestScenario(
+            name: 'embedded already running desktop',
+            child: SizedBox(
+              width: 800,
+              height: 700,
+              child: _localSettings(
+                ThemeMode.dark,
+                launcher: const _GoldenEmbeddedLauncher(
+                  failure: HostConnectionFailure.network(
+                    'lock failed',
+                    reason: HostFailureReason.embeddedAlreadyRunning,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -1223,7 +1241,10 @@ Widget _material(ThemeMode mode, Widget child) => MaterialApp(
   home: Scaffold(body: child),
 );
 
-Widget _localSettings(ThemeMode mode) {
+Widget _localSettings(
+  ThemeMode mode, {
+  _GoldenEmbeddedLauncher launcher = const _GoldenEmbeddedLauncher(),
+}) {
   final store = MemoryAppStore(
     settings: const AppSettings(
       embeddedDaemonExposure: EmbeddedDaemonExposure.allInterfaces,
@@ -1238,7 +1259,7 @@ Widget _localSettings(ThemeMode mode) {
           credentials: store,
           clients: const _UnusedClients(),
           clientKind: 'golden',
-          embeddedLauncher: const _GoldenEmbeddedLauncher(),
+          embeddedLauncher: launcher,
         ),
       ),
     ],
@@ -1297,13 +1318,17 @@ final class _UnusedClients implements HostClientFactory {
 }
 
 final class _GoldenEmbeddedLauncher implements EmbeddedDaemonLauncher {
-  const _GoldenEmbeddedLauncher();
+  const _GoldenEmbeddedLauncher({
+    this.failure = const HostConnectionFailure.network(
+      'Golden daemon is offline.',
+    ),
+  });
+
+  final HostConnectionFailure failure;
 
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
     required int port,
-  }) => Future<EmbeddedDaemonSession>.error(
-    const HostConnectionFailure.network('Golden daemon is offline.'),
-  );
+  }) => Future<EmbeddedDaemonSession>.error(failure);
 }

@@ -914,6 +914,12 @@ abstract class AppLocalizations {
   /// **'The selected port is already in use.'**
   String get hostErrorEmbeddedPortInUse;
 
+  /// Embedded daemon startup failure when another process already holds the daemon home.
+  ///
+  /// In en, this message translates to:
+  /// **'Coder is already running on this computer and owns the local daemon. Open the running copy from the system tray, or quit it and retry.'**
+  String get hostErrorEmbeddedAlreadyRunning;
+
   /// Connection failure in a browser for a daemon on the local machine or network, where the browser does not report whether the daemon was down or the Local Network Access permission was refused.
   ///
   /// In en, this message translates to:

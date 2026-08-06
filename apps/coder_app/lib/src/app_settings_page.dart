@@ -11,6 +11,7 @@ import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -56,6 +57,58 @@ class AppSettingsPage extends ConsumerWidget {
     );
   }
 
+  /// Builds the persistent alert for an embedded daemon that will not start.
+  ///
+  /// The guidance replaces the operating-system diagnostic, which no user can
+  /// act on, so the copy action carries both: the guidance for the user and
+  /// the diagnostic for whoever reads the bug report.
+  Widget _embeddedFailureAlert(
+    BuildContext context,
+    WidgetRef ref,
+    HostRuntimeSnapshot runtime, {
+    required int port,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final title = l10n.appSettingsEmbeddedFailureTitle;
+    final guidance = switch (runtime.errorReason) {
+      HostFailureReason.embeddedPortInUse =>
+        l10n.appSettingsEmbeddedPortConflict(port),
+      _ => hostErrorText(l10n, runtime) ?? l10n.hostStatusError,
+    };
+    final diagnostic = runtime.error;
+    return TRAlert(
+      key: const ValueKey<String>('embedded-daemon-error'),
+      title: TRText.inherit(title),
+      description: SelectionArea(child: TRText.inherit(guidance)),
+      icon: const Icon(CoderIcons.error),
+      variant: TRStatusVariant.danger,
+      actions: <Widget>[
+        TRButton(
+          appearance: TRAppearance.outline,
+          onPressed: () => ref
+              .read(hostRegistryControllerProvider.notifier)
+              .reconnect(embeddedHostId),
+          child: TRText.inherit(l10n.commonRetry),
+        ),
+        TRIconButton(
+          key: const ValueKey<String>('embedded-daemon-error-copy'),
+          appearance: TRAppearance.ghost,
+          label: l10n.commonCopy,
+          onPressed: () => Clipboard.setData(
+            ClipboardData(
+              text: <String>[
+                title,
+                guidance,
+                if (diagnostic != null && diagnostic != guidance) diagnostic,
+              ].join('\n'),
+            ),
+          ),
+          icon: const Icon(CoderIcons.copy),
+        ),
+      ],
+    );
+  }
+
   Widget _settingsBody(
     BuildContext context,
     WidgetRef ref,
@@ -72,31 +125,11 @@ class AppSettingsPage extends ConsumerWidget {
             banner:
                 embeddedRuntime != null &&
                     embeddedRuntime.status == HostRuntimeStatus.error
-                ? TRAlert(
-                    key: const ValueKey<String>('embedded-daemon-error'),
-                    title: TRText.inherit(
-                      l10n.appSettingsEmbeddedFailureTitle,
-                    ),
-                    description: TRText.inherit(
-                      embeddedRuntime.errorReason ==
-                              HostFailureReason.embeddedPortInUse
-                          ? l10n.appSettingsEmbeddedPortConflict(
-                              registry.settings.embeddedDaemonPort,
-                            )
-                          : hostErrorText(l10n, embeddedRuntime) ??
-                                l10n.hostStatusError,
-                    ),
-                    icon: const Icon(CoderIcons.error),
-                    variant: TRStatusVariant.danger,
-                    actions: <Widget>[
-                      TRButton(
-                        appearance: TRAppearance.outline,
-                        onPressed: () => ref
-                            .read(hostRegistryControllerProvider.notifier)
-                            .reconnect(embeddedHostId),
-                        child: TRText.inherit(l10n.commonRetry),
-                      ),
-                    ],
+                ? _embeddedFailureAlert(
+                    context,
+                    ref,
+                    embeddedRuntime,
+                    port: registry.settings.embeddedDaemonPort,
                   )
                 : null,
             children: <Widget>[

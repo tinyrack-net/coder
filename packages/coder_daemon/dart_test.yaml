@@ -3,6 +3,8 @@ tags:
   feature_test__conversation_attachments__unit:
   feature_test__conversation_attachments__verticalSlice:
   feature_test__daemon_authentication__verticalSlice:
+  feature_test__daemon_management__unit:
+  feature_test__daemon_management__contract:
   feature_test__workspace_catalog__unit:
   feature_test__workspace_catalog__verticalSlice:
   feature_test__workspace_registration__unit:

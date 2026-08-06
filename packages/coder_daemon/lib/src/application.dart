@@ -35,6 +35,30 @@ import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
+/// Raised when another daemon already holds the lock on a daemon home.
+///
+/// The daemon home is exclusive, so a second daemon over the same directory is
+/// a lifecycle conflict rather than a filesystem fault. The operating system
+/// only reports it as a lock error on `daemon.lock`, which reads as data
+/// corruption to a user, so the cause is named here instead.
+final class DaemonAlreadyRunningException implements Exception {
+  /// Creates a conflict for the daemon home another daemon still owns.
+  const DaemonAlreadyRunningException({
+    required this.homeDirectory,
+    required this.diagnostic,
+  });
+
+  /// Daemon home whose lock could not be taken.
+  final String homeDirectory;
+
+  /// Operating-system diagnostic kept for a bug report.
+  final String diagnostic;
+
+  @override
+  String toString() =>
+      'A daemon is already running on $homeDirectory ($diagnostic).';
+}
+
 /// Public API exposed by this library.
 abstract interface class DaemonHandle {
   /// The ready public API member.
@@ -78,6 +102,15 @@ abstract final class DaemonApplication {
     final lock = await lockFile.open(mode: FileMode.append);
     try {
       await lock.lock();
+    } on FileSystemException catch (error) {
+      // Every failure of this call is contention: the file is already open, so
+      // the only thing left to refuse is the lock itself. Matching on errno
+      // would mean tracking 33 on Windows, 11 on Linux, and 35 on macOS.
+      await lock.close();
+      throw DaemonAlreadyRunningException(
+        homeDirectory: home.path,
+        diagnostic: '$error',
+      );
     } catch (_) {
       await lock.close();
       rethrow;

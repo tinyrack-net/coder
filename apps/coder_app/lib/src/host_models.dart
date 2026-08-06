@@ -34,6 +34,9 @@ enum HostFailureReason {
   /// The configured embedded-daemon port is owned by another process.
   embeddedPortInUse,
 
+  /// Another copy of the app already owns the embedded daemon's home.
+  embeddedAlreadyRunning,
+
   /// A browser could not reach a daemon on the local machine or network.
   ///
   /// The cause is either a daemon that is not running or a refused Local

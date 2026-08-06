@@ -11,6 +11,9 @@ enum EmbeddedDaemonStartupFailureReason {
   /// The configured listener port is already owned by another process.
   portInUse,
 
+  /// Another daemon already holds the lock on this daemon home.
+  alreadyRunning,
+
   /// Startup failed for another reason.
   unknown,
 }
@@ -145,6 +148,9 @@ void _sendStartupError(SendPort ready, Object error) {
 }
 
 EmbeddedDaemonStartupFailureReason _startupFailureReason(Object error) {
+  if (error is DaemonAlreadyRunningException) {
+    return EmbeddedDaemonStartupFailureReason.alreadyRunning;
+  }
   if (error case SocketException(:final osError)) {
     // EADDRINUSE is 48 on Darwin, 98 on Linux, and 10048 on Windows.
     if (const <int>{48, 98, 10048}.contains(osError?.errorCode)) {
