@@ -115,10 +115,19 @@ final class McpAgentTool extends AgentTool {
   @override
   String get description => descriptor.description ?? descriptor.name;
 
-  /// External effects cannot be classified from a name, so every MCP tool
-  /// needs approval unless the user has opted out of approvals entirely.
+  /// Grades the tool from what the server said about it.
+  ///
+  /// A name tells you nothing about external effects, so the default stays
+  /// [ToolRisk.dangerous]. A server that declares a tool read-only is taken at
+  /// its word only far enough to drop it to [ToolRisk.read]; that spares the
+  /// user an approval dialog for every lookup without granting anything a
+  /// permission mode withheld, because `readOnly` still denies everything
+  /// above `read`. A tool that is not read-only stays dangerous even when the
+  /// server calls it non-destructive: "changes something, but gently" is still
+  /// a change the user should see.
   @override
-  ToolRisk get risk => ToolRisk.dangerous;
+  ToolRisk get risk =>
+      descriptor.annotations.readOnlyHint ? ToolRisk.read : ToolRisk.dangerous;
 
   @override
   bool get strict => false;

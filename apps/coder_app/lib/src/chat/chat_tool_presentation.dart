@@ -195,7 +195,11 @@ ChatToolPresentation describeToolActivity(
   AppLocalizations l10n,
   ChatToolActivity activity,
 ) {
-  final spec = _specs[activity.toolName] ?? _genericSpec;
+  final spec =
+      _specs[activity.toolName] ??
+      // MCP tool names are `mcp__server__tool`, made up at runtime, so they
+      // cannot sit in a fixed map the way the built-ins do.
+      (activity.toolName.startsWith('mcp__') ? _mcpSpec : _genericSpec);
   final title = spec.title(l10n, activity);
   final argumentBody = spec.argumentBody(activity);
   switch (activity.status) {
@@ -764,6 +768,31 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
     },
   ),
 };
+
+/// Renders any `mcp__server__tool` call.
+///
+/// The server and tool halves are the only thing known about it, so the title
+/// says which server is being asked and the body falls back to whatever text
+/// the server returned.
+final _ToolSpec _mcpSpec = _ToolSpec(
+  glyph: ChatToolGlyph.generic,
+  argumentBody: _prettyArgumentBody,
+  title: (l10n, activity) {
+    final parts = activity.toolName.split('__');
+    return parts.length >= 3
+        ? '${parts[1]}.${parts.sublist(2).join('__')}'
+        : activity.toolName;
+  },
+  result: (l10n, activity, output) {
+    // A server may answer with structured data or with plain text, and the
+    // error key is the one shape this side knows how to read.
+    if (output is ChatToolJsonObject && output.value['error'] is String) {
+      return output.value['error']! as String;
+    }
+    return _genericResult(l10n, output);
+  },
+  isFailure: _hasErrorKey,
+);
 
 final _ToolSpec _genericSpec = _ToolSpec(
   glyph: ChatToolGlyph.generic,
