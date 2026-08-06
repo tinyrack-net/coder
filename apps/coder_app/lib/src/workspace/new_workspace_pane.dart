@@ -219,7 +219,6 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                       worktree,
                       agent,
                       effective,
-                      anyDaemonConnected: anyDaemonConnected,
                       loading:
                           catalogLoading || agentsLoading || connectionsLoading,
                     ),
@@ -293,11 +292,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     WorktreeDto? worktree,
     AgentDefinitionDto? agent,
     SessionModelSelectionDto? model, {
-    required bool anyDaemonConnected,
     required bool loading,
   }) {
     if (_error != null) return _error;
-    if (!anyDaemonConnected) return '연결된 Daemon이 없습니다.';
     if (loading) return null;
     if (projects.isEmpty) return '먼저 프로젝트를 추가하세요.';
     if (project == null) return '프로젝트를 선택하세요.';

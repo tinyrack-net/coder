@@ -475,7 +475,7 @@ void main() {
       final router = await _pump(tester, api, connected: false);
       addTearDown(router.dispose);
 
-      expect(find.text('연결된 Daemon이 없습니다.'), findsOneWidget);
+      expect(find.text('연결된 Daemon이 없습니다.'), findsNothing);
       final control = tester.widget<TRButton>(
         find.byKey(const ValueKey('new-workspace-project')),
       );
