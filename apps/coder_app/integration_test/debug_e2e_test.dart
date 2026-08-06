@@ -2161,7 +2161,14 @@ Future<void> _submitComposerPrompt(
     matching: find.byType(EditableText),
   );
   await tester.tap(input);
-  await tester.pump();
+  // `testTextInput` delivers to whichever field owns the input connection, so
+  // typing before the tap lands writes the prompt nowhere and the field stays
+  // empty. Focus is the evidence that the connection is this composer's.
+  await pumpUntilCondition(
+    tester,
+    () => tester.widget<EditableText>(input).focusNode.hasFocus,
+    'the composer to take focus',
+  );
   tester.testTextInput.enterText(prompt);
   await tester.pump();
   expect(tester.widget<TRTextField>(composer).controller?.text, prompt);

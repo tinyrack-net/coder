@@ -962,6 +962,9 @@ class _SessionComposerState extends State<SessionComposer> {
   final List<PendingAttachment> _attachments = <PendingAttachment>[];
   bool _submitting = false;
   bool _dragging = false;
+
+  /// Mention the user dismissed, so Enter sends it as prose again.
+  Object? _dismissedMention;
   bool _focused = false;
   String? _attachmentError;
   ComposerTrigger? _trigger;
@@ -1084,8 +1087,16 @@ class _SessionComposerState extends State<SessionComposer> {
                       state: widget.suggestions,
                       controller: _suggestions,
                       onSelected: _completeWith,
-                      onDismissed: () =>
-                          widget.onCompletionQueryChanged?.call(null),
+                      onDismissed: () {
+                        // Remembered so Enter sends this token as prose. The
+                        // key is the sigil position, so typing on into the
+                        // same token stays dismissed while a new mention
+                        // starts offering completion again.
+                        _dismissedMention = parseComposerTrigger(
+                          _controller.value,
+                        )?.sessionKey;
+                        widget.onCompletionQueryChanged?.call(null);
+                      },
                       // Shift+Tab cycles the mode instead of moving focus, and
                       // Enter sends rather than opening a line.
                       child: Focus(
@@ -1247,6 +1258,19 @@ class _SessionComposerState extends State<SessionComposer> {
           !widget.enabled ||
           _controller.value.composing.isValid) {
         return KeyEventResult.ignored;
+      }
+      // An unfinished `@` mention keeps Enter even when its list is not up
+      // yet: the search is debounced and asynchronous, so the list can be
+      // frames behind the keystroke that asked for it. Sending here would
+      // fire the half-typed mention as prose and clear the field, losing the
+      // prompt the user was still writing. The text is the signal rather than
+      // the list, because the list is what flickers. Escape still hands the
+      // token back to prose, and `/` is left alone; it dispatches on its own.
+      final mention = parseComposerTrigger(_controller.value);
+      if (mention != null &&
+          mention.kind == ComposerTriggerKind.file &&
+          mention.sessionKey != _dismissedMention) {
+        return KeyEventResult.handled;
       }
       unawaited(control ? _runAlternateAction() : _runDefaultAction());
       return KeyEventResult.handled;
