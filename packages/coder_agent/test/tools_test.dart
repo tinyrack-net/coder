@@ -137,6 +137,7 @@ void main() {
         ListDirectoryTool(),
         ReadFileTool(),
         SearchTextTool(),
+        GlobTool(),
         ApplyPatchTool(),
         UpdatePlanTool(),
         AttachFileTool(publisher: publisher),

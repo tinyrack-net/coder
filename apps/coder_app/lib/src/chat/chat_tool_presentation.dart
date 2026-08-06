@@ -375,15 +375,44 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
       return path == null ? 'Search($query)' : 'Search($query in $path)';
     },
     result: (l10n, activity, output) {
-      if (output is! ChatToolJsonArray) return _genericResult(l10n, output);
-      if (output.value.isEmpty) return l10n.toolNoMatches;
-      final paths = output.value
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final matches = output.value['matches'];
+      if (matches is! List || matches.isEmpty) return l10n.toolNoMatches;
+      final paths = matches
           .whereType<Map<String, dynamic>>()
           .map((match) => match['path'])
           .whereType<String>()
           .toSet();
-      return l10n.toolMatches(output.value.length, paths.length);
+      // The cap changes what the count means: a truncated run says "at least",
+      // not "exactly".
+      return output.value['truncated'] == true
+          ? l10n.toolMatchesTruncated(matches.length, paths.length)
+          : l10n.toolMatches(matches.length, paths.length);
     },
+    isFailure: (output) =>
+        output is ChatToolJsonObject && output.value['error'] != null,
+  ),
+  'glob': _ToolSpec(
+    glyph: ChatToolGlyph.search,
+    title: (l10n, activity) {
+      final pattern = _truncate(_stringArg(activity, 'pattern') ?? '', 40);
+      final path = _stringArg(activity, 'path');
+      return path == null ? 'Glob($pattern)' : 'Glob($pattern in $path)';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final paths = output.value['paths'];
+      if (paths is! List || paths.isEmpty) return l10n.toolNoPaths;
+      return output.value['truncated'] == true
+          ? l10n.toolPathsTruncated(paths.length)
+          : l10n.toolPaths(paths.length);
+    },
+    isFailure: (output) =>
+        output is ChatToolJsonObject && output.value['error'] != null,
   ),
   'apply_patch': _ToolSpec(
     glyph: ChatToolGlyph.edit,

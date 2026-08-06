@@ -613,6 +613,7 @@ const Set<String> alwaysOnBuiltInToolIds = <String>{
   'list_directory',
   'read_file',
   'search_text',
+  'glob',
   'attach_file',
   'read_attachment',
   'update_plan',

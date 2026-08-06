@@ -113,31 +113,6 @@ void main() {
       expect(list.title, 'List(lib)');
       expect(list.resultLine, '디렉터리 1 · 파일 1');
 
-      final search = describeToolActivity(
-        testL10n,
-        activity(
-          'search_text',
-          arguments: <String, dynamic>{'query': 'TODO', 'path': 'lib'},
-          output:
-              '[{"path":"a.dart","line":1,"text":"TODO"},'
-              '{"path":"a.dart","line":9,"text":"TODO"},'
-              '{"path":"b.dart","line":2,"text":"TODO"}]',
-        ),
-      );
-      expect(search.title, 'Search(TODO in lib)');
-      expect(search.resultLine, '2개 파일에서 3건');
-      expect(
-        describeToolActivity(
-          testL10n,
-          activity(
-            'search_text',
-            arguments: <String, dynamic>{'query': 'nothing'},
-            output: '[]',
-          ),
-        ).resultLine,
-        '일치 없음',
-      );
-
       final edit = describeToolActivity(
         testL10n,
         activity(
@@ -204,6 +179,105 @@ void main() {
       expect(task.resultLine, 'completed · Looks good');
     },
     tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'search and glob render counts, caps, and correctable errors',
+    () {
+      final search = describeToolActivity(
+        testL10n,
+        activity(
+          'search_text',
+          arguments: <String, dynamic>{'query': 'TODO', 'path': 'lib'},
+          output:
+              '{"matches":['
+              '{"path":"a.dart","line":1,"text":"TODO"},'
+              '{"path":"a.dart","line":9,"text":"TODO"},'
+              '{"path":"b.dart","line":2,"text":"TODO"}],'
+              '"matchCount":3,"filesSearched":9,"truncated":false}',
+        ),
+      );
+      expect(search.title, 'Search(TODO in lib)');
+      expect(search.resultLine, '2개 파일에서 3건');
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'search_text',
+            arguments: <String, dynamic>{'query': 'nothing'},
+            output:
+                '{"matches":[],"matchCount":0,"filesSearched":9,'
+                '"truncated":false}',
+          ),
+        ).resultLine,
+        '일치 없음',
+      );
+      // A capped run has to read as "at least", not as a total.
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'search_text',
+            arguments: <String, dynamic>{'query': 'TODO'},
+            output:
+                '{"matches":[{"path":"a.dart","line":1,"text":"TODO"}],'
+                '"matchCount":1,"filesSearched":9,"truncated":true}',
+          ),
+        ).resultLine,
+        '1개 파일에서 1건 이상',
+      );
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'search_text',
+            arguments: <String, dynamic>{'query': '([', 'regex': true},
+            output: '{"error":"query is not a valid regular expression."}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.isFailure, 'isFailure', isTrue)
+            .having(
+              (value) => value.resultLine,
+              'result',
+              'query is not a valid regular expression.',
+            ),
+      );
+
+      final globbed = describeToolActivity(
+        testL10n,
+        activity(
+          'glob',
+          arguments: <String, dynamic>{'pattern': '**/*.dart', 'path': 'lib'},
+          output: '{"paths":["lib/a.dart","lib/b.dart"],"truncated":false}',
+        ),
+      );
+      expect(globbed.title, 'Glob(**/*.dart in lib)');
+      expect(globbed.resultLine, '파일 2개');
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'glob',
+            arguments: <String, dynamic>{'pattern': '**/*.rs'},
+            output: '{"paths":[],"truncated":false}',
+          ),
+        ).resultLine,
+        '파일 없음',
+      );
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'glob',
+            arguments: <String, dynamic>{'pattern': '**/*.dart'},
+            output: '{"paths":["lib/a.dart"],"truncated":true}',
+          ),
+        ).resultLine,
+        '파일 1개 이상',
+      );
+    },
+    tags: const <String>['feature_test__tool_search__widget'],
   );
 
   test(

@@ -69,6 +69,7 @@ abstract final class DaemonApplication {
     GitWorkspaceGateway? git,
     ProjectSettingsStore projectSettings = const FileProjectSettingsStore(),
     WorktreeHookRunner worktreeHooks = const ShellWorktreeHookRunner(),
+    GitignoreEnvironment? gitignoreEnvironment,
   }) async {
     final home = Directory(config.homeDirectory);
     await home.create(recursive: true);
@@ -149,10 +150,18 @@ abstract final class DaemonApplication {
         ids: ids,
       );
       await attachments.cleanupOrphans();
+      // The composition root is the one place allowed to read the ambient
+      // environment, which is how the search tools learn where the user's
+      // global git excludes live without any of them reaching for it. A test
+      // passes its own so it never inherits the running user's.
+      final gitignore =
+          gitignoreEnvironment ??
+          GitignoreEnvironment.fromEnvironment(Platform.environment);
       final builtInTools = <AgentTool>[
         ListDirectoryTool(),
         ReadFileTool(),
-        SearchTextTool(),
+        SearchTextTool(gitignoreEnvironment: gitignore),
+        GlobTool(gitignoreEnvironment: gitignore),
         UpdatePlanTool(),
         ApplyPatchTool(),
       ];

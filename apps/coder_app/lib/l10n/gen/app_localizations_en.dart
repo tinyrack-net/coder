@@ -1075,6 +1075,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String toolMatchesTruncated(int matches, int files) {
+    return '$matches+ matches in $files files';
+  }
+
+  @override
+  String get toolNoPaths => 'No files';
+
+  @override
+  String toolPaths(int count) {
+    return '$count files';
+  }
+
+  @override
+  String toolPathsTruncated(int count) {
+    return '$count+ files';
+  }
+
+  @override
   String toolEditFiles(int count) {
     return 'Edit($count files)';
   }

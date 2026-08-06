@@ -1988,6 +1988,30 @@ abstract class AppLocalizations {
   /// **'{matches} matches in {files} files'**
   String toolMatches(int matches, int files);
 
+  /// Search result summary when the result cap was reached.
+  ///
+  /// In en, this message translates to:
+  /// **'{matches}+ matches in {files} files'**
+  String toolMatchesTruncated(int matches, int files);
+
+  /// File-name search result with nothing found.
+  ///
+  /// In en, this message translates to:
+  /// **'No files'**
+  String get toolNoPaths;
+
+  /// File-name search result summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} files'**
+  String toolPaths(int count);
+
+  /// File-name search summary when the result cap was reached.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}+ files'**
+  String toolPathsTruncated(int count);
+
   /// Edit call summary across several files.
   ///
   /// In en, this message translates to:

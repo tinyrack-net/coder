@@ -85,6 +85,9 @@ tags:
   feature_test__tool_image_context__unit:
   feature_test__tool_image_context__verticalSlice:
   feature_test__tool_image_context__widget:
+  feature_test__tool_search__unit:
+  feature_test__tool_search__verticalSlice:
+  feature_test__tool_search__widget:
   feature_test__turn_question__contract:
   feature_test__turn_question__verticalSlice:
   feature_test__turn_question__widget:

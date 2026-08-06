@@ -630,6 +630,17 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'tool.search',
+    description:
+        'Searches workspace file contents by literal or regular expression and '
+        'finds files by glob, honouring the same ignore rules as git.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'tool.image.context',
     description:
         'Loads a workspace image into the model conversation context and '

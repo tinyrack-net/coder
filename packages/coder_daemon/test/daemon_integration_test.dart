@@ -1162,6 +1162,95 @@ void main() {
   );
 
   test(
+    'search_text and glob honour a real .gitignore in a real workspace',
+    () async {
+      final home = await Directory.systemTemp.createTemp('coder-search-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-search-workspace-',
+      );
+      await Directory(p.join(workspace.path, 'generated')).create();
+      await File(
+        p.join(workspace.path, '.gitignore'),
+      ).writeAsString('generated/\n*.log\n');
+      await File(
+        p.join(workspace.path, 'main.dart'),
+      ).writeAsString('const marker = 1;\n');
+      await File(
+        p.join(workspace.path, 'generated', 'out.dart'),
+      ).writeAsString('const marker = 2;\n');
+      await File(
+        p.join(workspace.path, 'notes.log'),
+      ).writeAsString('marker\n');
+      const bearerToken = 'search-tool-token-0123456789abcdef0123';
+      final provider = _SearchProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+        // Without this the daemon would consult whatever global git excludes
+        // the machine running the test happens to have.
+        gitignoreEnvironment: const GitignoreEnvironment.none(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'search-tool-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final session = await client.createSession(
+        id: 'search-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Search',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.subscribeTimeline(session.id);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'search-turn',
+        prompt: 'Find the marker',
+      );
+
+      final results = await provider.results.future.timeout(_eventTimeout);
+      final matches = results.search['matches']! as List;
+      // The ignored copies of the marker are not reachable, so the model sees
+      // exactly the file a developer would expect.
+      expect(
+        matches.map((match) => (match! as Map<String, dynamic>)['path']),
+        <String>['main.dart'],
+      );
+      expect(results.search['truncated'], isFalse);
+      expect(results.glob['paths'], <String>['main.dart']);
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+    },
+    tags: const <String>['feature_test__tool_search__verticalSlice'],
+  );
+
+  test(
     'an agent question blocks the turn until the user answers it',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-ask-home-');
@@ -3177,6 +3266,103 @@ final class _ViewImageProvider implements ModelProvider {
     yield const ModelTextDelta('I can see it.');
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'I can see it.'),
+    );
+  }
+}
+
+/// The two tool results the search vertical slice inspects.
+final class _SearchResults {
+  const _SearchResults({required this.search, required this.glob});
+
+  final Map<String, dynamic> search;
+  final Map<String, dynamic> glob;
+}
+
+final class _SearchProvider implements ModelProvider {
+  /// Completes once both tools have answered.
+  final Completer<_SearchResults> results = Completer<_SearchResults>();
+
+  @override
+  String get id => 'search-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    Map<String, dynamic>? resultFor(String callId) {
+      for (final item
+          in request.history.whereType<ToolResultConversationItem>()) {
+        if (item.callId == callId) {
+          return jsonDecode(item.output) as Map<String, dynamic>;
+        }
+      }
+      return null;
+    }
+
+    final search = resultFor('search-call');
+    if (search == null) {
+      const arguments = <String, dynamic>{
+        'query': 'marker',
+        'path': null,
+        'regex': null,
+        'case_sensitive': null,
+        'context_lines': null,
+        'include_ignored': null,
+        'max_results': null,
+      };
+      yield const ModelFunctionCall(
+        callId: 'search-call',
+        name: 'search_text',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'search-call',
+              name: 'search_text',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    final glob = resultFor('glob-call');
+    if (glob == null) {
+      const arguments = <String, dynamic>{
+        'pattern': '**/*.dart',
+        'path': null,
+        'include_ignored': null,
+        'max_results': null,
+      };
+      yield const ModelFunctionCall(
+        callId: 'glob-call',
+        name: 'glob',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'glob-call',
+              name: 'glob',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (!results.isCompleted) {
+      results.complete(_SearchResults(search: search, glob: glob));
+    }
+    yield const ModelTextDelta('Found it.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Found it.'),
     );
   }
 }

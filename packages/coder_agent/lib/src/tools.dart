@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
+import 'package:coder_agent/src/gitignore.dart';
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/workspace_walk.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
+import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 import 'package:platform/platform.dart';
 
@@ -173,7 +176,9 @@ class ListDirectoryTool extends AgentTool {
         entries
             .map(
               (entry) => <String, dynamic>{
-                'name': p.basename(entry.path),
+                // The injected filesystem's own context, not the host's, is
+                // what knows which separator these paths use.
+                'name': _fileSystem.path.basename(entry.path),
                 'type': switch (entry) {
                   file_api.Directory() => 'directory',
                   file_api.File() => 'file',
@@ -344,39 +349,90 @@ class ReadAttachmentTool extends AgentTool {
   }
 }
 
+/// Longest match line reported before it is cut.
+const int maxSearchLineLength = 500;
+
+/// Results one search returns unless the caller asks for fewer.
+const int defaultSearchResults = 200;
+
+/// Most lines of surrounding context a match may carry on each side.
+const int maxSearchContextLines = 5;
+
+/// Largest file the search will read.
+///
+/// Reporting context lines means holding a whole file at once, so a file this
+/// far past anything hand-written is skipped rather than paged into memory. It
+/// is almost certainly data or a build artefact.
+const int maxSearchFileBytes = 8 * 1024 * 1024;
+
 /// SearchTextTool defines a public contract.
 class SearchTextTool extends AgentTool {
   /// Creates a [SearchTextTool].
   SearchTextTool({
     this._fileSystem = const LocalFileSystem(),
     this._platform = const LocalPlatform(),
+    this._gitignoreEnvironment = const GitignoreEnvironment.none(),
   });
 
   final file_api.FileSystem _fileSystem;
   final Platform _platform;
 
-  static const Set<String> _ignored = <String>{
-    '.git',
-    '.dart_tool',
-    'build',
-    'node_modules',
-  };
+  /// Where user-level git configuration lives.
+  ///
+  /// Empty by default so nothing reads the running user's home unless a
+  /// composition root deliberately says to.
+  final GitignoreEnvironment _gitignoreEnvironment;
 
   @override
   String get name => 'search_text';
   @override
-  String get description => 'Search workspace text files for a literal string.';
+  String get description =>
+      'Search workspace text file contents. Matches a literal string by '
+      'default, or a regular expression when regex is true. Files git ignores '
+      'are skipped unless include_ignored is set. Use glob to search by file '
+      'name instead.';
   @override
   ToolRisk get risk => ToolRisk.read;
   @override
   Map<String, dynamic> get strictJsonSchema =>
       _strictObject(<String, Map<String, dynamic>>{
-        'query': <String, dynamic>{'type': 'string'},
+        'query': <String, dynamic>{
+          'type': 'string',
+          'description': 'Text to find, or a regular expression when regex.',
+        },
         'path': <String, dynamic>{
           'type': <String>['string', 'null'],
+          'description':
+              'Directory to search, relative to the workspace root. Null '
+              'searches the whole workspace.',
+        },
+        'regex': <String, dynamic>{
+          'type': <String>['boolean', 'null'],
+          'description':
+              'Whether query is a regular expression. Null and false treat it '
+              'as a literal string.',
+        },
+        'case_sensitive': <String, dynamic>{
+          'type': <String>['boolean', 'null'],
+          'description':
+              'Whether case matters. Null and true match case exactly.',
+        },
+        'context_lines': <String, dynamic>{
+          'type': <String>['integer', 'null'],
+          'description':
+              'Lines of surrounding context on each side of a match. Null '
+              'returns none; values are clamped to $maxSearchContextLines.',
+        },
+        'include_ignored': <String, dynamic>{
+          'type': <String>['boolean', 'null'],
+          'description':
+              'Whether to search files git ignores, such as build output and '
+              'generated code. Null and false skip them.',
         },
         'max_results': <String, dynamic>{
           'type': <String>['integer', 'null'],
+          'description':
+              'Most matches to return. Null uses $defaultSearchResults.',
         },
       });
 
@@ -387,49 +443,239 @@ class SearchTextTool extends AgentTool {
   ) async {
     final query = arguments['query'] as String;
     if (query.isEmpty) throw const FormatException('query must not be empty.');
-    final guard = WorkspacePathGuard(
+    final caseSensitive = arguments['case_sensitive'] != false;
+    final RegExp? pattern;
+    if (arguments['regex'] == true) {
+      try {
+        pattern = RegExp(query, caseSensitive: caseSensitive);
+      } on FormatException catch (error) {
+        // A bad expression is something the model can fix on the next call, so
+        // it is reported as tool output rather than failing the turn.
+        return ToolResult(
+          output: jsonEncode(<String, dynamic>{
+            'error': 'query is not a valid regular expression.',
+            'detail': error.message,
+          }),
+          isError: true,
+        );
+      }
+    } else {
+      pattern = null;
+    }
+
+    final root = WorkspacePathGuard(
       context.workspaceRoot,
       fileSystem: _fileSystem,
       platform: _platform,
+    ).resolveExisting((arguments['path'] as String?) ?? '.');
+    final maxResults =
+        (arguments['max_results'] as int?) ?? defaultSearchResults;
+    final contextLines = ((arguments['context_lines'] as int?) ?? 0).clamp(
+      0,
+      maxSearchContextLines,
     );
-    final root = guard.resolveExisting((arguments['path'] as String?) ?? '.');
-    final maxResults = (arguments['max_results'] as int?) ?? 200;
+    final needle = caseSensitive ? query : query.toLowerCase();
+
     final matches = <Map<String, dynamic>>[];
-    await for (final entity
-        in _fileSystem
-            .directory(root)
-            .list(recursive: true, followLinks: false)) {
-      context.cancellation.throwIfCancelled();
-      if (entity is! file_api.File ||
-          _ignored.any((name) => p.split(entity.path).contains(name))) {
-        continue;
-      }
+    var filesSearched = 0;
+    var truncated = false;
+    final walker = WorkspaceWalker(
+      fileSystem: _fileSystem,
+      workspaceRoot: context.workspaceRoot,
+      respectGitignore: arguments['include_ignored'] != true,
+      gitignoreEnvironment: _gitignoreEnvironment,
+    );
+
+    await for (final walked in walker.walk(root, context.cancellation)) {
+      final List<String> lines;
       try {
-        var lineNumber = 0;
-        await for (final line
-            in entity
-                .openRead()
-                .transform(utf8.decoder)
-                .transform(const LineSplitter())) {
-          lineNumber += 1;
-          if (line.contains(query)) {
-            matches.add(<String, dynamic>{
-              'path': p.relative(entity.path, from: context.workspaceRoot),
-              'line': lineNumber,
-              'text': line.length > 500 ? line.substring(0, 500) : line,
-            });
-            if (matches.length >= maxResults) {
-              return ToolResult(output: jsonEncode(matches));
-            }
-          }
-        }
+        if (await walked.file.length() > maxSearchFileBytes) continue;
+        lines = const LineSplitter().convert(await walked.file.readAsString());
       } on FormatException {
+        // Binary and non-UTF-8 files are skipped, not reported.
         continue;
       } on FileSystemException {
         continue;
       }
+      filesSearched += 1;
+      for (var index = 0; index < lines.length; index += 1) {
+        final line = lines[index];
+        final hit = pattern != null
+            ? pattern.hasMatch(line)
+            : (caseSensitive ? line : line.toLowerCase()).contains(needle);
+        if (!hit) continue;
+        matches.add(<String, dynamic>{
+          'path': walked.relativePath,
+          'line': index + 1,
+          'text': _clip(line),
+          if (contextLines > 0) ...<String, dynamic>{
+            'before': _slice(lines, index - contextLines, index),
+            'after': _slice(lines, index + 1, index + 1 + contextLines),
+          },
+        });
+        if (matches.length >= maxResults) {
+          truncated = true;
+          break;
+        }
+      }
+      // The cap ends the whole walk, not just this file.
+      if (truncated) break;
     }
-    return ToolResult(output: jsonEncode(matches));
+
+    return ToolResult(
+      output: truncateToolOutput(
+        jsonEncode(<String, dynamic>{
+          'matches': matches,
+          'matchCount': matches.length,
+          'filesSearched': filesSearched,
+          // Without this the model cannot tell "no more matches" from "the cap
+          // hid the rest", which are opposite conclusions.
+          'truncated': truncated,
+        }),
+      ),
+    );
+  }
+
+  static String _clip(String line) => line.length > maxSearchLineLength
+      ? line.substring(0, maxSearchLineLength)
+      : line;
+
+  static List<String> _slice(List<String> lines, int start, int end) => lines
+      .sublist(start.clamp(0, lines.length), end.clamp(0, lines.length))
+      .map(_clip)
+      .toList(growable: false);
+}
+
+/// GlobTool defines a public contract.
+class GlobTool extends AgentTool {
+  /// Creates a [GlobTool].
+  GlobTool({
+    this._fileSystem = const LocalFileSystem(),
+    this._platform = const LocalPlatform(),
+    this._gitignoreEnvironment = const GitignoreEnvironment.none(),
+  });
+
+  final file_api.FileSystem _fileSystem;
+  final Platform _platform;
+
+  /// Where user-level git configuration lives.
+  final GitignoreEnvironment _gitignoreEnvironment;
+
+  @override
+  String get name => 'glob';
+  @override
+  String get description =>
+      'Find workspace files by name using a glob pattern such as '
+      '`**/*_test.dart`. Files git ignores are skipped unless include_ignored '
+      'is set. Use search_text to search file contents instead.';
+  @override
+  ToolRisk get risk => ToolRisk.read;
+  @override
+  Map<String, dynamic> get strictJsonSchema => _strictObject(
+    <String, Map<String, dynamic>>{
+      'pattern': <String, dynamic>{
+        'type': 'string',
+        'description':
+            'Glob matched against paths relative to the searched directory, '
+            'for example `**/*.dart` or `lib/**/model_*.dart`.',
+      },
+      'path': <String, dynamic>{
+        'type': <String>['string', 'null'],
+        'description':
+            'Directory to search, relative to the workspace root. Null '
+            'searches the whole workspace.',
+      },
+      'include_ignored': <String, dynamic>{
+        'type': <String>['boolean', 'null'],
+        'description':
+            'Whether to include files git ignores. Null and false skip them.',
+      },
+      'max_results': <String, dynamic>{
+        'type': <String>['integer', 'null'],
+        'description': 'Most paths to return. Null uses $defaultSearchResults.',
+      },
+    },
+  );
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final rawPattern = arguments['pattern'] as String;
+    if (rawPattern.isEmpty) {
+      throw const FormatException('pattern must not be empty.');
+    }
+    final List<Glob> globs;
+    try {
+      // Walked paths are always `/`-separated, so the pattern is compiled in
+      // that same context rather than the host's.
+      globs = <Glob>[
+        Glob(rawPattern, context: p.posix),
+        // `**/` means "one or more directories" to package:glob, so a plain
+        // `**/*.dart` would silently miss every top-level file. Everyone who
+        // writes that pattern means "at any depth, including here", so the
+        // prefix-free form is matched as well.
+        if (rawPattern.startsWith('**/'))
+          Glob(rawPattern.substring(3), context: p.posix),
+      ];
+    } on FormatException catch (error) {
+      return ToolResult(
+        output: jsonEncode(<String, dynamic>{
+          'error': 'pattern is not a valid glob.',
+          'detail': error.message,
+        }),
+        isError: true,
+      );
+    }
+
+    final root = WorkspacePathGuard(
+      context.workspaceRoot,
+      fileSystem: _fileSystem,
+      platform: _platform,
+    ).resolveExisting((arguments['path'] as String?) ?? '.');
+    final maxResults =
+        (arguments['max_results'] as int?) ?? defaultSearchResults;
+    final walker = WorkspaceWalker(
+      fileSystem: _fileSystem,
+      workspaceRoot: context.workspaceRoot,
+      respectGitignore: arguments['include_ignored'] != true,
+      gitignoreEnvironment: _gitignoreEnvironment,
+    );
+    // Matching happens against the path the caller asked about, so a pattern
+    // written for a subdirectory does not have to repeat that subdirectory.
+    final scope = _scopeOf(root, context.workspaceRoot);
+
+    final paths = <String>[];
+    var truncated = false;
+    await for (final walked in walker.walk(root, context.cancellation)) {
+      final candidate = scope.isEmpty
+          ? walked.relativePath
+          : walked.relativePath.substring(scope.length + 1);
+      // Glob.matches is used rather than Glob.list, which reaches for dart:io
+      // directly and would bypass the injected filesystem.
+      if (!globs.any((glob) => glob.matches(candidate))) continue;
+      paths.add(walked.relativePath);
+      if (paths.length >= maxResults) {
+        truncated = true;
+        break;
+      }
+    }
+
+    return ToolResult(
+      output: truncateToolOutput(
+        jsonEncode(<String, dynamic>{
+          'paths': paths,
+          'truncated': truncated,
+        }),
+      ),
+    );
+  }
+
+  String _scopeOf(String root, String workspaceRoot) {
+    final relative = _fileSystem.path.relative(root, from: workspaceRoot);
+    if (relative == '.') return '';
+    return _fileSystem.path.split(relative).join('/');
   }
 }
 
@@ -1000,7 +1246,7 @@ class ApplyPatchTool extends AgentTool {
           await _fileSystem.file(entry.key).delete();
         } else {
           await _fileSystem
-              .directory(p.dirname(entry.key))
+              .directory(_fileSystem.path.dirname(entry.key))
               .create(recursive: true);
           final temporary = _fileSystem.file(
             '${entry.key}.coder-tmp-${_temporarySuffix()}',
