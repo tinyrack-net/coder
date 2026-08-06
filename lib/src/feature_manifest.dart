@@ -890,24 +890,29 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
-    id: 'agent.delegation',
+    id: 'agent.collaboration',
     description:
-        'Delegates to an allowlisted subagent and exposes its session.',
+        'Spawns, messages, waits on, interrupts, and lists collaborating '
+        'subagent sessions, and exposes them through the subagent track.',
+    apiMethods: <String>['listSubagents'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
       FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
       FeatureVerificationLayer.e2e,
     },
     e2eScenarios: <FeatureScenario>[
       FeatureScenario(
-        id: 'allowlisted_child_navigation',
-        description: 'Delegates to an allowlisted Agent and opens its child.',
+        id: 'spawn_child_final_answer',
+        description:
+            'Spawns a subagent asynchronously, opens its read-only tab from '
+            'the subagent track, and receives its final answer as mail.',
         surfaces: _allSurfaces,
       ),
       FeatureScenario(
-        id: 'disallowed_delegation_rejected',
-        description: 'Rejects delegation outside the Agent allowlist.',
+        id: 'unauthorized_agent_type_rejected',
+        description: 'Rejects a spawn outside the caller agent allowlist.',
         surfaces: _allSurfaces,
       ),
     ],

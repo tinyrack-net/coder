@@ -105,6 +105,78 @@ void main() {
     );
   });
 
+  test('queued turn input is drained before every model request', () async {
+    final provider = _SnapshottingProvider(<List<ModelEvent>>[
+      _toolResponseWith('echo', <String, dynamic>{'value': 'one'}),
+      _textResponse('done'),
+    ]);
+    final source = _QueueInputSource()
+      ..queue.add(const UserConversationItem('mail before the turn'));
+    final harness = _RunnerHarness(
+      provider,
+      tools: <AgentTool>[
+        _EnqueueOnExecuteTool(
+          source,
+          const UserConversationItem('mail during the tool round'),
+        ),
+      ],
+      pendingTurnInput: source,
+    );
+
+    await harness.runner.startTurn(_request(), CancellationToken());
+
+    // The pre-turn mail rides the first request; mail queued while the tool
+    // ran is folded into the boundary before the second request.
+    final first = provider.userTextsPerRequest[0];
+    expect(first, contains('mail before the turn'));
+    expect(first, isNot(contains('mail during the tool round')));
+    expect(
+      provider.userTextsPerRequest[1],
+      contains('mail during the tool round'),
+    );
+
+    expect(
+      harness.events.where((type) => type == 'agent.message.delivered').length,
+      2,
+    );
+    expect(
+      harness.items.whereType<UserConversationItem>().map((item) => item.text),
+      containsAll(<String>[
+        'mail before the turn',
+        'mail during the tool round',
+      ]),
+    );
+    expect(source.drains, greaterThanOrEqualTo(2));
+  });
+
+  test('input queued after the final response stays queued', () async {
+    final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('done')]);
+    final source = _QueueInputSource();
+    final harness = _RunnerHarness(provider, pendingTurnInput: source);
+
+    await harness.runner.startTurn(_request(), CancellationToken());
+    source.queue.add(const UserConversationItem('late mail'));
+
+    expect(harness.events, isNot(contains('agent.message.delivered')));
+    expect(
+      harness.items.whereType<UserConversationItem>().map((item) => item.text),
+      isNot(contains('late mail')),
+    );
+    expect(source.queue, hasLength(1));
+  });
+
+  test('an empty input source injects nothing and emits no event', () async {
+    final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('done')]);
+    final harness = _RunnerHarness(
+      provider,
+      pendingTurnInput: _QueueInputSource(),
+    );
+
+    await harness.runner.startTurn(_request(), CancellationToken());
+
+    expect(harness.events, isNot(contains('agent.message.delivered')));
+  });
+
   test('the runner forwards each tool strict-schema opt-out', () async {
     final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('done')]);
     final harness = _RunnerHarness(
@@ -855,6 +927,7 @@ final class _RunnerHarness {
       ApprovalDecision.approved,
     ),
     void Function(List<ConversationItem> retain)? contextResets,
+    TurnInputSource? pendingTurnInput,
   }) {
     runner = AgentRunner(
       provider: provider,
@@ -863,6 +936,7 @@ final class _RunnerHarness {
       contextResets: contextResets == null
           ? null
           : _RecordingContextReset(contextResets),
+      pendingTurnInput: pendingTurnInput,
       onEvent: (type, _) => events.add(type),
       onStatus: (status, {error}) {
         statuses.add(status);
@@ -877,6 +951,57 @@ final class _RunnerHarness {
   final List<SessionStatus> statuses = <SessionStatus>[];
   final List<String> statusErrors = <String>[];
   final List<ConversationItem> items = <ConversationItem>[];
+}
+
+final class _SnapshottingProvider extends _FakeProvider {
+  _SnapshottingProvider(super.responses);
+
+  /// User texts per request, copied because the runner mutates the live
+  /// history list between rounds.
+  final List<List<String>> userTextsPerRequest = <List<String>>[];
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) {
+    userTextsPerRequest.add(
+      request.history
+          .whereType<UserConversationItem>()
+          .map((item) => item.text)
+          .toList(growable: false),
+    );
+    return super.stream(request, cancellation);
+  }
+}
+
+final class _QueueInputSource implements TurnInputSource {
+  final List<ConversationItem> queue = <ConversationItem>[];
+  int drains = 0;
+
+  @override
+  Future<List<ConversationItem>> drainPending() async {
+    drains += 1;
+    final drained = List<ConversationItem>.unmodifiable(queue);
+    queue.clear();
+    return drained;
+  }
+}
+
+final class _EnqueueOnExecuteTool extends _EchoTool {
+  _EnqueueOnExecuteTool(this._source, this._item);
+
+  final _QueueInputSource _source;
+  final ConversationItem _item;
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    _source.queue.add(_item);
+    return const ToolResult(output: '{"queued":true}');
+  }
 }
 
 final class _RecordingContextReset implements ContextResetCoordinator {

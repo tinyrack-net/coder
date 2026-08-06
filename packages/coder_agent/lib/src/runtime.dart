@@ -20,6 +20,17 @@ typedef SessionStatusCallback =
 typedef ProviderItemsCallback =
     FutureOr<void> Function(List<ConversationItem> items);
 
+/// Supplies externally queued conversation input at message boundaries.
+///
+/// The runner drains this source immediately before every model request, so
+/// input queued while the model streams or a tool runs is folded into the
+/// next round rather than interrupting the current one. Input queued after
+/// the final response of a turn stays queued for the next turn.
+abstract interface class TurnInputSource {
+  /// Returns and consumes items queued for this session; empty when none.
+  Future<List<ConversationItem>> drainPending();
+}
+
 /// AgentRunRequest defines a public contract.
 class AgentRunRequest {
   /// Creates a [AgentRunRequest].
@@ -120,6 +131,7 @@ class AgentRunner {
     required this._onStatus,
     required this._onProviderItems,
     this._contextResets,
+    this._pendingTurnInput,
     ApprovalPolicy Function(PermissionMode mode)? policyFactory,
   }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool},
        _policyFactory = policyFactory ?? DefaultApprovalPolicy.new {
@@ -146,6 +158,9 @@ class AgentRunner {
 
   /// Discards persisted history when a tool asks for a fresh window.
   final ContextResetCoordinator? _contextResets;
+
+  /// Externally queued input drained at every message boundary.
+  final TurnInputSource? _pendingTurnInput;
 
   /// Builds the approval policy for a turn's permission mode.
   final ApprovalPolicy Function(PermissionMode mode) _policyFactory;
@@ -229,6 +244,18 @@ class AgentRunner {
     try {
       while (true) {
         cancellation.throwIfCancelled();
+
+        final injected =
+            await _pendingTurnInput?.drainPending() ??
+            const <ConversationItem>[];
+        if (injected.isNotEmpty) {
+          input.addAll(injected);
+          persisted.addAll(injected);
+          await _onProviderItems(injected);
+          await _onEvent('agent.message.delivered', <String, dynamic>{
+            'count': injected.length,
+          });
+        }
 
         final functionCalls = <ModelFunctionCall>[];
         ModelResponseCompleted? completed;

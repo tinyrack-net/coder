@@ -108,6 +108,39 @@ abstract interface class SessionRepository {
 
   /// The updateTurn public API member.
   Future<void> updateTurn(String id, TurnStatus status, {String? error});
+
+  /// Lists one collaboration tree (root included) ordered by agent path.
+  Future<List<SessionDto>> listByRoot(String rootSessionId);
+
+  /// Returns the tree member with [agentPath], or null.
+  ///
+  /// The tree root itself is addressed by `/root` even though its stored
+  /// `agentPath` is null.
+  Future<SessionDto?> getByAgentPath(String rootSessionId, String agentPath);
+
+  /// Sets the collaboration lifecycle of one session.
+  Future<SessionDto> updateLifecycle(String id, AgentLifecycle lifecycle);
+}
+
+/// One queued mailbox message with its delivery trigger flag.
+typedef QueuedAgentMail = ({AgentMailboxMessageDto message, bool triggerTurn});
+
+/// Persistence boundary for inter-agent mailbox messages.
+abstract interface class AgentMailboxRepository {
+  /// Persists one queued message.
+  Future<void> enqueue(
+    AgentMailboxMessageDto message, {
+    required bool triggerTurn,
+  });
+
+  /// Returns undelivered messages for [sessionId] oldest first.
+  Future<List<QueuedAgentMail>> undeliveredFor(String sessionId);
+
+  /// Marks messages as folded into a recipient turn.
+  Future<void> markDelivered(List<String> ids, DateTime deliveredAt);
+
+  /// Whether [sessionId] has an undelivered turn-triggering message.
+  Future<bool> hasUndeliveredTrigger(String sessionId);
 }
 
 /// Persistence boundary for attachment metadata and turn relationships.

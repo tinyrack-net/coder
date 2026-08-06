@@ -17,6 +17,7 @@ import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_daemon/src/mcp_resource_tools.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/mcp_transports.dart';
+import 'package:coder_daemon/src/multi_agent.dart';
 import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_daemon/src/portable_terminal.dart';
 import 'package:coder_daemon/src/ports.dart';
@@ -259,6 +260,14 @@ abstract final class DaemonApplication {
             risk: ToolRisk.read,
             alwaysOn: true,
           ),
+          const AgentToolDefinitionDto(
+            id: collaborationCapabilityId,
+            name: collaborationCapabilityId,
+            description:
+                'Spawn, message, wait on, interrupt, and list collaborating '
+                'subagents that share this workspace.',
+            risk: ToolRisk.read,
+          ),
         ],
       );
       final mcp = McpService(
@@ -412,6 +421,18 @@ abstract final class DaemonApplication {
         execHostFor: (id) => SessionExecHost(execSessions, id),
         skills: skills,
       );
+      final multiAgent = MultiAgentService(
+        sessions: database.sessionDao,
+        mailbox: database.agentMailboxDao,
+        timeline: database.timelineDao,
+        getDefinition: agentDefinitions.get,
+        validateModel: providers.validateAgentModel,
+        fallbackModel: providers.fallbackModel,
+        events: events.add,
+        clock: clock,
+        ids: ids,
+      )..runtime = service;
+      service.multiAgent = multiAgent;
       final fileIndex = GitAwareFileIndexGateway(
         const IoCommandRunner(),
         clock,
@@ -479,7 +500,7 @@ abstract final class DaemonApplication {
           'embeddedDaemon': true,
           'providerCatalog': true,
           'agentDefinitions': true,
-          'subagents': true,
+          'multiAgent': true,
           'mcp': true,
           'skills': true,
           'attachments': true,

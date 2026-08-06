@@ -450,6 +450,12 @@ void main() {
           .descendant(of: editorList, matching: find.byType(Scrollable))
           .first;
       await tester.scrollUntilVisible(
+        find.text('collaboration'),
+        400,
+        scrollable: editorScrollable,
+      );
+      await tester.tap(find.text('collaboration').last);
+      await tester.scrollUntilVisible(
         find.text('호출 가능한 Subagent'),
         400,
         scrollable: editorScrollable,
@@ -457,10 +463,9 @@ void main() {
       await tester.tap(find.text('Reviewer').last);
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
-      expect(
-        (await setupClient.getAgentDefinition('coder')).callableAgentIds,
-        <String>['reviewer'],
-      );
+      final collaboratingCoder = await setupClient.getAgentDefinition('coder');
+      expect(collaboratingCoder.callableAgentIds, <String>['reviewer']);
+      expect(collaboratingCoder.toolIds, contains('collaboration'));
 
       await tester.tap(find.text('Agent'));
       await pumpUntil(tester, find.text('Agents'));
@@ -844,22 +849,69 @@ void main() {
       );
       await tester.tap(find.byKey(send));
       await tester.pump();
+      // The parent turn completes without waiting for the spawned child.
       await _pumpUntilWithSessionDiagnostics(
         tester,
         find.text('Parent completed.', findRichText: true),
         setupClient,
       );
+      // The child works asynchronously; wait for its FINAL_ANSWER so the
+      // track rows below render settled icons instead of live spinners.
+      late SessionDto spawnedChild;
+      await pumpUntilCondition(
+        tester,
+        () async {
+          final sessions = await setupClient.listSessions(
+            worktreeId: 'checkout-e2e',
+          );
+          final child = sessions
+              .where(
+                (session) =>
+                    session.origin == SessionOrigin.delegated &&
+                    session.lifecycle == AgentLifecycle.completed,
+              )
+              .firstOrNull;
+          if (child == null) return false;
+          spawnedChild = child;
+          return true;
+        },
+        'the spawned subagent to complete',
+      );
+      expect(spawnedChild.taskName, 'review_task');
+      expect(spawnedChild.agentPath, '/root/review_task');
+      expect(
+        (await setupClient.listSubagents(spawnedChild.id)).map(
+          (session) => session.id,
+        ),
+        contains(spawnedChild.id),
+      );
+
+      // The collapsed track summarizes; expanding it reveals the child row,
+      // and opening the row shows a live read-only transcript.
+      final trackHeader = find.text('서브 에이전트 1개');
+      await pumpUntil(tester, trackHeader);
+      await tester.tap(trackHeader);
+      await tester.pumpAndSettle();
+      final childRow = find.byKey(
+        ValueKey<String>('subagent-row-${spawnedChild.id}'),
+      );
+      await pumpUntil(tester, childRow);
+      await tester.tap(childRow);
+      await pumpUntil(tester, find.textContaining('읽기 전용'));
+      await pumpUntil(
+        tester,
+        find.text('Review completed.', findRichText: true),
+      );
+      expect(find.byKey(composer), findsNothing);
+      // Subagents never surface in the all-sessions menu.
       await tester.tap(
         find
             .byKey(const ValueKey<String>('workspace-all-sessions-menu'))
             .hitTestable(),
       );
-      await pumpUntil(tester, find.text('Reviewer'));
-      // The popup is still animating when its label first appears.
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Reviewer').last);
-      await pumpUntil(tester, find.text('reviewer · delegated'));
-      await tester.tap(find.text('Delegate review').first);
+      expect(find.widgetWithText(TRMenuItem, 'review_task'), findsNothing);
+      await tester.tap(find.text('Delegate review').last);
       await pumpUntil(tester, find.text('coder · manual'));
       await pumpUntil(tester, find.byKey(composer));
 
@@ -943,7 +995,7 @@ void main() {
       await _pumpUntilWithSessionDiagnostics(
         tester,
         find.textContaining(
-          'Agent delegation is not allowed: not-allowed',
+          'Agent type is not allowed: not-allowed',
           findRichText: true,
         ),
         setupClient,
@@ -1194,9 +1246,18 @@ void main() {
         turnBranches
             .where((event) => event.type == 'turn.failed')
             .map((event) => event.data['error']),
-        contains(
-          contains('Agent delegation is not allowed: not-allowed'),
-        ),
+        contains(contains('planned provider outage')),
+      );
+      // A rejected spawn surfaces as an error tool result, not a failed turn.
+      expect(
+        turnBranches
+            .where(
+              (event) =>
+                  event.type == 'tool.completed' &&
+                  event.data['isError'] == true,
+            )
+            .map((event) => event.data['output']),
+        contains(contains('Agent type is not allowed: not-allowed')),
       );
       expect(
         turnBranches
@@ -1694,7 +1755,7 @@ void main() {
       'feature_test__agent_definition_management__e2e',
       'feature_test__mcp_server_management__e2e',
       'feature_test__skill_management__e2e',
-      'feature_test__agent_delegation__e2e',
+      'feature_test__agent_collaboration__e2e',
       'feature_test__provider_catalog__e2e',
       'feature_test__provider_connection_management__e2e',
       'feature_test__provider_custom__e2e',
@@ -1740,8 +1801,10 @@ void main() {
       'feature_scenario__composer_slash_command__agent_command_prompt__e2e',
       'feature_scenario__skill_invocation__enabled_injection_and_load__e2e',
       'feature_scenario__skill_invocation__disabled_skill_excluded__e2e',
-      'feature_scenario__agent_delegation__allowlisted_child_navigation__e2e',
-      'feature_scenario__agent_delegation__disallowed_delegation_rejected__e2e',
+      'feature_scenario__agent_collaboration__spawn_child_final_answer__e2e',
+      // The scenario tag mirrors its typed manifest ID exactly.
+      // ignore: lines_longer_than_80_chars
+      'feature_scenario__agent_collaboration__unauthorized_agent_type_rejected__e2e',
       'feature_scenario__provider_catalog__presets_models_refresh__e2e',
       // The scenario tag mirrors its typed manifest ID exactly.
       // ignore: lines_longer_than_80_chars
@@ -2373,12 +2436,21 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
 
-    final delegateEnabled = request.tools.any(
-      (tool) => tool.name == 'delegate_agent',
-    );
-    final hasDelegateResult = request.history
+    // A spawned subagent's turns always carry the NEW_TASK envelope the
+    // daemon delivered at its first message boundary.
+    final isSubagentTurn = request.history
+        .whereType<UserConversationItem>()
+        .any((item) => item.text.startsWith('Message Type: NEW_TASK'));
+    if (isSubagentTurn) {
+      yield const ModelTextDelta('Review completed.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Review completed.'),
+      );
+      return;
+    }
+    final hasSpawnResult = request.history
         .whereType<ToolResultConversationItem>()
-        .any((item) => item.callId == 'delegate-call');
+        .any((item) => item.callId == 'spawn-call');
     final hasPatchResult = request.history
         .whereType<ToolResultConversationItem>()
         .any((item) => item.callId == 'patch-call');
@@ -2461,12 +2533,16 @@ final class _AgentE2eProvider implements ModelProvider {
     if (latestPrompt == 'Disallowed delegation' &&
         !hasDisallowedDelegationResult) {
       const arguments = <String, dynamic>{
-        'agentDefinitionId': 'not-allowed',
-        'prompt': 'This delegation must not start.',
+        'task_name': 'forbidden_task',
+        'message': 'This spawn must not start.',
+        'agent_type': 'not-allowed',
+        'fork_turns': null,
+        'model': null,
+        'reasoning_effort': null,
       };
       yield const ModelFunctionCall(
         callId: 'disallowed-delegate-call',
-        name: 'delegate_agent',
+        name: 'spawn_agent',
         arguments: arguments,
       );
       yield const ModelResponseCompleted(
@@ -2475,7 +2551,7 @@ final class _AgentE2eProvider implements ModelProvider {
           toolCalls: <ConversationToolCall>[
             ConversationToolCall(
               callId: 'disallowed-delegate-call',
-              name: 'delegate_agent',
+              name: 'spawn_agent',
               arguments: arguments,
             ),
           ],
@@ -2664,16 +2740,18 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
 
-    if (latestPrompt == 'Delegate review' &&
-        delegateEnabled &&
-        !hasDelegateResult) {
+    if (latestPrompt == 'Delegate review' && !hasSpawnResult) {
       const arguments = <String, dynamic>{
-        'agentDefinitionId': 'reviewer',
-        'prompt': 'Review without changing files.',
+        'task_name': 'review_task',
+        'message': 'Review without changing files.',
+        'agent_type': 'reviewer',
+        'fork_turns': null,
+        'model': null,
+        'reasoning_effort': null,
       };
       yield const ModelFunctionCall(
-        callId: 'delegate-call',
-        name: 'delegate_agent',
+        callId: 'spawn-call',
+        name: 'spawn_agent',
         arguments: arguments,
       );
       yield const ModelResponseCompleted(
@@ -2681,19 +2759,12 @@ final class _AgentE2eProvider implements ModelProvider {
           text: '',
           toolCalls: <ConversationToolCall>[
             ConversationToolCall(
-              callId: 'delegate-call',
-              name: 'delegate_agent',
+              callId: 'spawn-call',
+              name: 'spawn_agent',
               arguments: arguments,
             ),
           ],
         ),
-      );
-      return;
-    }
-    if (!delegateEnabled) {
-      yield const ModelTextDelta('Review completed.');
-      yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(text: 'Review completed.'),
       );
       return;
     }

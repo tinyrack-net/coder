@@ -972,6 +972,44 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String subagentTrackHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '서브 에이전트 $count개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String subagentTrackRunning(int count) {
+    return '$count개 실행 중';
+  }
+
+  @override
+  String get subagentStatusRunning => '실행 중';
+
+  @override
+  String get subagentStatusCompleted => '완료';
+
+  @override
+  String get subagentStatusInterrupted => '중단됨';
+
+  @override
+  String get subagentStatusErrored => '실패';
+
+  @override
+  String get subagentReadOnlyNotice => '서브 에이전트 대화 · 읽기 전용';
+
+  @override
+  String get chatToolSubagentQueued => '대기열에 추가됨';
+
+  @override
+  String chatToolSubagentCount(int count) {
+    return '에이전트 $count개';
+  }
+
+  @override
   String chatDeferredTools(int count) {
     return '검색으로 사용할 수 있는 도구 $count개';
   }

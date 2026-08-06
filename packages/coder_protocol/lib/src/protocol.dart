@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 19;
+const int coderProtocolVersion = 20;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -109,6 +109,9 @@ abstract final class RpcMethod {
 
   /// Lists persisted sessions.
   static const String sessionList = 'session.list';
+
+  /// Lists all sessions of one collaboration tree ordered by agent path.
+  static const String sessionSubagentList = 'session.subagents.list';
 
   /// Creates a persisted session.
   static const String sessionCreate = 'session.create';

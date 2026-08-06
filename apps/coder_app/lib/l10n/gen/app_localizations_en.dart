@@ -988,6 +988,45 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String subagentTrackHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count subagents',
+      one: '1 subagent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String subagentTrackRunning(int count) {
+    return '$count running';
+  }
+
+  @override
+  String get subagentStatusRunning => 'Running';
+
+  @override
+  String get subagentStatusCompleted => 'Completed';
+
+  @override
+  String get subagentStatusInterrupted => 'Interrupted';
+
+  @override
+  String get subagentStatusErrored => 'Failed';
+
+  @override
+  String get subagentReadOnlyNotice => 'Subagent conversation · read-only';
+
+  @override
+  String get chatToolSubagentQueued => 'Queued';
+
+  @override
+  String chatToolSubagentCount(int count) {
+    return '$count agents';
+  }
+
+  @override
   String chatDeferredTools(int count) {
     return '$count tools are available through search';
   }

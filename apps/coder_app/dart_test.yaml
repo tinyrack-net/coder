@@ -61,8 +61,8 @@ tags:
   feature_scenario__composer_slash_command__agent_command_prompt__e2e:
   feature_scenario__skill_invocation__enabled_injection_and_load__e2e:
   feature_scenario__skill_invocation__disabled_skill_excluded__e2e:
-  feature_scenario__agent_delegation__allowlisted_child_navigation__e2e:
-  feature_scenario__agent_delegation__disallowed_delegation_rejected__e2e:
+  feature_scenario__agent_collaboration__spawn_child_final_answer__e2e:
+  feature_scenario__agent_collaboration__unauthorized_agent_type_rejected__e2e:
   feature_scenario__provider_catalog__presets_models_refresh__e2e:
   feature_scenario__provider_catalog__catalog_failure_retry__e2e:
   feature_scenario__provider_connection_management__api_key_none_disconnect__e2e:
@@ -136,8 +136,9 @@ tags:
   feature_test__mcp_tool_execution__widget:
   route_test__mcp_settings_route__widget:
   feature_test__agent_definition_management__e2e:
-  feature_test__agent_delegation__widget:
-  feature_test__agent_delegation__e2e:
+  feature_test__agent_collaboration__unit:
+  feature_test__agent_collaboration__widget:
+  feature_test__agent_collaboration__e2e:
   feature_test__skill_management__widget:
   feature_test__skill_management__e2e:
   feature_test__skill_invocation__widget:

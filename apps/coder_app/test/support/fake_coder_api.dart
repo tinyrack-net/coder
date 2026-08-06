@@ -618,6 +618,24 @@ final class FakeCoderApi implements CoderApi {
       .toList(growable: false);
 
   @override
+  Future<List<SessionDto>> listSubagents(String sessionId) async {
+    final session = _agents.firstWhere(
+      (agent) => agent.id == sessionId,
+      orElse: () => throw StateError('Session not found: $sessionId'),
+    );
+    final rootId = session.rootSessionId ?? session.id;
+    return _agents
+        .where(
+          (agent) => agent.id == rootId || agent.rootSessionId == rootId,
+        )
+        .toList(growable: false)
+      ..sort(
+        (left, right) =>
+            (left.agentPath ?? '').compareTo(right.agentPath ?? ''),
+      );
+  }
+
+  @override
   Future<SessionDto> createSession({
     required String id,
     required String worktreeId,

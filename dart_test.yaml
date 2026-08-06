@@ -110,10 +110,11 @@ tags:
   feature_test__mcp_tool_execution__unit:
   feature_test__mcp_tool_execution__verticalSlice:
   feature_test__mcp_tool_execution__widget:
-  feature_test__agent_delegation__unit:
-  feature_test__agent_delegation__verticalSlice:
-  feature_test__agent_delegation__widget:
-  feature_test__agent_delegation__e2e:
+  feature_test__agent_collaboration__unit:
+  feature_test__agent_collaboration__contract:
+  feature_test__agent_collaboration__verticalSlice:
+  feature_test__agent_collaboration__widget:
+  feature_test__agent_collaboration__e2e:
   feature_test__skill_management__unit:
   feature_test__skill_management__contract:
   feature_test__skill_management__verticalSlice:

@@ -1396,7 +1396,7 @@ final class SessionTabsControllerProvider
 }
 
 String _$sessionTabsControllerHash() =>
-    r'2986d349755320d9bd03bf811d75fa5f6efc1ed9';
+    r'1d5128610a4f21f36ed5fe3807d0b6f39ee4a390';
 
 /// Owns local tab visibility independently for each host worktree.
 

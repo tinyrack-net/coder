@@ -20,9 +20,6 @@ enum SessionStatus {
   /// The agent asked the user a question and cannot continue without an answer.
   waitingForInput,
 
-  /// The parent session is waiting for a delegated child session.
-  waitingForSubagent,
-
   /// The failed public API member.
   failed,
 
@@ -118,6 +115,40 @@ enum SessionOrigin {
 
   /// A primary agent delegated work to this child session.
   delegated,
+}
+
+/// Collaboration lifecycle of a spawned subagent session.
+///
+/// Maintained exclusively by the daemon. `interrupted` is not final: an
+/// interrupted subagent stays messageable and can be resumed with a
+/// follow-up task.
+enum AgentLifecycle {
+  /// The session exists but has not started its first turn.
+  pendingInit,
+
+  /// A turn is running or blocked on approval/input.
+  running,
+
+  /// The last turn was cancelled; the agent remains messageable.
+  interrupted,
+
+  /// The last turn completed and the session is idle.
+  completed,
+
+  /// The last turn failed.
+  errored,
+}
+
+/// Kind of an inter-agent mailbox message.
+enum InterAgentMessageType {
+  /// A plain message between collaborating agents.
+  message,
+
+  /// The initial task delivered to a freshly spawned subagent.
+  newTask,
+
+  /// A finished subagent's final answer delivered to its parent.
+  finalAnswer,
 }
 
 /// Values supported by TurnStatus.
@@ -949,6 +980,19 @@ abstract class SessionDto with _$SessionDto {
     /// Provider service tier for this session; null uses the provider default.
     String? serviceTier,
     String? parentSessionId,
+
+    /// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
+    String? taskName,
+
+    /// Canonical collaboration path, e.g. `/root/task1/task_3`; null for
+    /// manually created root sessions (implicitly `/root`).
+    String? agentPath,
+
+    /// Root session of the collaboration tree; null for root sessions.
+    String? rootSessionId,
+
+    /// Collaboration lifecycle; null for sessions outside a tree.
+    AgentLifecycle? lifecycle,
     String? activeTurnId,
     String? lastError,
 
@@ -962,6 +1006,33 @@ abstract class SessionDto with _$SessionDto {
   /// Decodes a session descriptor.
   factory SessionDto.fromJson(Map<String, dynamic> json) =>
       _$SessionDtoFromJson(json);
+}
+
+@freezed
+/// One queued inter-agent mailbox message.
+abstract class AgentMailboxMessageDto with _$AgentMailboxMessageDto {
+  /// Creates a mailbox message descriptor.
+  const factory AgentMailboxMessageDto({
+    required String id,
+
+    /// Recipient session.
+    required String sessionId,
+    required String senderPath,
+    required String recipientPath,
+    required InterAgentMessageType type,
+    required String payload,
+    required DateTime createdAt,
+
+    /// Sender session; null when the daemon itself authored the message.
+    String? senderSessionId,
+
+    /// When the message was folded into a recipient turn; null while queued.
+    DateTime? deliveredAt,
+  }) = _AgentMailboxMessageDto;
+
+  /// Decodes a mailbox message descriptor.
+  factory AgentMailboxMessageDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentMailboxMessageDtoFromJson(json);
 }
 
 @freezed

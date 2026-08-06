@@ -952,11 +952,16 @@ class SessionTabsController extends _$SessionTabsController {
     final saved = settings.sessionTabs[selection.storageKey];
     final existingIds = sessions.map((item) => item.id).toSet();
     final existingTerminalIds = terminals.map((item) => item.id).toSet();
+    // Subagent sessions never open by default; they are reached through the
+    // subagent track of their root conversation.
+    final firstRoot = sessions
+        .where((session) => session.parentSessionId == null)
+        .firstOrNull;
     final open =
         saved?.openAgentIds
             .where(existingIds.contains)
             .toList(growable: false) ??
-        <String>[if (sessions.isNotEmpty) sessions.first.id];
+        <String>[if (firstRoot != null) firstRoot.id];
     // A saved null selection means the composer draft is showing, so it must
     // not snap back to the first open tab on the next rebuild.
     final selected = saved == null
