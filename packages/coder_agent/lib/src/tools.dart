@@ -1186,7 +1186,9 @@ class ApplyPatchTool extends AgentTool {
   String get name => 'apply_patch';
   @override
   String get description =>
-      'Apply a unified diff to UTF-8 files inside the workspace.';
+      'Apply a unified diff to UTF-8 files inside the workspace. Create a file '
+      'with a /dev/null source, delete one with a /dev/null target, and move '
+      'or rename one by naming different paths in the --- and +++ headers.';
   @override
   ToolRisk get risk => ToolRisk.write;
   @override
@@ -1212,66 +1214,167 @@ class ApplyPatchTool extends AgentTool {
       fileSystem: _fileSystem,
       platform: _platform,
     );
-    final writes = <String, String>{};
-    final deletes = <String>{};
-    final originals = <String, String?>{};
+
+    // Every change is planned, and every patch context validated, before a
+    // single byte is written. A patch that cannot apply must leave the
+    // workspace exactly as it found it.
+    final plan = <_PlannedChange>[];
     for (final filePatch in patch.files) {
       context.cancellation.throwIfCancelled();
-      final relative = filePatch.newPath == '/dev/null'
-          ? filePatch.oldPath
-          : filePatch.newPath;
-      final clean = relative.startsWith('a/') || relative.startsWith('b/')
-          ? relative.substring(2)
-          : relative;
-      final target = guard.resolveWritable(clean);
-      final exists = _fileSystem.file(target).existsSync();
-      if (filePatch.newPath == '/dev/null' && !exists) {
-        throw FormatException('Cannot delete a missing file: $clean');
-      }
-      final original = exists
-          ? await _fileSystem.file(target).readAsString()
-          : '';
-      originals[target] = exists ? original : null;
-      writes[target] = filePatch.newPath == '/dev/null'
-          ? ''
-          : filePatch.apply(original);
-      if (filePatch.newPath == '/dev/null') deletes.add(target);
+      plan.add(await _plan(filePatch, guard));
     }
 
-    final applied = <String>[];
+    final applied = <_PlannedChange>[];
     try {
-      for (final entry in writes.entries) {
-        final original = originals[entry.key];
-        if (deletes.contains(entry.key) && original != null) {
-          await _fileSystem.file(entry.key).delete();
-        } else {
-          await _fileSystem
-              .directory(_fileSystem.path.dirname(entry.key))
-              .create(recursive: true);
-          final temporary = _fileSystem.file(
-            '${entry.key}.coder-tmp-${_temporarySuffix()}',
-          );
-          await temporary.writeAsString(entry.value, flush: true);
-          await temporary.rename(entry.key);
-        }
-        applied.add(entry.key);
+      for (final change in plan) {
+        await change.apply(_fileSystem, _temporarySuffix);
+        applied.add(change);
       }
     } catch (_) {
-      for (final target in applied.reversed) {
-        final original = originals[target];
-        if (original == null) {
-          if (_fileSystem.file(target).existsSync()) {
-            await _fileSystem.file(target).delete();
-          }
-        } else {
-          await _fileSystem.file(target).writeAsString(original, flush: true);
-        }
+      for (final change in applied.reversed) {
+        await change.revert(_fileSystem);
       }
       rethrow;
     }
     return ToolResult(
       output: jsonEncode(<String, dynamic>{'changedFiles': applied.length}),
     );
+  }
+
+  /// Works out what one file header asks for, and reads what it needs.
+  Future<_PlannedChange> _plan(
+    FilePatch filePatch,
+    WorkspacePathGuard guard,
+  ) async {
+    final from = _cleanPath(filePatch.oldPath);
+    final to = _cleanPath(filePatch.newPath);
+    if (from == null && to == null) {
+      throw const FormatException('A patch cannot move /dev/null to itself.');
+    }
+
+    if (to == null) {
+      final source = guard.resolveWritable(from!);
+      if (!_fileSystem.file(source).existsSync()) {
+        throw FormatException('Cannot delete a missing file: $from');
+      }
+      return _PlannedChange(
+        source: source,
+        sourceContents: await _fileSystem.file(source).readAsString(),
+      );
+    }
+
+    final target = guard.resolveWritable(to);
+    // A creation names /dev/null as its source; a plain edit names the same
+    // path on both sides. Anything else is a move.
+    final source = from == null ? null : guard.resolveWritable(from);
+    final moving = source != null && source != target;
+
+    final readFrom = source ?? target;
+    final originalExists = _fileSystem.file(readFrom).existsSync();
+    if (moving && !originalExists) {
+      throw FormatException('Cannot move a missing file: $from');
+    }
+    final original = originalExists
+        ? await _fileSystem.file(readFrom).readAsString()
+        : '';
+
+    if (moving && _fileSystem.file(target).existsSync()) {
+      // Silently clobbering the destination would lose a file the patch never
+      // mentioned, so the move is refused instead.
+      throw FormatException('Cannot move onto an existing file: $to');
+    }
+
+    return _PlannedChange(
+      source: moving ? source : null,
+      sourceContents: moving ? original : null,
+      target: target,
+      targetContents: filePatch.apply(original),
+      targetExisted: !moving && originalExists,
+      targetOriginal: !moving && originalExists ? original : null,
+    );
+  }
+
+  /// Strips the `a/` and `b/` prefixes, mapping `/dev/null` to null.
+  static String? _cleanPath(String path) {
+    if (path == '/dev/null') return null;
+    return path.startsWith('a/') || path.startsWith('b/')
+        ? path.substring(2)
+        : path;
+  }
+}
+
+/// One file's worth of work, and everything needed to undo it.
+class _PlannedChange {
+  _PlannedChange({
+    this.source,
+    this.sourceContents,
+    this.target,
+    this.targetContents,
+    this.targetExisted = false,
+    this.targetOriginal,
+  });
+
+  /// Path to remove, for a delete or the origin half of a move.
+  final String? source;
+
+  /// What [source] held, so a failure can put it back.
+  final String? sourceContents;
+
+  /// Path to write, absent for a delete.
+  final String? target;
+
+  /// What [target] should hold afterwards.
+  final String? targetContents;
+
+  /// Whether [target] existed before this change.
+  final bool targetExisted;
+
+  /// What [target] held before, when it existed.
+  final String? targetOriginal;
+
+  Future<void> apply(
+    file_api.FileSystem fileSystem,
+    String Function() temporarySuffix,
+  ) async {
+    if (target case final path?) {
+      await fileSystem
+          .directory(fileSystem.path.dirname(path))
+          .create(recursive: true);
+      // Written beside the target and renamed over it, so a reader never sees
+      // a half-written file.
+      final temporary = fileSystem.file(
+        '$path.coder-tmp-${temporarySuffix()}',
+      );
+      await temporary.writeAsString(targetContents ?? '', flush: true);
+      await temporary.rename(path);
+    }
+    // The removal comes last: until it happens the content still exists
+    // somewhere, whichever half of a move fails.
+    if (source case final path?) {
+      if (fileSystem.file(path).existsSync()) {
+        await fileSystem.file(path).delete();
+      }
+    }
+  }
+
+  Future<void> revert(file_api.FileSystem fileSystem) async {
+    if (source case final path?) {
+      await fileSystem
+          .file(path)
+          .writeAsString(sourceContents ?? '', flush: true);
+    }
+    if (target case final path?) {
+      if (targetExisted) {
+        await fileSystem
+            .file(path)
+            .writeAsString(
+              targetOriginal ?? '',
+              flush: true,
+            );
+      } else if (fileSystem.file(path).existsSync()) {
+        await fileSystem.file(path).delete();
+      }
+    }
   }
 }
 

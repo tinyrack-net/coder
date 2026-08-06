@@ -504,6 +504,124 @@ void main() {
     },
   );
 
+  group('patch moves', () {
+    late ApplyPatchTool tool;
+
+    setUp(() {
+      var suffix = 0;
+      tool = ApplyPatchTool(
+        fileSystem: fileSystem,
+        platform: platform,
+        temporarySuffix: () => 'move-${suffix++}',
+      );
+    });
+
+    Future<Map<String, dynamic>> apply(String patch) async =>
+        jsonDecode(
+              (await tool.execute(<String, dynamic>{
+                'patch': patch,
+              }, context)).output,
+            )
+            as Map<String, dynamic>;
+
+    test('differing headers move the file and edit it in one step', () async {
+      fileSystem.file('/workspace/old.txt').writeAsStringSync('before\n');
+
+      final output = await apply('''
+--- a/old.txt
++++ b/lib/new.txt
+@@ -1,1 +1,1 @@
+-before
++after
+''');
+
+      expect(output['changedFiles'], 1);
+      expect(fileSystem.file('/workspace/old.txt').existsSync(), isFalse);
+      expect(
+        fileSystem.file('/workspace/lib/new.txt').readAsStringSync(),
+        'after\n',
+      );
+    });
+
+    test('a move with no hunks still relocates the contents', () async {
+      fileSystem.file('/workspace/old.txt').writeAsStringSync('kept\n');
+
+      await apply('--- a/old.txt\n+++ b/renamed.txt\n');
+
+      expect(fileSystem.file('/workspace/old.txt').existsSync(), isFalse);
+      expect(
+        fileSystem.file('/workspace/renamed.txt').readAsStringSync(),
+        'kept\n',
+      );
+    });
+
+    test('moving a missing file is refused', () async {
+      await expectLater(
+        apply('--- a/gone.txt\n+++ b/new.txt\n'),
+        throwsA(isA<FormatException>()),
+      );
+      expect(fileSystem.file('/workspace/new.txt').existsSync(), isFalse);
+    });
+
+    test('a move never clobbers a file the patch did not mention', () async {
+      fileSystem
+        ..file('/workspace/old.txt').writeAsStringSync('source\n')
+        ..file('/workspace/taken.txt').writeAsStringSync('precious\n');
+
+      await expectLater(
+        apply('--- a/old.txt\n+++ b/taken.txt\n'),
+        throwsA(isA<FormatException>()),
+      );
+
+      // Both files survive untouched: the refusal happens during planning.
+      expect(
+        fileSystem.file('/workspace/taken.txt').readAsStringSync(),
+        'precious\n',
+      );
+      expect(
+        fileSystem.file('/workspace/old.txt').readAsStringSync(),
+        'source\n',
+      );
+    });
+
+    test('a later failure puts a completed move back', () async {
+      fileSystem
+        ..file('/workspace/old.txt').writeAsStringSync('moved\n')
+        ..file('/workspace/second.txt').writeAsStringSync('second\n');
+      // The second file's context does not match, so applying it throws after
+      // the move has already been written to disk.
+      await expectLater(
+        apply('''
+--- a/old.txt
++++ b/new.txt
+--- a/second.txt
++++ b/second.txt
+@@ -1,1 +1,1 @@
+-wrong context
++replacement
+'''),
+        throwsA(isA<FormatException>()),
+      );
+
+      expect(
+        fileSystem.file('/workspace/old.txt').readAsStringSync(),
+        'moved\n',
+      );
+      expect(fileSystem.file('/workspace/new.txt').existsSync(), isFalse);
+      expect(
+        fileSystem.file('/workspace/second.txt').readAsStringSync(),
+        'second\n',
+      );
+    });
+
+    test('a patch from nothing to nothing is rejected', () async {
+      await expectLater(
+        apply('--- /dev/null\n+++ /dev/null\n'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+  });
+
   test('unified patch parser rejects malformed and conflicting hunks', () {
     expect(
       () => UnifiedPatch.parse('not a patch'),
