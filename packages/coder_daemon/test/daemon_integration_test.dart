@@ -1631,8 +1631,7 @@ void main() {
       final timeline = await client.subscribeTimeline(session.id);
       final loaded = timeline
           .where((event) => event.type == 'tool.completed')
-          .single;
-      expect(loaded.data['name'], 'skill');
+          .firstWhere((event) => event.data['name'] == 'skill');
       expect(loaded.data['isError'], isFalse);
       // The worktree is the checkout itself, so the project skill wins.
       final output = loaded.data['output']! as String;
@@ -3466,32 +3465,61 @@ final class _SkillProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
-    final hasToolResult = request.history.any(
-      (item) => item is ToolResultConversationItem,
-    );
-    if (!hasToolResult) {
-      // The catalog is advertised in the instructions, and a disabled skill
-      // must not appear there.
-      expect(request.instructions, contains('- shared: From the project.'));
-      expect(request.instructions, isNot(contains('- commit:')));
-      const arguments = <String, dynamic>{'name': 'shared', 'resource': null};
-      yield const ModelFunctionCall(
-        callId: 'skill-call',
-        name: 'skill',
+    String? outputFor(String callId) {
+      for (final item
+          in request.history.whereType<ToolResultConversationItem>()) {
+        if (item.callId == callId) return item.output;
+      }
+      return null;
+    }
+
+    Stream<ModelEvent> call(
+      String callId,
+      String name,
+      Map<String, dynamic> arguments,
+    ) async* {
+      yield ModelFunctionCall(
+        callId: callId,
+        name: name,
         arguments: arguments,
       );
-      yield const ModelResponseCompleted(
+      yield ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
             ConversationToolCall(
-              callId: 'skill-call',
-              name: 'skill',
+              callId: callId,
+              name: name,
               arguments: arguments,
             ),
           ],
         ),
       );
+    }
+
+    final listed = outputFor('list-call');
+    if (listed == null) {
+      // The prompt no longer names the skills, only how many there are and
+      // which tool finds them.
+      yield* call('list-call', 'list_skills', <String, dynamic>{
+        'cursor': null,
+      });
+      return;
+    }
+    if (outputFor('skill-call') == null) {
+      // A disabled skill must not reach the model through the listing either,
+      // which is where the catalog now lives.
+      final page = jsonDecode(listed) as Map<String, dynamic>;
+      final names = (page['skills']! as List)
+          .map((skill) => (skill! as Map<String, dynamic>)['name'])
+          .toList();
+      expect(names, contains('shared'));
+      expect(names, isNot(contains('commit')));
+      expect(page['total'], names.length);
+      yield* call('skill-call', 'skill', <String, dynamic>{
+        'name': 'shared',
+        'resource': null,
+      });
       return;
     }
     yield const ModelTextDelta('Loaded the skill.');

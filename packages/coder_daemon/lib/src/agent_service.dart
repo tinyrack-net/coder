@@ -181,7 +181,10 @@ class SessionService {
           reportStatus: reportStatus,
         ),
       ),
-      if (skillSummaries.isNotEmpty) SkillTool(skills),
+      if (skillSummaries.isNotEmpty) ...<AgentTool>[
+        ListSkillsTool(skills),
+        SkillTool(skills),
+      ],
       if (definition.mode == AgentMode.primary &&
           definition.callableAgentIds.isNotEmpty)
         _DelegateAgentTool(

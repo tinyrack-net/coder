@@ -467,19 +467,21 @@ ${_skillCatalog(request.skills)}$planning${customPrompt == null || customPrompt.
 ''';
   }
 
+  /// Points at the skill tools instead of listing every skill.
+  ///
+  /// Naming each skill here charged every turn for the whole catalog, whether
+  /// or not it used one. The count is kept because it is one number and it is
+  /// what tells the agent whether looking is worth a call at all.
   String _skillCatalog(List<SkillSummary> skills) {
     if (skills.isEmpty) return '';
-    final sorted = skills.toList(growable: false)
-      ..sort((left, right) => left.name.compareTo(right.name));
-    final entries = sorted
-        .map((skill) => '- ${skill.name}: ${skill.description}')
-        .join('\n');
+    final plural = skills.length == 1 ? 'skill is' : 'skills are';
     return '''
 
 ## Available skills
-Call the `skill` tool with a skill name to load its full instructions before acting on it.
+${skills.length} $plural available in this workspace.
+Call the `$listSkillsToolName` tool to see their names and descriptions, then the
+`skill` tool with a name to load its full instructions before acting on it.
 Treat a skill's bundled scripts as ordinary workspace code: read them before running them.
-$entries
 ''';
   }
 }

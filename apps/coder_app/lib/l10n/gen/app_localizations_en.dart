@@ -1093,6 +1093,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String toolSkillLoaded(String name) {
+    return 'Loaded $name';
+  }
+
+  @override
+  String toolSkills(int count) {
+    return '$count skills';
+  }
+
+  @override
+  String toolSkillsTruncated(int count) {
+    return '$count+ skills';
+  }
+
+  @override
   String toolEditFiles(int count) {
     return 'Edit($count files)';
   }

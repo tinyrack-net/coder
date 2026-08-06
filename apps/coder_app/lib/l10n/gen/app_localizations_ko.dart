@@ -1077,6 +1077,21 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String toolSkillLoaded(String name) {
+    return '$name 불러옴';
+  }
+
+  @override
+  String toolSkills(int count) {
+    return '스킬 $count개';
+  }
+
+  @override
+  String toolSkillsTruncated(int count) {
+    return '스킬 $count개 이상';
+  }
+
+  @override
   String toolEditFiles(int count) {
     return 'Edit($count개 파일)';
   }

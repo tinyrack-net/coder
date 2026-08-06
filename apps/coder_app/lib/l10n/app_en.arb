@@ -1436,6 +1436,33 @@
       }
     }
   },
+  "toolSkillLoaded": "Loaded {name}",
+  "@toolSkillLoaded": {
+    "description": "Result line after a skill's instructions are loaded.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "toolSkills": "{count} skills",
+  "@toolSkills": {
+    "description": "Skill listing result summary.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "toolSkillsTruncated": "{count}+ skills",
+  "@toolSkillsTruncated": {
+    "description": "Skill listing summary when a page boundary was reached.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "toolEditFiles": "Edit({count} files)",
   "@toolEditFiles": {
     "description": "Edit call summary across several files.",

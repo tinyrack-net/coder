@@ -414,6 +414,47 @@ final Map<String, _ToolSpec> _specs = <String, _ToolSpec>{
     isFailure: (output) =>
         output is ChatToolJsonObject && output.value['error'] != null,
   ),
+  'list_skills': _ToolSpec(
+    glyph: ChatToolGlyph.list,
+    title: (l10n, activity) => 'Skills()',
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final skills = output.value['skills'];
+      if (skills is! List || skills.isEmpty) return l10n.toolNoMatches;
+      return output.value['nextCursor'] != null
+          ? l10n.toolSkillsTruncated(skills.length)
+          : l10n.toolSkills(skills.length);
+    },
+    isFailure: _hasErrorKey,
+  ),
+  'skill': _ToolSpec(
+    glyph: ChatToolGlyph.read,
+    title: (l10n, activity) {
+      final name = _stringArg(activity, 'name') ?? '?';
+      final resource = _stringArg(activity, 'resource');
+      // The bundled file matters as much as the skill when one is named.
+      return resource == null || resource.isEmpty
+          ? 'Skill($name)'
+          : 'Skill($name:${_truncate(resource, 40)})';
+    },
+    result: (l10n, activity, output) {
+      if (output is! ChatToolJsonObject) return _genericResult(l10n, output);
+      final error = output.value['error'];
+      if (error is String) return error;
+      final name = output.value['name'];
+      return name is String
+          ? l10n.toolSkillLoaded(name)
+          : _genericResult(l10n, output);
+    },
+    body: (activity, output) {
+      if (output is! ChatToolJsonObject) return _plainBody(activity, output);
+      final text = output.value['instructions'] ?? output.value['content'];
+      return text is String && text.isNotEmpty
+          ? ChatToolTextBody(text)
+          : const ChatToolEmptyBody();
+    },
+    isFailure: _hasErrorKey,
+  ),
   'apply_patch': _ToolSpec(
     glyph: ChatToolGlyph.edit,
     title: (l10n, activity) {

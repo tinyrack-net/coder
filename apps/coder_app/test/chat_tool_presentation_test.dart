@@ -281,6 +281,73 @@ void main() {
   );
 
   test(
+    'skill tools render their catalog and loaded instructions',
+    () {
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'list_skills',
+            arguments: <String, dynamic>{'cursor': null},
+            output:
+                '{"skills":[{"name":"commit"},{"name":"review"}],'
+                '"total":2}',
+          ),
+        ),
+        isA<ChatToolPresentation>()
+            .having((value) => value.title, 'title', 'Skills()')
+            .having((value) => value.resultLine, 'result', '스킬 2개'),
+      );
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'list_skills',
+            arguments: <String, dynamic>{'cursor': null},
+            output: '{"skills":[{"name":"commit"}],"total":9,"nextCursor":"1"}',
+          ),
+        ).resultLine,
+        '스킬 1개 이상',
+      );
+
+      final skill = describeToolActivity(
+        testL10n,
+        activity(
+          'skill',
+          arguments: <String, dynamic>{'name': 'commit', 'resource': null},
+          output: '{"name":"commit","instructions":"Stage related changes."}',
+        ),
+      );
+      expect(skill.title, 'Skill(commit)');
+      expect(skill.resultLine, 'commit 불러옴');
+      expect(
+        skill.body,
+        isA<ChatToolTextBody>().having(
+          (value) => value.text,
+          'text',
+          'Stage related changes.',
+        ),
+      );
+      // A bundled file is part of what was asked for, so the title says so.
+      expect(
+        describeToolActivity(
+          testL10n,
+          activity(
+            'skill',
+            arguments: <String, dynamic>{
+              'name': 'commit',
+              'resource': 'scripts/split.sh',
+            },
+            output: '{"name":"commit","content":"echo split"}',
+          ),
+        ).title,
+        'Skill(commit:scripts/split.sh)',
+      );
+    },
+    tags: const <String>['feature_test__skill_invocation__widget'],
+  );
+
+  test(
     'unknown tools and malformed output fall back to generic summaries',
     () {
       final unknown = describeToolActivity(

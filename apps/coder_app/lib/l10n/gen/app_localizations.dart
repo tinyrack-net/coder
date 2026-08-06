@@ -2012,6 +2012,24 @@ abstract class AppLocalizations {
   /// **'{count}+ files'**
   String toolPathsTruncated(int count);
 
+  /// Result line after a skill's instructions are loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded {name}'**
+  String toolSkillLoaded(String name);
+
+  /// Skill listing result summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} skills'**
+  String toolSkills(int count);
+
+  /// Skill listing summary when a page boundary was reached.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}+ skills'**
+  String toolSkillsTruncated(int count);
+
   /// Edit call summary across several files.
   ///
   /// In en, this message translates to:
