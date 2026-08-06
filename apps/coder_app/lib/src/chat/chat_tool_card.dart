@@ -31,7 +31,7 @@ IconData chatToolIcon(ChatToolGlyph glyph) => switch (glyph) {
 /// Tapping the row reveals the full request and result instead of dumping raw
 /// JSON into the conversation. Expansion is owned by the enclosing list so it
 /// survives scrolling and newly arriving events.
-class ChatToolCard extends StatelessWidget {
+class ChatToolCard extends StatefulWidget {
   /// Creates a tool card.
   const ChatToolCard({
     required this.activity,
@@ -50,7 +50,17 @@ class ChatToolCard extends StatelessWidget {
   final VoidCallback? onToggle;
 
   @override
+  State<ChatToolCard> createState() => _ChatToolCardState();
+}
+
+class _ChatToolCardState extends State<ChatToolCard> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
+    final activity = widget.activity;
+    final expanded = widget.expanded;
+    final onToggle = widget.onToggle;
     final theme = Theme.of(context);
     final presentation = describeToolActivity(
       AppLocalizations.of(context),
@@ -76,6 +86,10 @@ class ChatToolCard extends StatelessWidget {
         mouseCursor: hasBody && onToggle != null
             ? SystemMouseCursors.click
             : MouseCursor.defer,
+        // The card is a tab stop, so it has to say where the keyboard is. It
+        // drew nothing at all, which left the focus invisible on the one
+        // control in the transcript that takes it.
+        onShowFocusHighlight: (focused) => setState(() => _focused = focused),
         shortcuts: const <ShortcutActivator, Intent>{
           SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
           SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
@@ -91,7 +105,18 @@ class ChatToolCard extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: hasBody ? onToggle : null,
-          child: Padding(
+          child: Container(
+            // The ring is always present and only changes colour, so taking
+            // the focus never reflows the transcript line beneath it.
+            foregroundDecoration: BoxDecoration(
+              border: Border.all(
+                color: _focused
+                    ? context.tinyrackTheme.focus
+                    : Colors.transparent,
+                width: TRControlMetrics.focusWidth,
+              ),
+              borderRadius: const BorderRadius.all(TRRadii.medium),
+            ),
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

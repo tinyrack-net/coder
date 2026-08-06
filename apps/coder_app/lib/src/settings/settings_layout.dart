@@ -162,6 +162,7 @@ class SettingsRow extends StatelessWidget {
   const SettingsRow({
     required this.title,
     this.control,
+    this.controlOwnsFocus = false,
     this.description,
     this.leading,
     this.onTap,
@@ -184,6 +185,12 @@ class SettingsRow extends StatelessWidget {
 
   /// Optional trailing control.
   final Widget? control;
+
+  /// Whether [control] is the row's only tab stop.
+  ///
+  /// Set this whenever [onTap] only repeats what [control] already does, so
+  /// one setting costs one Tab press. See [CoderListRow.controlOwnsFocus].
+  final bool controlOwnsFocus;
 
   /// Invoked when the row is activated.
   final VoidCallback? onTap;
@@ -224,6 +231,7 @@ class SettingsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => CoderListRow(
     contentPadding: flush ? flushPadding : contentPadding,
+    controlOwnsFocus: controlOwnsFocus,
     enabled: enabled,
     isThreeLine: wrapsDescription || unboundedDescription,
     unboundedSubtitle: unboundedDescription,
