@@ -103,6 +103,41 @@ void main() {
   });
 
   test(
+    'isolate launcher preserves a typed already-running conflict',
+    () async {
+      final launcher = IsolateEmbeddedDaemonLauncher(
+        resolveConfig: () => const DaemonConfig(homeDirectory: '/test-home'),
+        startDaemon: (value) => Future<DaemonHandle>.error(
+          const EmbeddedDaemonStartupException(
+            'A daemon is already running on /test-home.',
+            reason: EmbeddedDaemonStartupFailureReason.alreadyRunning,
+          ),
+        ),
+      );
+
+      await expectLater(
+        launcher.start(exposure: EmbeddedDaemonExposure.loopback, port: 7337),
+        throwsA(
+          isA<HostConnectionFailure>()
+              .having(
+                (error) => error.reason,
+                'reason',
+                HostFailureReason.embeddedAlreadyRunning,
+              )
+              // The raw diagnostic survives the mapping so the settings
+              // page can offer it for a bug report.
+              .having(
+                (error) => error.message,
+                'message',
+                contains('/test-home'),
+              ),
+        ),
+      );
+    },
+    tags: const <String>['feature_test__daemon_management__unit'],
+  );
+
+  test(
     'real embedded launcher starts in loopback and all-interface modes',
     () async {
       final home = await Directory.systemTemp.createTemp(

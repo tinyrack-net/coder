@@ -86,9 +86,22 @@ hidden only when both the stored preference and that argument are present, so a
 launch the user started always shows a window.
 
 Because a second instance would bind a second daemon over the same data, the
-Linux runner is single-instance and later launches raise the running window.
-That also means `flutter run -d linux` exits immediately while another build of
-the app is running; stop it first.
+Linux and Windows runners are single-instance and later launches raise the
+running window. Linux keys that on the `GApplication` ID; Windows takes a mutex
+in the `Local\` namespace, which is scoped to the logon session and so matches
+the scope of the `%LOCALAPPDATA%` daemon home. Setting
+`TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES` opts a run out, which is how the E2E
+shards keep their own process. That also means `flutter run -d linux` exits
+immediately while another build of the app is running; stop it first.
+
+The Windows installer names the same mutex in `AppMutex`, so it closes a
+tray-resident copy before replacing files instead of leaving it holding the
+daemon home, and it starts the app with `runasoriginaluser` so a per-machine
+install does not launch it with the administrator's `%LOCALAPPDATA%`.
+
+When the daemon home is locked anyway, startup fails with a typed
+already-running reason rather than the operating system's lock error, and the
+settings alert offers the guidance and the raw diagnostic for a bug report.
 
 Linux requires `libayatana-appindicator3-dev` to build and a StatusNotifier host
 (on GNOME, the AppIndicator extension) to show the icon. macOS registers its

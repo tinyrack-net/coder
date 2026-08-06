@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "single_instance.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project,
                              bool show_on_first_frame)
@@ -62,6 +63,15 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     if (result) {
       return *result;
     }
+  }
+
+  // A duplicate launch broadcasts this instead of starting a second app. The
+  // window is usually hidden in the tray at this point, so it is restored the
+  // same way the tray's own "show" gesture would.
+  if (message != 0 && message == SingleInstance::RevealMessage()) {
+    ::ShowWindow(hwnd, ::IsIconic(hwnd) ? SW_RESTORE : SW_SHOW);
+    ::SetForegroundWindow(hwnd);
+    return 0;
   }
 
   switch (message) {

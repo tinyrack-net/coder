@@ -72,9 +72,13 @@ final class IsolateEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
     } on EmbeddedDaemonStartupException catch (error) {
       throw HostConnectionFailure.network(
         error.message,
-        reason: error.reason == EmbeddedDaemonStartupFailureReason.portInUse
-            ? HostFailureReason.embeddedPortInUse
-            : null,
+        reason: switch (error.reason) {
+          EmbeddedDaemonStartupFailureReason.portInUse =>
+            HostFailureReason.embeddedPortInUse,
+          EmbeddedDaemonStartupFailureReason.alreadyRunning =>
+            HostFailureReason.embeddedAlreadyRunning,
+          EmbeddedDaemonStartupFailureReason.unknown => null,
+        },
       );
     } on Exception catch (error) {
       throw HostConnectionFailure.network('$error');

@@ -8,6 +8,7 @@ import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -292,6 +293,76 @@ void main() {
       expect(launcher.starts, 2);
     },
     tags: const <String>['feature_test__daemon_exposure__widget'],
+  );
+
+  testWidgets(
+    'a held daemon home names the running copy and copies the diagnostic',
+    (tester) async {
+      String? clipboard;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            final arguments = call.arguments as Map<Object?, Object?>;
+            clipboard = arguments['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      final store = MemoryAppStore();
+      final launcher = _FailingLauncher(
+        failure: const HostConnectionFailure.network(
+          "PathAccessException: lock failed, path = 'daemon.lock'",
+          reason: HostFailureReason.embeddedAlreadyRunning,
+        ),
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const _OfflineClients(),
+            clientKind: 'desktop',
+            embeddedLauncher: launcher,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(findAccessibleAction('설정'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('내장 daemon을 시작할 수 없습니다'), findsOneWidget);
+      expect(find.textContaining('이미 실행 중'), findsOneWidget);
+      // Dragging over the message has to select it, so the text cannot be a
+      // plain label inside the alert.
+      expect(
+        find.ancestor(
+          of: find.textContaining('이미 실행 중'),
+          matching: find.byType(SelectionArea),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('embedded-daemon-error-copy')),
+      );
+      await tester.pumpAndSettle();
+
+      // A bug report needs the guidance and the operating-system diagnostic
+      // the guidance replaced.
+      expect(clipboard, contains('내장 daemon을 시작할 수 없습니다'));
+      expect(clipboard, contains('이미 실행 중'));
+      expect(clipboard, contains('PathAccessException'));
+    },
+    tags: const <String>['feature_test__daemon_management__widget'],
   );
 
   testWidgets(

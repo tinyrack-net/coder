@@ -19,6 +19,8 @@ String hostFailureText(AppLocalizations l10n, HostFailureReason reason) =>
       HostFailureReason.duplicateDaemon => l10n.hostErrorDuplicate,
       HostFailureReason.rejectedBearerToken => l10n.hostErrorUnauthorized,
       HostFailureReason.embeddedPortInUse => l10n.hostErrorEmbeddedPortInUse,
+      HostFailureReason.embeddedAlreadyRunning =>
+        l10n.hostErrorEmbeddedAlreadyRunning,
       HostFailureReason.localNetworkUnreachable =>
         l10n.hostErrorLocalNetworkUnreachable,
     };
