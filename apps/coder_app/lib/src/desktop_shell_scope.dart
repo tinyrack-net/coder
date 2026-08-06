@@ -125,11 +125,19 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     return Overlay(
       initialEntries: <OverlayEntry>[
         OverlayEntry(
+          // These bindings sit above the router, so a focused terminal sees
+          // every key first. A terminal turns Control with a letter into a
+          // control byte and reports the key as handled, which stops the event
+          // before it ever reaches here; adding Shift keeps the combination out
+          // of that translation, so Control with a letter still belongs to the
+          // program in the terminal. Control with a comma is not a control
+          // byte, so it needs no Shift.
           builder: (context) => CallbackShortcuts(
             bindings: <ShortcutActivator, VoidCallback>{
               const SingleActivator(
                 LogicalKeyboardKey.keyN,
                 control: true,
+                shift: true,
               ): newWorkspace,
               const SingleActivator(
                 LogicalKeyboardKey.comma,
@@ -138,10 +146,12 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
               const SingleActivator(
                 LogicalKeyboardKey.keyB,
                 control: true,
+                shift: true,
               ): toggleSidebar,
               const SingleActivator(
                 LogicalKeyboardKey.keyQ,
                 control: true,
+                shift: true,
               ): () =>
                   unawaited(_quit()),
             },

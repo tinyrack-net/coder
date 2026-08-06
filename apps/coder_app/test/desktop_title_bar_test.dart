@@ -158,9 +158,15 @@ void main() {
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
 
-      const shortcut = SingleActivator(LogicalKeyboardKey.keyB, control: true);
+      const shortcut = SingleActivator(
+        LogicalKeyboardKey.keyB,
+        control: true,
+        shift: true,
+      );
       await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
       await tester.sendKeyEvent(shortcut.trigger);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
       await tester.pumpAndSettle();
       expect(harness.store.settings.sidebarCollapsed, isTrue);
