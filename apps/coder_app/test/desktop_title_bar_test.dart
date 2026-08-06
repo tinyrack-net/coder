@@ -3,6 +3,7 @@ import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/desktop_title_bar.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/version.g.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -153,7 +154,7 @@ void main() {
       await tester.tap(find.text('About Tinyrack Coder'));
       await tester.pumpAndSettle();
       expect(find.text('Tinyrack Coder'), findsWidgets);
-      expect(find.text('0.1.0'), findsOneWidget);
+      expect(find.text(packageVersion), findsOneWidget);
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
 
