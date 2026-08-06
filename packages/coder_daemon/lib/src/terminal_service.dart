@@ -169,17 +169,19 @@ final class TerminalService {
         data: data,
       ),
     );
-    var total = terminal.replay.fold<int>(
-      0,
-      (sum, item) => sum + utf8.encode(item.data).length,
-    );
-    while (total > maxReplayBytes && terminal.replay.isNotEmpty) {
+    // Carried across chunks rather than recomputed. Re-measuring the whole
+    // buffer here costs a full megabyte of encoding per chunk once the budget
+    // is reached, which blocks this isolate for hundreds of milliseconds on a
+    // single burst of PTY reads and stalls every other request with it.
+    terminal.replayBytes += utf8.encode(data).length;
+    while (terminal.replayBytes > maxReplayBytes &&
+        terminal.replay.isNotEmpty) {
       final first = terminal.replay.first;
       final bytes = utf8.encode(first.data);
-      final excess = total - maxReplayBytes;
+      final excess = terminal.replayBytes - maxReplayBytes;
       if (bytes.length <= excess) {
         terminal.replay.removeAt(0);
-        total -= bytes.length;
+        terminal.replayBytes -= bytes.length;
       } else {
         var start = excess;
         while (start < bytes.length && (bytes[start] & 0xC0) == 0x80) {
@@ -188,7 +190,7 @@ final class TerminalService {
         terminal.replay[0] = first.copyWith(
           data: utf8.decode(bytes.sublist(start)),
         );
-        total -= start;
+        terminal.replayBytes -= start;
       }
     }
     _events.add(terminal.replay.last);
@@ -214,4 +216,7 @@ final class _LiveTerminal {
   final TerminalProcess process;
   TerminalDto dto;
   final List<TerminalOutputDto> replay = <TerminalOutputDto>[];
+
+  /// UTF-8 bytes currently held in [replay].
+  int replayBytes = 0;
 }

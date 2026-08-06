@@ -1318,7 +1318,12 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
             state?.selectedTerminalId,
             state?.selectedAgentId,
           )) {
+            // Keyed per terminal because the pane's state owns that terminal's
+            // emulator, event subscription, and last-seen sequence. Reusing it
+            // across a tab switch would keep the previous terminal's sequence
+            // and silently drop the new one's replay.
             (final terminalId?, _) => _TerminalPane(
+              key: ValueKey<String>('terminal-pane-$terminalId'),
               selection: widget.selection,
               terminal: state!.terminals
                   .where((item) => item.id == terminalId)
@@ -1523,7 +1528,11 @@ class _TerminalTab extends StatelessWidget {
 }
 
 class _TerminalPane extends ConsumerStatefulWidget {
-  const _TerminalPane({required this.selection, required this.terminal});
+  const _TerminalPane({
+    required this.selection,
+    required this.terminal,
+    super.key,
+  });
 
   final WorkspaceSelection selection;
   final TerminalDto terminal;

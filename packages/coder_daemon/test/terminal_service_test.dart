@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
 import 'package:coder_daemon/src/terminal_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -49,6 +51,111 @@ void main() {
       await service.terminate('terminal-1');
       expect(process.terminated, isTrue);
     },
+    tags: const <String>['feature_test__terminal_lifecycle__unit'],
+  );
+
+  test(
+    'replay stays a codepoint-aligned suffix of the stream at every step',
+    () async {
+      const maxReplayBytes = 512;
+      final process = _FakeTerminalProcess();
+      final service = TerminalService(
+        gateway: _FakeTerminalGateway(process),
+        worktreePath: (id) async => '/worktrees/$id',
+        shellFor: (id) async => const ShellSpecDto(executable: '/bin/zsh'),
+        maxReplayBytes: maxReplayBytes,
+      );
+      await service.create(
+        id: 'terminal-1',
+        worktreeId: 'worktree-1',
+        title: 'Terminal 1',
+        columns: 80,
+        rows: 24,
+      );
+
+      // A fixed seed keeps the mix of chunk lengths and of one- and
+      // three-byte codepoints reproducible across runs.
+      final random = Random(20260806);
+      final written = StringBuffer();
+      for (var i = 0; i < 400; i++) {
+        final chunk = String.fromCharCodes(<int>[
+          for (var j = 0; j < 1 + random.nextInt(40); j++)
+            random.nextBool() ? 0x61 + random.nextInt(26) : 0xAC00 + j,
+        ]);
+        written.write(chunk);
+        process.output.add(chunk);
+        await pumpEventQueue(times: 1);
+
+        final retained = service
+            .attach('terminal-1', afterSequence: 0)
+            .replay
+            .map((item) => item.data)
+            .join();
+        final retainedBytes = utf8.encode(retained);
+        final streamBytes = utf8.encode(written.toString());
+
+        // Trimming only ever drops from the front, so what is kept is a byte
+        // suffix of everything the program has written.
+        expect(
+          retainedBytes,
+          streamBytes.sublist(streamBytes.length - retainedBytes.length),
+          reason: 'replay drifted from the stream after chunk $i',
+        );
+        expect(retainedBytes.length, lessThanOrEqualTo(maxReplayBytes));
+        if (streamBytes.length > maxReplayBytes) {
+          // Trimming stops as soon as the budget fits, and only the aligning
+          // walk past continuation bytes can overshoot, by at most three.
+          expect(
+            retainedBytes.length,
+            greaterThanOrEqualTo(maxReplayBytes - 3),
+            reason: 'byte accounting drifted after chunk $i',
+          );
+        }
+      }
+
+      await service.terminate('terminal-1');
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__unit'],
+  );
+
+  test(
+    'recording output costs the same once the replay budget is full',
+    () async {
+      final process = _FakeTerminalProcess();
+      final service = TerminalService(
+        gateway: _FakeTerminalGateway(process),
+        worktreePath: (id) async => '/worktrees/$id',
+        shellFor: (id) async => const ShellSpecDto(executable: '/bin/zsh'),
+      );
+      await service.create(
+        id: 'terminal-1',
+        worktreeId: 'worktree-1',
+        title: 'Terminal 1',
+        columns: 80,
+        rows: 24,
+      );
+
+      // A terminal that has produced its megabyte of scrollback must not cost
+      // more per chunk than a fresh one. Accounting that rescans the buffer
+      // makes this quadratic: it blocks the daemon isolate for hundreds of
+      // milliseconds per PTY read burst, which stalls every other request.
+      // The bound is deliberately far above the constant-time cost so that a
+      // slow machine cannot fail it; only a return to rescanning can.
+      // Wide enough that the default megabyte budget fills within the first
+      // few thousand chunks, so most of the run measures the steady state.
+      final chunk = '${'terminal output line' * 12}\r\n';
+      final watch = Stopwatch()..start();
+      for (var i = 0; i < 20000; i++) {
+        process.output.add(chunk);
+        await pumpEventQueue(times: 1);
+      }
+      watch.stop();
+
+      expect(watch.elapsed, lessThan(const Duration(seconds: 15)));
+
+      await service.terminate('terminal-1');
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
     tags: const <String>['feature_test__terminal_lifecycle__unit'],
   );
 }

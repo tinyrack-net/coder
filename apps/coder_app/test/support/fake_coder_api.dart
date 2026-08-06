@@ -800,11 +800,15 @@ final class FakeCoderApi implements CoderApi {
   }) async {
     final error = terminalAttachError;
     if (error != null) throw error;
+    attachedTerminalIds.add(terminalId);
     return TerminalAttachResultDto(
       terminal: _terminals.firstWhere((item) => item.id == terminalId),
       replay: terminalReplay,
     );
   }
+
+  /// Terminals attached to, in order, including repeat attachments.
+  final List<String> attachedTerminalIds = <String>[];
 
   /// Terminal input received by the fake.
   final List<({String terminalId, String data})> terminalWrites =

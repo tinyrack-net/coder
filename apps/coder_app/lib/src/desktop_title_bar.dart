@@ -168,6 +168,7 @@ class _ApplicationMenu extends StatelessWidget {
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyN,
                 control: true,
+                shift: true,
               ),
               onPressed: onNewWorkspace,
               child: TRText.inherit(l10n.workspaceNewWorkspace),
@@ -185,6 +186,7 @@ class _ApplicationMenu extends StatelessWidget {
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyQ,
                 control: true,
+                shift: true,
               ),
               onPressed: onQuit,
               child: TRText.inherit(l10n.trayQuit),
