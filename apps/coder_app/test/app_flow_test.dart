@@ -375,6 +375,51 @@ void main() {
   );
 
   testWidgets(
+    'session tab strip is one control tall and its commands are square',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final first = session('one');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[first],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: first.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      expect(
+        tester.getSize(find.byKey(const ValueKey('session-tab-strip'))).height,
+        sessionTabBarHeight,
+      );
+
+      // The two menu commands sit beside the square close buttons on each tab,
+      // so a wide trigger would read as a stray pill in that row.
+      final square = Size.square(TRControlMetrics.heightOf(TRUiSize.md));
+      for (final key in const <String>[
+        'workspace-new-tab-menu',
+        'workspace-all-sessions-menu',
+      ]) {
+        expect(
+          tester.getSize(find.byKey(ValueKey<String>(key))),
+          square,
+          reason: key,
+        );
+      }
+    },
+    tags: const <String>['feature_test__session_tabs__widget'],
+  );
+
+  testWidgets(
     'session tabs close locally and reopen from the picker',
     (
       tester,

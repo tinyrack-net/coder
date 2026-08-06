@@ -44,6 +44,12 @@ void main() {
         find.byKey(const ValueKey('provider-add-deepseek')),
         findsOneWidget,
       );
+      // The card's action menu is a glyph, so it takes the square geometry
+      // every other icon control on the page uses.
+      expect(
+        tester.getSize(find.byKey(const ValueKey('provider-actions-openai'))),
+        Size.square(TRControlMetrics.heightOf(TRUiSize.md)),
+      );
       expect(find.text('기본 Provider로 설정'), findsNothing);
       expect(find.byKey(const ValueKey('model-selector-openai')), findsNothing);
       // The daemon-wide default model leads the page, above the connections.

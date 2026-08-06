@@ -583,10 +583,11 @@ class ComposerChipBar extends StatelessWidget {
 
   Widget _overflow(List<ComposerChipSpec> hidden) => TRTooltip(
     message: overflowLabel,
-    child: TRMenu(
+    child: TRMenu.icon(
       key: const ValueKey('session-composer-overflow'),
       uiSize: uiSize,
-      trigger: Icon(CoderIcons.more, size: TRControlMetrics.iconSizeOf(uiSize)),
+      icon: const Icon(CoderIcons.more),
+      label: overflowLabel,
       menuChildren: <Widget>[
         for (final chip in hidden)
           if (chip.menuChildren case final children?)

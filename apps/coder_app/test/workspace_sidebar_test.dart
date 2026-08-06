@@ -352,6 +352,20 @@ void main() {
         },
       );
 
+      // Both row menus stand where a TRIconButton would, so a text trigger's
+      // inline padding would leave them the one wide control in the sidebar.
+      final square = Size.square(TRControlMetrics.heightOf(TRUiSize.md));
+      for (final key in const <String>[
+        'workspace-menu-project',
+        'worktree-menu-project-main',
+      ]) {
+        expect(
+          tester.getSize(find.byKey(ValueKey<String>(key))),
+          square,
+          reason: key,
+        );
+      }
+
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-menu-project')),
       );

@@ -13,6 +13,7 @@ final ThemeData testDarkTheme = TinyrackTheme.dark();
 Finder findAccessibleAction(String label) => find.byWidgetPredicate(
   (widget) =>
       (widget is TRIconButton && widget.label == label) ||
+      (widget is TRMenu && widget.label == label) ||
       (widget is Icon && widget.semanticLabel == label),
   description: 'Tinyrack action labelled "$label"',
 );
