@@ -644,6 +644,129 @@ void main() {
   );
 
   testWidgets(
+    'terminal ignores the duplicate commit a sticky input method repeats',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        terminals: const <TerminalDto>[liveTerminal],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        TerminalRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          terminalId: liveTerminal.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      // A sticky input method ends its composition session by reporting the
+      // unchanged committed buffer one more time, without a new character.
+      for (final value in const <TextEditingValue>[
+        TextEditingValue(
+          text: '한',
+          selection: TextSelection.collapsed(offset: 1),
+          composing: TextRange(start: 0, end: 1),
+        ),
+        TextEditingValue(
+          text: '한',
+          selection: TextSelection.collapsed(offset: 1),
+        ),
+        TextEditingValue(
+          text: '한솔',
+          selection: TextSelection.collapsed(offset: 2),
+          composing: TextRange(start: 1, end: 2),
+        ),
+        TextEditingValue(
+          text: '한솔',
+          selection: TextSelection.collapsed(offset: 2),
+        ),
+        TextEditingValue(
+          text: '한솔',
+          selection: TextSelection.collapsed(offset: 2),
+        ),
+      ]) {
+        tester.testTextInput.updateEditingValue(value);
+        await tester.pump();
+      }
+
+      expect(
+        api.terminalWrites.map((write) => write.data).join(),
+        '한솔',
+      );
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'terminal context menu closes on a terminal click and on Escape',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        terminals: const <TerminalDto>[liveTerminal],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        TerminalRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          terminalId: liveTerminal.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      final copy = find.byKey(const ValueKey<String>('terminal-menu-copy'));
+      final surface = find.byKey(const ValueKey<String>('tr-terminal-surface'));
+
+      Future<void> openMenu() async {
+        final gesture = await tester.startGesture(
+          tester.getTopLeft(surface) + const Offset(24, 24),
+          kind: PointerDeviceKind.mouse,
+          buttons: kSecondaryButton,
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        await gesture.up();
+        await tester.pumpAndSettle();
+      }
+
+      await openMenu();
+      expect(copy, findsOneWidget);
+
+      // The terminal anchors its own menu, so a click on the terminal is not
+      // an outside tap for the menu's tap region and must still close it.
+      await tester.tapAt(tester.getBottomRight(surface) - const Offset(48, 48));
+      await tester.pumpAndSettle();
+      expect(copy, findsNothing);
+      // Let the terminal's double-tap recognition window expire.
+      await tester.pump(const Duration(milliseconds: 350));
+
+      await openMenu();
+      expect(copy, findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(copy, findsNothing);
+
+      // Closing the menu consumed Escape instead of sending it to the shell.
+      expect(
+        api.terminalWrites.map((write) => write.data).join(),
+        isNot(contains('\x1b')),
+      );
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets(
     'terminal context menu copies the selection and pastes the clipboard',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
