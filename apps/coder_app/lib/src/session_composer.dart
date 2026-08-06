@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
@@ -195,6 +196,9 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     return ComposerChipBar(
       overflowLabel: l10n.composerMoreSettings,
       leading: widget.leading,
+      // These are settings under the prompt, not the prompt itself, so the row
+      // takes the dense size the design system keeps for application chrome.
+      uiSize: TRUiSize.sm,
       chips: <ComposerChipSpec>[
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-agent'),
@@ -409,7 +413,11 @@ class ComposerChipSpec {
   final bool selected;
 
   /// Renders the setting as a chip.
-  Widget toChip({bool compact = false}) => ComposerChip(
+  Widget toChip({
+    TRUiSize uiSize = TRUiSize.md,
+    bool compact = false,
+    double? maxWidth,
+  }) => ComposerChip(
     valueKey: valueKey,
     icon: icon,
     label: label,
@@ -417,11 +425,13 @@ class ComposerChipSpec {
     onPressed: onPressed,
     menuChildren: menuChildren,
     selected: selected,
+    uiSize: uiSize,
     compact: compact,
+    maxWidth: maxWidth,
   );
 }
 
-/// Toolbar that trades chip labels, then whole chips, for width.
+/// Toolbar that trades label width, then whole labels, then chips, for width.
 ///
 /// Chip widths are computed from the published control geometry rather than
 /// measured after the fact, so exactly one arrangement is ever built: the
@@ -432,8 +442,12 @@ class ComposerChipBar extends StatelessWidget {
     required this.chips,
     required this.overflowLabel,
     this.leading,
+    this.uiSize = TRUiSize.md,
     super.key,
   });
+
+  /// Control geometry every chip in the row is built and measured with.
+  final TRUiSize uiSize;
 
   /// Settings to show. The trailing ones give up their labels and room first.
   final List<ComposerChipSpec> chips;
@@ -449,22 +463,30 @@ class ComposerChipBar extends StatelessWidget {
     const gap = TRSpacing.extraSmall;
     // A chip is a control holding one icon; a labelled one adds its text, and
     // a menu chip its disclosure glyph.
-    final icon = TRControlMetrics.iconSizeOf(TRUiSize.md);
+    final icon = TRControlMetrics.iconSizeOf(uiSize);
     final compact =
         2 *
-            (TRControlMetrics.inlinePaddingOf(TRUiSize.md) +
+            (TRControlMetrics.inlinePaddingOf(uiSize) +
                 TRControlMetrics.borderWidth) +
         icon;
     // A chip renders its label in the control style, not the ambient one, and
     // measuring it any other way under-reports the width.
-    final style = TRControlMetrics.labelStyleOf(TRUiSize.md);
+    final style = TRControlMetrics.labelStyleOf(uiSize);
     final scaler = MediaQuery.textScalerOf(context);
-    final labelled = <double>[
-      for (final chip in chips)
+    double width(int index, double label) =>
         compact +
-            gap +
-            _textWidth(chip.label, style, scaler) +
-            (chip.menuChildren == null ? 0 : gap + icon),
+        gap +
+        label +
+        (chips[index].menuChildren == null ? 0 : gap + icon);
+    final natural = <double>[
+      for (var index = 0; index < chips.length; index += 1)
+        width(index, _textWidth(chips[index].label, style, scaler)),
+    ];
+    // A label narrower than the glyph beside it is a character and an ellipsis,
+    // which reads as noise next to an icon that already names the setting. Such
+    // a chip gives its label up instead of showing a stub.
+    final legible = <double>[
+      for (var index = 0; index < chips.length; index += 1) width(index, icon),
     ];
 
     return LayoutBuilder(
@@ -473,30 +495,86 @@ class ComposerChipBar extends StatelessWidget {
         // every width, so the chips only ever compete for what it leaves.
         final pinned = leading == null
             ? 0.0
-            : TRControlMetrics.heightOf(TRUiSize.md) + gap;
+            : TRControlMetrics.heightOf(uiSize) + gap;
         final available = constraints.maxWidth - pinned;
         final gaps = chips.isEmpty ? 0.0 : gap * (chips.length - 1);
-        if (labelled.fold<double>(0, (sum, item) => sum + item) + gaps <=
-            available) {
-          return _row(chips.map((chip) => chip.toChip()).toList());
+        final room = available - gaps;
+        // Labels are dropped from the trailing end, one at a time. A row where
+        // only the last chip is wordy keeps every label before it, and the one
+        // long value is ellipsized rather than costing the whole row its text.
+        for (var labelled = chips.length; labelled >= 1; labelled -= 1) {
+          final widths = _share(
+            natural.take(labelled).toList(growable: false),
+            room - compact * (chips.length - labelled),
+          );
+          final fits = <bool>[
+            for (var index = 0; index < labelled; index += 1)
+              widths[index] >= math.min(natural[index], legible[index]),
+          ];
+          if (fits.contains(false)) continue;
+          return _row(<Widget>[
+            for (var index = 0; index < labelled; index += 1)
+              chips[index].toChip(
+                uiSize: uiSize,
+                maxWidth: widths[index] < natural[index] ? widths[index] : null,
+              ),
+            for (final chip in chips.skip(labelled))
+              chip.toChip(uiSize: uiSize, compact: true),
+          ]);
         }
-        if (compact * chips.length + gaps <= available) {
+        if (compact * chips.length <= room) {
           return _row(
-            chips.map((chip) => chip.toChip(compact: true)).toList(),
+            chips
+                .map((chip) => chip.toChip(uiSize: uiSize, compact: true))
+                .toList(),
           );
         }
         // Every chip that still fits keeps its place; the rest move into one
         // menu, which needs a slot of its own.
-        final room = available - compact - gap;
-        final visible = room <= 0
+        final shared = available - compact - gap;
+        final visible = shared <= 0
             ? 0
-            : ((room + gap) / (compact + gap)).floor().clamp(0, chips.length);
+            : ((shared + gap) / (compact + gap)).floor().clamp(0, chips.length);
         return _row(<Widget>[
-          for (final chip in chips.take(visible)) chip.toChip(compact: true),
+          for (final chip in chips.take(visible))
+            chip.toChip(uiSize: uiSize, compact: true),
           _overflow(chips.skip(visible).toList(growable: false)),
         ]);
       },
     );
+  }
+
+  /// Divides [room] between chips wanting [natural] widths, fairest first.
+  ///
+  /// A chip that wants less than an equal share takes only what it wants and
+  /// leaves the rest to be shared again, so a row of short labels and one long
+  /// one spends the width on the long one instead of clipping all of them.
+  List<double> _share(List<double> natural, double room) {
+    final widths = List<double>.filled(natural.length, 0);
+    final pending = <int>{
+      for (var index = 0; index < natural.length; index += 1) index,
+    };
+    var remaining = room;
+    while (pending.isNotEmpty) {
+      final equal = remaining / pending.length;
+      final content = pending
+          .where((index) => natural[index] <= equal)
+          .toList(
+            growable: false,
+          );
+      if (content.isEmpty) {
+        for (final index in pending) {
+          widths[index] = equal;
+        }
+        break;
+      }
+      for (final index in content) {
+        widths[index] = natural[index];
+        remaining -= natural[index];
+        pending.remove(index);
+      }
+    }
+    return widths;
   }
 
   double _textWidth(String label, TextStyle style, TextScaler scaler) {
@@ -524,10 +602,8 @@ class ComposerChipBar extends StatelessWidget {
     message: overflowLabel,
     child: TRMenu(
       key: const ValueKey('session-composer-overflow'),
-      trigger: Icon(
-        CoderIcons.more,
-        size: TRControlMetrics.iconSizeOf(TRUiSize.md),
-      ),
+      uiSize: uiSize,
+      trigger: Icon(CoderIcons.more, size: TRControlMetrics.iconSizeOf(uiSize)),
       menuChildren: <Widget>[
         for (final chip in hidden)
           if (chip.menuChildren case final children?)
@@ -566,7 +642,9 @@ class ComposerChip extends StatelessWidget {
     this.menuChildren,
     this.onPressed,
     this.selected = false,
+    this.uiSize = TRUiSize.md,
     this.compact = false,
+    this.maxWidth,
     super.key,
   });
 
@@ -591,11 +669,21 @@ class ComposerChip extends StatelessWidget {
   /// Whether the chip renders as active.
   final bool selected;
 
+  /// Control geometry the chip and the row around it share.
+  final TRUiSize uiSize;
+
   /// Whether the chip drops its label and shows the icon alone.
   ///
   /// The tooltip already names the control, so a narrow toolbar loses width
   /// rather than meaning.
   final bool compact;
+
+  /// Outer width the chip may not exceed, ellipsizing its label to fit.
+  ///
+  /// A chip whose value is long enough to crowd out its neighbours is capped
+  /// here instead, so one wordy model name costs its own label rather than
+  /// every label in the row.
+  final double? maxWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -607,17 +695,14 @@ class ComposerChip extends StatelessWidget {
       children: <Widget>[
         // Sized from the token the toolbar measures with, so a chip is exactly
         // as wide as the arithmetic that decided it fits.
-        Icon(icon, size: TRControlMetrics.iconSizeOf(TRUiSize.md)),
+        Icon(icon, size: TRControlMetrics.iconSizeOf(uiSize)),
         if (!compact) ...<Widget>[
           Flexible(
             // The chip caps and ellipsizes its own label.
             child: TRText.inherit(label, truncate: true),
           ),
           if (menuChildren != null)
-            Icon(
-              CoderIcons.expand,
-              size: TRControlMetrics.iconSizeOf(TRUiSize.md),
-            ),
+            Icon(CoderIcons.expand, size: TRControlMetrics.iconSizeOf(uiSize)),
         ],
       ],
     );
@@ -628,16 +713,26 @@ class ComposerChip extends StatelessWidget {
             key: valueKey,
             appearance: selected ? TRAppearance.solid : TRAppearance.ghost,
             intent: selected ? TRIntent.primary : TRIntent.neutral,
+            uiSize: uiSize,
             onPressed: onPressed == null ? null : () => onPressed!(context),
             child: content,
           )
         : TRMenu(
             key: valueKey,
             enabled: menuChildren!.isNotEmpty,
+            uiSize: uiSize,
             trigger: content,
             menuChildren: menuChildren!,
           );
-    return TRTooltip(message: tooltip, child: control);
+    return TRTooltip(
+      message: tooltip,
+      child: maxWidth == null
+          ? control
+          : ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth!),
+              child: control,
+            ),
+    );
   }
 }
 
@@ -878,20 +973,17 @@ class _SessionComposerState extends State<SessionComposer> {
   final List<PendingAttachment> _attachments = <PendingAttachment>[];
   bool _submitting = false;
   bool _dragging = false;
+  bool _focused = false;
   String? _attachmentError;
   ComposerTrigger? _trigger;
 
   @override
   void initState() {
     super.initState();
-    // The plain input paints no focus ring, so the card paints it instead.
-    _inputFocus.addListener(_handleFocusChange);
     // A listener rather than onChanged: a completion splices the value
     // programmatically, and that has to re-evaluate the token too.
     _controller.addListener(_handleTextChanged);
   }
-
-  void _handleFocusChange() => setState(() {});
 
   void _handleTextChanged() {
     final trigger = parseComposerTrigger(_controller.value);
@@ -902,9 +994,7 @@ class _SessionComposerState extends State<SessionComposer> {
 
   @override
   void dispose() {
-    _inputFocus
-      ..removeListener(_handleFocusChange)
-      ..dispose();
+    _inputFocus.dispose();
     _controller
       ..removeListener(_handleTextChanged)
       ..dispose();
@@ -970,118 +1060,130 @@ class _SessionComposerState extends State<SessionComposer> {
           children: <Widget>[
             if (widget.header != null) widget.header!,
             TRCard(
-              // A drop target reads the same way as focus: this card is where
-              // the content lands. Typing focus is left to the ghost input,
-              // which paints its own emphasis; ringing the card as well would
-              // show two focus rings for one caret.
-              focused: _dragging,
+              // The card is the control: the prompt, its settings, and send are
+              // one thing to the reader, so focus anywhere inside rings all of
+              // it. A drop target reads the same way, since this card is where
+              // the content lands. The input is plain, so the ring is painted
+              // here once rather than around the text as well.
+              focused: _focused || _dragging,
               padding: TRCardPadding.sm,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                spacing: TRSpacing.small,
-                children: <Widget>[
-                  for (var index = 0; index < widget.queued.length; index += 1)
-                    _QueuedTurnRow(
-                      slotKey: ValueKey<String>('queued-turn-$index'),
-                      turn: widget.queued[index],
-                      onEdit: widget.onQueuedEdit == null
-                          ? null
-                          : () => _editQueued(widget.queued[index].id),
-                      onSendNow: widget.onQueuedSendNow == null
-                          ? null
-                          : () => _sendQueuedNow(widget.queued[index].id),
-                    ),
-                  ComposerSuggestionsOverlay(
-                    state: widget.suggestions,
-                    controller: _suggestions,
-                    onSelected: _completeWith,
-                    onDismissed: () =>
-                        widget.onCompletionQueryChanged?.call(null),
-                    // Shift+Tab cycles the mode instead of moving focus, and
-                    // Enter sends rather than opening a line.
-                    child: Focus(
-                      onKeyEvent: _handleKey,
-                      child: TRTextField(
-                        key: const ValueKey('session-composer-input'),
-                        controller: _controller,
-                        focusNode: _inputFocus,
-                        appearance: TRFieldAppearance.ghost,
-                        minLines: 1,
-                        maxLines: 8,
-                        enabled: widget.enabled,
-                        placeholder: l10n.composerInputHint,
+              child: Focus(
+                canRequestFocus: false,
+                skipTraversal: true,
+                onFocusChange: (focused) => setState(() => _focused = focused),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: TRSpacing.small,
+                  children: <Widget>[
+                    for (
+                      var index = 0;
+                      index < widget.queued.length;
+                      index += 1
+                    )
+                      _QueuedTurnRow(
+                        slotKey: ValueKey<String>('queued-turn-$index'),
+                        turn: widget.queued[index],
+                        onEdit: widget.onQueuedEdit == null
+                            ? null
+                            : () => _editQueued(widget.queued[index].id),
+                        onSendNow: widget.onQueuedSendNow == null
+                            ? null
+                            : () => _sendQueuedNow(widget.queued[index].id),
+                      ),
+                    ComposerSuggestionsOverlay(
+                      state: widget.suggestions,
+                      controller: _suggestions,
+                      onSelected: _completeWith,
+                      onDismissed: () =>
+                          widget.onCompletionQueryChanged?.call(null),
+                      // Shift+Tab cycles the mode instead of moving focus, and
+                      // Enter sends rather than opening a line.
+                      child: Focus(
+                        onKeyEvent: _handleKey,
+                        child: TRTextField(
+                          key: const ValueKey('session-composer-input'),
+                          controller: _controller,
+                          focusNode: _inputFocus,
+                          appearance: TRFieldAppearance.plain,
+                          minLines: 1,
+                          maxLines: 8,
+                          enabled: widget.enabled,
+                          placeholder: l10n.composerInputHint,
+                        ),
                       ),
                     ),
-                  ),
-                  if (_attachments.isNotEmpty)
-                    Wrap(
-                      spacing: TRSpacing.extraSmall,
-                      runSpacing: TRSpacing.extraSmall,
+                    if (_attachments.isNotEmpty)
+                      Wrap(
+                        spacing: TRSpacing.extraSmall,
+                        runSpacing: TRSpacing.extraSmall,
+                        children: <Widget>[
+                          for (
+                            var index = 0;
+                            index < _attachments.length;
+                            index += 1
+                          )
+                            _PendingAttachmentPill(
+                              key: ValueKey('pending-attachment-$index'),
+                              attachment: _attachments[index],
+                              uploading: _submitting,
+                              onRemove: _submitting
+                                  ? null
+                                  : () => setState(
+                                      () => _attachments.removeAt(index),
+                                    ),
+                            ),
+                        ],
+                      ),
+                    if (widget.contextWindow case final window? when window > 0)
+                      _ContextMeter(used: widget.contextTokens, window: window),
+                    Row(
+                      spacing: TRSpacing.small,
                       children: <Widget>[
-                        for (
-                          var index = 0;
-                          index < _attachments.length;
-                          index += 1
-                        )
-                          _PendingAttachmentPill(
-                            key: ValueKey('pending-attachment-$index'),
-                            attachment: _attachments[index],
-                            uploading: _submitting,
-                            onRemove: _submitting
-                                ? null
-                                : () => setState(
-                                    () => _attachments.removeAt(index),
-                                  ),
-                          ),
-                      ],
-                    ),
-                  if (widget.contextWindow case final window? when window > 0)
-                    _ContextMeter(used: widget.contextTokens, window: window),
-                  Row(
-                    spacing: TRSpacing.small,
-                    children: <Widget>[
-                      // Attach leads and send stays pinned at the trailing
-                      // edge; only the settings between them give up room.
-                      Expanded(
-                        child: Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: widget.bar.withLeading(
-                            TRIconButton(
-                              key: const ValueKey('session-composer-attach'),
-                              appearance: TRAppearance.ghost,
-                              onPressed:
-                                  editable && widget.attachmentInput != null
-                                  ? _pickFiles
-                                  : null,
-                              icon: const Icon(CoderIcons.paperclip),
-                              label: l10n.composerAttachLabel,
+                        // Attach leads and send stays pinned at the trailing
+                        // edge; only the settings between them give up room.
+                        Expanded(
+                          child: Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: widget.bar.withLeading(
+                              TRIconButton(
+                                key: const ValueKey('session-composer-attach'),
+                                appearance: TRAppearance.ghost,
+                                uiSize: TRUiSize.sm,
+                                onPressed:
+                                    editable && widget.attachmentInput != null
+                                    ? _pickFiles
+                                    : null,
+                                icon: const Icon(CoderIcons.paperclip),
+                                label: l10n.composerAttachLabel,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      TRTooltip(
-                        message: queueing
-                            ? l10n.composerQueueTooltip
-                            : l10n.composerSendLabel,
-                        child: TRIconButton(
-                          key: const ValueKey('session-composer-send'),
-                          intent: TRIntent.primary,
-                          loading: _submitting,
-                          onPressed: widget.enabled
-                              ? () => unawaited(_runDefaultAction())
-                              : null,
-                          icon: Icon(
-                            queueing ? CoderIcons.queue : CoderIcons.send,
-                          ),
-                          label: queueing
-                              ? l10n.composerQueueLabel
+                        TRTooltip(
+                          message: queueing
+                              ? l10n.composerQueueTooltip
                               : l10n.composerSendLabel,
+                          child: TRIconButton(
+                            key: const ValueKey('session-composer-send'),
+                            intent: TRIntent.primary,
+                            uiSize: TRUiSize.sm,
+                            loading: _submitting,
+                            onPressed: widget.enabled
+                                ? () => unawaited(_runDefaultAction())
+                                : null,
+                            icon: Icon(
+                              queueing ? CoderIcons.queue : CoderIcons.send,
+                            ),
+                            label: queueing
+                                ? l10n.composerQueueLabel
+                                : l10n.composerSendLabel,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             if (widget.hint != null)
