@@ -165,7 +165,7 @@ void main() {
     // repository's 10 GB quota and evicts the caches that do pay off.
     // flutter-action gates the pub cache on `inputs.cache` unless `pub-cache`
     // is set explicitly, so pin it to keep pub caching on every runner.
-    expect(setupFlutter, contains("cache: \${{ runner.os != 'macOS' }}"));
+    expect(setupFlutter, contains(r"cache: ${{ runner.os != 'macOS' }}"));
     expect(setupFlutter, contains("pub-cache: 'true'"));
   });
 
