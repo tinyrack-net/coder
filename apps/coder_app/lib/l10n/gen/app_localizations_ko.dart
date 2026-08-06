@@ -526,6 +526,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appSettingsBearerToken => 'Bearer token';
 
   @override
+  String get appSettingsRemoteDetails => 'Daemon';
+
+  @override
   String get appSettingsConnectionBehaviour => '연결';
 
   @override

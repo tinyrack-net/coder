@@ -1070,6 +1070,12 @@ abstract class AppLocalizations {
   /// **'Bearer token'**
   String get appSettingsBearerToken;
 
+  /// Section heading for a remote daemon's name and address.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon'**
+  String get appSettingsRemoteDetails;
+
   /// Section heading for how the app connects to a daemon.
   ///
   /// In en, this message translates to:

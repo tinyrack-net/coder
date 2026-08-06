@@ -152,6 +152,40 @@ void main() {
     });
   });
 
+  group('SettingsSection header', () {
+    testWidgets('wraps its action rather than overflowing', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: TinyrackTheme.light(),
+          home: MediaQuery(
+            // A heading and its action do not fit on one line on a narrow
+            // window at a large text scale, and a Row cannot give.
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
+              body: SizedBox(
+                width: 390,
+                child: SettingsScaffold(
+                  children: <Widget>[
+                    SettingsSection(
+                      title: '원격 daemons',
+                      action: TRButton(
+                        onPressed: () {},
+                        child: const TRText.inherit('원격 daemon 추가'),
+                      ),
+                      children: const <Widget>[],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('SettingsSection banner', () {
     testWidgets('sits between the heading and the content', (tester) async {
       await tester.pumpWidget(

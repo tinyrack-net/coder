@@ -125,10 +125,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         for (final attempt in state.authAttempts.values)
           if (attempt.status == ProviderAuthAttemptStatus.failed ||
               attempt.status == ProviderAuthAttemptStatus.expired)
-            CoderListRow(
-              key: ValueKey<String>('provider-auth-error-${attempt.id}'),
-              leading: const Icon(CoderIcons.warning),
-              title: TRText.inherit(attempt.error ?? attempt.status.name),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: TRSpacing.extraLarge,
+              ),
+              child: SettingsRow(
+                key: ValueKey<String>('provider-auth-error-${attempt.id}'),
+                leading: const Icon(CoderIcons.warning),
+                title: TRText.inherit(attempt.error ?? attempt.status.name),
+              ),
             ),
       ],
     );
@@ -590,30 +595,33 @@ class _AuthAttemptBar extends StatelessWidget {
   final VoidCallback onCancel;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: context.tinyrackTheme.surfaceSelected,
-      borderRadius: const BorderRadius.all(TRRadii.medium),
-    ),
-    child: CoderListRow(
-      leading: const TRSpinner(),
-      title: TRText.inherit(
-        AppLocalizations.of(context).providerSettingsOAuthPending,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: TRSpacing.extraLarge),
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.tinyrackTheme.surfaceSelected,
+        borderRadius: const BorderRadius.all(TRRadii.medium),
       ),
-      // The device code has to be copyable for the user to complete the flow.
-      subtitle: SelectionArea(
-        child: TRText.inherit(
-          <String?>[
-            attempt.authorizationUrl,
-            attempt.userCode,
-          ].whereType<String>().join(' · '),
+      child: SettingsRow(
+        leading: const TRSpinner(),
+        title: TRText.inherit(
+          AppLocalizations.of(context).providerSettingsOAuthPending,
         ),
-      ),
-      trailing: TRButton(
-        key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),
-        appearance: TRAppearance.ghost,
-        onPressed: onCancel,
-        child: TRText.inherit(AppLocalizations.of(context).commonCancel),
+        // The device code has to be copyable for the user to complete it.
+        description: SelectionArea(
+          child: TRText.inherit(
+            <String?>[
+              attempt.authorizationUrl,
+              attempt.userCode,
+            ].whereType<String>().join(' · '),
+          ),
+        ),
+        control: TRButton(
+          key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),
+          appearance: TRAppearance.ghost,
+          onPressed: onCancel,
+          child: TRText.inherit(AppLocalizations.of(context).commonCancel),
+        ),
       ),
     ),
   );

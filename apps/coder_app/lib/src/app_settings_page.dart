@@ -471,9 +471,9 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
       body: SettingsScaffold(
         children: <Widget>[
           SettingsSection.form(
-            title: existing == null
-                ? l10n.appSettingsAddRemoteTitle
-                : l10n.appSettingsEditRemoteTitle,
+            // Not the page title again: the header above already names the
+            // form, and a section heading is drawn larger than it.
+            title: l10n.appSettingsRemoteDetails,
             banner: _error == null
                 ? null
                 : TRAlert(
