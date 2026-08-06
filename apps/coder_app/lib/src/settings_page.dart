@@ -557,11 +557,12 @@ class _ProviderConnectionCard extends StatelessWidget {
                     truncate: true,
                   ),
                 ),
-                TRMenu(
-                  trigger: Icon(
-                    CoderIcons.more,
-                    semanticLabel: l10n.providerSettingsActions,
+                TRMenu.icon(
+                  key: ValueKey<String>(
+                    'provider-actions-${connection.definitionId}',
                   ),
+                  icon: const Icon(CoderIcons.more),
+                  label: l10n.providerSettingsActions,
                   menuChildren: <Widget>[
                     if (connection.definitionId == 'custom')
                       TRMenuItem(

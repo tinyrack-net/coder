@@ -53,6 +53,10 @@ void main() {
           'gap literal; use TRSpacing',
       RegExp(r'\bTheme\.of\(context\)\.(?:colorScheme|textTheme)\b'):
           'Material theme read; use context.tinyrackTheme or TRTypography',
+      // A text trigger carries inline padding on both sides, so a glyph in one
+      // renders as a wide pill beside the square TRIconButtons it sits with.
+      RegExp(r'trigger: (?:const )?Icon\('):
+          'icon in a text menu trigger; use TRMenu.icon',
     };
     // The semantic icon map is where raw Lucide glyphs are allowed to appear;
     // naming them anywhere else is what the rule above forbids.

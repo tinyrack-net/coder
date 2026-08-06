@@ -268,12 +268,10 @@ class WorkspaceSidebar extends ConsumerWidget {
       label: Row(
         children: <Widget>[
           Expanded(child: TRText.inherit(workspace.name)),
-          TRMenu(
+          TRMenu.icon(
             key: ValueKey<String>('workspace-menu-${workspace.id}'),
-            trigger: Icon(
-              CoderIcons.more,
-              semanticLabel: l10n.workspaceProjectMenu,
-            ),
+            icon: const Icon(CoderIcons.more),
+            label: l10n.workspaceProjectMenu,
             menuChildren: <Widget>[
               TRMenuItem(
                 key: ValueKey<String>(
@@ -312,12 +310,10 @@ class WorkspaceSidebar extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: TRMenu(
+            trailing: TRMenu.icon(
               key: ValueKey<String>('worktree-menu-${worktree.id}'),
-              trigger: Icon(
-                CoderIcons.more,
-                semanticLabel: l10n.workspaceWorktreeMenu,
-              ),
+              icon: const Icon(CoderIcons.more),
+              label: l10n.workspaceWorktreeMenu,
               menuChildren: <Widget>[
                 TRMenuItem(
                   onPressed: () => unawaited(

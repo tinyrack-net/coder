@@ -361,6 +361,12 @@ void main() {
       await pumpAt(200);
       expect(tester.takeException(), isNull);
       expect(find.byKey(overflowKey), findsOneWidget);
+      // The overflow stands in the dense chip row beside the attach and send
+      // icon buttons, so it takes their square geometry at the same size.
+      expect(
+        tester.getSize(find.byKey(overflowKey)),
+        Size.square(TRControlMetrics.heightOf(TRUiSize.sm)),
+      );
       expect(
         find.byKey(const ValueKey('session-composer-mode')),
         findsNothing,
