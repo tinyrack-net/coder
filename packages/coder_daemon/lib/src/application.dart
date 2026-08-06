@@ -6,10 +6,12 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
+import 'package:coder_daemon/src/commands.dart';
 import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
 import 'package:coder_daemon/src/database.dart';
 import 'package:coder_daemon/src/exec_session_service.dart';
+import 'package:coder_daemon/src/file_index.dart';
 import 'package:coder_daemon/src/git_workspace.dart';
 import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_daemon/src/mcp_resource_tools.dart';
@@ -291,6 +293,26 @@ abstract final class DaemonApplication {
         ),
       );
       await skills.initialize();
+      final commands = CommandService(
+        globalSources: <CommandFiles>[
+          // A daemon without a resolved user home stays away from any
+          // `~/.agents` tree instead of guessing one.
+          if (userHome != null)
+            NativeCommandFiles(
+              p.join(userHome, '.agents', 'commands'),
+              source: AgentCommandSource.userHome,
+            ),
+          NativeCommandFiles(
+            p.join(config.configDirectory, 'commands'),
+            source: AgentCommandSource.config,
+          ),
+        ],
+        projectFiles: (root) => NativeCommandFiles(
+          p.join(root, '.agents', 'commands'),
+          source: AgentCommandSource.project,
+        ),
+      );
+      await commands.initialize();
       final execSessions = ExecSessionService(
         gateway: const TinyrackTerminalGateway(),
         ids: ids,
@@ -379,6 +401,10 @@ abstract final class DaemonApplication {
         execHostFor: (id) => SessionExecHost(execSessions, id),
         skills: skills,
       );
+      final fileIndex = GitAwareFileIndexGateway(
+        const IoCommandRunner(),
+        clock,
+      );
       final workspaceService = WorkspaceService(
         database.workspaceDao,
         database.worktreeDao,
@@ -387,6 +413,7 @@ abstract final class DaemonApplication {
         git ?? const ProcessGitWorkspaceGateway(IoCommandRunner()),
         clock,
         p.join(home.path, 'worktrees'),
+        fileIndex,
         projectSettings,
         worktreeHooks,
       );
@@ -455,6 +482,7 @@ abstract final class DaemonApplication {
         mcp: mcp,
         worktrees: database.worktreeDao,
         skills: skills,
+        commands: commands,
         providers: providers,
         providerAuth: providerAuth,
         terminals: terminals,

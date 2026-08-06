@@ -248,6 +248,24 @@ Map<String, dynamic> _$DirectorySuggestionDtoToJson(
   _DirectorySuggestionDto instance,
 ) => <String, dynamic>{'path': instance.path, 'name': instance.name};
 
+_FileMatchDto _$FileMatchDtoFromJson(Map<String, dynamic> json) =>
+    _FileMatchDto(
+      relativePath: json['relativePath'] as String,
+      absolutePath: json['absolutePath'] as String,
+      name: json['name'] as String,
+      isDirectory: json['isDirectory'] as bool,
+      score: (json['score'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$FileMatchDtoToJson(_FileMatchDto instance) =>
+    <String, dynamic>{
+      'relativePath': instance.relativePath,
+      'absolutePath': instance.absolutePath,
+      'name': instance.name,
+      'isDirectory': instance.isDirectory,
+      'score': instance.score,
+    };
+
 _GitBranchDto _$GitBranchDtoFromJson(Map<String, dynamic> json) =>
     _GitBranchDto(
       name: json['name'] as String,
@@ -574,6 +592,34 @@ const _$McpServerStatusEnumMap = {
 const _$McpConfigScopeEnumMap = {
   McpConfigScope.user: 'user',
   McpConfigScope.project: 'project',
+};
+
+_AgentCommandDto _$AgentCommandDtoFromJson(Map<String, dynamic> json) =>
+    _AgentCommandDto(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      source: $enumDecode(_$AgentCommandSourceEnumMap, json['source']),
+      sourcePath: json['sourcePath'] as String,
+      body: json['body'] as String,
+      argumentHint: json['argumentHint'] as String?,
+    );
+
+Map<String, dynamic> _$AgentCommandDtoToJson(_AgentCommandDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'description': instance.description,
+      'source': _$AgentCommandSourceEnumMap[instance.source]!,
+      'sourcePath': instance.sourcePath,
+      'body': instance.body,
+      'argumentHint': instance.argumentHint,
+    };
+
+const _$AgentCommandSourceEnumMap = {
+  AgentCommandSource.userHome: 'userHome',
+  AgentCommandSource.config: 'config',
+  AgentCommandSource.project: 'project',
 };
 
 _SkillDiagnosticDto _$SkillDiagnosticDtoFromJson(Map<String, dynamic> json) =>

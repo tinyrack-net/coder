@@ -59,6 +59,29 @@ Map<String, dynamic> _$DirectorySuggestParamsDtoToJson(
   _DirectorySuggestParamsDto instance,
 ) => <String, dynamic>{'query': instance.query, 'limit': instance.limit};
 
+_FileSearchParamsDto _$FileSearchParamsDtoFromJson(Map<String, dynamic> json) =>
+    _FileSearchParamsDto(
+      worktreeId: json['worktreeId'] as String,
+      query: json['query'] as String,
+      limit: (json['limit'] as num?)?.toInt() ?? 50,
+    );
+
+Map<String, dynamic> _$FileSearchParamsDtoToJson(
+  _FileSearchParamsDto instance,
+) => <String, dynamic>{
+  'worktreeId': instance.worktreeId,
+  'query': instance.query,
+  'limit': instance.limit,
+};
+
+_CommandListParamsDto _$CommandListParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _CommandListParamsDto(workspaceId: json['workspaceId'] as String?);
+
+Map<String, dynamic> _$CommandListParamsDtoToJson(
+  _CommandListParamsDto instance,
+) => <String, dynamic>{'workspaceId': instance.workspaceId};
+
 _GitBranchesListParamsDto _$GitBranchesListParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _GitBranchesListParamsDto(workspaceId: json['workspaceId'] as String);
@@ -606,6 +629,21 @@ Map<String, dynamic> _$DirectorySuggestResultDtoToJson(
   _DirectorySuggestResultDto instance,
 ) => <String, dynamic>{'suggestions': instance.suggestions};
 
+_FileSearchResultDto _$FileSearchResultDtoFromJson(Map<String, dynamic> json) =>
+    _FileSearchResultDto(
+      matches: (json['matches'] as List<dynamic>)
+          .map((e) => FileMatchDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      truncated: json['truncated'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$FileSearchResultDtoToJson(
+  _FileSearchResultDto instance,
+) => <String, dynamic>{
+  'matches': instance.matches,
+  'truncated': instance.truncated,
+};
+
 _GitBranchesListResultDto _$GitBranchesListResultDtoFromJson(
   Map<String, dynamic> json,
 ) => _GitBranchesListResultDto(
@@ -941,6 +979,18 @@ _SkillListResultDto _$SkillListResultDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$SkillListResultDtoToJson(_SkillListResultDto instance) =>
     <String, dynamic>{'skills': instance.skills};
+
+_CommandListResultDto _$CommandListResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _CommandListResultDto(
+  commands: (json['commands'] as List<dynamic>)
+      .map((e) => AgentCommandDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$CommandListResultDtoToJson(
+  _CommandListResultDto instance,
+) => <String, dynamic>{'commands': instance.commands};
 
 _SkillResultDto _$SkillResultDtoFromJson(Map<String, dynamic> json) =>
     _SkillResultDto(

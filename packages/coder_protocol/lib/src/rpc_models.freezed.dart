@@ -1092,6 +1092,538 @@ as int,
 
 
 /// @nodoc
+mixin _$FileSearchParamsDto {
+
+ String get worktreeId; String get query; int get limit;
+/// Create a copy of FileSearchParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileSearchParamsDtoCopyWith<FileSearchParamsDto> get copyWith => _$FileSearchParamsDtoCopyWithImpl<FileSearchParamsDto>(this as FileSearchParamsDto, _$identity);
+
+  /// Serializes this FileSearchParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileSearchParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.query, query) || other.query == query)&&(identical(other.limit, limit) || other.limit == limit));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId,query,limit);
+
+@override
+String toString() {
+  return 'FileSearchParamsDto(worktreeId: $worktreeId, query: $query, limit: $limit)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileSearchParamsDtoCopyWith<$Res>  {
+  factory $FileSearchParamsDtoCopyWith(FileSearchParamsDto value, $Res Function(FileSearchParamsDto) _then) = _$FileSearchParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String worktreeId, String query, int limit
+});
+
+
+
+
+}
+/// @nodoc
+class _$FileSearchParamsDtoCopyWithImpl<$Res>
+    implements $FileSearchParamsDtoCopyWith<$Res> {
+  _$FileSearchParamsDtoCopyWithImpl(this._self, this._then);
+
+  final FileSearchParamsDto _self;
+  final $Res Function(FileSearchParamsDto) _then;
+
+/// Create a copy of FileSearchParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? worktreeId = null,Object? query = null,Object? limit = null,}) {
+  return _then(_self.copyWith(
+worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as String,limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FileSearchParamsDto].
+extension FileSearchParamsDtoPatterns on FileSearchParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileSearchParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileSearchParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileSearchParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileSearchParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileSearchParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileSearchParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String worktreeId,  String query,  int limit)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileSearchParamsDto() when $default != null:
+return $default(_that.worktreeId,_that.query,_that.limit);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String worktreeId,  String query,  int limit)  $default,) {final _that = this;
+switch (_that) {
+case _FileSearchParamsDto():
+return $default(_that.worktreeId,_that.query,_that.limit);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String worktreeId,  String query,  int limit)?  $default,) {final _that = this;
+switch (_that) {
+case _FileSearchParamsDto() when $default != null:
+return $default(_that.worktreeId,_that.query,_that.limit);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileSearchParamsDto implements FileSearchParamsDto {
+  const _FileSearchParamsDto({required this.worktreeId, required this.query, this.limit = 50});
+  factory _FileSearchParamsDto.fromJson(Map<String, dynamic> json) => _$FileSearchParamsDtoFromJson(json);
+
+@override final  String worktreeId;
+@override final  String query;
+@override@JsonKey() final  int limit;
+
+/// Create a copy of FileSearchParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileSearchParamsDtoCopyWith<_FileSearchParamsDto> get copyWith => __$FileSearchParamsDtoCopyWithImpl<_FileSearchParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileSearchParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileSearchParamsDto&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.query, query) || other.query == query)&&(identical(other.limit, limit) || other.limit == limit));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,worktreeId,query,limit);
+
+@override
+String toString() {
+  return 'FileSearchParamsDto(worktreeId: $worktreeId, query: $query, limit: $limit)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileSearchParamsDtoCopyWith<$Res> implements $FileSearchParamsDtoCopyWith<$Res> {
+  factory _$FileSearchParamsDtoCopyWith(_FileSearchParamsDto value, $Res Function(_FileSearchParamsDto) _then) = __$FileSearchParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String worktreeId, String query, int limit
+});
+
+
+
+
+}
+/// @nodoc
+class __$FileSearchParamsDtoCopyWithImpl<$Res>
+    implements _$FileSearchParamsDtoCopyWith<$Res> {
+  __$FileSearchParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _FileSearchParamsDto _self;
+  final $Res Function(_FileSearchParamsDto) _then;
+
+/// Create a copy of FileSearchParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? worktreeId = null,Object? query = null,Object? limit = null,}) {
+  return _then(_FileSearchParamsDto(
+worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
+as String,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as String,limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$CommandListParamsDto {
+
+ String? get workspaceId;
+/// Create a copy of CommandListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CommandListParamsDtoCopyWith<CommandListParamsDto> get copyWith => _$CommandListParamsDtoCopyWithImpl<CommandListParamsDto>(this as CommandListParamsDto, _$identity);
+
+  /// Serializes this CommandListParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommandListParamsDto&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,workspaceId);
+
+@override
+String toString() {
+  return 'CommandListParamsDto(workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CommandListParamsDtoCopyWith<$Res>  {
+  factory $CommandListParamsDtoCopyWith(CommandListParamsDto value, $Res Function(CommandListParamsDto) _then) = _$CommandListParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class _$CommandListParamsDtoCopyWithImpl<$Res>
+    implements $CommandListParamsDtoCopyWith<$Res> {
+  _$CommandListParamsDtoCopyWithImpl(this._self, this._then);
+
+  final CommandListParamsDto _self;
+  final $Res Function(CommandListParamsDto) _then;
+
+/// Create a copy of CommandListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? workspaceId = freezed,}) {
+  return _then(_self.copyWith(
+workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [CommandListParamsDto].
+extension CommandListParamsDtoPatterns on CommandListParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CommandListParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _CommandListParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CommandListParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _CommandListParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CommandListParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _CommandListParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? workspaceId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _CommandListParamsDto() when $default != null:
+return $default(_that.workspaceId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? workspaceId)  $default,) {final _that = this;
+switch (_that) {
+case _CommandListParamsDto():
+return $default(_that.workspaceId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? workspaceId)?  $default,) {final _that = this;
+switch (_that) {
+case _CommandListParamsDto() when $default != null:
+return $default(_that.workspaceId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _CommandListParamsDto implements CommandListParamsDto {
+  const _CommandListParamsDto({this.workspaceId});
+  factory _CommandListParamsDto.fromJson(Map<String, dynamic> json) => _$CommandListParamsDtoFromJson(json);
+
+@override final  String? workspaceId;
+
+/// Create a copy of CommandListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$CommandListParamsDtoCopyWith<_CommandListParamsDto> get copyWith => __$CommandListParamsDtoCopyWithImpl<_CommandListParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$CommandListParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommandListParamsDto&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,workspaceId);
+
+@override
+String toString() {
+  return 'CommandListParamsDto(workspaceId: $workspaceId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$CommandListParamsDtoCopyWith<$Res> implements $CommandListParamsDtoCopyWith<$Res> {
+  factory _$CommandListParamsDtoCopyWith(_CommandListParamsDto value, $Res Function(_CommandListParamsDto) _then) = __$CommandListParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String? workspaceId
+});
+
+
+
+
+}
+/// @nodoc
+class __$CommandListParamsDtoCopyWithImpl<$Res>
+    implements _$CommandListParamsDtoCopyWith<$Res> {
+  __$CommandListParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _CommandListParamsDto _self;
+  final $Res Function(_CommandListParamsDto) _then;
+
+/// Create a copy of CommandListParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? workspaceId = freezed,}) {
+  return _then(_CommandListParamsDto(
+workspaceId: freezed == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$GitBranchesListParamsDto {
 
  String get workspaceId;
@@ -11425,6 +11957,278 @@ as List<DirectorySuggestionDto>,
 
 
 /// @nodoc
+mixin _$FileSearchResultDto {
+
+ List<FileMatchDto> get matches; bool get truncated;
+/// Create a copy of FileSearchResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileSearchResultDtoCopyWith<FileSearchResultDto> get copyWith => _$FileSearchResultDtoCopyWithImpl<FileSearchResultDto>(this as FileSearchResultDto, _$identity);
+
+  /// Serializes this FileSearchResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileSearchResultDto&&const DeepCollectionEquality().equals(other.matches, matches)&&(identical(other.truncated, truncated) || other.truncated == truncated));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(matches),truncated);
+
+@override
+String toString() {
+  return 'FileSearchResultDto(matches: $matches, truncated: $truncated)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileSearchResultDtoCopyWith<$Res>  {
+  factory $FileSearchResultDtoCopyWith(FileSearchResultDto value, $Res Function(FileSearchResultDto) _then) = _$FileSearchResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<FileMatchDto> matches, bool truncated
+});
+
+
+
+
+}
+/// @nodoc
+class _$FileSearchResultDtoCopyWithImpl<$Res>
+    implements $FileSearchResultDtoCopyWith<$Res> {
+  _$FileSearchResultDtoCopyWithImpl(this._self, this._then);
+
+  final FileSearchResultDto _self;
+  final $Res Function(FileSearchResultDto) _then;
+
+/// Create a copy of FileSearchResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? matches = null,Object? truncated = null,}) {
+  return _then(_self.copyWith(
+matches: null == matches ? _self.matches : matches // ignore: cast_nullable_to_non_nullable
+as List<FileMatchDto>,truncated: null == truncated ? _self.truncated : truncated // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FileSearchResultDto].
+extension FileSearchResultDtoPatterns on FileSearchResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileSearchResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileSearchResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileSearchResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileSearchResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileSearchResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileSearchResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<FileMatchDto> matches,  bool truncated)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileSearchResultDto() when $default != null:
+return $default(_that.matches,_that.truncated);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<FileMatchDto> matches,  bool truncated)  $default,) {final _that = this;
+switch (_that) {
+case _FileSearchResultDto():
+return $default(_that.matches,_that.truncated);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<FileMatchDto> matches,  bool truncated)?  $default,) {final _that = this;
+switch (_that) {
+case _FileSearchResultDto() when $default != null:
+return $default(_that.matches,_that.truncated);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileSearchResultDto implements FileSearchResultDto {
+  const _FileSearchResultDto({required final  List<FileMatchDto> matches, this.truncated = false}): _matches = matches;
+  factory _FileSearchResultDto.fromJson(Map<String, dynamic> json) => _$FileSearchResultDtoFromJson(json);
+
+ final  List<FileMatchDto> _matches;
+@override List<FileMatchDto> get matches {
+  if (_matches is EqualUnmodifiableListView) return _matches;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_matches);
+}
+
+@override@JsonKey() final  bool truncated;
+
+/// Create a copy of FileSearchResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileSearchResultDtoCopyWith<_FileSearchResultDto> get copyWith => __$FileSearchResultDtoCopyWithImpl<_FileSearchResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileSearchResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileSearchResultDto&&const DeepCollectionEquality().equals(other._matches, _matches)&&(identical(other.truncated, truncated) || other.truncated == truncated));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_matches),truncated);
+
+@override
+String toString() {
+  return 'FileSearchResultDto(matches: $matches, truncated: $truncated)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileSearchResultDtoCopyWith<$Res> implements $FileSearchResultDtoCopyWith<$Res> {
+  factory _$FileSearchResultDtoCopyWith(_FileSearchResultDto value, $Res Function(_FileSearchResultDto) _then) = __$FileSearchResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<FileMatchDto> matches, bool truncated
+});
+
+
+
+
+}
+/// @nodoc
+class __$FileSearchResultDtoCopyWithImpl<$Res>
+    implements _$FileSearchResultDtoCopyWith<$Res> {
+  __$FileSearchResultDtoCopyWithImpl(this._self, this._then);
+
+  final _FileSearchResultDto _self;
+  final $Res Function(_FileSearchResultDto) _then;
+
+/// Create a copy of FileSearchResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? matches = null,Object? truncated = null,}) {
+  return _then(_FileSearchResultDto(
+matches: null == matches ? _self._matches : matches // ignore: cast_nullable_to_non_nullable
+as List<FileMatchDto>,truncated: null == truncated ? _self.truncated : truncated // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$GitBranchesListResultDto {
 
  List<GitBranchDto> get branches;
@@ -19341,6 +20145,275 @@ class __$SkillListResultDtoCopyWithImpl<$Res>
   return _then(_SkillListResultDto(
 skills: null == skills ? _self._skills : skills // ignore: cast_nullable_to_non_nullable
 as List<SkillDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$CommandListResultDto {
+
+ List<AgentCommandDto> get commands;
+/// Create a copy of CommandListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CommandListResultDtoCopyWith<CommandListResultDto> get copyWith => _$CommandListResultDtoCopyWithImpl<CommandListResultDto>(this as CommandListResultDto, _$identity);
+
+  /// Serializes this CommandListResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommandListResultDto&&const DeepCollectionEquality().equals(other.commands, commands));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(commands));
+
+@override
+String toString() {
+  return 'CommandListResultDto(commands: $commands)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CommandListResultDtoCopyWith<$Res>  {
+  factory $CommandListResultDtoCopyWith(CommandListResultDto value, $Res Function(CommandListResultDto) _then) = _$CommandListResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<AgentCommandDto> commands
+});
+
+
+
+
+}
+/// @nodoc
+class _$CommandListResultDtoCopyWithImpl<$Res>
+    implements $CommandListResultDtoCopyWith<$Res> {
+  _$CommandListResultDtoCopyWithImpl(this._self, this._then);
+
+  final CommandListResultDto _self;
+  final $Res Function(CommandListResultDto) _then;
+
+/// Create a copy of CommandListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? commands = null,}) {
+  return _then(_self.copyWith(
+commands: null == commands ? _self.commands : commands // ignore: cast_nullable_to_non_nullable
+as List<AgentCommandDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [CommandListResultDto].
+extension CommandListResultDtoPatterns on CommandListResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CommandListResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _CommandListResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CommandListResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _CommandListResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CommandListResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _CommandListResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AgentCommandDto> commands)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _CommandListResultDto() when $default != null:
+return $default(_that.commands);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AgentCommandDto> commands)  $default,) {final _that = this;
+switch (_that) {
+case _CommandListResultDto():
+return $default(_that.commands);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AgentCommandDto> commands)?  $default,) {final _that = this;
+switch (_that) {
+case _CommandListResultDto() when $default != null:
+return $default(_that.commands);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _CommandListResultDto implements CommandListResultDto {
+  const _CommandListResultDto({required final  List<AgentCommandDto> commands}): _commands = commands;
+  factory _CommandListResultDto.fromJson(Map<String, dynamic> json) => _$CommandListResultDtoFromJson(json);
+
+ final  List<AgentCommandDto> _commands;
+@override List<AgentCommandDto> get commands {
+  if (_commands is EqualUnmodifiableListView) return _commands;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_commands);
+}
+
+
+/// Create a copy of CommandListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$CommandListResultDtoCopyWith<_CommandListResultDto> get copyWith => __$CommandListResultDtoCopyWithImpl<_CommandListResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$CommandListResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommandListResultDto&&const DeepCollectionEquality().equals(other._commands, _commands));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_commands));
+
+@override
+String toString() {
+  return 'CommandListResultDto(commands: $commands)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$CommandListResultDtoCopyWith<$Res> implements $CommandListResultDtoCopyWith<$Res> {
+  factory _$CommandListResultDtoCopyWith(_CommandListResultDto value, $Res Function(_CommandListResultDto) _then) = __$CommandListResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<AgentCommandDto> commands
+});
+
+
+
+
+}
+/// @nodoc
+class __$CommandListResultDtoCopyWithImpl<$Res>
+    implements _$CommandListResultDtoCopyWith<$Res> {
+  __$CommandListResultDtoCopyWithImpl(this._self, this._then);
+
+  final _CommandListResultDto _self;
+  final $Res Function(_CommandListResultDto) _then;
+
+/// Create a copy of CommandListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commands = null,}) {
+  return _then(_CommandListResultDto(
+commands: null == commands ? _self._commands : commands // ignore: cast_nullable_to_non_nullable
+as List<AgentCommandDto>,
   ));
 }
 

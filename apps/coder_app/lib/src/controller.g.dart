@@ -905,6 +905,349 @@ abstract class _$SkillsController extends $AsyncNotifier<List<SkillDto>> {
   }
 }
 
+/// Loads the agent commands one daemon offers, optionally for one project.
+///
+/// A null [AgentCommandsController.workspaceId] shows only the user-home and
+/// daemon-config sources; naming a workspace layers its `.agents/commands` on
+/// top.
+
+@ProviderFor(AgentCommandsController)
+final agentCommandsControllerProvider = AgentCommandsControllerFamily._();
+
+/// Loads the agent commands one daemon offers, optionally for one project.
+///
+/// A null [AgentCommandsController.workspaceId] shows only the user-home and
+/// daemon-config sources; naming a workspace layers its `.agents/commands` on
+/// top.
+final class AgentCommandsControllerProvider
+    extends
+        $AsyncNotifierProvider<AgentCommandsController, List<AgentCommandDto>> {
+  /// Loads the agent commands one daemon offers, optionally for one project.
+  ///
+  /// A null [AgentCommandsController.workspaceId] shows only the user-home and
+  /// daemon-config sources; naming a workspace layers its `.agents/commands` on
+  /// top.
+  AgentCommandsControllerProvider._({
+    required AgentCommandsControllerFamily super.from,
+    required (String, String?) super.argument,
+  }) : super(
+         retry: null,
+         name: r'agentCommandsControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentCommandsControllerHash();
+
+  @override
+  String toString() {
+    return r'agentCommandsControllerProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  AgentCommandsController create() => AgentCommandsController();
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentCommandsControllerProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentCommandsControllerHash() =>
+    r'40f6c0069a39751e3d5ee0f70bfa450154b953fc';
+
+/// Loads the agent commands one daemon offers, optionally for one project.
+///
+/// A null [AgentCommandsController.workspaceId] shows only the user-home and
+/// daemon-config sources; naming a workspace layers its `.agents/commands` on
+/// top.
+
+final class AgentCommandsControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          AgentCommandsController,
+          AsyncValue<List<AgentCommandDto>>,
+          List<AgentCommandDto>,
+          FutureOr<List<AgentCommandDto>>,
+          (String, String?)
+        > {
+  AgentCommandsControllerFamily._()
+    : super(
+        retry: null,
+        name: r'agentCommandsControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Loads the agent commands one daemon offers, optionally for one project.
+  ///
+  /// A null [AgentCommandsController.workspaceId] shows only the user-home and
+  /// daemon-config sources; naming a workspace layers its `.agents/commands` on
+  /// top.
+
+  AgentCommandsControllerProvider call(String hostId, String? workspaceId) =>
+      AgentCommandsControllerProvider._(
+        argument: (hostId, workspaceId),
+        from: this,
+      );
+
+  @override
+  String toString() => r'agentCommandsControllerProvider';
+}
+
+/// Loads the agent commands one daemon offers, optionally for one project.
+///
+/// A null [AgentCommandsController.workspaceId] shows only the user-home and
+/// daemon-config sources; naming a workspace layers its `.agents/commands` on
+/// top.
+
+abstract class _$AgentCommandsController
+    extends $AsyncNotifier<List<AgentCommandDto>> {
+  late final _$args = ref.$arg as (String, String?);
+  String get hostId => _$args.$1;
+  String? get workspaceId => _$args.$2;
+
+  FutureOr<List<AgentCommandDto>> build(String hostId, String? workspaceId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref
+            as $Ref<AsyncValue<List<AgentCommandDto>>, List<AgentCommandDto>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<List<AgentCommandDto>>,
+                List<AgentCommandDto>
+              >,
+              AsyncValue<List<AgentCommandDto>>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args.$1, _$args.$2));
+  }
+}
+
+/// Merges the app, agent, and skill sources into the composer's `/` catalog.
+
+@ProviderFor(composerCommands)
+final composerCommandsProvider = ComposerCommandsFamily._();
+
+/// Merges the app, agent, and skill sources into the composer's `/` catalog.
+
+final class ComposerCommandsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ComposerCommand>>,
+          List<ComposerCommand>,
+          FutureOr<List<ComposerCommand>>
+        >
+    with
+        $FutureModifier<List<ComposerCommand>>,
+        $FutureProvider<List<ComposerCommand>> {
+  /// Merges the app, agent, and skill sources into the composer's `/` catalog.
+  ComposerCommandsProvider._({
+    required ComposerCommandsFamily super.from,
+    required (String, String?) super.argument,
+  }) : super(
+         retry: null,
+         name: r'composerCommandsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$composerCommandsHash();
+
+  @override
+  String toString() {
+    return r'composerCommandsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ComposerCommand>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ComposerCommand>> create(Ref ref) {
+    final argument = this.argument as (String, String?);
+    return composerCommands(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ComposerCommandsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$composerCommandsHash() => r'eb05c67ffe9dc21f15dfeff6d1236d73f21e8632';
+
+/// Merges the app, agent, and skill sources into the composer's `/` catalog.
+
+final class ComposerCommandsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<ComposerCommand>>,
+          (String, String?)
+        > {
+  ComposerCommandsFamily._()
+    : super(
+        retry: null,
+        name: r'composerCommandsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Merges the app, agent, and skill sources into the composer's `/` catalog.
+
+  ComposerCommandsProvider call(String hostId, String? workspaceId) =>
+      ComposerCommandsProvider._(argument: (hostId, workspaceId), from: this);
+
+  @override
+  String toString() => r'composerCommandsProvider';
+}
+
+/// Searches one worktree for the files an `@` query could mention.
+///
+/// The query is part of the provider key, so each keystroke creates a new
+/// provider and disposes the previous one. Cancelling the timer on dispose is
+/// therefore the debounce itself, with no controller state to keep in sync.
+
+@ProviderFor(composerFileSearch)
+final composerFileSearchProvider = ComposerFileSearchFamily._();
+
+/// Searches one worktree for the files an `@` query could mention.
+///
+/// The query is part of the provider key, so each keystroke creates a new
+/// provider and disposes the previous one. Cancelling the timer on dispose is
+/// therefore the debounce itself, with no controller state to keep in sync.
+
+final class ComposerFileSearchProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<FileMatchDto>>,
+          List<FileMatchDto>,
+          FutureOr<List<FileMatchDto>>
+        >
+    with
+        $FutureModifier<List<FileMatchDto>>,
+        $FutureProvider<List<FileMatchDto>> {
+  /// Searches one worktree for the files an `@` query could mention.
+  ///
+  /// The query is part of the provider key, so each keystroke creates a new
+  /// provider and disposes the previous one. Cancelling the timer on dispose is
+  /// therefore the debounce itself, with no controller state to keep in sync.
+  ComposerFileSearchProvider._({
+    required ComposerFileSearchFamily super.from,
+    required (String, String, String) super.argument,
+  }) : super(
+         retry: null,
+         name: r'composerFileSearchProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$composerFileSearchHash();
+
+  @override
+  String toString() {
+    return r'composerFileSearchProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<FileMatchDto>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<FileMatchDto>> create(Ref ref) {
+    final argument = this.argument as (String, String, String);
+    return composerFileSearch(ref, argument.$1, argument.$2, argument.$3);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ComposerFileSearchProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$composerFileSearchHash() =>
+    r'8bd5f1afe9645cf32c7a32c0e97ae9c32bb91a90';
+
+/// Searches one worktree for the files an `@` query could mention.
+///
+/// The query is part of the provider key, so each keystroke creates a new
+/// provider and disposes the previous one. Cancelling the timer on dispose is
+/// therefore the debounce itself, with no controller state to keep in sync.
+
+final class ComposerFileSearchFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<FileMatchDto>>,
+          (String, String, String)
+        > {
+  ComposerFileSearchFamily._()
+    : super(
+        retry: null,
+        name: r'composerFileSearchProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Searches one worktree for the files an `@` query could mention.
+  ///
+  /// The query is part of the provider key, so each keystroke creates a new
+  /// provider and disposes the previous one. Cancelling the timer on dispose is
+  /// therefore the debounce itself, with no controller state to keep in sync.
+
+  ComposerFileSearchProvider call(
+    String hostId,
+    String worktreeId,
+    String query,
+  ) => ComposerFileSearchProvider._(
+    argument: (hostId, worktreeId, query),
+    from: this,
+  );
+
+  @override
+  String toString() => r'composerFileSearchProvider';
+}
+
 /// Owns the live terminal catalog for one connected worktree.
 
 @ProviderFor(TerminalsController)
@@ -1277,7 +1620,7 @@ final class ConversationControllerProvider
 }
 
 String _$conversationControllerHash() =>
-    r'5a54d819c81ecb36954c168f83f7dabc93b61797';
+    r'7f20e9ade8a8edafeb5e88bb2f31e64f28530873';
 
 /// ConversationController defines a public contract.
 

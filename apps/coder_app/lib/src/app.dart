@@ -14,6 +14,8 @@ import 'package:coder_app/src/chat/chat_timeline_view.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/coder_list_row.dart';
 import 'package:coder_app/src/coder_page_shell.dart';
+import 'package:coder_app/src/composer_commands.dart';
+import 'package:coder_app/src/composer_completion_scope.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/desktop_shell_scope.dart';
@@ -1789,83 +1791,94 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                     ),
                   ),
                 ),
-                SessionComposer(
-                  // A running turn never takes the keyboard away; the prompt
-                  // queues instead.
-                  enabled: effective != null,
-                  busy: busy,
-                  contextTokens: current.contextTokens,
-                  contextWindow: current.contextWindow,
-                  queued: value?.queued ?? const <QueuedTurn>[],
-                  onQueue: (submission) =>
-                      _conversation(ref, current.id).enqueueTurn(
-                        submission.text,
-                        attachments: submission.attachments,
+                ComposerCompletionScope(
+                  hostId: widget.selection.hostId,
+                  workspaceId: widget.selection.workspaceId,
+                  worktreeId: widget.selection.worktreeId,
+                  builder: (context, completion) => SessionComposer(
+                    // A running turn never takes the keyboard away; the prompt
+                    // queues instead.
+                    enabled: effective != null,
+                    busy: busy,
+                    contextTokens: current.contextTokens,
+                    contextWindow: current.contextWindow,
+                    queued: value?.queued ?? const <QueuedTurn>[],
+                    onQueue: (submission) =>
+                        _conversation(ref, current.id).enqueueTurn(
+                          submission.text,
+                          attachments: submission.attachments,
+                        ),
+                    onQueuedEdit: (id) =>
+                        _conversation(ref, current.id).takeQueuedTurn(id),
+                    onQueuedSendNow: (id) =>
+                        _conversation(ref, current.id).sendQueuedTurnNow(id),
+                    onSubmitAndInterrupt: (submission) async {
+                      await _conversation(ref, current.id).cancelTurn();
+                      await _send(current.id, submission);
+                    },
+                    hint:
+                        (agentsLoading || providersLoading || effective != null)
+                        ? null
+                        : AppLocalizations.of(context).composerSelectModelFirst,
+                    bar: SessionComposerBar(
+                      hostId: widget.selection.hostId,
+                      definitions: definitions,
+                      agentDefinitionId: current.agentDefinitionId,
+                      selection: effective,
+                      mode: current.mode,
+                      onModeChanged: (mode) => unawaited(
+                        ref
+                            .read(
+                              sessionsControllerProvider(
+                                widget.selection.hostId,
+                                widget.selection.worktreeId,
+                              ).notifier,
+                            )
+                            .setMode(current.id, mode),
                       ),
-                  onQueuedEdit: (id) =>
-                      _conversation(ref, current.id).takeQueuedTurn(id),
-                  onQueuedSendNow: (id) =>
-                      _conversation(ref, current.id).sendQueuedTurnNow(id),
-                  onSubmitAndInterrupt: (submission) async {
-                    await _conversation(ref, current.id).cancelTurn();
-                    await _send(current.id, submission);
-                  },
-                  hint: (agentsLoading || providersLoading || effective != null)
-                      ? null
-                      : AppLocalizations.of(context).composerSelectModelFirst,
-                  bar: SessionComposerBar(
-                    hostId: widget.selection.hostId,
-                    definitions: definitions,
-                    agentDefinitionId: current.agentDefinitionId,
-                    selection: effective,
-                    mode: current.mode,
-                    onModeChanged: (mode) => unawaited(
-                      ref
-                          .read(
-                            sessionsControllerProvider(
-                              widget.selection.hostId,
-                              widget.selection.worktreeId,
-                            ).notifier,
-                          )
-                          .setMode(current.id, mode),
+                      // Turn settings apply to the next turn, so they stay
+                      // reachable while one is running.
+                      agentEnabled: false,
+                      onAgentChanged: (_) {},
+                      onModelChanged: (model) => unawaited(
+                        ref
+                            .read(
+                              sessionsControllerProvider(
+                                widget.selection.hostId,
+                                widget.selection.worktreeId,
+                              ).notifier,
+                            )
+                            .setModel(current.id, model),
+                      ),
+                      reasoningEffort: current.reasoningEffort,
+                      onReasoningEffortChanged: (effort) => unawaited(
+                        _sessions(ref).setReasoningEffort(current.id, effort),
+                      ),
+                      permissionMode: current.permissionMode,
+                      onPermissionModeChanged: (mode) => unawaited(
+                        _sessions(ref).setPermissionMode(current.id, mode),
+                      ),
+                      serviceTier: current.serviceTier,
+                      onServiceTierChanged: (tier) => unawaited(
+                        _sessions(ref).setServiceTier(current.id, tier),
+                      ),
                     ),
-                    // Turn settings apply to the next turn, so they stay
-                    // reachable while one is running.
-                    agentEnabled: false,
-                    onAgentChanged: (_) {},
-                    onModelChanged: (model) => unawaited(
-                      ref
-                          .read(
-                            sessionsControllerProvider(
-                              widget.selection.hostId,
-                              widget.selection.worktreeId,
-                            ).notifier,
-                          )
-                          .setModel(current.id, model),
+                    onModeToggled: () => unawaited(
+                      _sessions(ref).setMode(
+                        current.id,
+                        current.mode == SessionMode.plan
+                            ? SessionMode.normal
+                            : SessionMode.plan,
+                      ),
                     ),
-                    reasoningEffort: current.reasoningEffort,
-                    onReasoningEffortChanged: (effort) => unawaited(
-                      _sessions(ref).setReasoningEffort(current.id, effort),
-                    ),
-                    permissionMode: current.permissionMode,
-                    onPermissionModeChanged: (mode) => unawaited(
-                      _sessions(ref).setPermissionMode(current.id, mode),
-                    ),
-                    serviceTier: current.serviceTier,
-                    onServiceTierChanged: (tier) => unawaited(
-                      _sessions(ref).setServiceTier(current.id, tier),
-                    ),
+                    attachmentInput: ref.read(attachmentInputProvider),
+                    commands: completion.commands,
+                    suggestions: completion.suggestions,
+                    onCompletionQueryChanged: completion.onQueryChanged,
+                    onClientCommand: (invocation) =>
+                        _runClientCommand(invocation, current),
+                    onSubmit: (submission) => _send(current.id, submission),
                   ),
-                  onModeToggled: () => unawaited(
-                    _sessions(ref).setMode(
-                      current.id,
-                      current.mode == SessionMode.plan
-                          ? SessionMode.normal
-                          : SessionMode.plan,
-                    ),
-                  ),
-                  attachmentInput: ref.read(attachmentInputProvider),
-                  onSubmit: (submission) => _send(current.id, submission),
                 ),
               ],
             ),
@@ -1873,6 +1886,46 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         ],
       ),
     );
+  }
+
+  /// Runs an app-owned command, reporting that the submission was consumed.
+  Future<bool> _runClientCommand(
+    ComposerCommandInvocation invocation,
+    SessionDto session,
+  ) async {
+    switch (invocation.command.action!) {
+      case ClientCommandAction.clear:
+        // The draft is already cleared by the composer; nothing else to undo.
+        break;
+      case ClientCommandAction.newSession:
+        await _sessions(ref).create(
+          title: invocation.arguments.isEmpty
+              ? AppLocalizations.of(context).workspaceNewSession
+              : invocation.arguments,
+          agentDefinitionId: session.agentDefinitionId,
+          mode: session.mode,
+          model: session.model,
+        );
+      case ClientCommandAction.toggleMode:
+        await _sessions(ref).setMode(
+          session.id,
+          session.mode == SessionMode.plan
+              ? SessionMode.normal
+              : SessionMode.plan,
+        );
+      case ClientCommandAction.openAgentSettings:
+        if (mounted) {
+          AgentSettingsRoute(hostId: widget.selection.hostId).go(context);
+        }
+      case ClientCommandAction.openSkillSettings:
+        if (mounted) {
+          SkillSettingsRoute(hostId: widget.selection.hostId).go(context);
+        }
+      case ClientCommandAction.help:
+        // Typing `/` already lists every command, so help only reopens it.
+        break;
+    }
+    return true;
   }
 
   Future<void> _send(

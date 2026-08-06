@@ -5,6 +5,7 @@ import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
+import 'package:coder_daemon/src/commands.dart';
 import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/ports.dart';
@@ -33,6 +34,7 @@ class DaemonRpcServer {
     required this.mcp,
     required this.worktrees,
     required this.skills,
+    required this.commands,
     required this.providers,
     required this.providerAuth,
     required this.terminals,
@@ -72,6 +74,14 @@ class DaemonRpcServer {
       (_) => _broadcast(
         const WireEnvelope(
           type: RpcNotification.skillsChanged,
+          payload: <String, dynamic>{},
+        ),
+      ),
+    );
+    _commandSubscription = commands.changes.listen(
+      (_) => _broadcast(
+        const WireEnvelope(
+          type: RpcNotification.commandsChanged,
           payload: <String, dynamic>{},
         ),
       ),
@@ -123,6 +133,9 @@ class DaemonRpcServer {
   /// The skills public API member.
   final SkillService skills;
 
+  /// Markdown-backed agent command catalog.
+  final CommandService commands;
+
   /// The providers public API member.
   final ProviderService providers;
 
@@ -153,6 +166,7 @@ class DaemonRpcServer {
   late final StreamSubscription<void> _agentDefinitionSubscription;
   late final StreamSubscription<void> _mcpSubscription;
   late final StreamSubscription<void> _skillSubscription;
+  late final StreamSubscription<void> _commandSubscription;
   late final StreamSubscription<Object> _terminalSubscription;
 
   /// The call public API member.
@@ -308,6 +322,7 @@ class DaemonRpcServer {
       mcp: mcp,
       worktrees: worktrees,
       skills: skills,
+      commands: commands,
       providers: providers,
       providerAuth: providerAuth,
       terminals: terminals,
@@ -342,6 +357,7 @@ class DaemonRpcServer {
     await _agentDefinitionSubscription.cancel();
     await _mcpSubscription.cancel();
     await _skillSubscription.cancel();
+    await _commandSubscription.cancel();
     await _terminalSubscription.cancel();
     await terminals.close();
     await providerAuth.close();
@@ -378,6 +394,7 @@ class _ClientSession {
     required this.mcp,
     required this.worktrees,
     required this.skills,
+    required this.commands,
     required this.providers,
     required this.providerAuth,
     required this.terminals,
@@ -396,6 +413,7 @@ class _ClientSession {
   final McpService mcp;
   final WorktreeRepository worktrees;
   final SkillService skills;
+  final CommandService commands;
   final ProviderService providers;
   final ProviderAuthCoordinator providerAuth;
   final TerminalService terminals;
@@ -416,6 +434,7 @@ class _ClientSession {
       RpcMethod.workspaceRefresh,
       RpcMethod.workspaceUnregister,
       RpcMethod.directorySuggest,
+      RpcMethod.fileSearch,
       RpcMethod.gitBranchesList,
       RpcMethod.worktreeCreate,
       RpcMethod.worktreeArchivePreview,
@@ -436,6 +455,7 @@ class _ClientSession {
       RpcMethod.mcpServerRemove,
       RpcMethod.mcpServerTest,
       RpcMethod.mcpSecretSet,
+      RpcMethod.commandList,
       RpcMethod.skillList,
       RpcMethod.skillGet,
       RpcMethod.skillCreate,
@@ -579,6 +599,15 @@ class _ClientSession {
     );
   }
 
+  /// Resolves a workspace ID into the project scope commands merge over.
+  Future<CommandScope> _commandScope(String? workspaceId) async {
+    if (workspaceId == null) return CommandScope.global;
+    return CommandScope(
+      workspaceId: workspaceId,
+      projectRoot: await workspaces.workspaceRoot(workspaceId),
+    );
+  }
+
   Future<Map<String, dynamic>> _dispatch(
     String method,
     Map<String, dynamic> payload,
@@ -610,6 +639,10 @@ class _ClientSession {
             request.limit,
           ),
         ).toJson();
+      case RpcMethod.fileSearch:
+        return (await workspaces.searchFiles(
+          FileSearchParamsDto.fromJson(payload),
+        )).toJson();
       case RpcMethod.gitBranchesList:
         final request = GitBranchesListParamsDto.fromJson(payload);
         return GitBranchesListResultDto(
@@ -717,6 +750,13 @@ class _ClientSession {
         final request = McpSecretParamsDto.fromJson(payload);
         await mcp.setSecret(request.key, request.value);
         return const <String, dynamic>{};
+      case RpcMethod.commandList:
+        final commandRequest = CommandListParamsDto.fromJson(payload);
+        return CommandListResultDto(
+          commands: await commands.list(
+            scope: await _commandScope(commandRequest.workspaceId),
+          ),
+        ).toJson();
       case RpcMethod.skillList:
         final request = SkillScopeParamsDto.fromJson(payload);
         return SkillListResultDto(

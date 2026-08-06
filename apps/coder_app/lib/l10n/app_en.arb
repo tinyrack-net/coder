@@ -145,7 +145,7 @@
   "@advancedResetAction": {
     "description": "Label of the button that starts a full reset."
   },
-  "advancedResetRunning": "Resetting\u2026",
+  "advancedResetRunning": "Resetting…",
   "@advancedResetRunning": {
     "description": "Label of the reset button while a reset runs."
   },
@@ -172,7 +172,11 @@
   "advancedResetFailedFilesystem": "Some daemon files could not be deleted: {error}",
   "@advancedResetFailedFilesystem": {
     "description": "Reset failure reported by the operating system.",
-    "placeholders": {"error": {"type": "String"}}
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "advancedResetFailedIncomplete": "Daemon data was removed but the app settings could not be cleared. Restart Tinyrack Coder.",
   "@advancedResetFailedIncomplete": {
@@ -355,7 +359,11 @@
   "workspaceUnregisterTitle": "Remove {name}?",
   "@workspaceUnregisterTitle": {
     "description": "Confirmation title for removing a project registration.",
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "workspaceUnregisterBody": "The project disappears from Coder, but its repository and files stay on disk.",
   "@workspaceUnregisterBody": {
@@ -534,7 +542,11 @@
   "appSettingsEmbeddedPortConflict": "Port {port} is being used by another process. Choose another port and apply it, or retry after the port becomes available.",
   "@appSettingsEmbeddedPortConflict": {
     "description": "Resolution guidance for an occupied embedded daemon port.",
-    "placeholders": {"port": {"type": "int"}}
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
   },
   "appSettingsRemoteSection": "Remote daemons",
   "@appSettingsRemoteSection": {
@@ -1095,37 +1107,71 @@
   "usageInput": "in {tokens}",
   "@usageInput": {
     "description": "Prompt token count in the usage summary line.",
-    "placeholders": {"tokens": {"type": "int"}}
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      }
+    }
   },
   "usageInputCached": "in {tokens} ({cached} cached)",
   "@usageInputCached": {
     "description": "Prompt tokens with the cached portion called out.",
-    "placeholders": {"tokens": {"type": "int"}, "cached": {"type": "int"}}
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      },
+      "cached": {
+        "type": "int"
+      }
+    }
   },
   "usageOutput": "out {tokens}",
   "@usageOutput": {
     "description": "Completion token count in the usage summary line.",
-    "placeholders": {"tokens": {"type": "int"}}
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      }
+    }
   },
   "usageOutputReasoning": "out {tokens} ({reasoning} reasoning)",
   "@usageOutputReasoning": {
     "description": "Completion tokens with the hidden reasoning portion called out.",
-    "placeholders": {"tokens": {"type": "int"}, "reasoning": {"type": "int"}}
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      },
+      "reasoning": {
+        "type": "int"
+      }
+    }
   },
   "usageTotal": "total {tokens}",
   "@usageTotal": {
     "description": "Total token count in the usage summary line.",
-    "placeholders": {"tokens": {"type": "int"}}
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      }
+    }
   },
   "toolExecRunning": "running · {lines} lines",
   "@toolExecRunning": {
     "description": "Result line while a pseudo-terminal session is still running.",
-    "placeholders": {"lines": {"type": "int"}}
+    "placeholders": {
+      "lines": {
+        "type": "int"
+      }
+    }
   },
   "chatAnswerTyped": "{answer} (typed)",
   "@chatAnswerTyped": {
     "description": "A free-form answer the user typed instead of choosing.",
-    "placeholders": {"answer": {"type": "String"}}
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
   },
   "chatSleepWaiting": "Waiting",
   "@chatSleepWaiting": {
@@ -1134,42 +1180,77 @@
   "chatSleepRemaining": "{seconds}s left",
   "@chatSleepRemaining": {
     "description": "Remaining time on the sleep countdown.",
-    "placeholders": {"seconds": {"type": "int"}}
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "chatSleepDone": "Waited {seconds}s",
   "@chatSleepDone": {
     "description": "Shown once a sleep has finished.",
-    "placeholders": {"seconds": {"type": "int"}}
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "toolSearchFound": "{found} loaded · {remaining} still hidden",
   "@toolSearchFound": {
     "description": "Result line of a tool_search call.",
-    "placeholders": {"found": {"type": "int"}, "remaining": {"type": "int"}}
+    "placeholders": {
+      "found": {
+        "type": "int"
+      },
+      "remaining": {
+        "type": "int"
+      }
+    }
   },
   "chatDeferredTools": "{count} tools are available through search",
   "@chatDeferredTools": {
     "description": "Notice that some tools were not advertised up front.",
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "toolMcpResources": "{count} resources",
   "@toolMcpResources": {
     "description": "Result line of a list_mcp_resources tool call.",
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "toolMcpResourceTemplates": "{count} templates",
   "@toolMcpResourceTemplates": {
     "description": "Result line of a list_mcp_resource_templates tool call.",
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "toolMcpResourceRead": "{count} blocks",
   "@toolMcpResourceRead": {
     "description": "Result line of a read_mcp_resource tool call.",
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "toolImageLoaded": "{bytes} bytes viewed",
   "@toolImageLoaded": {
     "description": "Result line of a view_image tool call.",
-    "placeholders": {"bytes": {"type": "int"}}
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
   },
   "chatQuestionSubmit": "Answer",
   "@chatQuestionSubmit": {
@@ -1698,12 +1779,23 @@
   "toolContextRemaining": "{remaining} of {window} tokens left",
   "@toolContextRemaining": {
     "description": "Result line of a get_context_remaining call.",
-    "placeholders": {"remaining": {"type": "int"}, "window": {"type": "int"}}
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "window": {
+        "type": "int"
+      }
+    }
   },
   "toolContextRemainingUnknown": "{used} tokens used",
   "@toolContextRemainingUnknown": {
     "description": "Result line when the provider never advertised a window.",
-    "placeholders": {"used": {"type": "int"}}
+    "placeholders": {
+      "used": {
+        "type": "int"
+      }
+    }
   },
   "chatContextReset": "New context window",
   "@chatContextReset": {
@@ -1716,6 +1808,98 @@
   "sessionContextMeterValue": "{percent}% of the context window used",
   "@sessionContextMeterValue": {
     "description": "Accessible value of the context budget meter.",
-    "placeholders": {"percent": {"type": "int"}}
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "composerCommandNoAttachments": "Remove attachments to run a command.",
+  "@composerCommandNoAttachments": {
+    "description": "Error shown when a slash command is submitted with attachments."
+  },
+  "composerCommandsEmpty": "No commands",
+  "@composerCommandsEmpty": {
+    "description": "Empty state of the composer command list."
+  },
+  "composerFilesEmpty": "No files",
+  "@composerFilesEmpty": {
+    "description": "Empty state of the composer file mention list."
+  },
+  "composerFilesSearching": "Searching workspace",
+  "@composerFilesSearching": {
+    "description": "Loading state of the composer file mention list."
+  },
+  "composerCommandsError": "Could not load commands",
+  "@composerCommandsError": {
+    "description": "Error state of the composer command list."
+  },
+  "composerFilesError": "Could not search files",
+  "@composerFilesError": {
+    "description": "Error state of the composer file mention list."
+  },
+  "composerCommandSourceClient": "app",
+  "@composerCommandSourceClient": {
+    "description": "Badge marking an app-owned composer command."
+  },
+  "composerCommandSourceAgent": "command",
+  "@composerCommandSourceAgent": {
+    "description": "Badge marking a Markdown-defined agent command."
+  },
+  "composerCommandSourceSkill": "skill",
+  "@composerCommandSourceSkill": {
+    "description": "Badge marking a composer command that loads a skill."
+  },
+  "composerCommandClearLabel": "clear",
+  "@composerCommandClearLabel": {
+    "description": "Name of the composer command that clears the draft."
+  },
+  "composerCommandClearDescription": "Clear the composer.",
+  "@composerCommandClearDescription": {
+    "description": "Description of the clear command."
+  },
+  "composerCommandNewLabel": "new",
+  "@composerCommandNewLabel": {
+    "description": "Name of the composer command that starts a session."
+  },
+  "composerCommandNewDescription": "Start a new session.",
+  "@composerCommandNewDescription": {
+    "description": "Description of the new session command."
+  },
+  "composerCommandModeLabel": "mode",
+  "@composerCommandModeLabel": {
+    "description": "Name of the composer command that switches mode."
+  },
+  "composerCommandModeDescription": "Switch between planning and working.",
+  "@composerCommandModeDescription": {
+    "description": "Description of the mode command."
+  },
+  "composerCommandAgentsLabel": "agents",
+  "@composerCommandAgentsLabel": {
+    "description": "Name of the composer command that opens agent settings."
+  },
+  "composerCommandAgentsDescription": "Open agent settings.",
+  "@composerCommandAgentsDescription": {
+    "description": "Description of the agents command."
+  },
+  "composerCommandSkillsLabel": "skills",
+  "@composerCommandSkillsLabel": {
+    "description": "Name of the composer command that opens skill settings."
+  },
+  "composerCommandSkillsDescription": "Open skill settings.",
+  "@composerCommandSkillsDescription": {
+    "description": "Description of the skills command."
+  },
+  "composerCommandHelpLabel": "help",
+  "@composerCommandHelpLabel": {
+    "description": "Name of the composer command that lists commands."
+  },
+  "composerCommandHelpDescription": "List the available commands.",
+  "@composerCommandHelpDescription": {
+    "description": "Description of the help command."
+  },
+  "composerSuggestionsLabel": "Suggestions",
+  "@composerSuggestionsLabel": {
+    "description": "Accessible name of the composer suggestion list."
   }
 }

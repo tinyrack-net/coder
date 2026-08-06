@@ -1326,4 +1326,70 @@ class AppLocalizationsKo extends AppLocalizations {
   String sessionContextMeterValue(int percent) {
     return '컨텍스트 창의 $percent% 사용';
   }
+
+  @override
+  String get composerCommandNoAttachments => '명령을 실행하려면 첨부를 제거하세요.';
+
+  @override
+  String get composerCommandsEmpty => '명령 없음';
+
+  @override
+  String get composerFilesEmpty => '파일 없음';
+
+  @override
+  String get composerFilesSearching => '워크스페이스 검색 중';
+
+  @override
+  String get composerCommandsError => '명령을 불러오지 못했습니다';
+
+  @override
+  String get composerFilesError => '파일을 검색하지 못했습니다';
+
+  @override
+  String get composerCommandSourceClient => '앱';
+
+  @override
+  String get composerCommandSourceAgent => '명령';
+
+  @override
+  String get composerCommandSourceSkill => '스킬';
+
+  @override
+  String get composerCommandClearLabel => 'clear';
+
+  @override
+  String get composerCommandClearDescription => '컴포저를 비웁니다.';
+
+  @override
+  String get composerCommandNewLabel => 'new';
+
+  @override
+  String get composerCommandNewDescription => '새 세션을 시작합니다.';
+
+  @override
+  String get composerCommandModeLabel => 'mode';
+
+  @override
+  String get composerCommandModeDescription => '계획과 작업 모드를 전환합니다.';
+
+  @override
+  String get composerCommandAgentsLabel => 'agents';
+
+  @override
+  String get composerCommandAgentsDescription => '에이전트 설정을 엽니다.';
+
+  @override
+  String get composerCommandSkillsLabel => 'skills';
+
+  @override
+  String get composerCommandSkillsDescription => '스킬 설정을 엽니다.';
+
+  @override
+  String get composerCommandHelpLabel => 'help';
+
+  @override
+  String get composerCommandHelpDescription => '사용할 수 있는 명령을 보여줍니다.';
+
+  @override
+  String get composerSuggestionsLabel => '제안';
 }

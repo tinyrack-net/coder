@@ -35,7 +35,7 @@
   "advancedResetDescription": "임베디드 daemon의 데이터베이스, 자격 증명, MCP 및 에이전트 설정, 스킬, 첨부 파일을 삭제하고 모든 앱 설정과 저장된 원격 daemon 토큰을 지웁니다. worktrees 폴더의 Git 체크아웃은 디스크에 남습니다.",
   "advancedResetDescriptionAppOnly": "이 기기의 모든 앱 설정과 저장된 원격 daemon 토큰을 지웁니다. 원격 daemon의 데이터는 그대로 유지됩니다.",
   "advancedResetAction": "전체 초기화",
-  "advancedResetRunning": "초기화 중\u2026",
+  "advancedResetRunning": "초기화 중…",
   "advancedResetConfirmTitle": "전체 초기화할까요?",
   "advancedResetConfirmBody": "임베디드 daemon의 모든 세션, 워크스페이스 등록, 프로바이더 연결, 에이전트, 스킬, MCP 서버가 삭제되고 모든 앱 설정과 원격 daemon 프로필 및 토큰도 함께 삭제됩니다. daemon은 기본 포트로 돌아갑니다. Git 체크아웃은 디스크에 남지만 다시 추가해야 합니다. 되돌릴 수 없습니다.",
   "advancedResetConfirmAccept": "초기화",
@@ -395,5 +395,93 @@
   "toolContextRemainingUnknown": "토큰 {used}개 사용",
   "chatContextReset": "새 컨텍스트 창",
   "sessionContextMeter": "컨텍스트",
-  "sessionContextMeterValue": "컨텍스트 창의 {percent}% 사용"
+  "sessionContextMeterValue": "컨텍스트 창의 {percent}% 사용",
+  "composerCommandNoAttachments": "명령을 실행하려면 첨부를 제거하세요.",
+  "@composerCommandNoAttachments": {
+    "description": "Error shown when a slash command is submitted with attachments."
+  },
+  "composerCommandsEmpty": "명령 없음",
+  "@composerCommandsEmpty": {
+    "description": "Empty state of the composer command list."
+  },
+  "composerFilesEmpty": "파일 없음",
+  "@composerFilesEmpty": {
+    "description": "Empty state of the composer file mention list."
+  },
+  "composerFilesSearching": "워크스페이스 검색 중",
+  "@composerFilesSearching": {
+    "description": "Loading state of the composer file mention list."
+  },
+  "composerCommandsError": "명령을 불러오지 못했습니다",
+  "@composerCommandsError": {
+    "description": "Error state of the composer command list."
+  },
+  "composerFilesError": "파일을 검색하지 못했습니다",
+  "@composerFilesError": {
+    "description": "Error state of the composer file mention list."
+  },
+  "composerCommandSourceClient": "앱",
+  "@composerCommandSourceClient": {
+    "description": "Badge marking an app-owned composer command."
+  },
+  "composerCommandSourceAgent": "명령",
+  "@composerCommandSourceAgent": {
+    "description": "Badge marking a Markdown-defined agent command."
+  },
+  "composerCommandSourceSkill": "스킬",
+  "@composerCommandSourceSkill": {
+    "description": "Badge marking a composer command that loads a skill."
+  },
+  "composerCommandClearLabel": "clear",
+  "@composerCommandClearLabel": {
+    "description": "Name of the composer command that clears the draft."
+  },
+  "composerCommandClearDescription": "컴포저를 비웁니다.",
+  "@composerCommandClearDescription": {
+    "description": "Description of the clear command."
+  },
+  "composerCommandNewLabel": "new",
+  "@composerCommandNewLabel": {
+    "description": "Name of the composer command that starts a session."
+  },
+  "composerCommandNewDescription": "새 세션을 시작합니다.",
+  "@composerCommandNewDescription": {
+    "description": "Description of the new session command."
+  },
+  "composerCommandModeLabel": "mode",
+  "@composerCommandModeLabel": {
+    "description": "Name of the composer command that switches mode."
+  },
+  "composerCommandModeDescription": "계획과 작업 모드를 전환합니다.",
+  "@composerCommandModeDescription": {
+    "description": "Description of the mode command."
+  },
+  "composerCommandAgentsLabel": "agents",
+  "@composerCommandAgentsLabel": {
+    "description": "Name of the composer command that opens agent settings."
+  },
+  "composerCommandAgentsDescription": "에이전트 설정을 엽니다.",
+  "@composerCommandAgentsDescription": {
+    "description": "Description of the agents command."
+  },
+  "composerCommandSkillsLabel": "skills",
+  "@composerCommandSkillsLabel": {
+    "description": "Name of the composer command that opens skill settings."
+  },
+  "composerCommandSkillsDescription": "스킬 설정을 엽니다.",
+  "@composerCommandSkillsDescription": {
+    "description": "Description of the skills command."
+  },
+  "composerCommandHelpLabel": "help",
+  "@composerCommandHelpLabel": {
+    "description": "Name of the composer command that lists commands."
+  },
+  "composerCommandHelpDescription": "사용할 수 있는 명령을 보여줍니다.",
+  "@composerCommandHelpDescription": {
+    "description": "Description of the help command."
+  },
+  "composerSuggestionsLabel": "제안",
+  "@composerSuggestionsLabel": {
+    "description": "Accessible name of the composer suggestion list."
+  }
 }

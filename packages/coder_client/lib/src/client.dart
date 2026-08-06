@@ -114,6 +114,7 @@ class CoderClient implements CoderApi {
         RpcNotification.sessionUpdated,
         RpcNotification.agentDefinitionsChanged,
         RpcNotification.skillsChanged,
+        RpcNotification.commandsChanged,
         RpcNotification.approvalRequested,
         RpcNotification.userQuestionRequested,
         RpcNotification.providerAuthUpdated,
@@ -196,6 +197,8 @@ class CoderClient implements CoderApi {
           _events.add(const McpServersChangedClientEvent());
         case RpcNotification.skillsChanged:
           _events.add(const SkillsChangedClientEvent());
+        case RpcNotification.commandsChanged:
+          _events.add(const CommandsChangedClientEvent());
         case RpcNotification.approvalRequested:
           _events.add(
             ApprovalRequestedClientEvent(
@@ -331,6 +334,23 @@ class CoderClient implements CoderApi {
       DirectorySuggestParamsDto(query: query, limit: limit).toJson(),
     );
     return DirectorySuggestResultDto.fromJson(response).suggestions;
+  }
+
+  @override
+  Future<FileSearchResultDto> searchFiles({
+    required String worktreeId,
+    required String query,
+    int limit = 50,
+  }) async {
+    final response = await _request(
+      RpcMethod.fileSearch,
+      FileSearchParamsDto(
+        worktreeId: worktreeId,
+        query: query,
+        limit: limit,
+      ).toJson(),
+    );
+    return FileSearchResultDto.fromJson(response);
   }
 
   @override
@@ -754,6 +774,15 @@ class CoderClient implements CoderApi {
       RpcMethod.mcpSecretSet,
       McpSecretParamsDto(key: key, value: value).toJson(),
     );
+  }
+
+  @override
+  Future<List<AgentCommandDto>> listCommands({String? workspaceId}) async {
+    final response = await _request(
+      RpcMethod.commandList,
+      CommandListParamsDto(workspaceId: workspaceId).toJson(),
+    );
+    return CommandListResultDto.fromJson(response).commands;
   }
 
   @override

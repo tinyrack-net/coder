@@ -803,6 +803,58 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'composer.file.mention',
+    description:
+        'Completes gitignore-aware worktree file paths from an @ token in the '
+        'composer and inserts them into the prompt.',
+    apiMethods: <String>['searchFiles'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'mention_insert_path',
+        description: 'Completes an @ token into a worktree-relative path.',
+        surfaces: _allSurfaces,
+      ),
+      FeatureScenario(
+        id: 'no_match_dismiss',
+        description: 'Dismisses the mention list and sends the typed text.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'composer.slash.command',
+    description:
+        'Completes client, skill, and agent commands from a / token and either '
+        'runs the app action or expands the prompt.',
+    apiMethods: <String>['listCommands'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'client_command_dispatch',
+        description: 'Runs an app-owned command without starting a turn.',
+        surfaces: _allSurfaces,
+      ),
+      FeatureScenario(
+        id: 'agent_command_prompt',
+        description: 'Expands an agent command template into the prompt.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
     id: 'agent.delegation',
     description:
         'Delegates to an allowlisted subagent and exposes its session.',

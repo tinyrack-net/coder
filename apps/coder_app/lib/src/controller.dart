@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:coder_app/src/app_services.dart';
 import 'package:coder_app/src/attachment_ports.dart';
+import 'package:coder_app/src/composer_commands.dart';
+import 'package:coder_app/src/composer_suggestions.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/host_registry.dart';
@@ -723,6 +725,92 @@ class SkillsController extends _$SkillsController {
 }
 
 @riverpod
+/// Loads the agent commands one daemon offers, optionally for one project.
+///
+/// A null [AgentCommandsController.workspaceId] shows only the user-home and
+/// daemon-config sources; naming a workspace layers its `.agents/commands` on
+/// top.
+class AgentCommandsController extends _$AgentCommandsController {
+  StreamSubscription<ClientEvent>? _events;
+
+  @override
+  Future<List<AgentCommandDto>> build(
+    String hostId,
+    String? workspaceId,
+  ) async {
+    final api = await _watchHostApi(ref, hostId);
+    _events = api.events.listen((event) {
+      if (event is CommandsChangedClientEvent) unawaited(refresh());
+    });
+    ref.onDispose(() => unawaited(_events?.cancel()));
+    return api.listCommands(workspaceId: workspaceId);
+  }
+
+  /// Reloads the catalog from the daemon.
+  Future<void> refresh() async {
+    final api = await _requireHostApi(ref, hostId);
+    final commands = await api.listCommands(workspaceId: workspaceId);
+    if (!ref.mounted) return;
+    state = AsyncData<List<AgentCommandDto>>(commands);
+  }
+}
+
+@riverpod
+/// Merges the app, agent, and skill sources into the composer's `/` catalog.
+Future<List<ComposerCommand>> composerCommands(
+  Ref ref,
+  String hostId,
+  String? workspaceId,
+) async => mergeComposerCommands(
+  client: clientComposerCommands,
+  agent: await ref.watch(
+    agentCommandsControllerProvider(hostId, workspaceId).future,
+  ),
+  skills: await ref.watch(
+    skillsControllerProvider(hostId, workspaceId).future,
+  ),
+);
+
+/// How long an `@` query rests before the daemon index is asked.
+const Duration composerFileSearchDebounce = Duration(milliseconds: 120);
+
+/// How long an idle empty-query result stays warm so reopening `@` is instant.
+const Duration composerFileSearchKeepAlive = Duration(seconds: 30);
+
+@riverpod
+/// Searches one worktree for the files an `@` query could mention.
+///
+/// The query is part of the provider key, so each keystroke creates a new
+/// provider and disposes the previous one. Cancelling the timer on dispose is
+/// therefore the debounce itself, with no controller state to keep in sync.
+Future<List<FileMatchDto>> composerFileSearch(
+  Ref ref,
+  String hostId,
+  String worktreeId,
+  String query,
+) async {
+  await _debounce(ref, composerFileSearchDebounce);
+  if (query.isEmpty) {
+    final link = ref.keepAlive();
+    final timer = Timer(composerFileSearchKeepAlive, link.close);
+    ref.onDispose(timer.cancel);
+  }
+  final api = await _requireHostApi(ref, hostId);
+  final result = await api.searchFiles(worktreeId: worktreeId, query: query);
+  return rankFileMatches(result.matches, query);
+}
+
+/// Waits [delay], or never completes when the provider is disposed first.
+Future<void> _debounce(Ref ref, Duration delay) {
+  final completer = Completer<void>();
+  final timer = Timer(delay, () {
+    if (!completer.isCompleted) completer.complete();
+  });
+  ref.onDispose(timer.cancel);
+  return completer.future;
+}
+
+@riverpod
 /// Owns the live terminal catalog for one connected worktree.
 class TerminalsController extends _$TerminalsController {
   StreamSubscription<ClientEvent>? _events;
@@ -1414,6 +1502,7 @@ class ConversationController extends _$ConversationController {
       case AgentDefinitionsChangedClientEvent():
       case McpServersChangedClientEvent():
       case SkillsChangedClientEvent():
+      case CommandsChangedClientEvent():
       case TerminalOutputClientEvent():
       case TerminalUpdatedClientEvent():
         break;

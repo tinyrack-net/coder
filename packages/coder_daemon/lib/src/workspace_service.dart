@@ -17,7 +17,8 @@ final class WorkspaceService {
     this._paths,
     this._git,
     this._clock,
-    this._managedWorktreeRoot, [
+    this._managedWorktreeRoot,
+    this._fileIndex, [
     this._projectSettings = const FileProjectSettingsStore(),
     this._hooks = const ShellWorktreeHookRunner(),
   ]);
@@ -29,6 +30,7 @@ final class WorkspaceService {
   final GitWorkspaceGateway _git;
   final Clock _clock;
   final String _managedWorktreeRoot;
+  final WorkspaceFileIndexGateway _fileIndex;
   final ProjectSettingsStore _projectSettings;
   final WorktreeHookRunner _hooks;
 
@@ -125,6 +127,21 @@ final class WorkspaceService {
     String query,
     int limit,
   ) => _paths.suggest(query, limit);
+
+  /// Searches one worktree for files a composer mention can reference.
+  Future<FileSearchResultDto> searchFiles(FileSearchParamsDto request) async {
+    final worktree = await _worktrees.getById(request.worktreeId);
+    if (worktree == null || worktree.archivedAt != null) {
+      throw const FormatException('Active worktree not found.');
+    }
+    return _fileIndex.search(
+      FileSearchRequest(
+        root: worktree.path,
+        query: request.query,
+        limit: request.limit.clamp(1, 100),
+      ),
+    );
+  }
 
   /// Updates the remote a base ref belongs to so the new branch starts from
   /// the latest upstream commit; a failed fetch falls back to the cached ref.

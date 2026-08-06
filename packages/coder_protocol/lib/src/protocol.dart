@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 18;
+const int coderProtocolVersion = 19;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -22,6 +22,9 @@ abstract final class RpcMethod {
 
   /// Searches directories on the daemon host.
   static const String directorySuggest = 'directory.suggest';
+
+  /// Searches worktree files for a composer file mention.
+  static const String fileSearch = 'file.search';
 
   /// Lists local branches for a Git workspace.
   static const String gitBranchesList = 'git.branches.list';
@@ -82,6 +85,9 @@ abstract final class RpcMethod {
 
   /// Stores one secret an MCP configuration may reference.
   static const String mcpSecretSet = 'mcp.servers.secret.set';
+
+  /// Lists agent-provided slash commands visible in one scope.
+  static const String commandList = 'command.list';
 
   /// Lists skills visible in one scope.
   static const String skillList = 'skill.list';
@@ -223,6 +229,9 @@ abstract final class RpcNotification {
 
   /// Reports a skill catalog change.
   static const String skillsChanged = 'skills.changed';
+
+  /// Reports an agent command catalog change.
+  static const String commandsChanged = 'commands.changed';
 
   /// The approvalRequested public API member.
   static const String approvalRequested = 'approval.requested';

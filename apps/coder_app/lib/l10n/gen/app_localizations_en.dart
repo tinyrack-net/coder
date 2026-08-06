@@ -1351,4 +1351,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String sessionContextMeterValue(int percent) {
     return '$percent% of the context window used';
   }
+
+  @override
+  String get composerCommandNoAttachments =>
+      'Remove attachments to run a command.';
+
+  @override
+  String get composerCommandsEmpty => 'No commands';
+
+  @override
+  String get composerFilesEmpty => 'No files';
+
+  @override
+  String get composerFilesSearching => 'Searching workspace';
+
+  @override
+  String get composerCommandsError => 'Could not load commands';
+
+  @override
+  String get composerFilesError => 'Could not search files';
+
+  @override
+  String get composerCommandSourceClient => 'app';
+
+  @override
+  String get composerCommandSourceAgent => 'command';
+
+  @override
+  String get composerCommandSourceSkill => 'skill';
+
+  @override
+  String get composerCommandClearLabel => 'clear';
+
+  @override
+  String get composerCommandClearDescription => 'Clear the composer.';
+
+  @override
+  String get composerCommandNewLabel => 'new';
+
+  @override
+  String get composerCommandNewDescription => 'Start a new session.';
+
+  @override
+  String get composerCommandModeLabel => 'mode';
+
+  @override
+  String get composerCommandModeDescription =>
+      'Switch between planning and working.';
+
+  @override
+  String get composerCommandAgentsLabel => 'agents';
+
+  @override
+  String get composerCommandAgentsDescription => 'Open agent settings.';
+
+  @override
+  String get composerCommandSkillsLabel => 'skills';
+
+  @override
+  String get composerCommandSkillsDescription => 'Open skill settings.';
+
+  @override
+  String get composerCommandHelpLabel => 'help';
+
+  @override
+  String get composerCommandHelpDescription => 'List the available commands.';
+
+  @override
+  String get composerSuggestionsLabel => 'Suggestions';
 }

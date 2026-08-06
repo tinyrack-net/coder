@@ -1,11 +1,18 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/attachment_ports.dart';
+import 'package:coder_app/src/composer_commands.dart';
+import 'package:coder_app/src/composer_suggestions.dart';
+import 'package:coder_app/src/composer_suggestions_overlay.dart';
+import 'package:coder_app/src/composer_trigger.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/fuzzy_match.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
@@ -417,6 +424,284 @@ void main() {
       expect(rings, hasLength(1));
     },
   );
+
+  testWidgets(
+    'a file mention completes into the prompt instead of sending',
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(inputKey), 'read @li');
+      await tester.pumpAndSettle();
+      expect(find.text('lib/app.dart'), findsOneWidget);
+
+      // Down then Enter picks the second row and splices it; nothing is sent.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(submitted, isEmpty);
+      expect(
+        tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
+        'read @lib/composer.dart ',
+      );
+
+      // With the list closed, Enter sends the completed prompt.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(submitted, <String>['read @lib/composer.dart']);
+    },
+  );
+
+  testWidgets(
+    'Escape closes the mention list and returns Enter to sending',
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(inputKey), 'read @li');
+      await tester.pumpAndSettle();
+      expect(find.text('lib/app.dart'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('lib/app.dart'), findsNothing);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(submitted, <String>['read @li']);
+    },
+  );
+
+  testWidgets(
+    'an open list takes plain Tab but leaves the modified one alone',
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+    (tester) async {
+      var toggles = 0;
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (_) {},
+          onModeToggled: () => toggles += 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Future<void> shiftTab() async {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pumpAndSettle();
+      }
+
+      // Closed, Shift+Tab cycles the mode.
+      await tester.enterText(find.byKey(inputKey), 'plain');
+      await tester.pumpAndSettle();
+      await shiftTab();
+      expect(toggles, 1);
+
+      // Open, it still does: a held modifier makes the key the host's, so the
+      // list never takes the mode shortcut away.
+      await tester.enterText(find.byKey(inputKey), '@li');
+      await tester.pumpAndSettle();
+      expect(find.text('lib/app.dart'), findsOneWidget);
+      await shiftTab();
+      expect(toggles, 2);
+      expect(
+        tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
+        '@li',
+      );
+
+      // Plain Tab is the list's, and commits the highlighted row.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(toggles, 2);
+      expect(
+        tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
+        '@lib/app.dart ',
+      );
+    },
+  );
+
+  testWidgets(
+    'Shift+Enter opens a line even with the list open',
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(inputKey), 'read @li');
+      await tester.pumpAndSettle();
+      expect(find.text('lib/app.dart'), findsOneWidget);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+
+      // Neither committed nor sent: the newline belongs to the field.
+      expect(submitted, isEmpty);
+      expect(
+        tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
+        'read @li',
+      );
+    },
+  );
+
+  testWidgets(
+    'a client command runs in the app and never starts a turn',
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      final ran = <ClientCommandAction>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+          onClientCommand: (invocation) async {
+            ran.add(invocation.command.action!);
+            return true;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(inputKey), '/cle');
+      await tester.pumpAndSettle();
+      expect(find.text('clear'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(ran, <ClientCommandAction>[ClientCommandAction.clear]);
+      expect(submitted, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'a client command with attachments is refused rather than dropped',
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+    (tester) async {
+      final ran = <ClientCommandAction>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (_) {},
+          attachmentInput: const _OneFileAttachmentInput(),
+          onClientCommand: (invocation) async {
+            ran.add(invocation.command.action!);
+            return true;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-attach')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(inputKey), '/clear');
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(ran, isEmpty);
+      expect(
+        find.byKey(const ValueKey('session-composer-attachment-error')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'a command with no handler submits as ordinary text',
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(inputKey), '/clear');
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(submitted, <String>['/clear']);
+    },
+  );
+
+  testWidgets(
+    'a skill command is expanded into the prompt that is sent',
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(inputKey), '/commit split it');
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(submitted, <String>['Use the "commit" skill.\n\nsplit it']);
+    },
+  );
+
+  testWidgets(
+    'an open list does not send on the Enter that ends a composition',
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (submission) => submitted.add(submission.text),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // A live Korean composition spanning the token: no list, and the Enter
+      // that commits the composition must not send either.
+      final field = tester.widget<TRTextField>(find.byKey(inputKey));
+      field.controller!.value = const TextEditingValue(
+        text: '@한',
+        selection: TextSelection.collapsed(offset: 2),
+        composing: TextRange(start: 0, end: 2),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(submitted, isEmpty);
+    },
+  );
 }
 
 Widget _harness({
@@ -447,3 +732,131 @@ SessionComposerBar _bar() => SessionComposerBar(
   mode: SessionMode.normal,
   onModeChanged: (_) {},
 );
+
+/// A composer wired to a fixed catalog, so the tests exercise the composer
+/// rather than the daemon-backed providers behind it.
+Widget _completionHarness({
+  required void Function(ComposerSubmission submission) onSubmit,
+  Future<bool> Function(ComposerCommandInvocation invocation)? onClientCommand,
+  VoidCallback? onModeToggled,
+  AttachmentInputPort? attachmentInput,
+}) => _harness(
+  composer: _CompletionHost(
+    onSubmit: onSubmit,
+    onClientCommand: onClientCommand,
+    onModeToggled: onModeToggled,
+    attachmentInput: attachmentInput,
+  ),
+);
+
+const List<String> _files = <String>[
+  'lib/app.dart',
+  'lib/composer.dart',
+  'README.md',
+];
+
+/// Holds the active token the way the real completion scope does.
+class _CompletionHost extends StatefulWidget {
+  const _CompletionHost({
+    required this.onSubmit,
+    this.onClientCommand,
+    this.onModeToggled,
+    this.attachmentInput,
+  });
+
+  final void Function(ComposerSubmission submission) onSubmit;
+  final Future<bool> Function(ComposerCommandInvocation invocation)?
+  onClientCommand;
+  final VoidCallback? onModeToggled;
+  final AttachmentInputPort? attachmentInput;
+
+  @override
+  State<_CompletionHost> createState() => _CompletionHostState();
+}
+
+class _CompletionHostState extends State<_CompletionHost> {
+  ComposerTrigger? _trigger;
+
+  late final List<ComposerCommand> _commands = mergeComposerCommands(
+    client: clientComposerCommands,
+    agent: const <AgentCommandDto>[],
+    skills: const <SkillDto>[
+      SkillDto(
+        id: 'commit',
+        name: 'commit',
+        description: 'Writes atomic commits.',
+        source: SkillSource.config,
+        sourcePath: '/config/skills/commit/SKILL.md',
+        contentHash: 'hash',
+        body: 'Stage related changes together.',
+      ),
+    ],
+  );
+
+  ComposerSuggestionsState get _suggestions {
+    final trigger = _trigger;
+    if (trigger == null) return ComposerSuggestionsState.closed;
+    if (trigger.kind == ComposerTriggerKind.command) {
+      return ComposerSuggestionsState(
+        trigger: trigger,
+        items: commandSuggestions(_commands, trigger.query),
+      );
+    }
+    final matches = <FileMatchDto>[
+      for (final path in _files)
+        if (fuzzyMatch(path, trigger.query) != null)
+          FileMatchDto(
+            relativePath: path,
+            absolutePath: '/worktree/$path',
+            name: path.split('/').last,
+            isDirectory: false,
+          ),
+    ];
+    return ComposerSuggestionsState(
+      trigger: trigger,
+      items: fileSuggestions(
+        rankFileMatches(matches, trigger.query),
+        trigger.query,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => SessionComposer(
+    enabled: true,
+    commands: _commands,
+    suggestions: _suggestions,
+    onCompletionQueryChanged: (trigger) => setState(() => _trigger = trigger),
+    onClientCommand: widget.onClientCommand,
+    onModeToggled: widget.onModeToggled,
+    attachmentInput: widget.attachmentInput,
+    onSubmit: widget.onSubmit,
+    bar: _bar(),
+  );
+}
+
+/// Supplies exactly one attachment, so a command submission has something to
+/// collide with.
+final class _OneFileAttachmentInput implements AttachmentInputPort {
+  const _OneFileAttachmentInput();
+
+  @override
+  bool get supportsDrop => false;
+
+  @override
+  Future<List<PendingAttachment>> pickFiles() async => <PendingAttachment>[
+    PendingAttachment.fromBytes(
+      fileName: 'notes.txt',
+      mimeType: 'text/plain',
+      bytes: Uint8List.fromList(<int>[1, 2, 3]),
+    ),
+  ];
+
+  @override
+  Future<List<PendingAttachment>> pasteFiles() async =>
+      const <PendingAttachment>[];
+
+  @override
+  Future<List<PendingAttachment>> droppedFiles(PerformDropEvent event) async =>
+      const <PendingAttachment>[];
+}
