@@ -1013,14 +1013,10 @@ void main() {
         tester,
         find.text('Created result.txt', findRichText: true),
       );
-      expect(
-        await File('${workspace.path}/result.txt').readAsString(),
-        'done\n',
-      );
-      // Tool activity renders as a CLI summary; no raw payload reaches the UI.
-      expect(find.textContaining('Edit('), findsWidgets);
-      expect(find.textContaining('changedFiles'), findsNothing);
-      expect(find.textContaining('"isError"'), findsNothing);
+      // That reply is the scripted provider's catch-all, so an earlier turn
+      // already put it in this transcript and the finder above matches on the
+      // first poll. Only a settled session proves this turn's tool ran, and
+      // the file it wrote is what the next line reads.
       await pumpUntilCondition(
         tester,
         () async =>
@@ -1030,8 +1026,16 @@ void main() {
                 )
                 .status ==
             SessionStatus.idle,
-        'the current session to become idle',
+        'the patch turn to finish',
       );
+      expect(
+        await File('${workspace.path}/result.txt').readAsString(),
+        'done\n',
+      );
+      // Tool activity renders as a CLI summary; no raw payload reaches the UI.
+      expect(find.textContaining('Edit('), findsWidgets);
+      expect(find.textContaining('changedFiles'), findsNothing);
+      expect(find.textContaining('"isError"'), findsNothing);
       expect(tester.takeException(), isNull);
 
       // Attachments use the authenticated HTTP transport even though the turn
