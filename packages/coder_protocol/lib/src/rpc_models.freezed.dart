@@ -17179,6 +17179,293 @@ $ShellSpecDtoCopyWith<$Res>? get shell {
 
 
 /// @nodoc
+mixin _$DefaultModelDto {
+
+ SessionModelSelectionDto? get model;
+/// Create a copy of DefaultModelDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DefaultModelDtoCopyWith<DefaultModelDto> get copyWith => _$DefaultModelDtoCopyWithImpl<DefaultModelDto>(this as DefaultModelDto, _$identity);
+
+  /// Serializes this DefaultModelDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DefaultModelDto&&(identical(other.model, model) || other.model == model));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,model);
+
+@override
+String toString() {
+  return 'DefaultModelDto(model: $model)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DefaultModelDtoCopyWith<$Res>  {
+  factory $DefaultModelDtoCopyWith(DefaultModelDto value, $Res Function(DefaultModelDto) _then) = _$DefaultModelDtoCopyWithImpl;
+@useResult
+$Res call({
+ SessionModelSelectionDto? model
+});
+
+
+$SessionModelSelectionDtoCopyWith<$Res>? get model;
+
+}
+/// @nodoc
+class _$DefaultModelDtoCopyWithImpl<$Res>
+    implements $DefaultModelDtoCopyWith<$Res> {
+  _$DefaultModelDtoCopyWithImpl(this._self, this._then);
+
+  final DefaultModelDto _self;
+  final $Res Function(DefaultModelDto) _then;
+
+/// Create a copy of DefaultModelDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? model = freezed,}) {
+  return _then(_self.copyWith(
+model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as SessionModelSelectionDto?,
+  ));
+}
+/// Create a copy of DefaultModelDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SessionModelSelectionDtoCopyWith<$Res>? get model {
+    if (_self.model == null) {
+    return null;
+  }
+
+  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+    return _then(_self.copyWith(model: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [DefaultModelDto].
+extension DefaultModelDtoPatterns on DefaultModelDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DefaultModelDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DefaultModelDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DefaultModelDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _DefaultModelDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DefaultModelDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DefaultModelDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionModelSelectionDto? model)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DefaultModelDto() when $default != null:
+return $default(_that.model);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionModelSelectionDto? model)  $default,) {final _that = this;
+switch (_that) {
+case _DefaultModelDto():
+return $default(_that.model);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionModelSelectionDto? model)?  $default,) {final _that = this;
+switch (_that) {
+case _DefaultModelDto() when $default != null:
+return $default(_that.model);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DefaultModelDto implements DefaultModelDto {
+  const _DefaultModelDto({this.model});
+  factory _DefaultModelDto.fromJson(Map<String, dynamic> json) => _$DefaultModelDtoFromJson(json);
+
+@override final  SessionModelSelectionDto? model;
+
+/// Create a copy of DefaultModelDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DefaultModelDtoCopyWith<_DefaultModelDto> get copyWith => __$DefaultModelDtoCopyWithImpl<_DefaultModelDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DefaultModelDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DefaultModelDto&&(identical(other.model, model) || other.model == model));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,model);
+
+@override
+String toString() {
+  return 'DefaultModelDto(model: $model)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DefaultModelDtoCopyWith<$Res> implements $DefaultModelDtoCopyWith<$Res> {
+  factory _$DefaultModelDtoCopyWith(_DefaultModelDto value, $Res Function(_DefaultModelDto) _then) = __$DefaultModelDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ SessionModelSelectionDto? model
+});
+
+
+@override $SessionModelSelectionDtoCopyWith<$Res>? get model;
+
+}
+/// @nodoc
+class __$DefaultModelDtoCopyWithImpl<$Res>
+    implements _$DefaultModelDtoCopyWith<$Res> {
+  __$DefaultModelDtoCopyWithImpl(this._self, this._then);
+
+  final _DefaultModelDto _self;
+  final $Res Function(_DefaultModelDto) _then;
+
+/// Create a copy of DefaultModelDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? model = freezed,}) {
+  return _then(_DefaultModelDto(
+model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as SessionModelSelectionDto?,
+  ));
+}
+
+/// Create a copy of DefaultModelDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SessionModelSelectionDtoCopyWith<$Res>? get model {
+    if (_self.model == null) {
+    return null;
+  }
+
+  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+    return _then(_self.copyWith(model: value));
+  });
+}
+}
+
+
+/// @nodoc
 mixin _$AgentDefinitionListResultDto {
 
  List<AgentDefinitionDto> get definitions;

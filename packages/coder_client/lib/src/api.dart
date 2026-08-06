@@ -424,6 +424,14 @@ abstract interface class CoderApi {
   /// The listProviderModels public API member.
   Future<List<ProviderModelDto>> listProviderModels(String connectionId);
 
+  /// Reads the daemon-global default model, or null when unset.
+  ///
+  /// A null result means the daemon resolves the first usable provider model.
+  Future<SessionModelSelectionDto?> getDefaultModel();
+
+  /// Replaces or clears the daemon-global default model.
+  Future<void> setDefaultModel(SessionModelSelectionDto? model);
+
   /// Creates an advanced custom provider connection.
   Future<ProviderConnectionDto> createCustomProvider(
     String id,

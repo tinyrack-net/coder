@@ -1521,6 +1521,37 @@ void main() {
   );
 
   test(
+    'default model contracts round-trip and name stable RPC methods',
+    () {
+      _roundTrip(
+        const DefaultModelDto(
+          model: SessionModelSelectionDto(
+            providerConnectionId: 'connection-1',
+            modelId: 'model-1',
+          ),
+        ),
+        (value) => value.toJson(),
+        DefaultModelDto.fromJson,
+      );
+      _roundTrip(
+        const DefaultModelDto(),
+        (value) => value.toJson(),
+        DefaultModelDto.fromJson,
+      );
+
+      expect(
+        RpcMethod.providerDefaultModelGet,
+        'provider.defaultModel.get',
+      );
+      expect(
+        RpcMethod.providerDefaultModelSet,
+        'provider.defaultModel.set',
+      );
+    },
+    tags: const <String>['feature_test__provider_default_model__contract'],
+  );
+
+  test(
     'composer file mention contracts round-trip and default to a capped search',
     () {
       const match = FileMatchDto(

@@ -123,6 +123,10 @@ tags:
   feature_test__provider_connection_management__verticalSlice:
   feature_test__provider_connection_management__widget:
   feature_test__provider_connection_management__e2e:
+  feature_test__provider_default_model__unit:
+  feature_test__provider_default_model__contract:
+  feature_test__provider_default_model__verticalSlice:
+  feature_test__provider_default_model__widget:
   feature_test__provider_oauth__unit:
   feature_test__provider_oauth__contract:
   feature_test__provider_oauth__verticalSlice:

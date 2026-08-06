@@ -871,6 +871,18 @@ _TerminalShellDto _$TerminalShellDtoFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$TerminalShellDtoToJson(_TerminalShellDto instance) =>
     <String, dynamic>{'shell': instance.shell};
 
+_DefaultModelDto _$DefaultModelDtoFromJson(Map<String, dynamic> json) =>
+    _DefaultModelDto(
+      model: json['model'] == null
+          ? null
+          : SessionModelSelectionDto.fromJson(
+              json['model'] as Map<String, dynamic>,
+            ),
+    );
+
+Map<String, dynamic> _$DefaultModelDtoToJson(_DefaultModelDto instance) =>
+    <String, dynamic>{'model': instance.model};
+
 _AgentDefinitionListResultDto _$AgentDefinitionListResultDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentDefinitionListResultDto(

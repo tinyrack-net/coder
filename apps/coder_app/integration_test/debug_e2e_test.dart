@@ -1505,6 +1505,9 @@ void main() {
         },
         'invalid provider credential to be rejected',
       );
+      // The daemon records the failure before the settings controller finishes
+      // reloading, so wait for the card rather than sampling one frame.
+      await pumpUntil(tester, find.textContaining('credential rejected'));
       expect(find.textContaining('credential rejected'), findsOneWidget);
       await _disconnectProviderCard(tester, 'DeepSeek');
       await pumpUntilCondition(
@@ -1517,6 +1520,9 @@ void main() {
         'failed provider to disconnect',
       );
 
+      // Disconnecting moves the provider back to the addable list only once
+      // the settings controller has reloaded, which trails the daemon.
+      await pumpUntil(tester, addDeepSeek);
       await tester.ensureVisible(addDeepSeek);
       await tester.tap(addDeepSeek);
       await tester.pumpAndSettle();

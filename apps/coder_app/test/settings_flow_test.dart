@@ -45,8 +45,16 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('기본 Provider로 설정'), findsNothing);
-      expect(find.text('기본 모델'), findsNothing);
       expect(find.byKey(const ValueKey('model-selector-openai')), findsNothing);
+      // The daemon-wide default model leads the page, above the connections.
+      final defaultModel = find.byKey(
+        const ValueKey('provider-settings-default-model'),
+      );
+      expect(defaultModel, findsOneWidget);
+      expect(
+        tester.getBottomRight(defaultModel).dy,
+        lessThanOrEqualTo(tester.getTopLeft(connected).dy),
+      );
       expect(tester.takeException(), isNull);
     });
   }
@@ -451,6 +459,82 @@ void main() {
       expect(find.byKey(const ValueKey('provider-add-custom')), findsOneWidget);
     },
     tags: const <String>['feature_test__daemon_authentication__widget'],
+  );
+
+  testWidgets(
+    'the default model card shows automatic, a pick, and a stale selection',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi();
+      await _pumpSettings(tester, api);
+
+      final row = find.byKey(const ValueKey('provider-default-model-row'));
+      // Unset: the card names the model automatic selection would resolve.
+      expect(find.text('자동'), findsOneWidget);
+      expect(
+        find.descendant(of: row, matching: find.text('OpenAI · GPT-5.6 Sol')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('provider-default-model-choose')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        api.defaultModel,
+        const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      expect(
+        find.descendant(of: row, matching: find.text('OpenAI · GPT-5.6 Sol')),
+        findsOneWidget,
+      );
+      expect(find.text('자동'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('provider-default-model-stale')),
+        findsNothing,
+      );
+
+      // Disconnecting the provider must surface the default as unavailable
+      // without discarding what the user chose.
+      await tester.tap(findAccessibleAction('연결 작업'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('연결 해제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '연결 해제').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        api.defaultModel,
+        const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      expect(
+        find.byKey(const ValueKey('provider-default-model-stale')),
+        findsOneWidget,
+      );
+
+      // Choosing automatic clears the stored default again.
+      await tester.tap(
+        find.byKey(const ValueKey('provider-default-model-choose')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('model-option-inherit')));
+      await tester.pumpAndSettle();
+      expect(api.defaultModel, isNull);
+      expect(find.text('자동'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__provider_default_model__widget'],
   );
 
   testWidgets('settings renders disconnected and bootstrap error states', (

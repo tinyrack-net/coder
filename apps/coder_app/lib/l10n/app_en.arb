@@ -752,6 +752,30 @@
     "description": "Shown when provider settings has no daemon state."
   },
   "providerSettingsRefreshCatalog": "Refresh catalog",
+  "providerSettingsDefaultModelTitle": "Default model",
+  "@providerSettingsDefaultModelTitle": {
+    "description": "Section title of the daemon-wide default model."
+  },
+  "providerSettingsDefaultModelDescription": "Used when a session and its agent do not pin a model.",
+  "@providerSettingsDefaultModelDescription": {
+    "description": "Explains when the daemon default model applies."
+  },
+  "providerSettingsDefaultModelAutomatic": "Automatic",
+  "@providerSettingsDefaultModelAutomatic": {
+    "description": "Label for letting the daemon pick the first usable model."
+  },
+  "providerSettingsDefaultModelNone": "No connected provider offers a usable model.",
+  "@providerSettingsDefaultModelNone": {
+    "description": "Shown when automatic selection cannot resolve a model."
+  },
+  "providerSettingsDefaultModelUnavailable": "This model is unavailable, so sessions use the first usable model.",
+  "@providerSettingsDefaultModelUnavailable": {
+    "description": "Shown when the stored default model can no longer run."
+  },
+  "providerSettingsDefaultModelChoose": "Change",
+  "@providerSettingsDefaultModelChoose": {
+    "description": "Button that opens the default model picker."
+  },
   "@providerSettingsRefreshCatalog": {
     "description": "Tooltip that reloads the provider catalog."
   },
@@ -947,6 +971,10 @@
   "@composerInheritModel": {
     "description": "Model picker entry that inherits the agent default."
   },
+  "composerInheritDefaultModel": "Use the default model",
+  "@composerInheritDefaultModel": {
+    "description": "Model picker entry that clears the session model override."
+  },
   "composerStartHint": "Start a new session with a coding request.",
   "@composerStartHint": {
     "description": "Placeholder shown before the first session exists."
@@ -955,8 +983,8 @@
   "@composerNoPrimaryAgent": {
     "description": "Explains why the composer is disabled."
   },
-  "composerSelectModelFirst": "Select a model first.",
-  "@composerSelectModelFirst": {
+  "composerConnectProviderFirst": "Connect a provider first.",
+  "@composerConnectProviderFirst": {
     "description": "Explains why the composer is disabled."
   },
   "composerInputHint": "Type a coding request…",

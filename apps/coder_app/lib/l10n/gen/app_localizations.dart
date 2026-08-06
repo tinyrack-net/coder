@@ -1232,6 +1232,42 @@ abstract class AppLocalizations {
   /// **'Refresh catalog'**
   String get providerSettingsRefreshCatalog;
 
+  /// Section title of the daemon-wide default model.
+  ///
+  /// In en, this message translates to:
+  /// **'Default model'**
+  String get providerSettingsDefaultModelTitle;
+
+  /// Explains when the daemon default model applies.
+  ///
+  /// In en, this message translates to:
+  /// **'Used when a session and its agent do not pin a model.'**
+  String get providerSettingsDefaultModelDescription;
+
+  /// Label for letting the daemon pick the first usable model.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get providerSettingsDefaultModelAutomatic;
+
+  /// Shown when automatic selection cannot resolve a model.
+  ///
+  /// In en, this message translates to:
+  /// **'No connected provider offers a usable model.'**
+  String get providerSettingsDefaultModelNone;
+
+  /// Shown when the stored default model can no longer run.
+  ///
+  /// In en, this message translates to:
+  /// **'This model is unavailable, so sessions use the first usable model.'**
+  String get providerSettingsDefaultModelUnavailable;
+
+  /// Button that opens the default model picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get providerSettingsDefaultModelChoose;
+
   /// Title of the OpenAI auth method sheet.
   ///
   /// In en, this message translates to:
@@ -1502,6 +1538,12 @@ abstract class AppLocalizations {
   /// **'Use the agent default'**
   String get composerInheritModel;
 
+  /// Model picker entry that clears the session model override.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the default model'**
+  String get composerInheritDefaultModel;
+
   /// Placeholder shown before the first session exists.
   ///
   /// In en, this message translates to:
@@ -1517,8 +1559,8 @@ abstract class AppLocalizations {
   /// Explains why the composer is disabled.
   ///
   /// In en, this message translates to:
-  /// **'Select a model first.'**
-  String get composerSelectModelFirst;
+  /// **'Connect a provider first.'**
+  String get composerConnectProviderFirst;
 
   /// Hint of the composer text field.
   ///

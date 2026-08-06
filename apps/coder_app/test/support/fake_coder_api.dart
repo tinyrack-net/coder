@@ -205,6 +205,10 @@ final class FakeCoderApi implements CoderApi {
 
   /// Host shell saved through the settings API.
   ShellSpecDto? get terminalShell => _terminalShell;
+  SessionModelSelectionDto? _defaultModel;
+
+  /// Daemon-global default model saved through the provider settings API.
+  SessionModelSelectionDto? get defaultModel => _defaultModel;
   final List<AgentDefinitionDto> _agentDefinitions;
   final List<SkillDto> _skills;
   final List<SkillDto> _projectSkills;
@@ -1202,6 +1206,14 @@ final class FakeCoderApi implements CoderApi {
     return List<ProviderModelDto>.unmodifiable(
       _models[connectionId] ?? const <ProviderModelDto>[],
     );
+  }
+
+  @override
+  Future<SessionModelSelectionDto?> getDefaultModel() async => _defaultModel;
+
+  @override
+  Future<void> setDefaultModel(SessionModelSelectionDto? model) async {
+    _defaultModel = model;
   }
 
   @override

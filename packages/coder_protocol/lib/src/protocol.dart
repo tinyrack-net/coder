@@ -182,6 +182,12 @@ abstract final class RpcMethod {
   /// The providerModelsList public API member.
   static const String providerModelsList = 'provider.models.list';
 
+  /// Reads the daemon-global default model used when nothing else resolves.
+  static const String providerDefaultModelGet = 'provider.defaultModel.get';
+
+  /// Replaces or clears the daemon-global default model.
+  static const String providerDefaultModelSet = 'provider.defaultModel.set';
+
   /// Creates an advanced custom OpenAI-compatible connection.
   static const String providerCustomCreate = 'provider.custom.create';
 

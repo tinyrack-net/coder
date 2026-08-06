@@ -392,6 +392,166 @@ void main() {
     tags: const <String>['feature_test__provider_custom__unit'],
   );
 
+  test(
+    'default model round-trips and clears back to automatic',
+    () async {
+      final fixture = _ServiceFixture(now);
+      const selection = SessionModelSelectionDto(
+        providerConnectionId: 'deepseek',
+        modelId: 'deepseek-v4-pro',
+      );
+
+      expect(await fixture.service.storedDefaultModel(), isNull);
+
+      await fixture.service.setDefaultModel(selection);
+      expect(await fixture.service.storedDefaultModel(), selection);
+
+      await fixture.service.setDefaultModel(null);
+      expect(await fixture.service.storedDefaultModel(), isNull);
+    },
+    tags: const <String>['feature_test__provider_default_model__unit'],
+  );
+
+  test(
+    'fallback prefers the stored default and keeps it when unusable',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>[];
+      await fixture.service.connectApiKey('deepseek', 'secret');
+      const stored = SessionModelSelectionDto(
+        providerConnectionId: 'deepseek',
+        modelId: 'deepseek-v4-pro',
+      );
+      await fixture.service.setDefaultModel(stored);
+
+      expect(await fixture.service.fallbackModel(), stored);
+
+      // A model the catalog no longer offers must not block resolution.
+      await fixture.service.setDefaultModel(
+        const SessionModelSelectionDto(
+          providerConnectionId: 'deepseek',
+          modelId: 'retired-model',
+        ),
+      );
+      expect(
+        await fixture.service.fallbackModel(),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'deepseek',
+          modelId: 'deepseek-chat',
+        ),
+      );
+
+      // Nor must a connection that can no longer run.
+      await fixture.service.setDefaultModel(stored);
+      await fixture.service.disconnect('deepseek');
+      expect(await fixture.service.fallbackModel(), isNull);
+
+      // The unusable default survives so the settings page can surface it.
+      expect(await fixture.service.storedDefaultModel(), stored);
+    },
+    tags: const <String>['feature_test__provider_default_model__unit'],
+  );
+
+  test(
+    'first usable model follows connection and model ordering',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>[];
+      await fixture.service.connectApiKey('xai', 'secret');
+
+      expect(
+        await fixture.service.firstUsableModel(),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'xai',
+          modelId: 'grok-4.3',
+        ),
+      );
+
+      // "DeepSeek" sorts before "xAI", so connecting it moves the choice.
+      await fixture.service.connectApiKey('deepseek', 'secret');
+      expect(
+        await fixture.service.firstUsableModel(),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'deepseek',
+          modelId: 'deepseek-chat',
+        ),
+      );
+
+      // A first-by-label model that cannot stream is skipped, not returned.
+      await fixture.repository.upsertModel(
+        const ProviderModelDto(
+          connectionId: 'deepseek',
+          id: 'deepseek-alpha',
+          label: 'DeepSeek Alpha',
+          source: ProviderModelSource.manual,
+          capabilities: ModelCapabilitiesDto(
+            streaming: CapabilitySupport.unsupported,
+            toolCalling: CapabilitySupport.supported,
+          ),
+        ),
+      );
+      expect(
+        await fixture.service.firstUsableModel(),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'deepseek',
+          modelId: 'deepseek-chat',
+        ),
+      );
+
+      await fixture.service.disconnect('deepseek');
+      await fixture.service.disconnect('xai');
+      expect(await fixture.service.firstUsableModel(), isNull);
+    },
+    tags: const <String>['feature_test__provider_default_model__unit'],
+  );
+
+  test(
+    'agent model resolution falls back for session and unusable pins',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>[];
+      await fixture.service.connectApiKey('deepseek', 'secret');
+
+      final sessionSourced = await fixture.service.resolveAgentModel(
+        const AgentModelSelectionDto(source: AgentModelSource.session),
+      );
+      expect(sessionSourced.modelId, 'deepseek-chat');
+
+      final pinnedToMissing = await fixture.service.resolveAgentModel(
+        const AgentModelSelectionDto(
+          source: AgentModelSource.fixed,
+          providerConnectionId: 'xai',
+          modelId: 'grok-4.5',
+        ),
+      );
+      expect(pinnedToMissing.connectionId, 'deepseek');
+
+      final pinned = await fixture.service.resolveAgentModel(
+        const AgentModelSelectionDto(
+          source: AgentModelSource.fixed,
+          providerConnectionId: 'deepseek',
+          modelId: 'deepseek-v4-pro',
+        ),
+      );
+      expect(pinned.modelId, 'deepseek-v4-pro');
+
+      await fixture.service.disconnect('deepseek');
+      await expectLater(
+        fixture.service.resolveAgentModel(
+          const AgentModelSelectionDto(source: AgentModelSource.session),
+        ),
+        throwsA(
+          isA<ProviderConnectionFailure>().having(
+            (error) => error.code,
+            'code',
+            'model_required',
+          ),
+        ),
+      );
+    },
+    tags: const <String>['feature_test__provider_default_model__unit'],
+  );
+
   test('model validation rejects unusable selections', () async {
     final fixture = _ServiceFixture(now);
     fixture.discovery.ids = <String>['unknown-capabilities'];
@@ -496,6 +656,7 @@ final class _ServiceFixture {
     service = ProviderService(
       repository: repository,
       credentials: credentials,
+      settings: settings,
       environment: environment,
       clock: clock,
       modelDiscovery: discovery,
@@ -507,6 +668,7 @@ final class _ServiceFixture {
   }
 
   final _ProviderRepository repository = _ProviderRepository();
+  final _Settings settings = _Settings();
   final _Credentials credentials = _Credentials();
   final _Discovery discovery = _Discovery();
   final _Factory factory = _Factory();
@@ -540,6 +702,16 @@ final class _Clock implements Clock {
 
   @override
   DateTime nowUtc() => value;
+}
+
+final class _Settings implements SettingsRepository {
+  final Map<String, String> values = <String, String>{};
+
+  @override
+  Future<String?> getValue(String key) async => values[key];
+
+  @override
+  Future<void> setValue(String key, String value) async => values[key] = value;
 }
 
 final class _ProviderRepository implements ProviderRepository {

@@ -488,6 +488,8 @@ class _ClientSession {
       RpcMethod.providerDisconnect,
       RpcMethod.providerCatalogRefresh,
       RpcMethod.providerModelsList,
+      RpcMethod.providerDefaultModelGet,
+      RpcMethod.providerDefaultModelSet,
       RpcMethod.providerCustomCreate,
       RpcMethod.providerCustomUpdate,
       RpcMethod.providerCustomDelete,
@@ -829,14 +831,8 @@ class _ClientSession {
           );
         }
         final requestedModel = request.model;
-        // An explicit override replaces the definition model, so an agent
-        // whose own model cannot resolve must not block creation.
-        if (requestedModel == null &&
-            definition.model.source == AgentModelSource.session) {
-          throw const FormatException(
-            'This agent requires an explicit session model.',
-          );
-        }
+        // Without an override the definition resolves through the daemon
+        // fallback chain, which only fails when nothing is connected.
         if (requestedModel == null) {
           await providers.resolveAgentModel(definition.model);
         } else {
@@ -995,6 +991,14 @@ class _ClientSession {
         final request = ProviderConnectionIdParamsDto.fromJson(payload);
         final models = await providers.listModels(request.connectionId);
         return ProviderModelsResultDto(models: models).toJson();
+      case RpcMethod.providerDefaultModelGet:
+        return DefaultModelDto(
+          model: await providers.storedDefaultModel(),
+        ).toJson();
+      case RpcMethod.providerDefaultModelSet:
+        final request = DefaultModelDto.fromJson(payload);
+        await providers.setDefaultModel(request.model);
+        return const <String, dynamic>{};
       case RpcMethod.providerCustomCreate:
         final request = ProviderCustomCreateParamsDto.fromJson(payload);
         final connection = await providers.createCustom(

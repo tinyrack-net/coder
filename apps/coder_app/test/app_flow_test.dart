@@ -999,8 +999,16 @@ void main() {
 
       await tester.pumpAndSettle();
       expect(newWorkspace, findsNothing);
-      expect(find.bySemanticsLabel('New workspace'), findsNothing);
       final surface = find.byKey(const ValueKey('workspace-sidebar-surface'));
+      // The detail pane keeps its own "New workspace" heading, so scope the
+      // semantics check to the sidebar the toggle collapsed.
+      expect(
+        find.descendant(
+          of: surface,
+          matching: find.bySemanticsLabel('New workspace'),
+        ),
+        findsNothing,
+      );
       for (var press = 0; press < 6; press++) {
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
         await tester.pump();

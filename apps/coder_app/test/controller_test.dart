@@ -745,12 +745,14 @@ void main() {
         container.read(provider.notifier).loadModels('second'),
       ]);
 
+      // The build already seeds the first usable connection, so assert that
+      // neither concurrent load dropped the other rather than the exact map.
       expect(
         container.read(provider).value!.models,
-        const <String, List<ProviderModelDto>>{
-          'first': <ProviderModelDto>[first],
-          'second': <ProviderModelDto>[second],
-        },
+        allOf(
+          containsPair('first', const <ProviderModelDto>[first]),
+          containsPair('second', const <ProviderModelDto>[second]),
+        ),
       );
     },
     tags: const <String>['feature_test__provider_catalog__unit'],
