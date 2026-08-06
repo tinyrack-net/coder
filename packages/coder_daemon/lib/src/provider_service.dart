@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
@@ -45,12 +47,19 @@ final class ProviderConnectionFailure implements Exception {
   String toString() => 'ProviderConnectionFailure($code): $message';
 }
 
+/// Settings key holding the daemon-global default model selection.
+///
+/// An empty stored value means no explicit default, which makes the daemon
+/// fall back to the first usable provider model instead.
+const String defaultModelSettingKey = 'provider.defaultModel';
+
 /// Owns provider connections while keeping runtime details out of the protocol.
 final class ProviderService implements ProviderOAuthConnector {
   /// Creates the provider connection service.
   factory ProviderService({
     required ProviderRepository repository,
     required CredentialRepository credentials,
+    required SettingsRepository settings,
     required Map<String, String> environment,
     required Clock clock,
     required ProviderModelDiscovery modelDiscovery,
@@ -61,6 +70,7 @@ final class ProviderService implements ProviderOAuthConnector {
   }) => ProviderService._(
     repository: repository,
     credentials: credentials,
+    settings: settings,
     environment: environment,
     clock: clock,
     modelDiscovery: modelDiscovery,
@@ -73,6 +83,7 @@ final class ProviderService implements ProviderOAuthConnector {
   ProviderService._({
     required this._repository,
     required this._credentials,
+    required this._settings,
     required this._environment,
     required this._clock,
     required this._modelDiscovery,
@@ -83,6 +94,7 @@ final class ProviderService implements ProviderOAuthConnector {
   });
 
   final ProviderRepository _repository;
+  final SettingsRepository _settings;
   final CredentialRepository _credentials;
   final Map<String, String> _environment;
   final Clock _clock;
@@ -175,18 +187,63 @@ final class ProviderService implements ProviderOAuthConnector {
     return result;
   }
 
+  /// Reads the stored daemon-global default model without validating it.
+  ///
+  /// A stored selection that no longer runs is kept on disk so the settings
+  /// page can show it as unavailable instead of silently forgetting it.
+  Future<SessionModelSelectionDto?> storedDefaultModel() async {
+    final raw = await _settings.getValue(defaultModelSettingKey);
+    if (raw == null || raw.isEmpty) return null;
+    return SessionModelSelectionDto.fromJson(
+      Map<String, dynamic>.from(jsonDecode(raw) as Map),
+    );
+  }
+
+  /// Replaces or clears the daemon-global default model.
+  Future<void> setDefaultModel(SessionModelSelectionDto? model) =>
+      _settings.setValue(
+        defaultModelSettingKey,
+        model == null ? '' : jsonEncode(model.toJson()),
+      );
+
+  /// Resolves the model to use when no session or agent selection applies.
+  ///
+  /// Prefers the stored daemon default and falls through to
+  /// [firstUsableModel] when that default no longer runs.
+  Future<SessionModelSelectionDto?> fallbackModel() async {
+    final stored = await storedDefaultModel();
+    if (stored != null && await _isRunnableSelection(stored)) return stored;
+    return firstUsableModel();
+  }
+
+  /// Returns the first runnable model of the first usable connection.
+  ///
+  /// Connections arrive sorted by display name and models by label, so the
+  /// choice is deterministic and matches what the app shows.
+  Future<SessionModelSelectionDto?> firstUsableModel() async {
+    for (final connection in await connections()) {
+      if (!_canRun(connection.status)) continue;
+      for (final model in await _repository.listModels(connection.id)) {
+        if (!_isRunnableModel(model)) continue;
+        return SessionModelSelectionDto(
+          providerConnectionId: connection.id,
+          modelId: model.id,
+        );
+      }
+    }
+    return null;
+  }
+
   /// Resolves daemon-default or fixed Markdown agent model configuration.
+  ///
+  /// A fixed selection whose provider or model can no longer run falls back to
+  /// the daemon default so a disconnected provider never blocks a turn.
   Future<ResolvedAgentModel> resolveAgentModel(
     AgentModelSelectionDto selection,
   ) async {
-    final String connectionId;
-    final String modelId;
     switch (selection.source) {
       case AgentModelSource.session:
-        throw const ProviderConnectionFailure(
-          'model_required',
-          'This agent requires an explicit session model.',
-        );
+        return _resolveFallback();
       case AgentModelSource.fixed:
         final fixedConnection = selection.providerConnectionId;
         final fixedModel = selection.modelId;
@@ -195,10 +252,39 @@ final class ProviderService implements ProviderOAuthConnector {
             'Fixed agent models require a provider and model.',
           );
         }
-        connectionId = fixedConnection;
-        modelId = fixedModel;
+        final pinned = SessionModelSelectionDto(
+          providerConnectionId: fixedConnection,
+          modelId: fixedModel,
+        );
+        if (!await _isRunnableSelection(pinned)) return _resolveFallback();
+        return resolveExplicitModel(fixedConnection, fixedModel);
     }
-    return resolveExplicitModel(connectionId, modelId);
+  }
+
+  Future<ResolvedAgentModel> _resolveFallback() async {
+    final fallback = await fallbackModel();
+    if (fallback == null) {
+      throw const ProviderConnectionFailure(
+        'model_required',
+        'No connected provider offers a usable model.',
+      );
+    }
+    return resolveExplicitModel(
+      fallback.providerConnectionId,
+      fallback.modelId,
+    );
+  }
+
+  Future<bool> _isRunnableSelection(SessionModelSelectionDto selection) async {
+    final connection = await _repository.getConnection(
+      selection.providerConnectionId,
+    );
+    if (connection == null || !_canRun(connection.status)) return false;
+    final model = await _repository.getModel(
+      selection.providerConnectionId,
+      selection.modelId,
+    );
+    return model != null && _isRunnableModel(model);
   }
 
   /// Validates and resolves one explicitly chosen connection and model.
@@ -474,8 +560,7 @@ final class ProviderService implements ProviderOAuthConnector {
     }
     final model = await _repository.getModel(connectionId, modelId);
     if (model == null) throw StateError('Unknown provider model: $modelId');
-    if (model.capabilities.streaming != CapabilitySupport.supported ||
-        model.capabilities.toolCalling != CapabilitySupport.supported) {
+    if (!_isRunnableModel(model)) {
       throw StateError(
         'Model streaming and tool calling capabilities must be supported.',
       );
@@ -655,6 +740,14 @@ final class ProviderService implements ProviderOAuthConnector {
   static bool _canRun(ProviderConnectionStatus status) =>
       status == ProviderConnectionStatus.connected ||
       status == ProviderConnectionStatus.degraded;
+
+  /// Whether a model advertises everything a coding turn needs.
+  ///
+  /// [validateAgentModel] and the fallback chain share this predicate so the
+  /// chain never hands back a model the validator would reject.
+  static bool _isRunnableModel(ProviderModelDto model) =>
+      model.capabilities.streaming == CapabilitySupport.supported &&
+      model.capabilities.toolCalling == CapabilitySupport.supported;
 
   static ApiKeyCredential? _customCredential(
     CustomProviderConfigDto config,

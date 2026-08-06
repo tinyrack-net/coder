@@ -194,15 +194,24 @@ void main() {
       expect(await output, contains(marker));
       await client.terminateTerminal(terminal.id);
 
-      await expectLater(
-        client.createSession(
-          id: 'model-required',
-          worktreeId: checkout.id,
-          title: 'Model required',
-          agentDefinitionId: 'coder',
-        ),
-        throwsA(isA<CoderClientException>()),
+      // The built-in agent picks no model of its own, so creation now falls
+      // back to the daemon default and leaves the session without an override.
+      expect(await client.getDefaultModel(), isNull);
+      const wireDefault = SessionModelSelectionDto(
+        providerConnectionId: 'local-test',
+        modelId: 'test-model',
       );
+      await client.setDefaultModel(wireDefault);
+      expect(await client.getDefaultModel(), wireDefault);
+      final inherited = await client.createSession(
+        id: 'model-inherited',
+        worktreeId: checkout.id,
+        title: 'Model inherited',
+        agentDefinitionId: 'coder',
+      );
+      expect(inherited.model, isNull);
+      await client.setDefaultModel(null);
+      expect(await client.getDefaultModel(), isNull);
       await expectLater(
         client.createSession(
           id: 'agent-rejected',
@@ -242,7 +251,9 @@ void main() {
         ),
       );
       expect(
-        (await client.listSessions(worktreeId: checkout.id)).single.model,
+        (await client.listSessions(
+          worktreeId: checkout.id,
+        )).singleWhere((session) => session.id == agent.id).model,
         agent.model,
       );
       expect(agent.mode, SessionMode.plan);
@@ -258,7 +269,9 @@ void main() {
       );
       expect((await normalFuture).id, agent.id);
       expect(
-        (await client.listSessions(worktreeId: checkout.id)).single.mode,
+        (await client.listSessions(
+          worktreeId: checkout.id,
+        )).singleWhere((session) => session.id == agent.id).mode,
         SessionMode.normal,
       );
       final coder = (await client.listAgentDefinitions()).single;
@@ -267,7 +280,7 @@ void main() {
         expectedContentHash: coder.contentHash,
       );
       expect(configuredDefinition.reasoningEffort, 'high');
-      expect(await client.listSessions(worktreeId: checkout.id), hasLength(1));
+      expect(await client.listSessions(worktreeId: checkout.id), hasLength(2));
       expect(await client.subscribeTimeline(agent.id), isEmpty);
 
       final approvalFuture = client.events
@@ -312,12 +325,17 @@ void main() {
           modelId: 'test-model',
         ),
       );
-      await expectLater(
-        client.updateSessionModel(agent.id, null),
-        throwsA(isA<CoderClientException>()),
+      // Clearing the override is always legal now: the model resolves through
+      // the fallback chain when the turn starts.
+      expect((await client.updateSessionModel(agent.id, null)).model, isNull);
+      expect(
+        (await client.updateSessionModel(agent.id, agent.model)).model,
+        agent.model,
       );
       expect(
-        (await client.listSessions(worktreeId: checkout.id)).single.model,
+        (await client.listSessions(
+          worktreeId: checkout.id,
+        )).singleWhere((session) => session.id == agent.id).model,
         agent.model,
       );
       await expectLater(
@@ -356,7 +374,7 @@ void main() {
       );
       final overridden = (await client.listSessions(
         worktreeId: checkout.id,
-      )).single;
+      )).singleWhere((session) => session.id == agent.id);
       expect(overridden.reasoningEffort, 'high');
       expect(overridden.permissionMode, PermissionMode.workspaceWrite);
       expect(overridden.serviceTier, 'priority');
@@ -409,7 +427,9 @@ void main() {
         ),
       );
       expect(
-        (await client.listSessions(worktreeId: checkout.id)).single.status,
+        (await client.listSessions(
+          worktreeId: checkout.id,
+        )).singleWhere((session) => session.id == agent.id).status,
         SessionStatus.idle,
       );
     },
@@ -423,6 +443,7 @@ void main() {
       'feature_test__provider_catalog__verticalSlice',
       'feature_test__provider_connection_management__verticalSlice',
       'feature_test__provider_custom__verticalSlice',
+      'feature_test__provider_default_model__verticalSlice',
     ],
   );
 

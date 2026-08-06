@@ -614,6 +614,27 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsRefreshCatalog => 'Catalog 갱신';
 
   @override
+  String get providerSettingsDefaultModelTitle => '기본 모델';
+
+  @override
+  String get providerSettingsDefaultModelDescription =>
+      '세션과 Agent 모두 모델을 지정하지 않았을 때 사용합니다.';
+
+  @override
+  String get providerSettingsDefaultModelAutomatic => '자동';
+
+  @override
+  String get providerSettingsDefaultModelNone =>
+      '연동된 프로바이더에 사용할 수 있는 모델이 없습니다.';
+
+  @override
+  String get providerSettingsDefaultModelUnavailable =>
+      '이 모델을 사용할 수 없어 세션은 첫 번째 사용 가능한 모델을 사용합니다.';
+
+  @override
+  String get providerSettingsDefaultModelChoose => '변경';
+
+  @override
   String get providerSettingsOpenAiTitle => 'OpenAI 연결';
 
   @override
@@ -757,13 +778,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerInheritModel => 'Agent 기본값 사용';
 
   @override
+  String get composerInheritDefaultModel => '기본 모델 사용';
+
+  @override
   String get composerStartHint => '코딩 요청으로 새 session을 시작하세요.';
 
   @override
   String get composerNoPrimaryAgent => '사용 가능한 primary Agent가 없습니다.';
 
   @override
-  String get composerSelectModelFirst => '사용할 모델을 먼저 선택하세요.';
+  String get composerConnectProviderFirst => '프로바이더를 먼저 연동하세요.';
 
   @override
   String get composerInputHint => '코딩 요청을 입력하세요…';

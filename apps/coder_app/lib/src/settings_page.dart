@@ -7,6 +7,9 @@ import 'package:coder_app/src/coder_page_shell.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/external_url_opener.dart';
+import 'package:coder_app/src/model_picker.dart';
+import 'package:coder_app/src/model_picker_options.dart';
+import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -138,6 +141,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         Expanded(
           child: CustomScrollView(
             slivers: <Widget>[
+              SliverToBoxAdapter(
+                child: _DefaultModel(
+                  selection: state.defaultModel,
+                  connections: state.connections,
+                  models: state.models,
+                  onChoose: () => unawaited(_chooseDefaultModel()),
+                ),
+              ),
               SliverToBoxAdapter(child: connected),
               const SliverToBoxAdapter(child: TRSeparator()),
               SliverToBoxAdapter(child: catalog),
@@ -162,6 +173,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
       ],
     );
+  }
+
+  Future<void> _chooseDefaultModel() async {
+    final l10n = AppLocalizations.of(context);
+    final options = await loadModelPickerOptions(ref, widget.hostId);
+    if (!mounted) return;
+    final chosen = await showModelPicker(
+      context,
+      options: options,
+      currentSelection: ref.read(_provider).value?.defaultModel,
+      title: l10n.providerSettingsDefaultModelTitle,
+      inheritLabel: l10n.providerSettingsDefaultModelAutomatic,
+    );
+    if (chosen == null) return;
+    final notifier = ref.read(_provider.notifier);
+    switch (chosen) {
+      case SelectedModelPickerChoice(:final selection):
+        await notifier.setDefaultModel(selection);
+      case InheritModelPickerChoice():
+        await notifier.setDefaultModel(null);
+    }
   }
 
   Future<void> _refreshCatalog() async {
@@ -345,6 +377,103 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     if (confirmed != true) return;
     await ref.read(_provider.notifier).disconnect(connection.id);
+  }
+}
+
+/// Daemon-wide default model used when nothing more specific applies.
+class _DefaultModel extends StatelessWidget {
+  const _DefaultModel({
+    required this.selection,
+    required this.connections,
+    required this.models,
+    required this.onChoose,
+  });
+
+  final SessionModelSelectionDto? selection;
+  final List<ProviderConnectionDto> connections;
+  final Map<String, List<ProviderModelDto>> models;
+  final VoidCallback onChoose;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final stored = selection;
+    final stale =
+        stored != null && !isRunnableSelection(stored, connections, models);
+    final shown = stale
+        ? null
+        : stored ?? firstUsableModel(connections, models);
+    return Padding(
+      key: const ValueKey('provider-settings-default-model'),
+      padding: const EdgeInsets.fromLTRB(
+        TRSpacing.extraLarge,
+        TRSpacing.extraLarge,
+        TRSpacing.extraLarge,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          TRText(
+            l10n.providerSettingsDefaultModelTitle,
+            variant: TRTextVariant.headingLg,
+          ),
+          const SizedBox(height: TRSpacing.medium),
+          TRCard(
+            padding: TRCardPadding.none,
+            child: CoderListRow(
+              key: const ValueKey('provider-default-model-row'),
+              title: TRText.inherit(
+                stored == null
+                    ? l10n.providerSettingsDefaultModelAutomatic
+                    : _label(stored),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: stale
+                  ? TRText(
+                      l10n.providerSettingsDefaultModelUnavailable,
+                      key: const ValueKey('provider-default-model-stale'),
+                      color: TRTextColor.danger,
+                      maxLines: 1,
+                      truncate: true,
+                    )
+                  : TRText.inherit(
+                      stored != null
+                          ? l10n.providerSettingsDefaultModelDescription
+                          : shown == null
+                          ? l10n.providerSettingsDefaultModelNone
+                          : _label(shown),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+              trailing: TRButton(
+                key: const ValueKey('provider-default-model-choose'),
+                appearance: TRAppearance.outline,
+                onPressed: onChoose,
+                child: TRText.inherit(
+                  l10n.providerSettingsDefaultModelChoose,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Renders "Provider · Model", falling back to raw ids when unresolvable.
+  String _label(SessionModelSelectionDto model) {
+    final connection = connections
+        .where((item) => item.id == model.providerConnectionId)
+        .firstOrNull;
+    final label =
+        (models[model.providerConnectionId] ?? const <ProviderModelDto>[])
+            .where((item) => item.id == model.modelId)
+            .firstOrNull
+            ?.label;
+    return '${connection?.displayName ?? model.providerConnectionId}'
+        ' · ${label ?? model.modelId}';
   }
 }
 

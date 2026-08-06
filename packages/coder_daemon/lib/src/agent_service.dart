@@ -407,7 +407,7 @@ class SessionService {
 
   /// Sets or clears the provider and model override of one session.
   ///
-  /// A null [model] restores inheritance from the agent definition.
+  /// A null [model] restores the fallback chain, which resolves at turn start.
   Future<SessionDto> setModel(
     String sessionId,
     SessionModelSelectionDto? model,
@@ -416,10 +416,6 @@ class SessionService {
     if (session == null) throw StateError('Session not found: $sessionId');
     if (_activeTurns.containsKey(sessionId)) {
       throw StateError('Cannot change the model while a turn is running.');
-    }
-    final definition = await _definitions.resolve(session.agentDefinitionId);
-    if (model == null && definition.model.source == AgentModelSource.session) {
-      throw StateError('This agent requires an explicit session model.');
     }
     if (model != null) {
       await _providers.validateAgentModel(
@@ -596,7 +592,7 @@ class SessionService {
     }
     final now = _clock.nowUtc();
     final childModel = childDefinition.model.source == AgentModelSource.session
-        ? _effectiveSessionModel(parentSession, parentDefinition)
+        ? await _effectiveSessionModel(parentSession, parentDefinition)
         : null;
     final child = await _sessions.create(
       SessionDto(
@@ -658,23 +654,27 @@ class SessionService {
     }
   }
 
-  SessionModelSelectionDto _effectiveSessionModel(
+  /// Resolves the model a session runs on for inheritance by a subagent.
+  ///
+  /// Returns null when nothing resolves, which is safe: the child re-runs the
+  /// full chain at turn start.
+  Future<SessionModelSelectionDto?> _effectiveSessionModel(
     SessionDto session,
     AgentDefinitionDto definition,
-  ) {
+  ) async {
     final selected = session.model;
     if (selected != null) return selected;
     final providerConnectionId = definition.model.providerConnectionId;
     final modelId = definition.model.modelId;
-    if (definition.model.source != AgentModelSource.fixed ||
-        providerConnectionId == null ||
-        modelId == null) {
-      throw StateError('Parent session has no executable model.');
+    if (definition.model.source == AgentModelSource.fixed &&
+        providerConnectionId != null &&
+        modelId != null) {
+      return SessionModelSelectionDto(
+        providerConnectionId: providerConnectionId,
+        modelId: modelId,
+      );
     }
-    return SessionModelSelectionDto(
-      providerConnectionId: providerConnectionId,
-      modelId: modelId,
-    );
+    return _providers.fallbackModel();
   }
 
   void _completeTurn(String turnId, AgentRunResult result) {

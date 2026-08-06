@@ -14,6 +14,7 @@ import 'package:coder_app/src/composer_trigger.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/model_picker.dart';
+import 'package:coder_app/src/model_picker_options.dart';
 import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/session_title.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -329,28 +330,10 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
 
   Future<void> _chooseModel(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    final state = ref
-        .read(providerSettingsControllerProvider(widget.hostId))
-        .value;
-    final connections = usableConnections(
-      state?.connections ?? const <ProviderConnectionDto>[],
-    );
-    await Future.wait<void>(
-      connections.map((connection) => _ensureModelsLoaded(connection.id)),
-    );
+    final options = await loadModelPickerOptions(ref, widget.hostId);
     if (!context.mounted) return;
-    final loaded = ref
-        .read(providerSettingsControllerProvider(widget.hostId))
-        .value;
-    final options = <ModelPickerOption>[
-      for (final connection in connections)
-        for (final model
-            in loaded?.models[connection.id] ?? const <ProviderModelDto>[])
-          ModelPickerOption(
-            providerName: connection.displayName,
-            model: model,
-          ),
-    ];
+    // Clearing the override always means "follow the fallback chain"; only the
+    // first step of that chain differs per agent.
     final chosen = await showModelPicker(
       context,
       options: options,
@@ -358,7 +341,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       title: l10n.composerSelectModel,
       inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed
           ? l10n.composerInheritModel
-          : null,
+          : l10n.composerInheritDefaultModel,
     );
     if (chosen == null) return;
     switch (chosen) {
@@ -783,7 +766,12 @@ class DraftSessionPane extends ConsumerWidget {
         providers?.connections ?? const <ProviderConnectionDto>[];
     final effective =
         draft.model ??
-        (agent == null ? null : agentSelectionFor(agent, connections));
+        effectiveModelFor(
+          definition: agent,
+          connections: connections,
+          models: providers?.models ?? const <String, List<ProviderModelDto>>{},
+          defaultModel: providers?.defaultModel,
+        );
     final notifier = ref.read(
       sessionComposerDraftControllerProvider(
         selection.hostId,
@@ -807,7 +795,7 @@ class DraftSessionPane extends ConsumerWidget {
                 : (agent == null
                       ? l10n.composerNoPrimaryAgent
                       : (effective == null
-                            ? l10n.composerSelectModelFirst
+                            ? l10n.composerConnectProviderFirst
                             : null)),
             bar: SessionComposerBar(
               hostId: selection.hostId,

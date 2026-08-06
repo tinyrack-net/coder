@@ -1699,9 +1699,14 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         .firstOrNull;
     final effective =
         current.model ??
-        (definition == null
-            ? null
-            : agentSelectionFor(definition, connections));
+        effectiveModelFor(
+          definition: definition,
+          connections: connections,
+          models:
+              providersAsync.value?.models ??
+              const <String, List<ProviderModelDto>>{},
+          defaultModel: providersAsync.value?.defaultModel,
+        );
     // Only the newest plan can still be acted on, and only in plan mode: the
     // card asks whether to leave planning and carry the plan out.
     final lastPlan = items.whereType<ChatPlanProposal>().lastOrNull;
@@ -1819,7 +1824,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                     hint:
                         (agentsLoading || providersLoading || effective != null)
                         ? null
-                        : AppLocalizations.of(context).composerSelectModelFirst,
+                        : AppLocalizations.of(
+                            context,
+                          ).composerConnectProviderFirst,
                     bar: SessionComposerBar(
                       hostId: widget.selection.hostId,
                       definitions: definitions,

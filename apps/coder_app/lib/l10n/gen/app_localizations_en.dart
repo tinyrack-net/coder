@@ -624,6 +624,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsRefreshCatalog => 'Refresh catalog';
 
   @override
+  String get providerSettingsDefaultModelTitle => 'Default model';
+
+  @override
+  String get providerSettingsDefaultModelDescription =>
+      'Used when a session and its agent do not pin a model.';
+
+  @override
+  String get providerSettingsDefaultModelAutomatic => 'Automatic';
+
+  @override
+  String get providerSettingsDefaultModelNone =>
+      'No connected provider offers a usable model.';
+
+  @override
+  String get providerSettingsDefaultModelUnavailable =>
+      'This model is unavailable, so sessions use the first usable model.';
+
+  @override
+  String get providerSettingsDefaultModelChoose => 'Change';
+
+  @override
   String get providerSettingsOpenAiTitle => 'OpenAI connection';
 
   @override
@@ -770,13 +791,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerInheritModel => 'Use the agent default';
 
   @override
+  String get composerInheritDefaultModel => 'Use the default model';
+
+  @override
   String get composerStartHint => 'Start a new session with a coding request.';
 
   @override
   String get composerNoPrimaryAgent => 'No primary agent is available.';
 
   @override
-  String get composerSelectModelFirst => 'Select a model first.';
+  String get composerConnectProviderFirst => 'Connect a provider first.';
 
   @override
   String get composerInputHint => 'Type a coding request…';

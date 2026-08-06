@@ -40,6 +40,8 @@ tags:
   feature_test__provider_catalog__verticalSlice:
   feature_test__provider_connection_management__unit:
   feature_test__provider_connection_management__verticalSlice:
+  feature_test__provider_default_model__unit:
+  feature_test__provider_default_model__verticalSlice:
   feature_test__provider_oauth__unit:
   feature_test__provider_oauth__verticalSlice:
   feature_test__provider_custom__unit:

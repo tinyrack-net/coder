@@ -593,6 +593,22 @@ void main() {
         await client.listProviderModels(connection.id),
         <ProviderModelDto>[model],
       );
+      expect(
+        await client.getDefaultModel(),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5.6-sol',
+        ),
+      );
+      await client.setDefaultModel(null);
+      expect(
+        connector.requests
+            .lastWhere(
+              (request) => request.method == RpcMethod.providerDefaultModelSet,
+            )
+            .payload,
+        const DefaultModelDto().toJson(),
+      );
       const customConfig = CustomProviderConfigDto(
         name: 'Custom',
         baseUrl: 'http://localhost/v1',
@@ -1249,6 +1265,13 @@ void _registerFixtureMethods(
     RpcMethod.providerModelsList: ProviderModelsResultDto(
       models: <ProviderModelDto>[model],
     ).toJson(),
+    RpcMethod.providerDefaultModelGet: const DefaultModelDto(
+      model: SessionModelSelectionDto(
+        providerConnectionId: 'openai',
+        modelId: 'gpt-5.6-sol',
+      ),
+    ).toJson(),
+    RpcMethod.providerDefaultModelSet: const <String, dynamic>{},
     RpcMethod.providerCustomCreate: ProviderConnectionResultDto(
       connection: connection,
     ).toJson(),

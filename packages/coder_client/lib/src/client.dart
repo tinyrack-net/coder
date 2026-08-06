@@ -971,6 +971,21 @@ class CoderClient implements CoderApi {
   }
 
   @override
+  Future<SessionModelSelectionDto?> getDefaultModel() async {
+    final response = await _request(
+      RpcMethod.providerDefaultModelGet,
+      const <String, dynamic>{},
+    );
+    return DefaultModelDto.fromJson(response).model;
+  }
+
+  @override
+  Future<void> setDefaultModel(SessionModelSelectionDto? model) => _request(
+    RpcMethod.providerDefaultModelSet,
+    DefaultModelDto(model: model).toJson(),
+  );
+
+  @override
   Future<ProviderConnectionDto> createCustomProvider(
     String id,
     CustomProviderConfigDto config, {

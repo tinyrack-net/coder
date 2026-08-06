@@ -171,12 +171,14 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     final draft = _draft(project);
     final effective =
         draft?.model ??
-        (agent == null
-            ? null
-            : agentSelectionFor(
-                agent,
-                connections ?? const <ProviderConnectionDto>[],
-              ));
+        effectiveModelFor(
+          definition: agent,
+          connections: connections ?? const <ProviderConnectionDto>[],
+          models:
+              connectionsAsync?.value?.models ??
+              const <String, List<ProviderModelDto>>{},
+          defaultModel: connectionsAsync?.value?.defaultModel,
+        );
     final ready =
         project != null &&
         (isGitProject || worktree != null) &&

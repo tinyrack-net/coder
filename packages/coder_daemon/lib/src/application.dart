@@ -116,6 +116,7 @@ abstract final class DaemonApplication {
       final providers = ProviderService(
         repository: database.providerDao,
         credentials: credentials,
+        settings: database.settingsDao,
         environment: config.useEnvironmentCredentials
             ? Platform.environment
             : const <String, String>{},

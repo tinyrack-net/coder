@@ -908,6 +908,22 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'provider.default.model',
+    description:
+        'Resolves the chat model from the session override, the agent '
+        'definition, the daemon default, then the first usable provider '
+        'model, and edits the daemon default.',
+    // ProviderSettingsRoute already belongs to provider.catalog; a route maps
+    // to exactly one feature, and the card is only part of that page.
+    apiMethods: <String>['getDefaultModel', 'setDefaultModel'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'provider.connection.management',
     description: 'Connects and disconnects provider presets.',
     apiMethods: <String>[

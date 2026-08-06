@@ -906,6 +906,21 @@ abstract class TerminalShellDto with _$TerminalShellDto {
 }
 
 @freezed
+/// Reads or writes the daemon-global default model.
+///
+/// A null [model] means the daemon resolves the first usable provider model
+/// instead of a stored preference.
+abstract class DefaultModelDto with _$DefaultModelDto {
+  /// Creates a default-model payload.
+  const factory DefaultModelDto({SessionModelSelectionDto? model}) =
+      _DefaultModelDto;
+
+  /// Decodes a default-model payload.
+  factory DefaultModelDto.fromJson(Map<String, dynamic> json) =>
+      _$DefaultModelDtoFromJson(json);
+}
+
+@freezed
 /// Returns agent definitions and source diagnostics.
 abstract class AgentDefinitionListResultDto
     with _$AgentDefinitionListResultDto {

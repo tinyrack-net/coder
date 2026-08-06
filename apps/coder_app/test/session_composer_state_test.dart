@@ -159,6 +159,124 @@ void main() {
     tags: const <String>['feature_test__session_lifecycle__unit'],
   );
 
+  ProviderModelDto model({
+    String connectionId = 'openai',
+    String id = 'gpt-5',
+    CapabilitySupport streaming = CapabilitySupport.supported,
+  }) => ProviderModelDto(
+    connectionId: connectionId,
+    id: id,
+    label: id,
+    source: ProviderModelSource.bundled,
+    capabilities: ModelCapabilitiesDto(
+      streaming: streaming,
+      toolCalling: CapabilitySupport.supported,
+    ),
+  );
+
+  test(
+    'the model chain prefers the agent pin, then the default, then the first',
+    () {
+      // Display-name order: the daemon returns "deepseek" before "openai".
+      final connections = <ProviderConnectionDto>[
+        connection(id: 'deepseek'),
+        connection(),
+      ];
+      final models = <String, List<ProviderModelDto>>{
+        'deepseek': <ProviderModelDto>[
+          model(
+            connectionId: 'deepseek',
+            id: 'deepseek-alpha',
+            streaming: CapabilitySupport.unsupported,
+          ),
+          model(connectionId: 'deepseek', id: 'deepseek-chat'),
+        ],
+        'openai': <ProviderModelDto>[model(), model(id: 'gpt-5-mini')],
+      };
+      SessionModelSelectionDto? resolve({
+        AgentDefinitionDto? agent,
+        SessionModelSelectionDto? defaultModel,
+        List<ProviderConnectionDto>? only,
+      }) => effectiveModelFor(
+        definition: agent ?? definition(),
+        connections: only ?? connections,
+        models: models,
+        defaultModel: defaultModel,
+      );
+
+      // Step 2 wins over everything below it.
+      expect(
+        resolve(
+          agent: definition(
+            model: const AgentModelSelectionDto(
+              source: AgentModelSource.fixed,
+              providerConnectionId: 'openai',
+              modelId: 'gpt-5-mini',
+            ),
+          ),
+          defaultModel: const SessionModelSelectionDto(
+            providerConnectionId: 'deepseek',
+            modelId: 'deepseek-chat',
+          ),
+        ),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5-mini',
+        ),
+      );
+
+      // Step 3 wins once the agent has no usable pin.
+      expect(
+        resolve(
+          defaultModel: const SessionModelSelectionDto(
+            providerConnectionId: 'openai',
+            modelId: 'gpt-5-mini',
+          ),
+        ),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'openai',
+          modelId: 'gpt-5-mini',
+        ),
+      );
+
+      // Step 4 skips the unusable default and the unusable first model.
+      expect(
+        resolve(
+          defaultModel: const SessionModelSelectionDto(
+            providerConnectionId: 'retired',
+            modelId: 'gpt-5-mini',
+          ),
+        ),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'deepseek',
+          modelId: 'deepseek-chat',
+        ),
+      );
+      expect(
+        resolve(),
+        const SessionModelSelectionDto(
+          providerConnectionId: 'deepseek',
+          modelId: 'deepseek-chat',
+        ),
+      );
+
+      // A disconnected provider drops out of the chain entirely.
+      expect(
+        resolve(
+          only: <ProviderConnectionDto>[
+            connection(
+              id: 'deepseek',
+              status: ProviderConnectionStatus.disconnected,
+            ),
+          ],
+        ),
+        isNull,
+      );
+      expect(resolve(only: const <ProviderConnectionDto>[]), isNull);
+    },
+    tags: const <String>['feature_test__provider_default_model__unit'],
+  );
+
   test(
     'composer draft drops the model when the agent changes',
     () {

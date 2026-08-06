@@ -7,6 +7,7 @@ import 'package:coder_app/src/composer_suggestions.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/host_registry.dart';
+import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1579,6 +1580,7 @@ final class ProviderSettingsState {
   const ProviderSettingsState({
     required this.catalog,
     required this.connections,
+    this.defaultModel,
     this.models = const <String, List<ProviderModelDto>>{},
     this.authAttempts = const <String, ProviderAuthAttemptDto>{},
   });
@@ -1588,6 +1590,9 @@ final class ProviderSettingsState {
 
   /// User-owned provider connections.
   final List<ProviderConnectionDto> connections;
+
+  /// Daemon-global default model, or null when the daemon picks the first one.
+  final SessionModelSelectionDto? defaultModel;
 
   /// The models public API member.
   final Map<String, List<ProviderModelDto>> models;
@@ -1599,11 +1604,14 @@ final class ProviderSettingsState {
   ProviderSettingsState copyWith({
     ProviderCatalogDto? catalog,
     List<ProviderConnectionDto>? connections,
+    SessionModelSelectionDto? defaultModel,
     Map<String, List<ProviderModelDto>>? models,
     Map<String, ProviderAuthAttemptDto>? authAttempts,
+    bool clearDefaultModel = false,
   }) => ProviderSettingsState(
     catalog: catalog ?? this.catalog,
     connections: connections ?? this.connections,
+    defaultModel: clearDefaultModel ? null : defaultModel ?? this.defaultModel,
     models: models ?? this.models,
     authAttempts: authAttempts ?? this.authAttempts,
   );
@@ -1623,10 +1631,48 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     final api = runtime!.api!;
     _events = api.events.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
+    final connections = await api.listProviderConnections();
+    final defaultModel = await api.getDefaultModel();
     return ProviderSettingsState(
       catalog: await api.listProviderCatalog(),
-      connections: await api.listProviderConnections(),
+      connections: connections,
+      defaultModel: defaultModel,
+      models: await _resolutionModels(api, connections, defaultModel),
     );
+  }
+
+  /// Loads the model lists the composer needs to resolve a model eagerly.
+  ///
+  /// Only the stored default's connection and the first usable connection can
+  /// win the fallback chain, so this stays two requests regardless of how many
+  /// providers are connected. Awaiting it inside [build] means the composer
+  /// never observes a frame where connections are known but models are not.
+  Future<Map<String, List<ProviderModelDto>>> _resolutionModels(
+    CoderApi api,
+    List<ProviderConnectionDto> connections,
+    SessionModelSelectionDto? defaultModel,
+  ) async {
+    final usable = usableConnections(connections);
+    final wanted = <String>{
+      if (defaultModel != null &&
+          usable.any(
+            (connection) => connection.id == defaultModel.providerConnectionId,
+          ))
+        defaultModel.providerConnectionId,
+      if (usable.isNotEmpty) usable.first.id,
+    };
+    final loaded = <String, List<ProviderModelDto>>{};
+    for (final connectionId in wanted) {
+      loaded[connectionId] = await api.listProviderModels(connectionId);
+    }
+    return loaded;
+  }
+
+  /// Replaces or clears the daemon-global default model.
+  Future<void> setDefaultModel(SessionModelSelectionDto? model) async {
+    final api = await _requireConnection();
+    await api.setDefaultModel(model);
+    await _reload(api);
   }
 
   /// The loadModels public API member.
@@ -1764,9 +1810,18 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     final current = state.asData?.value;
     final ProviderCatalogDto catalog;
     final List<ProviderConnectionDto> connections;
+    final SessionModelSelectionDto? defaultModel;
+    final Map<String, List<ProviderModelDto>> resolutionModels;
     try {
       catalog = await api.listProviderCatalog();
       connections = await api.listProviderConnections();
+      defaultModel = await api.getDefaultModel();
+      // Connecting or disconnecting changes which connection resolves first.
+      resolutionModels = await _resolutionModels(
+        api,
+        connections,
+        defaultModel,
+      );
     } on CoderClientException catch (error, stackTrace) {
       // A refresh that loses its daemon must not escape as an unhandled error.
       if (ref.mounted) {
@@ -1779,7 +1834,11 @@ class ProviderSettingsController extends _$ProviderSettingsController {
       ProviderSettingsState(
         catalog: catalog,
         connections: connections,
-        models: current?.models ?? const <String, List<ProviderModelDto>>{},
+        defaultModel: defaultModel,
+        models: <String, List<ProviderModelDto>>{
+          ...?current?.models,
+          ...resolutionModels,
+        },
         authAttempts:
             current?.authAttempts ?? const <String, ProviderAuthAttemptDto>{},
       ),
