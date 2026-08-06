@@ -540,6 +540,9 @@ final class FakeCoderApi implements CoderApi {
   List<WorktreeHookRunDto> archiveWorktreeHookRuns =
       const <WorktreeHookRunDto>[];
 
+  /// Holds an archive open, so a test can unmount the caller mid-flight.
+  Completer<void>? archiveWorktreeGate;
+
   @override
   Future<ProjectSettingsResultDto> getProjectSettings(
     String workspaceId,
@@ -612,6 +615,7 @@ final class FakeCoderApi implements CoderApi {
     String worktreeId, {
     bool force = false,
   }) async {
+    if (archiveWorktreeGate case final gate?) await gate.future;
     final index = _worktrees.indexWhere((item) => item.id == worktreeId);
     final archived = _worktrees[index].copyWith(archivedAt: _now);
     _worktrees.removeAt(index);
