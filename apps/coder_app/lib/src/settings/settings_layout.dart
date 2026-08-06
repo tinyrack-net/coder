@@ -28,10 +28,10 @@ class SettingsScaffold extends StatelessWidget {
             top: index > 0 ? TRSpacing.twoExtraLarge : 0,
           ),
           child: Align(
-            // Leading aligned rather than centred: the settings sidebar
-            // already weights the window to one side, so centring the column
-            // here would pull it away from the navigation that opened it.
-            alignment: AlignmentDirectional.topStart,
+            // Centred, so a wide window keeps the column balanced rather than
+            // stranding it against one edge with a growing void beside it.
+            // Below the cap the column fills the pane and this is a no-op.
+            alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
                 maxWidth: TRMeasurements.readingWidthMd,
@@ -131,7 +131,11 @@ class SettingsSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               for (final (index, child) in children.indexed) ...<Widget>[
-                if (index > 0) const TRSeparator(),
+                if (index > 0)
+                  // Muted, so a divider inside a card matches the card's own
+                  // border. The default variant is borderStrong, which is the
+                  // weight a control draws at, not a surface.
+                  const TRSeparator(variant: TRSeparatorVariant.muted),
                 child,
               ],
             ],
@@ -324,7 +328,7 @@ class SettingsPaneHeader extends StatelessWidget {
           ],
         ),
       ),
-      const TRSeparator(),
+      const TRSeparator(variant: TRSeparatorVariant.muted),
     ],
   );
 }
