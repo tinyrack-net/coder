@@ -2449,6 +2449,11 @@ final class _AgentE2eProvider implements ModelProvider {
     final hasSkillResult = request.history
         .whereType<ToolResultConversationItem>()
         .any((item) => item.callId == 'skill-call');
+    final skillListing = request.history
+        .whereType<ToolResultConversationItem>()
+        .where((item) => item.callId == 'skill-list-call')
+        .map((item) => item.output)
+        .firstOrNull;
     final hasDisallowedDelegationResult = request.history
         .whereType<ToolResultConversationItem>()
         .any((item) => item.callId == 'disallowed-delegate-call');
@@ -2488,11 +2493,38 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
 
+    if (latestPrompt == 'Use E2E skill' && skillListing == null) {
+      // The prompt names no skill any more, only how many there are and which
+      // tool finds them, so its size no longer tracks the catalog.
+      if (!request.instructions.contains('list_skills') ||
+          request.instructions.contains('Loaded during an end-to-end turn.')) {
+        throw StateError('the skill prompt still carried the catalog');
+      }
+      const listArguments = <String, dynamic>{'cursor': null};
+      yield const ModelFunctionCall(
+        callId: 'skill-list-call',
+        name: 'list_skills',
+        arguments: listArguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'skill-list-call',
+              name: 'list_skills',
+              arguments: listArguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     if (latestPrompt == 'Use E2E skill' && !hasSkillResult) {
-      if (!request.instructions.contains(
-            '- invoke-e2e: Loaded during an end-to-end turn.',
-          ) ||
-          request.instructions.contains('- commit:')) {
+      // The catalog now lives in the listing, so that is where an enabled
+      // skill must appear and a disabled one must not.
+      if (!skillListing!.contains('invoke-e2e') ||
+          skillListing.contains('"commit"')) {
         throw StateError('enabled and disabled skill catalog was incorrect');
       }
       const arguments = <String, dynamic>{
@@ -2526,8 +2558,11 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
     if (latestPrompt == 'Disabled E2E skill') {
-      if (request.instructions.contains('- invoke-e2e:') ||
-          request.instructions.contains('- commit:')) {
+      // The prompt carries no skill text at all now, so this only guards
+      // against a regression that puts the catalog back. That a disabled
+      // skill leaves the catalog is pinned by the daemon vertical slice,
+      // which asserts on the listing the tool actually returns.
+      if (request.instructions.contains('Loaded during an end-to-end turn.')) {
         throw StateError('disabled skill remained in the turn catalog');
       }
       yield const ModelTextDelta('Disabled skill excluded');
