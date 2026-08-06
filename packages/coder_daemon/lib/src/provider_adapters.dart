@@ -13,6 +13,7 @@ final class ProviderRuntimeConfig {
     required this.baseUrl,
     required this.apiFormat,
     required this.strictToolSchema,
+    this.supportsModelDiscovery = true,
   });
 
   /// Connection identifier exposed to the agent runtime.
@@ -26,6 +27,12 @@ final class ProviderRuntimeConfig {
 
   /// OpenAI-compatible API format.
   final ProviderApiFormat apiFormat;
+
+  /// Whether the endpoint exposes an OpenAI-compatible `/models` listing.
+  ///
+  /// The ChatGPT subscription backend serves only the Responses API, so model
+  /// identifiers come from the bundled catalog instead of a discovery request.
+  final bool supportsModelDiscovery;
 
   /// Whether the endpoint supports strict tool schemas.
   final bool strictToolSchema;

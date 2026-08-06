@@ -118,8 +118,11 @@ void main() {
         apiFormat: ProviderApiFormat.chatCompletions,
         strictToolSchema: false,
       );
+      // Endpoints that really do serve `/models` keep discovery enabled, so a
+      // 400 there stays a genuine unavailability signal.
+      expect(config.supportsModelDiscovery, isTrue);
 
-      for (final status in <int>[401, 500]) {
+      for (final status in <int>[400, 401, 500]) {
         final adapter = _Adapter(
           '{}',
           contentType: Headers.jsonContentType,
