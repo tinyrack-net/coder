@@ -208,6 +208,26 @@ void main() {
   );
 
   testWidgets(
+    'running state does not move existing timeline rows',
+    (tester) async {
+      final events = <TimelineEventDto>[
+        event('user.message', <String, dynamic>{'text': 'Keep me still'}),
+      ];
+      await pump(tester, events);
+      await tester.pumpAndSettle();
+      final message = find.text('Keep me still', findRichText: true);
+      final before = tester.getRect(message);
+
+      await pump(tester, events, busy: true);
+      await tester.pump();
+
+      expect(tester.getRect(message), before);
+      expect(find.text('실행 중'), findsWidgets);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
     'assistant links open only browser-safe schemes',
     (tester) async {
       final opener = _RecordingUrlOpener();

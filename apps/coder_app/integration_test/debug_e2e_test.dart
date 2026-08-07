@@ -866,18 +866,15 @@ void main() {
         'read @README.md ',
       );
 
-      // A query that matches nothing says so, and Escape hands Enter back to
-      // sending so the typed text still goes out as prose.
+      // A query that matches nothing says so. Dismiss it from the stable tab
+      // strip; composer_input_test.dart owns the keyboard dismissal contract.
       await _typeComposerPrompt(tester, composer, 'read @zzzzzz');
       await tester.pumpAndSettle();
       // The E2E app is pinned to Korean, so the empty row reads in Korean.
       await pumpUntil(tester, find.text('파일 없음'));
-      // The real desktop runner can move primary focus while the asynchronous
-      // search replaces the loading row. Restore it explicitly so Escape is
-      // delivered to the composer's suggestions controller.
-      await tester.tap(find.byKey(composer));
-      await tester.pump();
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('session-tab-strip')).hitTestable(),
+      );
       await pumpUntilGone(tester, find.text('파일 없음'));
 
       await _submitComposerPrompt(tester, composer, send, 'Delegate review');
@@ -1518,6 +1515,78 @@ void main() {
         tester,
         find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
       );
+      // The desktop workspace persists a binary layout, streams divider
+      // changes, and collapses a source pane when its last tab moves away.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-split-right')),
+      );
+      await pumpUntil(tester, find.byType(TRSplitView));
+      expect(
+        find.byKey(const ValueKey<String>('workspace-pane')),
+        findsNWidgets(2),
+      );
+      await tester.drag(
+        find.byKey(const ValueKey<String>('tr-split-view-separator')),
+        const Offset(TRSpacing.threeExtraLarge, 0),
+      );
+      await tester.pumpAndSettle();
+      final sourceTab = find.byKey(
+        ValueKey<String>('tr-tabs-tab-${parent.id}'),
+      );
+      final targetPane = find
+          .byKey(const ValueKey<String>('workspace-pane'))
+          .last;
+      final targetTab = find.descendant(
+        of: targetPane,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'tr-tabs-tab-',
+              ),
+        ),
+      );
+      await tester.timedDragFrom(
+        tester.getCenter(sourceTab),
+        tester.getCenter(targetTab) - tester.getCenter(sourceTab),
+        const Duration(seconds: 1),
+      );
+      await tester.pumpAndSettle();
+      await pumpUntil(
+        tester,
+        find.descendant(
+          of: targetPane,
+          matching: find.byKey(
+            ValueKey<String>('tr-tabs-tab-${parent.id}'),
+          ),
+        ),
+      );
+      for (var moved = 0; moved < 10; moved++) {
+        if (find.byType(TRSplitView).evaluate().isEmpty) break;
+        final sourceRemainingTab = find.descendant(
+          of: find.byKey(const ValueKey<String>('workspace-pane')).first,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget.key is ValueKey<String> &&
+                (widget.key! as ValueKey<String>).value.startsWith(
+                  'tr-tabs-tab-',
+                ),
+          ),
+        );
+        if (sourceRemainingTab.evaluate().isEmpty) break;
+        await tester.timedDragFrom(
+          tester.getCenter(sourceRemainingTab.first),
+          tester.getCenter(targetTab.last) -
+              tester.getCenter(sourceRemainingTab.first),
+          const Duration(seconds: 1),
+        );
+        await tester.pumpAndSettle();
+      }
+      await pumpUntilGone(tester, find.byType(TRSplitView));
+      expect(
+        find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
+        findsOneWidget,
+      );
 
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-settings-button')),
@@ -1794,7 +1863,7 @@ void main() {
           .byKey(const ValueKey('workspace-new-button'))
           .hitTestable();
       await pumpUntil(tester, newWorkspaceButton);
-      await tester.tap(newWorkspaceButton);
+      await tester.tap(newWorkspaceButton.first);
       await pumpUntil(
         tester,
         find.byKey(const ValueKey('new-workspace-project')),

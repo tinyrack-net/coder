@@ -138,6 +138,51 @@ final class ChatPlanProposal extends ChatItem {
   final String explanation;
 }
 
+/// Lifecycle shared by actionable conversation rows.
+enum ChatInteractionStatus {
+  /// The user can still act on the request.
+  pending,
+
+  /// The request has been resolved and remains in history.
+  resolved,
+}
+
+/// One tool approval, retained in the timeline after it is resolved.
+final class ChatApprovalInteraction extends ChatItem {
+  /// Creates an approval timeline row.
+  const ChatApprovalInteraction({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+    required this.approval,
+    required this.status,
+    this.approved,
+  });
+
+  /// The request and preview supplied by the daemon.
+  final ApprovalRequestDto approval;
+
+  /// Whether the row is still actionable.
+  final ChatInteractionStatus status;
+
+  /// The recorded decision, null while pending.
+  final bool? approved;
+}
+
+/// One pending question occupying its eventual answer's timeline slot.
+final class ChatQuestionInteraction extends ChatItem {
+  /// Creates a question timeline row.
+  const ChatQuestionInteraction({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+    required this.request,
+  });
+
+  /// The questions awaiting answers.
+  final UserQuestionRequestDto request;
+}
+
 /// Lifecycle of one tool call.
 enum ChatToolStatus {
   /// The tool was requested and has not reported a result yet.
@@ -362,9 +407,15 @@ final class ChatUnknownEvent extends ChatItem {
 /// Projects a persisted timeline into ordered, renderable chat items.
 ///
 /// Assistant deltas of one turn merge across interleaved tool calls, tool
-/// requests merge with their result, and approval bookkeeping is dropped
-/// because pending approvals are rendered from conversation state instead.
-List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
+/// requests merge with their results, and live approval or question snapshots
+/// merge with persisted events into one stable interaction row.
+List<ChatItem> projectChatTimeline(
+  List<TimelineEventDto> events, {
+  Map<String, ApprovalRequestDto> approvals =
+      const <String, ApprovalRequestDto>{},
+  Map<String, UserQuestionRequestDto> questions =
+      const <String, UserQuestionRequestDto>{},
+}) {
   final ordered = List<TimelineEventDto>.of(events)
     ..sort((left, right) => left.sequence.compareTo(right.sequence));
   final builders = <_ChatItemBuilder>[];
@@ -373,6 +424,7 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
   final openPlans = <String, _PlanBuilder>{};
   final openSleeps = <String, _SleepBuilder>{};
   final openQuestions = <String, _QuestionBuilder>{};
+  final openApprovals = <String, _ApprovalBuilder>{};
   final terminatedTurns = <String?>{};
 
   void closeAssistant(String? turnId) => openAssistant.remove(turnId);
@@ -650,9 +702,35 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           ),
         );
       case 'approval.requested':
+        final raw = event.data['approval'];
+        if (raw is Map<dynamic, dynamic>) {
+          final approval = ApprovalRequestDto.fromJson(
+            Map<String, dynamic>.from(raw),
+          );
+          final builder = _ApprovalBuilder(
+            approval: approval,
+            turnId: turnId,
+            createdAt: event.createdAt,
+          );
+          openApprovals[approval.id] = builder;
+          builders.add(builder);
+        }
       case 'approval.resolved':
-        // Pending approvals are rendered from conversation state, and a denied
-        // approval already arrives as tool.denied.
+        final approvalId = _string(event.data['approvalId']);
+        final status = _string(event.data['status']);
+        if (approvalId != null) {
+          openApprovals[approvalId]?.decision = status == 'approved';
+        }
+      case 'userQuestion.requested':
+        final raw = event.data['request'];
+        if (raw is Map<dynamic, dynamic>) {
+          final request = UserQuestionRequestDto.fromJson(
+            Map<String, dynamic>.from(raw),
+          );
+          openQuestions['${request.turnId}/${request.toolCallId}']?.request =
+              request;
+        }
+      case 'userQuestion.answered':
         continue;
       default:
         closeAssistant(turnId);
@@ -668,6 +746,38 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           ),
         );
     }
+  }
+
+  // Broadcast notifications can precede their persisted timeline event. Fold
+  // those snapshots into the same builders so the later event does not create
+  // a second row or a new key.
+  for (final approval in approvals.values) {
+    final existing = openApprovals[approval.id];
+    if (existing != null) continue;
+    final builder = _ApprovalBuilder(
+      approval: approval,
+      turnId: approval.turnId,
+      createdAt: approval.createdAt,
+    );
+    openApprovals[approval.id] = builder;
+    builders.add(builder);
+  }
+  for (final request in questions.values) {
+    final existing = openQuestions['${request.turnId}/${request.toolCallId}'];
+    if (existing != null) {
+      existing.request = request;
+      continue;
+    }
+    builders.add(
+      _StaticBuilder(
+        ChatQuestionInteraction(
+          key: 'question-${request.toolCallId}',
+          turnId: request.turnId,
+          createdAt: request.createdAt,
+          request: request,
+        ),
+      ),
+    );
   }
 
   // Only the trailing assistant block of an unfinished turn is still growing.
@@ -753,6 +863,40 @@ final class _StaticBuilder extends _ChatItemBuilder {
 
   @override
   List<ChatItem> build({required bool isStreaming}) => <ChatItem>[item];
+}
+
+final class _ApprovalBuilder extends _ChatItemBuilder {
+  _ApprovalBuilder({
+    required this.approval,
+    required this.turnId,
+    required this.createdAt,
+  });
+
+  final ApprovalRequestDto approval;
+
+  @override
+  final String? turnId;
+
+  final DateTime createdAt;
+  bool? _decision;
+
+  bool? get decision => _decision;
+
+  set decision(bool value) => _decision = value;
+
+  @override
+  List<ChatItem> build({required bool isStreaming}) => <ChatItem>[
+    ChatApprovalInteraction(
+      key: 'approval-${approval.id}',
+      turnId: turnId,
+      createdAt: createdAt,
+      approval: approval,
+      status: decision == null
+          ? ChatInteractionStatus.pending
+          : ChatInteractionStatus.resolved,
+      approved: decision,
+    ),
+  ];
 }
 
 final class _AssistantBuilder extends _ChatItemBuilder {
@@ -875,6 +1019,7 @@ final class _QuestionBuilder extends _ChatItemBuilder {
   final DateTime createdAt;
   final String callId;
   final Object? questions;
+  UserQuestionRequestDto? request;
 
   ChatToolStatus _status = ChatToolStatus.running;
   String? _output;
@@ -925,8 +1070,19 @@ final class _QuestionBuilder extends _ChatItemBuilder {
 
   @override
   List<ChatItem> build({required bool isStreaming}) {
-    // Still pending: the question card owns the screen.
-    if (_status == ChatToolStatus.running) return const <ChatItem>[];
+    if (_status == ChatToolStatus.running) {
+      final pending = request;
+      return pending == null
+          ? const <ChatItem>[]
+          : <ChatItem>[
+              ChatQuestionInteraction(
+                key: key,
+                turnId: turnId,
+                createdAt: createdAt,
+                request: pending,
+              ),
+            ];
+    }
     final entries = _entries();
     if (_isError || _status != ChatToolStatus.succeeded || entries.isEmpty) {
       // A refused or cancelled question stays a tool row so it is visible.

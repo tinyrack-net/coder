@@ -62,8 +62,9 @@ void main() {
       fileName: 'composer_chip_menu_without_tooltip',
       constraints: const BoxConstraints.tightFor(width: 720, height: 480),
       whilePerforming: (tester) async {
-        final chip = find.byKey(const ValueKey('golden-project-chip'));
-        await tester.tap(chip);
+        await tester.tap(find.byKey(const ValueKey('golden-project-chip')));
+        await tester.pumpAndSettle();
+        FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();
         FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();

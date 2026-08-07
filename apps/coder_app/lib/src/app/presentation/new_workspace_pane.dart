@@ -307,12 +307,18 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
 
   SessionComposerDraft? _draft(String? hostId) => hostId == null
       ? null
-      : ref.watch(sessionComposerDraftControllerProvider(hostId, null));
+      : ref.watch(
+          sessionComposerDraftControllerProvider(hostId, null, 'new-workspace'),
+        );
 
   SessionComposerDraftController? _notifier(String? hostId) => hostId == null
       ? null
       : ref.read(
-          sessionComposerDraftControllerProvider(hostId, null).notifier,
+          sessionComposerDraftControllerProvider(
+            hostId,
+            null,
+            'new-workspace',
+          ).notifier,
         );
 
   String? _hint(

@@ -65,7 +65,7 @@ void main() {
         workspaceId: workspace.id,
         worktreeId: worktree.id,
       ).location,
-      find.text('Route session'),
+      find.text('새 탭'),
     ),
     tags: const <String>['route_test__worktree_route__widget'],
   );

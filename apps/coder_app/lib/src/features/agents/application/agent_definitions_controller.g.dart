@@ -59,7 +59,7 @@ final class AgentDefinitionsControllerProvider
 }
 
 String _$agentDefinitionsControllerHash() =>
-    r'0489db348d63a8f88cb49fb33b2fcfa12d6dc72f';
+    r'70becfdf007279d49a7583f833b5039f9a225b45';
 
 /// Loads and edits one daemon's Markdown agent files.
 
