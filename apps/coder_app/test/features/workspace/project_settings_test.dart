@@ -293,7 +293,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('/projects/workspace/coder.json'), findsOneWidget);
 
-    await tester.tap(findAccessibleAction('Project 목록'));
+    expect(findAccessibleAction('Project 목록'), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey<String>('settings-back-button')),
+    );
     await tester.pumpAndSettle();
     expect(find.text('/projects/workspace/coder.json'), findsNothing);
   });

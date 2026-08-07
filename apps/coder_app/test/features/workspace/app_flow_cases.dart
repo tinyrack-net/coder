@@ -432,9 +432,42 @@ void _registerWorkspaceAppFlows() {
 
     expect(find.byKey(const ValueKey('workspace-new-button')), findsNothing);
     expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
-    await tester.tap(find.byIcon(CoderIcons.back));
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('session-tab-strip')),
+        matching: find.byIcon(CoderIcons.back),
+      ),
+      findsNothing,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey<String>('workspace-back-button')),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('workspace-new-button')), findsOne);
+  });
+
+  testWidgets('mobile new-workspace composer backs from the page header', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 780));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final router = await _pumpRoute(
+      tester,
+      FakeCoderApi(),
+      const WorkspaceHomeRoute(compose: true).location,
+    );
+    addTearDown(router.dispose);
+
+    expect(find.text('New workspace'), findsOneWidget);
+    final back = find.byKey(
+      const ValueKey<String>('workspace-back-button'),
+    );
+    expect(back, findsOneWidget);
+    await tester.tap(back);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('workspace-new-button')), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, '/');
   });
 
   testWidgets('workspace shell is visible before any daemon exists', (

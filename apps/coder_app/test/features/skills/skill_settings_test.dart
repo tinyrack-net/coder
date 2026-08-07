@@ -267,9 +267,11 @@ void main() {
       expect(findAccessibleAction('스킬 목록'), findsNothing);
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
-      expect(findAccessibleAction('스킬 목록'), findsOneWidget);
+      expect(findAccessibleAction('스킬 목록'), findsNothing);
 
-      await tester.tap(findAccessibleAction('스킬 목록'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
       await tester.pumpAndSettle();
       expect(findAccessibleAction('스킬 추가'), findsOneWidget);
     },

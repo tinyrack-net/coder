@@ -75,99 +75,135 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     final catalog = ref.watch(workspaceCatalogControllerProvider);
     final collapsed = registry.value?.settings.sidebarCollapsed ?? false;
     _restoreSelection(registry.value, catalog.value);
-    return CoderPageShell(
-      appBar: CoderPageHeader(
-        // The toggle keeps one position in both states: the very top left.
-        leading:
-            MediaQuery.sizeOf(context).width <
-                CoderLayoutMetrics.compactBreakpoint
-            ? null
-            : TRIconButton(
-                appearance: TRAppearance.ghost,
-                key: const ValueKey('workspace-sidebar-toggle'),
-                label: collapsed
-                    ? AppLocalizations.of(context).workspaceSidebarExpand
-                    : AppLocalizations.of(context).workspaceSidebarCollapse,
-                onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
-                icon: Icon(collapsed ? CoderIcons.menu : CoderIcons.menuOpen),
+    return LayoutBuilder(
+      builder: (context, pageConstraints) {
+        final compact =
+            pageConstraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+        final showsCompactDetail =
+            compact && (widget.selection != null || widget.compose);
+        return PopScope<Object?>(
+          canPop: !showsCompactDetail,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && showsCompactDetail) {
+              const WorkspaceHomeRoute().replace(context);
+            }
+          },
+          child: CoderPageShell(
+            appBar: CoderPageHeader(
+              // Compact Back and the desktop toggle share the one stable
+              // navigation position at the very top left.
+              leading: showsCompactDetail
+                  ? TRIconButton(
+                      key: const ValueKey<String>('workspace-back-button'),
+                      appearance: TRAppearance.ghost,
+                      label: MaterialLocalizations.of(
+                        context,
+                      ).backButtonTooltip,
+                      onPressed: () =>
+                          const WorkspaceHomeRoute().replace(context),
+                      icon: const Icon(CoderIcons.back),
+                    )
+                  : compact
+                  ? null
+                  : TRIconButton(
+                      appearance: TRAppearance.ghost,
+                      key: const ValueKey('workspace-sidebar-toggle'),
+                      label: collapsed
+                          ? AppLocalizations.of(context).workspaceSidebarExpand
+                          : AppLocalizations.of(
+                              context,
+                            ).workspaceSidebarCollapse,
+                      onPressed: () =>
+                          unawaited(_setSidebarCollapsed(!collapsed)),
+                      icon: Icon(
+                        collapsed ? CoderIcons.menu : CoderIcons.menuOpen,
+                      ),
+                    ),
+              title: TRText.inherit(
+                AppLocalizations.of(context).workspacesTitle,
               ),
-        title: TRText.inherit(AppLocalizations.of(context).workspacesTitle),
-        actions: <Widget>[
-          TRIconButton(
-            key: const ValueKey('workspace-settings-button'),
-            appearance: TRAppearance.ghost,
-            label: AppLocalizations.of(context).settingsTitle,
-            onPressed: () {
-              final hostId = widget.selection?.hostId;
-              unawaited(
-                hostId == null
-                    ? const DaemonSettingsRoute().push<void>(context)
-                    : ProviderSettingsRoute(hostId: hostId).push<void>(context),
-              );
-            },
-            icon: const Icon(CoderIcons.settings),
-          ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final sidebar = WorkspaceSidebar(
-            registry: registry.value,
-            catalog: catalog,
-            homeSessions: _homeSessions(catalog.value),
-            selected: widget.selection,
-            onNewWorkspace: () =>
-                const WorkspaceHomeRoute(compose: true).replace(context),
-            onSelect: (selection) => _goWorktree(context, selection),
-            onSelectSession: (selection, sessionId) =>
-                _goSession(context, selection, sessionId),
-            onOpenDaemonSettings: () =>
-                unawaited(const DaemonSettingsRoute().push<void>(context)),
-            onArchivedSelection: () =>
-                const WorkspaceHomeRoute().replace(context),
-          );
-          final detail = widget.selection == null
-              ? NewWorkspacePane(
-                  showBack:
-                      constraints.maxWidth <
-                      CoderLayoutMetrics.compactBreakpoint,
-                  onBack: () => const WorkspaceHomeRoute().replace(context),
-                  onStarted: (selection, session) =>
-                      _goSession(context, selection, session.id),
-                )
-              : _SessionArea(
-                  // Selecting a checkout replaces the location rather than
-                  // pushing, so this page is not rebuilt from scratch. Key the
-                  // session area on the checkout so its tabs, conversation,
-                  // and terminals still start clean on a different one.
-                  key: ValueKey<WorkspaceSelection>(widget.selection!),
-                  selection: widget.selection!,
-                  requestedAgentId: widget.requestedAgentId,
-                  requestedTerminalId: widget.requestedTerminalId,
-                  mobile:
-                      constraints.maxWidth <
-                      CoderLayoutMetrics.compactBreakpoint,
+              actions: <Widget>[
+                TRIconButton(
+                  key: const ValueKey('workspace-settings-button'),
+                  appearance: TRAppearance.ghost,
+                  label: AppLocalizations.of(context).settingsTitle,
+                  onPressed: () {
+                    if (compact) {
+                      unawaited(const SettingsHomeRoute().push<void>(context));
+                      return;
+                    }
+                    final hostId = widget.selection?.hostId;
+                    unawaited(
+                      hostId == null
+                          ? const DaemonSettingsRoute().push<void>(context)
+                          : ProviderSettingsRoute(
+                              hostId: hostId,
+                            ).push<void>(context),
+                    );
+                  },
+                  icon: const Icon(CoderIcons.settings),
+                ),
+              ],
+            ),
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                final sidebar = WorkspaceSidebar(
+                  registry: registry.value,
+                  catalog: catalog,
+                  homeSessions: _homeSessions(catalog.value),
+                  selected: widget.selection,
+                  onNewWorkspace: () =>
+                      const WorkspaceHomeRoute(compose: true).replace(context),
+                  onSelect: (selection) => _goWorktree(context, selection),
+                  onSelectSession: (selection, sessionId) =>
+                      _goSession(context, selection, sessionId),
+                  onOpenDaemonSettings: () => unawaited(
+                    const DaemonSettingsRoute().push<void>(context),
+                  ),
+                  onArchivedSelection: () =>
+                      const WorkspaceHomeRoute().replace(context),
                 );
-          if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
-            return widget.selection == null && !widget.compose
-                ? sidebar
-                : detail;
-          }
-          return Row(
-            children: <Widget>[
-              // The sidebar owns its width so collapsing animates instead of
-              // dropping the pane out of the row.
-              TRAppShellSidebar(
-                key: const ValueKey<String>('workspace-sidebar-surface'),
-                collapsed: collapsed,
-                scroll: false,
-                child: sidebar,
-              ),
-              Expanded(child: detail),
-            ],
-          );
-        },
-      ),
+                final detail = widget.selection == null
+                    ? NewWorkspacePane(
+                        onStarted: (selection, session) =>
+                            _goSession(context, selection, session.id),
+                      )
+                    : _SessionArea(
+                        // Replacing a checkout location preserves this page.
+                        // Key its session area so tabs, conversations, and
+                        // terminals start clean on a different checkout.
+                        key: ValueKey<WorkspaceSelection>(widget.selection!),
+                        selection: widget.selection!,
+                        requestedAgentId: widget.requestedAgentId,
+                        requestedTerminalId: widget.requestedTerminalId,
+                        mobile:
+                            constraints.maxWidth <
+                            CoderLayoutMetrics.compactBreakpoint,
+                      );
+                if (constraints.maxWidth <
+                    CoderLayoutMetrics.compactBreakpoint) {
+                  return widget.selection == null && !widget.compose
+                      ? sidebar
+                      : detail;
+                }
+                return Row(
+                  children: <Widget>[
+                    // Owning its width lets the sidebar animate its collapse
+                    // instead of dropping out of the row.
+                    TRAppShellSidebar(
+                      key: const ValueKey<String>('workspace-sidebar-surface'),
+                      collapsed: collapsed,
+                      scroll: false,
+                      child: sidebar,
+                    ),
+                    Expanded(child: detail),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -427,13 +463,9 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
             semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
             value: _controlValue(entry),
             onValueChange: (_) => unawaited(_showTabSheet()),
-            leading: TRIconButton(
-              appearance: TRAppearance.ghost,
-              label: MaterialLocalizations.of(context).backButtonTooltip,
-              onPressed: () => const WorkspaceHomeRoute().replace(context),
-              icon: const Icon(CoderIcons.back),
-            ),
-            tabs: <TRTabsTab>[_tab(context, workspace, entry, closable: false)],
+            tabs: <TRTabsTab>[
+              _tab(context, workspace, entry, closable: false),
+            ],
             actions: <Widget>[
               _newTabMenu(context, workspace.focusedPaneId, true),
             ],
