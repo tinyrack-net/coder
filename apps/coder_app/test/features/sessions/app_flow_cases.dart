@@ -754,7 +754,9 @@ void _registerSessionsAppFlows() {
         model: AgentModelSelectionDto(
           source: AgentModelSource.session,
         ),
-        reasoningEffort: 'medium',
+        modelControls: <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+        },
         permissionMode: PermissionMode.readOnly,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],
@@ -911,7 +913,11 @@ void _registerSessionsAppFlows() {
               providerConnectionId: 'openai',
               modelId: 'gpt-5.6-sol',
             ),
-            reasoningEffort: 'medium',
+            modelControls: <String, ModelControlValueDto>{
+              'reasoning_effort': ModelControlValueDto.stringValue(
+                value: 'medium',
+              ),
+            },
             permissionMode: PermissionMode.ask,
             toolIds: <String>['read_file'],
             callableAgentIds: <String>[],
@@ -1036,10 +1042,24 @@ void _registerSessionsAppFlows() {
               capabilities: ModelCapabilitiesDto(
                 streaming: CapabilitySupport.supported,
                 toolCalling: CapabilitySupport.supported,
-                reasoningEffort: CapabilitySupport.supported,
-                serviceTier: CapabilitySupport.supported,
-                supportedReasoningEfforts: <String>['low', 'high'],
-                supportedServiceTiers: <String>['default', 'priority'],
+                controls: <ModelControlDescriptorDto>[
+                  ModelControlDescriptorDto(
+                    id: 'reasoning_effort',
+                    label: 'Reasoning effort',
+                    kind: ModelControlKind.choice,
+                    presentation: ModelControlPresentation.menuChip,
+                    choices: <ModelControlChoiceDto>[
+                      ModelControlChoiceDto(id: 'low', label: 'Low'),
+                      ModelControlChoiceDto(id: 'high', label: 'High'),
+                    ],
+                  ),
+                  ModelControlDescriptorDto(
+                    id: 'fast_mode',
+                    label: 'Fast',
+                    kind: ModelControlKind.toggle,
+                    presentation: ModelControlPresentation.selectableChip,
+                  ),
+                ],
               ),
             ),
             // A model the catalog says cannot honour either setting.
@@ -1051,8 +1071,6 @@ void _registerSessionsAppFlows() {
               capabilities: ModelCapabilitiesDto(
                 streaming: CapabilitySupport.supported,
                 toolCalling: CapabilitySupport.supported,
-                reasoningEffort: CapabilitySupport.unsupported,
-                serviceTier: CapabilitySupport.unsupported,
               ),
             ),
           ],
@@ -1082,16 +1100,26 @@ void _registerSessionsAppFlows() {
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('session-composer-effort')), findsOne);
-      expect(find.byKey(const ValueKey('session-composer-fast')), findsOne);
+      expect(
+        find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
+        findsOne,
+      );
+      expect(
+        find.byKey(const ValueKey('session-composer-control-fast_mode')),
+        findsOne,
+      );
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-effort')));
-      await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('session-composer-effort-high')),
+        find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('high'), findsOneWidget);
+      await tester.tap(
+        find.byKey(
+          const ValueKey('session-composer-control-reasoning_effort-high'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('High'), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey('session-composer-permission')),
@@ -1102,7 +1130,9 @@ void _registerSessionsAppFlows() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-fast')));
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-control-fast_mode')),
+      );
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -1113,22 +1143,34 @@ void _registerSessionsAppFlows() {
       await tester.pumpAndSettle();
 
       final created = api.createdSessions.single;
-      expect(created.reasoningEffort, 'high');
+      expect(
+        created.modelControls['reasoning_effort'],
+        const ModelControlValueDto.stringValue(value: 'high'),
+      );
       expect(created.permissionMode, PermissionMode.readOnly);
-      expect(created.serviceTier, 'priority');
+      expect(
+        created.modelControls['fast_mode'],
+        const ModelControlValueDto.boolValue(value: true),
+      );
 
       // Toggling fast mode off restores the provider default tier.
-      await tester.tap(find.byKey(const ValueKey('session-composer-fast')));
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-control-fast_mode')),
+      );
       await tester.pumpAndSettle();
       expect(api.updatedSessionServiceTiers.single.serviceTier, isNull);
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-effort')));
-      await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('session-composer-effort-inherit')),
+        find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
       );
       await tester.pumpAndSettle();
-      expect(api.updatedSessionReasoningEfforts.single.reasoningEffort, isNull);
+      await tester.tap(
+        find.byKey(
+          const ValueKey('session-composer-control-reasoning_effort-default'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(api.updatedSessionReasoningEfforts.last.reasoningEffort, isNull);
 
       await tester.tap(
         find.byKey(const ValueKey('session-composer-permission')),
@@ -1148,10 +1190,13 @@ void _registerSessionsAppFlows() {
       );
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('session-composer-effort')),
+        find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
         findsNothing,
       );
-      expect(find.byKey(const ValueKey('session-composer-fast')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('session-composer-control-fast_mode')),
+        findsNothing,
+      );
       expect(
         find.byKey(const ValueKey('session-composer-permission')),
         findsOne,

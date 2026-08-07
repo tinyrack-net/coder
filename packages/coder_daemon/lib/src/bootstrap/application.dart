@@ -18,7 +18,11 @@ import 'package:coder_daemon/src/features/mcp/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/prompts/infrastructure/commands.dart';
 import 'package:coder_daemon/src/features/prompts/infrastructure/skills.dart';
 import 'package:coder_daemon/src/features/prompts/transport/rpc_bindings.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/anthropic/plugin.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/anthropic/wire.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/credential_store.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/gemini/plugin.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/gemini/wire.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/openai/openai.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_adapters.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth.dart';
@@ -233,11 +237,19 @@ abstract final class DaemonApplication {
       // The whole vendor surface of this daemon: adding a vendor package
       // means adding its plugins and wire protocols to these two lists.
       final providerRegistry = ProviderRegistry(
-        plugins: openAIFamilyPlugins(
-          clock: effectiveClock,
-          openAIOAuth: effectiveOAuthGateway,
-        ),
-        wireProtocols: openAIWireProtocols(),
+        plugins: <ProviderPlugin>[
+          ...openAIFamilyPlugins(
+            clock: effectiveClock,
+            openAIOAuth: effectiveOAuthGateway,
+          ),
+          const AnthropicPlugin(),
+          const GoogleGeminiPlugin(),
+        ],
+        wireProtocols: <ProviderWireProtocol>[
+          ...openAIWireProtocols(),
+          const AnthropicMessagesWire(),
+          const GeminiInteractionsWire(),
+        ],
       );
       final providers = ProviderConnectionService(
         repository: database.providerDao,
@@ -500,6 +512,11 @@ abstract final class DaemonApplication {
         },
       );
       final notificationSubscriptions = <StreamSubscription<Object?>>[
+        providers.catalogUpdates.listen((catalog) {
+          events.add(
+            OutboundNotification(providersCatalogUpdatedNotification, catalog),
+          );
+        }),
         providerAuth.events.listen((attempt) {
           events.add(
             OutboundNotification(providersAuthUpdatedNotification, attempt),
@@ -636,6 +653,7 @@ abstract final class DaemonApplication {
         execSweep: execSweep,
         execSessions: execSessions,
         providerAuth: providerAuth,
+        providers: providers,
         terminals: terminals,
         notificationSubscriptions: notificationSubscriptions,
       );
@@ -665,6 +683,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._execSweep,
     required this._execSessions,
     required this._providerAuth,
+    required this._providers,
     required this._terminals,
     required this._notificationSubscriptions,
   }) : _serverId = serverIdValue;
@@ -684,6 +703,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final Timer _execSweep;
   final ExecSessionService _execSessions;
   final ProviderAuthCoordinator _providerAuth;
+  final ProviderConnectionService _providers;
   final TerminalService _terminals;
   final List<StreamSubscription<Object?>> _notificationSubscriptions;
   bool _stopped = false;
@@ -711,6 +731,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _rpc.close();
     await _terminals.close();
     await _providerAuth.close();
+    await _providers.close();
     await _mcp.close();
     await _agentDefinitions.close();
     await _skills.close();

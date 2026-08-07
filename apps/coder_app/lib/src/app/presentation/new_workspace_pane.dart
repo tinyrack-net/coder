@@ -243,17 +243,18 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         enabled: hostId != null && !_submitting,
         mode: draft?.mode ?? SessionMode.normal,
         onAgentChanged: (id) => _notifier(hostId)?.selectAgent(id),
-        onModelChanged: (model) => _notifier(hostId)?.selectModel(model),
+        onModelChanged: (model, controls) {
+          _notifier(hostId)?.selectModel(model);
+          _notifier(hostId)?.selectModelControls(controls);
+        },
         onModeChanged: (mode) => _notifier(hostId)?.selectMode(mode),
-        reasoningEffort: draft?.reasoningEffort,
-        onReasoningEffortChanged: (effort) =>
-            _notifier(hostId)?.selectReasoningEffort(effort),
+        modelControls:
+            draft?.modelControls ?? const <String, ModelControlValueDto>{},
+        onModelControlsChanged: (controls) =>
+            _notifier(hostId)?.selectModelControls(controls),
         permissionMode: draft?.permissionMode,
         onPermissionModeChanged: (mode) =>
             _notifier(hostId)?.selectPermissionMode(mode),
-        serviceTier: draft?.serviceTier,
-        onServiceTierChanged: (tier) =>
-            _notifier(hostId)?.selectServiceTier(tier),
       ),
       onModeToggled: hostId == null ? null : toggleMode,
       attachmentInput: ref.read(attachmentInputProvider),

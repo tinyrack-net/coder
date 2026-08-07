@@ -126,6 +126,12 @@ abstract interface class ProviderWireProtocol {
   /// Human-readable name shown when choosing a protocol.
   String get label;
 
+  /// Stable model-control IDs this wire knows how to map safely.
+  Set<String> get supportedControlIds;
+
+  /// Complete control templates custom models may opt into.
+  List<AgentModelControlDescriptor> get controlDescriptors;
+
   /// Builds the executable adapter for one resolved model.
   ModelProvider createProvider(ModelProviderRequest request);
 
@@ -277,6 +283,12 @@ abstract base class ProviderPlugin {
   /// itself may know more, such as inputs its API accepts for every model.
   AgentModelCapabilities refineRemoteCapabilities(
     AgentModelCapabilities capabilities,
+  ) => capabilities;
+
+  /// Narrows model controls for a credential-specific endpoint.
+  AgentModelCapabilities capabilitiesForAuth(
+    AgentModelCapabilities capabilities,
+    AgentProviderAuthKind authKind,
   ) => capabilities;
 }
 

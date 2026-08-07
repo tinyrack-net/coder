@@ -49,8 +49,7 @@ class AgentRunRequest {
     required this.history,
     required this.safetyIdentifier,
     this.attachments = const <ConversationAttachment>[],
-    this.reasoningEffort = 'medium',
-    this.serviceTier,
+    this.modelControls = const <String, AgentModelControlValue>{},
     this.maxToolRounds = 64,
     this.sessionMode = AgentSessionMode.normal,
     this.customSystemPrompt,
@@ -87,11 +86,8 @@ class AgentRunRequest {
   /// The model public API member.
   final String model;
 
-  /// The reasoningEffort public API member.
-  final String reasoningEffort;
-
-  /// Provider service tier for this turn; null uses the provider default.
-  final String? serviceTier;
+  /// Model-specific values already validated by the provider boundary.
+  final Map<String, AgentModelControlValue> modelControls;
 
   /// The history public API member.
   final List<ConversationItem> history;
@@ -298,8 +294,7 @@ class AgentRunner {
           var recovered = false;
           final modelRequest = ModelRequest(
             model: request.model,
-            reasoningEffort: request.reasoningEffort,
-            serviceTier: request.serviceTier,
+            modelControls: request.modelControls,
             instructions: _instructions(request),
             history: List<ConversationItem>.unmodifiable(input),
             safetyIdentifier: request.safetyIdentifier,
@@ -539,8 +534,7 @@ class AgentRunner {
       history: List<ConversationItem>.unmodifiable(input),
       target: CompactionTarget(
         model: request.model,
-        reasoningEffort: request.reasoningEffort,
-        serviceTier: request.serviceTier,
+        modelControls: request.modelControls,
         safetyIdentifier: request.safetyIdentifier,
       ),
       cancellation: cancellation,

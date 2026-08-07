@@ -120,7 +120,11 @@ final class _AgentBackend implements AgentCliBackend {
     model: const AgentModelSelectionDto(
       source: AgentModelSource.session,
     ),
-    reasoningEffort: 'medium',
+    modelControls: <String, ModelControlValueDto>{
+      'reasoning_effort': const ModelControlValueDto.stringValue(
+        value: 'medium',
+      ),
+    },
     permissionMode: PermissionMode.ask,
     toolIds: const <String>[],
     callableAgentIds: const <String>[],

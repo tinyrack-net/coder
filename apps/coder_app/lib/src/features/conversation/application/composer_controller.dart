@@ -67,9 +67,8 @@ final class SessionComposerDraft {
     this.agentDefinitionId,
     this.model,
     this.mode = SessionMode.normal,
-    this.reasoningEffort,
+    this.modelControls = const <String, ModelControlValueDto>{},
     this.permissionMode,
-    this.serviceTier,
   });
 
   /// Explicitly chosen agent definition; null falls back to the first usable.
@@ -81,14 +80,11 @@ final class SessionComposerDraft {
   /// Collaboration mode the next session starts in.
   final SessionMode mode;
 
-  /// Explicitly chosen reasoning effort; null inherits the agent definition.
-  final String? reasoningEffort;
+  /// Explicit values for the selected provider model.
+  final Map<String, ModelControlValueDto> modelControls;
 
   /// Explicitly chosen permission mode; null inherits the agent definition.
   final PermissionMode? permissionMode;
-
-  /// Explicitly chosen provider service tier; null uses the provider default.
-  final String? serviceTier;
 
   /// Returns a copy with the given fields replaced.
   ///
@@ -98,22 +94,18 @@ final class SessionComposerDraft {
     SessionMode? mode,
     ({String? value})? agentDefinitionId,
     ({SessionModelSelectionDto? value})? model,
-    ({String? value})? reasoningEffort,
+    Map<String, ModelControlValueDto>? modelControls,
     ({PermissionMode? value})? permissionMode,
-    ({String? value})? serviceTier,
   }) => SessionComposerDraft(
     agentDefinitionId: agentDefinitionId == null
         ? this.agentDefinitionId
         : agentDefinitionId.value,
     model: model == null ? this.model : model.value,
     mode: mode ?? this.mode,
-    reasoningEffort: reasoningEffort == null
-        ? this.reasoningEffort
-        : reasoningEffort.value,
+    modelControls: modelControls ?? this.modelControls,
     permissionMode: permissionMode == null
         ? this.permissionMode
         : permissionMode.value,
-    serviceTier: serviceTier == null ? this.serviceTier : serviceTier.value,
   );
 }
 
@@ -137,23 +129,17 @@ class SessionComposerDraftController extends _$SessionComposerDraftController {
   /// Chooses the provider and model override, or clears it when null.
   void selectModel(SessionModelSelectionDto? model) => state = state.copyWith(
     model: (value: model),
-    // A different model may not support the previous tier or effort.
-    reasoningEffort: const (value: null),
-    serviceTier: const (value: null),
+    modelControls: const <String, ModelControlValueDto>{},
   );
 
   /// Chooses the collaboration mode the next session starts in.
   void selectMode(SessionMode mode) => state = state.copyWith(mode: mode);
 
-  /// Chooses the reasoning effort override, or clears it when null.
-  void selectReasoningEffort(String? reasoningEffort) =>
-      state = state.copyWith(reasoningEffort: (value: reasoningEffort));
+  /// Replaces all values for the currently selected provider model.
+  void selectModelControls(Map<String, ModelControlValueDto> controls) =>
+      state = state.copyWith(modelControls: controls);
 
   /// Chooses the permission mode override, or clears it when null.
   void selectPermissionMode(PermissionMode? permissionMode) =>
       state = state.copyWith(permissionMode: (value: permissionMode));
-
-  /// Chooses the provider service tier, or clears it when null.
-  void selectServiceTier(String? serviceTier) =>
-      state = state.copyWith(serviceTier: (value: serviceTier));
 }

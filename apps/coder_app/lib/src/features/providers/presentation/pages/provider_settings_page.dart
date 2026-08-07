@@ -95,6 +95,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 onDeleteCustom: _deleteCustom,
               ),
               _ProviderCatalog(
+                catalog: state.catalog,
                 definitions: state.catalog.definitions
                     .where(
                       (definition) => !activeConnections.any(
@@ -288,7 +289,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         .read(_provider.notifier)
         .updateCustom(
           connection.id,
-          draft.config.copyWith(manualModelIds: manualModels),
+          draft.config.copyWith(
+            models: <ManualProviderModelDto>[
+              for (final id in manualModels)
+                ManualProviderModelDto(id: id, label: id),
+            ],
+          ),
         );
   }
 
@@ -542,6 +548,7 @@ class _ProviderConnectionRow extends StatelessWidget {
 
 class _ProviderCatalog extends StatelessWidget {
   const _ProviderCatalog({
+    required this.catalog,
     required this.definitions,
     required this.onAdd,
     required this.onAddCustom,
@@ -549,6 +556,7 @@ class _ProviderCatalog extends StatelessWidget {
     required this.refreshError,
   });
 
+  final ProviderCatalogDto catalog;
   final List<ProviderDefinitionDto> definitions;
   final ValueChanged<ProviderDefinitionDto> onAdd;
   final VoidCallback onAddCustom;
@@ -558,6 +566,7 @@ class _ProviderCatalog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final catalogError = catalog.refreshError ?? refreshError?.toString();
     return SettingsSection(
       key: const ValueKey('provider-settings-add'),
       title: l10n.providerSettingsAdd,
@@ -574,16 +583,32 @@ class _ProviderCatalog extends StatelessWidget {
           ],
         ),
       ),
-      banner: refreshError == null
+      banner: catalogError == null
           ? null
           : TRAlert(
               key: const ValueKey<String>('provider-catalog-refresh-error'),
               title: TRText.inherit(l10n.providerSettingsRefreshFailed),
-              description: TRText.inherit('$refreshError'),
+              description: TRText.inherit(catalogError),
               icon: const Icon(CoderIcons.error),
               variant: TRStatusVariant.danger,
             ),
       children: <Widget>[
+        SettingsRow(
+          key: const ValueKey('provider-catalog-status'),
+          title: TRText.inherit(l10n.providerSettingsCatalogStatus),
+          description: TRText.inherit(
+            switch (catalog.freshness) {
+              ProviderCatalogFreshness.bundled =>
+                l10n.providerSettingsCatalogBundled,
+              ProviderCatalogFreshness.cached =>
+                l10n.providerSettingsCatalogCached,
+              ProviderCatalogFreshness.fresh =>
+                l10n.providerSettingsCatalogFresh,
+              ProviderCatalogFreshness.stale =>
+                l10n.providerSettingsCatalogStale,
+            },
+          ),
+        ),
         if (definitions.isEmpty)
           SettingsRow(title: TRText.inherit(l10n.providerSettingsNoPresets)),
         for (final definition in definitions)
@@ -728,6 +753,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
   late final TextEditingController _models;
   late String _wireFormatId;
   late bool _authenticationRequired;
+  late Set<String> _controlIds;
 
   @override
   void initState() {
@@ -739,11 +765,15 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
     );
     _apiKey = TextEditingController();
     _models = TextEditingController(
-      text: initial?.manualModelIds.join(', ') ?? '',
+      text: initial?.models.map((model) => model.id).join(', ') ?? '',
     );
     _wireFormatId =
         initial?.wireFormatId ?? widget.wireFormats.firstOrNull?.id ?? '';
     _authenticationRequired = initial?.authenticationRequired ?? true;
+    _controlIds = <String>{
+      for (final model in initial?.models ?? const <ManualProviderModelDto>[])
+        for (final control in model.controls) control.id,
+    };
   }
 
   @override
@@ -784,7 +814,14 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                   )
                   .toList(growable: false),
               onValueChange: (value) {
-                if (value != null) setState(() => _wireFormatId = value);
+                if (value != null) {
+                  setState(() {
+                    _wireFormatId = value;
+                    _controlIds.retainAll(
+                      _selectedWire.controls.map((control) => control.id),
+                    );
+                  });
+                }
               },
             ),
             CoderSwitchRow(
@@ -800,11 +837,24 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                 obscureText: true,
                 label: 'API key',
               ),
-            if (widget.initial?.manualModelIds.isNotEmpty ?? false)
-              TRTextField(
-                controller: _models,
-                label: l10n.providerSettingsManualModels,
-                placeholder: 'model-a, model-b',
+            TRTextField(
+              controller: _models,
+              label: l10n.providerSettingsManualModels,
+              placeholder: 'model-a, model-b',
+            ),
+            for (final control in _selectedWire.controls)
+              CoderCheckboxRow(
+                key: ValueKey('custom-control-${control.id}'),
+                value: _controlIds.contains(control.id),
+                onChanged: (selected) => setState(() {
+                  selected == true
+                      ? _controlIds.add(control.id)
+                      : _controlIds.remove(control.id);
+                }),
+                title: TRText.inherit(control.label),
+                subtitle: control.description == null
+                    ? null
+                    : TRText.inherit(control.description!),
               ),
           ],
         ),
@@ -840,17 +890,32 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
           baseUrl: baseUrl,
           wireFormatId: _wireFormatId,
           authenticationRequired: _authenticationRequired,
-          manualModelIds: _models.text
-              .split(',')
-              .map((value) => value.trim())
-              .where((value) => value.isNotEmpty)
-              .toSet()
-              .toList(growable: false),
+          models: <ManualProviderModelDto>[
+            for (final id
+                in _models.text
+                    .split(',')
+                    .map((value) => value.trim())
+                    .where((value) => value.isNotEmpty)
+                    .toSet())
+              ManualProviderModelDto(
+                id: id,
+                label: id,
+                controls: <ModelControlDescriptorDto>[
+                  for (final control in _selectedWire.controls)
+                    if (_controlIds.contains(control.id)) control,
+                ],
+              ),
+          ],
         ),
         apiKey: apiKey.isEmpty ? null : apiKey,
       ),
     );
   }
+
+  ProviderWireFormatDto get _selectedWire => widget.wireFormats.firstWhere(
+    (format) => format.id == _wireFormatId,
+    orElse: () => const ProviderWireFormatDto(id: '', label: ''),
+  );
 }
 
 class _ManualModelsDialog extends StatefulWidget {

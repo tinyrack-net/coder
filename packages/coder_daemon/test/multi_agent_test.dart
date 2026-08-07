@@ -68,7 +68,9 @@ const AgentDefinitionDto _coderDefinition = AgentDefinitionDto(
   promptEnabled: false,
   systemPrompt: '',
   model: AgentModelSelectionDto(source: AgentModelSource.session),
-  reasoningEffort: 'medium',
+  modelControls: <String, ModelControlValueDto>{
+    'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+  },
   permissionMode: PermissionMode.workspaceWrite,
   toolIds: <String>[collaborationCapabilityId],
   callableAgentIds: <String>['reviewer'],
@@ -84,7 +86,9 @@ const AgentDefinitionDto _reviewerDefinition = AgentDefinitionDto(
   promptEnabled: false,
   systemPrompt: '',
   model: AgentModelSelectionDto(source: AgentModelSource.session),
-  reasoningEffort: 'medium',
+  modelControls: <String, ModelControlValueDto>{
+    'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+  },
   permissionMode: PermissionMode.readOnly,
   toolIds: <String>[],
   callableAgentIds: <String>[],

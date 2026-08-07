@@ -158,9 +158,9 @@ Future<SessionDto> startSessionWithPrompt(
   List<PendingAttachment> attachments = const <PendingAttachment>[],
   SessionMode mode = SessionMode.normal,
   SessionModelSelectionDto? model,
-  String? reasoningEffort,
+  Map<String, ModelControlValueDto> modelControls =
+      const <String, ModelControlValueDto>{},
   PermissionMode? permissionMode,
-  String? serviceTier,
 }) => ref
     .read(sessionStarterProvider)
     .start(
@@ -171,7 +171,6 @@ Future<SessionDto> startSessionWithPrompt(
       attachments: attachments,
       mode: mode,
       model: model,
-      reasoningEffort: reasoningEffort,
+      modelControls: modelControls,
       permissionMode: permissionMode,
-      serviceTier: serviceTier,
     );

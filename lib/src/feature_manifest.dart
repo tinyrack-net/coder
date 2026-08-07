@@ -401,8 +401,8 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Starts sessions from the chat composer with a selected Agent, model, '
         'and collaboration mode, resolves the model provider automatically, '
-        'and changes the session model, mode, reasoning effort, permission '
-        'mode, or provider service tier afterwards.',
+        'and atomically changes the session model, dynamic model controls, '
+        'mode, or permission mode afterwards.',
     apiMethods: <String>[
       'sessions.listSessions',
       'sessions.createSession',
@@ -968,7 +968,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'provider.catalog',
-    description: 'Lists provider presets, connections, and available models.',
+    description:
+        'Lists bundled, cached, and refreshed provider models, streams '
+        'background catalog state, and keeps offline fallback metadata.',
     apiMethods: <String>[
       'providers.listProviderCatalog',
       'providers.listProviderConnections',
@@ -1017,7 +1019,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'provider.connection.management',
-    description: 'Connects and disconnects provider presets.',
+    description:
+        'Connects and disconnects OpenAI, Anthropic, Gemini, and compatible '
+        'provider presets through their public API contracts.',
     apiMethods: <String>[
       'providers.connectProviderApiKey',
       'providers.connectProviderNone',
@@ -1045,7 +1049,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'provider.oauth',
-    description: 'Starts, observes, cancels, and refreshes provider OAuth.',
+    description:
+        'Starts, observes, cancels, and refreshes supported public provider '
+        'OAuth flows without subscription-only private endpoints.',
     apiMethods: <String>[
       'providers.startProviderAuth',
       'providers.providerAuthStatus',
@@ -1073,7 +1079,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'provider.custom',
-    description: 'Creates, edits, and removes advanced compatible providers.',
+    description:
+        'Creates and edits compatible providers for OpenAI, Anthropic, and '
+        'Gemini with typed manual models and wire-owned controls.',
     apiMethods: <String>[
       'providers.createCustomProvider',
       'providers.updateCustomProvider',

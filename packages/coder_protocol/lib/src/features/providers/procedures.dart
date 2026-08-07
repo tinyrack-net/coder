@@ -161,6 +161,13 @@ final providersAuthUpdatedNotification =
       encode: (value) => value.toJson(),
     );
 
+/// Background provider-catalog refresh result.
+final providersCatalogUpdatedNotification = RpcNotification<ProviderCatalogDto>(
+  name: 'providers.catalogUpdated',
+  decode: ProviderCatalogDto.fromJson,
+  encode: (value) => value.toJson(),
+);
+
 /// Feature-owned descriptor catalog.
 final providersProcedures = <RpcProcedureDescriptor>[
   providersCatalogProcedure,
@@ -183,4 +190,5 @@ final providersProcedures = <RpcProcedureDescriptor>[
 /// Feature-owned descriptor catalog.
 final providersNotifications = <RpcNotificationDescriptor>[
   providersAuthUpdatedNotification,
+  providersCatalogUpdatedNotification,
 ];

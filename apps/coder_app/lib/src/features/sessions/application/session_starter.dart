@@ -29,9 +29,9 @@ final class SessionStarter {
     List<PendingAttachment> attachments = const <PendingAttachment>[],
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
-    String? reasoningEffort,
+    Map<String, ModelControlValueDto> modelControls =
+        const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
-    String? serviceTier,
   }) async {
     final sessions = sessionsControllerProvider(
       selection.hostId,
@@ -52,9 +52,8 @@ final class SessionStarter {
             agentDefinitionId: agentDefinitionId,
             mode: mode,
             model: model,
-            reasoningEffort: reasoningEffort,
+            modelControls: modelControls,
             permissionMode: permissionMode,
-            serviceTier: serviceTier,
           );
       await _ref.read(tabs.notifier).add(session);
       final conversation = conversationControllerProvider(
