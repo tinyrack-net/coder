@@ -438,6 +438,13 @@ class SessionTurnCoordinator implements SessionTurnPort {
     } on Exception {
       // Restart recovery reconsiders durable active goals.
     }
+    // A detached turn may finish after daemon shutdown has closed drift.
+    // Durable active goals are reconsidered during restart recovery, so this
+    // shutdown-only database StateError must not escape the runner.
+    // ignore: avoid_catching_errors
+    on StateError {
+      // Nothing to salvage; see above.
+    }
   }
 
   Future<void> _markTurnFailed(String turnId, Object error) =>
