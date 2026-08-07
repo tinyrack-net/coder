@@ -181,7 +181,7 @@ class _ApplicationMenu extends StatelessWidget {
               onPressed: onOpenSettings,
               child: TRText.inherit(l10n.settingsTitle),
             ),
-            const TRSeparator(),
+            const TRMenuSeparator(),
             TRMenuItem(
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyQ,
