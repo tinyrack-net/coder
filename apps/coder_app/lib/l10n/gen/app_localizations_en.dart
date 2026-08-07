@@ -761,13 +761,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Advanced: connect your own endpoint';
 
   @override
-  String get providerSettingsCustomName => 'Custom OpenAI Compatible';
+  String get providerSettingsCustomName => 'Custom Provider';
 
   @override
   String get providerSettingsRefreshFailed => 'Could not refresh the catalog';
 
   @override
-  String get providerSettingsOAuthPending => 'Waiting for ChatGPT sign-in';
+  String get providerSettingsOAuthPending => 'Waiting for sign-in';
 
   @override
   String providerSettingsConnectTitle(String name) {

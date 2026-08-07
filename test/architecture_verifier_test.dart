@@ -38,6 +38,78 @@ void main() {
     );
   });
 
+  test('a vendor name in shared code is a violation', () {
+    for (final package in const <String>[
+      'coder_agent',
+      'coder_daemon',
+      'coder_client',
+      'coder_cli',
+      'coder_app',
+      'coder_protocol',
+    ]) {
+      final violations = verifier.verifySource(
+        package: package,
+        path: '$package/lib/src/service.dart',
+        source: "if (definition.id == 'openai') connectChatGpt();",
+      );
+      expect(
+        violations.map((violation) => violation.rule),
+        contains('vendor_literal'),
+        reason: package,
+      );
+    }
+  });
+
+  test('adapter packages and the composition root may name their vendor', () {
+    expect(
+      verifier.verifySource(
+        package: 'coder_provider_openai',
+        path: 'packages/coder_provider_openai/lib/src/plugins.dart',
+        source: "const id = 'openai'; // ChatGPT subscription backend",
+      ),
+      isEmpty,
+    );
+    expect(
+      verifier.verifySource(
+        package: 'coder_daemon',
+        path: 'packages/coder_daemon/lib/src/application.dart',
+        source: 'final plugins = openAIFamilyPlugins(clock: clock);',
+      ),
+      isEmpty,
+    );
+  });
+
+  test(
+    'a tool name literal in the app outside its presenter is a violation',
+    () {
+      final violations = verifier.verifySource(
+        package: 'coder_app',
+        path: 'apps/coder_app/lib/src/chat/chat_approval_card.dart',
+        source: "if (approval.toolName == 'apply_patch') showDiff();",
+      );
+      expect(violations.single.rule, 'tool_name_literal');
+
+      // The presenter tree owns the names, the timeline builds the dedicated
+      // cards, and other packages define the tools themselves.
+      for (final (package, path) in const <(String, String)>[
+        ('coder_app', 'apps/coder_app/lib/src/chat/tools/apply_patch.dart'),
+        ('coder_app', 'apps/coder_app/lib/src/chat/chat_timeline_model.dart'),
+        ('coder_agent', 'packages/coder_agent/lib/src/tools/apply_patch.dart'),
+        ('coder_daemon', 'packages/coder_daemon/lib/src/built_in_tools.dart'),
+      ]) {
+        expect(
+          verifier.verifySource(
+            package: package,
+            path: path,
+            source: "const name = 'apply_patch';",
+          ),
+          isEmpty,
+          reason: path,
+        );
+      }
+    },
+  );
+
   test('invalid package fixture reports a reversed dependency', () {
     final violations = verifier.verifySource(
       package: 'coder_protocol',

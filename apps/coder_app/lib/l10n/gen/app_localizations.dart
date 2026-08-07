@@ -1487,7 +1487,7 @@ abstract class AppLocalizations {
   /// Title of the custom provider catalog entry.
   ///
   /// In en, this message translates to:
-  /// **'Custom OpenAI Compatible'**
+  /// **'Custom Provider'**
   String get providerSettingsCustomName;
 
   /// Alert title shown when the provider catalog fails to load.
@@ -1499,7 +1499,7 @@ abstract class AppLocalizations {
   /// Title of the pending OAuth attempt bar.
   ///
   /// In en, this message translates to:
-  /// **'Waiting for ChatGPT sign-in'**
+  /// **'Waiting for sign-in'**
   String get providerSettingsOAuthPending;
 
   /// Title of the API key dialog.

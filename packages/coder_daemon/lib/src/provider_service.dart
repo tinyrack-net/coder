@@ -45,6 +45,13 @@ final class ProviderConnectionFailure implements Exception {
   String toString() => 'ProviderConnectionFailure($code): $message';
 }
 
+/// Definition id recorded for connections built from custom configuration.
+///
+/// Not a vendor: only the presence of [ProviderConnectionDto.customConfig]
+/// decides how a connection resolves. This id exists so a custom connection
+/// never collides with a registered plugin id.
+const String customProviderDefinitionId = 'custom';
+
 /// Settings key holding the daemon-global default model selection.
 ///
 /// An empty stored value means no explicit default, which makes the daemon
@@ -163,7 +170,7 @@ final class ProviderService implements ProviderOAuthConnector {
   Future<ProviderCatalogDto> refreshCatalog() async {
     final refreshed = await _catalog.refresh();
     for (final connection in await _repository.listConnections()) {
-      if (connection.definitionId == 'custom') continue;
+      if (connection.customConfig != null) continue;
       final models = <String, ProviderModelDto>{
         for (final model in await _repository.listModels(connection.id))
           model.id: model,
@@ -381,7 +388,7 @@ final class ProviderService implements ProviderOAuthConnector {
     );
   }
 
-  /// Creates an advanced custom OpenAI-compatible connection.
+  /// Creates an advanced custom connection speaking a registered wire format.
   Future<ProviderConnectionDto> createCustom(
     String id,
     CustomProviderConfigDto config, {
@@ -401,7 +408,7 @@ final class ProviderService implements ProviderOAuthConnector {
     final now = _clock.nowUtc();
     final connection = ProviderConnectionDto(
       id: id,
-      definitionId: 'custom',
+      definitionId: customProviderDefinitionId,
       displayName: normalized.name,
       status: ProviderConnectionStatus.connecting,
       authKind: normalized.authenticationRequired
@@ -424,7 +431,7 @@ final class ProviderService implements ProviderOAuthConnector {
     String? apiKey,
   }) async {
     final current = await get(id);
-    if (current.definitionId != 'custom') {
+    if (current.customConfig == null) {
       throw StateError('Built-in provider configuration is immutable.');
     }
     final normalized = _validateCustom(config);
@@ -470,7 +477,7 @@ final class ProviderService implements ProviderOAuthConnector {
   /// Permanently removes a custom provider connection.
   Future<void> deleteCustom(String id) async {
     final connection = await get(id);
-    if (connection.definitionId != 'custom') {
+    if (connection.customConfig == null) {
       throw StateError('Built-in provider connections cannot be deleted.');
     }
     await _credentials.removeCredential(id);

@@ -750,13 +750,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsCustomSubtitle => '고급 설정: 자체 endpoint 연결';
 
   @override
-  String get providerSettingsCustomName => 'Custom OpenAI Compatible';
+  String get providerSettingsCustomName => '커스텀 프로바이더';
 
   @override
   String get providerSettingsRefreshFailed => 'Catalog를 갱신하지 못했어요';
 
   @override
-  String get providerSettingsOAuthPending => 'ChatGPT 로그인 대기 중';
+  String get providerSettingsOAuthPending => '로그인 대기 중';
 
   @override
   String providerSettingsConnectTitle(String name) {

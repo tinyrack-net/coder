@@ -519,12 +519,12 @@ class _ProviderConnectionRow extends StatelessWidget {
         icon: const Icon(CoderIcons.more),
         label: l10n.providerSettingsActions,
         menuChildren: <Widget>[
-          if (connection.definitionId == 'custom')
+          if (connection.customConfig != null)
             TRMenuItem(
               onPressed: () => onEditCustom(connection),
               child: TRText.inherit(l10n.providerSettingsEditAdvanced),
             ),
-          if (connection.definitionId == 'custom')
+          if (connection.customConfig != null)
             TRMenuItem(
               onPressed: () => onDeleteCustom(connection),
               child: TRText.inherit(l10n.commonDelete),

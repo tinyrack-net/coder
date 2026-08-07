@@ -935,7 +935,7 @@
   "@providerSettingsCustomSubtitle": {
     "description": "Subtitle of the custom provider catalog entry."
   },
-  "providerSettingsCustomName": "Custom OpenAI Compatible",
+  "providerSettingsCustomName": "Custom Provider",
   "@providerSettingsCustomName": {
     "description": "Title of the custom provider catalog entry."
   },
@@ -943,7 +943,7 @@
   "@providerSettingsRefreshFailed": {
     "description": "Alert title shown when the provider catalog fails to load."
   },
-  "providerSettingsOAuthPending": "Waiting for ChatGPT sign-in",
+  "providerSettingsOAuthPending": "Waiting for sign-in",
   "@providerSettingsOAuthPending": {
     "description": "Title of the pending OAuth attempt bar."
   },

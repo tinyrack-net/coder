@@ -116,7 +116,7 @@ void main() {
       await tester.tap(find.text('Sign in with ChatGPT'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('ChatGPT 로그인 대기 중'), findsOneWidget);
+      expect(find.text('로그인 대기 중'), findsOneWidget);
       expect(find.textContaining('auth.example'), findsOneWidget);
       expect(opener.opened.single.host, 'auth.example');
       expect(
