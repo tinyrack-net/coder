@@ -113,7 +113,12 @@ void main() {
     ]) {
       expect(gate, contains('- $dependency'));
     }
-    expect(gate, contains('all(.[]; .result == "success")'));
+    // A job the plan skipped is a pass; see the `impact-based job selection`
+    // group below for the rest of that contract.
+    expect(
+      gate,
+      contains('all(.[]; .result == "success" or .result == "skipped")'),
+    );
     expect(_job(workflow, 'publish-release'), contains('- quality-gate'));
   });
 
@@ -220,6 +225,102 @@ void main() {
       workflow,
       isNot(contains('dart pub global run shipworld:shipworld')),
     );
+  });
+
+  group('impact-based job selection', () {
+    // Job id -> the plan output that decides whether it runs. `static-linux`
+    // is deliberately absent: the workspace-wide static gates are cheap and
+    // always run.
+    const gated = <String, String>{
+      'generated-linux': 'run_generated',
+      'dart-tests': 'run_dart_tests',
+      'flutter-tests': 'run_flutter',
+      'coverage-dart-linux': 'run_dart_coverage',
+      'coverage-flutter-linux': 'run_flutter',
+      'golden-linux': 'run_golden',
+      'e2e-linux-warm': 'run_e2e',
+      'debug-e2e-linux': 'run_e2e',
+      'mobile-debug-build': 'run_mobile_build',
+      'desktop-debug-build': 'run_desktop_build',
+      'web-build': 'run_web',
+      'cli-verify': 'run_cli',
+    };
+
+    test('every selectable job waits on the plan and reads its output', () {
+      for (final entry in gated.entries) {
+        final job = _job(workflow, entry.key);
+        expect(
+          job,
+          contains(
+            "if: github.event_name != 'schedule' && "
+            "needs.plan.outputs.${entry.value} == 'true'",
+          ),
+          reason: entry.key,
+        );
+        expect(job, contains('needs'), reason: entry.key);
+        expect(job, contains('plan'), reason: entry.key);
+      }
+    });
+
+    test('the static gate is never planned away', () {
+      final job = _job(workflow, 'static-linux');
+      expect(job, contains("if: github.event_name != 'schedule'"));
+      expect(job, isNot(contains('needs.plan.outputs')));
+    });
+
+    test('the plan job fetches enough history to diff the merge base', () {
+      final job = _job(workflow, 'plan');
+      expect(job, contains('fetch-depth: 0'));
+      expect(job, contains('dart run tool/plan_ci.dart'));
+    });
+
+    // A narrowed pull request must never be the last word before `main`.
+    test('only a pull request is planned; everything else runs in full', () {
+      final job = _job(workflow, 'plan');
+      expect(job, contains("github.event_name == 'pull_request' &&"));
+      expect(job, contains("format('--base=origin/{0}', github.base_ref)"));
+      expect(job, contains("|| '--full'"));
+    });
+
+    test('the quality gate treats a planned-away job as a pass', () {
+      final job = _job(workflow, 'quality-gate');
+      expect(
+        job,
+        contains(
+          "jq -e 'all(.[]; .result == \"success\" or .result == \"skipped\")'",
+        ),
+      );
+      // The planner itself is never skipped, so its failure still blocks.
+      expect(job, contains('      - plan\n'));
+      for (final id in gated.keys) {
+        expect(job, contains('      - $id\n'), reason: id);
+      }
+    });
+
+    test('the Dart test jobs are narrowed by the planned Melos filter', () {
+      for (final id in <String>['dart-tests', 'coverage-dart-linux']) {
+        expect(
+          _job(workflow, id),
+          contains(r'MELOS_PACKAGES: ${{ needs.plan.outputs.melos_packages }}'),
+          reason: id,
+        );
+      }
+      expect(
+        _job(workflow, 'coverage-dart-linux'),
+        contains(r'${{ needs.plan.outputs.coverage_scope_flags }}'),
+      );
+    });
+
+    test('the E2E shards reuse one Linux desktop build', () {
+      expect(
+        _job(workflow, 'e2e-linux-warm'),
+        contains(r'key: e2e-linux-${{ github.sha }}'),
+      );
+      expect(
+        _job(workflow, 'debug-e2e-linux'),
+        contains(r'key: e2e-linux-${{ github.sha }}'),
+      );
+    });
   });
 }
 
