@@ -826,7 +826,7 @@ final class _MailboxTurnInputSource implements TurnInputSource {
 /// Selection is not by id alone: a subagent is handed the tools by its
 /// parentage, because an agent that was spawned has to be able to answer the
 /// agent that spawned it.
-final class CollaborationToolProvider implements AgentToolProvider {
+final class CollaborationToolProvider extends AgentToolProvider {
   /// Creates a provider reading the supervisor at turn time.
   ///
   /// The supervisor is wired after the session service it drives, so reading

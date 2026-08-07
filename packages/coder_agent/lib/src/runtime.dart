@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:coder_agent/src/compaction.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/plan_mode_prompt.dart';
-import 'package:coder_agent/src/tools/skills.dart';
 import 'package:coder_agent/src/tools/tool_search.dart';
 import 'package:coder_agent/src/usage.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -55,7 +54,7 @@ class AgentRunRequest {
     this.maxToolRounds = 64,
     this.sessionMode = SessionMode.normal,
     this.customSystemPrompt,
-    this.skills = const <SkillSummary>[],
+    this.toolPrompts = const <String>[],
     this.contextWindowTokens,
     this.priorUsage = const ModelUsage(),
   });
@@ -113,7 +112,11 @@ class AgentRunRequest {
   final String? customSystemPrompt;
 
   /// Skills the turn may load through the `skill` tool.
-  final List<SkillSummary> skills;
+  /// System-prompt paragraphs contributed by the turn's own capabilities.
+  ///
+  /// A tool that needs the model told how to use it supplies its own text, so
+  /// this package never names a tool it does not define.
+  final List<String> toolPrompts;
 }
 
 /// Stands in for "no compaction has happened yet" in a token comparison.
@@ -596,25 +599,7 @@ You are a coding agent operating in ${request.workspaceRoot}.
 Use only the supplied tools. Read before editing, keep changes scoped to the request,
 and validate relevant behavior before finishing. Never attempt to access paths outside
 the workspace. Approval decisions are enforced by the host; do not work around them.
-${_skillCatalog(request.skills)}$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
-''';
-  }
-
-  /// Points at the skill tools instead of listing every skill.
-  ///
-  /// Naming each skill here charged every turn for the whole catalog, whether
-  /// or not it used one. The count is kept because it is one number and it is
-  /// what tells the agent whether looking is worth a call at all.
-  String _skillCatalog(List<SkillSummary> skills) {
-    if (skills.isEmpty) return '';
-    final plural = skills.length == 1 ? 'skill is' : 'skills are';
-    return '''
-
-## Available skills
-${skills.length} $plural available in this workspace.
-Call the `$listSkillsToolName` tool to see their names and descriptions, then the
-`skill` tool with a name to load its full instructions before acting on it.
-Treat a skill's bundled scripts as ordinary workspace code: read them before running them.
+${request.toolPrompts.map((prompt) => '\n$prompt\n').join()}$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
 ''';
   }
 }

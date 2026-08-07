@@ -438,4 +438,12 @@ final class ExecCommandToolProvider extends SelectableToolProvider {
     ExecCommandTool(host: scope.execHost),
     WriteStdinTool(host: scope.execHost),
   ];
+
+  @override
+  ApprovalPolicy decoratePolicy(ApprovalPolicy inner, AgentToolScope scope) =>
+      ExecSessionApprovalPolicy(
+        inner,
+        scope.execHost,
+        toolName: writeStdinToolName,
+      );
 }

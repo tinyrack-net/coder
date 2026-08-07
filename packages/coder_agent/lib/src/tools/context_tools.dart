@@ -96,7 +96,7 @@ class NewContextTool extends AgentTool {
 /// Hidden rather than selectable: how a turn measures and retires its own
 /// context window is part of how the runtime works, not a capability a user
 /// grants an agent.
-final class ContextWindowToolProvider implements AgentToolProvider {
+final class ContextWindowToolProvider extends AgentToolProvider {
   /// Creates a [ContextWindowToolProvider].
   const ContextWindowToolProvider();
 

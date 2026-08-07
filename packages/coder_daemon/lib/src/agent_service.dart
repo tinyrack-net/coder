@@ -209,7 +209,6 @@ class SessionService implements SessionRuntimePort {
     // Skills resolve against the worktree, so a branch carries the project
     // skills that were committed to it.
     final skills = await _skills.viewFor(worktree.path);
-    final skillSummaries = skills.summaries();
     final scope = AgentToolScope(
       session: session,
       definition: definition,
@@ -232,14 +231,14 @@ class SessionService implements SessionRuntimePort {
       execHost: _execHostFor(sessionId),
       skills: skills,
     );
-    final tools = _toolRegistry.toolsFor(
+    final turnTools = _toolRegistry.build(
       scope,
       external: _externalTools.lookupFor(worktree.path),
     );
 
     final runner = AgentRunner(
       provider: resolvedModel.provider,
-      tools: tools,
+      tools: turnTools.tools,
       // The summary is written by the model that produced the work, so the
       // compactor rides the same provider the turn already resolved.
       compactor: ConversationCompactor(resolvedModel.provider),
@@ -287,10 +286,8 @@ class SessionService implements SessionRuntimePort {
       ),
       // A shell the user allowed stays writable, so an interactive session
       // does not raise a dialog for every keystroke.
-      policyFactory: (mode) => ExecSessionApprovalPolicy(
-        DefaultApprovalPolicy(mode),
-        _execHostFor(sessionId),
-      ),
+      policyFactory: (mode) =>
+          turnTools.decoratePolicy(DefaultApprovalPolicy(mode)),
     );
 
     final turnAttachments = await _attachments.resolveAll(
@@ -320,7 +317,7 @@ class SessionService implements SessionRuntimePort {
             definition.promptEnabled ? definition.systemPrompt : null,
             multiAgent?.usageHintFor(session, definition),
           ),
-          skills: skillSummaries,
+          toolPrompts: turnTools.promptFragments,
           contextWindowTokens: resolvedModel.limits?.context,
           // What the live window already holds, so a turn that starts on a
           // full window compacts before it samples rather than failing.

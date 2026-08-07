@@ -549,7 +549,11 @@ void main() {
 
     test('a session is approved once, not per keystroke', () async {
       const inner = DefaultApprovalPolicy(PermissionMode.ask);
-      final policy = ExecSessionApprovalPolicy(inner, host);
+      final policy = ExecSessionApprovalPolicy(
+        inner,
+        host,
+        toolName: writeStdinToolName,
+      );
       host.script('python3', <ExecSessionChunk>[
         const ExecSessionChunk(output: '>>> ', isRunning: true),
       ]);
@@ -594,7 +598,11 @@ void main() {
 
     test('a read-only session is never unlocked by an approved id', () {
       const inner = DefaultApprovalPolicy(PermissionMode.readOnly);
-      final policy = ExecSessionApprovalPolicy(inner, host);
+      final policy = ExecSessionApprovalPolicy(
+        inner,
+        host,
+        toolName: writeStdinToolName,
+      );
       host.markApproved('exec-1');
 
       expect(
@@ -609,7 +617,11 @@ void main() {
 
     test('an allow from the inner policy passes straight through', () {
       const inner = DefaultApprovalPolicy(PermissionMode.workspaceWrite);
-      final policy = ExecSessionApprovalPolicy(inner, host);
+      final policy = ExecSessionApprovalPolicy(
+        inner,
+        host,
+        toolName: writeStdinToolName,
+      );
 
       expect(
         policy.evaluate(

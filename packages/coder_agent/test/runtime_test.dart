@@ -331,55 +331,29 @@ void main() {
     );
   });
 
-  test(
-    'the skill prompt points at the tools instead of listing every skill',
-    () async {
-      final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
-      await _RunnerHarness(provider).runner.startTurn(
-        _request(
-          customSystemPrompt: 'Review every security boundary.',
-          skills: const <SkillSummary>[
-            SkillSummary(name: 'commit', description: 'Writes commits.'),
-            SkillSummary(name: 'dataviz', description: 'Draws charts.'),
-          ],
-        ),
-        CancellationToken(),
-      );
+  test('a capability prompt sits above the agent custom prompt', () async {
+    final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
+    await _RunnerHarness(provider).runner.startTurn(
+      _request(
+        customSystemPrompt: 'Review every security boundary.',
+        toolPrompts: const <String>['## Available skills', '## Sandboxing'],
+      ),
+      CancellationToken(),
+    );
 
-      final instructions = provider.requests.single.instructions;
-      expect(instructions, contains('## Available skills'));
-      // The count is one number whatever the catalog size, and it is what
-      // tells the agent whether looking is worth a call.
-      expect(instructions, contains('2 skills are available'));
-      expect(instructions, contains(listSkillsToolName));
-      // No per-skill line survives, which is the whole point: the prompt cost
-      // no longer grows with the catalog.
-      expect(instructions, isNot(contains('Writes commits.')));
-      expect(instructions, isNot(contains('Draws charts.')));
-      expect(
-        instructions.indexOf('## Available skills'),
-        lessThan(instructions.indexOf('Review every security boundary.')),
-      );
-
-      final single = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
-      await _RunnerHarness(single).runner.startTurn(
-        _request(
-          skills: const <SkillSummary>[
-            SkillSummary(name: 'commit', description: 'Writes commits.'),
-          ],
-        ),
-        CancellationToken(),
-      );
-      expect(
-        single.requests.single.instructions,
-        contains('1 skill is available'),
-      );
-    },
-    tags: const <String>['feature_test__skill_invocation__unit'],
-  );
+    final instructions = provider.requests.single.instructions;
+    // The runner places what a capability says about itself; it never writes
+    // that text, so it never names a tool it does not define.
+    expect(instructions, contains('## Available skills'));
+    expect(instructions, contains('## Sandboxing'));
+    expect(
+      instructions.indexOf('## Available skills'),
+      lessThan(instructions.indexOf('Review every security boundary.')),
+    );
+  });
 
   test(
-    'a turn without skills carries no catalog block',
+    'a turn whose capabilities say nothing carries no extra block',
     () async {
       final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
       await _RunnerHarness(provider).runner.startTurn(
@@ -391,7 +365,6 @@ void main() {
         isNot(contains('Available skills')),
       );
     },
-    tags: const <String>['feature_test__skill_invocation__unit'],
   );
 
   test('read-only and denied approvals produce error tool results', () async {
@@ -1075,7 +1048,7 @@ AgentRunRequest _request({
   int maxToolRounds = 64,
   SessionMode sessionMode = SessionMode.normal,
   String? customSystemPrompt,
-  List<SkillSummary> skills = const <SkillSummary>[],
+  List<String> toolPrompts = const <String>[],
   List<ConversationItem> history = const <ConversationItem>[
     UserConversationItem('history'),
   ],
@@ -1094,7 +1067,7 @@ AgentRunRequest _request({
   maxToolRounds: maxToolRounds,
   sessionMode: sessionMode,
   customSystemPrompt: customSystemPrompt,
-  skills: skills,
+  toolPrompts: toolPrompts,
 );
 
 List<ModelEvent> _toolResponse(

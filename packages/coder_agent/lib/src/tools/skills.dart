@@ -215,7 +215,7 @@ class SkillTool extends AgentTool {
   final SkillCatalog _catalog;
 
   @override
-  String get name => 'skill';
+  String get name => skillToolName;
 
   @override
   String get description =>
@@ -300,12 +300,15 @@ class SkillTool extends AgentTool {
   );
 }
 
+/// Name of the tool that loads one skill's full instructions.
+const String skillToolName = 'skill';
+
 /// Registers the skill tools, in a worktree that publishes any.
 ///
 /// Hidden rather than selectable: a skill is content the workspace carries, so
 /// the tools appear because the worktree has skills rather than because an
 /// agent asked for them.
-final class SkillToolProvider implements AgentToolProvider {
+final class SkillToolProvider extends AgentToolProvider {
   /// Creates a [SkillToolProvider].
   const SkillToolProvider();
 
@@ -320,4 +323,22 @@ final class SkillToolProvider implements AgentToolProvider {
       scope.skills.summaries().isEmpty
       ? const <AgentTool>[]
       : <AgentTool>[ListSkillsTool(scope.skills), SkillTool(scope.skills)];
+
+  /// Points at the skill tools instead of listing every skill.
+  ///
+  /// Naming each skill here charged every turn for the whole catalog, whether
+  /// or not it used one. The count is kept because it is one number and it is
+  /// what tells the agent whether looking is worth a call at all.
+  @override
+  String? promptFragment(AgentToolScope scope) {
+    final skills = scope.skills.summaries();
+    if (skills.isEmpty) return null;
+    final plural = skills.length == 1 ? 'skill is' : 'skills are';
+    return '''
+## Available skills
+${skills.length} $plural available in this workspace.
+Call the `$listSkillsToolName` tool to see their names and descriptions, then the
+`$skillToolName` tool with a name to load its full instructions before acting on it.
+Treat a skill's bundled scripts as ordinary workspace code: read them before running them.''';
+  }
 }

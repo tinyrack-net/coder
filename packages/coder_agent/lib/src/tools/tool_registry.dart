@@ -74,7 +74,10 @@ final class AgentToolScope {
 /// the registry's. Most answer it by id, but a subagent gets the collaboration
 /// tools from its parentage and the skill tools only exist where the worktree
 /// has skills, and neither of those is a selection a user made.
-abstract interface class AgentToolProvider {
+abstract base class AgentToolProvider {
+  /// Allows subclasses to be const.
+  const AgentToolProvider();
+
   /// Identifier agents select this capability by.
   String get id;
 
@@ -87,10 +90,24 @@ abstract interface class AgentToolProvider {
 
   /// Builds this capability's tools, or none when it does not apply.
   List<AgentTool> create(AgentToolScope scope);
+
+  /// Lets a capability widen approvals for the tools it owns.
+  ///
+  /// A rule about one tool belongs to that tool. Approving every write into a
+  /// shell the user already allowed is a fact about `exec_command`, not
+  /// something the shared permission code should know a tool name to express.
+  ApprovalPolicy decoratePolicy(ApprovalPolicy inner, AgentToolScope scope) =>
+      inner;
+
+  /// Text this capability contributes to the system prompt, or null.
+  ///
+  /// A tool that needs the model told how to use it says so itself, so the
+  /// prompt never names a tool that is not in the turn.
+  String? promptFragment(AgentToolScope scope) => null;
 }
 
 /// A provider whose tools exist exactly when the turn selected its id.
-abstract base class SelectableToolProvider implements AgentToolProvider {
+abstract base class SelectableToolProvider extends AgentToolProvider {
   /// Allows subclasses to be const.
   const SelectableToolProvider();
 
@@ -145,19 +162,64 @@ final class AgentToolRegistry {
   List<String> resolveIds(Iterable<String> chosen) =>
       List<String>.unmodifiable(<String>{...alwaysOnIds, ...chosen});
 
-  /// Builds every tool one turn may call.
+  /// Builds everything one turn takes from its capabilities.
+  ///
+  /// Each capability is asked once, and only the ones that produced a tool go
+  /// on to shape the turn's approvals and system prompt: a rule or a paragraph
+  /// about a tool the model was never given would describe nothing.
   ///
   /// Ids this registry does not know are handed to [external], which is how
   /// MCP tools published at runtime join a turn without being compiled in.
-  List<AgentTool> toolsFor(
+  AgentToolTurn build(
     AgentToolScope scope, {
     AgentTool? Function(String id)? external,
   }) {
     final known = <String>{for (final provider in _providers) provider.id};
-    return <AgentTool>[
-      for (final provider in _providers) ...provider.create(scope),
-      for (final id in scope.selectedToolIds)
-        if (!known.contains(id)) ?external?.call(id),
-    ];
+    final tools = <AgentTool>[];
+    final present = <AgentToolProvider>[];
+    for (final provider in _providers) {
+      final built = provider.create(scope);
+      if (built.isEmpty) continue;
+      present.add(provider);
+      tools.addAll(built);
+    }
+    for (final id in scope.selectedToolIds) {
+      if (known.contains(id)) continue;
+      final tool = external?.call(id);
+      if (tool != null) tools.add(tool);
+    }
+    return AgentToolTurn._(
+      tools: List<AgentTool>.unmodifiable(tools),
+      promptFragments: List<String>.unmodifiable(<String>[
+        for (final provider in present) ?provider.promptFragment(scope),
+      ]),
+      decorate: (inner) {
+        var policy = inner;
+        for (final provider in present) {
+          policy = provider.decoratePolicy(policy, scope);
+        }
+        return policy;
+      },
+    );
   }
+}
+
+/// What one turn's capabilities contribute to it.
+final class AgentToolTurn {
+  const AgentToolTurn._({
+    required this.tools,
+    required this.promptFragments,
+    required this._decorate,
+  });
+
+  /// Every tool this turn may call.
+  final List<AgentTool> tools;
+
+  /// System-prompt paragraphs contributed by the capabilities present.
+  final List<String> promptFragments;
+
+  final ApprovalPolicy Function(ApprovalPolicy inner) _decorate;
+
+  /// Wraps [inner] with the approval rules of the capabilities present.
+  ApprovalPolicy decoratePolicy(ApprovalPolicy inner) => _decorate(inner);
 }
