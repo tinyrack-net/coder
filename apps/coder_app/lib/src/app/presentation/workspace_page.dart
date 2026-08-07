@@ -78,7 +78,8 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     _restoreSelection(registry.value, catalog.value);
     return LayoutBuilder(
       builder: (context, pageConstraints) {
-        final compact = pageConstraints.maxWidth < TRBreakpoints.medium;
+        final compact =
+            pageConstraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
         final showsCompactDetail =
             compact && (widget.selection != null || widget.compose);
         return PopScope<Object?>(
@@ -177,7 +178,8 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                         requestedAgentId: widget.requestedAgentId,
                         requestedTerminalId: widget.requestedTerminalId,
                       );
-                if (constraints.maxWidth < TRBreakpoints.medium) {
+                if (constraints.maxWidth <
+                    CoderLayoutMetrics.compactBreakpoint) {
                   return widget.selection == null && !widget.compose
                       ? sidebar
                       : detail;

@@ -152,7 +152,8 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     };
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < TRBreakpoints.medium;
+        final compact =
+            constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
         final body = compact
             ? switch ((widget.category, widget.hostId)) {
                 (null, null) => _MobileSettingsHome(hosts: hosts),
@@ -171,7 +172,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                     scroll: false,
                     // The sidebar lays content out at the width it is given,
                     // so the width belongs here rather than on an outer box.
-                    width: TRMeasurements.paneSm,
+                    width: CoderLayoutMetrics.settingsSidebarWidth,
                     child: _SettingsSidebar(
                       selected: category,
                       hosts: hosts,
