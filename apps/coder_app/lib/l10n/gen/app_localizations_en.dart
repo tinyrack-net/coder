@@ -809,6 +809,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsOAuthPending => 'Waiting for sign-in';
 
   @override
+  String get providerSettingsModelPrefix => 'Model prefix';
+
+  @override
+  String get providerSettingsModelPrefixHelp =>
+      'Used in model IDs such as openai/gpt-5.6-col.';
+
+  @override
+  String get providerSettingsModelPrefixInvalid =>
+      'Use 1–64 lowercase letters, numbers, hyphens, or underscores.';
+
+  @override
+  String get providerSettingsModelPrefixConflict =>
+      'That model prefix is already in use. Try the updated suggestion.';
+
+  @override
   String providerSettingsConnectTitle(String name) {
     return 'Connect $name';
   }

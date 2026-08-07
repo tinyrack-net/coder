@@ -178,7 +178,13 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final inheritedPermission =
         agent?.permissionMode ?? daemonDefault ?? PermissionMode.ask;
     final connection = connections
-        .where((item) => item.id == selection?.providerConnectionId)
+        .where(
+          (item) =>
+              selection?.qualifiedModelId.startsWith(
+                '${item.modelPrefix}/',
+              ) ??
+              false,
+        )
         .firstOrNull;
     final models =
         providers?.models[connection?.id] ?? const <ProviderModelDto>[];
@@ -220,7 +226,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-model'),
           icon: CoderIcons.memory,
-          label: modelLabel ?? selection?.modelId ?? l10n.composerModel,
+          label: selection?.modelId ?? modelLabel ?? l10n.composerModel,
           tooltip: l10n.composerSelectModel,
           onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
         ),

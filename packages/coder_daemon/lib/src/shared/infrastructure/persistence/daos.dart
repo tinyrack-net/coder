@@ -249,8 +249,7 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
         activeTurnId: Value<String?>(session.activeTurnId),
         lastError: Value<String?>(session.lastError),
         mode: Value<String>(session.mode.name),
-        modelConnectionId: Value<String?>(session.model?.providerConnectionId),
-        modelId: Value<String?>(session.model?.modelId),
+        modelId: Value<String?>(session.model?.qualifiedModelId),
         modelControlsJson: Value<String>(
           jsonEncode(
             session.modelControls.map(
@@ -286,11 +285,8 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
   }) async {
     await (update(sessions)..where((row) => row.id.equals(id))).write(
       SessionsCompanion(
-        modelConnectionId: hasModel
-            ? Value<String?>(model?.providerConnectionId)
-            : const Value<String?>.absent(),
         modelId: hasModel
-            ? Value<String?>(model?.modelId)
+            ? Value<String?>(model?.qualifiedModelId)
             : const Value<String?>.absent(),
         modelControlsJson: Value<String>(
           jsonEncode(
@@ -303,6 +299,30 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
       ),
     );
     return (await getById(id))!;
+  }
+
+  @override
+  Future<void> rewriteModelPrefix(String oldPrefix, String newPrefix) async {
+    await attachedDatabase.transaction(() async {
+      final affected =
+          await (select(sessions)..where(
+                (row) => row.modelId.like('$oldPrefix/%'),
+              ))
+              .get();
+      for (final session in affected) {
+        final modelId = session.modelId;
+        if (modelId == null) continue;
+        await (update(
+          sessions,
+        )..where((row) => row.id.equals(session.id))).write(
+          SessionsCompanion(
+            modelId: Value<String>(
+              '$newPrefix/${modelId.substring(oldPrefix.length + 1)}',
+            ),
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -463,7 +483,6 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
   }
 
   SessionDto _toDto(Session row) {
-    final connectionId = row.modelConnectionId;
     final modelId = row.modelId;
     return SessionDto(
       id: row.id,
@@ -488,13 +507,9 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
           SessionMode.normal,
       activeTurnId: row.activeTurnId,
       lastError: row.lastError,
-      // A half-written row cannot pin a model, so it inherits the agent.
-      model: connectionId == null || modelId == null
+      model: modelId == null
           ? null
-          : SessionModelSelectionDto(
-              providerConnectionId: connectionId,
-              modelId: modelId,
-            ),
+          : SessionModelSelectionDto(modelId: modelId),
       modelControls: <String, ModelControlValueDto>{
         for (final entry
             in (jsonDecode(row.modelControlsJson) as Map<String, dynamic>)
@@ -1154,6 +1169,7 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
       ProviderConnectionsCompanion.insert(
         id: connection.id,
         definitionId: connection.definitionId,
+        modelPrefix: connection.modelPrefix,
         displayName: connection.displayName,
         status: connection.status.name,
         authKind: connection.authKind.name,
@@ -1215,6 +1231,7 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
       ProviderModelsCompanion.insert(
         connectionId: model.connectionId,
         modelId: model.id,
+        providerModelId: model.providerModelId,
         label: model.label,
         source: model.source.name,
         capabilitiesJson: jsonEncode(model.capabilities.toJson()),
@@ -1261,6 +1278,7 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
       ProviderConnectionDto(
         id: row.id,
         definitionId: row.definitionId,
+        modelPrefix: row.modelPrefix,
         displayName: row.displayName,
         status: ProviderConnectionStatus.values.byName(row.status),
         authKind: ProviderAuthKind.values.byName(row.authKind),
@@ -1282,6 +1300,7 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
   ProviderModelDto _modelToDto(ProviderModel row) => ProviderModelDto(
     connectionId: row.connectionId,
     id: row.modelId,
+    providerModelId: row.providerModelId,
     label: row.label,
     source: ProviderModelSource.values.byName(row.source),
     capabilities: ModelCapabilitiesDto.fromJson(

@@ -1047,8 +1047,7 @@ Widget _composerState(
           ],
           agentDefinitionId: 'coder',
           selection: const SessionModelSelectionDto(
-            providerConnectionId: 'openai',
-            modelId: 'gpt-5.6-sol',
+            modelId: 'openai/gpt-5.6-sol',
           ),
           onAgentChanged: (_) {},
           onModelChanged: (_, _) {},

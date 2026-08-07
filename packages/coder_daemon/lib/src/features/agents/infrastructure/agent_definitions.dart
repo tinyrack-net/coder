@@ -54,6 +54,9 @@ abstract interface class AgentDefinitionStore {
     bool force = false,
   });
 
+  /// Atomically rewrites fixed-model prefixes in active and archived files.
+  Future<void> rewriteModelPrefix(String oldPrefix, String newPrefix);
+
   /// Moves one custom definition to the archive directory.
   Future<void> archive(String id);
 
@@ -108,6 +111,9 @@ abstract interface class AgentDefinitionFiles {
 
   /// Atomically writes one active Markdown document.
   Future<void> writeActive(String id, String source);
+
+  /// Atomically writes one archived Markdown document.
+  Future<void> writeArchived(String id, String source);
 
   /// Atomically moves one active document into the archive.
   Future<void> archive(String id);
@@ -192,6 +198,10 @@ final class NativeAgentDefinitionFiles implements AgentDefinitionFiles {
   @override
   Future<void> writeActive(String id, String source) =>
       _writeAtomic(File(activePath(id)), source);
+
+  @override
+  Future<void> writeArchived(String id, String source) =>
+      _writeAtomic(File(archivePath(id)), source);
 
   @override
   Future<void> archive(String id) async {
@@ -389,6 +399,78 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
       await _files.writeActive(definition.id, source);
       await _reloadLocked();
       return _active[definition.id]!;
+    });
+  }
+
+  @override
+  Future<void> rewriteModelPrefix(String oldPrefix, String newPrefix) async {
+    await initialize();
+    await _serialize(() async {
+      await _reloadLocked();
+      final writes =
+          <({String id, String before, String after, bool archived})>[];
+      for (final entry in <({AgentDefinitionDto value, bool archived})>[
+        for (final value in _active.values) (value: value, archived: false),
+        for (final value in _archived.values) (value: value, archived: true),
+      ]) {
+        final definition = entry.value;
+        final modelId = definition.model.modelId;
+        if (definition.model.source != AgentModelSource.fixed ||
+            modelId == null ||
+            !modelId.startsWith('$oldPrefix/')) {
+          continue;
+        }
+        final before = _sources[definition.id];
+        if (before == null) {
+          throw StateError('Agent source is unavailable: ${definition.id}');
+        }
+        final after = codec.encodeUpdate(
+          originalSource: before,
+          definition: definition.copyWith(
+            model: AgentModelSelectionDto(
+              source: AgentModelSource.fixed,
+              modelId: '$newPrefix/${modelId.substring(oldPrefix.length + 1)}',
+            ),
+          ),
+        );
+        codec.decode(
+          id: definition.id,
+          sourcePath: definition.sourcePath,
+          source: after,
+          isArchived: entry.archived,
+        );
+        writes.add(
+          (
+            id: definition.id,
+            before: before,
+            after: after,
+            archived: entry.archived,
+          ),
+        );
+      }
+      final completed = <({String id, String before, bool archived})>[];
+      try {
+        for (final write in writes) {
+          if (write.archived) {
+            await _files.writeArchived(write.id, write.after);
+          } else {
+            await _files.writeActive(write.id, write.after);
+          }
+          completed.add(
+            (id: write.id, before: write.before, archived: write.archived),
+          );
+        }
+      } catch (_) {
+        for (final write in completed.reversed) {
+          if (write.archived) {
+            await _files.writeArchived(write.id, write.before);
+          } else {
+            await _files.writeActive(write.id, write.before);
+          }
+        }
+        rethrow;
+      }
+      await _reloadLocked();
     });
   }
 
@@ -715,7 +797,7 @@ final class AgentDefinitionService {
   }
 
   /// Whether an active or archived definition fixes itself to a connection.
-  Future<bool> referencesProvider(String connectionId) async {
+  Future<bool> referencesProvider(String modelPrefix) async {
     final definitions = <AgentDefinitionDto>[
       ...await _store.list(),
       ...await _store.listArchived(),
@@ -723,9 +805,13 @@ final class AgentDefinitionService {
     return definitions.any(
       (definition) =>
           definition.model.source == AgentModelSource.fixed &&
-          definition.model.providerConnectionId == connectionId,
+          definition.model.modelId?.startsWith('$modelPrefix/') == true,
     );
   }
+
+  /// Rewrites fixed-model references in active and archived definitions.
+  Future<void> rewriteModelPrefix(String oldPrefix, String newPrefix) =>
+      _store.rewriteModelPrefix(oldPrefix, newPrefix);
 
   /// Creates a custom definition after validating references.
   Future<AgentDefinitionDto> create(
@@ -858,7 +944,7 @@ final class AgentMarkdownCodec {
       throw const FormatException('Agent frontmatter must be a YAML map.');
     }
     final frontmatter = _stringMap(decoded);
-    if (_requiredInt(frontmatter, 'version') != 3) {
+    if (_requiredInt(frontmatter, 'version') != 4) {
       throw const FormatException('Unsupported agent Markdown version.');
     }
     final mode = _enumValue(
@@ -872,15 +958,10 @@ final class AgentMarkdownCodec {
       _requiredString(modelMap, 'source'),
       'model.source',
     );
-    final providerConnectionId = _optionalString(
-      modelMap,
-      'providerConnectionId',
-    );
     final modelId = _optionalString(modelMap, 'modelId');
-    if (modelSource == AgentModelSource.fixed &&
-        (providerConnectionId == null || modelId == null)) {
+    if (modelSource == AgentModelSource.fixed && modelId == null) {
       throw const FormatException(
-        'Fixed agent models require providerConnectionId and modelId.',
+        'Fixed agent models require a qualified modelId.',
       );
     }
     final modelControls = _modelControls(frontmatter['modelControls']);
@@ -903,7 +984,6 @@ final class AgentMarkdownCodec {
       systemPrompt: document.body.trim(),
       model: AgentModelSelectionDto(
         source: modelSource,
-        providerConnectionId: providerConnectionId,
         modelId: modelId,
       ),
       modelControls: modelControls,
@@ -930,7 +1010,7 @@ final class AgentMarkdownCodec {
   }) {
     final document = _AgentMarkdownDocument.parse(originalSource);
     final editor = YamlEditor(document.frontmatter)
-      ..update(<Object>['version'], 3)
+      ..update(<Object>['version'], 4)
       ..update(<Object>['name'], definition.name)
       ..update(<Object>['description'], definition.description)
       ..update(<Object>['mode'], definition.mode.name)
@@ -956,7 +1036,7 @@ final class AgentMarkdownCodec {
   String encodeNew(AgentDefinitionDto definition) {
     final editor = YamlEditor('')
       ..update(<Object>[], <String, Object?>{
-        'version': 3,
+        'version': 4,
         'name': definition.name,
         'description': definition.description,
         'mode': definition.mode.name,
@@ -974,7 +1054,6 @@ final class AgentMarkdownCodec {
   static Map<String, Object?> _modelMap(AgentModelSelectionDto model) =>
       <String, Object?>{
         'source': model.source.name,
-        'providerConnectionId': ?model.providerConnectionId,
         'modelId': ?model.modelId,
       };
 

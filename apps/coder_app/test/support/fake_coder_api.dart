@@ -111,6 +111,7 @@ final class FakeCoderApi
     this.failNextAgentUpdate = false,
     this.failNextSkillUpdate = false,
     this.catalogRefreshError,
+    this.providerConnectError,
     this.modelListGate,
     this.suggestDirectoriesGate,
     this.workspaceCatalogGate,
@@ -143,7 +144,14 @@ final class FakeCoderApi
        ),
        _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
-       _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
+       _connections =
+           (connections ?? <ProviderConnectionDto>[_openAIConnection])
+               .map(
+                 (connection) => connection.modelPrefix.isEmpty
+                     ? connection.copyWith(modelPrefix: connection.definitionId)
+                     : connection,
+               )
+               .toList(),
        _workspaces = workspaces ?? <WorkspaceDto>[],
        _worktrees = worktrees ?? <WorktreeDto>[],
        _agents = agents ?? <SessionDto>[],
@@ -165,13 +173,27 @@ final class FakeCoderApi
          'openai': <ProviderModelDto>[_openAIModel],
          for (final entry
              in (models ?? <String, List<ProviderModelDto>>{}).entries)
-           entry.key: List<ProviderModelDto>.of(entry.value),
+           entry.key: entry.value
+               .map(
+                 (model) => model.id.contains('/')
+                     ? model
+                     : model.copyWith(
+                         id: '${entry.key}/${model.id}',
+                         providerModelId: model.providerModelId.isEmpty
+                             ? model.id
+                             : model.providerModelId,
+                       ),
+               )
+               .toList(),
        };
 
   static final DateTime _now = DateTime.utc(2026);
 
   /// Error thrown once by the next explicit provider catalog refresh.
   CoderClientException? catalogRefreshError;
+
+  /// Error thrown once by the next explicit provider connection.
+  CoderClientException? providerConnectError;
   static const ServerInfoDto _defaultServerInfo = ServerInfoDto(
     serverId: 'server',
     version: 'test',
@@ -221,6 +243,7 @@ final class FakeCoderApi
   static final ProviderConnectionDto _openAIConnection = ProviderConnectionDto(
     id: 'openai',
     definitionId: 'openai',
+    modelPrefix: 'openai',
     displayName: 'OpenAI',
     status: ProviderConnectionStatus.connected,
     authKind: ProviderAuthKind.apiKey,
@@ -230,7 +253,8 @@ final class FakeCoderApi
   );
   static const ProviderModelDto _openAIModel = ProviderModelDto(
     connectionId: 'openai',
-    id: 'gpt-5.6-sol',
+    id: 'openai/gpt-5.6-sol',
+    providerModelId: 'gpt-5.6-sol',
     label: 'GPT-5.6 Sol',
     source: ProviderModelSource.bundled,
     capabilities: ModelCapabilitiesDto(
@@ -1434,16 +1458,28 @@ final class FakeCoderApi
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String? modelPrefix,
+  }) async {
+    final error = providerConnectError;
+    providerConnectError = null;
+    if (error != null) throw error;
+    final existing = _connections
+        .where((connection) => connection.definitionId == definitionId)
+        .length;
+    final connectionId = existing == 0
+        ? definitionId
+        : '$definitionId-${existing + 1}';
     credentials[definitionId] = apiKey;
+    credentials[connectionId] = apiKey;
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
     return _saveConnection(
       ProviderConnectionDto(
-        id: definitionId,
+        id: connectionId,
         definitionId: definitionId,
+        modelPrefix: modelPrefix ?? definitionId,
         displayName: definition.name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.apiKey,
@@ -1455,14 +1491,24 @@ final class FakeCoderApi
   }
 
   @override
-  Future<ProviderConnectionDto> connectProviderNone(String definitionId) async {
+  Future<ProviderConnectionDto> connectProviderNone(
+    String definitionId, {
+    String? modelPrefix,
+  }) async {
+    final existing = _connections
+        .where((connection) => connection.definitionId == definitionId)
+        .length;
+    final connectionId = existing == 0
+        ? definitionId
+        : '$definitionId-${existing + 1}';
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
     return _saveConnection(
       ProviderConnectionDto(
-        id: definitionId,
+        id: connectionId,
         definitionId: definitionId,
+        modelPrefix: modelPrefix ?? definitionId,
         displayName: definition.name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.none,
@@ -1476,11 +1522,13 @@ final class FakeCoderApi
   @override
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
-    String methodId,
-  ) async => ProviderAuthAttemptDto(
+    String methodId, {
+    String? modelPrefix,
+  }) async => ProviderAuthAttemptDto(
     id: 'attempt',
     definitionId: definitionId,
     methodId: methodId,
+    modelPrefix: modelPrefix ?? definitionId,
     status: ProviderAuthAttemptStatus.awaitingUser,
     authorizationUrl: 'https://auth.example/authorize',
     userCode: methodId.contains('device') ? 'CODE-1234' : null,
@@ -1510,6 +1558,15 @@ final class FakeCoderApi
         credentialOrigin: ProviderCredentialOrigin.none,
       ),
     );
+  }
+
+  @override
+  Future<ProviderConnectionDto> updateProviderModelPrefix(
+    String connectionId,
+    String modelPrefix,
+  ) async {
+    final current = _connections.singleWhere((item) => item.id == connectionId);
+    return _saveConnection(current.copyWith(modelPrefix: modelPrefix));
   }
 
   @override
@@ -1546,7 +1603,10 @@ final class FakeCoderApi
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
+    String? modelPrefix,
   }) async {
+    final prefix =
+        modelPrefix ?? config.name.toLowerCase().replaceAll(' ', '-');
     if (apiKey != null) credentials[id] = apiKey;
     for (final manualModel in config.models) {
       _models
@@ -1554,7 +1614,8 @@ final class FakeCoderApi
           .add(
             ProviderModelDto(
               connectionId: id,
-              id: manualModel.id,
+              id: '$prefix/${manualModel.id}',
+              providerModelId: manualModel.id,
               label: manualModel.label,
               source: ProviderModelSource.manual,
               capabilities: const ModelCapabilitiesDto(
@@ -1569,6 +1630,7 @@ final class FakeCoderApi
       ProviderConnectionDto(
         id: id,
         definitionId: 'custom',
+        modelPrefix: prefix,
         displayName: config.name,
         status: ProviderConnectionStatus.connected,
         authKind: config.authenticationRequired

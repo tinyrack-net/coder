@@ -44,10 +44,7 @@ List<RpcBindingDescriptor> sessionRpcBindings({
         );
       }
       if (request.model case final selected?) {
-        await models.validateAgentModel(
-          selected.providerConnectionId,
-          selected.modelId,
-        );
+        await models.validateQualifiedModel(selected.qualifiedModelId);
       } else {
         await models.resolveAgentModel(definition.model);
       }

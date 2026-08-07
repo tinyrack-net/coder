@@ -235,6 +235,7 @@ final class _Backend implements ProviderCliBackend {
       ProviderConnectionDto(
         id: id,
         definitionId: id,
+        modelPrefix: id,
         displayName: name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.apiKey,
@@ -246,14 +247,18 @@ final class _Backend implements ProviderCliBackend {
   @override
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String? modelPrefix,
+  }) async {
     apiKeys[definitionId] = apiKey;
     return connection(definitionId, definitionId);
   }
 
   @override
-  Future<ProviderConnectionDto> connectNone(String definitionId) async {
+  Future<ProviderConnectionDto> connectNone(
+    String definitionId, {
+    String? modelPrefix,
+  }) async {
     noneConnections.add(definitionId);
     return connection(definitionId, definitionId);
   }
@@ -337,8 +342,9 @@ final class _Backend implements ProviderCliBackend {
   @override
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
-    String methodId,
-  ) async {
+    String methodId, {
+    String? modelPrefix,
+  }) async {
     return ProviderAuthAttemptDto(
       id: 'attempt',
       definitionId: definitionId,
@@ -360,4 +366,12 @@ final class _Backend implements ProviderCliBackend {
       error: authError,
     );
   }
+
+  @override
+  Future<ProviderConnectionDto> updateModelPrefix(
+    String connectionId,
+    String modelPrefix,
+  ) async => connection(connectionId, connectionId).copyWith(
+    modelPrefix: modelPrefix,
+  );
 }

@@ -131,8 +131,7 @@ void main() {
     model:
         model ??
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-test',
+          modelId: 'openai/gpt-test',
         ),
     createdAt: now,
     updatedAt: now,
@@ -176,8 +175,8 @@ void main() {
         _ => throw const FormatException('Unknown agent definition.'),
       },
       fallbackModel: () async => null,
-      validateModel: (connectionId, modelId) async {
-        validatedModels.add((connectionId, modelId));
+      validateModel: (modelId) async {
+        validatedModels.add(('', modelId));
         if (modelId == 'missing-model') {
           throw const CollaborationException('Unknown model.');
         }
@@ -343,14 +342,14 @@ void main() {
         turnId: 'turn-1',
         taskName: 'fast_task',
         message: 'Work.',
-        model: 'gpt-cheap',
+        model: 'openai/gpt-cheap',
       );
-      expect(validatedModels.single, ('openai', 'gpt-cheap'));
+      expect(validatedModels.single, ('', 'openai/gpt-cheap'));
       final child = (await database.sessionDao.getByAgentPath(
         'root',
         '/root/fast_task',
       ))!;
-      expect(child.model?.modelId, 'gpt-cheap');
+      expect(child.model?.modelId, 'openai/gpt-cheap');
       await expectLater(
         service.spawn(
           caller: root,

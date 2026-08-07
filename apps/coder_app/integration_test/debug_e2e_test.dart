@@ -13,7 +13,6 @@ import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
-import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -1702,6 +1701,7 @@ void main() {
       );
       await tester.tap(find.text('API key 필요'));
       await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await _acceptSuggestedProviderPrefix(tester);
       await pumpUntil(tester, find.text('Model 자동 조회 실패'));
       await tester.tap(find.widgetWithText(TRButton, '나중에'));
       await pumpUntil(tester, find.text('E2E Provider'));
@@ -1715,7 +1715,7 @@ void main() {
       // own row carries rather than by walking up to a card that holds every
       // connection.
       final providerMenu = find.byKey(
-        const ValueKey<String>('provider-actions-custom'),
+        ValueKey<String>('provider-actions-${degradedProvider.id}'),
       );
       await tester.ensureVisible(providerMenu);
       await tester.pumpAndSettle();
@@ -1738,7 +1738,10 @@ void main() {
         (await remoteClient.providers.listProviderModels(
           providerConnection.id,
         )).map((model) => model.id),
-        containsAll(<String>['e2e-model', selectedModelId]),
+        containsAll(<String>[
+          '${providerConnection.modelPrefix}/e2e-model',
+          '${providerConnection.modelPrefix}/$selectedModelId',
+        ]),
       );
       final connectedSection = find.byKey(
         const ValueKey('provider-settings-connected'),
@@ -1794,17 +1797,24 @@ void main() {
       await tester.ensureVisible(addDeepSeek);
       await tester.tap(addDeepSeek);
       await tester.pumpAndSettle();
+      await _acceptSuggestedProviderPrefix(tester);
       await tester.enterText(_trTextInput('API key'), 'invalid-key');
       await tester.tap(find.widgetWithText(TRButton, '연결'));
+      ProviderConnectionDto? failedDeepSeek;
       await pumpUntilCondition(
         tester,
         () async {
           final matches =
               (await remoteClient.providers.listProviderConnections())
-                  .where((item) => item.id == 'deepseek')
+                  .where(
+                    (item) =>
+                        item.definitionId == 'deepseek' &&
+                        item.status == ProviderConnectionStatus.error,
+                  )
                   .toList();
-          return matches.isNotEmpty &&
-              matches.single.status == ProviderConnectionStatus.error;
+          if (matches.length != 1) return false;
+          failedDeepSeek = matches.single;
+          return true;
         },
         'invalid provider credential to be rejected',
       );
@@ -1812,12 +1822,12 @@ void main() {
       // reloading, so wait for the card rather than sampling one frame.
       await pumpUntil(tester, find.textContaining('credential rejected'));
       expect(find.textContaining('credential rejected'), findsOneWidget);
-      await _disconnectProviderCard(tester, 'DeepSeek');
+      await _disconnectProviderConnection(tester, failedDeepSeek!.id);
       await pumpUntilCondition(
         tester,
         () async =>
             (await remoteClient.providers.listProviderConnections())
-                .singleWhere((item) => item.id == 'deepseek')
+                .singleWhere((item) => item.id == failedDeepSeek!.id)
                 .status ==
             ProviderConnectionStatus.disconnected,
         'failed provider to disconnect',
@@ -1829,45 +1839,64 @@ void main() {
       await tester.ensureVisible(addDeepSeek);
       await tester.tap(addDeepSeek);
       await tester.pumpAndSettle();
+      await _acceptSuggestedProviderPrefix(tester);
       await tester.enterText(_trTextInput('API key'), 'valid-key');
       await tester.tap(find.widgetWithText(TRButton, '연결'));
+      ProviderConnectionDto? connectedDeepSeek;
       await pumpUntilCondition(
         tester,
         () async {
           final matches =
               (await remoteClient.providers.listProviderConnections())
-                  .where((item) => item.id == 'deepseek')
+                  .where(
+                    (item) =>
+                        item.definitionId == 'deepseek' &&
+                        item.status == ProviderConnectionStatus.connected,
+                  )
                   .toList();
-          return matches.isNotEmpty &&
-              matches.single.status == ProviderConnectionStatus.connected;
+          if (matches.length != 1) return false;
+          connectedDeepSeek = matches.single;
+          return true;
         },
         'corrected provider credential to connect',
       );
-      await _disconnectProviderCard(tester, 'DeepSeek');
+      await _disconnectProviderConnection(tester, connectedDeepSeek!.id);
 
       final addOllama = find.byKey(const ValueKey('provider-add-ollama'));
       await tester.ensureVisible(addOllama);
       await tester.tap(addOllama);
+      await tester.pumpAndSettle();
+      await _acceptSuggestedProviderPrefix(tester);
+      ProviderConnectionDto? connectedOllama;
       await pumpUntilCondition(
         tester,
         () async {
           final matches =
               (await remoteClient.providers.listProviderConnections())
-                  .where((item) => item.id == 'ollama')
+                  .where(
+                    (item) =>
+                        item.definitionId == 'ollama' &&
+                        item.status == ProviderConnectionStatus.connected,
+                  )
                   .toList();
-          return matches.isNotEmpty &&
-              matches.single.status == ProviderConnectionStatus.connected &&
-              matches.single.credentialOrigin == ProviderCredentialOrigin.none;
+          if (matches.length != 1 ||
+              matches.single.credentialOrigin !=
+                  ProviderCredentialOrigin.none) {
+            return false;
+          }
+          connectedOllama = matches.single;
+          return true;
         },
         'no-auth provider to connect',
       );
-      await _disconnectProviderCard(tester, 'Ollama');
+      await _disconnectProviderConnection(tester, connectedOllama!.id);
       await pumpUntilCondition(
         tester,
         () async => (await remoteClient.providers.listProviderConnections())
             .where(
               (item) =>
-                  (item.id == 'deepseek' || item.id == 'ollama') &&
+                  (item.definitionId == 'deepseek' ||
+                      item.definitionId == 'ollama') &&
                   item.status == ProviderConnectionStatus.connected,
             )
             .isEmpty,
@@ -1878,13 +1907,16 @@ void main() {
       expect(
         remainingConnections.where(
           (item) =>
-              (item.id == 'deepseek' || item.id == 'ollama') &&
+              (item.definitionId == 'deepseek' ||
+                  item.definitionId == 'ollama') &&
               item.status == ProviderConnectionStatus.connected,
         ),
         isEmpty,
       );
       expect(
-        remainingConnections.singleWhere((item) => item.id == 'openai').status,
+        remainingConnections
+            .singleWhere((item) => item.definitionId == 'openai')
+            .status,
         ProviderConnectionStatus.connected,
       );
 
@@ -2229,17 +2261,13 @@ Future<void> _selectDaemon(
   }
 }
 
-Future<void> _disconnectProviderCard(
+Future<void> _disconnectProviderConnection(
   WidgetTester tester,
-  String displayName,
+  String connectionId,
 ) async {
-  // Connections share one card, so the menu is scoped to the connection's own
-  // row rather than to a card that holds every connection.
-  final row = find.ancestor(
-    of: find.text(displayName),
-    matching: find.byType(SettingsRow),
+  final menu = find.byKey(
+    ValueKey<String>('provider-actions-$connectionId'),
   );
-  final menu = find.descendant(of: row.first, matching: find.byType(TRMenu));
   await pumpUntil(tester, menu);
   await Scrollable.ensureVisible(tester.element(menu), alignment: 0.3);
   await tester.pumpAndSettle();
@@ -2248,6 +2276,22 @@ Future<void> _disconnectProviderCard(
   await tester.tap(find.text('연결 해제'));
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _acceptSuggestedProviderPrefix(WidgetTester tester) async {
+  await pumpUntil(
+    tester,
+    find.byKey(const ValueKey<String>('provider-model-prefix')),
+  );
+  await tester.tap(
+    find
+        .descendant(
+          of: find.byType(TRAlertDialog),
+          matching: find.byType(TRButton),
+        )
+        .last,
+  );
   await tester.pumpAndSettle();
 }
 

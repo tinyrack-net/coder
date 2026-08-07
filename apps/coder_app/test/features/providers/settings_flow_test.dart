@@ -38,7 +38,7 @@ void main() {
       );
       expect(
         find.byKey(const ValueKey('provider-add-openai')),
-        findsNothing,
+        findsOneWidget,
       );
       expect(
         find.byKey(const ValueKey('provider-add-deepseek')),
@@ -79,6 +79,7 @@ void main() {
       expect(find.text('Provider 추가'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
       await tester.pumpAndSettle();
+      await _acceptSuggestedPrefix(tester);
 
       expect(_field('API key'), findsOneWidget);
       expect(_field('Base URL'), findsNothing);
@@ -108,6 +109,7 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
       await tester.pumpAndSettle();
+      await _acceptSuggestedPrefix(tester);
       expect(find.text('Sign in with ChatGPT'), findsOneWidget);
       expect(find.text('실험적'), findsOneWidget);
       expect(find.text('API key'), findsOneWidget);
@@ -145,6 +147,7 @@ void main() {
       await _pumpSettings(tester, api);
       await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
       await tester.pumpAndSettle();
+      await _acceptSuggestedPrefix(tester);
       await tester.tap(find.text('Sign in with ChatGPT'));
       await tester.pump();
       events.add(
@@ -189,6 +192,7 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
       await tester.pumpAndSettle();
+      await _acceptSuggestedPrefix(tester);
       await tester.tap(find.text('API key'));
       await tester.pumpAndSettle();
       await tester.enterText(_field('API key'), 'openai-secret');
@@ -198,6 +202,7 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('provider-add-ollama')));
       await tester.pumpAndSettle();
+      await _acceptSuggestedPrefix(tester);
       final ollama = (await api.providers.listProviderConnections())
           .singleWhere(
             (connection) => connection.id == 'ollama',
@@ -219,6 +224,64 @@ void main() {
       'feature_test__provider_connection_management__widget',
     ],
   );
+
+  testWidgets('the same provider can be added again with a unique prefix', (
+    tester,
+  ) async {
+    final api = FakeCoderApi(connections: <ProviderConnectionDto>[]);
+    await _pumpSettings(tester, api);
+
+    await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+    await tester.pumpAndSettle();
+    await _acceptSuggestedPrefix(tester);
+    await tester.tap(find.text('API key'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('API key'), 'first');
+    await tester.tap(find.widgetWithText(TRButton, '연결'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('provider-add-openai')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+    await tester.pumpAndSettle();
+    final prefix = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const ValueKey('provider-model-prefix')),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(prefix.controller.text, 'openai-2');
+  });
+
+  testWidgets('a server prefix conflict is inline with a fresh suggestion', (
+    tester,
+  ) async {
+    final api = FakeCoderApi(
+      connections: <ProviderConnectionDto>[],
+      providerConnectError: const CoderClientException(
+        'Model prefix is already in use: openai',
+        code: 'model_prefix_conflict',
+      ),
+    );
+    await _pumpSettings(tester, api);
+
+    await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+    await tester.pumpAndSettle();
+    await _acceptSuggestedPrefix(tester);
+    await tester.tap(find.text('API key'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('API key'), 'secret');
+    await tester.tap(find.widgetWithText(TRButton, '연결'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('이미 사용 중인 모델 Prefix'), findsOneWidget);
+    final prefix = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const ValueKey('provider-model-prefix')),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(prefix.controller.text, 'openai-2');
+  });
 
   testWidgets(
     'catalog refresh shows a transient failure and retries',
@@ -274,6 +337,7 @@ void main() {
       await tester.enterText(_field('수동 model ID'), 'lab-model');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
+      await _acceptSuggestedPrefix(tester);
 
       final custom = (await api.providers.listProviderConnections())
           .singleWhere(
@@ -298,10 +362,11 @@ void main() {
     final custom = ProviderConnectionDto(
       id: 'custom-one',
       definitionId: 'custom',
+      modelPrefix: 'lab',
       displayName: 'Lab',
       status: ProviderConnectionStatus.degraded,
       authKind: ProviderAuthKind.apiKey,
-      credentialOrigin: ProviderCredentialOrigin.environment,
+      credentialOrigin: ProviderCredentialOrigin.stored,
       error: 'model discovery unavailable',
       customConfig: const CustomProviderConfigDto(
         name: 'Lab',
@@ -338,7 +403,7 @@ void main() {
     );
     await _pumpSettings(tester, api);
 
-    expect(find.text('제한된 연결 · Environment credential'), findsOneWidget);
+    expect(find.text('lab · 제한된 연결 · 저장된 credential'), findsOneWidget);
     expect(find.text('model discovery unavailable'), findsOneWidget);
     await tester.tap(findAccessibleAction('연결 작업'));
     await tester.pumpAndSettle();
@@ -417,7 +482,7 @@ void main() {
       ProviderCredentialOrigin.stored,
       ProviderCredentialOrigin.oauth,
       ProviderCredentialOrigin.none,
-      ProviderCredentialOrigin.environment,
+      ProviderCredentialOrigin.stored,
     ];
     final api = FakeCoderApi(
       connections: <ProviderConnectionDto>[
@@ -436,10 +501,13 @@ void main() {
     );
     await _pumpSettings(tester, api);
 
-    expect(find.text('연결 중 · 저장된 credential'), findsOneWidget);
-    expect(find.text('연결됨 · OAuth'), findsOneWidget);
-    expect(find.text('오류 · 인증 없음'), findsOneWidget);
-    expect(find.text('재로그인 필요 · Environment credential'), findsOneWidget);
+    expect(find.text('definition-0 · 연결 중 · 저장된 credential'), findsOneWidget);
+    expect(find.text('definition-1 · 연결됨 · OAuth'), findsOneWidget);
+    expect(find.text('definition-2 · 오류 · 인증 없음'), findsOneWidget);
+    expect(
+      find.text('definition-3 · 재로그인 필요 · 저장된 credential'),
+      findsOneWidget,
+    );
     // A successful ChatGPT sign-in carries no error, so the card must not show
     // a "Limited connection" status or a danger-coloured diagnostic line.
     expect(find.text('제한된 연결 · OAuth'), findsNothing);
@@ -506,8 +574,7 @@ void main() {
       expect(
         api.defaultModel,
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       expect(
@@ -532,8 +599,7 @@ void main() {
       expect(
         api.defaultModel,
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       expect(
@@ -678,6 +744,15 @@ Future<void> _pumpUntilPresent(WidgetTester tester, Finder finder) async {
     if (finder.evaluate().isNotEmpty) return;
   }
   fail('Timed out waiting for $finder.');
+}
+
+Future<void> _acceptSuggestedPrefix(WidgetTester tester) async {
+  expect(
+    find.byKey(const ValueKey('provider-model-prefix')),
+    findsOneWidget,
+  );
+  await tester.tap(find.widgetWithText(TRButton, '연결'));
+  await tester.pumpAndSettle();
 }
 
 final class _ExternalUrlOpener implements ExternalUrlOpener {

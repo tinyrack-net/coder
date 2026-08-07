@@ -59,10 +59,7 @@ final class SessionSettingsService implements SessionSettingsPort {
         patch.mode != null || patch.hasModel || patch.hasModelControls;
     if (changesIdleSettings) _requireIdle(sessionId, 'settings');
     if (patch.hasModel && patch.model != null) {
-      await _models.validateAgentModel(
-        patch.model!.providerConnectionId,
-        patch.model!.modelId,
-      );
+      await _models.validateQualifiedModel(patch.model!.qualifiedModelId);
     }
 
     var session = (await _sessions.getById(sessionId))!;
@@ -78,15 +75,13 @@ final class SessionSettingsService implements SessionSettingsPort {
       }
       targetControls = const <String, ModelControlValueDto>{};
     } else if (patch.hasModelControls) {
-      await _models.validateModelControls(
-        targetModel.providerConnectionId,
-        targetModel.modelId,
+      await _models.validateQualifiedModelControls(
+        targetModel.qualifiedModelId,
         targetControls,
       );
     } else if (patch.hasModel) {
-      targetControls = await _models.retainValidModelControls(
-        targetModel.providerConnectionId,
-        targetModel.modelId,
+      targetControls = await _models.retainValidQualifiedModelControls(
+        targetModel.qualifiedModelId,
         targetControls,
       );
     }
@@ -136,17 +131,13 @@ final class SessionSettingsService implements SessionSettingsPort {
     await _requireSession(sessionId);
     _requireIdle(sessionId, 'model');
     if (model != null) {
-      await _models.validateAgentModel(
-        model.providerConnectionId,
-        model.modelId,
-      );
+      await _models.validateQualifiedModel(model.qualifiedModelId);
     }
     final current = (await _sessions.getById(sessionId))!;
     final controls = model == null
         ? const <String, ModelControlValueDto>{}
-        : await _models.retainValidModelControls(
-            model.providerConnectionId,
-            model.modelId,
+        : await _models.retainValidQualifiedModelControls(
+            model.qualifiedModelId,
             current.modelControls,
           );
     return _emit(

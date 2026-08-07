@@ -13,7 +13,6 @@ void main() {
       osHomeDirectory: '/os-home',
       host: '0.0.0.0',
       port: 8123,
-      apiKey: 'api-key',
       bearerToken: 'token',
       version: '2.0.0',
       useEnvironmentCredentials: false,
@@ -25,7 +24,6 @@ void main() {
     expect(decoded.osHomeDirectory, '/os-home');
     expect(decoded.host, '0.0.0.0');
     expect(decoded.port, 8123);
-    expect(decoded.apiKey, 'api-key');
     expect(decoded.bearerToken, 'token');
     expect(decoded.version, '2.0.0');
     expect(decoded.useEnvironmentCredentials, isFalse);
@@ -37,7 +35,6 @@ void main() {
       osHomeDirectory: '/other-os-home',
       host: 'localhost',
       port: 9000,
-      apiKey: 'other-key',
       bearerToken: 'other-token',
       useEnvironmentCredentials: true,
     );
@@ -47,7 +44,6 @@ void main() {
     expect(copy.osHomeDirectory, '/other-os-home');
     expect(copy.host, 'localhost');
     expect(copy.port, 9000);
-    expect(copy.apiKey, 'other-key');
     expect(copy.bearerToken, 'other-token');
     expect(copy.version, config.version);
     expect(copy.useEnvironmentCredentials, isTrue);
@@ -77,7 +73,6 @@ void main() {
     expect(defaults.port, 7337);
 
     final override = DaemonConfig.fromEnvironment(
-      apiKey: 'key',
       environment: const _Environment(
         values: <String, String>{
           'TINYRACK_CODER_HOME': '/override',
@@ -95,7 +90,6 @@ void main() {
     expect(override.userHomeDirectory, '/unused');
     expect(override.host, '0.0.0.0');
     expect(override.port, 9001);
-    expect(override.apiKey, 'key');
     expect(override.bearerToken, 'token');
   });
 

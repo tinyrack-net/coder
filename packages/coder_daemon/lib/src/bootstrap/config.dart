@@ -44,7 +44,6 @@ class DaemonConfig {
     this.osHomeDirectory,
     this.host = '127.0.0.1',
     this.port = 7337,
-    this.apiKey,
     this.bearerToken,
     this.version = packageVersion,
     this.useEnvironmentCredentials = true,
@@ -60,7 +59,6 @@ class DaemonConfig {
         osHomeDirectory: value['osHomeDirectory'] as String?,
         host: value['host']! as String,
         port: value['port']! as int,
-        apiKey: value['apiKey'] as String?,
         bearerToken: value['bearerToken'] as String?,
         version: value['version']! as String,
         useEnvironmentCredentials: value['useEnvironmentCredentials']! as bool,
@@ -71,7 +69,6 @@ class DaemonConfig {
 
   /// Creates a [DaemonConfig].
   factory DaemonConfig.fromEnvironment({
-    String? apiKey,
     DaemonEnvironment environment = const IoDaemonEnvironment(),
   }) {
     final values = environment.values;
@@ -86,7 +83,6 @@ class DaemonConfig {
       osHomeDirectory: directories.osHomeDirectory,
       host: host,
       port: port,
-      apiKey: apiKey,
       bearerToken: values['TINYRACK_CODER_TOKEN'],
       allowedOrigins: parseAllowedOrigins(
         values['TINYRACK_CODER_ALLOWED_ORIGINS'],
@@ -118,16 +114,13 @@ class DaemonConfig {
   /// The port public API member.
   final int port;
 
-  /// The apiKey public API member.
-  final String? apiKey;
-
   /// The bearerToken public API member.
   final String? bearerToken;
 
   /// The version public API member.
   final String version;
 
-  /// Whether built-in providers may use credentials from daemon environment.
+  /// Whether MCP secret substitution may read the daemon environment.
   final bool useEnvironmentCredentials;
 
   /// Browser origins permitted to call the daemon.
@@ -141,7 +134,6 @@ class DaemonConfig {
     String? osHomeDirectory,
     String? host,
     int? port,
-    String? apiKey,
     String? bearerToken,
     bool? useEnvironmentCredentials,
     Set<String>? allowedOrigins,
@@ -152,7 +144,6 @@ class DaemonConfig {
     osHomeDirectory: osHomeDirectory ?? this.osHomeDirectory,
     host: host ?? this.host,
     port: port ?? this.port,
-    apiKey: apiKey ?? this.apiKey,
     bearerToken: bearerToken ?? this.bearerToken,
     version: version,
     useEnvironmentCredentials:
@@ -168,7 +159,6 @@ class DaemonConfig {
     'osHomeDirectory': osHomeDirectory,
     'host': host,
     'port': port,
-    'apiKey': apiKey,
     'bearerToken': bearerToken,
     'version': version,
     'useEnvironmentCredentials': useEnvironmentCredentials,

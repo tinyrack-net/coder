@@ -490,8 +490,7 @@ void main() {
           agentDefinitionId: agent.agentDefinitionId,
           mode: SessionMode.plan,
           model: const SessionModelSelectionDto(
-            providerConnectionId: 'provider',
-            modelId: 'model',
+            modelId: 'provider/model',
           ),
         ),
         agent,
@@ -502,8 +501,7 @@ void main() {
           const SessionSettingsPatchDto(
             hasModel: true,
             model: SessionModelSelectionDto(
-              providerConnectionId: 'provider',
-              modelId: 'model',
+              modelId: 'provider/model',
             ),
           ),
         ),
@@ -731,8 +729,7 @@ void main() {
       expect(
         await client.getDefaultModel(),
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       await client.setDefaultModel(null);
@@ -1451,8 +1448,7 @@ void _registerFixtureMethods(
     ).toJson(),
     providersGetDefaultModelProcedure.name: const DefaultModelDto(
       model: SessionModelSelectionDto(
-        providerConnectionId: 'openai',
-        modelId: 'gpt-5.6-sol',
+        modelId: 'openai/gpt-5.6-sol',
       ),
     ).toJson(),
     providersSetDefaultModelProcedure.name: const <String, dynamic>{},

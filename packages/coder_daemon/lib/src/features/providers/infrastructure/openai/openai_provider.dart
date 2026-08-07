@@ -149,8 +149,7 @@ class OpenAIResponsesProvider implements ModelProvider {
   ) async* {
     if (_config.requiresApiKey && _config.apiKey.isEmpty) {
       throw const OpenAIProviderException(
-        'OpenAI API key is not configured. Set it in the desktop app or '
-        'OPENAI_API_KEY.',
+        'OpenAI API key is not configured. Connect the provider first.',
       );
     }
     final cancelToken = CancelToken();

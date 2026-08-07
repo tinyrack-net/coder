@@ -3,7 +3,8 @@ part of '../../app/application_controllers_test.dart';
 void _registerProvidersControllerTests() {
   const model = ProviderModelDto(
     connectionId: 'openai',
-    id: 'gpt-5.6-sol',
+    id: 'openai/gpt-5.6-sol',
+    providerModelId: 'gpt-5.6-sol',
     label: 'GPT',
     source: ProviderModelSource.bundled,
     capabilities: ModelCapabilitiesDto(

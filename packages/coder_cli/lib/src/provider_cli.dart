@@ -15,23 +15,34 @@ abstract interface class ProviderCliBackend {
   /// Connects a hosted provider with an API key.
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey,
-  );
+    String apiKey, {
+    String? modelPrefix,
+  });
 
   /// Connects a local provider without authentication.
-  Future<ProviderConnectionDto> connectNone(String definitionId);
+  Future<ProviderConnectionDto> connectNone(
+    String definitionId, {
+    String? modelPrefix,
+  });
 
   /// Starts an interactive OAuth authorization flow.
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
-    String methodId,
-  );
+    String methodId, {
+    String? modelPrefix,
+  });
 
   /// Returns the latest OAuth attempt state.
   Future<ProviderAuthAttemptDto> authStatus(String attemptId);
 
   /// Disconnects one connection.
   Future<void> disconnect(String connectionId);
+
+  /// Changes a connection model prefix.
+  Future<ProviderConnectionDto> updateModelPrefix(
+    String connectionId,
+    String modelPrefix,
+  );
 
   /// Explicitly refreshes public model metadata.
   Future<ProviderCatalogDto> refreshCatalog();
@@ -54,18 +65,33 @@ final class CoderApiProviderCliBackend implements ProviderCliBackend {
   @override
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey,
-  ) => _api.providers.connectProviderApiKey(definitionId, apiKey);
+    String apiKey, {
+    String? modelPrefix,
+  }) => _api.providers.connectProviderApiKey(
+    definitionId,
+    apiKey,
+    modelPrefix: modelPrefix,
+  );
 
   @override
-  Future<ProviderConnectionDto> connectNone(String definitionId) =>
-      _api.providers.connectProviderNone(definitionId);
+  Future<ProviderConnectionDto> connectNone(
+    String definitionId, {
+    String? modelPrefix,
+  }) => _api.providers.connectProviderNone(
+    definitionId,
+    modelPrefix: modelPrefix,
+  );
 
   @override
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
-    String methodId,
-  ) => _api.providers.startProviderAuth(definitionId, methodId);
+    String methodId, {
+    String? modelPrefix,
+  }) => _api.providers.startProviderAuth(
+    definitionId,
+    methodId,
+    modelPrefix: modelPrefix,
+  );
 
   @override
   Future<ProviderAuthAttemptDto> authStatus(String attemptId) =>
@@ -74,6 +100,12 @@ final class CoderApiProviderCliBackend implements ProviderCliBackend {
   @override
   Future<void> disconnect(String connectionId) =>
       _api.providers.disconnectProvider(connectionId);
+
+  @override
+  Future<ProviderConnectionDto> updateModelPrefix(
+    String connectionId,
+    String modelPrefix,
+  ) => _api.providers.updateProviderModelPrefix(connectionId, modelPrefix);
 
   @override
   Future<ProviderCatalogDto> refreshCatalog() =>
@@ -97,7 +129,8 @@ Future<int> providerList({
     final name =
         definitions[connection.definitionId]?.name ?? connection.displayName;
     output.writeln(
-      '${connection.id}\t$name\t${connection.status.name}',
+      '${connection.id}\t${connection.modelPrefix}\t$name\t'
+      '${connection.status.name}',
     );
   }
   return 0;
@@ -115,6 +148,7 @@ Future<int> providerConnect({
   required String definitionId,
   String? methodId,
   String? apiKey,
+  String? modelPrefix,
   Future<String> Function()? readSecret,
   CliProgress progress = const SilentCliProgress(),
   Duration pollInterval = const Duration(seconds: 1),
@@ -148,16 +182,24 @@ Future<int> providerConnect({
   switch (method.flow) {
     case ProviderAuthFlow.apiKey:
       final key = apiKey ?? await (readSecret?.call() ?? _missingSecret());
-      await backend.connectApiKey(definitionId, key);
+      await backend.connectApiKey(
+        definitionId,
+        key,
+        modelPrefix: modelPrefix,
+      );
       output.writeln('Connected ${definition.name}.');
       return 0;
     case ProviderAuthFlow.none:
-      await backend.connectNone(definitionId);
+      await backend.connectNone(definitionId, modelPrefix: modelPrefix);
       output.writeln('Connected ${definition.name}.');
       return 0;
     case ProviderAuthFlow.oauthBrowser:
     case ProviderAuthFlow.oauthDevice:
-      final attempt = await backend.startAuth(definitionId, method.id);
+      final attempt = await backend.startAuth(
+        definitionId,
+        method.id,
+        modelPrefix: modelPrefix,
+      );
       output.writeln('Open ${attempt.authorizationUrl}');
       if (attempt.userCode case final code?) output.writeln('Code: $code');
       progress.start('Waiting for authorization');
@@ -178,6 +220,21 @@ Future<int> providerConnect({
       output.writeln(failure);
       return 1;
   }
+}
+
+/// Changes a connection's qualified-model prefix.
+Future<int> providerPrefixSet({
+  required ProviderCliBackend backend,
+  required StringSink output,
+  required String connectionId,
+  required String modelPrefix,
+}) async {
+  final connection = await backend.updateModelPrefix(
+    connectionId,
+    modelPrefix,
+  );
+  output.writeln('Model prefix updated to ${connection.modelPrefix}.');
+  return 0;
 }
 
 /// Removes the provider connection [connectionId].

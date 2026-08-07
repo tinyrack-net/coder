@@ -617,8 +617,7 @@ class _OpenModelPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     const picker = ModelPicker(
       currentSelection: SessionModelSelectionDto(
-        providerConnectionId: 'openai',
-        modelId: 'gpt-5.6',
+        modelId: 'openai/gpt-5.6',
       ),
       title: '모델 선택',
       inheritLabel: '프로젝트 설정 사용',

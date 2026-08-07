@@ -3659,7 +3659,7 @@ as bool,
 /// @nodoc
 mixin _$AgentModelSelectionDto {
 
- AgentModelSource get source; String? get providerConnectionId; String? get modelId;
+ AgentModelSource get source; String? get modelId;
 /// Create a copy of AgentModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3672,16 +3672,16 @@ $AgentModelSelectionDtoCopyWith<AgentModelSelectionDto> get copyWith => _$AgentM
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentModelSelectionDto&&(identical(other.source, source) || other.source == source)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentModelSelectionDto&&(identical(other.source, source) || other.source == source)&&(identical(other.modelId, modelId) || other.modelId == modelId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,source,providerConnectionId,modelId);
+int get hashCode => Object.hash(runtimeType,source,modelId);
 
 @override
 String toString() {
-  return 'AgentModelSelectionDto(source: $source, providerConnectionId: $providerConnectionId, modelId: $modelId)';
+  return 'AgentModelSelectionDto(source: $source, modelId: $modelId)';
 }
 
 
@@ -3692,7 +3692,7 @@ abstract mixin class $AgentModelSelectionDtoCopyWith<$Res>  {
   factory $AgentModelSelectionDtoCopyWith(AgentModelSelectionDto value, $Res Function(AgentModelSelectionDto) _then) = _$AgentModelSelectionDtoCopyWithImpl;
 @useResult
 $Res call({
- AgentModelSource source, String? providerConnectionId, String? modelId
+ AgentModelSource source, String? modelId
 });
 
 
@@ -3709,11 +3709,10 @@ class _$AgentModelSelectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? source = null,Object? providerConnectionId = freezed,Object? modelId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? source = null,Object? modelId = freezed,}) {
   return _then(_self.copyWith(
 source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
-as AgentModelSource,providerConnectionId: freezed == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
-as String?,modelId: freezed == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as AgentModelSource,modelId: freezed == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -3799,10 +3798,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AgentModelSource source,  String? providerConnectionId,  String? modelId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AgentModelSource source,  String? modelId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentModelSelectionDto() when $default != null:
-return $default(_that.source,_that.providerConnectionId,_that.modelId);case _:
+return $default(_that.source,_that.modelId);case _:
   return orElse();
 
 }
@@ -3820,10 +3819,10 @@ return $default(_that.source,_that.providerConnectionId,_that.modelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AgentModelSource source,  String? providerConnectionId,  String? modelId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AgentModelSource source,  String? modelId)  $default,) {final _that = this;
 switch (_that) {
 case _AgentModelSelectionDto():
-return $default(_that.source,_that.providerConnectionId,_that.modelId);case _:
+return $default(_that.source,_that.modelId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3840,10 +3839,10 @@ return $default(_that.source,_that.providerConnectionId,_that.modelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AgentModelSource source,  String? providerConnectionId,  String? modelId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AgentModelSource source,  String? modelId)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentModelSelectionDto() when $default != null:
-return $default(_that.source,_that.providerConnectionId,_that.modelId);case _:
+return $default(_that.source,_that.modelId);case _:
   return null;
 
 }
@@ -3854,12 +3853,11 @@ return $default(_that.source,_that.providerConnectionId,_that.modelId);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _AgentModelSelectionDto implements AgentModelSelectionDto {
-  const _AgentModelSelectionDto({required this.source, this.providerConnectionId, this.modelId});
+class _AgentModelSelectionDto extends AgentModelSelectionDto {
+  const _AgentModelSelectionDto({required this.source, this.modelId}): super._();
   factory _AgentModelSelectionDto.fromJson(Map<String, dynamic> json) => _$AgentModelSelectionDtoFromJson(json);
 
 @override final  AgentModelSource source;
-@override final  String? providerConnectionId;
 @override final  String? modelId;
 
 /// Create a copy of AgentModelSelectionDto
@@ -3875,16 +3873,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentModelSelectionDto&&(identical(other.source, source) || other.source == source)&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentModelSelectionDto&&(identical(other.source, source) || other.source == source)&&(identical(other.modelId, modelId) || other.modelId == modelId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,source,providerConnectionId,modelId);
+int get hashCode => Object.hash(runtimeType,source,modelId);
 
 @override
 String toString() {
-  return 'AgentModelSelectionDto(source: $source, providerConnectionId: $providerConnectionId, modelId: $modelId)';
+  return 'AgentModelSelectionDto(source: $source, modelId: $modelId)';
 }
 
 
@@ -3895,7 +3893,7 @@ abstract mixin class _$AgentModelSelectionDtoCopyWith<$Res> implements $AgentMod
   factory _$AgentModelSelectionDtoCopyWith(_AgentModelSelectionDto value, $Res Function(_AgentModelSelectionDto) _then) = __$AgentModelSelectionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- AgentModelSource source, String? providerConnectionId, String? modelId
+ AgentModelSource source, String? modelId
 });
 
 
@@ -3912,11 +3910,10 @@ class __$AgentModelSelectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? source = null,Object? providerConnectionId = freezed,Object? modelId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? source = null,Object? modelId = freezed,}) {
   return _then(_AgentModelSelectionDto(
 source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
-as AgentModelSource,providerConnectionId: freezed == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
-as String?,modelId: freezed == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as AgentModelSource,modelId: freezed == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -7438,7 +7435,7 @@ as List<SkillDiagnosticDto>,
 /// @nodoc
 mixin _$SessionModelSelectionDto {
 
- String get providerConnectionId; String get modelId;
+ String get modelId;
 /// Create a copy of SessionModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -7451,16 +7448,16 @@ $SessionModelSelectionDtoCopyWith<SessionModelSelectionDto> get copyWith => _$Se
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionModelSelectionDto&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionModelSelectionDto&&(identical(other.modelId, modelId) || other.modelId == modelId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,providerConnectionId,modelId);
+int get hashCode => Object.hash(runtimeType,modelId);
 
 @override
 String toString() {
-  return 'SessionModelSelectionDto(providerConnectionId: $providerConnectionId, modelId: $modelId)';
+  return 'SessionModelSelectionDto(modelId: $modelId)';
 }
 
 
@@ -7471,7 +7468,7 @@ abstract mixin class $SessionModelSelectionDtoCopyWith<$Res>  {
   factory $SessionModelSelectionDtoCopyWith(SessionModelSelectionDto value, $Res Function(SessionModelSelectionDto) _then) = _$SessionModelSelectionDtoCopyWithImpl;
 @useResult
 $Res call({
- String providerConnectionId, String modelId
+ String modelId
 });
 
 
@@ -7488,10 +7485,9 @@ class _$SessionModelSelectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? providerConnectionId = null,Object? modelId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? modelId = null,}) {
   return _then(_self.copyWith(
-providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
-as String,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -7577,10 +7573,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String providerConnectionId,  String modelId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String modelId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionModelSelectionDto() when $default != null:
-return $default(_that.providerConnectionId,_that.modelId);case _:
+return $default(_that.modelId);case _:
   return orElse();
 
 }
@@ -7598,10 +7594,10 @@ return $default(_that.providerConnectionId,_that.modelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String providerConnectionId,  String modelId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String modelId)  $default,) {final _that = this;
 switch (_that) {
 case _SessionModelSelectionDto():
-return $default(_that.providerConnectionId,_that.modelId);case _:
+return $default(_that.modelId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7618,10 +7614,10 @@ return $default(_that.providerConnectionId,_that.modelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String providerConnectionId,  String modelId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String modelId)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionModelSelectionDto() when $default != null:
-return $default(_that.providerConnectionId,_that.modelId);case _:
+return $default(_that.modelId);case _:
   return null;
 
 }
@@ -7632,11 +7628,10 @@ return $default(_that.providerConnectionId,_that.modelId);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _SessionModelSelectionDto implements SessionModelSelectionDto {
-  const _SessionModelSelectionDto({required this.providerConnectionId, required this.modelId});
+class _SessionModelSelectionDto extends SessionModelSelectionDto {
+  const _SessionModelSelectionDto({required this.modelId}): super._();
   factory _SessionModelSelectionDto.fromJson(Map<String, dynamic> json) => _$SessionModelSelectionDtoFromJson(json);
 
-@override final  String providerConnectionId;
 @override final  String modelId;
 
 /// Create a copy of SessionModelSelectionDto
@@ -7652,16 +7647,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionModelSelectionDto&&(identical(other.providerConnectionId, providerConnectionId) || other.providerConnectionId == providerConnectionId)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionModelSelectionDto&&(identical(other.modelId, modelId) || other.modelId == modelId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,providerConnectionId,modelId);
+int get hashCode => Object.hash(runtimeType,modelId);
 
 @override
 String toString() {
-  return 'SessionModelSelectionDto(providerConnectionId: $providerConnectionId, modelId: $modelId)';
+  return 'SessionModelSelectionDto(modelId: $modelId)';
 }
 
 
@@ -7672,7 +7667,7 @@ abstract mixin class _$SessionModelSelectionDtoCopyWith<$Res> implements $Sessio
   factory _$SessionModelSelectionDtoCopyWith(_SessionModelSelectionDto value, $Res Function(_SessionModelSelectionDto) _then) = __$SessionModelSelectionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String providerConnectionId, String modelId
+ String modelId
 });
 
 
@@ -7689,10 +7684,9 @@ class __$SessionModelSelectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? providerConnectionId = null,Object? modelId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? modelId = null,}) {
   return _then(_SessionModelSelectionDto(
-providerConnectionId: null == providerConnectionId ? _self.providerConnectionId : providerConnectionId // ignore: cast_nullable_to_non_nullable
-as String,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -11872,7 +11866,7 @@ as List<ModelControlDescriptorDto>,
 /// @nodoc
 mixin _$ProviderConnectionDto {
 
- String get id; String get definitionId; String get displayName; ProviderConnectionStatus get status; ProviderAuthKind get authKind; ProviderCredentialOrigin get credentialOrigin; DateTime get createdAt; DateTime get updatedAt; String? get error; CustomProviderConfigDto? get customConfig;
+ String get id; String get definitionId; String get displayName; ProviderConnectionStatus get status; ProviderAuthKind get authKind; ProviderCredentialOrigin get credentialOrigin; DateTime get createdAt; DateTime get updatedAt; String get modelPrefix; String? get error; CustomProviderConfigDto? get customConfig;
 /// Create a copy of ProviderConnectionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -11885,16 +11879,16 @@ $ProviderConnectionDtoCopyWith<ProviderConnectionDto> get copyWith => _$Provider
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderConnectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.status, status) || other.status == status)&&(identical(other.authKind, authKind) || other.authKind == authKind)&&(identical(other.credentialOrigin, credentialOrigin) || other.credentialOrigin == credentialOrigin)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.error, error) || other.error == error)&&(identical(other.customConfig, customConfig) || other.customConfig == customConfig));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderConnectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.status, status) || other.status == status)&&(identical(other.authKind, authKind) || other.authKind == authKind)&&(identical(other.credentialOrigin, credentialOrigin) || other.credentialOrigin == credentialOrigin)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.modelPrefix, modelPrefix) || other.modelPrefix == modelPrefix)&&(identical(other.error, error) || other.error == error)&&(identical(other.customConfig, customConfig) || other.customConfig == customConfig));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,definitionId,displayName,status,authKind,credentialOrigin,createdAt,updatedAt,error,customConfig);
+int get hashCode => Object.hash(runtimeType,id,definitionId,displayName,status,authKind,credentialOrigin,createdAt,updatedAt,modelPrefix,error,customConfig);
 
 @override
 String toString() {
-  return 'ProviderConnectionDto(id: $id, definitionId: $definitionId, displayName: $displayName, status: $status, authKind: $authKind, credentialOrigin: $credentialOrigin, createdAt: $createdAt, updatedAt: $updatedAt, error: $error, customConfig: $customConfig)';
+  return 'ProviderConnectionDto(id: $id, definitionId: $definitionId, displayName: $displayName, status: $status, authKind: $authKind, credentialOrigin: $credentialOrigin, createdAt: $createdAt, updatedAt: $updatedAt, modelPrefix: $modelPrefix, error: $error, customConfig: $customConfig)';
 }
 
 
@@ -11905,7 +11899,7 @@ abstract mixin class $ProviderConnectionDtoCopyWith<$Res>  {
   factory $ProviderConnectionDtoCopyWith(ProviderConnectionDto value, $Res Function(ProviderConnectionDto) _then) = _$ProviderConnectionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String definitionId, String displayName, ProviderConnectionStatus status, ProviderAuthKind authKind, ProviderCredentialOrigin credentialOrigin, DateTime createdAt, DateTime updatedAt, String? error, CustomProviderConfigDto? customConfig
+ String id, String definitionId, String displayName, ProviderConnectionStatus status, ProviderAuthKind authKind, ProviderCredentialOrigin credentialOrigin, DateTime createdAt, DateTime updatedAt, String modelPrefix, String? error, CustomProviderConfigDto? customConfig
 });
 
 
@@ -11922,7 +11916,7 @@ class _$ProviderConnectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderConnectionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? definitionId = null,Object? displayName = null,Object? status = null,Object? authKind = null,Object? credentialOrigin = null,Object? createdAt = null,Object? updatedAt = null,Object? error = freezed,Object? customConfig = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? definitionId = null,Object? displayName = null,Object? status = null,Object? authKind = null,Object? credentialOrigin = null,Object? createdAt = null,Object? updatedAt = null,Object? modelPrefix = null,Object? error = freezed,Object? customConfig = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
@@ -11932,7 +11926,8 @@ as ProviderConnectionStatus,authKind: null == authKind ? _self.authKind : authKi
 as ProviderAuthKind,credentialOrigin: null == credentialOrigin ? _self.credentialOrigin : credentialOrigin // ignore: cast_nullable_to_non_nullable
 as ProviderCredentialOrigin,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as DateTime,modelPrefix: null == modelPrefix ? _self.modelPrefix : modelPrefix // ignore: cast_nullable_to_non_nullable
+as String,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,customConfig: freezed == customConfig ? _self.customConfig : customConfig // ignore: cast_nullable_to_non_nullable
 as CustomProviderConfigDto?,
   ));
@@ -12031,10 +12026,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String? error,  CustomProviderConfigDto? customConfig)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String modelPrefix,  String? error,  CustomProviderConfigDto? customConfig)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderConnectionDto() when $default != null:
-return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.error,_that.customConfig);case _:
+return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.modelPrefix,_that.error,_that.customConfig);case _:
   return orElse();
 
 }
@@ -12052,10 +12047,10 @@ return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String? error,  CustomProviderConfigDto? customConfig)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String modelPrefix,  String? error,  CustomProviderConfigDto? customConfig)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderConnectionDto():
-return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.error,_that.customConfig);case _:
+return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.modelPrefix,_that.error,_that.customConfig);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -12072,10 +12067,10 @@ return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String? error,  CustomProviderConfigDto? customConfig)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String definitionId,  String displayName,  ProviderConnectionStatus status,  ProviderAuthKind authKind,  ProviderCredentialOrigin credentialOrigin,  DateTime createdAt,  DateTime updatedAt,  String modelPrefix,  String? error,  CustomProviderConfigDto? customConfig)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderConnectionDto() when $default != null:
-return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.error,_that.customConfig);case _:
+return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that.authKind,_that.credentialOrigin,_that.createdAt,_that.updatedAt,_that.modelPrefix,_that.error,_that.customConfig);case _:
   return null;
 
 }
@@ -12087,7 +12082,7 @@ return $default(_that.id,_that.definitionId,_that.displayName,_that.status,_that
 @JsonSerializable()
 
 class _ProviderConnectionDto implements ProviderConnectionDto {
-  const _ProviderConnectionDto({required this.id, required this.definitionId, required this.displayName, required this.status, required this.authKind, required this.credentialOrigin, required this.createdAt, required this.updatedAt, this.error, this.customConfig});
+  const _ProviderConnectionDto({required this.id, required this.definitionId, required this.displayName, required this.status, required this.authKind, required this.credentialOrigin, required this.createdAt, required this.updatedAt, this.modelPrefix = '', this.error, this.customConfig});
   factory _ProviderConnectionDto.fromJson(Map<String, dynamic> json) => _$ProviderConnectionDtoFromJson(json);
 
 @override final  String id;
@@ -12098,6 +12093,7 @@ class _ProviderConnectionDto implements ProviderConnectionDto {
 @override final  ProviderCredentialOrigin credentialOrigin;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
+@override@JsonKey() final  String modelPrefix;
 @override final  String? error;
 @override final  CustomProviderConfigDto? customConfig;
 
@@ -12114,16 +12110,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderConnectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.status, status) || other.status == status)&&(identical(other.authKind, authKind) || other.authKind == authKind)&&(identical(other.credentialOrigin, credentialOrigin) || other.credentialOrigin == credentialOrigin)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.error, error) || other.error == error)&&(identical(other.customConfig, customConfig) || other.customConfig == customConfig));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderConnectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.status, status) || other.status == status)&&(identical(other.authKind, authKind) || other.authKind == authKind)&&(identical(other.credentialOrigin, credentialOrigin) || other.credentialOrigin == credentialOrigin)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.modelPrefix, modelPrefix) || other.modelPrefix == modelPrefix)&&(identical(other.error, error) || other.error == error)&&(identical(other.customConfig, customConfig) || other.customConfig == customConfig));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,definitionId,displayName,status,authKind,credentialOrigin,createdAt,updatedAt,error,customConfig);
+int get hashCode => Object.hash(runtimeType,id,definitionId,displayName,status,authKind,credentialOrigin,createdAt,updatedAt,modelPrefix,error,customConfig);
 
 @override
 String toString() {
-  return 'ProviderConnectionDto(id: $id, definitionId: $definitionId, displayName: $displayName, status: $status, authKind: $authKind, credentialOrigin: $credentialOrigin, createdAt: $createdAt, updatedAt: $updatedAt, error: $error, customConfig: $customConfig)';
+  return 'ProviderConnectionDto(id: $id, definitionId: $definitionId, displayName: $displayName, status: $status, authKind: $authKind, credentialOrigin: $credentialOrigin, createdAt: $createdAt, updatedAt: $updatedAt, modelPrefix: $modelPrefix, error: $error, customConfig: $customConfig)';
 }
 
 
@@ -12134,7 +12130,7 @@ abstract mixin class _$ProviderConnectionDtoCopyWith<$Res> implements $ProviderC
   factory _$ProviderConnectionDtoCopyWith(_ProviderConnectionDto value, $Res Function(_ProviderConnectionDto) _then) = __$ProviderConnectionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String definitionId, String displayName, ProviderConnectionStatus status, ProviderAuthKind authKind, ProviderCredentialOrigin credentialOrigin, DateTime createdAt, DateTime updatedAt, String? error, CustomProviderConfigDto? customConfig
+ String id, String definitionId, String displayName, ProviderConnectionStatus status, ProviderAuthKind authKind, ProviderCredentialOrigin credentialOrigin, DateTime createdAt, DateTime updatedAt, String modelPrefix, String? error, CustomProviderConfigDto? customConfig
 });
 
 
@@ -12151,7 +12147,7 @@ class __$ProviderConnectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderConnectionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? definitionId = null,Object? displayName = null,Object? status = null,Object? authKind = null,Object? credentialOrigin = null,Object? createdAt = null,Object? updatedAt = null,Object? error = freezed,Object? customConfig = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? definitionId = null,Object? displayName = null,Object? status = null,Object? authKind = null,Object? credentialOrigin = null,Object? createdAt = null,Object? updatedAt = null,Object? modelPrefix = null,Object? error = freezed,Object? customConfig = freezed,}) {
   return _then(_ProviderConnectionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
@@ -12161,7 +12157,8 @@ as ProviderConnectionStatus,authKind: null == authKind ? _self.authKind : authKi
 as ProviderAuthKind,credentialOrigin: null == credentialOrigin ? _self.credentialOrigin : credentialOrigin // ignore: cast_nullable_to_non_nullable
 as ProviderCredentialOrigin,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as DateTime,modelPrefix: null == modelPrefix ? _self.modelPrefix : modelPrefix // ignore: cast_nullable_to_non_nullable
+as String,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,customConfig: freezed == customConfig ? _self.customConfig : customConfig // ignore: cast_nullable_to_non_nullable
 as CustomProviderConfigDto?,
   ));
@@ -12186,7 +12183,7 @@ $CustomProviderConfigDtoCopyWith<$Res>? get customConfig {
 /// @nodoc
 mixin _$ProviderAuthAttemptDto {
 
- String get id; String get definitionId; String get methodId; ProviderAuthAttemptStatus get status; String? get authorizationUrl; String? get userCode; String? get instructions; DateTime? get expiresAt; String? get error;
+ String get id; String get definitionId; String get methodId; ProviderAuthAttemptStatus get status; String get connectionId; String get modelPrefix; String? get authorizationUrl; String? get userCode; String? get instructions; DateTime? get expiresAt; String? get error;
 /// Create a copy of ProviderAuthAttemptDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -12199,16 +12196,16 @@ $ProviderAuthAttemptDtoCopyWith<ProviderAuthAttemptDto> get copyWith => _$Provid
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderAuthAttemptDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.methodId, methodId) || other.methodId == methodId)&&(identical(other.status, status) || other.status == status)&&(identical(other.authorizationUrl, authorizationUrl) || other.authorizationUrl == authorizationUrl)&&(identical(other.userCode, userCode) || other.userCode == userCode)&&(identical(other.instructions, instructions) || other.instructions == instructions)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderAuthAttemptDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.methodId, methodId) || other.methodId == methodId)&&(identical(other.status, status) || other.status == status)&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.modelPrefix, modelPrefix) || other.modelPrefix == modelPrefix)&&(identical(other.authorizationUrl, authorizationUrl) || other.authorizationUrl == authorizationUrl)&&(identical(other.userCode, userCode) || other.userCode == userCode)&&(identical(other.instructions, instructions) || other.instructions == instructions)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.error, error) || other.error == error));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,definitionId,methodId,status,authorizationUrl,userCode,instructions,expiresAt,error);
+int get hashCode => Object.hash(runtimeType,id,definitionId,methodId,status,connectionId,modelPrefix,authorizationUrl,userCode,instructions,expiresAt,error);
 
 @override
 String toString() {
-  return 'ProviderAuthAttemptDto(id: $id, definitionId: $definitionId, methodId: $methodId, status: $status, authorizationUrl: $authorizationUrl, userCode: $userCode, instructions: $instructions, expiresAt: $expiresAt, error: $error)';
+  return 'ProviderAuthAttemptDto(id: $id, definitionId: $definitionId, methodId: $methodId, status: $status, connectionId: $connectionId, modelPrefix: $modelPrefix, authorizationUrl: $authorizationUrl, userCode: $userCode, instructions: $instructions, expiresAt: $expiresAt, error: $error)';
 }
 
 
@@ -12219,7 +12216,7 @@ abstract mixin class $ProviderAuthAttemptDtoCopyWith<$Res>  {
   factory $ProviderAuthAttemptDtoCopyWith(ProviderAuthAttemptDto value, $Res Function(ProviderAuthAttemptDto) _then) = _$ProviderAuthAttemptDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String definitionId, String methodId, ProviderAuthAttemptStatus status, String? authorizationUrl, String? userCode, String? instructions, DateTime? expiresAt, String? error
+ String id, String definitionId, String methodId, ProviderAuthAttemptStatus status, String connectionId, String modelPrefix, String? authorizationUrl, String? userCode, String? instructions, DateTime? expiresAt, String? error
 });
 
 
@@ -12236,13 +12233,15 @@ class _$ProviderAuthAttemptDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderAuthAttemptDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? definitionId = null,Object? methodId = null,Object? status = null,Object? authorizationUrl = freezed,Object? userCode = freezed,Object? instructions = freezed,Object? expiresAt = freezed,Object? error = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? definitionId = null,Object? methodId = null,Object? status = null,Object? connectionId = null,Object? modelPrefix = null,Object? authorizationUrl = freezed,Object? userCode = freezed,Object? instructions = freezed,Object? expiresAt = freezed,Object? error = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
 as String,methodId: null == methodId ? _self.methodId : methodId // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as ProviderAuthAttemptStatus,authorizationUrl: freezed == authorizationUrl ? _self.authorizationUrl : authorizationUrl // ignore: cast_nullable_to_non_nullable
+as ProviderAuthAttemptStatus,connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
+as String,modelPrefix: null == modelPrefix ? _self.modelPrefix : modelPrefix // ignore: cast_nullable_to_non_nullable
+as String,authorizationUrl: freezed == authorizationUrl ? _self.authorizationUrl : authorizationUrl // ignore: cast_nullable_to_non_nullable
 as String?,userCode: freezed == userCode ? _self.userCode : userCode // ignore: cast_nullable_to_non_nullable
 as String?,instructions: freezed == instructions ? _self.instructions : instructions // ignore: cast_nullable_to_non_nullable
 as String?,expiresAt: freezed == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
@@ -12332,10 +12331,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String definitionId,  String methodId,  ProviderAuthAttemptStatus status,  String? authorizationUrl,  String? userCode,  String? instructions,  DateTime? expiresAt,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String definitionId,  String methodId,  ProviderAuthAttemptStatus status,  String connectionId,  String modelPrefix,  String? authorizationUrl,  String? userCode,  String? instructions,  DateTime? expiresAt,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderAuthAttemptDto() when $default != null:
-return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.authorizationUrl,_that.userCode,_that.instructions,_that.expiresAt,_that.error);case _:
+return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.connectionId,_that.modelPrefix,_that.authorizationUrl,_that.userCode,_that.instructions,_that.expiresAt,_that.error);case _:
   return orElse();
 
 }
@@ -12353,10 +12352,10 @@ return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.au
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String definitionId,  String methodId,  ProviderAuthAttemptStatus status,  String? authorizationUrl,  String? userCode,  String? instructions,  DateTime? expiresAt,  String? error)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String definitionId,  String methodId,  ProviderAuthAttemptStatus status,  String connectionId,  String modelPrefix,  String? authorizationUrl,  String? userCode,  String? instructions,  DateTime? expiresAt,  String? error)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderAuthAttemptDto():
-return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.authorizationUrl,_that.userCode,_that.instructions,_that.expiresAt,_that.error);case _:
+return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.connectionId,_that.modelPrefix,_that.authorizationUrl,_that.userCode,_that.instructions,_that.expiresAt,_that.error);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -12373,10 +12372,10 @@ return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.au
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String definitionId,  String methodId,  ProviderAuthAttemptStatus status,  String? authorizationUrl,  String? userCode,  String? instructions,  DateTime? expiresAt,  String? error)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String definitionId,  String methodId,  ProviderAuthAttemptStatus status,  String connectionId,  String modelPrefix,  String? authorizationUrl,  String? userCode,  String? instructions,  DateTime? expiresAt,  String? error)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderAuthAttemptDto() when $default != null:
-return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.authorizationUrl,_that.userCode,_that.instructions,_that.expiresAt,_that.error);case _:
+return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.connectionId,_that.modelPrefix,_that.authorizationUrl,_that.userCode,_that.instructions,_that.expiresAt,_that.error);case _:
   return null;
 
 }
@@ -12388,13 +12387,15 @@ return $default(_that.id,_that.definitionId,_that.methodId,_that.status,_that.au
 @JsonSerializable()
 
 class _ProviderAuthAttemptDto implements ProviderAuthAttemptDto {
-  const _ProviderAuthAttemptDto({required this.id, required this.definitionId, required this.methodId, required this.status, this.authorizationUrl, this.userCode, this.instructions, this.expiresAt, this.error});
+  const _ProviderAuthAttemptDto({required this.id, required this.definitionId, required this.methodId, required this.status, this.connectionId = '', this.modelPrefix = '', this.authorizationUrl, this.userCode, this.instructions, this.expiresAt, this.error});
   factory _ProviderAuthAttemptDto.fromJson(Map<String, dynamic> json) => _$ProviderAuthAttemptDtoFromJson(json);
 
 @override final  String id;
 @override final  String definitionId;
 @override final  String methodId;
 @override final  ProviderAuthAttemptStatus status;
+@override@JsonKey() final  String connectionId;
+@override@JsonKey() final  String modelPrefix;
 @override final  String? authorizationUrl;
 @override final  String? userCode;
 @override final  String? instructions;
@@ -12414,16 +12415,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderAuthAttemptDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.methodId, methodId) || other.methodId == methodId)&&(identical(other.status, status) || other.status == status)&&(identical(other.authorizationUrl, authorizationUrl) || other.authorizationUrl == authorizationUrl)&&(identical(other.userCode, userCode) || other.userCode == userCode)&&(identical(other.instructions, instructions) || other.instructions == instructions)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderAuthAttemptDto&&(identical(other.id, id) || other.id == id)&&(identical(other.definitionId, definitionId) || other.definitionId == definitionId)&&(identical(other.methodId, methodId) || other.methodId == methodId)&&(identical(other.status, status) || other.status == status)&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.modelPrefix, modelPrefix) || other.modelPrefix == modelPrefix)&&(identical(other.authorizationUrl, authorizationUrl) || other.authorizationUrl == authorizationUrl)&&(identical(other.userCode, userCode) || other.userCode == userCode)&&(identical(other.instructions, instructions) || other.instructions == instructions)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.error, error) || other.error == error));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,definitionId,methodId,status,authorizationUrl,userCode,instructions,expiresAt,error);
+int get hashCode => Object.hash(runtimeType,id,definitionId,methodId,status,connectionId,modelPrefix,authorizationUrl,userCode,instructions,expiresAt,error);
 
 @override
 String toString() {
-  return 'ProviderAuthAttemptDto(id: $id, definitionId: $definitionId, methodId: $methodId, status: $status, authorizationUrl: $authorizationUrl, userCode: $userCode, instructions: $instructions, expiresAt: $expiresAt, error: $error)';
+  return 'ProviderAuthAttemptDto(id: $id, definitionId: $definitionId, methodId: $methodId, status: $status, connectionId: $connectionId, modelPrefix: $modelPrefix, authorizationUrl: $authorizationUrl, userCode: $userCode, instructions: $instructions, expiresAt: $expiresAt, error: $error)';
 }
 
 
@@ -12434,7 +12435,7 @@ abstract mixin class _$ProviderAuthAttemptDtoCopyWith<$Res> implements $Provider
   factory _$ProviderAuthAttemptDtoCopyWith(_ProviderAuthAttemptDto value, $Res Function(_ProviderAuthAttemptDto) _then) = __$ProviderAuthAttemptDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String definitionId, String methodId, ProviderAuthAttemptStatus status, String? authorizationUrl, String? userCode, String? instructions, DateTime? expiresAt, String? error
+ String id, String definitionId, String methodId, ProviderAuthAttemptStatus status, String connectionId, String modelPrefix, String? authorizationUrl, String? userCode, String? instructions, DateTime? expiresAt, String? error
 });
 
 
@@ -12451,13 +12452,15 @@ class __$ProviderAuthAttemptDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderAuthAttemptDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? definitionId = null,Object? methodId = null,Object? status = null,Object? authorizationUrl = freezed,Object? userCode = freezed,Object? instructions = freezed,Object? expiresAt = freezed,Object? error = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? definitionId = null,Object? methodId = null,Object? status = null,Object? connectionId = null,Object? modelPrefix = null,Object? authorizationUrl = freezed,Object? userCode = freezed,Object? instructions = freezed,Object? expiresAt = freezed,Object? error = freezed,}) {
   return _then(_ProviderAuthAttemptDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,definitionId: null == definitionId ? _self.definitionId : definitionId // ignore: cast_nullable_to_non_nullable
 as String,methodId: null == methodId ? _self.methodId : methodId // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as ProviderAuthAttemptStatus,authorizationUrl: freezed == authorizationUrl ? _self.authorizationUrl : authorizationUrl // ignore: cast_nullable_to_non_nullable
+as ProviderAuthAttemptStatus,connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
+as String,modelPrefix: null == modelPrefix ? _self.modelPrefix : modelPrefix // ignore: cast_nullable_to_non_nullable
+as String,authorizationUrl: freezed == authorizationUrl ? _self.authorizationUrl : authorizationUrl // ignore: cast_nullable_to_non_nullable
 as String?,userCode: freezed == userCode ? _self.userCode : userCode // ignore: cast_nullable_to_non_nullable
 as String?,instructions: freezed == instructions ? _self.instructions : instructions // ignore: cast_nullable_to_non_nullable
 as String?,expiresAt: freezed == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
@@ -12473,7 +12476,7 @@ as String?,
 /// @nodoc
 mixin _$ProviderModelDto {
 
- String get connectionId; String get id; String get label; ProviderModelSource get source; ModelCapabilitiesDto get capabilities; ModelPricingDto? get pricing; ModelLimitsDto? get limits; DiagnosticStatus get diagnosticStatus; DateTime? get verifiedAt; String? get diagnosticError;
+ String get connectionId; String get id; String get label; ProviderModelSource get source; ModelCapabilitiesDto get capabilities; String get providerModelId; ModelPricingDto? get pricing; ModelLimitsDto? get limits; DiagnosticStatus get diagnosticStatus; DateTime? get verifiedAt; String? get diagnosticError;
 /// Create a copy of ProviderModelDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -12486,16 +12489,16 @@ $ProviderModelDtoCopyWith<ProviderModelDto> get copyWith => _$ProviderModelDtoCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderModelDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.source, source) || other.source == source)&&(identical(other.capabilities, capabilities) || other.capabilities == capabilities)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.limits, limits) || other.limits == limits)&&(identical(other.diagnosticStatus, diagnosticStatus) || other.diagnosticStatus == diagnosticStatus)&&(identical(other.verifiedAt, verifiedAt) || other.verifiedAt == verifiedAt)&&(identical(other.diagnosticError, diagnosticError) || other.diagnosticError == diagnosticError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderModelDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.source, source) || other.source == source)&&(identical(other.capabilities, capabilities) || other.capabilities == capabilities)&&(identical(other.providerModelId, providerModelId) || other.providerModelId == providerModelId)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.limits, limits) || other.limits == limits)&&(identical(other.diagnosticStatus, diagnosticStatus) || other.diagnosticStatus == diagnosticStatus)&&(identical(other.verifiedAt, verifiedAt) || other.verifiedAt == verifiedAt)&&(identical(other.diagnosticError, diagnosticError) || other.diagnosticError == diagnosticError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,connectionId,id,label,source,capabilities,pricing,limits,diagnosticStatus,verifiedAt,diagnosticError);
+int get hashCode => Object.hash(runtimeType,connectionId,id,label,source,capabilities,providerModelId,pricing,limits,diagnosticStatus,verifiedAt,diagnosticError);
 
 @override
 String toString() {
-  return 'ProviderModelDto(connectionId: $connectionId, id: $id, label: $label, source: $source, capabilities: $capabilities, pricing: $pricing, limits: $limits, diagnosticStatus: $diagnosticStatus, verifiedAt: $verifiedAt, diagnosticError: $diagnosticError)';
+  return 'ProviderModelDto(connectionId: $connectionId, id: $id, label: $label, source: $source, capabilities: $capabilities, providerModelId: $providerModelId, pricing: $pricing, limits: $limits, diagnosticStatus: $diagnosticStatus, verifiedAt: $verifiedAt, diagnosticError: $diagnosticError)';
 }
 
 
@@ -12506,7 +12509,7 @@ abstract mixin class $ProviderModelDtoCopyWith<$Res>  {
   factory $ProviderModelDtoCopyWith(ProviderModelDto value, $Res Function(ProviderModelDto) _then) = _$ProviderModelDtoCopyWithImpl;
 @useResult
 $Res call({
- String connectionId, String id, String label, ProviderModelSource source, ModelCapabilitiesDto capabilities, ModelPricingDto? pricing, ModelLimitsDto? limits, DiagnosticStatus diagnosticStatus, DateTime? verifiedAt, String? diagnosticError
+ String connectionId, String id, String label, ProviderModelSource source, ModelCapabilitiesDto capabilities, String providerModelId, ModelPricingDto? pricing, ModelLimitsDto? limits, DiagnosticStatus diagnosticStatus, DateTime? verifiedAt, String? diagnosticError
 });
 
 
@@ -12523,14 +12526,15 @@ class _$ProviderModelDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderModelDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? connectionId = null,Object? id = null,Object? label = null,Object? source = null,Object? capabilities = null,Object? pricing = freezed,Object? limits = freezed,Object? diagnosticStatus = null,Object? verifiedAt = freezed,Object? diagnosticError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? connectionId = null,Object? id = null,Object? label = null,Object? source = null,Object? capabilities = null,Object? providerModelId = null,Object? pricing = freezed,Object? limits = freezed,Object? diagnosticStatus = null,Object? verifiedAt = freezed,Object? diagnosticError = freezed,}) {
   return _then(_self.copyWith(
 connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
 as String,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as ProviderModelSource,capabilities: null == capabilities ? _self.capabilities : capabilities // ignore: cast_nullable_to_non_nullable
-as ModelCapabilitiesDto,pricing: freezed == pricing ? _self.pricing : pricing // ignore: cast_nullable_to_non_nullable
+as ModelCapabilitiesDto,providerModelId: null == providerModelId ? _self.providerModelId : providerModelId // ignore: cast_nullable_to_non_nullable
+as String,pricing: freezed == pricing ? _self.pricing : pricing // ignore: cast_nullable_to_non_nullable
 as ModelPricingDto?,limits: freezed == limits ? _self.limits : limits // ignore: cast_nullable_to_non_nullable
 as ModelLimitsDto?,diagnosticStatus: null == diagnosticStatus ? _self.diagnosticStatus : diagnosticStatus // ignore: cast_nullable_to_non_nullable
 as DiagnosticStatus,verifiedAt: freezed == verifiedAt ? _self.verifiedAt : verifiedAt // ignore: cast_nullable_to_non_nullable
@@ -12653,10 +12657,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String connectionId,  String id,  String label,  ProviderModelSource source,  ModelCapabilitiesDto capabilities,  ModelPricingDto? pricing,  ModelLimitsDto? limits,  DiagnosticStatus diagnosticStatus,  DateTime? verifiedAt,  String? diagnosticError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String connectionId,  String id,  String label,  ProviderModelSource source,  ModelCapabilitiesDto capabilities,  String providerModelId,  ModelPricingDto? pricing,  ModelLimitsDto? limits,  DiagnosticStatus diagnosticStatus,  DateTime? verifiedAt,  String? diagnosticError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderModelDto() when $default != null:
-return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capabilities,_that.pricing,_that.limits,_that.diagnosticStatus,_that.verifiedAt,_that.diagnosticError);case _:
+return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capabilities,_that.providerModelId,_that.pricing,_that.limits,_that.diagnosticStatus,_that.verifiedAt,_that.diagnosticError);case _:
   return orElse();
 
 }
@@ -12674,10 +12678,10 @@ return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capab
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String connectionId,  String id,  String label,  ProviderModelSource source,  ModelCapabilitiesDto capabilities,  ModelPricingDto? pricing,  ModelLimitsDto? limits,  DiagnosticStatus diagnosticStatus,  DateTime? verifiedAt,  String? diagnosticError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String connectionId,  String id,  String label,  ProviderModelSource source,  ModelCapabilitiesDto capabilities,  String providerModelId,  ModelPricingDto? pricing,  ModelLimitsDto? limits,  DiagnosticStatus diagnosticStatus,  DateTime? verifiedAt,  String? diagnosticError)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderModelDto():
-return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capabilities,_that.pricing,_that.limits,_that.diagnosticStatus,_that.verifiedAt,_that.diagnosticError);case _:
+return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capabilities,_that.providerModelId,_that.pricing,_that.limits,_that.diagnosticStatus,_that.verifiedAt,_that.diagnosticError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -12694,10 +12698,10 @@ return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capab
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String connectionId,  String id,  String label,  ProviderModelSource source,  ModelCapabilitiesDto capabilities,  ModelPricingDto? pricing,  ModelLimitsDto? limits,  DiagnosticStatus diagnosticStatus,  DateTime? verifiedAt,  String? diagnosticError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String connectionId,  String id,  String label,  ProviderModelSource source,  ModelCapabilitiesDto capabilities,  String providerModelId,  ModelPricingDto? pricing,  ModelLimitsDto? limits,  DiagnosticStatus diagnosticStatus,  DateTime? verifiedAt,  String? diagnosticError)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderModelDto() when $default != null:
-return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capabilities,_that.pricing,_that.limits,_that.diagnosticStatus,_that.verifiedAt,_that.diagnosticError);case _:
+return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capabilities,_that.providerModelId,_that.pricing,_that.limits,_that.diagnosticStatus,_that.verifiedAt,_that.diagnosticError);case _:
   return null;
 
 }
@@ -12709,7 +12713,7 @@ return $default(_that.connectionId,_that.id,_that.label,_that.source,_that.capab
 @JsonSerializable()
 
 class _ProviderModelDto implements ProviderModelDto {
-  const _ProviderModelDto({required this.connectionId, required this.id, required this.label, required this.source, required this.capabilities, this.pricing, this.limits, this.diagnosticStatus = DiagnosticStatus.unknown, this.verifiedAt, this.diagnosticError});
+  const _ProviderModelDto({required this.connectionId, required this.id, required this.label, required this.source, required this.capabilities, this.providerModelId = '', this.pricing, this.limits, this.diagnosticStatus = DiagnosticStatus.unknown, this.verifiedAt, this.diagnosticError});
   factory _ProviderModelDto.fromJson(Map<String, dynamic> json) => _$ProviderModelDtoFromJson(json);
 
 @override final  String connectionId;
@@ -12717,6 +12721,7 @@ class _ProviderModelDto implements ProviderModelDto {
 @override final  String label;
 @override final  ProviderModelSource source;
 @override final  ModelCapabilitiesDto capabilities;
+@override@JsonKey() final  String providerModelId;
 @override final  ModelPricingDto? pricing;
 @override final  ModelLimitsDto? limits;
 @override@JsonKey() final  DiagnosticStatus diagnosticStatus;
@@ -12736,16 +12741,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderModelDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.source, source) || other.source == source)&&(identical(other.capabilities, capabilities) || other.capabilities == capabilities)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.limits, limits) || other.limits == limits)&&(identical(other.diagnosticStatus, diagnosticStatus) || other.diagnosticStatus == diagnosticStatus)&&(identical(other.verifiedAt, verifiedAt) || other.verifiedAt == verifiedAt)&&(identical(other.diagnosticError, diagnosticError) || other.diagnosticError == diagnosticError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderModelDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.source, source) || other.source == source)&&(identical(other.capabilities, capabilities) || other.capabilities == capabilities)&&(identical(other.providerModelId, providerModelId) || other.providerModelId == providerModelId)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.limits, limits) || other.limits == limits)&&(identical(other.diagnosticStatus, diagnosticStatus) || other.diagnosticStatus == diagnosticStatus)&&(identical(other.verifiedAt, verifiedAt) || other.verifiedAt == verifiedAt)&&(identical(other.diagnosticError, diagnosticError) || other.diagnosticError == diagnosticError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,connectionId,id,label,source,capabilities,pricing,limits,diagnosticStatus,verifiedAt,diagnosticError);
+int get hashCode => Object.hash(runtimeType,connectionId,id,label,source,capabilities,providerModelId,pricing,limits,diagnosticStatus,verifiedAt,diagnosticError);
 
 @override
 String toString() {
-  return 'ProviderModelDto(connectionId: $connectionId, id: $id, label: $label, source: $source, capabilities: $capabilities, pricing: $pricing, limits: $limits, diagnosticStatus: $diagnosticStatus, verifiedAt: $verifiedAt, diagnosticError: $diagnosticError)';
+  return 'ProviderModelDto(connectionId: $connectionId, id: $id, label: $label, source: $source, capabilities: $capabilities, providerModelId: $providerModelId, pricing: $pricing, limits: $limits, diagnosticStatus: $diagnosticStatus, verifiedAt: $verifiedAt, diagnosticError: $diagnosticError)';
 }
 
 
@@ -12756,7 +12761,7 @@ abstract mixin class _$ProviderModelDtoCopyWith<$Res> implements $ProviderModelD
   factory _$ProviderModelDtoCopyWith(_ProviderModelDto value, $Res Function(_ProviderModelDto) _then) = __$ProviderModelDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String connectionId, String id, String label, ProviderModelSource source, ModelCapabilitiesDto capabilities, ModelPricingDto? pricing, ModelLimitsDto? limits, DiagnosticStatus diagnosticStatus, DateTime? verifiedAt, String? diagnosticError
+ String connectionId, String id, String label, ProviderModelSource source, ModelCapabilitiesDto capabilities, String providerModelId, ModelPricingDto? pricing, ModelLimitsDto? limits, DiagnosticStatus diagnosticStatus, DateTime? verifiedAt, String? diagnosticError
 });
 
 
@@ -12773,14 +12778,15 @@ class __$ProviderModelDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderModelDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? connectionId = null,Object? id = null,Object? label = null,Object? source = null,Object? capabilities = null,Object? pricing = freezed,Object? limits = freezed,Object? diagnosticStatus = null,Object? verifiedAt = freezed,Object? diagnosticError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? connectionId = null,Object? id = null,Object? label = null,Object? source = null,Object? capabilities = null,Object? providerModelId = null,Object? pricing = freezed,Object? limits = freezed,Object? diagnosticStatus = null,Object? verifiedAt = freezed,Object? diagnosticError = freezed,}) {
   return _then(_ProviderModelDto(
 connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
 as String,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as ProviderModelSource,capabilities: null == capabilities ? _self.capabilities : capabilities // ignore: cast_nullable_to_non_nullable
-as ModelCapabilitiesDto,pricing: freezed == pricing ? _self.pricing : pricing // ignore: cast_nullable_to_non_nullable
+as ModelCapabilitiesDto,providerModelId: null == providerModelId ? _self.providerModelId : providerModelId // ignore: cast_nullable_to_non_nullable
+as String,pricing: freezed == pricing ? _self.pricing : pricing // ignore: cast_nullable_to_non_nullable
 as ModelPricingDto?,limits: freezed == limits ? _self.limits : limits // ignore: cast_nullable_to_non_nullable
 as ModelLimitsDto?,diagnosticStatus: null == diagnosticStatus ? _self.diagnosticStatus : diagnosticStatus // ignore: cast_nullable_to_non_nullable
 as DiagnosticStatus,verifiedAt: freezed == verifiedAt ? _self.verifiedAt : verifiedAt // ignore: cast_nullable_to_non_nullable

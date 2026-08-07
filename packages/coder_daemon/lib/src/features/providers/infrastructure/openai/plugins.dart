@@ -13,7 +13,6 @@ base class OpenAICompatiblePlugin extends ProviderPlugin {
     required this.definition,
     required this.baseUrl,
     required this._wire,
-    this.environmentVariables = const <String>[],
     this.models = const <ProviderCatalogModel>[],
     this.strictToolSchema = false,
   });
@@ -28,9 +27,6 @@ base class OpenAICompatiblePlugin extends ProviderPlugin {
   final bool strictToolSchema;
 
   final OpenAICompatibleWire _wire;
-
-  @override
-  final List<String> environmentVariables;
 
   @override
   final List<ProviderCatalogModel> models;
@@ -67,7 +63,6 @@ final class OpenAIPlugin extends OpenAICompatiblePlugin {
   }) : super(
          definition: openAIDefinition,
          baseUrl: 'https://api.openai.com/v1',
-         environmentVariables: const <String>['OPENAI_API_KEY'],
          strictToolSchema: true,
          models: openAIBundledModels,
        );
@@ -147,28 +142,24 @@ List<ProviderPlugin> openAIFamilyPlugins({
       definition: deepseekDefinition,
       baseUrl: 'https://api.deepseek.com',
       wire: chatCompletions,
-      environmentVariables: const <String>['DEEPSEEK_API_KEY'],
       models: deepseekBundledModels,
     ),
     OpenAICompatiblePlugin(
       definition: openRouterDefinition,
       baseUrl: 'https://openrouter.ai/api/v1',
       wire: chatCompletions,
-      environmentVariables: const <String>['OPENROUTER_API_KEY'],
       models: openRouterBundledModels,
     ),
     OpenAICompatiblePlugin(
       definition: groqDefinition,
       baseUrl: 'https://api.groq.com/openai/v1',
       wire: chatCompletions,
-      environmentVariables: const <String>['GROQ_API_KEY'],
       models: groqBundledModels,
     ),
     OpenAICompatiblePlugin(
       definition: xaiDefinition,
       baseUrl: 'https://api.x.ai/v1',
       wire: chatCompletions,
-      environmentVariables: const <String>['XAI_API_KEY'],
       models: xaiBundledModels,
     ),
     OpenAICompatiblePlugin(
