@@ -862,9 +862,13 @@ void main() {
       await tester.pumpAndSettle();
       // The E2E app is pinned to Korean, so the empty row reads in Korean.
       await pumpUntil(tester, find.text('파일 없음'));
+      // The real desktop runner can move primary focus while the asynchronous
+      // search replaces the loading row. Restore it explicitly so Escape is
+      // delivered to the composer's suggestions controller.
+      await tester.tap(find.byKey(composer));
+      await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-      expect(find.text('파일 없음'), findsNothing);
+      await pumpUntilGone(tester, find.text('파일 없음'));
 
       await _submitComposerPrompt(tester, composer, send, 'Delegate review');
       // The parent turn completes without waiting for the spawned child.

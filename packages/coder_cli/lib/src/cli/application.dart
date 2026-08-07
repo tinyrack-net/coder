@@ -177,7 +177,7 @@ Future<CoderClient> _connectCoderClient({
         scheme: 'ws',
         host: host,
         port: port,
-        path: '/v3/ws',
+        path: '/v4/ws',
       ),
     ),
     credentials: DaemonCredentials(bearerToken: bearerToken),

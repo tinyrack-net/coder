@@ -196,6 +196,58 @@ void main() {
     expect(violations.single.rule, 'source_dependency_direction');
   });
 
+  test('the daemon cannot depend on the client transport package', () {
+    final violations = verifier.verifySource(
+      package: 'coder_daemon',
+      path: 'packages/coder_daemon/lib/src/bootstrap/config.dart',
+      source: "import 'package:coder_client/local_daemon.dart';",
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      contains('source_dependency_direction'),
+    );
+  });
+
+  test('the daemon server cannot own feature dispatch', () {
+    final violations = verifier.verifySource(
+      package: 'coder_daemon',
+      path: 'packages/coder_daemon/lib/src/transport/rpc/server.dart',
+      source: <String>[
+        "import 'package:coder_daemon/src/features/sessions/",
+        "infrastructure/service.dart';\n",
+        'switch (method) { case "sessions.list": break; }',
+      ].join(),
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      containsAll(<String>['rpc_server_feature_import', 'central_rpc_switch']),
+    );
+  });
+
+  test('the client public API cannot expose a heterogeneous event stream', () {
+    final violations = verifier.verifySource(
+      package: 'coder_client',
+      path: 'packages/coder_client/lib/src/api.dart',
+      source: 'sealed class ClientEvent {}',
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      contains('raw_client_event'),
+    );
+  });
+
+  test('the daemon barrel cannot export concrete host adapters', () {
+    final violations = verifier.verifySource(
+      package: 'coder_daemon',
+      path: 'packages/coder_daemon/lib/coder_daemon.dart',
+      source: 'show SystemClock, UuidIdGenerator, FileProjectSettingsStore;',
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      contains('daemon_concrete_public_export'),
+    );
+  });
+
   test('the agent package stays independent of every internal package', () {
     for (final forbidden in const <String>[
       'coder_protocol',

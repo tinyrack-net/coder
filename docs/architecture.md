@@ -21,7 +21,7 @@ coder_app -> coder_client -> coder_protocol
 
 - `coder_protocol`: platform-neutral, feature-scoped generated models,
   requests, responses, events, and typed procedure descriptors for protocol
-  version 3.
+  version 4.
 - `coder_client`: authenticated JSON-RPC 2.0 over WebSocket, reconnect, and
   sequence-based timeline catch-up. Its root `CoderApi` exposes lifecycle and
   feature APIs such as `sessions`, `providers`, and `mcp`; each feature owns
@@ -42,10 +42,11 @@ Dependencies point inward through DTOs and interfaces. `coder_agent` does not
 read databases or call the network. The daemon is the only package allowed to
 combine a provider, repositories, tools, and transports.
 
-The v3 WebSocket endpoint is `/v3/ws` with subprotocol
-`tinyrack.coder.v3`. `system.hello` requires protocol major 3 and revision 0.
-State and config start fresh under their respective `v3` directories; v2 data
-is neither read nor removed by normal startup or reset.
+The v4 WebSocket endpoint is `/v4/ws` with subprotocol
+`tinyrack.coder.v4`. `system.hello` requires protocol major 4 and revision 0.
+State and config start fresh under their respective `v4` directories; v2 and
+v3 data are neither read nor removed by normal startup or reset. Only the
+explicit legacy-cleanup operation may target those preserved namespaces.
 
 ## Flutter application boundaries
 

@@ -1,93 +1,19 @@
 import 'package:coder_protocol/coder_protocol.dart';
 
-/// Feature ownership for every authenticated daemon RPC method.
-const Map<String, List<String>> daemonRpcMethodGroups = <String, List<String>>{
-  'workspace': <String>[
-    RpcMethod.workspaceCatalog,
-    RpcMethod.workspaceRegister,
-    RpcMethod.workspaceRefresh,
-    RpcMethod.workspaceUnregister,
-    RpcMethod.directorySuggest,
-    RpcMethod.fileSearch,
-    RpcMethod.gitBranchesList,
-    RpcMethod.worktreeCreate,
-    RpcMethod.worktreeArchivePreview,
-    RpcMethod.worktreeArchive,
-    RpcMethod.projectSettingsGet,
-    RpcMethod.projectSettingsSave,
-  ],
-  'agents': <String>[
-    RpcMethod.agentDefinitionList,
-    RpcMethod.agentDefinitionGet,
-    RpcMethod.agentDefinitionCreate,
-    RpcMethod.agentDefinitionUpdate,
-    RpcMethod.agentDefinitionArchive,
-    RpcMethod.agentDefinitionReset,
-    RpcMethod.agentDefinitionValidate,
-    RpcMethod.agentToolCatalog,
-  ],
-  'mcp': <String>[
-    RpcMethod.mcpServerList,
-    RpcMethod.mcpServerAdd,
-    RpcMethod.mcpServerUpdate,
-    RpcMethod.mcpServerRemove,
-    RpcMethod.mcpServerTest,
-    RpcMethod.mcpSecretSet,
-  ],
-  'prompts': <String>[
-    RpcMethod.commandList,
-    RpcMethod.skillList,
-    RpcMethod.skillGet,
-    RpcMethod.skillCreate,
-    RpcMethod.skillUpdate,
-    RpcMethod.skillDelete,
-    RpcMethod.skillSetEnabled,
-  ],
-  'sessions': <String>[
-    RpcMethod.sessionList,
-    RpcMethod.sessionSubagentList,
-    RpcMethod.sessionCreate,
-    RpcMethod.sessionUpdateSettings,
-    RpcMethod.turnStart,
-    RpcMethod.turnCancel,
-    RpcMethod.sessionCompact,
-    RpcMethod.approvalResolve,
-    RpcMethod.userQuestionAnswer,
-    RpcMethod.sessionPendingInput,
-    RpcMethod.timelineSubscribe,
-  ],
-  'terminal': <String>[
-    RpcMethod.terminalList,
-    RpcMethod.terminalCreate,
-    RpcMethod.terminalAttach,
-    RpcMethod.terminalWrite,
-    RpcMethod.terminalResize,
-    RpcMethod.terminalTerminate,
-    RpcMethod.terminalShellGet,
-    RpcMethod.terminalShellSet,
-    RpcMethod.permissionDefaultModeGet,
-    RpcMethod.permissionDefaultModeSet,
-  ],
-  'providers': <String>[
-    RpcMethod.providerCatalog,
-    RpcMethod.providerConnectionsList,
-    RpcMethod.providerConnectApiKey,
-    RpcMethod.providerConnectNone,
-    RpcMethod.providerAuthStart,
-    RpcMethod.providerAuthStatus,
-    RpcMethod.providerAuthCancel,
-    RpcMethod.providerDisconnect,
-    RpcMethod.providerCatalogRefresh,
-    RpcMethod.providerModelsList,
-    RpcMethod.providerDefaultModelGet,
-    RpcMethod.providerDefaultModelSet,
-    RpcMethod.providerCustomCreate,
-    RpcMethod.providerCustomUpdate,
-    RpcMethod.providerCustomDelete,
-  ],
-};
+/// Feature ownership for every authenticated v4 RPC procedure.
+final Map<String, List<RpcProcedureDescriptor>> daemonRpcProcedureGroups =
+    <String, List<RpcProcedureDescriptor>>{
+      'workspaces': workspacesProcedures,
+      'agents': agentsProcedures,
+      'prompts': promptsProcedures,
+      'providers': providersProcedures,
+      'mcp': mcpProcedures,
+      'sessions': sessionsProcedures,
+      'terminals': terminalsProcedures,
+    };
 
-/// Every authenticated method, flattened in deterministic feature order.
-final List<String> daemonRpcMethods = List<String>.unmodifiable(
-  daemonRpcMethodGroups.values.expand((methods) => methods),
-);
+/// Every authenticated descriptor in deterministic feature order.
+final List<RpcProcedureDescriptor> daemonRpcProcedures =
+    List<RpcProcedureDescriptor>.unmodifiable(
+      daemonRpcProcedureGroups.values.expand((procedures) => procedures),
+    );

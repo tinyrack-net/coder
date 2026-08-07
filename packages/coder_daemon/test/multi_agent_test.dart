@@ -9,6 +9,7 @@ import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.da
 import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent_tools.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/database.dart';
 import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
+import 'package:coder_daemon/src/transport/rpc/binding.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
@@ -96,7 +97,7 @@ void main() {
   late CoderDatabase database;
   late _FakeRuntime fakeRuntime;
   late MultiAgentService service;
-  late List<WireEnvelope> emitted;
+  late List<OutboundNotification> emitted;
   late List<(String, String)> validatedModels;
 
   SessionDto session(
@@ -158,7 +159,7 @@ void main() {
       ),
     );
     fakeRuntime = _FakeRuntime();
-    emitted = <WireEnvelope>[];
+    emitted = <OutboundNotification>[];
     validatedModels = <(String, String)>[];
     service = MultiAgentService(
       sessions: database.sessionDao,

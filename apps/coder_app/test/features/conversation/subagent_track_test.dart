@@ -5,7 +5,6 @@ import 'package:coder_app/src/app/router/app_router.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:coder_app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
-import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

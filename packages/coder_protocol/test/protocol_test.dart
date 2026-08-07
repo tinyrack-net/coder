@@ -6,36 +6,54 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v3 exposes permission defaults and typed contracts', () {
-    expect(coderProtocolVersion, 3);
-    expect(RpcMethod.workspaceCatalog, 'workspaces.catalog');
-    expect(RpcMethod.workspaceRefresh, 'workspaces.refresh');
-    expect(RpcMethod.workspaceUnregister, 'workspaces.unregister');
-    expect(RpcMethod.directorySuggest, 'workspaces.suggestDirectories');
-    expect(RpcMethod.gitBranchesList, 'workspaces.listBranches');
-    expect(RpcMethod.worktreeCreate, 'workspaces.createWorktree');
-    expect(RpcMethod.worktreeArchivePreview, 'workspaces.previewArchive');
-    expect(RpcMethod.worktreeArchive, 'workspaces.archiveWorktree');
-    expect(RpcMethod.projectSettingsGet, 'workspaces.getProjectSettings');
-    expect(RpcMethod.projectSettingsSave, 'workspaces.saveProjectSettings');
-    expect(RpcMethod.permissionDefaultModeGet, 'agents.getDefaultPermission');
-    expect(RpcMethod.permissionDefaultModeSet, 'agents.setDefaultPermission');
-    expect(RpcMethod.agentDefinitionList, 'agents.list');
-    expect(RpcMethod.agentDefinitionUpdate, 'agents.update');
-    expect(RpcMethod.agentToolCatalog, 'agents.listTools');
-    expect(RpcMethod.skillList, 'prompts.listSkills');
-    expect(RpcMethod.skillGet, 'prompts.getSkill');
-    expect(RpcMethod.skillCreate, 'prompts.createSkill');
-    expect(RpcMethod.skillUpdate, 'prompts.updateSkill');
-    expect(RpcMethod.skillDelete, 'prompts.deleteSkill');
-    expect(RpcMethod.skillSetEnabled, 'prompts.setSkillEnabled');
-    expect(RpcNotification.skillsChanged, 'prompts.skillsChanged');
-    expect(RpcMethod.fileSearch, 'workspaces.searchFiles');
-    expect(RpcMethod.commandList, 'prompts.listCommands');
-    expect(RpcNotification.commandsChanged, 'prompts.commandsChanged');
-    expect(RpcMethod.sessionList, 'sessions.list');
-    expect(RpcMethod.sessionCreate, 'sessions.create');
-    expect(RpcMethod.sessionUpdateSettings, 'sessions.updateSettings');
+  test('protocol v4 exposes permission defaults and typed contracts', () {
+    expect(coderProtocolMajor, 4);
+    expect(workspacesCatalogProcedure.name, 'workspaces.catalog');
+    expect(workspacesRefreshProcedure.name, 'workspaces.refresh');
+    expect(workspacesUnregisterProcedure.name, 'workspaces.unregister');
+    expect(
+      workspacesSuggestDirectoriesProcedure.name,
+      'workspaces.suggestDirectories',
+    );
+    expect(workspacesListBranchesProcedure.name, 'workspaces.listBranches');
+    expect(workspacesCreateWorktreeProcedure.name, 'workspaces.createWorktree');
+    expect(workspacesPreviewArchiveProcedure.name, 'workspaces.previewArchive');
+    expect(
+      workspacesArchiveWorktreeProcedure.name,
+      'workspaces.archiveWorktree',
+    );
+    expect(
+      workspacesGetProjectSettingsProcedure.name,
+      'workspaces.getProjectSettings',
+    );
+    expect(
+      workspacesSaveProjectSettingsProcedure.name,
+      'workspaces.saveProjectSettings',
+    );
+    expect(
+      agentsGetDefaultPermissionModeProcedure.name,
+      'agents.getDefaultPermissionMode',
+    );
+    expect(
+      agentsSetDefaultPermissionModeProcedure.name,
+      'agents.setDefaultPermissionMode',
+    );
+    expect(agentsListProcedure.name, 'agents.list');
+    expect(agentsUpdateProcedure.name, 'agents.update');
+    expect(agentsListToolsProcedure.name, 'agents.listTools');
+    expect(promptsListSkillsProcedure.name, 'prompts.listSkills');
+    expect(promptsGetSkillProcedure.name, 'prompts.getSkill');
+    expect(promptsCreateSkillProcedure.name, 'prompts.createSkill');
+    expect(promptsUpdateSkillProcedure.name, 'prompts.updateSkill');
+    expect(promptsDeleteSkillProcedure.name, 'prompts.deleteSkill');
+    expect(promptsSetSkillEnabledProcedure.name, 'prompts.setSkillEnabled');
+    expect(promptsSkillsChangedNotification.name, 'prompts.skillsChanged');
+    expect(workspacesSearchFilesProcedure.name, 'workspaces.searchFiles');
+    expect(promptsListCommandsProcedure.name, 'prompts.listCommands');
+    expect(promptsCommandsChangedNotification.name, 'prompts.commandsChanged');
+    expect(sessionsListProcedure.name, 'sessions.list');
+    expect(sessionsCreateProcedure.name, 'sessions.create');
+    expect(sessionsUpdateSettingsProcedure.name, 'sessions.updateSettings');
   });
 
   test(
@@ -172,7 +190,7 @@ void main() {
   test(
     'multi-agent collaboration contracts round-trip',
     () {
-      expect(RpcMethod.sessionSubagentList, 'sessions.listAgents');
+      expect(sessionsListSubagentsProcedure.name, 'sessions.listSubagents');
       expect(
         SessionStatus.values.map((value) => value.name),
         isNot(contains('waitingForSubagent')),
@@ -700,16 +718,22 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 3);
-    expect(RpcMethod.workspaceCatalog, 'workspaces.catalog');
-    expect(RpcMethod.sessionCreate, 'sessions.create');
-    expect(RpcMethod.sessionUpdateSettings, 'sessions.updateSettings');
-    expect(RpcMethod.permissionDefaultModeGet, 'agents.getDefaultPermission');
-    expect(RpcMethod.permissionDefaultModeSet, 'agents.setDefaultPermission');
-    expect(RpcMethod.providerCatalog, 'providers.catalog');
-    expect(RpcMethod.providerAuthStart, 'providers.startAuth');
-    expect(RpcMethod.turnStart, 'sessions.startTurn');
-    expect(RpcNotification.timelineEvent, 'sessions.timelineEvent');
+    expect(coderProtocolMajor, 4);
+    expect(workspacesCatalogProcedure.name, 'workspaces.catalog');
+    expect(sessionsCreateProcedure.name, 'sessions.create');
+    expect(sessionsUpdateSettingsProcedure.name, 'sessions.updateSettings');
+    expect(
+      agentsGetDefaultPermissionModeProcedure.name,
+      'agents.getDefaultPermissionMode',
+    );
+    expect(
+      agentsSetDefaultPermissionModeProcedure.name,
+      'agents.setDefaultPermissionMode',
+    );
+    expect(providersCatalogProcedure.name, 'providers.catalog');
+    expect(providersStartAuthProcedure.name, 'providers.startAuth');
+    expect(sessionsStartTurnProcedure.name, 'sessions.startTurn');
+    expect(sessionsTimelineEventNotification.name, 'sessions.timelineEvent');
   });
 
   test('MCP contracts round-trip and expose their defaults', () {
@@ -885,7 +909,7 @@ void main() {
       const ServerInfoDto(
         serverId: 'server',
         version: '1.0.0',
-        protocolVersion: coderProtocolVersion,
+        protocolVersion: coderProtocolMajor,
         features: <String, bool>{},
         homeDirectory: '/home/test',
       ),
@@ -898,7 +922,7 @@ void main() {
       const ServerInfoDto(
         serverId: 'server',
         version: '1.0.0',
-        protocolVersion: coderProtocolVersion,
+        protocolVersion: coderProtocolMajor,
         features: <String, bool>{},
       ),
       (value) => value.toJson(),
@@ -1326,9 +1350,9 @@ void main() {
         SessionStatus.waitingForInput,
       );
       expect(TurnStatus.values, contains(TurnStatus.waitingForInput));
-      expect(RpcMethod.userQuestionAnswer, 'sessions.answerQuestion');
+      expect(sessionsAnswerQuestionProcedure.name, 'sessions.answerQuestion');
       expect(
-        RpcNotification.userQuestionRequested,
+        sessionsQuestionRequestedNotification.name,
         'sessions.questionRequested',
       );
     },
@@ -1434,23 +1458,22 @@ void main() {
     },
   );
 
-  test('malformed required values and protocol envelopes are rejected', () {
+  test('malformed required values and typed RPC values are rejected', () {
     expect(
       () => WorkspaceDto.fromJson(const <String, dynamic>{'id': 'missing'}),
       throwsA(isA<TypeError>()),
     );
     expect(
-      () => WireEnvelope.decode('[]'),
-      throwsA(isA<ProtocolException>()),
+      () => EmptyParamsDto.fromJson(const <String, dynamic>{'extra': true}),
+      throwsA(isA<FormatException>()),
     );
     expect(
-      () => WireEnvelope.fromJson(const <String, dynamic>{
-        'version': coderProtocolVersion,
-        'type': 'notification',
-        'payload': <String, dynamic>{},
-        'requestId': 12,
+      () => RpcFailureDto.fromJson(const <String, dynamic>{
+        'code': 12,
+        'retryable': false,
+        'details': <String, dynamic>{},
       }),
-      throwsA(isA<ProtocolException>()),
+      throwsA(isA<FormatException>()),
     );
   });
 
@@ -1461,17 +1484,15 @@ void main() {
     );
   });
 
-  test('wire envelope round-trips and ignores additive fields', () {
-    final envelope = WireEnvelope.fromJson(const <String, dynamic>{
-      'version': coderProtocolVersion,
-      'type': 'future.event',
-      'requestId': 'request-1',
-      'payload': <String, dynamic>{'value': 42, 'futureField': true},
-      'unknownEnvelopeField': 'ignored',
-    });
-
-    expect(envelope.payload['futureField'], isTrue);
-    expect(WireEnvelope.decode(envelope.encode()).requestId, 'request-1');
+  test('typed RPC failure round-trips structured safe details', () {
+    const failure = RpcFailureDto(
+      code: 'invalid_params',
+      details: <String, dynamic>{'field': 'workspaceId'},
+    );
+    final decoded = RpcFailureDto.fromJson(failure.toJson());
+    expect(decoded.code, 'invalid_params');
+    expect(decoded.retryable, isFalse);
+    expect(decoded.details, <String, dynamic>{'field': 'workspaceId'});
   });
 
   test('every enum value has a stable JSON name', () {
@@ -1678,11 +1699,11 @@ void main() {
       );
 
       expect(
-        RpcMethod.providerDefaultModelGet,
+        providersGetDefaultModelProcedure.name,
         'providers.getDefaultModel',
       );
       expect(
-        RpcMethod.providerDefaultModelSet,
+        providersSetDefaultModelProcedure.name,
         'providers.setDefaultModel',
       );
     },
@@ -1806,6 +1827,19 @@ void _roundTrip<T>(
   Map<String, dynamic> Function(T value) encoder,
   T Function(Map<String, dynamic> json) decoder,
 ) {
+  for (final procedure in rpcProcedures) {
+    if (procedure.paramsType == T) {
+      expect(procedure.encodeParamsObject(value as Object), encoder(value));
+    }
+    if (procedure.resultType == T) {
+      expect(procedure.encodeResultObject(value as Object), encoder(value));
+    }
+  }
+  for (final notification in rpcNotifications) {
+    if (notification.eventType == T) {
+      expect(notification.encodeObject(value as Object), encoder(value));
+    }
+  }
   final encoded = jsonEncode(<String, dynamic>{
     ...encoder(value),
     'futureField': true,

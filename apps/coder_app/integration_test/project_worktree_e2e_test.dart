@@ -24,7 +24,7 @@ void main() {
       await settingsFile.parent.create();
       await settingsFile.writeAsString(
         '${jsonEncode(<String, Object?>{
-          'schemaVersion': 3,
+          'schemaVersion': 4,
           'other': <String, Object?>{'keep': true},
         })}\n',
       );
@@ -77,7 +77,7 @@ void main() {
       expect(find.text('다시 시도'), findsOneWidget);
 
       await settingsFile.writeAsString(
-        '${jsonEncode(<String, Object?>{'schemaVersion': 3})}\n',
+        '${jsonEncode(<String, Object?>{'schemaVersion': 4})}\n',
         flush: true,
       );
       await tester.tap(find.widgetWithText(TRButton, '다시 시도'));

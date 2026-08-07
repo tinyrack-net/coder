@@ -10,10 +10,11 @@ import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.da
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_daemon/src/shared/ports/agent_protocol_mapping.dart';
+import 'package:coder_daemon/src/transport/rpc/binding.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Signature used by DaemonEventSink.
-typedef DaemonEventSink = void Function(WireEnvelope event);
+typedef DaemonEventSink = void Function(OutboundNotification event);
 
 /// Resolves the tools published at runtime rather than compiled in.
 ///
@@ -493,20 +494,14 @@ class SessionTurnCoordinator implements SessionTurnPort {
       data: data,
     );
     _events(
-      WireEnvelope(
-        type: RpcNotification.timelineEvent,
-        payload: event.toJson(),
-      ),
+      OutboundNotification(sessionsTimelineEventNotification, event),
     );
   }
 
   void _emitSession(SessionDto? session) {
     if (session != null) {
       _events(
-        WireEnvelope(
-          type: RpcNotification.sessionUpdated,
-          payload: session.toJson(),
-        ),
+        OutboundNotification(sessionsUpdatedNotification, session),
       );
     }
   }

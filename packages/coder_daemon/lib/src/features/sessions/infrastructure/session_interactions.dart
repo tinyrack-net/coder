@@ -4,6 +4,7 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_daemon/src/shared/ports/agent_protocol_mapping.dart';
 import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
+import 'package:coder_daemon/src/transport/rpc/binding.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Client-mediated interactions that can suspend a running session turn.
@@ -29,7 +30,7 @@ final class SessionInteractionCoordinator implements SessionInteractionPort {
   /// Creates a coordinator backed by the durable timeline.
   SessionInteractionCoordinator({
     required TimelineRepository timeline,
-    required void Function(WireEnvelope event) events,
+    required void Function(OutboundNotification event) events,
     required IdGenerator ids,
     required Clock clock,
   }) : this._(timeline, events, ids, clock);
@@ -42,7 +43,7 @@ final class SessionInteractionCoordinator implements SessionInteractionPort {
   );
 
   final TimelineRepository _timeline;
-  final void Function(WireEnvelope event) _events;
+  final void Function(OutboundNotification event) _events;
   final IdGenerator _ids;
   final Clock _clock;
   final Map<String, Completer<ApprovalDecision>> _pendingApprovals =
@@ -172,10 +173,7 @@ final class SessionInteractionCoordinator implements SessionInteractionPort {
       data: data,
     );
     _events(
-      WireEnvelope(
-        type: RpcNotification.timelineEvent,
-        payload: event.toJson(),
-      ),
+      OutboundNotification(sessionsTimelineEventNotification, event),
     );
   }
 }
@@ -233,10 +231,7 @@ final class _TimelineUserQuestionCoordinator
       data: <String, dynamic>{'request': request.toJson()},
     );
     owner._events(
-      WireEnvelope(
-        type: RpcNotification.userQuestionRequested,
-        payload: request.toJson(),
-      ),
+      OutboundNotification(sessionsQuestionRequestedNotification, request),
     );
     await reportStatus(SessionStatus.waitingForInput);
     cancellation.onCancel(() {
@@ -300,10 +295,7 @@ final class _TimelineApprovalCoordinator implements ApprovalCoordinator {
       data: <String, dynamic>{'approval': approval.toJson()},
     );
     owner._events(
-      WireEnvelope(
-        type: RpcNotification.approvalRequested,
-        payload: approval.toJson(),
-      ),
+      OutboundNotification(sessionsApprovalRequestedNotification, approval),
     );
     cancellation.onCancel(() {
       final active = owner._pendingApprovals.remove(approval.id);

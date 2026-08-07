@@ -455,7 +455,7 @@ void main() {
         serverInfo: const ServerInfoDto(
           serverId: 'remote',
           version: 'test',
-          protocolVersion: coderProtocolVersion,
+          protocolVersion: coderProtocolMajor,
           features: <String, bool>{},
         ),
       );

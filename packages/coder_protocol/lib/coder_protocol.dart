@@ -1,3 +1,13 @@
+export 'src/catalog.dart';
+export 'src/common/rpc_values.dart';
+export 'src/features/agents/procedures.dart';
+export 'src/features/mcp/procedures.dart';
+export 'src/features/prompts/procedures.dart';
+export 'src/features/providers/procedures.dart';
+export 'src/features/sessions/procedures.dart';
+export 'src/features/system/procedures.dart';
+export 'src/features/terminals/procedures.dart';
+export 'src/features/workspaces/procedures.dart';
 export 'src/models.dart';
 export 'src/protocol.dart';
 export 'src/rpc_catalog.dart';

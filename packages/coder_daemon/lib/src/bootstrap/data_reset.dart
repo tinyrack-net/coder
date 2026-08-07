@@ -119,30 +119,30 @@ final class DaemonDataReset {
 
   /// Entries erased from [homeDirectory].
   static const List<String> homeEntries = <String>[
-    'v3/coder.sqlite',
-    'v3/coder.sqlite-wal',
-    'v3/coder.sqlite-shm',
-    'v3/coder.sqlite-journal',
-    'v3/attachments',
-    'v3/daemon.lock',
+    'v4/coder.sqlite',
+    'v4/coder.sqlite-wal',
+    'v4/coder.sqlite-shm',
+    'v4/coder.sqlite-journal',
+    'v4/attachments',
+    'v4/daemon.lock',
   ];
 
   /// Entries erased from [configDirectory].
   static const List<String> configEntries = <String>[
-    'v3/secrets.json',
-    'v3/secrets.json.tmp',
-    'v3/config.json',
-    'v3/config.json.tmp',
-    'v3/agents',
-    'v3/skills',
-    'v3/commands',
+    'v4/secrets.json',
+    'v4/secrets.json.tmp',
+    'v4/config.json',
+    'v4/config.json.tmp',
+    'v4/agents',
+    'v4/skills',
+    'v4/commands',
   ];
 
   /// Entries under [homeDirectory] that a reset must never touch.
   ///
   /// Managed checkouts can hold unpushed work, so they outlive a reset even
   /// though their workspace registrations do not.
-  static const List<String> preservedHomeEntries = <String>['v3/worktrees'];
+  static const List<String> preservedHomeEntries = <String>['v4/worktrees'];
 
   /// Erases every entry in the allowlist, leaving both roots in place.
   ///
@@ -151,7 +151,7 @@ final class DaemonDataReset {
   /// deleted.
   Future<void> eraseAll() async {
     await files.assertLockAvailable(
-      p.join(homeDirectory, 'v3', 'daemon.lock'),
+      p.join(homeDirectory, 'v4', 'daemon.lock'),
     );
     for (final path in _targets()) {
       if (!await files.exists(path)) continue;
@@ -189,5 +189,65 @@ final class DaemonDataReset {
       }
     }
     return targets;
+  }
+}
+
+/// Explicitly removes preserved pre-v4 daemon namespaces.
+///
+/// This operation is never called by startup or [DaemonDataReset]. Callers
+/// must name the legacy versions they intend to remove.
+final class DaemonLegacyDataCleanup {
+  /// Creates a cleanup operation for one daemon installation.
+  const DaemonLegacyDataCleanup({
+    required this.configDirectory,
+    required this.homeDirectory,
+    this.files = const NativeDaemonDataFiles(),
+  });
+
+  /// Root containing legacy configuration namespaces.
+  final String configDirectory;
+
+  /// Root containing legacy state namespaces.
+  final String homeDirectory;
+
+  /// Filesystem adapter used by the operation.
+  final DaemonDataFiles files;
+
+  /// Deletes exactly the requested v2 and/or v3 namespaces.
+  Future<void> erase({required Set<int> versions}) async {
+    if (versions.isEmpty ||
+        versions.any((version) => version != 2 && version != 3)) {
+      throw ArgumentError.value(
+        versions,
+        'versions',
+        'Only legacy versions 2 and 3 may be removed.',
+      );
+    }
+    final targets = <String>{};
+    for (final version in versions) {
+      final name = 'v$version';
+      await files.assertLockAvailable(
+        p.join(homeDirectory, name, 'daemon.lock'),
+      );
+      targets
+        ..add(p.canonicalize(p.join(homeDirectory, name)))
+        ..add(p.canonicalize(p.join(configDirectory, name)));
+    }
+    for (final path in targets) {
+      if (!await files.exists(path)) continue;
+      try {
+        if (await files.isDirectory(path)) {
+          await files.deleteDirectory(path);
+        } else {
+          await files.deleteFile(path);
+        }
+      } on FileSystemException catch (error) {
+        throw DaemonDataResetException(
+          'Failed to delete $path: ${error.message}',
+          reason: DaemonDataResetFailureReason.filesystem,
+          path: path,
+        );
+      }
+    }
   }
 }

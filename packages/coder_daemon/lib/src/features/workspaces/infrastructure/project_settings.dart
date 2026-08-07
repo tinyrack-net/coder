@@ -11,7 +11,7 @@ String _projectSettingsPath(String rootPath) =>
     p.join(rootPath, '.coder', 'config.json');
 
 /// Schema shared by project worktree and MCP configuration.
-const int projectConfigSchemaVersion = 3;
+const int projectConfigSchemaVersion = 4;
 
 /// Typed source-of-truth boundary for project-scoped configuration.
 abstract interface class ProjectSettingsStore {

@@ -26,7 +26,7 @@ void main() {
   ServerInfoDto info({String? homeDirectory}) => ServerInfoDto(
     serverId: 'server',
     version: 'test',
-    protocolVersion: coderProtocolVersion,
+    protocolVersion: coderProtocolMajor,
     features: const <String, bool>{},
     homeDirectory: homeDirectory,
   );

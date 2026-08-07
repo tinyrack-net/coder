@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:coder_daemon/coder_daemon.dart';
+import 'package:coder_daemon/src/bootstrap/config.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -64,11 +64,14 @@ void main() {
         linux: true,
       ),
     );
-    // The daemon joins with the host separator, which is what a daemon
-    // running on that host should do, so the expectations join too rather
-    // than pinning a slash.
-    expect(defaults.configDirectory, p.join('/xdg/config', 'tinyrack-coder'));
-    expect(defaults.homeDirectory, p.join('/xdg/state', 'tinyrack-coder'));
+    expect(
+      defaults.configDirectory,
+      p.posix.join('/xdg/config', 'tinyrack-coder'),
+    );
+    expect(
+      defaults.homeDirectory,
+      p.posix.join('/xdg/state', 'tinyrack-coder'),
+    );
     expect(defaults.userHomeDirectory, '/home/test');
     expect(defaults.host, '127.0.0.1');
     expect(defaults.port, 7337);
@@ -134,7 +137,12 @@ void main() {
     );
     expect(
       macOS.homeDirectory,
-      p.join('/Users/test', 'Library', 'Application Support', 'Tinyrack Coder'),
+      p.posix.join(
+        '/Users/test',
+        'Library',
+        'Application Support',
+        'Tinyrack Coder',
+      ),
     );
     expect(macOS.configDirectory, macOS.homeDirectory);
 
@@ -158,11 +166,11 @@ void main() {
     );
     expect(
       fallback.configDirectory,
-      p.join('/home/test', '.config', 'tinyrack-coder'),
+      p.posix.join('/home/test', '.config', 'tinyrack-coder'),
     );
     expect(
       fallback.homeDirectory,
-      p.join('/home/test', '.local', 'state', 'tinyrack-coder'),
+      p.posix.join('/home/test', '.local', 'state', 'tinyrack-coder'),
     );
   });
 

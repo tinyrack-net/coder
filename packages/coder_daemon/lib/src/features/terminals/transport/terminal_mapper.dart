@@ -1,7 +1,7 @@
 import 'package:coder_daemon/src/features/terminals/domain/terminal.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
-/// Maps a terminal domain snapshot to its v3 wire DTO.
+/// Maps a terminal domain snapshot to its v4 wire DTO.
 TerminalDto terminalToDto(Terminal terminal) => TerminalDto(
   id: terminal.id,
   worktreeId: terminal.worktreeId,
@@ -18,7 +18,7 @@ TerminalDto terminalToDto(Terminal terminal) => TerminalDto(
   error: terminal.error,
 );
 
-/// Maps terminal output to its v3 wire DTO.
+/// Maps terminal output to its v4 wire DTO.
 TerminalOutputDto terminalOutputToDto(TerminalOutput output) =>
     TerminalOutputDto(
       terminalId: output.terminalId,
@@ -26,7 +26,7 @@ TerminalOutputDto terminalOutputToDto(TerminalOutput output) =>
       data: output.data,
     );
 
-/// Maps an attach result to its v3 wire DTO.
+/// Maps an attach result to its v4 wire DTO.
 TerminalAttachResultDto terminalAttachmentToDto(
   TerminalAttachment attachment,
 ) => TerminalAttachResultDto(

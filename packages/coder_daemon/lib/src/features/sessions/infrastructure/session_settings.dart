@@ -1,5 +1,6 @@
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
+import 'package:coder_daemon/src/transport/rpc/binding.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Session preference mutations exposed to the daemon transport.
@@ -42,7 +43,7 @@ final class SessionSettingsService implements SessionSettingsPort {
     required SessionRepository sessions,
     required ProviderModelResolver models,
     required bool Function(String sessionId) hasActiveTurn,
-    required void Function(WireEnvelope event) events,
+    required void Function(OutboundNotification event) events,
   }) : this._(sessions, models, hasActiveTurn, events);
 
   const SessionSettingsService._(
@@ -55,7 +56,7 @@ final class SessionSettingsService implements SessionSettingsPort {
   final SessionRepository _sessions;
   final ProviderModelResolver _models;
   final bool Function(String sessionId) _hasActiveTurn;
-  final void Function(WireEnvelope event) _events;
+  final void Function(OutboundNotification event) _events;
 
   @override
   Future<SessionDto> updateSettings(
@@ -174,10 +175,7 @@ final class SessionSettingsService implements SessionSettingsPort {
 
   SessionDto _emit(SessionDto session) {
     _events(
-      WireEnvelope(
-        type: RpcNotification.sessionUpdated,
-        payload: session.toJson(),
-      ),
+      OutboundNotification(sessionsUpdatedNotification, session),
     );
     return session;
   }

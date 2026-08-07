@@ -284,7 +284,7 @@ void _registerAgentsAppFlows() {
     const remoteInfo = ServerInfoDto(
       serverId: 'server',
       version: 'test',
-      protocolVersion: coderProtocolVersion,
+      protocolVersion: coderProtocolMajor,
       features: <String, bool>{},
     );
     final remoteRouter = await _pumpRoute(

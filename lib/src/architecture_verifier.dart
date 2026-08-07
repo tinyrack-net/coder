@@ -52,7 +52,6 @@ final class ArchitectureVerifier {
         },
         'coder_daemon': <String>{
           'coder_agent',
-          'coder_client',
           'coder_protocol',
         },
         'coder_app': <String>{
@@ -67,7 +66,7 @@ final class ArchitectureVerifier {
   // A vendor's name in shared code is how the last refactor's leaks began: a
   // ChatGPT gateway in the daemon, an id switch in the settings page, an enum
   // of one vendor's flows in the CLI. Everything vendor-specific now lives in
-  // coder_provider_* packages; the one legitimate mention elsewhere is the
+  // provider infrastructure; the one legitimate mention elsewhere is the
   // daemon's composition root, which assembles the registry.
   static final RegExp _vendorIdentifier = RegExp(
     'openai|chatgpt|anthropic|deepseek|openrouter|groq|ollama|lmstudio'
@@ -127,7 +126,7 @@ final class ArchitectureVerifier {
 
   /// Runs every architecture check and returns all violations.
   List<ArchitectureViolation> verify() {
-    final violations = <ArchitectureViolation>[];
+    final violations = <ArchitectureViolation>[..._verifyPackageSet()];
     for (final package in _allowedInternalDependencies.keys) {
       final directory = package == 'coder_app'
           ? p.join(workspaceRoot, 'apps', package)
@@ -137,6 +136,36 @@ final class ArchitectureVerifier {
         ..addAll(_verifySources(package, directory));
     }
     return violations;
+  }
+
+  List<ArchitectureViolation> _verifyPackageSet() {
+    final packages = Directory(p.join(workspaceRoot, 'packages'));
+    if (!packages.existsSync()) return const <ArchitectureViolation>[];
+    final actual = packages
+        .listSync()
+        .whereType<Directory>()
+        .map((directory) => p.basename(directory.path))
+        .toSet();
+    const expected = <String>{
+      'coder_agent',
+      'coder_cli',
+      'coder_client',
+      'coder_daemon',
+      'coder_protocol',
+    };
+    if (actual.length == expected.length && actual.containsAll(expected)) {
+      return const <ArchitectureViolation>[];
+    }
+    return <ArchitectureViolation>[
+      ArchitectureViolation(
+        path: 'packages',
+        line: 0,
+        rule: 'internal_package_set',
+        message:
+            'Expected exactly ${expected.toList()..sort()}, found '
+            '${actual.toList()..sort()}.',
+      ),
+    ];
   }
 
   List<ArchitectureViolation> _verifyPubspec(
@@ -230,6 +259,57 @@ final class ArchitectureVerifier {
         );
       }
       if (package == 'coder_daemon' &&
+          path.endsWith('/transport/rpc/server.dart')) {
+        if (line.contains('package:coder_daemon/src/features/')) {
+          violations.add(
+            ArchitectureViolation(
+              path: path,
+              line: index + 1,
+              rule: 'rpc_server_feature_import',
+              message: 'The RPC server must depend only on feature bindings.',
+            ),
+          );
+        }
+        if (line.contains('switch (method)')) {
+          violations.add(
+            ArchitectureViolation(
+              path: path,
+              line: index + 1,
+              rule: 'central_rpc_switch',
+              message: 'Feature modules own RPC dispatch.',
+            ),
+          );
+        }
+      }
+      if (package == 'coder_client' &&
+          path.endsWith('/src/api.dart') &&
+          line.contains('ClientEvent')) {
+        violations.add(
+          ArchitectureViolation(
+            path: path,
+            line: index + 1,
+            rule: 'raw_client_event',
+            message: 'Feature APIs must expose their own typed streams.',
+          ),
+        );
+      }
+      if (package == 'coder_daemon' &&
+          path.endsWith('/lib/coder_daemon.dart') &&
+          RegExp(
+            'SystemClock|UuidIdGenerator|IoWorkspacePathGateway|'
+            'ProcessGitWorkspaceGateway|FileProjectSettingsStore|'
+            'ShellWorktreeHookRunner',
+          ).hasMatch(line)) {
+        violations.add(
+          ArchitectureViolation(
+            path: path,
+            line: index + 1,
+            rule: 'daemon_concrete_public_export',
+            message: 'The daemon public API may expose typed host ports only.',
+          ),
+        );
+      }
+      if (package == 'coder_daemon' &&
           (path.contains('/domain/') || path.contains('/application/')) &&
           importedPackage == 'coder_protocol') {
         violations.add(
@@ -250,8 +330,8 @@ final class ArchitectureVerifier {
             line: index + 1,
             rule: 'vendor_literal',
             message:
-                'Vendor names belong in a coder_provider_* package or the '
-                'daemon composition root, not in shared code.',
+                'Vendor names belong in provider infrastructure or the daemon '
+                'composition root, not in shared code.',
           ),
         );
       }
