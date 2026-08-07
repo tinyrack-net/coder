@@ -12,6 +12,7 @@ import 'package:coder_app/src/features/conversation/application/subagent_track_m
 import 'package:coder_app/src/features/conversation/domain/composer_commands.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_plan_actions.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_timeline_view.dart';
+import 'package:coder_app/src/features/conversation/presentation/goal_status_bar.dart';
 import 'package:coder_app/src/features/conversation/presentation/subagents/subagent_status_icon.dart';
 import 'package:coder_app/src/features/conversation/presentation/subagents/subagent_track.dart';
 import 'package:coder_app/src/features/conversation/presentation/widgets/composer_completion_scope.dart';
@@ -1203,6 +1204,24 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               exportAttachment: _exportAttachment,
             ),
           ),
+          if (value?.goal case final GoalDto goal)
+            if (!readOnly)
+              GoalStatusBar(
+                goal: goal,
+                sessionMode: current.mode,
+                onEdit: () => unawaited(_editGoal(current.id, goal)),
+                onStatusChanged: (status) => unawaited(
+                  _conversation(ref, current.id).updateGoal(
+                    GoalUpdateDto(
+                      expectedGoalId: goal.goalId,
+                      status: status,
+                    ),
+                  ),
+                ),
+                onClear: () => unawaited(
+                  _conversation(ref, current.id).clearGoal(),
+                ),
+              ),
           // Keep the auxiliary subagent track bounded so the composer retains
           // its natural height and the timeline receives the remaining space.
           if (!readOnly)
@@ -1356,11 +1375,120 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         }
       case ClientCommandAction.compact:
         await _sessions(ref).compact(session.id);
+      case ClientCommandAction.goal:
+        await _runGoalCommand(session.id, invocation.arguments);
       case ClientCommandAction.help:
         // Typing `/` already lists every command, so help only reopens it.
         break;
     }
     return true;
+  }
+
+  Future<void> _runGoalCommand(String sessionId, String arguments) async {
+    final command = arguments.trim();
+    final goal = ref
+        .read(
+          conversationControllerProvider(
+            widget.selection.hostId,
+            sessionId,
+          ),
+        )
+        .asData
+        ?.value
+        .goal;
+    switch (command) {
+      case '':
+      case 'edit':
+        await _editGoal(sessionId, goal);
+      case 'pause':
+        if (goal != null) {
+          await _conversation(ref, sessionId).updateGoal(
+            GoalUpdateDto(
+              expectedGoalId: goal.goalId,
+              status: GoalStatus.paused,
+            ),
+          );
+        }
+      case 'resume':
+        if (goal != null) {
+          await _conversation(ref, sessionId).updateGoal(
+            GoalUpdateDto(
+              expectedGoalId: goal.goalId,
+              status: GoalStatus.active,
+            ),
+          );
+        }
+      case 'clear':
+        await _conversation(ref, sessionId).clearGoal();
+      default:
+        await _replaceGoal(sessionId, command, current: goal);
+    }
+  }
+
+  Future<void> _editGoal(String sessionId, GoalDto? goal) async {
+    final edited = await showGoalEditor(context, goal: goal);
+    if (!mounted || edited == null) return;
+    if (goal == null ||
+        goal.status == GoalStatus.complete ||
+        goal.status == GoalStatus.budgetLimited) {
+      await _replaceGoal(
+        sessionId,
+        edited.objective,
+        tokenBudget: edited.tokenBudget,
+        current: goal,
+      );
+      return;
+    }
+    await _conversation(ref, sessionId).updateGoal(
+      GoalUpdateDto(
+        expectedGoalId: goal.goalId,
+        objective: edited.objective,
+        hasTokenBudget: true,
+        tokenBudget: edited.tokenBudget,
+      ),
+    );
+  }
+
+  Future<void> _replaceGoal(
+    String sessionId,
+    String objective, {
+    int? tokenBudget,
+    GoalDto? current,
+  }) async {
+    if (current != null && current.status != GoalStatus.complete) {
+      final replace = await showTRDialog<bool>(
+        context: context,
+        builder: (context) => TRAlertDialog(
+          title: TRText.inherit(
+            AppLocalizations.of(context).goalReplaceTitle,
+          ),
+          content: TRText.inherit(
+            AppLocalizations.of(context).goalReplaceDescription,
+          ),
+          actions: <TRButton>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              onPressed: () => Navigator.pop(context, false),
+              child: TRText.inherit(
+                AppLocalizations.of(context).commonCancel,
+              ),
+            ),
+            TRButton(
+              intent: TRIntent.primary,
+              onPressed: () => Navigator.pop(context, true),
+              child: TRText.inherit(
+                AppLocalizations.of(context).goalReplaceAction,
+              ),
+            ),
+          ],
+        ),
+      );
+      if (replace != true || !mounted) return;
+    }
+    await _conversation(
+      ref,
+      sessionId,
+    ).replaceGoal(objective, tokenBudget: tokenBudget);
   }
 
   Future<void> _send(

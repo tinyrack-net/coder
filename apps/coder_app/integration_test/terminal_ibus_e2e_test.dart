@@ -156,11 +156,14 @@ void main() {
         modeReady.existsSync,
         'the PTY mode probe to enter raw mode',
       );
-      // Replacing the worktree route with the terminal route briefly leaves
-      // both pane surfaces mounted; the last one is the active route.
+      // Route replacement briefly leaves both pane surfaces mounted, so scope
+      // the finder to the terminal created for this test.
       final terminalSurface = find
-          .byKey(
-            const ValueKey<String>('tr-terminal-surface'),
+          .descendant(
+            of: find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
+            matching: find.byKey(
+              const ValueKey<String>('tr-terminal-surface'),
+            ),
           )
           .last;
       await tester.tap(terminalSurface);

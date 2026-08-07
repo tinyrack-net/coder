@@ -129,6 +129,7 @@ List<ComposerCommand> localizedClientCommands(AppLocalizations l10n) =>
           name: _clientName(l10n, command.action!),
           description: _clientDescription(l10n, command.action!),
           kind: command.kind,
+          argumentHint: command.argumentHint,
           action: command.action,
         ),
     ];
@@ -141,6 +142,7 @@ String _clientName(AppLocalizations l10n, ClientCommandAction action) =>
       ClientCommandAction.openAgentSettings => l10n.composerCommandAgentsLabel,
       ClientCommandAction.openSkillSettings => l10n.composerCommandSkillsLabel,
       ClientCommandAction.compact => l10n.composerCommandCompactLabel,
+      ClientCommandAction.goal => l10n.composerCommandGoalLabel,
       ClientCommandAction.help => l10n.composerCommandHelpLabel,
     };
 
@@ -154,5 +156,6 @@ String _clientDescription(AppLocalizations l10n, ClientCommandAction action) =>
       ClientCommandAction.openSkillSettings =>
         l10n.composerCommandSkillsDescription,
       ClientCommandAction.compact => l10n.composerCommandCompactDescription,
+      ClientCommandAction.goal => l10n.composerCommandGoalDescription,
       ClientCommandAction.help => l10n.composerCommandHelpDescription,
     };

@@ -172,6 +172,40 @@ class Turns extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+/// One persistent objective owned by a manually-created root session.
+class Goals extends Table {
+  /// Session owning the goal; also enforces one goal per session.
+  TextColumn get sessionId =>
+      text().references(Sessions, #id, onDelete: KeyAction.cascade)();
+
+  /// Identity of the current goal generation.
+  TextColumn get goalId => text()();
+
+  /// User-authored objective.
+  TextColumn get objective => text()();
+
+  /// Current goal-status wire name.
+  TextColumn get status => text()();
+
+  /// Optional maximum billable tokens.
+  IntColumn get tokenBudget => integer().nullable()();
+
+  /// Billable tokens consumed by this goal.
+  IntColumn get tokensUsed => integer().withDefault(const Constant(0))();
+
+  /// Wall-clock seconds spent pursuing this goal.
+  IntColumn get timeUsedSeconds => integer().withDefault(const Constant(0))();
+
+  /// Creation instant of this goal generation.
+  DateTimeColumn get createdAt => dateTime()();
+
+  /// Last persisted mutation or accounting instant.
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{sessionId};
+}
+
 /// Immutable attachment metadata; payload bytes live in the attachment store.
 class Attachments extends Table {
   /// Stable opaque identifier used as the storage key.
@@ -463,6 +497,7 @@ class ProviderModels extends Table {
     Worktrees,
     Sessions,
     Turns,
+    Goals,
     AgentMailboxMessages,
     Attachments,
     TurnAttachments,
@@ -479,6 +514,7 @@ class ProviderModels extends Table {
     WorkspaceDao,
     WorktreeDao,
     SessionDao,
+    GoalDao,
     AgentMailboxDao,
     AttachmentDao,
     TimelineDao,
@@ -504,7 +540,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

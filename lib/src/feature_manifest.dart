@@ -445,6 +445,35 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'session.goal',
+    description:
+        'Persists a root-session objective, accounts model usage and active '
+        'time, automatically continues work in Run mode, and exposes goal '
+        'status and controls in the conversation.',
+    apiMethods: <String>[
+      'sessions.getGoal',
+      'sessions.replaceGoal',
+      'sessions.updateGoal',
+      'sessions.clearGoal',
+    ],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'multi_turn_completion_reconnect',
+        description:
+            'Creates a goal, completes deterministic continuation turns, and '
+            'restores the completed goal after reconnect.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
     id: 'session.home',
     description:
         'Starts a session without picking a project. The daemon provisions the '

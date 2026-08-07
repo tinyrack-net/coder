@@ -808,6 +808,39 @@ const _$AgentLifecycleEnumMap = {
   AgentLifecycle.errored: 'errored',
 };
 
+_GoalDto _$GoalDtoFromJson(Map<String, dynamic> json) => _GoalDto(
+  sessionId: json['sessionId'] as String,
+  goalId: json['goalId'] as String,
+  objective: json['objective'] as String,
+  status: $enumDecode(_$GoalStatusEnumMap, json['status']),
+  tokensUsed: (json['tokensUsed'] as num).toInt(),
+  timeUsedSeconds: (json['timeUsedSeconds'] as num).toInt(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  tokenBudget: (json['tokenBudget'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$GoalDtoToJson(_GoalDto instance) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'goalId': instance.goalId,
+  'objective': instance.objective,
+  'status': _$GoalStatusEnumMap[instance.status]!,
+  'tokensUsed': instance.tokensUsed,
+  'timeUsedSeconds': instance.timeUsedSeconds,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'tokenBudget': instance.tokenBudget,
+};
+
+const _$GoalStatusEnumMap = {
+  GoalStatus.active: 'active',
+  GoalStatus.paused: 'paused',
+  GoalStatus.blocked: 'blocked',
+  GoalStatus.usageLimited: 'usageLimited',
+  GoalStatus.budgetLimited: 'budgetLimited',
+  GoalStatus.complete: 'complete',
+};
+
 _AgentMailboxMessageDto _$AgentMailboxMessageDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentMailboxMessageDto(

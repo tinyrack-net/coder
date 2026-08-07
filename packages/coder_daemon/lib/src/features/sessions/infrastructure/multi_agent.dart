@@ -105,6 +105,7 @@ abstract interface class SessionTurnPort {
     required String sessionId,
     required String turnId,
     required String prompt,
+    bool internal = false,
   });
 
   /// Cancels the running turn of one session, if any.

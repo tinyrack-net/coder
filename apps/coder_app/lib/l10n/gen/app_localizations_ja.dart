@@ -1704,5 +1704,81 @@ class AppLocalizationsJa extends AppLocalizations {
   String get composerCommandHelpDescription => 'List the available commands.';
 
   @override
+  String get composerCommandGoalLabel => 'goal';
+
+  @override
+  String get composerCommandGoalDescription => 'セッションの永続的な作業目標を作成または管理します。';
+
+  @override
+  String get goalStatusActive => '実行中';
+
+  @override
+  String get goalStatusPaused => '一時停止';
+
+  @override
+  String get goalStatusBlocked => 'ブロック中';
+
+  @override
+  String get goalStatusUsageLimited => '使用量制限';
+
+  @override
+  String get goalStatusBudgetLimited => '予算上限に到達';
+
+  @override
+  String get goalStatusComplete => '完了';
+
+  @override
+  String get goalPlanHold => '実行モードで再開します';
+
+  @override
+  String goalElapsed(int seconds) {
+    return '$seconds秒経過';
+  }
+
+  @override
+  String goalTokenUsage(int used, int budget) {
+    return '$used / $budget トークン';
+  }
+
+  @override
+  String get goalPause => 'Goalを一時停止';
+
+  @override
+  String get goalResume => 'Goalを再開';
+
+  @override
+  String get goalEdit => 'Goalを編集';
+
+  @override
+  String get goalClear => 'Goalをクリア';
+
+  @override
+  String get goalDialogTitle => 'セッションGoal';
+
+  @override
+  String get goalObjectiveLabel => '目標';
+
+  @override
+  String get goalObjectiveRequired => '1〜4,000文字で入力してください。';
+
+  @override
+  String get goalBudgetLabel => 'トークン予算（任意）';
+
+  @override
+  String get goalBudgetInvalid => '正のトークン予算を入力してください。';
+
+  @override
+  String get goalStart => 'Goalを開始';
+
+  @override
+  String get goalReplaceTitle => '現在のGoalを置き換えますか？';
+
+  @override
+  String get goalReplaceDescription => '新しいGoalを開始し、記録された使用量をリセットします。';
+
+  @override
+  String get goalReplaceAction => 'Goalを置き換える';
+
+  @override
   String get composerSuggestionsLabel => 'Suggestions';
 }

@@ -2236,6 +2236,39 @@
   "@composerCommandHelpDescription": {
     "description": "Description of the help command."
   },
+  "composerCommandGoalLabel": "goal",
+  "composerCommandGoalDescription": "Create or manage persistent session work.",
+  "goalStatusActive": "Active",
+  "goalStatusPaused": "Paused",
+  "goalStatusBlocked": "Blocked",
+  "goalStatusUsageLimited": "Usage limited",
+  "goalStatusBudgetLimited": "Budget reached",
+  "goalStatusComplete": "Complete",
+  "goalPlanHold": "Resumes in Run mode",
+  "goalElapsed": "{seconds}s elapsed",
+  "@goalElapsed": {
+    "placeholders": {"seconds": {"type": "int"}}
+  },
+  "goalTokenUsage": "{used} / {budget} tokens",
+  "@goalTokenUsage": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "budget": {"type": "int"}
+    }
+  },
+  "goalPause": "Pause goal",
+  "goalResume": "Resume goal",
+  "goalEdit": "Edit goal",
+  "goalClear": "Clear goal",
+  "goalDialogTitle": "Session goal",
+  "goalObjectiveLabel": "Objective",
+  "goalObjectiveRequired": "Enter 1–4,000 characters.",
+  "goalBudgetLabel": "Token budget (optional)",
+  "goalBudgetInvalid": "Enter a positive token budget.",
+  "goalStart": "Start goal",
+  "goalReplaceTitle": "Replace current goal?",
+  "goalReplaceDescription": "This starts a new goal and resets recorded usage.",
+  "goalReplaceAction": "Replace goal",
   "composerSuggestionsLabel": "Suggestions",
   "@composerSuggestionsLabel": {
     "description": "Accessible name of the composer suggestion list."

@@ -1,4 +1,10 @@
 tags:
+  feature_test__session_goal__unit:
+  feature_test__session_goal__contract:
+  feature_test__session_goal__verticalSlice:
+  feature_test__session_goal__widget:
+  feature_test__session_goal__e2e:
+  feature_scenario__session_goal__multi_turn_completion_reconnect__e2e:
   feature_test__settings_async_loading__widget:
   feature_test__permission_settings__contract:
   feature_test__permission_settings__verticalSlice:

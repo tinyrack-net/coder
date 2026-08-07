@@ -928,7 +928,7 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.home);
       await tester.pumpAndSettle();
-      expect(isVisible('agents'), isTrue);
+      expect(isVisible('new'), isTrue);
     },
   );
 }
