@@ -8,15 +8,15 @@ part of 'session_tabs_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Owns local tab visibility independently for each host worktree.
+/// Owns local workspace tabs and pane layout independently per worktree.
 
 @ProviderFor(SessionTabsController)
 final sessionTabsControllerProvider = SessionTabsControllerFamily._();
 
-/// Owns local tab visibility independently for each host worktree.
+/// Owns local workspace tabs and pane layout independently per worktree.
 final class SessionTabsControllerProvider
     extends $AsyncNotifierProvider<SessionTabsController, SessionTabsState> {
-  /// Owns local tab visibility independently for each host worktree.
+  /// Owns local workspace tabs and pane layout independently per worktree.
   SessionTabsControllerProvider._({
     required SessionTabsControllerFamily super.from,
     required WorkspaceSelection super.argument,
@@ -54,9 +54,9 @@ final class SessionTabsControllerProvider
 }
 
 String _$sessionTabsControllerHash() =>
-    r'1d5128610a4f21f36ed5fe3807d0b6f39ee4a390';
+    r'7d87ab9f8faedb8f86468c5d4144c1fcafd53964';
 
-/// Owns local tab visibility independently for each host worktree.
+/// Owns local workspace tabs and pane layout independently per worktree.
 
 final class SessionTabsControllerFamily extends $Family
     with
@@ -76,7 +76,7 @@ final class SessionTabsControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Owns local tab visibility independently for each host worktree.
+  /// Owns local workspace tabs and pane layout independently per worktree.
 
   SessionTabsControllerProvider call(WorkspaceSelection selection) =>
       SessionTabsControllerProvider._(argument: selection, from: this);
@@ -85,7 +85,7 @@ final class SessionTabsControllerFamily extends $Family
   String toString() => r'sessionTabsControllerProvider';
 }
 
-/// Owns local tab visibility independently for each host worktree.
+/// Owns local workspace tabs and pane layout independently per worktree.
 
 abstract class _$SessionTabsController
     extends $AsyncNotifier<SessionTabsState> {

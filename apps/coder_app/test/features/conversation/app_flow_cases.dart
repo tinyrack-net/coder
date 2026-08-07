@@ -46,10 +46,11 @@ void _registerConversationAppFlows() {
       final router = await _pumpRoute(
         tester,
         api,
-        WorktreeRoute(
+        SessionRoute(
           hostId: 'server',
           workspaceId: workspace.id,
           worktreeId: checkout.id,
+          sessionId: running.id,
         ).location,
       );
       addTearDown(router.dispose);

@@ -6,7 +6,7 @@ import 'package:coder_app/src/features/conversation/application/chat_timeline_mo
 import 'package:coder_app/src/features/conversation/application/conversation_controller.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_plan.dart';
 import 'package:coder_app/src/features/hosts/domain/host_models.dart';
-import 'package:coder_app/src/features/sessions/application/session_tabs_controller.dart';
+import 'package:coder_app/src/features/sessions/application/session_starter.dart';
 import 'package:coder_app/src/features/sessions/application/sessions_controller.dart';
 import 'package:coder_app/src/features/sessions/domain/session_title.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -135,8 +135,6 @@ class ChatPlanActions extends ConsumerWidget {
       explanation: proposal.explanation,
     ).toMarkdown();
     final prompt = '$freshSessionPlanPreamble\n\n$markdown';
-    // Dismiss only after the work is done; this widget owns the `ref` used by
-    // `startSessionWithPrompt` and unmounts as soon as the card is dismissed.
     final created = await startSessionWithPrompt(
       ref,
       selection: selection,
@@ -166,55 +164,16 @@ Future<SessionDto> startSessionWithPrompt(
   Map<String, ModelControlValueDto> modelControls =
       const <String, ModelControlValueDto>{},
   PermissionMode? permissionMode,
-}) async {
-  final sessions = sessionsControllerProvider(
-    selection.hostId,
-    selection.worktreeId,
-  );
-  // The caller may never have rendered this worktree - the new-workspace
-  // composer starts a session on one it just created - so hold the providers
-  // alive across the awaits instead of letting them dispose mid-sequence.
-  final sessionsHandle = ref.listenManual(sessions, (previous, next) {});
-  final tabsHandle = ref.listenManual(
-    sessionTabsControllerProvider(selection),
-    (previous, next) {},
-  );
-  try {
-    await Future.wait(<Future<Object?>>[
-      ref.read(sessions.future),
-      ref.read(sessionTabsControllerProvider(selection).future),
-    ]);
-    final session = await ref
-        .read(sessions.notifier)
-        .create(
-          title: title,
-          agentDefinitionId: agentDefinitionId,
-          mode: mode,
-          model: model,
-          modelControls: modelControls,
-          permissionMode: permissionMode,
-        );
-    await ref
-        .read(sessionTabsControllerProvider(selection).notifier)
-        .add(session);
-    final conversation = conversationControllerProvider(
-      selection.hostId,
-      session.id,
+}) => ref
+    .read(sessionStarterProvider)
+    .start(
+      selection: selection,
+      agentDefinitionId: agentDefinitionId,
+      title: title,
+      prompt: prompt,
+      attachments: attachments,
+      mode: mode,
+      model: model,
+      modelControls: modelControls,
+      permissionMode: permissionMode,
     );
-    final conversationHandle = ref.listenManual(
-      conversation,
-      (previous, next) {},
-    );
-    try {
-      await ref
-          .read(conversation.notifier)
-          .startTurn(prompt, attachments: attachments);
-    } finally {
-      conversationHandle.close();
-    }
-    return session;
-  } finally {
-    tabsHandle.close();
-    sessionsHandle.close();
-  }
-}
