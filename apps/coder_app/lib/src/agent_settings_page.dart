@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/coder_icons.dart';
 import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/permission_picker.dart';
 import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -231,7 +234,7 @@ class _AgentEditorState extends State<_AgentEditor> {
   late bool _promptEnabled;
   late AgentModelSource _modelSource;
   late String _reasoningEffort;
-  late PermissionMode _permissionMode;
+  PermissionMode? _permissionMode;
   late Set<String> _tools;
   late Set<String> _callableAgents;
   bool _saving = false;
@@ -453,24 +456,25 @@ class _AgentEditorState extends State<_AgentEditor> {
                   ),
                   SettingsRow(
                     title: TRText.inherit(l10n.agentSettingsPermission),
-                    control: Semantics(
-                      label: l10n.agentSettingsPermission,
-                      container: true,
-                      child: TRSelect<PermissionMode>.controlled(
-                        value: _permissionMode,
-                        enabled: editable,
-                        items: PermissionMode.values
-                            .map(
-                              (value) => TRSelectItem<PermissionMode>(
-                                value: value,
-                                label: value.name,
-                              ),
-                            )
-                            .toList(growable: false),
-                        onValueChange: editable
-                            ? (value) =>
-                                  setState(() => _permissionMode = value!)
-                            : null,
+                    description: TRText.inherit(
+                      _permissionMode == null
+                          ? l10n.permissionSettingsDaemonDefault
+                          : permissionModeDescription(
+                              l10n,
+                              _permissionMode!,
+                            ),
+                    ),
+                    unboundedDescription: true,
+                    control: TRButton(
+                      key: const ValueKey<String>('agent-permission-change'),
+                      appearance: TRAppearance.outline,
+                      onPressed: editable
+                          ? () => unawaited(_choosePermission())
+                          : null,
+                      child: TRText.inherit(
+                        _permissionMode == null
+                            ? l10n.permissionSettingsDaemonDefault
+                            : permissionModeLabel(l10n, _permissionMode!),
                       ),
                     ),
                   ),
@@ -570,6 +574,19 @@ class _AgentEditorState extends State<_AgentEditor> {
     toolIds: _tools.toList(growable: false)..sort(),
     callableAgentIds: _callableAgents.toList(growable: false)..sort(),
   );
+
+  Future<void> _choosePermission() async {
+    final choice = await showPermissionPicker(
+      context,
+      currentMode: _permissionMode,
+      inheritLabel: AppLocalizations.of(
+        context,
+      ).permissionSettingsDaemonDefault,
+    );
+    if (choice != null && mounted) {
+      setState(() => _permissionMode = choice.mode);
+    }
+  }
 
   Future<void> _save({required bool force}) async {
     final l10n = AppLocalizations.of(context);

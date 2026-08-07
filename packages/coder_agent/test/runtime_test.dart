@@ -103,6 +103,48 @@ void main() {
       ).evaluateRisk(ToolRisk.dangerous),
       ApprovalEvaluation.deny,
     );
+    for (final risk in ToolRisk.values) {
+      expect(
+        const DefaultApprovalPolicy(
+          PermissionMode.fullAccess,
+        ).evaluateRisk(risk),
+        ApprovalEvaluation.allow,
+        reason: 'full access must allow ${risk.name}',
+      );
+    }
+  });
+
+  test('permission changes apply at the next tool boundary', () async {
+    final permissions = _MutablePermissionModeSource(PermissionMode.readOnly);
+    final harness = _RunnerHarness(
+      _FakeProvider(<List<ModelEvent>>[
+        _toolResponse('change_permission'),
+        _toolResponse('echo'),
+        _textResponse('done'),
+      ]),
+      tools: <AgentTool>[
+        _PermissionChangingTool(permissions),
+        _EchoTool(),
+      ],
+      approvals: const _Approval(ApprovalDecision.denied),
+      permissions: permissions,
+    );
+
+    final result = await harness.runner.startTurn(
+      _request(),
+      CancellationToken(),
+    );
+
+    expect(
+      result.conversationItems.whereType<ToolResultConversationItem>(),
+      everyElement(
+        isA<ToolResultConversationItem>().having(
+          (item) => item.isError,
+          'isError',
+          isFalse,
+        ),
+      ),
+    );
   });
 
   test('queued turn input is drained before every model request', () async {
@@ -205,10 +247,11 @@ void main() {
     final harness = _RunnerHarness(
       provider,
       tools: <AgentTool>[_EchoTool()],
+      permissionMode: PermissionMode.ask,
     );
 
     final result = await harness.runner.startTurn(
-      _request(permissionMode: PermissionMode.ask),
+      _request(),
       CancellationToken(),
     );
 
@@ -369,9 +412,10 @@ void main() {
         ]),
         tools: <AgentTool>[_EchoTool()],
         approvals: _Approval(scenario.decision),
+        permissionMode: scenario.mode,
       );
       final result = await harness.runner.startTurn(
-        _request(permissionMode: scenario.mode),
+        _request(),
         CancellationToken(),
       );
       final toolResult = result.conversationItems
@@ -1028,7 +1072,6 @@ void main() {
 }
 
 AgentRunRequest _request({
-  PermissionMode permissionMode = PermissionMode.workspaceWrite,
   int maxToolRounds = 64,
   SessionMode sessionMode = SessionMode.normal,
   String? customSystemPrompt,
@@ -1046,7 +1089,6 @@ AgentRunRequest _request({
   workspaceRoot: Directory.current.path,
   prompt: 'test',
   model: 'test-model',
-  permissionMode: permissionMode,
   history: history,
   safetyIdentifier: 'safe-id',
   maxToolRounds: maxToolRounds,
@@ -1144,6 +1186,8 @@ final class _RunnerHarness {
     void Function(List<ConversationItem> retain)? contextResets,
     TurnInputSource? pendingTurnInput,
     bool compacts = false,
+    PermissionMode permissionMode = PermissionMode.workspaceWrite,
+    PermissionModeSource? permissions,
   }) {
     runner = AgentRunner(
       provider: provider,
@@ -1156,6 +1200,7 @@ final class _RunnerHarness {
           ? null
           : _RecordingContextReset(contextResets),
       pendingTurnInput: pendingTurnInput,
+      permissions: permissions ?? _FixedPermissionModeSource(permissionMode),
       onEvent: (type, _) => events.add(type),
       onStatus: (status, {error}) {
         statuses.add(status);
@@ -1170,6 +1215,55 @@ final class _RunnerHarness {
   final List<SessionStatus> statuses = <SessionStatus>[];
   final List<String> statusErrors = <String>[];
   final List<ConversationItem> items = <ConversationItem>[];
+}
+
+final class _FixedPermissionModeSource implements PermissionModeSource {
+  const _FixedPermissionModeSource(this.mode);
+
+  final PermissionMode mode;
+
+  @override
+  Future<PermissionMode> currentMode() async => mode;
+}
+
+final class _MutablePermissionModeSource implements PermissionModeSource {
+  _MutablePermissionModeSource(this.mode);
+
+  PermissionMode mode;
+
+  @override
+  Future<PermissionMode> currentMode() async => mode;
+}
+
+final class _PermissionChangingTool extends AgentTool {
+  _PermissionChangingTool(this.permissions);
+
+  final _MutablePermissionModeSource permissions;
+
+  @override
+  String get name => 'change_permission';
+
+  @override
+  String get description => 'Changes the permission mode.';
+
+  @override
+  ToolRisk get risk => ToolRisk.read;
+
+  @override
+  Map<String, dynamic> get strictJsonSchema => const <String, dynamic>{
+    'type': 'object',
+    'properties': <String, dynamic>{},
+    'additionalProperties': false,
+  };
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    permissions.mode = PermissionMode.fullAccess;
+    return const ToolResult(output: 'changed');
+  }
 }
 
 /// Refuses the requests at [overflowAt] the way a full context window is

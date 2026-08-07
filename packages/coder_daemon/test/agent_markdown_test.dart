@@ -70,6 +70,21 @@ Review the requested code without modifying it.
     );
   });
 
+  test('omitted permission mode inherits the daemon default', () {
+    const codec = AgentMarkdownCodec();
+    final inherited = codec.decode(
+      id: 'reviewer',
+      sourcePath: '/config/agents/reviewer.md',
+      source: source.replaceFirst('permissionMode: readOnly\n', ''),
+    );
+
+    expect(inherited.permissionMode, isNull);
+    expect(
+      codec.encodeNew(inherited),
+      isNot(contains('permissionMode:')),
+    );
+  });
+
   test('updates known fields while preserving comments and unknown fields', () {
     const codec = AgentMarkdownCodec();
     final parsed = codec.decode(

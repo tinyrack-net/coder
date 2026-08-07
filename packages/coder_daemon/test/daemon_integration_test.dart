@@ -21,6 +21,55 @@ const Duration _eventTimeout = Duration(seconds: 30);
 
 void main() {
   test(
+    'daemon permission default survives a restart',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'coder-permission-home-',
+      );
+      const token = 'permission-token-0123456789abcdef012345';
+      final config = DaemonConfig(
+        homeDirectory: home.path,
+        port: 0,
+        bearerToken: token,
+        useEnvironmentCredentials: false,
+      );
+      try {
+        final firstHandle = await DaemonApplication.start(config);
+        final firstClient = await CoderClient.connect(
+          endpoint: HostEndpoint(websocketUri: firstHandle.boundEndpoint),
+          credentials: const DaemonCredentials(bearerToken: token),
+          clientId: 'permission-first',
+          clientKind: 'test',
+        );
+        expect(
+          (await firstClient.getDefaultPermissionMode()).defaultMode,
+          PermissionMode.ask,
+        );
+        await firstClient.setDefaultPermissionMode(PermissionMode.fullAccess);
+        await firstClient.close();
+        await firstHandle.stop();
+
+        final secondHandle = await DaemonApplication.start(config);
+        final secondClient = await CoderClient.connect(
+          endpoint: HostEndpoint(websocketUri: secondHandle.boundEndpoint),
+          credentials: const DaemonCredentials(bearerToken: token),
+          clientId: 'permission-second',
+          clientKind: 'test',
+        );
+        expect(
+          (await secondClient.getDefaultPermissionMode()).defaultMode,
+          PermissionMode.fullAccess,
+        );
+        await secondClient.close();
+        await secondHandle.stop();
+      } finally {
+        await home.delete(recursive: true);
+      }
+    },
+    tags: const <String>['feature_test__permission_settings__verticalSlice'],
+  );
+
+  test(
     'standalone application serves authenticated workspace and agent RPCs',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-daemon-home-');
@@ -79,6 +128,16 @@ void main() {
       // The handshake carries the browsing home so the app can open a picker
       // there instead of at the drive root.
       expect(client.serverInfo.homeDirectory, workspace.path);
+      expect(
+        (await client.getDefaultPermissionMode()).defaultMode,
+        PermissionMode.ask,
+      );
+      await client.setDefaultPermissionMode(PermissionMode.fullAccess);
+      expect(
+        (await client.getDefaultPermissionMode()).defaultMode,
+        PermissionMode.fullAccess,
+      );
+      await client.setDefaultPermissionMode(PermissionMode.ask);
       final initialCatalog = await client.listProviderCatalog();
       expect(
         initialCatalog.definitions.map((item) => item.id),
@@ -444,6 +503,7 @@ void main() {
       'feature_test__provider_connection_management__verticalSlice',
       'feature_test__provider_custom__verticalSlice',
       'feature_test__provider_default_model__verticalSlice',
+      'feature_test__permission_settings__verticalSlice',
     ],
   );
 

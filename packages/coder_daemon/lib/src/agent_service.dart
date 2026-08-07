@@ -43,6 +43,7 @@ class SessionService implements SessionRuntimePort {
     required this._skills,
     required this._attachments,
     required this._execHostFor,
+    required this._settings,
   });
 
   final ExecHostFactory _execHostFor;
@@ -58,6 +59,7 @@ class SessionService implements SessionRuntimePort {
   final AgentToolsFactory _toolsFactory;
   final SkillService _skills;
   final AttachmentService _attachments;
+  final SettingsRepository _settings;
   final Map<String, CancellationToken> _activeTurns =
       <String, CancellationToken>{};
   final Map<String, Completer<ApprovalDecision>> _pendingApprovals =
@@ -201,7 +203,6 @@ class SessionService implements SessionRuntimePort {
       sessionId: sessionId,
       pendingInput: pendingInput,
     );
-    final permissionMode = await _effectivePermission(session, definition);
     // Skills resolve against the worktree, so a branch carries the project
     // skills that were committed to it.
     final skills = await _skills.viewFor(worktree.path);
@@ -268,6 +269,9 @@ class SessionService implements SessionRuntimePort {
       onProviderItems: (items) =>
           _timeline.appendProviderItems(sessionId, items),
       pendingTurnInput: multiAgent?.drainSourceFor(sessionId),
+      permissions: _LivePermissionModeSource(
+        () => _effectivePermissionForSession(sessionId),
+      ),
       // The runner emits `context.reset` itself; this only makes the discard
       // durable so a reconnect does not replay the retired window.
       contextResets: _DatabaseContextResetCoordinator(
@@ -303,7 +307,6 @@ class SessionService implements SessionRuntimePort {
           reasoningEffort:
               session.reasoningEffort ?? definition.reasoningEffort,
           serviceTier: session.serviceTier,
-          permissionMode: permissionMode,
           history: history,
           attachments: turnAttachments,
           safetyIdentifier: _safetyIdentifier,
@@ -509,19 +512,14 @@ class SessionService implements SessionRuntimePort {
   /// Sets or clears the permission mode override of one session.
   ///
   /// A null [permissionMode] restores inheritance from the agent definition.
-  /// Permissions are resolved when a turn starts, so they can only change
-  /// between turns.
+  /// Active turns observe the update at their next tool boundary; tools and
+  /// approval requests already in progress retain the policy they started with.
   Future<SessionDto> setPermissionMode(
     String sessionId,
     PermissionMode? permissionMode,
   ) async {
     final session = await _sessions.getById(sessionId);
     if (session == null) throw StateError('Session not found: $sessionId');
-    if (_activeTurns.containsKey(sessionId)) {
-      throw StateError(
-        'Cannot change the permission mode while a turn is running.',
-      );
-    }
     final updated = await _sessions.updatePermissionMode(
       sessionId,
       permissionMode,
@@ -699,13 +697,20 @@ class SessionService implements SessionRuntimePort {
     }
   }
 
-  Future<PermissionMode> _effectivePermission(
-    SessionDto session,
-    AgentDefinitionDto definition,
+  Future<PermissionMode> _effectivePermissionForSession(
+    String sessionId,
   ) async {
+    final session = await _sessions.getById(sessionId);
+    if (session == null) return PermissionMode.readOnly;
+    final definition = await _definitions.resolve(session.agentDefinitionId);
+    final storedDefault = await _settings.getValue('permission.defaultMode');
+    final defaultMode = storedDefault == null || storedDefault.isEmpty
+        ? PermissionMode.ask
+        : PermissionMode.values.byName(storedDefault);
     // A session override may narrow an ancestor's permissions but never widen
     // them, so no agent in a nested tree can escalate past any ancestor.
-    var mode = session.permissionMode ?? definition.permissionMode;
+    var mode =
+        session.permissionMode ?? definition.permissionMode ?? defaultMode;
     var parentId = session.parentSessionId;
     final visited = <String>{session.id};
     while (parentId != null && visited.add(parentId)) {
@@ -715,7 +720,7 @@ class SessionService implements SessionRuntimePort {
         parent.agentDefinitionId,
       );
       mode = _moreRestrictive(
-        parent.permissionMode ?? parentDefinition.permissionMode,
+        parent.permissionMode ?? parentDefinition.permissionMode ?? defaultMode,
         mode,
       );
       parentId = parent.parentSessionId;
@@ -743,8 +748,18 @@ PermissionMode _moreRestrictive(PermissionMode left, PermissionMode right) {
     PermissionMode.readOnly: 0,
     PermissionMode.ask: 1,
     PermissionMode.workspaceWrite: 2,
+    PermissionMode.fullAccess: 3,
   };
   return rank[left]! <= rank[right]! ? left : right;
+}
+
+final class _LivePermissionModeSource implements PermissionModeSource {
+  const _LivePermissionModeSource(this._read);
+
+  final Future<PermissionMode> Function() _read;
+
+  @override
+  Future<PermissionMode> currentMode() => _read();
 }
 
 /// Makes a `new_context` reset durable.

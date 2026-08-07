@@ -594,7 +594,6 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
       'your work.',
   model: const AgentModelSelectionDto(source: AgentModelSource.session),
   reasoningEffort: 'medium',
-  permissionMode: PermissionMode.ask,
   // The read tools are always on, so only the opt-in ones are listed here.
   toolIds: const <String>['apply_patch', 'exec_command'],
   callableAgentIds: const <String>[],
@@ -906,6 +905,7 @@ final class AgentMarkdownCodec {
     if (mode == AgentMode.subagent && callableAgentIds.isNotEmpty) {
       throw const FormatException('Subagents cannot call other agents.');
     }
+    final permissionMode = _optionalString(frontmatter, 'permissionMode');
     return AgentDefinitionDto(
       id: id,
       name: _requiredString(frontmatter, 'name'),
@@ -919,11 +919,13 @@ final class AgentMarkdownCodec {
         modelId: modelId,
       ),
       reasoningEffort: _requiredString(frontmatter, 'reasoningEffort'),
-      permissionMode: _enumValue(
-        PermissionMode.values,
-        _requiredString(frontmatter, 'permissionMode'),
-        'permissionMode',
-      ),
+      permissionMode: permissionMode == null
+          ? null
+          : _enumValue(
+              PermissionMode.values,
+              permissionMode,
+              'permissionMode',
+            ),
       toolIds: _stringList(frontmatter, 'tools'),
       callableAgentIds: callableAgentIds,
       contentHash: sha256.convert(utf8.encode(source)).toString(),
@@ -947,9 +949,15 @@ final class AgentMarkdownCodec {
       ..update(<Object>['promptEnabled'], definition.promptEnabled)
       ..update(<Object>['model'], _modelMap(definition.model))
       ..update(<Object>['reasoningEffort'], definition.reasoningEffort)
-      ..update(<Object>['permissionMode'], definition.permissionMode.name)
       ..update(<Object>['tools'], definition.toolIds)
       ..update(<Object>['callableAgents'], definition.callableAgentIds);
+    if (definition.permissionMode case final permissionMode?) {
+      editor.update(<Object>['permissionMode'], permissionMode.name);
+    } else if ((loadYaml(document.frontmatter) as YamlMap).containsKey(
+      'permissionMode',
+    )) {
+      editor.remove(<Object>['permissionMode']);
+    }
     return '---\n$editor\n---\n\n${definition.systemPrompt.trim()}\n';
   }
 
@@ -964,7 +972,8 @@ final class AgentMarkdownCodec {
         'promptEnabled': definition.promptEnabled,
         'model': _modelMap(definition.model),
         'reasoningEffort': definition.reasoningEffort,
-        'permissionMode': definition.permissionMode.name,
+        if (definition.permissionMode case final permissionMode?)
+          'permissionMode': permissionMode.name,
         'tools': definition.toolIds,
         'callableAgents': definition.callableAgentIds,
       });

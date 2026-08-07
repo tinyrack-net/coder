@@ -117,6 +117,10 @@
   "@settingsCategoryProvider": {
     "description": "Settings sidebar entry for provider connections."
   },
+  "settingsCategoryPermission": "Permissions",
+  "@settingsCategoryPermission": {
+    "description": "Settings sidebar entry for daemon permission defaults."
+  },
   "settingsCategoryDaemon": "Daemons",
   "@settingsCategoryDaemon": {
     "description": "Settings sidebar entry for daemon connections."
@@ -1111,14 +1115,27 @@
   "@composerPermissionReadOnly": {
     "description": "Permission mode allowing read-only tools."
   },
-  "composerPermissionAsk": "Ask",
+  "composerPermissionAsk": "Ask before changes",
   "@composerPermissionAsk": {
     "description": "Permission mode asking before every mutation."
   },
-  "composerPermissionWorkspaceWrite": "Write workspace",
+  "composerPermissionWorkspaceWrite": "Workspace access",
   "@composerPermissionWorkspaceWrite": {
     "description": "Permission mode allowing workspace writes without asking."
   },
+  "composerPermissionFullAccess": "Full access",
+  "permissionPickerDescription": "Choose what the agent may do without asking.",
+  "permissionDescriptionReadOnly": "Can read files. File changes, commands, and write-capable external tools are blocked.",
+  "permissionDescriptionAsk": "Reads without asking. Asks before file changes, commands, and write-capable external tools.",
+  "permissionDescriptionWorkspaceWrite": "Can read and edit workspace files. Asks before commands and write-capable external tools.",
+  "permissionDescriptionFullAccess": "Runs file changes, commands, and external tools without asking. Use only for trusted work.",
+  "permissionSettingsTitle": "Permissions",
+  "permissionSettingsSection": "Default permissions",
+  "permissionSettingsSectionDescription": "Agents that do not choose their own permissions inherit this daemon default.",
+  "permissionSettingsChange": "Change default permissions",
+  "permissionSettingsSaveFailed": "Could not update default permissions",
+  "permissionChangeFailed": "Could not change permissions",
+  "permissionSettingsDaemonDefault": "Daemon default",
   "composerFastMode": "Fast",
   "@composerFastMode": {
     "description": "Label of the composer fast mode toggle."

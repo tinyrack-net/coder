@@ -24,6 +24,7 @@ import 'package:coder_app/src/general_settings_page.dart';
 import 'package:coder_app/src/host_labels.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/mcp_settings_page.dart';
+import 'package:coder_app/src/permission_settings_page.dart';
 import 'package:coder_app/src/project_settings_page.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/session_model_options.dart';
@@ -366,6 +367,24 @@ class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
       UnifiedSettingsPage(category: SettingsCategory.provider, hostId: hostId);
 }
 
+@TypedGoRoute<PermissionSettingsRoute>(path: '/settings/permissions')
+/// Unified settings route with Permissions selected.
+class PermissionSettingsRoute extends GoRouteData
+    with $PermissionSettingsRoute {
+  /// Creates the permission settings route.
+  const PermissionSettingsRoute({this.hostId});
+
+  /// Preferred daemon in the permission selector.
+  final String? hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UnifiedSettingsPage(
+        category: SettingsCategory.permission,
+        hostId: hostId,
+      );
+}
+
 @TypedGoRoute<ProjectSettingsRoute>(path: '/settings/projects')
 /// Unified settings route with Projects selected.
 class ProjectSettingsRoute extends GoRouteData with $ProjectSettingsRoute {
@@ -496,6 +515,9 @@ enum SettingsCategory {
   /// API provider connections owned by one daemon.
   provider,
 
+  /// Default agent permissions owned by one daemon.
+  permission,
+
   /// Embedded and remote daemon connections.
   daemon,
 
@@ -526,6 +548,7 @@ extension SettingsCategoryScopeX on SettingsCategory {
     SettingsCategory.agent ||
     SettingsCategory.mcp ||
     SettingsCategory.skill ||
+    SettingsCategory.permission ||
     SettingsCategory.provider => SettingsCategoryScope.daemon,
   };
 }
@@ -626,6 +649,10 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       SettingsCategory.provider => _HostScopedDetail(
         host: host,
         builder: (hostId) => SettingsPage(hostId: hostId, embedded: true),
+      ),
+      SettingsCategory.permission => _HostScopedDetail(
+        host: host,
+        builder: (hostId) => PermissionSettingsPage(hostId: hostId),
       ),
       SettingsCategory.daemon => const AppSettingsPage(embedded: true),
       SettingsCategory.advanced => const AdvancedSettingsPage(embedded: true),
@@ -863,6 +890,7 @@ IconData _settingsCategoryIcon(SettingsCategory category) => switch (category) {
   SettingsCategory.mcp => CoderIcons.extension,
   SettingsCategory.skill => CoderIcons.sparkle,
   SettingsCategory.provider => CoderIcons.network,
+  SettingsCategory.permission => CoderIcons.permission,
   SettingsCategory.daemon => CoderIcons.daemon,
   SettingsCategory.advanced => CoderIcons.tool,
 };
@@ -877,6 +905,7 @@ String _settingsCategoryLabel(
   SettingsCategory.mcp => l10n.settingsCategoryMcp,
   SettingsCategory.skill => l10n.settingsCategorySkill,
   SettingsCategory.provider => l10n.settingsCategoryProvider,
+  SettingsCategory.permission => l10n.settingsCategoryPermission,
   SettingsCategory.daemon => l10n.settingsCategoryDaemon,
   SettingsCategory.advanced => l10n.settingsCategoryAdvanced,
 };
@@ -900,6 +929,8 @@ void _goToSettingsCategory(BuildContext context, SettingsCategory category) {
       const SkillSettingsRoute().replace(context);
     case SettingsCategory.provider:
       const ProviderSettingsRoute().replace(context);
+    case SettingsCategory.permission:
+      const PermissionSettingsRoute().replace(context);
     case SettingsCategory.daemon:
       const DaemonSettingsRoute().replace(context);
     case SettingsCategory.advanced:
@@ -1884,9 +1915,11 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           _sessions(ref).setReasoningEffort(current.id, effort),
                         ),
                         permissionMode: current.permissionMode,
-                        onPermissionModeChanged: (mode) => unawaited(
-                          _sessions(ref).setPermissionMode(current.id, mode),
-                        ),
+                        onPermissionModeChanged: (mode) async {
+                          await _sessions(
+                            ref,
+                          ).setPermissionMode(current.id, mode);
+                        },
                         serviceTier: current.serviceTier,
                         onServiceTierChanged: (tier) => unawaited(
                           _sessions(ref).setServiceTier(current.id, tier),

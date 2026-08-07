@@ -17442,6 +17442,269 @@ $ShellSpecDtoCopyWith<$Res>? get shell {
 
 
 /// @nodoc
+mixin _$PermissionSettingsDto {
+
+ PermissionMode get defaultMode;
+/// Create a copy of PermissionSettingsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PermissionSettingsDtoCopyWith<PermissionSettingsDto> get copyWith => _$PermissionSettingsDtoCopyWithImpl<PermissionSettingsDto>(this as PermissionSettingsDto, _$identity);
+
+  /// Serializes this PermissionSettingsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PermissionSettingsDto&&(identical(other.defaultMode, defaultMode) || other.defaultMode == defaultMode));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,defaultMode);
+
+@override
+String toString() {
+  return 'PermissionSettingsDto(defaultMode: $defaultMode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PermissionSettingsDtoCopyWith<$Res>  {
+  factory $PermissionSettingsDtoCopyWith(PermissionSettingsDto value, $Res Function(PermissionSettingsDto) _then) = _$PermissionSettingsDtoCopyWithImpl;
+@useResult
+$Res call({
+ PermissionMode defaultMode
+});
+
+
+
+
+}
+/// @nodoc
+class _$PermissionSettingsDtoCopyWithImpl<$Res>
+    implements $PermissionSettingsDtoCopyWith<$Res> {
+  _$PermissionSettingsDtoCopyWithImpl(this._self, this._then);
+
+  final PermissionSettingsDto _self;
+  final $Res Function(PermissionSettingsDto) _then;
+
+/// Create a copy of PermissionSettingsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? defaultMode = null,}) {
+  return _then(_self.copyWith(
+defaultMode: null == defaultMode ? _self.defaultMode : defaultMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PermissionSettingsDto].
+extension PermissionSettingsDtoPatterns on PermissionSettingsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PermissionSettingsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PermissionSettingsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PermissionSettingsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PermissionSettingsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PermissionSettingsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PermissionSettingsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PermissionMode defaultMode)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PermissionSettingsDto() when $default != null:
+return $default(_that.defaultMode);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PermissionMode defaultMode)  $default,) {final _that = this;
+switch (_that) {
+case _PermissionSettingsDto():
+return $default(_that.defaultMode);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PermissionMode defaultMode)?  $default,) {final _that = this;
+switch (_that) {
+case _PermissionSettingsDto() when $default != null:
+return $default(_that.defaultMode);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PermissionSettingsDto implements PermissionSettingsDto {
+  const _PermissionSettingsDto({this.defaultMode = PermissionMode.ask});
+  factory _PermissionSettingsDto.fromJson(Map<String, dynamic> json) => _$PermissionSettingsDtoFromJson(json);
+
+@override@JsonKey() final  PermissionMode defaultMode;
+
+/// Create a copy of PermissionSettingsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PermissionSettingsDtoCopyWith<_PermissionSettingsDto> get copyWith => __$PermissionSettingsDtoCopyWithImpl<_PermissionSettingsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PermissionSettingsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PermissionSettingsDto&&(identical(other.defaultMode, defaultMode) || other.defaultMode == defaultMode));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,defaultMode);
+
+@override
+String toString() {
+  return 'PermissionSettingsDto(defaultMode: $defaultMode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PermissionSettingsDtoCopyWith<$Res> implements $PermissionSettingsDtoCopyWith<$Res> {
+  factory _$PermissionSettingsDtoCopyWith(_PermissionSettingsDto value, $Res Function(_PermissionSettingsDto) _then) = __$PermissionSettingsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ PermissionMode defaultMode
+});
+
+
+
+
+}
+/// @nodoc
+class __$PermissionSettingsDtoCopyWithImpl<$Res>
+    implements _$PermissionSettingsDtoCopyWith<$Res> {
+  __$PermissionSettingsDtoCopyWithImpl(this._self, this._then);
+
+  final _PermissionSettingsDto _self;
+  final $Res Function(_PermissionSettingsDto) _then;
+
+/// Create a copy of PermissionSettingsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? defaultMode = null,}) {
+  return _then(_PermissionSettingsDto(
+defaultMode: null == defaultMode ? _self.defaultMode : defaultMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$DefaultModelDto {
 
  SessionModelSelectionDto? get model;

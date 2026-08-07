@@ -95,6 +95,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsCategoryProvider => 'Provider';
 
   @override
+  String get settingsCategoryPermission => '권한';
+
+  @override
   String get settingsCategoryDaemon => 'Daemons';
 
   @override
@@ -884,10 +887,54 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerPermissionReadOnly => '읽기 전용';
 
   @override
-  String get composerPermissionAsk => '확인 후 실행';
+  String get composerPermissionAsk => '변경 전 확인';
 
   @override
-  String get composerPermissionWorkspaceWrite => '작업 공간 쓰기';
+  String get composerPermissionWorkspaceWrite => '작업 공간 접근';
+
+  @override
+  String get composerPermissionFullAccess => '전체 접근';
+
+  @override
+  String get permissionPickerDescription => '에이전트가 확인 없이 할 수 있는 작업을 선택하세요.';
+
+  @override
+  String get permissionDescriptionReadOnly =>
+      '파일을 읽을 수 있습니다. 파일 변경, 명령 실행, 변경 가능한 외부 도구는 차단합니다.';
+
+  @override
+  String get permissionDescriptionAsk =>
+      '파일 읽기는 바로 허용하고, 파일 변경·명령 실행·변경 가능한 외부 도구는 먼저 확인합니다.';
+
+  @override
+  String get permissionDescriptionWorkspaceWrite =>
+      '작업 공간 파일은 읽고 수정할 수 있습니다. 명령 실행과 변경 가능한 외부 도구는 먼저 확인합니다.';
+
+  @override
+  String get permissionDescriptionFullAccess =>
+      '파일 변경, 명령 실행, 외부 도구를 확인 없이 허용합니다. 신뢰할 수 있는 작업에서만 사용하세요.';
+
+  @override
+  String get permissionSettingsTitle => '권한';
+
+  @override
+  String get permissionSettingsSection => '기본 권한';
+
+  @override
+  String get permissionSettingsSectionDescription =>
+      '별도 권한을 선택하지 않은 에이전트는 이 데몬 기본값을 상속합니다.';
+
+  @override
+  String get permissionSettingsChange => '기본 권한 변경';
+
+  @override
+  String get permissionSettingsSaveFailed => '기본 권한을 변경하지 못했습니다';
+
+  @override
+  String get permissionChangeFailed => '권한을 변경하지 못했습니다';
+
+  @override
+  String get permissionSettingsDaemonDefault => '데몬 기본값';
 
   @override
   String get composerFastMode => '빠르게';

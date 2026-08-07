@@ -375,6 +375,22 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'permission.settings',
+    description:
+        'Stores one daemon-global permission default and presents localized '
+        'permission behavior for agents and sessions that inherit it.',
+    apiMethods: <String>[
+      'getDefaultPermissionMode',
+      'setDefaultPermissionMode',
+    ],
+    routes: <String>['PermissionSettingsRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'session.lifecycle',
     description:
         'Starts sessions from the chat composer with a selected Agent, model, '

@@ -335,13 +335,16 @@ _AgentDefinitionDto _$AgentDefinitionDtoFromJson(
   systemPrompt: json['systemPrompt'] as String,
   model: AgentModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
   reasoningEffort: json['reasoningEffort'] as String,
-  permissionMode: $enumDecode(_$PermissionModeEnumMap, json['permissionMode']),
   toolIds: (json['toolIds'] as List<dynamic>).map((e) => e as String).toList(),
   callableAgentIds: (json['callableAgentIds'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
   contentHash: json['contentHash'] as String,
   sourcePath: json['sourcePath'] as String,
+  permissionMode: $enumDecodeNullable(
+    _$PermissionModeEnumMap,
+    json['permissionMode'],
+  ),
   isBuiltIn: json['isBuiltIn'] as bool? ?? false,
   isArchived: json['isArchived'] as bool? ?? false,
   isStale: json['isStale'] as bool? ?? false,
@@ -366,11 +369,11 @@ Map<String, dynamic> _$AgentDefinitionDtoToJson(_AgentDefinitionDto instance) =>
       'systemPrompt': instance.systemPrompt,
       'model': instance.model,
       'reasoningEffort': instance.reasoningEffort,
-      'permissionMode': _$PermissionModeEnumMap[instance.permissionMode]!,
       'toolIds': instance.toolIds,
       'callableAgentIds': instance.callableAgentIds,
       'contentHash': instance.contentHash,
       'sourcePath': instance.sourcePath,
+      'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
       'isBuiltIn': instance.isBuiltIn,
       'isArchived': instance.isArchived,
       'isStale': instance.isStale,
@@ -386,6 +389,7 @@ const _$PermissionModeEnumMap = {
   PermissionMode.readOnly: 'readOnly',
   PermissionMode.ask: 'ask',
   PermissionMode.workspaceWrite: 'workspaceWrite',
+  PermissionMode.fullAccess: 'fullAccess',
 };
 
 _AgentToolDefinitionDto _$AgentToolDefinitionDtoFromJson(

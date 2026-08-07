@@ -498,6 +498,7 @@ class DefaultApprovalPolicy implements ApprovalPolicy {
 
   /// Decides from a bare risk, ignoring which tool raised it.
   ApprovalEvaluation evaluateRisk(ToolRisk risk) => switch ((mode, risk)) {
+    (PermissionMode.fullAccess, _) => ApprovalEvaluation.allow,
     (_, ToolRisk.read) => ApprovalEvaluation.allow,
     (PermissionMode.readOnly, _) => ApprovalEvaluation.deny,
     (PermissionMode.workspaceWrite, ToolRisk.write) => ApprovalEvaluation.allow,

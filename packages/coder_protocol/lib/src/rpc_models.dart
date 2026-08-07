@@ -919,6 +919,19 @@ abstract class TerminalShellDto with _$TerminalShellDto {
 }
 
 @freezed
+/// Daemon-global permission defaults.
+abstract class PermissionSettingsDto with _$PermissionSettingsDto {
+  /// Creates daemon-global permission settings.
+  const factory PermissionSettingsDto({
+    @Default(PermissionMode.ask) PermissionMode defaultMode,
+  }) = _PermissionSettingsDto;
+
+  /// Decodes daemon-global permission settings.
+  factory PermissionSettingsDto.fromJson(Map<String, dynamic> json) =>
+      _$PermissionSettingsDtoFromJson(json);
+}
+
+@freezed
 /// Reads or writes the daemon-global default model.
 ///
 /// A null [model] means the daemon resolves the first usable provider model

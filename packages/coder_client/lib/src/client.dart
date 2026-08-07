@@ -534,6 +534,27 @@ class CoderClient implements CoderApi {
   }
 
   @override
+  Future<PermissionSettingsDto> getDefaultPermissionMode() async {
+    final response = await _request(
+      RpcMethod.permissionDefaultModeGet,
+      const <String, dynamic>{},
+    );
+    return PermissionSettingsDto.fromJson(response);
+  }
+
+  @override
+  Future<PermissionSettingsDto> setDefaultPermissionMode(
+    PermissionMode permissionMode,
+  ) async {
+    final settings = PermissionSettingsDto(defaultMode: permissionMode);
+    final response = await _request(
+      RpcMethod.permissionDefaultModeSet,
+      settings.toJson(),
+    );
+    return PermissionSettingsDto.fromJson(response);
+  }
+
+  @override
   Future<SessionDto> updateSessionServiceTier(
     String sessionId,
     String? serviceTier,

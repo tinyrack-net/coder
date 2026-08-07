@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 20;
+const int coderProtocolVersion = 21;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
@@ -154,6 +154,12 @@ abstract final class RpcMethod {
 
   /// Replaces or clears the daemon host's default terminal shell.
   static const String terminalShellSet = 'terminal.shell.set';
+
+  /// Reads the daemon-global permission mode used by inheriting agents.
+  static const String permissionDefaultModeGet = 'permission.defaultMode.get';
+
+  /// Replaces the daemon-global permission mode.
+  static const String permissionDefaultModeSet = 'permission.defaultMode.set';
 
   /// Returns immutable built-in provider definitions.
   static const String providerCatalog = 'provider.catalog';

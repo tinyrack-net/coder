@@ -95,6 +95,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoryProvider => 'Provider';
 
   @override
+  String get settingsCategoryPermission => 'Permissions';
+
+  @override
   String get settingsCategoryDaemon => 'Daemons';
 
   @override
@@ -897,10 +900,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerPermissionReadOnly => 'Read only';
 
   @override
-  String get composerPermissionAsk => 'Ask';
+  String get composerPermissionAsk => 'Ask before changes';
 
   @override
-  String get composerPermissionWorkspaceWrite => 'Write workspace';
+  String get composerPermissionWorkspaceWrite => 'Workspace access';
+
+  @override
+  String get composerPermissionFullAccess => 'Full access';
+
+  @override
+  String get permissionPickerDescription =>
+      'Choose what the agent may do without asking.';
+
+  @override
+  String get permissionDescriptionReadOnly =>
+      'Can read files. File changes, commands, and write-capable external tools are blocked.';
+
+  @override
+  String get permissionDescriptionAsk =>
+      'Reads without asking. Asks before file changes, commands, and write-capable external tools.';
+
+  @override
+  String get permissionDescriptionWorkspaceWrite =>
+      'Can read and edit workspace files. Asks before commands and write-capable external tools.';
+
+  @override
+  String get permissionDescriptionFullAccess =>
+      'Runs file changes, commands, and external tools without asking. Use only for trusted work.';
+
+  @override
+  String get permissionSettingsTitle => 'Permissions';
+
+  @override
+  String get permissionSettingsSection => 'Default permissions';
+
+  @override
+  String get permissionSettingsSectionDescription =>
+      'Agents that do not choose their own permissions inherit this daemon default.';
+
+  @override
+  String get permissionSettingsChange => 'Change default permissions';
+
+  @override
+  String get permissionSettingsSaveFailed =>
+      'Could not update default permissions';
+
+  @override
+  String get permissionChangeFailed => 'Could not change permissions';
+
+  @override
+  String get permissionSettingsDaemonDefault => 'Daemon default';
 
   @override
   String get composerFastMode => 'Fast';
