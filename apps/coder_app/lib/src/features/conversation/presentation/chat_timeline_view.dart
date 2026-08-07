@@ -1,12 +1,17 @@
 import 'dart:typed_data';
 
 import 'package:coder_app/src/features/conversation/application/chat_timeline_model.dart';
+import 'package:coder_app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_plan_card.dart';
+import 'package:coder_app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_sleep_card.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:flutter/material.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
+
+/// Builds the controls belonging to one actionable plan row.
+typedef ChatPlanActionBuilder = Widget? Function(ChatPlanProposal proposal);
 
 /// Scrolling conversation body rendered from projected chat items.
 class ChatTimelineView extends StatefulWidget {
@@ -14,6 +19,8 @@ class ChatTimelineView extends StatefulWidget {
   const ChatTimelineView({
     required this.items,
     required this.busy,
+    this.hostId,
+    this.planActionBuilder,
     this.loadAttachment,
     this.exportAttachment,
     super.key,
@@ -24,6 +31,12 @@ class ChatTimelineView extends StatefulWidget {
 
   /// Whether the session is currently running a turn.
   final bool busy;
+
+  /// Host used to resolve approval and question interactions.
+  final String? hostId;
+
+  /// Builds actions inside the latest plan card.
+  final ChatPlanActionBuilder? planActionBuilder;
 
   /// Authenticated attachment byte loader.
   final ChatAttachmentLoader? loadAttachment;
@@ -41,6 +54,13 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   final Set<String> _expanded = <String>{};
   final Map<String, Future<Uint8List>> _attachmentCache =
       <String, Future<Uint8List>>{};
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<Uint8List> _load(ChatAttachment attachment) =>
       _attachmentCache.putIfAbsent(
@@ -57,43 +77,60 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     // stable key so expanding a tool card cannot leak into its neighbour when
     // indices shift.
     // The list owns its own viewport, so the scroll area may only theme it.
-    return TRScrollArea.forScrollable(
-      child: ListView.separated(
-        reverse: true,
-        padding: const EdgeInsets.fromLTRB(
-          TRSpacing.extraLarge,
-          TRSpacing.large,
-          TRSpacing.extraLarge,
-          TRSpacing.large,
-        ),
-        itemCount: items.length + (busy ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: TRSpacing.small),
-        // Every new event shifts the reversed indices, so keys are mapped back
-        // to their slot; without this an expanded card would leak its state
-        // into whichever item lands on its old index.
-        findItemIndexCallback: (key) {
-          if (key is! ValueKey<String>) return null;
-          final position = items.indexWhere((item) => item.key == key.value);
-          if (position < 0) return null;
-          return items.length - position - 1 + (busy ? 1 : 0);
-        },
-        itemBuilder: (context, index) {
-          if (busy && index == 0) return const ChatRunningIndicator();
-          final item = items[items.length - index - 1 + (busy ? 1 : 0)];
-          return KeyedSubtree(
-            key: ValueKey<String>(item.key),
-            child: ChatItemView(
-              item: item,
-              expanded: _expanded.contains(item.key),
-              onToggle: () => setState(() {
-                if (!_expanded.remove(item.key)) _expanded.add(item.key);
-              }),
-              loadAttachment: widget.loadAttachment == null ? null : _load,
-              exportAttachment: widget.exportAttachment,
+    return Stack(
+      children: <Widget>[
+        TRScrollArea.forScrollable(
+          controller: _scrollController,
+          child: ListView.separated(
+            controller: _scrollController,
+            primary: false,
+            reverse: true,
+            padding: const EdgeInsets.fromLTRB(
+              TRSpacing.extraLarge,
+              TRSpacing.large,
+              TRSpacing.extraLarge,
+              TRSpacing.large,
             ),
-          );
-        },
-      ),
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const SizedBox(height: TRSpacing.small),
+            // Every new event shifts the reversed indices, so keys are mapped
+            // back
+            // to their slot; without this an expanded card would leak its state
+            // into whichever item lands on its old index.
+            findItemIndexCallback: (key) {
+              if (key is! ValueKey<String>) return null;
+              final position = items.indexWhere(
+                (item) => item.key == key.value,
+              );
+              if (position < 0) return null;
+              return items.length - position - 1;
+            },
+            itemBuilder: (context, index) {
+              final item = items[items.length - index - 1];
+              return KeyedSubtree(
+                key: ValueKey<String>(item.key),
+                child: ChatItemView(
+                  item: item,
+                  expanded: _expanded.contains(item.key),
+                  onToggle: () => setState(() {
+                    if (!_expanded.remove(item.key)) _expanded.add(item.key);
+                  }),
+                  loadAttachment: widget.loadAttachment == null ? null : _load,
+                  exportAttachment: widget.exportAttachment,
+                  hostId: widget.hostId,
+                  planActionBuilder: widget.planActionBuilder,
+                ),
+              );
+            },
+          ),
+        ),
+        if (busy)
+          const Positioned(
+            left: TRSpacing.extraLarge,
+            bottom: TRSpacing.large,
+            child: ChatRunningIndicator(),
+          ),
+      ],
     );
   }
 }
@@ -107,6 +144,8 @@ class ChatItemView extends StatelessWidget {
     this.onToggle,
     this.loadAttachment,
     this.exportAttachment,
+    this.hostId,
+    this.planActionBuilder,
     super.key,
   });
 
@@ -125,6 +164,12 @@ class ChatItemView extends StatelessWidget {
   /// Platform file exporter.
   final ChatAttachmentExporter? exportAttachment;
 
+  /// Host used by actionable interaction rows.
+  final String? hostId;
+
+  /// Builds actions inside a plan card.
+  final ChatPlanActionBuilder? planActionBuilder;
+
   @override
   Widget build(BuildContext context) {
     final value = item;
@@ -140,7 +185,18 @@ class ChatItemView extends StatelessWidget {
         exportAttachment: exportAttachment,
       ),
       ChatAssistantMessage() => ChatAssistantMessageView(message: value),
-      ChatPlanProposal() => ChatPlanCard(proposal: value),
+      ChatPlanProposal() => ChatPlanCard(
+        proposal: value,
+        actions: planActionBuilder?.call(value),
+      ),
+      ChatApprovalInteraction() => ApprovalCard(
+        hostId: hostId,
+        interaction: value,
+      ),
+      ChatQuestionInteraction() => ChatQuestionCard(
+        hostId: hostId,
+        request: value.request,
+      ),
       ChatToolActivity() => ChatToolCard(
         activity: value,
         expanded: expanded,

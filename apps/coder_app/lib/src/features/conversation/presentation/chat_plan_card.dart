@@ -11,10 +11,13 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 /// the agent ticks off while it works rather than only a plan-mode proposal.
 class ChatPlanCard extends StatelessWidget {
   /// Creates a plan card.
-  const ChatPlanCard({required this.proposal, super.key});
+  const ChatPlanCard({required this.proposal, this.actions, super.key});
 
   /// The recorded plan.
   final ChatPlanProposal proposal;
+
+  /// Controls for an actionable plan-mode proposal.
+  final Widget? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +53,10 @@ class ChatPlanCard extends StatelessWidget {
                   variant: TRTextVariant.bodySm,
                   color: TRTextColor.muted,
                 ),
+              ],
+              if (actions case final actions?) ...<Widget>[
+                const SizedBox(height: TRSpacing.medium),
+                actions,
               ],
             ],
           ),

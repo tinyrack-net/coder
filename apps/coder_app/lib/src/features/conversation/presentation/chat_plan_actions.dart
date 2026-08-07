@@ -38,6 +38,7 @@ class ChatPlanActions extends ConsumerWidget {
     required this.proposal,
     required this.onDismiss,
     required this.onSessionCreated,
+    this.embedded = false,
     super.key,
   });
 
@@ -56,9 +57,42 @@ class ChatPlanActions extends ConsumerWidget {
   /// Called with a session started from the plan in a fresh context.
   final ValueChanged<SessionDto> onSessionCreated;
 
+  /// Whether the controls are already hosted by the plan card.
+  final bool embedded;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        TRText(l10n.chatPlanPrompt, variant: TRTextVariant.headingSm),
+        const SizedBox(height: TRSpacing.small),
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: TRSpacing.small,
+          runSpacing: TRSpacing.small,
+          children: <Widget>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              onPressed: onDismiss,
+              child: TRText.inherit(l10n.chatPlanKeepPlanning),
+            ),
+            TRButton(
+              appearance: TRAppearance.ghost,
+              onPressed: () => unawaited(_startFreshSession(ref)),
+              child: TRText.inherit(l10n.chatPlanRunInNewSession),
+            ),
+            TRButton(
+              intent: TRIntent.primary,
+              onPressed: () => unawaited(_implementHere(ref)),
+              child: TRText.inherit(l10n.chatPlanRun),
+            ),
+          ],
+        ),
+      ],
+    );
+    if (embedded) return content;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         TRSpacing.large,
@@ -72,38 +106,7 @@ class ChatPlanActions extends ConsumerWidget {
         variant: TRCardVariant.elevated,
         child: Padding(
           padding: const EdgeInsets.all(TRSpacing.medium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              TRText(
-                l10n.chatPlanPrompt,
-                variant: TRTextVariant.headingSm,
-              ),
-              const SizedBox(height: TRSpacing.small),
-              Wrap(
-                alignment: WrapAlignment.end,
-                spacing: 8,
-                runSpacing: 8,
-                children: <Widget>[
-                  TRButton(
-                    appearance: TRAppearance.ghost,
-                    onPressed: onDismiss,
-                    child: TRText.inherit(l10n.chatPlanKeepPlanning),
-                  ),
-                  TRButton(
-                    appearance: TRAppearance.ghost,
-                    onPressed: () => unawaited(_startFreshSession(ref)),
-                    child: TRText.inherit(l10n.chatPlanRunInNewSession),
-                  ),
-                  TRButton(
-                    intent: TRIntent.primary,
-                    onPressed: () => unawaited(_implementHere(ref)),
-                    child: TRText.inherit(l10n.chatPlanRun),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          child: content,
         ),
       ),
     );

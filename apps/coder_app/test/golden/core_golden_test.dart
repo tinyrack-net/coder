@@ -386,6 +386,50 @@ void main() {
             ),
           ),
           GoldenTestScenario(
+            name: 'resolved approval light',
+            child: SizedBox(
+              width: 460,
+              height: 300,
+              child: _material(
+                ThemeMode.light,
+                ProviderScope(
+                  child: ApprovalCard(
+                    interaction: ChatApprovalInteraction(
+                      key: 'approval-${approval.id}',
+                      turnId: approval.turnId,
+                      createdAt: approval.createdAt,
+                      approval: approval,
+                      status: ChatInteractionStatus.resolved,
+                      approved: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'resolved approval dark',
+            child: SizedBox(
+              width: 460,
+              height: 300,
+              child: _material(
+                ThemeMode.dark,
+                ProviderScope(
+                  child: ApprovalCard(
+                    interaction: ChatApprovalInteraction(
+                      key: 'approval-${approval.id}',
+                      turnId: approval.turnId,
+                      createdAt: approval.createdAt,
+                      approval: approval,
+                      status: ChatInteractionStatus.resolved,
+                      approved: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
             name: 'plan light',
             child: SizedBox(
               width: 460,
