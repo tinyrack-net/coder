@@ -1150,17 +1150,13 @@ class CoderClient
             ..headers['content-type'] = mimeType
             ..headers['x-file-name'] = Uri.encodeComponent(fileName)
             ..contentLength = byteSize;
-      unawaited(
-        bytes
-            .forEach(request.sink.add)
-            .then<void>((_) => request.sink.close())
-            .onError<Object>((error, stackTrace) {
-              request.sink.addError(error, stackTrace);
-              return request.sink.close();
-            }),
-      );
+      final responseFuture = client.send(request);
+      // Keep the upload producer inside this operation's lifetime. Closing the
+      // HTTP client while the request sink is still settling races the next
+      // daemon call on Windows, even when the server has already replied.
+      await bytes.pipe(request.sink);
       final response = await http.Response.fromStream(
-        await client.send(request),
+        await responseFuture,
       );
       if (response.statusCode != 200) {
         throw CoderClientException(
