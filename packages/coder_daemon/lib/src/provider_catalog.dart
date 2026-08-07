@@ -1,6 +1,5 @@
-import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:dio/dio.dart';
 
 /// Safe model metadata returned by an external catalog.
@@ -91,12 +90,6 @@ final class ModelsDevCatalogMetadataSource
             reasoningEffort: reasoning
                 ? CapabilitySupport.supported
                 : CapabilitySupport.unsupported,
-            imageInput: providerId == 'openai'
-                ? CapabilitySupport.supported
-                : CapabilitySupport.unknown,
-            fileInput: providerId == 'openai'
-                ? CapabilitySupport.supported
-                : CapabilitySupport.unknown,
             supportedReasoningEfforts: _reasoningEfforts(model),
             source: CapabilitySource.refreshed,
           ),
@@ -151,18 +144,21 @@ final class ModelsDevCatalogMetadataSource
 
 /// Read-only catalog of provider definitions trusted by the daemon.
 final class BuiltInProviderCatalog {
-  /// Creates a catalog backed by bundled presets and an explicit refresh port.
+  /// Creates a catalog over the registered vendors and a refresh port.
   factory BuiltInProviderCatalog({
     required Clock clock,
+    required ProviderRegistry registry,
     ProviderCatalogMetadataSource? metadataSource,
   }) => BuiltInProviderCatalog._(
     clock,
+    registry,
     metadataSource ?? ModelsDevCatalogMetadataSource(),
   );
 
-  BuiltInProviderCatalog._(this._clock, this._metadataSource);
+  BuiltInProviderCatalog._(this._clock, this._registry, this._metadataSource);
 
   final Clock _clock;
+  final ProviderRegistry _registry;
   final ProviderCatalogMetadataSource _metadataSource;
   Map<String, List<ProviderCatalogMetadata>>? _refreshedModels;
   DateTime? _refreshedAt;
@@ -170,7 +166,11 @@ final class BuiltInProviderCatalog {
   /// Returns public provider metadata without endpoint or transport details.
   ProviderCatalogDto catalog() => ProviderCatalogDto(
     definitions: <ProviderDefinitionDto>[
-      for (final preset in builtInProviderPresets) preset.definition,
+      for (final plugin in _registry.plugins) plugin.definition,
+    ],
+    wireFormats: <ProviderWireFormatDto>[
+      for (final wire in _registry.wireProtocols)
+        ProviderWireFormatDto(id: wire.id, label: wire.label),
     ],
     source: _refreshedModels == null
         ? ProviderCatalogSource.bundled
@@ -180,14 +180,27 @@ final class BuiltInProviderCatalog {
 
   /// Explicitly refreshes model metadata while retaining trusted runtime data.
   Future<ProviderCatalogDto> refresh() async {
-    final providerIds = builtInProviderPresets
-        .map((preset) => preset.definition.id)
-        .toSet();
+    final providerIds = _registry.plugins.map((plugin) => plugin.id).toSet();
     final fetched = await _metadataSource.fetch(providerIds);
     _refreshedModels = <String, List<ProviderCatalogMetadata>>{
       for (final entry in fetched.entries)
-        if (providerIds.contains(entry.key))
-          entry.key: List<ProviderCatalogMetadata>.unmodifiable(entry.value),
+        if (_registry.find(entry.key) case final plugin?)
+          // The public catalog reports what it measured; the vendor may know
+          // more, such as inputs its API accepts for every model.
+          entry.key: List<ProviderCatalogMetadata>.unmodifiable(
+            <ProviderCatalogMetadata>[
+              for (final model in entry.value)
+                ProviderCatalogMetadata(
+                  id: model.id,
+                  label: model.label,
+                  capabilities: plugin.refineRemoteCapabilities(
+                    model.capabilities,
+                  ),
+                  pricing: model.pricing,
+                  limits: model.limits,
+                ),
+            ],
+          ),
     };
     _refreshedAt = _clock.nowUtc();
     return catalog();
@@ -197,7 +210,8 @@ final class BuiltInProviderCatalog {
   List<ProviderCatalogMetadata> modelsFor(String definitionId) {
     final result = <String, ProviderCatalogMetadata>{
       for (final model
-          in find(definitionId)?.models ?? const <ProviderCatalogModel>[])
+          in _registry.find(definitionId)?.models ??
+              const <ProviderCatalogModel>[])
         model.id: ProviderCatalogMetadata(
           id: model.id,
           label: model.label,
@@ -218,18 +232,4 @@ final class BuiltInProviderCatalog {
   bool isRefreshedModel(String definitionId, String modelId) =>
       _refreshedModels?[definitionId]?.any((model) => model.id == modelId) ??
       false;
-
-  /// Returns trusted runtime metadata for [definitionId].
-  ProviderRuntimePreset? find(String definitionId) => builtInProviderPresets
-      .where((preset) => preset.definition.id == definitionId)
-      .firstOrNull;
-
-  /// Returns trusted runtime metadata or fails for an unknown definition.
-  ProviderRuntimePreset require(String definitionId) {
-    final preset = find(definitionId);
-    if (preset == null) {
-      throw StateError('Unknown provider definition: $definitionId');
-    }
-    return preset;
-  }
 }

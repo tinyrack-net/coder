@@ -6,6 +6,7 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
+import 'package:coder_daemon/src/built_in_tools.dart';
 import 'package:coder_daemon/src/commands.dart';
 import 'package:coder_daemon/src/config.dart';
 import 'package:coder_daemon/src/credential_store.dart';
@@ -18,7 +19,6 @@ import 'package:coder_daemon/src/mcp_resource_tools.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/mcp_transports.dart';
 import 'package:coder_daemon/src/multi_agent.dart';
-import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_daemon/src/portable_terminal.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/project_settings.dart';
@@ -31,6 +31,7 @@ import 'package:coder_daemon/src/skills.dart';
 import 'package:coder_daemon/src/terminal_service.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -85,9 +86,7 @@ abstract final class DaemonApplication {
     ModelProvider? provider,
     Clock clock = const SystemClock(),
     IdGenerator ids = const UuidIdGenerator(),
-    ProviderModelDiscovery modelDiscovery = const DioProviderModelDiscovery(),
-    ModelProviderFactory providerFactory =
-        const OpenAICompatibleProviderFactory(),
+    ProviderModelDiscovery? modelDiscovery,
     ProviderOAuthGateway? oauthGateway,
     ProviderCatalogMetadataSource? providerCatalogMetadataSource,
     WorkspacePathGateway workspacePaths = const IoWorkspacePathGateway(),
@@ -146,8 +145,12 @@ abstract final class DaemonApplication {
         await credentials.setDaemonToken(token);
       }
       final events = StreamController<WireEnvelope>.broadcast(sync: true);
-      final effectiveOAuthGateway =
-          oauthGateway ?? OpenAIOAuthGateway(clock: clock);
+      // The whole vendor surface of this daemon: adding a vendor package
+      // means adding its plugins and wire protocols to these two lists.
+      final providerRegistry = ProviderRegistry(
+        plugins: openAIFamilyPlugins(clock: clock, openAIOAuth: oauthGateway),
+        wireProtocols: openAIWireProtocols(),
+      );
       final providers = ProviderService(
         repository: database.providerDao,
         credentials: credentials,
@@ -156,24 +159,26 @@ abstract final class DaemonApplication {
             ? Platform.environment
             : const <String, String>{},
         clock: clock,
-        modelDiscovery: modelDiscovery,
-        providerFactory: providerFactory,
+        registry: providerRegistry,
         catalog: BuiltInProviderCatalog(
           clock: clock,
+          registry: providerRegistry,
           metadataSource: providerCatalogMetadataSource,
         ),
-        oauthRefresher: OAuthCredentialRefresher(
-          gateway: effectiveOAuthGateway,
-        ),
+        modelDiscovery: modelDiscovery,
+        oauthRefresher: OAuthCredentialRefresher(registry: providerRegistry),
         fixedProvider: provider,
       );
       await providers.initialize();
+      // A bare API key in daemon config has always meant the first vendor's
+      // platform key; the composition root is where that convention lives.
+      final apiKeyDefinition = providerRegistry.plugins.first.id;
       if (config.apiKey?.isNotEmpty == true &&
-          await database.providerDao.getConnection('openai') == null) {
-        await providers.connectApiKey('openai', config.apiKey!);
+          await database.providerDao.getConnection(apiKeyDefinition) == null) {
+        await providers.connectApiKey(apiKeyDefinition, config.apiKey!);
       }
       final providerAuth = ProviderAuthCoordinator(
-        gateway: effectiveOAuthGateway,
+        registry: providerRegistry,
         connector: providers,
         ids: ids,
       );
@@ -191,118 +196,6 @@ abstract final class DaemonApplication {
       final gitignore =
           gitignoreEnvironment ??
           GitignoreEnvironment.fromEnvironment(Platform.environment);
-      final builtInTools = <AgentTool>[
-        ListDirectoryTool(),
-        ReadFileTool(),
-        SearchTextTool(gitignoreEnvironment: gitignore),
-        GlobTool(gitignoreEnvironment: gitignore),
-        UpdatePlanTool(),
-        ApplyPatchTool(),
-      ];
-      final toolById = <String, AgentTool>{
-        for (final tool in builtInTools) tool.name: tool,
-      };
-      final builtInCatalog = StaticAgentToolCatalog(
-        <AgentToolDefinitionDto>[
-          ...builtInTools.map(
-            (tool) => AgentToolDefinitionDto(
-              id: tool.name,
-              name: tool.name,
-              description: tool.description,
-              risk: tool.risk,
-              alwaysOn: alwaysOnBuiltInToolIds.contains(tool.name),
-            ),
-          ),
-          const AgentToolDefinitionDto(
-            id: 'attach_file',
-            name: 'attach_file',
-            description:
-                'Attach a regular file from the workspace to the conversation.',
-            risk: ToolRisk.read,
-            alwaysOn: true,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'current_time',
-            name: 'current_time',
-            description: 'Get the current time in UTC.',
-            risk: ToolRisk.read,
-            alwaysOn: true,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'sleep',
-            name: 'sleep',
-            description:
-                'Pause before checking something again; ends early on new '
-                'user input.',
-            risk: ToolRisk.read,
-            alwaysOn: true,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'list_mcp_resources',
-            name: 'list_mcp_resources',
-            description:
-                'List resources MCP servers publish, such as files, schemas, '
-                'or application state.',
-            risk: ToolRisk.read,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'list_mcp_resource_templates',
-            name: 'list_mcp_resource_templates',
-            description:
-                'List parameterized resource templates MCP servers publish.',
-            risk: ToolRisk.read,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'read_mcp_resource',
-            name: 'read_mcp_resource',
-            description: 'Read one resource from an MCP server.',
-            risk: ToolRisk.read,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'exec_command',
-            name: 'exec_command',
-            description:
-                'Run shell commands, on pipes or in a pseudo-terminal, '
-                'including REPLs and servers driven across several calls.',
-            risk: ToolRisk.command,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'view_image',
-            name: 'view_image',
-            description:
-                'Look at an image file in the workspace, such as a screenshot '
-                'or a design mock-up.',
-            risk: ToolRisk.read,
-            alwaysOn: true,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'ask_user',
-            name: 'ask_user',
-            description:
-                'Ask the user multiple-choice questions and wait for the '
-                'answers.',
-            risk: ToolRisk.read,
-            alwaysOn: true,
-          ),
-          const AgentToolDefinitionDto(
-            id: 'read_attachment',
-            name: 'read_attachment',
-            description:
-                'Resolve an attachment ID to validated metadata and a '
-                'readable path.',
-            risk: ToolRisk.read,
-            alwaysOn: true,
-          ),
-          const AgentToolDefinitionDto(
-            id: collaborationCapabilityId,
-            name: collaborationCapabilityId,
-            description:
-                'Spawn, message, wait on, interrupt, and list collaborating '
-                'subagents that share this workspace.',
-            risk: ToolRisk.read,
-          ),
-        ],
-      );
       final mcp = McpService(
         store: FileMcpConfigStore(config.configDirectory),
         credentials: credentials,
@@ -316,12 +209,23 @@ abstract final class DaemonApplication {
       // Reads mcp.json only; every handshake runs in the background so one
       // unstartable server cannot hold up daemon boot.
       await mcp.initialize();
+      // Assigned once the session service it drives exists; the registry reads
+      // it per turn rather than capturing null here.
+      MultiAgentService? multiAgent;
+      final toolRegistry = builtInAgentToolRegistry(
+        gitignoreEnvironment: gitignore,
+        mcpResourceHostFor: (workspaceRoot) =>
+            SessionMcpResourceHost(mcp, workspaceRoot),
+        multiAgent: () => multiAgent,
+      );
+      final builtInCatalog = StaticAgentToolCatalog(toolRegistry.catalog);
       final agentDefinitions = AgentDefinitionService(
         store: FileAgentDefinitionStore(config.configDirectory),
         tools: CompositeAgentToolCatalog(<AgentToolCatalog>[
           builtInCatalog,
           mcp,
         ]),
+        alwaysOnToolIds: toolRegistry.alwaysOnIds,
       );
       await agentDefinitions.initialize();
       final userHome = config.userHomeDirectory;
@@ -386,76 +290,13 @@ abstract final class DaemonApplication {
         clock: clock,
         ids: ids,
         attachments: attachments,
-        toolsFactory: (ids, workspaceRoot, sessionId, turnId) {
-          // Starting a turn is what marks a worktree as in use: its project
-          // servers connect in the background and join from the next turn,
-          // and worktrees nothing has touched lately are released.
-          unawaited(mcp.ensureProject(workspaceRoot));
-          mcp.releaseIdleProjects();
-          final execHost = SessionExecHost(execSessions, sessionId);
-          // Withhold MCP tools only once there are enough of them to crowd
-          // the context; below the threshold nothing changes for the user.
-          final mcpExposure =
-              mcp.tools(workspaceRoot: workspaceRoot).length >
-                  mcpDeferralThreshold
-              ? ToolExposure.deferred
-              : ToolExposure.advertised;
-          return resolveAgentToolIds(ids)
-              .expand<AgentTool?>(
-                (id) => switch (id) {
-                  'attach_file' => <AgentTool?>[
-                    AttachFileTool(
-                      publisher: TurnAttachmentPublisher(attachments, turnId),
-                    ),
-                  ],
-                  'read_attachment' => <AgentTool?>[
-                    ReadAttachmentTool(
-                      reader: SessionAttachmentReader(attachments, sessionId),
-                    ),
-                  ],
-                  'view_image' => <AgentTool?>[
-                    ViewImageTool(
-                      publisher: TurnAttachmentPublisher(attachments, turnId),
-                    ),
-                  ],
-                  // One capability, two tools: nobody can enable writing to a
-                  // shell without being able to start one.
-                  'list_mcp_resources' => <AgentTool?>[
-                    ListMcpResourcesTool(
-                      host: SessionMcpResourceHost(mcp, workspaceRoot),
-                    ),
-                  ],
-                  'list_mcp_resource_templates' => <AgentTool?>[
-                    ListMcpResourceTemplatesTool(
-                      host: SessionMcpResourceHost(mcp, workspaceRoot),
-                    ),
-                  ],
-                  'read_mcp_resource' => <AgentTool?>[
-                    ReadMcpResourceTool(
-                      host: SessionMcpResourceHost(mcp, workspaceRoot),
-                    ),
-                  ],
-                  'exec_command' => <AgentTool?>[
-                    ExecCommandTool(host: execHost),
-                    WriteStdinTool(host: execHost),
-                  ],
-                  _ => <AgentTool?>[
-                    toolById[id] ??
-                        mcp.tool(
-                          id,
-                          workspaceRoot: workspaceRoot,
-                          exposure: mcpExposure,
-                        ),
-                  ],
-                },
-              )
-              .whereType<AgentTool>();
-        },
+        toolRegistry: toolRegistry,
+        externalTools: _McpToolSource(mcp),
         execHostFor: (id) => SessionExecHost(execSessions, id),
         skills: skills,
         settings: database.settingsDao,
       );
-      final multiAgent = MultiAgentService(
+      multiAgent = MultiAgentService(
         sessions: database.sessionDao,
         mailbox: database.agentMailboxDao,
         timeline: database.timelineDao,
@@ -663,5 +504,30 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _database.close();
     await _lock.unlock();
     await _lock.close();
+  }
+}
+
+/// Resolves MCP tools for one turn, and marks the worktree as in use.
+///
+/// Starting a turn is what marks a worktree as in use: its project servers
+/// connect in the background and join from the next turn, and worktrees nothing
+/// has touched lately are released.
+final class _McpToolSource implements ExternalToolSource {
+  const _McpToolSource(this._mcp);
+
+  final McpService _mcp;
+
+  @override
+  AgentTool? Function(String id) lookupFor(String workspaceRoot) {
+    unawaited(_mcp.ensureProject(workspaceRoot));
+    _mcp.releaseIdleProjects();
+    // Withhold MCP tools only once there are enough of them to crowd the
+    // context; below the threshold nothing changes for the user.
+    final exposure =
+        _mcp.tools(workspaceRoot: workspaceRoot).length > mcpDeferralThreshold
+        ? ToolExposure.deferred
+        : ToolExposure.advertised;
+    return (id) =>
+        _mcp.tool(id, workspaceRoot: workspaceRoot, exposure: exposure);
   }
 }

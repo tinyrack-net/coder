@@ -28,8 +28,9 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Service tier the fast-mode toggle selects.
 ///
-/// Codex names this tier `fast`; the OpenAI APIs accept `priority` for the same
-/// behavior, so the request field carries the documented API value.
+/// A capability-listed value, not an assumption: the toggle only appears when
+/// the resolved model itself advertises this tier, so a vendor that names its
+/// tiers differently simply never shows it.
 const String _priorityServiceTier = 'priority';
 
 /// Turn settings shown in the composer toolbar row.
@@ -274,7 +275,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                 )
               : null,
         ),
-        if (capabilities.serviceTier == CapabilitySupport.supported)
+        if (capabilities.serviceTier == CapabilitySupport.supported &&
+            capabilities.supportedServiceTiers.contains(_priorityServiceTier))
           ComposerChipSpec(
             valueKey: const ValueKey('session-composer-fast'),
             icon: CoderIcons.fast,

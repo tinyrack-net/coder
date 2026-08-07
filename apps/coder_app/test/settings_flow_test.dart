@@ -116,7 +116,7 @@ void main() {
       await tester.tap(find.text('Sign in with ChatGPT'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('ChatGPT 로그인 대기 중'), findsOneWidget);
+      expect(find.text('로그인 대기 중'), findsOneWidget);
       expect(find.textContaining('auth.example'), findsOneWidget);
       expect(opener.opened.single.host, 'auth.example');
       expect(
@@ -304,7 +304,7 @@ void main() {
       customConfig: const CustomProviderConfigDto(
         name: 'Lab',
         baseUrl: 'http://127.0.0.1:9000/v1',
-        apiFormat: ProviderApiFormat.chatCompletions,
+        wireFormatId: 'openai-chat-completions',
         authenticationRequired: true,
         manualModelIds: <String>['model-a'],
       ),
@@ -430,12 +430,12 @@ void main() {
     await _pumpSettings(tester, api);
 
     expect(find.text('연결 중 · 저장된 credential'), findsOneWidget);
-    expect(find.text('연결됨 · ChatGPT OAuth'), findsOneWidget);
+    expect(find.text('연결됨 · OAuth'), findsOneWidget);
     expect(find.text('오류 · 인증 없음'), findsOneWidget);
     expect(find.text('재로그인 필요 · Environment credential'), findsOneWidget);
     // A successful ChatGPT sign-in carries no error, so the card must not show
     // a "Limited connection" status or a danger-coloured diagnostic line.
-    expect(find.text('제한된 연결 · ChatGPT OAuth'), findsNothing);
+    expect(find.text('제한된 연결 · OAuth'), findsNothing);
     expect(find.textContaining('status code of 400'), findsNothing);
   });
 

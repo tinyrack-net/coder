@@ -1,67 +1,17 @@
 import 'dart:async';
 
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/ports.dart';
-import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
-/// One running OAuth browser or device-code session.
-abstract interface class ProviderOAuthSession {
-  /// URL the user must open to continue authorization.
-  String get authorizationUrl;
-
-  /// Optional code shown for device authorization.
-  String? get userCode;
-
-  /// Optional user-facing instructions.
-  String? get instructions;
-
-  /// UTC expiration instant for the attempt.
-  DateTime get expiresAt;
-
-  /// Completes with tokens after the remote authorization succeeds.
-  Future<OAuthCredential> get completion;
-
-  /// Cancels the callback server or device polling loop.
-  Future<void> cancel();
-}
-
-/// Starts OpenAI OAuth sessions and refreshes rotating tokens.
-abstract interface class ProviderOAuthGateway {
-  /// Starts one browser or device-code authorization session.
-  Future<ProviderOAuthSession> start(ProviderAuthFlow flow);
-
-  /// Refreshes one OAuth credential, preserving refresh-token rotation.
-  Future<OAuthCredential> refresh(OAuthCredential credential);
-}
-
-/// Typed OAuth refresh failure with an explicit reauthentication decision.
-final class OAuthRefreshFailure implements Exception {
-  /// Creates a refresh failure safe to persist as connection status metadata.
-  const OAuthRefreshFailure(this.message, {required this.reauthRequired});
-
-  /// Human-readable failure without credential material.
-  final String message;
-
-  /// Whether the refresh token is permanently unusable.
-  final bool reauthRequired;
-
-  @override
-  String toString() => 'OAuthRefreshFailure: $message';
-}
-
-/// Typed failure raised while authorizing, before any credential exists.
-final class OAuthAuthorizationFailure implements Exception {
-  /// Creates an authorization failure safe to show as attempt metadata.
-  const OAuthAuthorizationFailure(this.message);
-
-  /// Human-readable failure without credential material.
-  final String message;
-
-  /// The coordinator publishes `'$error'` straight to the attempt tile, so the
-  /// bare sentence is the user-facing text.
-  @override
-  String toString() => message;
-}
+// The OAuth port types moved to the vendor-neutral port layer so a vendor
+// package can implement its own gateway; daemon consumers keep this path.
+export 'package:coder_agent/coder_agent.dart'
+    show
+        OAuthAuthorizationFailure,
+        OAuthRefreshFailure,
+        ProviderOAuthGateway,
+        ProviderOAuthSession;
 
 /// Refreshes one connection credential while preserving token rotation.
 abstract interface class ProviderCredentialRefresher {
@@ -85,22 +35,22 @@ abstract interface class ProviderOAuthConnector {
 final class ProviderAuthCoordinator {
   /// Creates an authorization coordinator from typed ports.
   factory ProviderAuthCoordinator({
-    required ProviderOAuthGateway gateway,
+    required ProviderRegistry registry,
     required ProviderOAuthConnector connector,
     required IdGenerator ids,
   }) => ProviderAuthCoordinator._(
-    gateway: gateway,
+    registry: registry,
     connector: connector,
     ids: ids,
   );
 
   ProviderAuthCoordinator._({
-    required this._gateway,
+    required this._registry,
     required this._connector,
     required this._ids,
   });
 
-  final ProviderOAuthGateway _gateway;
+  final ProviderRegistry _registry;
   final ProviderOAuthConnector _connector;
   final IdGenerator _ids;
   final Map<String, _PendingAuth> _attempts = <String, _PendingAuth>{};
@@ -110,20 +60,27 @@ final class ProviderAuthCoordinator {
   /// Authorization attempt updates safe to broadcast to clients.
   Stream<ProviderAuthAttemptDto> get events => _events.stream;
 
-  /// Starts an OpenAI browser or device-code OAuth flow.
+  /// Starts one vendor's browser or device-code OAuth flow.
   Future<ProviderAuthAttemptDto> start({
     required String definitionId,
     required String methodId,
   }) async {
-    if (definitionId != 'openai') {
-      throw StateError('OAuth is only available for the OpenAI definition.');
+    final plugin = _registry.require(definitionId);
+    final gateway = plugin.oauth;
+    if (gateway == null) {
+      throw StateError('$definitionId does not support OAuth.');
     }
-    final flow = switch (methodId) {
-      'chatgpt-browser' => ProviderAuthFlow.oauthBrowser,
-      'chatgpt-device' => ProviderAuthFlow.oauthDevice,
-      _ => throw StateError('Unknown OpenAI OAuth method: $methodId'),
-    };
-    final session = await _gateway.start(flow);
+    // The definition already names each method's flow, so the coordinator
+    // never has to know what a vendor called its buttons.
+    final method = plugin.definition.authMethods
+        .where((candidate) => candidate.id == methodId)
+        .firstOrNull;
+    final flow = method?.flow;
+    if (flow != ProviderAuthFlow.oauthBrowser &&
+        flow != ProviderAuthFlow.oauthDevice) {
+      throw StateError('Unknown $definitionId OAuth method: $methodId');
+    }
+    final session = await gateway.start(flow!);
     final attempt = ProviderAuthAttemptDto(
       id: _ids.generate(),
       definitionId: definitionId,
@@ -213,15 +170,15 @@ final class ProviderAuthCoordinator {
       status == ProviderAuthAttemptStatus.expired;
 }
 
-/// Deduplicates concurrent refreshes because OpenAI rotates refresh tokens.
+/// Deduplicates concurrent refreshes because vendors rotate refresh tokens.
 final class OAuthCredentialRefresher implements ProviderCredentialRefresher {
-  /// Creates a single-flight token refresher.
-  factory OAuthCredentialRefresher({required ProviderOAuthGateway gateway}) =>
-      OAuthCredentialRefresher._(gateway);
+  /// Creates a single-flight token refresher over the registered vendors.
+  factory OAuthCredentialRefresher({required ProviderRegistry registry}) =>
+      OAuthCredentialRefresher._(registry);
 
-  OAuthCredentialRefresher._(this._gateway);
+  OAuthCredentialRefresher._(this._registry);
 
-  final ProviderOAuthGateway _gateway;
+  final ProviderRegistry _registry;
   final Map<String, Future<OAuthCredential>> _inFlight =
       <String, Future<OAuthCredential>>{};
 
@@ -233,7 +190,13 @@ final class OAuthCredentialRefresher implements ProviderCredentialRefresher {
   ) {
     final existing = _inFlight[connectionId];
     if (existing != null) return existing;
-    final operation = _gateway.refresh(credential);
+    // Only built-in vendors authenticate over OAuth, and a built-in
+    // connection's id is its definition id, so the lookup needs no join.
+    final gateway = _registry.find(connectionId)?.oauth;
+    if (gateway == null) {
+      throw StateError('$connectionId does not support OAuth refresh.');
+    }
+    final operation = gateway.refresh(credential);
     _inFlight[connectionId] = operation;
     unawaited(
       operation.then<void>(

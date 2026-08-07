@@ -3,8 +3,7 @@ import 'dart:convert';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/chat/chat_code_block.dart';
-import 'package:coder_app/src/chat/chat_diff.dart';
-import 'package:coder_app/src/chat/chat_diff_view.dart';
+import 'package:coder_app/src/chat/chat_tool_presentation.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +44,7 @@ class ApprovalCard extends ConsumerWidget {
                 variant: TRTextVariant.headingSm,
               ),
               const SizedBox(height: TRSpacing.small),
-              _preview(),
+              _preview(context),
               const SizedBox(height: TRSpacing.small),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -70,7 +69,7 @@ class ApprovalCard extends ConsumerWidget {
     );
   }
 
-  Widget _preview() {
+  Widget _preview(BuildContext context) {
     final preview = approval.preview;
     if (preview == null || preview.isEmpty) {
       return ChatCodeBlock(
@@ -78,10 +77,12 @@ class ApprovalCard extends ConsumerWidget {
         maxLines: 12,
       );
     }
-    if (approval.toolName == 'apply_patch') {
-      return ChatDiffView(files: parseChatDiff(preview), maxLines: 24);
-    }
-    return ChatCodeBlock(text: preview, maxLines: 12);
+    // A tool that has a richer preview than its own arguments supplies it;
+    // everything else reads as the text the daemon sent.
+    final body = presenterFor(approval.toolName).approvalBody;
+    return body == null
+        ? ChatCodeBlock(text: preview, maxLines: 12)
+        : body(context, preview);
   }
 
   void _resolve(WidgetRef ref, {required bool approved}) => unawaited(

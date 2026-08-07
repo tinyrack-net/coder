@@ -68,6 +68,45 @@ final class ArchitectureVerifier {
         },
       };
 
+  // Vendor identifiers that must never appear outside an adapter package.
+  //
+  // A vendor's name in shared code is how the last refactor's leaks began: a
+  // ChatGPT gateway in the daemon, an id switch in the settings page, an enum
+  // of one vendor's flows in the CLI. Everything vendor-specific now lives in
+  // coder_provider_* packages; the one legitimate mention elsewhere is the
+  // daemon's composition root, which assembles the registry.
+  static final RegExp _vendorIdentifier = RegExp(
+    'openai|chatgpt|anthropic|deepseek|openrouter|groq|ollama|lmstudio'
+    '|vllm|gemini|claude',
+    caseSensitive: false,
+  );
+
+  // Built-in tool names that must never appear as string literals in the app
+  // outside the presenter tree that owns them.
+  //
+  // One tool's name used to reach the UI through six literal sites; the
+  // presenters in chat/tools/ are now the single place a tool name may be
+  // spelled, with the timeline's dedicated card builders as the documented
+  // exception because they hold per-turn state a presenter cannot.
+  static final RegExp _quotedToolName = RegExp(
+    "'(list_directory|read_file|search_text|glob|update_plan|apply_patch"
+    '|attach_file|read_attachment|view_image|ask_user|current_time|sleep'
+    '|exec_command|write_stdin|tool_search|list_skills|get_context_remaining'
+    '|new_context|list_mcp_resources|list_mcp_resource_templates'
+    '|read_mcp_resource|spawn_agent|followup_task|wait_agent|interrupt_agent'
+    "|list_agents)'",
+  );
+
+  static bool _mayNameVendors(String package, String path) =>
+      package.startsWith('coder_provider_') ||
+      (package == 'coder_daemon' && path.endsWith('/application.dart'));
+
+  static bool _mayNameTools(String package, String path) {
+    if (package != 'coder_app') return true;
+    return path.contains('/chat/tools/') ||
+        path.endsWith('/chat/chat_timeline_model.dart');
+  }
+
   // Packages resolved from outside this workspace that must still stay behind
   // one boundary. `ptyworld` spawns native pseudo-terminals, so only the
   // daemon's terminal gateway may reach it; every other package goes through
@@ -146,7 +185,8 @@ final class ArchitectureVerifier {
     for (final entity in lib.listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
       if (entity.path.endsWith('.g.dart') ||
-          entity.path.endsWith('.freezed.dart')) {
+          entity.path.endsWith('.freezed.dart') ||
+          entity.path.contains('${p.separator}l10n${p.separator}gen')) {
         continue;
       }
       violations.addAll(
@@ -183,6 +223,30 @@ final class ArchitectureVerifier {
             line: index + 1,
             rule: 'source_dependency_direction',
             message: '$package must not import $importedPackage.',
+          ),
+        );
+      }
+      if (!_mayNameVendors(package, path) && _vendorIdentifier.hasMatch(line)) {
+        violations.add(
+          ArchitectureViolation(
+            path: path,
+            line: index + 1,
+            rule: 'vendor_literal',
+            message:
+                'Vendor names belong in a coder_provider_* package or the '
+                'daemon composition root, not in shared code.',
+          ),
+        );
+      }
+      if (!_mayNameTools(package, path) && _quotedToolName.hasMatch(line)) {
+        violations.add(
+          ArchitectureViolation(
+            path: path,
+            line: index + 1,
+            rule: 'tool_name_literal',
+            message:
+                'Tool names in the app belong to their chat/tools/ '
+                'presenter, not to shared code.',
           ),
         );
       }

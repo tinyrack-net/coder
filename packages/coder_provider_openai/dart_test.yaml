@@ -1,4 +1,6 @@
 tags:
   feature_test__context_compaction__unit:
   feature_test__conversation_attachments__unit:
+  feature_test__provider_catalog__unit:
+  feature_test__provider_oauth__unit:
   feature_test__tool_context_budget__unit:

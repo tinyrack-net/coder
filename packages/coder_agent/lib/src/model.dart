@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:coder_agent/src/tool_search.dart';
+import 'package:coder_agent/src/tools/tool_search.dart';
 import 'package:coder_agent/src/usage.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 

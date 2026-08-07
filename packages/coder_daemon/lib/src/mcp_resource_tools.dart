@@ -340,3 +340,39 @@ class ReadMcpResourceTool extends AgentTool {
     );
   }
 }
+
+/// Registers one MCP resource capability over a workspace-scoped host.
+///
+/// The three resource capabilities differ only in which tool they build, so
+/// they share one provider rather than three near-identical ones.
+final class McpResourceToolProvider extends SelectableToolProvider {
+  /// Creates a provider building [_tool] from a host scoped to the worktree.
+  const McpResourceToolProvider({
+    required this.id,
+    required this.description,
+    required this._tool,
+    required this._hostFor,
+  });
+
+  @override
+  final String id;
+
+  /// What clients show for this capability.
+  final String description;
+
+  final AgentTool Function(McpResourceHost host) _tool;
+  final McpResourceHost Function(String workspaceRoot) _hostFor;
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description: description,
+    risk: ToolRisk.read,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    _tool(_hostFor(scope.workspaceRoot)),
+  ];
+}

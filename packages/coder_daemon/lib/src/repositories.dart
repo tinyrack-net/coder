@@ -1,6 +1,11 @@
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
+// The secret credential types moved to the vendor-neutral port layer so
+// adapter packages can hold them; daemon consumers keep this import path.
+export 'package:coder_agent/coder_agent.dart'
+    show ApiKeyCredential, OAuthCredential, ProviderCredential;
+
 /// Public API exposed by this library.
 abstract interface class SettingsRepository {
   /// The getValue public API member.
@@ -291,41 +296,4 @@ abstract interface class CredentialRepository {
 
   /// Removes one MCP secret.
   Future<void> removeMcpSecret(String key);
-}
-
-/// Secret credential material held only inside the daemon.
-sealed class ProviderCredential {
-  const ProviderCredential();
-}
-
-/// API key credential material.
-final class ApiKeyCredential extends ProviderCredential {
-  /// Creates API key credential material.
-  const ApiKeyCredential(this.key);
-
-  /// Secret provider API key.
-  final String key;
-}
-
-/// OAuth credential material for a subscription-backed provider.
-final class OAuthCredential extends ProviderCredential {
-  /// Creates OAuth credential material.
-  const OAuthCredential({
-    required this.accessToken,
-    required this.refreshToken,
-    required this.expiresAt,
-    this.accountId,
-  });
-
-  /// Short-lived OAuth access token.
-  final String accessToken;
-
-  /// Rotating OAuth refresh token.
-  final String refreshToken;
-
-  /// UTC expiration instant for [accessToken].
-  final DateTime expiresAt;
-
-  /// ChatGPT account identifier sent to the Codex backend when available.
-  final String? accountId;
 }

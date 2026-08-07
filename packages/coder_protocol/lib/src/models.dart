@@ -298,15 +298,6 @@ enum WorktreeCreateMode {
   existingBranch,
 }
 
-/// API formats supported by custom OpenAI-compatible connections.
-enum ProviderApiFormat {
-  /// Uses the OpenAI Responses API.
-  responses,
-
-  /// Uses the OpenAI-compatible Chat Completions API.
-  chatCompletions,
-}
-
 /// Credential families supported by a provider connection.
 enum ProviderAuthKind {
   /// A provider-issued API key.
@@ -1125,13 +1116,30 @@ abstract class ProviderDefinitionDto with _$ProviderDefinitionDto {
 }
 
 @freezed
+/// One wire protocol a custom connection may speak.
+///
+/// Served by the daemon from its registered adapter packages, so the set a
+/// client offers grows with the daemon instead of with a client release.
+abstract class ProviderWireFormatDto with _$ProviderWireFormatDto {
+  /// Creates one selectable wire protocol.
+  const factory ProviderWireFormatDto({
+    required String id,
+    required String label,
+  }) = _ProviderWireFormatDto;
+
+  /// Decodes one selectable wire protocol.
+  factory ProviderWireFormatDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderWireFormatDtoFromJson(json);
+}
+
+@freezed
 /// CustomProviderConfigDto contains the advanced custom endpoint settings.
 abstract class CustomProviderConfigDto with _$CustomProviderConfigDto {
-  /// Creates custom OpenAI-compatible endpoint configuration.
+  /// Creates custom endpoint configuration.
   const factory CustomProviderConfigDto({
     required String name,
     required String baseUrl,
-    required ProviderApiFormat apiFormat,
+    required String wireFormatId,
     required bool authenticationRequired,
     @Default(false) bool strictToolSchema,
     @Default(<String>[]) List<String> manualModelIds,
@@ -1215,6 +1223,8 @@ abstract class ProviderCatalogDto with _$ProviderCatalogDto {
     required List<ProviderDefinitionDto> definitions,
     required ProviderCatalogSource source,
     required DateTime updatedAt,
+    // The first entry is what a new custom connection defaults to.
+    @Default(<ProviderWireFormatDto>[]) List<ProviderWireFormatDto> wireFormats,
   }) = _ProviderCatalogDto;
 
   /// Creates a [ProviderCatalogDto].

@@ -9770,9 +9770,275 @@ as String?,
 
 
 /// @nodoc
+mixin _$ProviderWireFormatDto {
+
+ String get id; String get label;
+/// Create a copy of ProviderWireFormatDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProviderWireFormatDtoCopyWith<ProviderWireFormatDto> get copyWith => _$ProviderWireFormatDtoCopyWithImpl<ProviderWireFormatDto>(this as ProviderWireFormatDto, _$identity);
+
+  /// Serializes this ProviderWireFormatDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderWireFormatDto&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,label);
+
+@override
+String toString() {
+  return 'ProviderWireFormatDto(id: $id, label: $label)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProviderWireFormatDtoCopyWith<$Res>  {
+  factory $ProviderWireFormatDtoCopyWith(ProviderWireFormatDto value, $Res Function(ProviderWireFormatDto) _then) = _$ProviderWireFormatDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String label
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProviderWireFormatDtoCopyWithImpl<$Res>
+    implements $ProviderWireFormatDtoCopyWith<$Res> {
+  _$ProviderWireFormatDtoCopyWithImpl(this._self, this._then);
+
+  final ProviderWireFormatDto _self;
+  final $Res Function(ProviderWireFormatDto) _then;
+
+/// Create a copy of ProviderWireFormatDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ProviderWireFormatDto].
+extension ProviderWireFormatDtoPatterns on ProviderWireFormatDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProviderWireFormatDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ProviderWireFormatDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProviderWireFormatDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _ProviderWireFormatDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProviderWireFormatDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ProviderWireFormatDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String label)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ProviderWireFormatDto() when $default != null:
+return $default(_that.id,_that.label);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String label)  $default,) {final _that = this;
+switch (_that) {
+case _ProviderWireFormatDto():
+return $default(_that.id,_that.label);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String label)?  $default,) {final _that = this;
+switch (_that) {
+case _ProviderWireFormatDto() when $default != null:
+return $default(_that.id,_that.label);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ProviderWireFormatDto implements ProviderWireFormatDto {
+  const _ProviderWireFormatDto({required this.id, required this.label});
+  factory _ProviderWireFormatDto.fromJson(Map<String, dynamic> json) => _$ProviderWireFormatDtoFromJson(json);
+
+@override final  String id;
+@override final  String label;
+
+/// Create a copy of ProviderWireFormatDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ProviderWireFormatDtoCopyWith<_ProviderWireFormatDto> get copyWith => __$ProviderWireFormatDtoCopyWithImpl<_ProviderWireFormatDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ProviderWireFormatDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderWireFormatDto&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,label);
+
+@override
+String toString() {
+  return 'ProviderWireFormatDto(id: $id, label: $label)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ProviderWireFormatDtoCopyWith<$Res> implements $ProviderWireFormatDtoCopyWith<$Res> {
+  factory _$ProviderWireFormatDtoCopyWith(_ProviderWireFormatDto value, $Res Function(_ProviderWireFormatDto) _then) = __$ProviderWireFormatDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String label
+});
+
+
+
+
+}
+/// @nodoc
+class __$ProviderWireFormatDtoCopyWithImpl<$Res>
+    implements _$ProviderWireFormatDtoCopyWith<$Res> {
+  __$ProviderWireFormatDtoCopyWithImpl(this._self, this._then);
+
+  final _ProviderWireFormatDto _self;
+  final $Res Function(_ProviderWireFormatDto) _then;
+
+/// Create a copy of ProviderWireFormatDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,}) {
+  return _then(_ProviderWireFormatDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$CustomProviderConfigDto {
 
- String get name; String get baseUrl; ProviderApiFormat get apiFormat; bool get authenticationRequired; bool get strictToolSchema; List<String> get manualModelIds;
+ String get name; String get baseUrl; String get wireFormatId; bool get authenticationRequired; bool get strictToolSchema; List<String> get manualModelIds;
 /// Create a copy of CustomProviderConfigDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -9785,16 +10051,16 @@ $CustomProviderConfigDtoCopyWith<CustomProviderConfigDto> get copyWith => _$Cust
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomProviderConfigDto&&(identical(other.name, name) || other.name == name)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.apiFormat, apiFormat) || other.apiFormat == apiFormat)&&(identical(other.authenticationRequired, authenticationRequired) || other.authenticationRequired == authenticationRequired)&&(identical(other.strictToolSchema, strictToolSchema) || other.strictToolSchema == strictToolSchema)&&const DeepCollectionEquality().equals(other.manualModelIds, manualModelIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomProviderConfigDto&&(identical(other.name, name) || other.name == name)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.wireFormatId, wireFormatId) || other.wireFormatId == wireFormatId)&&(identical(other.authenticationRequired, authenticationRequired) || other.authenticationRequired == authenticationRequired)&&(identical(other.strictToolSchema, strictToolSchema) || other.strictToolSchema == strictToolSchema)&&const DeepCollectionEquality().equals(other.manualModelIds, manualModelIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,baseUrl,apiFormat,authenticationRequired,strictToolSchema,const DeepCollectionEquality().hash(manualModelIds));
+int get hashCode => Object.hash(runtimeType,name,baseUrl,wireFormatId,authenticationRequired,strictToolSchema,const DeepCollectionEquality().hash(manualModelIds));
 
 @override
 String toString() {
-  return 'CustomProviderConfigDto(name: $name, baseUrl: $baseUrl, apiFormat: $apiFormat, authenticationRequired: $authenticationRequired, strictToolSchema: $strictToolSchema, manualModelIds: $manualModelIds)';
+  return 'CustomProviderConfigDto(name: $name, baseUrl: $baseUrl, wireFormatId: $wireFormatId, authenticationRequired: $authenticationRequired, strictToolSchema: $strictToolSchema, manualModelIds: $manualModelIds)';
 }
 
 
@@ -9805,7 +10071,7 @@ abstract mixin class $CustomProviderConfigDtoCopyWith<$Res>  {
   factory $CustomProviderConfigDtoCopyWith(CustomProviderConfigDto value, $Res Function(CustomProviderConfigDto) _then) = _$CustomProviderConfigDtoCopyWithImpl;
 @useResult
 $Res call({
- String name, String baseUrl, ProviderApiFormat apiFormat, bool authenticationRequired, bool strictToolSchema, List<String> manualModelIds
+ String name, String baseUrl, String wireFormatId, bool authenticationRequired, bool strictToolSchema, List<String> manualModelIds
 });
 
 
@@ -9822,12 +10088,12 @@ class _$CustomProviderConfigDtoCopyWithImpl<$Res>
 
 /// Create a copy of CustomProviderConfigDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? baseUrl = null,Object? apiFormat = null,Object? authenticationRequired = null,Object? strictToolSchema = null,Object? manualModelIds = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? baseUrl = null,Object? wireFormatId = null,Object? authenticationRequired = null,Object? strictToolSchema = null,Object? manualModelIds = null,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,baseUrl: null == baseUrl ? _self.baseUrl : baseUrl // ignore: cast_nullable_to_non_nullable
-as String,apiFormat: null == apiFormat ? _self.apiFormat : apiFormat // ignore: cast_nullable_to_non_nullable
-as ProviderApiFormat,authenticationRequired: null == authenticationRequired ? _self.authenticationRequired : authenticationRequired // ignore: cast_nullable_to_non_nullable
+as String,wireFormatId: null == wireFormatId ? _self.wireFormatId : wireFormatId // ignore: cast_nullable_to_non_nullable
+as String,authenticationRequired: null == authenticationRequired ? _self.authenticationRequired : authenticationRequired // ignore: cast_nullable_to_non_nullable
 as bool,strictToolSchema: null == strictToolSchema ? _self.strictToolSchema : strictToolSchema // ignore: cast_nullable_to_non_nullable
 as bool,manualModelIds: null == manualModelIds ? _self.manualModelIds : manualModelIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
@@ -9915,10 +10181,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String baseUrl,  ProviderApiFormat apiFormat,  bool authenticationRequired,  bool strictToolSchema,  List<String> manualModelIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  bool strictToolSchema,  List<String> manualModelIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CustomProviderConfigDto() when $default != null:
-return $default(_that.name,_that.baseUrl,_that.apiFormat,_that.authenticationRequired,_that.strictToolSchema,_that.manualModelIds);case _:
+return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.strictToolSchema,_that.manualModelIds);case _:
   return orElse();
 
 }
@@ -9936,10 +10202,10 @@ return $default(_that.name,_that.baseUrl,_that.apiFormat,_that.authenticationReq
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String baseUrl,  ProviderApiFormat apiFormat,  bool authenticationRequired,  bool strictToolSchema,  List<String> manualModelIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  bool strictToolSchema,  List<String> manualModelIds)  $default,) {final _that = this;
 switch (_that) {
 case _CustomProviderConfigDto():
-return $default(_that.name,_that.baseUrl,_that.apiFormat,_that.authenticationRequired,_that.strictToolSchema,_that.manualModelIds);case _:
+return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.strictToolSchema,_that.manualModelIds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -9956,10 +10222,10 @@ return $default(_that.name,_that.baseUrl,_that.apiFormat,_that.authenticationReq
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String baseUrl,  ProviderApiFormat apiFormat,  bool authenticationRequired,  bool strictToolSchema,  List<String> manualModelIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  bool strictToolSchema,  List<String> manualModelIds)?  $default,) {final _that = this;
 switch (_that) {
 case _CustomProviderConfigDto() when $default != null:
-return $default(_that.name,_that.baseUrl,_that.apiFormat,_that.authenticationRequired,_that.strictToolSchema,_that.manualModelIds);case _:
+return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.strictToolSchema,_that.manualModelIds);case _:
   return null;
 
 }
@@ -9971,12 +10237,12 @@ return $default(_that.name,_that.baseUrl,_that.apiFormat,_that.authenticationReq
 @JsonSerializable()
 
 class _CustomProviderConfigDto implements CustomProviderConfigDto {
-  const _CustomProviderConfigDto({required this.name, required this.baseUrl, required this.apiFormat, required this.authenticationRequired, this.strictToolSchema = false, final  List<String> manualModelIds = const <String>[]}): _manualModelIds = manualModelIds;
+  const _CustomProviderConfigDto({required this.name, required this.baseUrl, required this.wireFormatId, required this.authenticationRequired, this.strictToolSchema = false, final  List<String> manualModelIds = const <String>[]}): _manualModelIds = manualModelIds;
   factory _CustomProviderConfigDto.fromJson(Map<String, dynamic> json) => _$CustomProviderConfigDtoFromJson(json);
 
 @override final  String name;
 @override final  String baseUrl;
-@override final  ProviderApiFormat apiFormat;
+@override final  String wireFormatId;
 @override final  bool authenticationRequired;
 @override@JsonKey() final  bool strictToolSchema;
  final  List<String> _manualModelIds;
@@ -10000,16 +10266,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomProviderConfigDto&&(identical(other.name, name) || other.name == name)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.apiFormat, apiFormat) || other.apiFormat == apiFormat)&&(identical(other.authenticationRequired, authenticationRequired) || other.authenticationRequired == authenticationRequired)&&(identical(other.strictToolSchema, strictToolSchema) || other.strictToolSchema == strictToolSchema)&&const DeepCollectionEquality().equals(other._manualModelIds, _manualModelIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomProviderConfigDto&&(identical(other.name, name) || other.name == name)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.wireFormatId, wireFormatId) || other.wireFormatId == wireFormatId)&&(identical(other.authenticationRequired, authenticationRequired) || other.authenticationRequired == authenticationRequired)&&(identical(other.strictToolSchema, strictToolSchema) || other.strictToolSchema == strictToolSchema)&&const DeepCollectionEquality().equals(other._manualModelIds, _manualModelIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,baseUrl,apiFormat,authenticationRequired,strictToolSchema,const DeepCollectionEquality().hash(_manualModelIds));
+int get hashCode => Object.hash(runtimeType,name,baseUrl,wireFormatId,authenticationRequired,strictToolSchema,const DeepCollectionEquality().hash(_manualModelIds));
 
 @override
 String toString() {
-  return 'CustomProviderConfigDto(name: $name, baseUrl: $baseUrl, apiFormat: $apiFormat, authenticationRequired: $authenticationRequired, strictToolSchema: $strictToolSchema, manualModelIds: $manualModelIds)';
+  return 'CustomProviderConfigDto(name: $name, baseUrl: $baseUrl, wireFormatId: $wireFormatId, authenticationRequired: $authenticationRequired, strictToolSchema: $strictToolSchema, manualModelIds: $manualModelIds)';
 }
 
 
@@ -10020,7 +10286,7 @@ abstract mixin class _$CustomProviderConfigDtoCopyWith<$Res> implements $CustomP
   factory _$CustomProviderConfigDtoCopyWith(_CustomProviderConfigDto value, $Res Function(_CustomProviderConfigDto) _then) = __$CustomProviderConfigDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String baseUrl, ProviderApiFormat apiFormat, bool authenticationRequired, bool strictToolSchema, List<String> manualModelIds
+ String name, String baseUrl, String wireFormatId, bool authenticationRequired, bool strictToolSchema, List<String> manualModelIds
 });
 
 
@@ -10037,12 +10303,12 @@ class __$CustomProviderConfigDtoCopyWithImpl<$Res>
 
 /// Create a copy of CustomProviderConfigDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? baseUrl = null,Object? apiFormat = null,Object? authenticationRequired = null,Object? strictToolSchema = null,Object? manualModelIds = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? baseUrl = null,Object? wireFormatId = null,Object? authenticationRequired = null,Object? strictToolSchema = null,Object? manualModelIds = null,}) {
   return _then(_CustomProviderConfigDto(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,baseUrl: null == baseUrl ? _self.baseUrl : baseUrl // ignore: cast_nullable_to_non_nullable
-as String,apiFormat: null == apiFormat ? _self.apiFormat : apiFormat // ignore: cast_nullable_to_non_nullable
-as ProviderApiFormat,authenticationRequired: null == authenticationRequired ? _self.authenticationRequired : authenticationRequired // ignore: cast_nullable_to_non_nullable
+as String,wireFormatId: null == wireFormatId ? _self.wireFormatId : wireFormatId // ignore: cast_nullable_to_non_nullable
+as String,authenticationRequired: null == authenticationRequired ? _self.authenticationRequired : authenticationRequired // ignore: cast_nullable_to_non_nullable
 as bool,strictToolSchema: null == strictToolSchema ? _self.strictToolSchema : strictToolSchema // ignore: cast_nullable_to_non_nullable
 as bool,manualModelIds: null == manualModelIds ? _self._manualModelIds : manualModelIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
@@ -11013,7 +11279,7 @@ $ModelLimitsDtoCopyWith<$Res>? get limits {
 /// @nodoc
 mixin _$ProviderCatalogDto {
 
- List<ProviderDefinitionDto> get definitions; ProviderCatalogSource get source; DateTime get updatedAt;
+ List<ProviderDefinitionDto> get definitions; ProviderCatalogSource get source; DateTime get updatedAt; List<ProviderWireFormatDto> get wireFormats;
 /// Create a copy of ProviderCatalogDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -11026,16 +11292,16 @@ $ProviderCatalogDtoCopyWith<ProviderCatalogDto> get copyWith => _$ProviderCatalo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderCatalogDto&&const DeepCollectionEquality().equals(other.definitions, definitions)&&(identical(other.source, source) || other.source == source)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderCatalogDto&&const DeepCollectionEquality().equals(other.definitions, definitions)&&(identical(other.source, source) || other.source == source)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.wireFormats, wireFormats));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(definitions),source,updatedAt);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(definitions),source,updatedAt,const DeepCollectionEquality().hash(wireFormats));
 
 @override
 String toString() {
-  return 'ProviderCatalogDto(definitions: $definitions, source: $source, updatedAt: $updatedAt)';
+  return 'ProviderCatalogDto(definitions: $definitions, source: $source, updatedAt: $updatedAt, wireFormats: $wireFormats)';
 }
 
 
@@ -11046,7 +11312,7 @@ abstract mixin class $ProviderCatalogDtoCopyWith<$Res>  {
   factory $ProviderCatalogDtoCopyWith(ProviderCatalogDto value, $Res Function(ProviderCatalogDto) _then) = _$ProviderCatalogDtoCopyWithImpl;
 @useResult
 $Res call({
- List<ProviderDefinitionDto> definitions, ProviderCatalogSource source, DateTime updatedAt
+ List<ProviderDefinitionDto> definitions, ProviderCatalogSource source, DateTime updatedAt, List<ProviderWireFormatDto> wireFormats
 });
 
 
@@ -11063,12 +11329,13 @@ class _$ProviderCatalogDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderCatalogDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? definitions = null,Object? source = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? definitions = null,Object? source = null,Object? updatedAt = null,Object? wireFormats = null,}) {
   return _then(_self.copyWith(
 definitions: null == definitions ? _self.definitions : definitions // ignore: cast_nullable_to_non_nullable
 as List<ProviderDefinitionDto>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as ProviderCatalogSource,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,wireFormats: null == wireFormats ? _self.wireFormats : wireFormats // ignore: cast_nullable_to_non_nullable
+as List<ProviderWireFormatDto>,
   ));
 }
 
@@ -11153,10 +11420,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ProviderDefinitionDto> definitions,  ProviderCatalogSource source,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ProviderDefinitionDto> definitions,  ProviderCatalogSource source,  DateTime updatedAt,  List<ProviderWireFormatDto> wireFormats)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProviderCatalogDto() when $default != null:
-return $default(_that.definitions,_that.source,_that.updatedAt);case _:
+return $default(_that.definitions,_that.source,_that.updatedAt,_that.wireFormats);case _:
   return orElse();
 
 }
@@ -11174,10 +11441,10 @@ return $default(_that.definitions,_that.source,_that.updatedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ProviderDefinitionDto> definitions,  ProviderCatalogSource source,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ProviderDefinitionDto> definitions,  ProviderCatalogSource source,  DateTime updatedAt,  List<ProviderWireFormatDto> wireFormats)  $default,) {final _that = this;
 switch (_that) {
 case _ProviderCatalogDto():
-return $default(_that.definitions,_that.source,_that.updatedAt);case _:
+return $default(_that.definitions,_that.source,_that.updatedAt,_that.wireFormats);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -11194,10 +11461,10 @@ return $default(_that.definitions,_that.source,_that.updatedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ProviderDefinitionDto> definitions,  ProviderCatalogSource source,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ProviderDefinitionDto> definitions,  ProviderCatalogSource source,  DateTime updatedAt,  List<ProviderWireFormatDto> wireFormats)?  $default,) {final _that = this;
 switch (_that) {
 case _ProviderCatalogDto() when $default != null:
-return $default(_that.definitions,_that.source,_that.updatedAt);case _:
+return $default(_that.definitions,_that.source,_that.updatedAt,_that.wireFormats);case _:
   return null;
 
 }
@@ -11209,7 +11476,7 @@ return $default(_that.definitions,_that.source,_that.updatedAt);case _:
 @JsonSerializable()
 
 class _ProviderCatalogDto implements ProviderCatalogDto {
-  const _ProviderCatalogDto({required final  List<ProviderDefinitionDto> definitions, required this.source, required this.updatedAt}): _definitions = definitions;
+  const _ProviderCatalogDto({required final  List<ProviderDefinitionDto> definitions, required this.source, required this.updatedAt, final  List<ProviderWireFormatDto> wireFormats = const <ProviderWireFormatDto>[]}): _definitions = definitions,_wireFormats = wireFormats;
   factory _ProviderCatalogDto.fromJson(Map<String, dynamic> json) => _$ProviderCatalogDtoFromJson(json);
 
  final  List<ProviderDefinitionDto> _definitions;
@@ -11221,6 +11488,13 @@ class _ProviderCatalogDto implements ProviderCatalogDto {
 
 @override final  ProviderCatalogSource source;
 @override final  DateTime updatedAt;
+ final  List<ProviderWireFormatDto> _wireFormats;
+@override@JsonKey() List<ProviderWireFormatDto> get wireFormats {
+  if (_wireFormats is EqualUnmodifiableListView) return _wireFormats;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_wireFormats);
+}
+
 
 /// Create a copy of ProviderCatalogDto
 /// with the given fields replaced by the non-null parameter values.
@@ -11235,16 +11509,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderCatalogDto&&const DeepCollectionEquality().equals(other._definitions, _definitions)&&(identical(other.source, source) || other.source == source)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderCatalogDto&&const DeepCollectionEquality().equals(other._definitions, _definitions)&&(identical(other.source, source) || other.source == source)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other._wireFormats, _wireFormats));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_definitions),source,updatedAt);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_definitions),source,updatedAt,const DeepCollectionEquality().hash(_wireFormats));
 
 @override
 String toString() {
-  return 'ProviderCatalogDto(definitions: $definitions, source: $source, updatedAt: $updatedAt)';
+  return 'ProviderCatalogDto(definitions: $definitions, source: $source, updatedAt: $updatedAt, wireFormats: $wireFormats)';
 }
 
 
@@ -11255,7 +11529,7 @@ abstract mixin class _$ProviderCatalogDtoCopyWith<$Res> implements $ProviderCata
   factory _$ProviderCatalogDtoCopyWith(_ProviderCatalogDto value, $Res Function(_ProviderCatalogDto) _then) = __$ProviderCatalogDtoCopyWithImpl;
 @override @useResult
 $Res call({
- List<ProviderDefinitionDto> definitions, ProviderCatalogSource source, DateTime updatedAt
+ List<ProviderDefinitionDto> definitions, ProviderCatalogSource source, DateTime updatedAt, List<ProviderWireFormatDto> wireFormats
 });
 
 
@@ -11272,12 +11546,13 @@ class __$ProviderCatalogDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderCatalogDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? definitions = null,Object? source = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? definitions = null,Object? source = null,Object? updatedAt = null,Object? wireFormats = null,}) {
   return _then(_ProviderCatalogDto(
 definitions: null == definitions ? _self._definitions : definitions // ignore: cast_nullable_to_non_nullable
 as List<ProviderDefinitionDto>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as ProviderCatalogSource,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,wireFormats: null == wireFormats ? _self._wireFormats : wireFormats // ignore: cast_nullable_to_non_nullable
+as List<ProviderWireFormatDto>,
   ));
 }
 

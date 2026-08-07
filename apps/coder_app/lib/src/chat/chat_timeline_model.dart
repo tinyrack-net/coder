@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coder_app/src/chat/chat_plan.dart';
+import 'package:coder_app/src/chat/chat_tool_presentation.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Loads authenticated attachment bytes for preview.
@@ -423,12 +424,12 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
         }
       case 'tool.requested':
         closeAssistant(turnId);
-        // Both render as their own item, so a tool row beside them would
-        // only repeat what the reader already sees.
-        const suppressed = <String>{'attach_file', 'new_context'};
-        if (suppressed.contains(_string(event.data['name']))) continue;
+        // A tool that renders as its own item wants no row beside it, which
+        // is a fact each presenter states rather than a set kept here.
+        if (_timelineOf(event) == ChatToolTimeline.suppressed) continue;
         final callId = _string(event.data['callId']) ?? '';
-        if (_string(event.data['name']) == 'update_plan' &&
+        if (_timelineOf(event) == ChatToolTimeline.card &&
+            _string(event.data['name']) == 'update_plan' &&
             !openPlans.containsKey('$turnId/$callId')) {
           // A plan renders as its own card; a plan the model malformed badly
           // enough to parse to nothing falls through to a plain tool row so the
@@ -449,7 +450,8 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
             continue;
           }
         }
-        if (_string(event.data['name']) == 'ask_user' &&
+        if (_timelineOf(event) == ChatToolTimeline.card &&
+            _string(event.data['name']) == 'ask_user' &&
             !openQuestions.containsKey('$turnId/$callId')) {
           // A pending question renders from conversation state, so a tool row
           // beside it would only duplicate it; the answer replaces both.
@@ -464,7 +466,8 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
           builders.add(builder);
           continue;
         }
-        if (_string(event.data['name']) == 'sleep' &&
+        if (_timelineOf(event) == ChatToolTimeline.card &&
+            _string(event.data['name']) == 'sleep' &&
             !openSleeps.containsKey('$turnId/$callId')) {
           final arguments = _map(event.data['arguments']);
           final milliseconds = arguments['duration_ms'];
@@ -507,10 +510,7 @@ List<ChatItem> projectChatTimeline(List<TimelineEventDto> events) {
         closeAssistant(turnId);
         // A failure still falls through to a plain row so it stays visible.
         if (event.type == 'tool.completed' &&
-            const <String>{
-              'attach_file',
-              'new_context',
-            }.contains(_string(event.data['name'])) &&
+            _timelineOf(event) == ChatToolTimeline.suppressed &&
             event.data['isError'] != true) {
           continue;
         }
@@ -1051,3 +1051,10 @@ final class _ToolBuilder extends _ChatItemBuilder {
     ),
   ];
 }
+
+/// Where the tool behind [event] belongs in the timeline.
+///
+/// The answer is the tool's own, so a tool that renders as a card or as
+/// nothing says so once in its presenter instead of being listed here.
+ChatToolTimeline _timelineOf(TimelineEventDto event) =>
+    presenterFor(_string(event.data['name']) ?? '').timeline;

@@ -1,13 +1,11 @@
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:coder_provider_openai/coder_provider_openai.dart';
 
 /// Runtime provider selection resolved from one Markdown agent snapshot.
 final class ResolvedAgentModel {
@@ -47,6 +45,13 @@ final class ProviderConnectionFailure implements Exception {
   String toString() => 'ProviderConnectionFailure($code): $message';
 }
 
+/// Definition id recorded for connections built from custom configuration.
+///
+/// Not a vendor: only the presence of [ProviderConnectionDto.customConfig]
+/// decides how a connection resolves. This id exists so a custom connection
+/// never collides with a registered plugin id.
+const String customProviderDefinitionId = 'custom';
+
 /// Settings key holding the daemon-global default model selection.
 ///
 /// An empty stored value means no explicit default, which makes the daemon
@@ -62,9 +67,10 @@ final class ProviderService implements ProviderOAuthConnector {
     required SettingsRepository settings,
     required Map<String, String> environment,
     required Clock clock,
-    required ProviderModelDiscovery modelDiscovery,
-    required ModelProviderFactory providerFactory,
+    required ProviderRegistry registry,
     required BuiltInProviderCatalog catalog,
+    ProviderModelDiscovery? modelDiscovery,
+    ModelProviderFactory? providerFactory,
     ProviderCredentialRefresher? oauthRefresher,
     ModelProvider? fixedProvider,
   }) => ProviderService._(
@@ -73,9 +79,10 @@ final class ProviderService implements ProviderOAuthConnector {
     settings: settings,
     environment: environment,
     clock: clock,
+    registry: registry,
+    catalog: catalog,
     modelDiscovery: modelDiscovery,
     providerFactory: providerFactory,
-    catalog: catalog,
     oauthRefresher: oauthRefresher,
     fixedProvider: fixedProvider,
   );
@@ -86,39 +93,49 @@ final class ProviderService implements ProviderOAuthConnector {
     required this._settings,
     required this._environment,
     required this._clock,
-    required this._modelDiscovery,
-    required this._providerFactory,
+    required this._registry,
     required this._catalog,
+    ProviderModelDiscovery? modelDiscovery,
+    ModelProviderFactory? providerFactory,
     this._oauthRefresher,
     this._fixedProvider,
-  });
+  }) : _discoveryOverride = modelDiscovery,
+       _factoryOverride = providerFactory;
 
   final ProviderRepository _repository;
   final SettingsRepository _settings;
   final CredentialRepository _credentials;
   final Map<String, String> _environment;
   final Clock _clock;
-  final ProviderModelDiscovery _modelDiscovery;
-  final ModelProviderFactory _providerFactory;
+  final ProviderRegistry _registry;
   final BuiltInProviderCatalog _catalog;
+  final ProviderModelDiscovery? _discoveryOverride;
+  final ModelProviderFactory? _factoryOverride;
   final ProviderCredentialRefresher? _oauthRefresher;
   final ModelProvider? _fixedProvider;
+
+  /// The definition a fixed test provider connects under.
+  ///
+  /// A fixed provider replaces every transport, so which vendor lends its
+  /// bundled models is arbitrary; the first registered one keeps embedded
+  /// runs deterministic.
+  String get _fixedProviderDefinitionId => _registry.plugins.first.id;
 
   /// Loads secrets and connects built-ins backed by daemon environment keys.
   Future<void> initialize() async {
     await _credentials.load();
     if (_fixedProvider != null &&
-        await _repository.getConnection('openai') == null) {
+        await _repository.getConnection(_fixedProviderDefinitionId) == null) {
       await _initializeFixedProvider();
     }
-    for (final preset in builtInProviderPresets) {
-      if (await _repository.getConnection(preset.definition.id) != null) {
+    for (final plugin in _registry.plugins) {
+      if (await _repository.getConnection(plugin.id) != null) {
         continue;
       }
-      final environmentCredential = _environmentCredential(preset);
+      final environmentCredential = _environmentCredential(plugin);
       if (environmentCredential == null) continue;
       await _connectBuiltIn(
-        preset,
+        plugin,
         ProviderAuthKind.apiKey,
         ProviderCredentialOrigin.environment,
         environmentCredential,
@@ -127,12 +144,12 @@ final class ProviderService implements ProviderOAuthConnector {
   }
 
   Future<void> _initializeFixedProvider() async {
-    final preset = _catalog.require('openai');
+    final plugin = _registry.require(_fixedProviderDefinitionId);
     final now = _clock.nowUtc();
     final connection = ProviderConnectionDto(
-      id: preset.definition.id,
-      definitionId: preset.definition.id,
-      displayName: preset.definition.name,
+      id: plugin.id,
+      definitionId: plugin.id,
+      displayName: plugin.definition.name,
       status: ProviderConnectionStatus.connected,
       authKind: ProviderAuthKind.none,
       credentialOrigin: ProviderCredentialOrigin.none,
@@ -153,7 +170,7 @@ final class ProviderService implements ProviderOAuthConnector {
   Future<ProviderCatalogDto> refreshCatalog() async {
     final refreshed = await _catalog.refresh();
     for (final connection in await _repository.listConnections()) {
-      if (connection.definitionId == 'custom') continue;
+      if (connection.customConfig != null) continue;
       final models = <String, ProviderModelDto>{
         for (final model in await _repository.listModels(connection.id))
           model.id: model,
@@ -321,8 +338,8 @@ final class ProviderService implements ProviderOAuthConnector {
     if (apiKey.trim().isEmpty) {
       throw const FormatException('API key must not be empty.');
     }
-    final preset = _catalog.require(definitionId);
-    if (!_supportsFlow(preset, ProviderAuthFlow.apiKey)) {
+    final plugin = _registry.require(definitionId);
+    if (!_supportsFlow(plugin, ProviderAuthFlow.apiKey)) {
       throw StateError(
         '$definitionId does not support API key authentication.',
       );
@@ -330,7 +347,7 @@ final class ProviderService implements ProviderOAuthConnector {
     final credential = ApiKeyCredential(apiKey);
     await _credentials.setCredential(definitionId, credential);
     return _connectBuiltIn(
-      preset,
+      plugin,
       ProviderAuthKind.apiKey,
       ProviderCredentialOrigin.stored,
       credential,
@@ -339,13 +356,13 @@ final class ProviderService implements ProviderOAuthConnector {
 
   /// Connects a local built-in provider without authentication.
   Future<ProviderConnectionDto> connectNone(String definitionId) async {
-    final preset = _catalog.require(definitionId);
-    if (!_supportsFlow(preset, ProviderAuthFlow.none)) {
+    final plugin = _registry.require(definitionId);
+    if (!_supportsFlow(plugin, ProviderAuthFlow.none)) {
       throw StateError('$definitionId requires authentication.');
     }
     await _credentials.removeCredential(definitionId);
     return _connectBuiltIn(
-      preset,
+      plugin,
       ProviderAuthKind.none,
       ProviderCredentialOrigin.none,
       null,
@@ -357,21 +374,21 @@ final class ProviderService implements ProviderOAuthConnector {
     String definitionId,
     OAuthCredential credential,
   ) async {
-    final preset = _catalog.require(definitionId);
-    if (!_supportsFlow(preset, ProviderAuthFlow.oauthBrowser) &&
-        !_supportsFlow(preset, ProviderAuthFlow.oauthDevice)) {
+    final plugin = _registry.require(definitionId);
+    if (!_supportsFlow(plugin, ProviderAuthFlow.oauthBrowser) &&
+        !_supportsFlow(plugin, ProviderAuthFlow.oauthDevice)) {
       throw StateError('$definitionId does not support OAuth.');
     }
     await _credentials.setCredential(definitionId, credential);
     await _connectBuiltIn(
-      preset,
+      plugin,
       ProviderAuthKind.oauth,
       ProviderCredentialOrigin.oauth,
       credential,
     );
   }
 
-  /// Creates an advanced custom OpenAI-compatible connection.
+  /// Creates an advanced custom connection speaking a registered wire format.
   Future<ProviderConnectionDto> createCustom(
     String id,
     CustomProviderConfigDto config, {
@@ -391,7 +408,7 @@ final class ProviderService implements ProviderOAuthConnector {
     final now = _clock.nowUtc();
     final connection = ProviderConnectionDto(
       id: id,
-      definitionId: 'custom',
+      definitionId: customProviderDefinitionId,
       displayName: normalized.name,
       status: ProviderConnectionStatus.connecting,
       authKind: normalized.authenticationRequired
@@ -414,7 +431,7 @@ final class ProviderService implements ProviderOAuthConnector {
     String? apiKey,
   }) async {
     final current = await get(id);
-    if (current.definitionId != 'custom') {
+    if (current.customConfig == null) {
       throw StateError('Built-in provider configuration is immutable.');
     }
     final normalized = _validateCustom(config);
@@ -460,7 +477,7 @@ final class ProviderService implements ProviderOAuthConnector {
   /// Permanently removes a custom provider connection.
   Future<void> deleteCustom(String id) async {
     final connection = await get(id);
-    if (connection.definitionId != 'custom') {
+    if (connection.customConfig == null) {
       throw StateError('Built-in provider connections cannot be deleted.');
     }
     await _credentials.removeCredential(id);
@@ -498,18 +515,15 @@ final class ProviderService implements ProviderOAuthConnector {
       credential = await _refreshOAuth(connection, oauthCredential);
     }
     final model = await _repository.getModel(connectionId, modelId);
-    return _providerFactory.create(
-      config: _runtimeConfig(connection),
+    final request = ModelProviderRequest(
+      connectionId: connection.id,
+      endpoint: _endpointFor(connection),
       credential: credential,
-      supportsReasoningEffort:
-          model?.capabilities.reasoningEffort == CapabilitySupport.supported,
-      supportsImageInput:
-          model?.capabilities.imageInput == CapabilitySupport.supported,
-      supportsFileInput:
-          model?.capabilities.fileInput == CapabilitySupport.supported,
-      supportsServiceTier:
-          model?.capabilities.serviceTier == CapabilitySupport.supported,
+      capabilities: model?.capabilities ?? const ModelCapabilitiesDto(),
     );
+    final override = _factoryOverride;
+    if (override != null) return override.create(request);
+    return _adapterSourceFor(connection).createProvider(request);
   }
 
   Future<OAuthCredential> _refreshOAuth(
@@ -569,17 +583,17 @@ final class ProviderService implements ProviderOAuthConnector {
   }
 
   Future<ProviderConnectionDto> _connectBuiltIn(
-    ProviderRuntimePreset preset,
+    ProviderPlugin plugin,
     ProviderAuthKind authKind,
     ProviderCredentialOrigin origin,
     ProviderCredential? credential,
   ) async {
-    final existing = await _repository.getConnection(preset.definition.id);
+    final existing = await _repository.getConnection(plugin.id);
     final now = _clock.nowUtc();
     final connection = ProviderConnectionDto(
-      id: preset.definition.id,
-      definitionId: preset.definition.id,
-      displayName: preset.definition.name,
+      id: plugin.id,
+      definitionId: plugin.id,
+      displayName: plugin.definition.name,
       status: ProviderConnectionStatus.connecting,
       authKind: authKind,
       credentialOrigin: origin,
@@ -594,18 +608,19 @@ final class ProviderService implements ProviderOAuthConnector {
     ProviderCredential? credential,
   ) async {
     await _repository.upsertConnection(connection);
-    final runtime = _runtimeConfig(connection);
+    final endpoint = _endpointFor(connection);
     final models = _seedModels(connection);
     ProviderConnectionStatus status;
     String? error;
-    if (!runtime.supportsModelDiscovery) {
+    if (!endpoint.supportsModelDiscovery) {
       // The bundled catalog is already the complete model set for endpoints
       // without a `/models` listing, so a discovery request would only fail.
       status = ProviderConnectionStatus.connected;
     } else {
       try {
-        final discovered = await _modelDiscovery.fetchModelIds(
-          runtime,
+        final discovered = await _discoverModels(
+          connection,
+          endpoint,
           credential,
         );
         for (final modelId in discovered) {
@@ -689,37 +704,57 @@ final class ProviderService implements ProviderOAuthConnector {
           .firstOrNull ??
       const ModelCapabilitiesDto();
 
-  ProviderRuntimeConfig _runtimeConfig(ProviderConnectionDto connection) {
+  ProviderEndpoint _endpointFor(ProviderConnectionDto connection) {
     final custom = connection.customConfig;
     if (custom != null) {
-      return ProviderRuntimeConfig(
-        id: connection.id,
-        definitionId: connection.definitionId,
+      return ProviderEndpoint(
         baseUrl: custom.baseUrl,
-        apiFormat: custom.apiFormat,
         strictToolSchema: custom.strictToolSchema,
       );
     }
-    final preset = _catalog.require(connection.definitionId);
-    if (connection.definitionId == 'openai' &&
-        connection.authKind == ProviderAuthKind.oauth) {
-      return ProviderRuntimeConfig(
-        id: connection.id,
-        definitionId: connection.definitionId,
-        baseUrl: 'https://chatgpt.com/backend-api/codex',
-        apiFormat: ProviderApiFormat.responses,
-        strictToolSchema: true,
-        supportsModelDiscovery: false,
-        supportsPlatformRequestFields: false,
+    return _registry
+        .require(connection.definitionId)
+        .endpoint(connection.authKind);
+  }
+
+  /// The plugin or wire protocol that builds and discovers for [connection].
+  ///
+  /// A built-in connection asks its vendor; a custom connection asks the wire
+  /// protocol its configuration names.
+  ({
+    ModelProvider Function(ModelProviderRequest request) createProvider,
+    Future<List<String>> Function(
+      ProviderEndpoint endpoint,
+      ProviderCredential? credential,
+    )
+    discoverModels,
+  })
+  _adapterSourceFor(ProviderConnectionDto connection) {
+    final custom = connection.customConfig;
+    if (custom != null) {
+      final wire = _registry.requireWire(custom.wireFormatId);
+      return (
+        createProvider: wire.createProvider,
+        discoverModels: wire.discoverModels,
       );
     }
-    return ProviderRuntimeConfig(
-      id: connection.id,
-      definitionId: connection.definitionId,
-      baseUrl: preset.baseUrl,
-      apiFormat: preset.apiFormat,
-      strictToolSchema: preset.strictToolSchema,
+    final plugin = _registry.require(connection.definitionId);
+    return (
+      createProvider: plugin.createProvider,
+      discoverModels: plugin.discoverModels,
     );
+  }
+
+  Future<List<String>> _discoverModels(
+    ProviderConnectionDto connection,
+    ProviderEndpoint endpoint,
+    ProviderCredential? credential,
+  ) {
+    final override = _discoveryOverride;
+    if (override != null) return override.fetchModelIds(endpoint, credential);
+    return _adapterSourceFor(
+      connection,
+    ).discoverModels(endpoint, credential);
   }
 
   ProviderCredential? _credentialFor(ProviderConnectionDto connection) =>
@@ -727,13 +762,13 @@ final class ProviderService implements ProviderOAuthConnector {
         ProviderCredentialOrigin.stored || ProviderCredentialOrigin.oauth =>
           _credentials.credential(connection.id),
         ProviderCredentialOrigin.environment => _environmentCredential(
-          _catalog.require(connection.definitionId),
+          _registry.require(connection.definitionId),
         ),
         ProviderCredentialOrigin.none => null,
       };
 
-  ApiKeyCredential? _environmentCredential(ProviderRuntimePreset preset) {
-    for (final name in preset.environmentVariables) {
+  ApiKeyCredential? _environmentCredential(ProviderPlugin plugin) {
+    for (final name in plugin.environmentVariables) {
       final value = _environment[name];
       if (value != null && value.isNotEmpty) return ApiKeyCredential(value);
     }
@@ -741,9 +776,9 @@ final class ProviderService implements ProviderOAuthConnector {
   }
 
   static bool _supportsFlow(
-    ProviderRuntimePreset preset,
+    ProviderPlugin plugin,
     ProviderAuthFlow flow,
-  ) => preset.definition.authMethods.any((method) => method.flow == flow);
+  ) => plugin.definition.authMethods.any((method) => method.flow == flow);
 
   static bool _canRun(ProviderConnectionStatus status) =>
       status == ProviderConnectionStatus.connected ||
@@ -768,7 +803,7 @@ final class ProviderService implements ProviderOAuthConnector {
     return ApiKeyCredential(apiKey);
   }
 
-  static CustomProviderConfigDto _validateCustom(
+  CustomProviderConfigDto _validateCustom(
     CustomProviderConfigDto config,
   ) {
     final uri = Uri.tryParse(config.baseUrl);
@@ -777,6 +812,11 @@ final class ProviderService implements ProviderOAuthConnector {
         (uri.scheme != 'http' && uri.scheme != 'https')) {
       throw const FormatException(
         'Custom provider base URL must be an absolute HTTP(S) URL.',
+      );
+    }
+    if (_registry.findWire(config.wireFormatId) == null) {
+      throw FormatException(
+        'Unknown provider wire format: ${config.wireFormatId}',
       );
     }
     return config.copyWith(

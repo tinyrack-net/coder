@@ -1,10 +1,9 @@
 import 'dart:async';
 
 import 'package:coder_mcp/coder_mcp.dart';
+import 'package:coder_mcp/testing.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:test/test.dart';
-
-import 'support/scripted_mcp_server.dart';
 
 void main() {
   test('connecting negotiates, confirms, and lists every tool page', () async {

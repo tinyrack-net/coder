@@ -1,14 +1,19 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 2);
+  final registry = ProviderRegistry(
+    plugins: openAIFamilyPlugins(clock: _Clock(now)),
+    wireProtocols: openAIWireProtocols(),
+  );
 
   test(
     'explicit refresh merges model metadata without runtime fields',
@@ -16,9 +21,13 @@ void main() {
       final source = _MetadataSource();
       final catalog = BuiltInProviderCatalog(
         clock: _Clock(now),
+        registry: registry,
         metadataSource: source,
       );
-      final trustedEndpoint = catalog.require('deepseek').baseUrl;
+      final trustedEndpoint = registry
+          .require('deepseek')
+          .endpoint(ProviderAuthKind.apiKey)
+          .baseUrl;
 
       final refreshed = await catalog.refresh();
       final model = catalog
@@ -31,8 +40,11 @@ void main() {
       expect(model.pricing!.input, 0.25);
       expect(model.limits!.context, 128000);
       expect(catalog.isRefreshedModel('deepseek', model.id), isTrue);
-      expect(catalog.require('deepseek').baseUrl, trustedEndpoint);
-      expect(catalog.find('attacker'), isNull);
+      expect(
+        registry.require('deepseek').endpoint(ProviderAuthKind.apiKey).baseUrl,
+        trustedEndpoint,
+      );
+      expect(registry.find('attacker'), isNull);
     },
   );
 
@@ -93,6 +105,7 @@ void main() {
   test('refresh failure retains the bundled snapshot', () async {
     final catalog = BuiltInProviderCatalog(
       clock: _Clock(now),
+      registry: registry,
       metadataSource: const _FailingMetadataSource(),
     );
 

@@ -197,13 +197,13 @@ abstract final class RpcMethod {
   /// Replaces or clears the daemon-global default model.
   static const String providerDefaultModelSet = 'provider.defaultModel.set';
 
-  /// Creates an advanced custom OpenAI-compatible connection.
+  /// Creates an advanced custom connection speaking a registered wire format.
   static const String providerCustomCreate = 'provider.custom.create';
 
-  /// Updates an advanced custom OpenAI-compatible connection.
+  /// Updates an advanced custom connection.
   static const String providerCustomUpdate = 'provider.custom.update';
 
-  /// Deletes an advanced custom OpenAI-compatible connection.
+  /// Deletes an advanced custom connection.
   static const String providerCustomDelete = 'provider.custom.delete';
 
   /// The turnStart public API member.

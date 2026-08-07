@@ -1,4 +1,3 @@
-import 'package:coder_agent/src/exec_tools.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -79,17 +78,22 @@ abstract interface class ExecSessionHost {
 /// an allow: a denial from the inner policy — every non-read tool under
 /// [PermissionMode.readOnly] — is never overturned.
 class ExecSessionApprovalPolicy implements ApprovalPolicy {
-  /// Creates an [ExecSessionApprovalPolicy].
-  const ExecSessionApprovalPolicy(this._inner, this._host);
+  /// Creates an [ExecSessionApprovalPolicy] over the tool it governs.
+  const ExecSessionApprovalPolicy(
+    this._inner,
+    this._host, {
+    required this._toolName,
+  });
 
   final ApprovalPolicy _inner;
   final ExecSessionHost _host;
+  final String _toolName;
 
   @override
   ApprovalEvaluation evaluate(ToolInvocation invocation) {
     final decision = _inner.evaluate(invocation);
     if (decision != ApprovalEvaluation.ask) return decision;
-    if (invocation.name != writeStdinToolName) return decision;
+    if (invocation.name != _toolName) return decision;
     final sessionId = invocation.arguments['session_id'];
     return sessionId is String && _host.isApproved(sessionId)
         ? ApprovalEvaluation.allow

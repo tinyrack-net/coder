@@ -867,13 +867,14 @@
   "@providerSettingsRefreshCatalog": {
     "description": "Tooltip that reloads the provider catalog."
   },
-  "providerSettingsOpenAiTitle": "OpenAI connection",
-  "@providerSettingsOpenAiTitle": {
-    "description": "Title of the OpenAI auth method sheet."
-  },
-  "providerSettingsOpenAiSubtitle": "ChatGPT sign-in is experimental and relies on the public Codex auth flow.",
-  "@providerSettingsOpenAiSubtitle": {
-    "description": "Warns that ChatGPT sign-in is experimental."
+  "providerSettingsAuthTitle": "{name} connection",
+  "@providerSettingsAuthTitle": {
+    "description": "Title of the sheet choosing how to connect one provider.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "providerSettingsExperimental": "Experimental",
   "@providerSettingsExperimental": {
@@ -934,7 +935,7 @@
   "@providerSettingsCustomSubtitle": {
     "description": "Subtitle of the custom provider catalog entry."
   },
-  "providerSettingsCustomName": "Custom OpenAI Compatible",
+  "providerSettingsCustomName": "Custom Provider",
   "@providerSettingsCustomName": {
     "description": "Title of the custom provider catalog entry."
   },
@@ -942,7 +943,7 @@
   "@providerSettingsRefreshFailed": {
     "description": "Alert title shown when the provider catalog fails to load."
   },
-  "providerSettingsOAuthPending": "Waiting for ChatGPT sign-in",
+  "providerSettingsOAuthPending": "Waiting for sign-in",
   "@providerSettingsOAuthPending": {
     "description": "Title of the pending OAuth attempt bar."
   },
@@ -1014,6 +1015,10 @@
   "providerAuthStored": "Stored credential",
   "@providerAuthStored": {
     "description": "Origin of a provider credential."
+  },
+  "providerAuthOAuth": "OAuth",
+  "@providerAuthOAuth": {
+    "description": "Credential label for a connection authorized over OAuth."
   },
   "providerAuthNone": "No credential",
   "@providerAuthNone": {

@@ -274,7 +274,102 @@ void main() {
     },
     tags: const <String>['feature_test__skill_invocation__unit'],
   );
+
+  test(
+    'the skill prompt points at the tools instead of listing every skill',
+    () {
+      const provider = SkillToolProvider();
+
+      final prompt = provider.promptFragment(_skillScope(_CountedCatalog(2)));
+
+      expect(prompt, contains('## Available skills'));
+      // The count is one number whatever the catalog size, and it is what
+      // tells the agent whether looking is worth a call.
+      expect(prompt, contains('2 skills are available'));
+      expect(prompt, contains(listSkillsToolName));
+      expect(prompt, contains(skillToolName));
+      // No per-skill line survives, which is the whole point: the prompt cost
+      // no longer grows with the catalog.
+      expect(prompt, isNot(contains('Number 0.')));
+      expect(prompt, isNot(contains('skill-000')));
+
+      expect(
+        provider.promptFragment(_skillScope(_CountedCatalog(1))),
+        contains('1 skill is available'),
+      );
+    },
+    tags: const <String>['feature_test__skill_invocation__unit'],
+  );
+
+  test(
+    'a worktree without skills contributes no tools and no prompt',
+    () {
+      const provider = SkillToolProvider();
+      final scope = _skillScope(_CountedCatalog(0));
+
+      expect(provider.create(scope), isEmpty);
+      expect(provider.promptFragment(scope), isNull);
+      // Hidden rather than selectable: the skill tools appear because the
+      // worktree has skills, not because anyone chose them in settings.
+      expect(provider.catalogEntry, isNull);
+    },
+    tags: const <String>['feature_test__skill_invocation__unit'],
+  );
 }
+
+/// Stands in for every port the skill capability never touches.
+final class _UnusedPorts
+    implements
+        AttachmentPublisher,
+        AttachmentReader,
+        AgentClock,
+        UserQuestionCoordinator,
+        ExecSessionHost {
+  const _UnusedPorts();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    '${invocation.memberName} is not part of this test: the skill capability '
+    'reads only the catalog.',
+  );
+}
+
+AgentToolScope _skillScope(SkillCatalog skills) => AgentToolScope(
+  session: SessionDto(
+    id: 'session-1',
+    worktreeId: 'worktree-1',
+    title: 'test',
+    agentDefinitionId: 'coder',
+    origin: SessionOrigin.manual,
+    status: SessionStatus.idle,
+    createdAt: DateTime.utc(2026),
+    updatedAt: DateTime.utc(2026),
+  ),
+  definition: const AgentDefinitionDto(
+    id: 'coder',
+    name: 'Coder',
+    description: 'test',
+    mode: AgentMode.primary,
+    promptEnabled: true,
+    systemPrompt: '',
+    model: AgentModelSelectionDto(source: AgentModelSource.session),
+    reasoningEffort: 'medium',
+    permissionMode: PermissionMode.ask,
+    toolIds: <String>[],
+    callableAgentIds: <String>[],
+    contentHash: '',
+    sourcePath: '',
+  ),
+  selectedToolIds: const <String>{},
+  workspaceRoot: '/workspace',
+  turnId: 'turn-1',
+  attachmentPublisher: const _UnusedPorts(),
+  attachmentReader: const _UnusedPorts(),
+  clock: const _UnusedPorts(),
+  questions: const _UnusedPorts(),
+  execHost: const _UnusedPorts(),
+  skills: skills,
+);
 
 /// A catalog holding a fixed number of generated skills.
 final class _CountedCatalog implements SkillCatalog {

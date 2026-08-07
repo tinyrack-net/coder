@@ -621,7 +621,7 @@ void main() {
       const customConfig = CustomProviderConfigDto(
         name: 'Custom',
         baseUrl: 'http://localhost/v1',
-        apiFormat: ProviderApiFormat.chatCompletions,
+        wireFormatId: 'openai-chat-completions',
         authenticationRequired: false,
       );
       expect(

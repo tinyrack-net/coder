@@ -38,6 +38,78 @@ void main() {
     );
   });
 
+  test('a vendor name in shared code is a violation', () {
+    for (final package in const <String>[
+      'coder_agent',
+      'coder_daemon',
+      'coder_client',
+      'coder_cli',
+      'coder_app',
+      'coder_protocol',
+    ]) {
+      final violations = verifier.verifySource(
+        package: package,
+        path: '$package/lib/src/service.dart',
+        source: "if (definition.id == 'openai') connectChatGpt();",
+      );
+      expect(
+        violations.map((violation) => violation.rule),
+        contains('vendor_literal'),
+        reason: package,
+      );
+    }
+  });
+
+  test('adapter packages and the composition root may name their vendor', () {
+    expect(
+      verifier.verifySource(
+        package: 'coder_provider_openai',
+        path: 'packages/coder_provider_openai/lib/src/plugins.dart',
+        source: "const id = 'openai'; // ChatGPT subscription backend",
+      ),
+      isEmpty,
+    );
+    expect(
+      verifier.verifySource(
+        package: 'coder_daemon',
+        path: 'packages/coder_daemon/lib/src/application.dart',
+        source: 'final plugins = openAIFamilyPlugins(clock: clock);',
+      ),
+      isEmpty,
+    );
+  });
+
+  test(
+    'a tool name literal in the app outside its presenter is a violation',
+    () {
+      final violations = verifier.verifySource(
+        package: 'coder_app',
+        path: 'apps/coder_app/lib/src/chat/chat_approval_card.dart',
+        source: "if (approval.toolName == 'apply_patch') showDiff();",
+      );
+      expect(violations.single.rule, 'tool_name_literal');
+
+      // The presenter tree owns the names, the timeline builds the dedicated
+      // cards, and other packages define the tools themselves.
+      for (final (package, path) in const <(String, String)>[
+        ('coder_app', 'apps/coder_app/lib/src/chat/tools/apply_patch.dart'),
+        ('coder_app', 'apps/coder_app/lib/src/chat/chat_timeline_model.dart'),
+        ('coder_agent', 'packages/coder_agent/lib/src/tools/apply_patch.dart'),
+        ('coder_daemon', 'packages/coder_daemon/lib/src/built_in_tools.dart'),
+      ]) {
+        expect(
+          verifier.verifySource(
+            package: package,
+            path: path,
+            source: "const name = 'apply_patch';",
+          ),
+          isEmpty,
+          reason: path,
+        );
+      }
+    },
+  );
+
   test('invalid package fixture reports a reversed dependency', () {
     final violations = verifier.verifySource(
       package: 'coder_protocol',
@@ -139,6 +211,42 @@ void main() {
     );
     expect(result, contains('line=89.0%'));
     expect(result, contains('branch=70.0%'));
+  });
+
+  test('an interface-only file is not untested production code', () {
+    final root = Directory.systemTemp.createTempSync('coverage-estimate-');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final package = Directory(p.join(root.path, 'fixture'))
+      ..createSync(recursive: true);
+    Directory(p.join(package.path, 'lib')).createSync();
+    Directory(p.join(package.path, 'coverage')).createSync();
+    // A port file whose doc prose contains "for": the word must read as
+    // documentation, not as a loop that went untested.
+    File(p.join(package.path, 'lib', 'ports.dart')).writeAsStringSync('''
+/// Overrides discovery for all of the plugins at once.
+abstract interface class Discovery {
+  /// Fetches identifiers for one connection.
+  Future<List<String>> fetch();
+}
+''');
+    File(p.join(package.path, 'lib', 'logic.dart')).writeAsStringSync('''
+int double_(int value) {
+  return value * 2;
+}
+''');
+    File(p.join(package.path, 'coverage', 'lcov.info')).writeAsStringSync('''
+SF:${p.join(package.path, 'lib', 'logic.dart')}
+LF:2
+LH:2
+BRF:1
+BRH:1
+end_of_record
+''');
+
+    final totals = const CoverageVerifier('/unused').calculate(package.path);
+
+    expect(totals.missingFiles, isEmpty);
+    expect(totals.lineRate, 1.0);
   });
 
   test(

@@ -1828,7 +1828,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     return result;
   }
 
-  /// Starts ChatGPT browser or device-code authorization.
+  /// Starts one provider's browser or device-code authorization.
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
     String methodId,
@@ -1877,7 +1877,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     }
   }
 
-  /// Creates an advanced custom OpenAI-compatible provider.
+  /// Creates an advanced custom provider speaking a registered wire format.
   Future<ProviderConnectionDto> createCustom(
     String id,
     CustomProviderConfigDto config, {
@@ -1893,7 +1893,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     return result;
   }
 
-  /// Updates an advanced custom OpenAI-compatible provider.
+  /// Updates an advanced custom provider.
   Future<ProviderConnectionDto> updateCustom(
     String connectionId,
     CustomProviderConfigDto config, {

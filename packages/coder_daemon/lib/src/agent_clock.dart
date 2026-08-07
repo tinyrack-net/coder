@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/ports.dart';
 
 /// Completes once the client queues something for a session.
 ///

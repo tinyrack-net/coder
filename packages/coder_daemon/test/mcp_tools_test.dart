@@ -6,10 +6,9 @@ import 'dart:convert';
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/mcp_tools.dart';
 import 'package:coder_mcp/coder_mcp.dart';
+import 'package:coder_mcp/testing.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
-
-import 'support/scripted_mcp_server.dart';
 
 void main() {
   group('risk grading', () {

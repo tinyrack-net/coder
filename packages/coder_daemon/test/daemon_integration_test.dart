@@ -6,6 +6,7 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -152,7 +153,7 @@ void main() {
         CustomProviderConfigDto(
           name: 'Local test',
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
-          apiFormat: ProviderApiFormat.chatCompletions,
+          wireFormatId: openAIChatCompletionsWireId,
           authenticationRequired: false,
           manualModelIds: const <String>['test-model'],
         ),
@@ -174,7 +175,7 @@ void main() {
         CustomProviderConfigDto(
           name: 'Updated local test',
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
-          apiFormat: ProviderApiFormat.chatCompletions,
+          wireFormatId: openAIChatCompletionsWireId,
           authenticationRequired: false,
           manualModelIds: const <String>['test-model'],
         ),
@@ -185,7 +186,7 @@ void main() {
         CustomProviderConfigDto(
           name: 'Temporary',
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
-          apiFormat: ProviderApiFormat.responses,
+          wireFormatId: openAIResponsesWireId,
           authenticationRequired: false,
           manualModelIds: const <String>['test-model'],
         ),
@@ -2096,7 +2097,7 @@ void main() {
         const CustomProviderConfigDto(
           name: 'Bearer managed',
           baseUrl: 'http://127.0.0.1:9999/v1',
-          apiFormat: ProviderApiFormat.chatCompletions,
+          wireFormatId: openAIChatCompletionsWireId,
           authenticationRequired: false,
         ),
       );
@@ -2207,7 +2208,7 @@ void main() {
         CustomProviderConfigDto(
           name: 'Local test',
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
-          apiFormat: ProviderApiFormat.chatCompletions,
+          wireFormatId: openAIChatCompletionsWireId,
           authenticationRequired: false,
           manualModelIds: const <String>['test-model'],
         ),
@@ -3097,7 +3098,7 @@ final class _StaticDiscovery implements ProviderModelDiscovery {
 
   @override
   Future<List<String>> fetchModelIds(
-    ProviderRuntimeConfig config,
+    ProviderEndpoint endpoint,
     ProviderCredential? credential,
   ) async => modelIds;
 }

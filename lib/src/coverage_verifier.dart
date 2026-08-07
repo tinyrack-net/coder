@@ -173,10 +173,14 @@ final class CoverageVerifier {
 
   int _estimatedExecutableLines(File file) {
     final lines = file.readAsLinesSync();
-    final source = lines.join('\n');
+    // Comments are prose: a doc sentence containing "for" must not make an
+    // interface-only file count as untested production code.
+    final code = lines
+        .where((line) => !line.trim().startsWith('//'))
+        .join('\n');
     final hasExecutableBody = RegExp(
       r'=>|\b(await|return|throw|if|switch|try|for|while)\b|\bmain\s*\(',
-    ).hasMatch(source);
+    ).hasMatch(code);
     if (!hasExecutableBody) return 0;
     return lines.where((line) {
       final trimmed = line.trim();

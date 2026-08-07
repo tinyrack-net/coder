@@ -175,35 +175,58 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _addDefinition(ProviderDefinitionDto definition) async {
-    if (definition.id == 'openai') {
-      await _showOpenAIAuth(definition);
+    // A definition with one way in connects directly; several raise a choice.
+    // The methods themselves come from the catalog, so this page never has to
+    // know which vendor offers what.
+    if (definition.authMethods.length > 1) {
+      await _showAuthMethods(definition);
       return;
     }
     final method = definition.authMethods.single;
-    if (method.flow == ProviderAuthFlow.none) {
-      await ref.read(_provider.notifier).connectNone(definition.id);
-      return;
-    }
-    await _showApiKey(definition);
+    await _connectWith(definition, method);
   }
 
-  Future<void> _showOpenAIAuth(ProviderDefinitionDto definition) async {
-    final methodId = await showTRDrawer<String>(
+  Future<void> _connectWith(
+    ProviderDefinitionDto definition,
+    ProviderAuthMethodDto method,
+  ) async {
+    switch (method.flow) {
+      case ProviderAuthFlow.none:
+        await ref.read(_provider.notifier).connectNone(definition.id);
+      case ProviderAuthFlow.apiKey:
+        await _showApiKey(definition);
+      case ProviderAuthFlow.oauthBrowser:
+      case ProviderAuthFlow.oauthDevice:
+        final attempt = await ref
+            .read(_provider.notifier)
+            .startAuth(definition.id, method.id);
+        final authorizationUrl = attempt.authorizationUrl;
+        if (method.flow == ProviderAuthFlow.oauthBrowser &&
+            authorizationUrl != null) {
+          await ref
+              .read(externalUrlOpenerProvider)
+              .open(Uri.parse(authorizationUrl));
+        }
+    }
+  }
+
+  Future<void> _showAuthMethods(ProviderDefinitionDto definition) async {
+    final method = await showTRDrawer<ProviderAuthMethodDto>(
       context: context,
       builder: (context) => TRDrawer(
         title: TRText.inherit(
-          AppLocalizations.of(context).providerSettingsOpenAiTitle,
+          AppLocalizations.of(
+            context,
+          ).providerSettingsAuthTitle(definition.name),
         ),
-        description: TRText.inherit(
-          AppLocalizations.of(context).providerSettingsOpenAiSubtitle,
-        ),
+        description: TRText.inherit(definition.description),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             for (final method in definition.authMethods)
               CoderListRow(
-                key: ValueKey('openai-auth-${method.id}'),
+                key: ValueKey('provider-auth-${method.id}'),
                 leading: Icon(
                   method.kind == ProviderAuthKind.oauth
                       ? CoderIcons.user
@@ -216,27 +239,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           context,
                         ).providerSettingsExperimental,
                       )
-                    : const TRText('OpenAI Platform'),
-                onTap: () => Navigator.pop(context, method.id),
+                    : TRText(definition.name),
+                onTap: () => Navigator.pop(context, method),
               ),
           ],
         ),
       ),
     );
-    if (!mounted || methodId == null) return;
-    if (methodId == 'api-key') {
-      await _showApiKey(definition);
-      return;
-    }
-    final attempt = await ref
-        .read(_provider.notifier)
-        .startAuth(definition.id, methodId);
-    final authorizationUrl = attempt.authorizationUrl;
-    if (methodId == 'chatgpt-browser' && authorizationUrl != null) {
-      await ref
-          .read(externalUrlOpenerProvider)
-          .open(Uri.parse(authorizationUrl));
-    }
+    if (!mounted || method == null) return;
+    await _connectWith(definition, method);
   }
 
   Future<void> _showApiKey(ProviderDefinitionDto definition) async {
@@ -249,9 +260,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _addCustom() async {
+    final wireFormats =
+        ref.read(_provider).value?.catalog.wireFormats ??
+        const <ProviderWireFormatDto>[];
     final draft = await showTRDialog<_CustomDraft>(
       context: context,
-      builder: (context) => const _CustomProviderDialog(),
+      builder: (context) => _CustomProviderDialog(wireFormats: wireFormats),
     );
     if (draft == null) return;
     final connection = await ref
@@ -278,10 +292,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _editCustom(ProviderConnectionDto connection) async {
+    final wireFormats =
+        ref.read(_provider).value?.catalog.wireFormats ??
+        const <ProviderWireFormatDto>[];
     final draft = await showTRDialog<_CustomDraft>(
       context: context,
-      builder: (context) =>
-          _CustomProviderDialog(initial: connection.customConfig),
+      builder: (context) => _CustomProviderDialog(
+        initial: connection.customConfig,
+        wireFormats: wireFormats,
+      ),
     );
     if (draft == null) return;
     await ref
@@ -500,12 +519,12 @@ class _ProviderConnectionRow extends StatelessWidget {
         icon: const Icon(CoderIcons.more),
         label: l10n.providerSettingsActions,
         menuChildren: <Widget>[
-          if (connection.definitionId == 'custom')
+          if (connection.customConfig != null)
             TRMenuItem(
               onPressed: () => onEditCustom(connection),
               child: TRText.inherit(l10n.providerSettingsEditAdvanced),
             ),
-          if (connection.definitionId == 'custom')
+          if (connection.customConfig != null)
             TRMenuItem(
               onPressed: () => onDeleteCustom(connection),
               child: TRText.inherit(l10n.commonDelete),
@@ -686,9 +705,12 @@ final class _CustomDraft {
 }
 
 class _CustomProviderDialog extends StatefulWidget {
-  const _CustomProviderDialog({this.initial});
+  const _CustomProviderDialog({required this.wireFormats, this.initial});
 
   final CustomProviderConfigDto? initial;
+
+  /// The wire protocols this daemon serves; the first one is the default.
+  final List<ProviderWireFormatDto> wireFormats;
 
   @override
   State<_CustomProviderDialog> createState() => _CustomProviderDialogState();
@@ -699,7 +721,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
   late final TextEditingController _baseUrl;
   late final TextEditingController _apiKey;
   late final TextEditingController _models;
-  late ProviderApiFormat _apiFormat;
+  late String _wireFormatId;
   late bool _authenticationRequired;
 
   @override
@@ -714,7 +736,8 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
     _models = TextEditingController(
       text: initial?.manualModelIds.join(', ') ?? '',
     );
-    _apiFormat = initial?.apiFormat ?? ProviderApiFormat.chatCompletions;
+    _wireFormatId =
+        initial?.wireFormatId ?? widget.wireFormats.firstOrNull?.id ?? '';
     _authenticationRequired = initial?.authenticationRequired ?? true;
   }
 
@@ -748,19 +771,19 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                 label: 'Base URL',
               ),
               const SizedBox(height: TRSpacing.medium),
-              TRSelectFormField<ProviderApiFormat>(
-                initialValue: _apiFormat,
+              TRSelectFormField<String>(
+                initialValue: _wireFormatId,
                 label: l10n.providerSettingsApiFormat,
-                items: ProviderApiFormat.values
+                items: widget.wireFormats
                     .map(
-                      (format) => TRSelectItem<ProviderApiFormat>(
-                        value: format,
-                        label: format.name,
+                      (format) => TRSelectItem<String>(
+                        value: format.id,
+                        label: format.label,
                       ),
                     )
                     .toList(growable: false),
                 onValueChange: (value) {
-                  if (value != null) setState(() => _apiFormat = value);
+                  if (value != null) setState(() => _wireFormatId = value);
                 },
               ),
               CoderSwitchRow(
@@ -816,7 +839,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
         config: CustomProviderConfigDto(
           name: name,
           baseUrl: baseUrl,
-          apiFormat: _apiFormat,
+          wireFormatId: _wireFormatId,
           authenticationRequired: _authenticationRequired,
           manualModelIds: _models.text
               .split(',')
@@ -907,6 +930,6 @@ String _authLabel(AppLocalizations l10n, ProviderCredentialOrigin origin) =>
     switch (origin) {
       ProviderCredentialOrigin.stored => l10n.providerAuthStored,
       ProviderCredentialOrigin.environment => 'Environment credential',
-      ProviderCredentialOrigin.oauth => 'ChatGPT OAuth',
+      ProviderCredentialOrigin.oauth => l10n.providerAuthOAuth,
       ProviderCredentialOrigin.none => l10n.providerAuthNone,
     };

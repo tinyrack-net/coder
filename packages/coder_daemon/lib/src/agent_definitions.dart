@@ -602,26 +602,6 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
   isBuiltIn: true,
 );
 
-/// Built-in tools every agent gets, whichever tools it lists.
-///
-/// Reading the workspace is how an agent grounds itself before it acts, so
-/// these are a property of the daemon rather than a per-agent choice. Writing
-/// and running commands stay opt-in. Sharing a plan is likewise a property of
-/// the host UI rather than an agent capability.
-const Set<String> alwaysOnBuiltInToolIds = <String>{
-  'list_directory',
-  'read_file',
-  'search_text',
-  'glob',
-  'attach_file',
-  'read_attachment',
-  'update_plan',
-  'ask_user',
-  'view_image',
-  'current_time',
-  'sleep',
-};
-
 /// How many MCP tools a turn tolerates before they are withheld.
 ///
 /// Below this the model is told about every one, so a user with a couple of
@@ -629,10 +609,6 @@ const Set<String> alwaysOnBuiltInToolIds = <String>{
 /// the schemas alone would crowd the context, so they move behind
 /// `tool_search` instead.
 const int mcpDeferralThreshold = 8;
-
-/// Returns the tool ids a turn runs with, always-on tools first.
-List<String> resolveAgentToolIds(Iterable<String> chosen) =>
-    List<String>.unmodifiable(<String>{...alwaysOnBuiltInToolIds, ...chosen});
 
 /// A live view of the tools a turn may use.
 ///
@@ -686,11 +662,19 @@ final class AgentDefinitionService {
   AgentDefinitionService({
     required this._store,
     required AgentToolCatalog tools,
+    required this._alwaysOnToolIds,
     this.codec = const AgentMarkdownCodec(),
   }) : _catalog = tools;
 
   final AgentDefinitionStore _store;
   final AgentToolCatalog _catalog;
+
+  /// Capabilities an agent gets whether or not the catalog still lists them.
+  ///
+  /// A daemon may drop a built-in from its catalog, but an agent that still
+  /// lists a read tool is not misconfigured: it gets it regardless, so the
+  /// listing is not worth a diagnostic.
+  final Set<String> _alwaysOnToolIds;
 
   /// Codec used for validation-only RPC requests.
   final AgentMarkdownCodec codec;
@@ -831,8 +815,7 @@ final class AgentDefinitionService {
     };
     final unavailable = definition.toolIds
         .where(
-          (id) =>
-              !available.contains(id) && !alwaysOnBuiltInToolIds.contains(id),
+          (id) => !available.contains(id) && !_alwaysOnToolIds.contains(id),
         )
         .map(
           (id) => AgentDefinitionDiagnosticDto(
