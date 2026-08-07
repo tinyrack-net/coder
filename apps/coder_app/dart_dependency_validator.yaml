@@ -1,2 +1,6 @@
 # The Riverpod generator/analyzer graph is pinned as a tested unit.
 allow_pins: true
+exclude:
+  # A Flutter build writes plugin sources here whose imports are not this
+  # package's dependencies, so a build left by verify:debug would fail verify.
+  - "build/**"

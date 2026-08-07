@@ -26,9 +26,10 @@ melos:
       run: dart analyze --fatal-infos
       description: Analyze the entire workspace.
     format:
-      run: dart format .
+      run: dart run tool/format_sources.dart
+      description: Format every Dart source Git tracks or does not ignore.
     format:check:
-      run: dart format --output=none --set-exit-if-changed .
+      run: dart run tool/format_sources.dart --check
     generate:
       run: dart run melos exec --depends-on=build_runner -c 3 -o -- dart run build_runner build
     generate:check:

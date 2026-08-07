@@ -23,6 +23,30 @@ void main() {
     );
   });
 
+  test('formatting runs over a Git-derived file list, never the tree', () {
+    // `dart format .` walks generated Flutter build output, which has no
+    // exclude flag, so verify fails right after verify:debug populates build/.
+    for (final script in <String>['format', 'format:check']) {
+      final command = _script(pubspec, script);
+      expect(command, contains('tool/format_sources.dart'));
+      expect(command, isNot(contains('dart format .')));
+    }
+    expect(_script(pubspec, 'format:check'), contains('--check'));
+    expect(_script(pubspec, 'format'), isNot(contains('--check')));
+  });
+
+  test('every static scanner skips Flutter build output', () {
+    // verify:debug leaves apps/coder_app/build populated, and a following
+    // verify must not read the plugin sources a Flutter build writes there.
+    final options = File('analysis_options.yaml').readAsStringSync();
+    expect(options, contains('- "build/**"'));
+    expect(options, contains('- "**/build/**"'));
+    expect(
+      File('apps/coder_app/dart_dependency_validator.yaml').readAsStringSync(),
+      contains('- "build/**"'),
+    );
+  });
+
   test('the embedded daemon port gate is a registered static check', () {
     expect(
       _script(pubspec, 'embedded-ports:check'),
