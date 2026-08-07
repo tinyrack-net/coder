@@ -5,7 +5,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:meta/meta.dart';
 import 'package:tinyrack_pty/src/native_bindings.dart';
+import 'package:tinyrack_pty/src/pty_bindings.dart';
 import 'package:tinyrack_pty/src/pty_exception.dart';
 
 /// Lifecycle state of a pseudo-terminal process.
@@ -22,10 +24,23 @@ enum PtyStatus {
 
 /// A child process connected to a platform pseudo-terminal.
 final class PtyProcess implements Finalizable {
-  PtyProcess._(this._handle, this.pid) {
-    _finalizer.attach(this, _handle, detach: this);
+  PtyProcess._(this._handle, this.pid, this._bindings) {
+    _bindings.attachFinalizer(this, _handle);
     _timer = Timer.periodic(const Duration(milliseconds: 10), (_) => _poll());
   }
+
+  /// Creates a process driven by [bindings] instead of a real terminal.
+  ///
+  /// [handle] is passed back to [bindings] unmodified and is never
+  /// dereferenced, so a fake implementation may use any placeholder address.
+  /// Exists so tests can exercise the native-failure branches that a healthy
+  /// pseudo-terminal cannot produce.
+  @visibleForTesting
+  factory PtyProcess.withBindings(
+    PtyBindings bindings, {
+    Pointer<Void>? handle,
+    int pid = 0,
+  }) => PtyProcess._(handle ?? Pointer<Void>.fromAddress(1), pid, bindings);
 
   /// Starts [executable] inside a new pseudo-terminal.
   static Future<PtyProcess> start(
@@ -92,15 +107,12 @@ final class PtyProcess implements Finalizable {
       if (handle == nullptr) {
         throw _nativeException('start', errorCode.value);
       }
-      return PtyProcess._(handle, trPtyPid(handle));
+      return PtyProcess._(handle, trPtyPid(handle), const PtyBindings());
     });
   }
 
-  static final NativeFinalizer _finalizer = NativeFinalizer(
-    Native.addressOf<NativeFunction<Void Function(Pointer<Void>)>>(trPtyFree),
-  );
-
   final Pointer<Void> _handle;
+  final PtyBindings _bindings;
   final StreamController<List<int>> _output = StreamController<List<int>>();
   final Completer<int> _exitCode = Completer<int>();
   final ListQueue<_PendingWrite> _writes = ListQueue<_PendingWrite>();
@@ -156,7 +168,7 @@ final class PtyProcess implements Finalizable {
     final buffer = calloc<Uint8>(capacity);
     try {
       while (true) {
-        final length = trPtyRead(_handle, buffer, capacity);
+        final length = _bindings.read(_handle, buffer, capacity);
         if (length > 0) {
           _output.add(Uint8List.fromList(buffer.asTypedList(length)));
         } else if (length == 0) {
@@ -165,7 +177,7 @@ final class PtyProcess implements Finalizable {
           _outputEnded = true;
           return;
         } else {
-          throw _nativeException('read', trPtyLastError(_handle));
+          throw _nativeException('read', _bindings.lastError(_handle));
         }
       }
     } finally {
@@ -177,9 +189,9 @@ final class PtyProcess implements Finalizable {
     if (_observedExitCode != null) return;
     final result = calloc<Int32>();
     try {
-      final state = trPtyTryWait(_handle, result);
+      final state = _bindings.tryWait(_handle, result);
       if (state < 0) {
-        throw _nativeException('wait', trPtyLastError(_handle));
+        throw _nativeException('wait', _bindings.lastError(_handle));
       }
       if (state == 1) _observedExitCode = result.value;
     } finally {
@@ -212,9 +224,9 @@ final class PtyProcess implements Finalizable {
               pending.data,
               pending.offset,
             );
-        final written = trPtyWrite(_handle, buffer, remaining);
+        final written = _bindings.write(_handle, buffer, remaining);
         if (written < 0) {
-          throw _nativeException('write', trPtyLastError(_handle));
+          throw _nativeException('write', _bindings.lastError(_handle));
         }
         if (written == 0) return;
         pending.offset += written;
@@ -236,8 +248,8 @@ final class PtyProcess implements Finalizable {
     if (columns <= 0 || rows <= 0) {
       throw ArgumentError('Terminal columns and rows must be positive.');
     }
-    if (trPtyResize(_handle, columns, rows) != 0) {
-      throw _nativeException('resize', trPtyLastError(_handle));
+    if (_bindings.resize(_handle, columns, rows) != 0) {
+      throw _nativeException('resize', _bindings.lastError(_handle));
     }
   }
 
@@ -248,7 +260,7 @@ final class PtyProcess implements Finalizable {
     if (_status == PtyStatus.exited) return;
     if (_status == PtyStatus.running) {
       _status = PtyStatus.terminating;
-      final result = trPtySignal(_handle, 0);
+      final result = _bindings.signal(_handle, 0);
       if (result != 0 && _observedExitCode == null) {
         _checkExit();
       }
@@ -256,10 +268,10 @@ final class PtyProcess implements Finalizable {
     try {
       await exitCode.timeout(gracePeriod);
     } on TimeoutException {
-      if (trPtySignal(_handle, 1) != 0) {
+      if (_bindings.signal(_handle, 1) != 0) {
         _checkExit();
         if (_observedExitCode == null) {
-          throw _nativeException('terminate', trPtyLastError(_handle));
+          throw _nativeException('terminate', _bindings.lastError(_handle));
         }
       }
       await exitCode;
@@ -283,8 +295,9 @@ final class PtyProcess implements Finalizable {
     }
     if (!_exitCode.isCompleted) _exitCode.complete(code);
     unawaited(_output.close());
-    _finalizer.detach(this);
-    trPtyFree(_handle);
+    _bindings
+      ..detachFinalizer(this)
+      ..free(_handle);
   }
 }
 
