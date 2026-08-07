@@ -23,6 +23,7 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
@@ -144,6 +145,21 @@ void main() {
       data: const <String, dynamic>{'toolRounds': 2},
       createdAt: now,
     ),
+  ];
+  final longChatEvents = <TimelineEventDto>[
+    for (var index = 0; index < 80; index += 1)
+      TimelineEventDto(
+        sessionId: 'agent-1',
+        sequence: index + 1,
+        turnId: 'turn-$index',
+        type: 'user.message',
+        data: <String, dynamic>{
+          'text': index < 65
+              ? 'Long message $index\nSecond line\nThird line\nFourth line'
+              : 'Short message $index',
+        },
+        createdAt: now,
+      ),
   ];
   final question = UserQuestionRequestDto(
     id: 'question',
@@ -457,6 +473,44 @@ void main() {
               width: 460,
               height: 220,
               child: _chat(ThemeMode.dark, const <TimelineEventDto>[]),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'long mixed-height chat keeps its scrollbar stable',
+      fileName: 'chat_scrollbar',
+      constraints: const BoxConstraints.tightFor(width: 1000, height: 620),
+      whilePerforming: (tester) async {
+        for (final element in find.byType(Scrollable).evaluate()) {
+          final state = (element as StatefulElement).state as ScrollableState;
+          state.position.jumpTo(420);
+        }
+        await tester.pump();
+        await tester.pump(TRMotion.fast);
+        return null;
+      },
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'long timeline light',
+            child: SizedBox(
+              width: 460,
+              height: 420,
+              child: _chat(ThemeMode.light, longChatEvents),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'long timeline dark',
+            child: SizedBox(
+              width: 460,
+              height: 420,
+              child: _chat(ThemeMode.dark, longChatEvents),
             ),
           ),
         ],
