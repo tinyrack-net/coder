@@ -235,7 +235,6 @@ class _AgentEditorState extends State<_AgentEditor> {
   late final TextEditingController _modelId;
   late bool _promptEnabled;
   late AgentModelSource _modelSource;
-  late String _reasoningEffort;
   PermissionMode? _permissionMode;
   late Set<String> _tools;
   late Set<String> _callableAgents;
@@ -254,7 +253,6 @@ class _AgentEditorState extends State<_AgentEditor> {
     _modelId = TextEditingController(text: definition.model.modelId);
     _promptEnabled = definition.promptEnabled;
     _modelSource = definition.model.source;
-    _reasoningEffort = definition.reasoningEffort;
     _permissionMode = definition.permissionMode;
     final alwaysOn = <String>{
       for (final tool in widget.state.tools)
@@ -434,29 +432,6 @@ class _AgentEditorState extends State<_AgentEditor> {
                 title: l10n.agentSettingsBehaviourHeading,
                 children: <Widget>[
                   SettingsRow(
-                    title: TRText.inherit(l10n.agentSettingsReasoning),
-                    control: Semantics(
-                      label: l10n.agentSettingsReasoning,
-                      container: true,
-                      child: TRSelect<String>.controlled(
-                        value: _reasoningEffort,
-                        enabled: editable,
-                        items: const <String>['low', 'medium', 'high']
-                            .map(
-                              (value) => TRSelectItem<String>(
-                                value: value,
-                                label: value,
-                              ),
-                            )
-                            .toList(growable: false),
-                        onValueChange: editable
-                            ? (value) =>
-                                  setState(() => _reasoningEffort = value!)
-                            : null,
-                      ),
-                    ),
-                  ),
-                  SettingsRow(
                     title: TRText.inherit(l10n.agentSettingsPermission),
                     description: TRText.inherit(
                       _permissionMode == null
@@ -569,7 +544,9 @@ class _AgentEditorState extends State<_AgentEditor> {
           ? _modelId.text.trim()
           : null,
     ),
-    reasoningEffort: _reasoningEffort,
+    modelControls: _modelSource == AgentModelSource.fixed
+        ? widget.definition.modelControls
+        : const <String, ModelControlValueDto>{},
     permissionMode: _permissionMode,
     // Always-on ids are never written back: the daemon supplies them, so
     // repeating them in the frontmatter would only go stale.

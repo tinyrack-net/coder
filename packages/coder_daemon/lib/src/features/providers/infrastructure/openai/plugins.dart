@@ -114,6 +114,20 @@ final class OpenAIPlugin extends OpenAICompatiblePlugin {
     imageInput: AgentCapabilitySupport.supported,
     fileInput: AgentCapabilitySupport.supported,
   );
+
+  @override
+  AgentModelCapabilities capabilitiesForAuth(
+    AgentModelCapabilities capabilities,
+    AgentProviderAuthKind authKind,
+  ) => authKind == AgentProviderAuthKind.oauth
+      ? capabilities.copyWith(
+          controls: capabilities.controls
+              .where(
+                (control) => control.id != AgentModelControlIds.fastMode,
+              )
+              .toList(growable: false),
+        )
+      : capabilities;
 }
 
 /// The vendors this package compiles into the daemon, in advertised order.
@@ -204,15 +218,7 @@ const AgentProviderAuthMethod _none = AgentProviderAuthMethod(
 const AgentModelCapabilities _reasoning = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
-  reasoningEffort: AgentCapabilitySupport.supported,
-  supportedReasoningEfforts: <String>[
-    'none',
-    'low',
-    'medium',
-    'high',
-    'xhigh',
-    'max',
-  ],
+  controls: <AgentModelControlDescriptor>[_reasoningEffortControl],
   source: AgentCapabilitySource.bundled,
 );
 
@@ -221,28 +227,45 @@ const AgentModelCapabilities _reasoning = AgentModelCapabilities(
 const AgentModelCapabilities _openAiReasoning = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
-  reasoningEffort: AgentCapabilitySupport.supported,
   imageInput: AgentCapabilitySupport.supported,
   fileInput: AgentCapabilitySupport.supported,
-  serviceTier: AgentCapabilitySupport.supported,
-  supportedReasoningEfforts: <String>[
-    'none',
-    'low',
-    'medium',
-    'high',
-    'xhigh',
-    'max',
+  controls: <AgentModelControlDescriptor>[
+    _reasoningEffortControl,
+    _fastModeControl,
   ],
-  supportedServiceTiers: <String>['default', 'flex', 'priority'],
   source: AgentCapabilitySource.bundled,
 );
 
 const AgentModelCapabilities _tools = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
-  reasoningEffort: AgentCapabilitySupport.unsupported,
   source: AgentCapabilitySource.bundled,
 );
+
+const AgentModelControlDescriptor _reasoningEffortControl =
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningEffort,
+      label: 'Reasoning effort',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      choices: <AgentModelControlChoice>[
+        AgentModelControlChoice(id: 'none', label: 'None'),
+        AgentModelControlChoice(id: 'low', label: 'Low'),
+        AgentModelControlChoice(id: 'medium', label: 'Medium'),
+        AgentModelControlChoice(id: 'high', label: 'High'),
+        AgentModelControlChoice(id: 'xhigh', label: 'Extra high'),
+        AgentModelControlChoice(id: 'max', label: 'Maximum'),
+      ],
+    );
+
+const AgentModelControlDescriptor _fastModeControl =
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.fastMode,
+      label: 'Fast mode',
+      description: 'Use priority processing when this endpoint supports it.',
+      kind: AgentModelControlKind.toggle,
+      presentation: AgentModelControlPresentation.selectableChip,
+    );
 
 /// Public OpenAI metadata safe to send to clients.
 const AgentProviderDefinition openAIDefinition = AgentProviderDefinition(

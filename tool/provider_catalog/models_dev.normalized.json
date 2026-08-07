@@ -1,0 +1,4044 @@
+{
+  "anthropic": [
+    {
+      "id": "claude-fable-5",
+      "label": "Claude Fable 5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 10.0,
+        "output": 50.0,
+        "cache_read": 1.0,
+        "cache_write": 12.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "label": "Claude Haiku 4.5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.0,
+        "output": 5.0,
+        "cache_read": 0.1,
+        "cache_write": 1.25
+      },
+      "limits": {
+        "context": 200000,
+        "output": 64000
+      }
+    },
+    {
+      "id": "claude-opus-4-5-20251101",
+      "label": "Claude Opus 4.5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 200000,
+        "output": 64000
+      }
+    },
+    {
+      "id": "claude-opus-4-6",
+      "label": "Claude Opus 4.6",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "claude-opus-4-7",
+      "label": "Claude Opus 4.7",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "claude-opus-4-8",
+      "label": "Claude Opus 4.8",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "claude-sonnet-4-5-20250929",
+      "label": "Claude Sonnet 4.5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_read": 0.3,
+        "cache_write": 3.75
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 64000
+      }
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "label": "Claude Sonnet 4.6",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_read": 0.3,
+        "cache_write": 3.75
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "claude-sonnet-5",
+      "label": "Claude Sonnet 5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 10.0,
+        "cache_read": 0.2,
+        "cache_write": 2.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    }
+  ],
+  "deepseek": [
+    {
+      "id": "deepseek-chat",
+      "label": "DeepSeek Chat",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 0.14,
+        "output": 0.28,
+        "cache_read": 0.0028
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 384000
+      }
+    },
+    {
+      "id": "deepseek-reasoner",
+      "label": "DeepSeek Reasoner",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 0.14,
+        "output": 0.28,
+        "reasoning": 0.28,
+        "cache_read": 0.0028
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 384000
+      }
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "label": "DeepSeek V4 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.435,
+        "output": 0.87,
+        "reasoning": 0.87,
+        "cache_read": 0.003625
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 384000
+      }
+    }
+  ],
+  "google": [
+    {
+      "id": "gemini-2.0-flash",
+      "label": "Gemini 2.0 Flash",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.4,
+        "cache_read": 0.025
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 8192
+      }
+    },
+    {
+      "id": "gemini-2.0-flash-lite",
+      "label": "Gemini 2.0 Flash-Lite",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.075,
+        "output": 0.3
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 8192
+      }
+    },
+    {
+      "id": "gemini-2.5-flash-lite",
+      "label": "Gemini 2.5 Flash-Lite",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.4,
+        "cache_read": 0.01,
+        "input_audio": 0.3
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-3-flash-preview",
+      "label": "Gemini 3 Flash Preview",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.5,
+        "output": 3.0,
+        "cache_read": 0.05,
+        "input_audio": 1.0
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-3-pro-preview",
+      "label": "Gemini 3 Pro Preview",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 12.0,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-3.1-flash-lite",
+      "label": "Gemini 3.1 Flash Lite",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 1.5,
+        "cache_read": 0.025,
+        "input_audio": 0.5
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-3.1-flash-lite-preview",
+      "label": "Gemini 3.1 Flash Lite Preview",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 1.5,
+        "cache_read": 0.025,
+        "input_audio": 0.5
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-3.1-pro-preview",
+      "label": "Gemini 3.1 Pro Preview",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 12.0,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-3.1-pro-preview-customtools",
+      "label": "Gemini 3.1 Pro Preview Custom Tools",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 12.0,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "label": "Gemini 3.5 Flash",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.5,
+        "output": 9.0,
+        "cache_read": 0.15,
+        "input_audio": 1.5
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-flash-latest",
+      "label": "Gemini Flash Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.5,
+        "output": 9.0,
+        "cache_read": 0.15,
+        "input_audio": 1.5
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemini-flash-lite-latest",
+      "label": "Gemini Flash-Lite Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 1.5,
+        "cache_read": 0.025,
+        "input_audio": 0.5
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "gemma-4-26b-a4b-it",
+      "label": "Gemma 4 26B A4B IT",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "gemma-4-31b-it",
+      "label": "Gemma 4 31B IT",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    }
+  ],
+  "groq": [
+    {
+      "id": "llama-3.1-8b-instant",
+      "label": "Llama 3.1 8B",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.05,
+        "output": 0.08
+      },
+      "limits": {
+        "context": 131072,
+        "output": 131072
+      }
+    },
+    {
+      "id": "llama-3.3-70b-versatile",
+      "label": "Llama 3.3 70B",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.59,
+        "output": 0.79
+      },
+      "limits": {
+        "context": 131072,
+        "output": 32768
+      }
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "label": "GPT OSS 20B",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.075,
+        "output": 0.3,
+        "cache_read": 0.0375
+      },
+      "limits": {
+        "context": 131072,
+        "output": 65536
+      }
+    },
+    {
+      "id": "openai/gpt-oss-safeguard-20b",
+      "label": "Safety GPT OSS 20B",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.075,
+        "output": 0.3
+      },
+      "limits": {
+        "context": 131072,
+        "output": 65536
+      }
+    }
+  ],
+  "openai": [
+    {
+      "id": "gpt-4",
+      "label": "GPT-4",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 30.0,
+        "output": 60.0
+      },
+      "limits": {
+        "context": 8192,
+        "output": 8192
+      }
+    },
+    {
+      "id": "gpt-4-turbo",
+      "label": "GPT-4 Turbo",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 10.0,
+        "output": 30.0
+      },
+      "limits": {
+        "context": 128000,
+        "output": 4096
+      }
+    },
+    {
+      "id": "gpt-4.1",
+      "label": "GPT-4.1",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 8.0,
+        "cache_read": 0.5
+      },
+      "limits": {
+        "context": 1047576,
+        "output": 32768
+      }
+    },
+    {
+      "id": "gpt-4.1-mini",
+      "label": "GPT-4.1 mini",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.4,
+        "output": 1.6,
+        "cache_read": 0.1
+      },
+      "limits": {
+        "context": 1047576,
+        "output": 32768
+      }
+    },
+    {
+      "id": "gpt-4.1-nano",
+      "label": "GPT-4.1 nano",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.4,
+        "cache_read": 0.025
+      },
+      "limits": {
+        "context": 1047576,
+        "output": 32768
+      }
+    },
+    {
+      "id": "gpt-4o",
+      "label": "GPT-4o",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 10.0,
+        "cache_read": 1.25
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-4o-2024-05-13",
+      "label": "GPT-4o (2024-05-13)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 15.0
+      },
+      "limits": {
+        "context": 128000,
+        "output": 4096
+      }
+    },
+    {
+      "id": "gpt-4o-2024-08-06",
+      "label": "GPT-4o (2024-08-06)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 10.0,
+        "cache_read": 1.25
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-4o-2024-11-20",
+      "label": "GPT-4o (2024-11-20)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 10.0,
+        "cache_read": 1.25
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-4o-mini",
+      "label": "GPT-4o mini",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.15,
+        "output": 0.6,
+        "cache_read": 0.075
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-5-mini",
+      "label": "GPT-5 Mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 2.0,
+        "cache_read": 0.025
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5-nano",
+      "label": "GPT-5 Nano",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.05,
+        "output": 0.4,
+        "cache_read": 0.005
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5-pro",
+      "label": "GPT-5 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 15.0,
+        "output": 120.0
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 272000
+      }
+    },
+    {
+      "id": "gpt-5.1",
+      "label": "GPT-5.1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 10.0,
+        "cache_read": 0.125
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.2",
+      "label": "GPT-5.2",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.2-chat-latest",
+      "label": "GPT-5.2 Chat",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-5.2-pro",
+      "label": "GPT-5.2 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 21.0,
+        "output": 168.0
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.3-chat-latest",
+      "label": "GPT-5.3 Chat (latest)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-5.3-codex",
+      "label": "GPT-5.3 Codex",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.3-codex-spark",
+      "label": "GPT-5.3 Codex Spark",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 128000,
+        "input": 100000,
+        "output": 32000
+      }
+    },
+    {
+      "id": "gpt-5.4",
+      "label": "GPT-5.4",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 15.0,
+        "cache_read": 0.25
+      },
+      "limits": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.4-mini",
+      "label": "GPT-5.4 mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.75,
+        "output": 4.5,
+        "cache_read": 0.075
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.4-nano",
+      "label": "GPT-5.4 nano",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.2,
+        "output": 1.25,
+        "cache_read": 0.02
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.4-pro",
+      "label": "GPT-5.4 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 30.0,
+        "output": 180.0
+      },
+      "limits": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.5",
+      "label": "GPT-5.5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 30.0,
+        "cache_read": 0.5
+      },
+      "limits": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "gpt-5.5-pro",
+      "label": "GPT-5.5 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 30.0,
+        "output": 180.0
+      },
+      "limits": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "o1",
+      "label": "o1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 15.0,
+        "output": 60.0,
+        "cache_read": 7.5
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "o1-pro",
+      "label": "o1-pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 150.0,
+        "output": 600.0
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "o3",
+      "label": "o3",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 8.0,
+        "cache_read": 0.5
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "o3-mini",
+      "label": "o3-mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 1.1,
+        "output": 4.4,
+        "cache_read": 0.55
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "o3-pro",
+      "label": "o3-pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 20.0,
+        "output": 80.0
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "o4-mini",
+      "label": "o4-mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.1,
+        "output": 4.4,
+        "cache_read": 0.275
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    }
+  ],
+  "openrouter": [
+    {
+      "id": "ai21/jamba-large-1.7",
+      "label": "Jamba Large 1.7",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 2.0,
+        "output": 8.0
+      },
+      "limits": {
+        "context": 256000,
+        "output": 4096
+      }
+    },
+    {
+      "id": "aion-labs/aion-2.0",
+      "label": "Aion-2.0",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.8,
+        "output": 1.6,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 131072,
+        "output": 32768
+      }
+    },
+    {
+      "id": "aion-labs/aion-3.0",
+      "label": "Aion-3.0",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 3.0,
+        "output": 6.0,
+        "cache_read": 0.75
+      },
+      "limits": {
+        "context": 131072,
+        "output": 32768
+      }
+    },
+    {
+      "id": "aion-labs/aion-3.0-mini",
+      "label": "Aion-3.0-Mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.7,
+        "output": 1.4,
+        "cache_read": 0.18
+      },
+      "limits": {
+        "context": 131072,
+        "output": 32768
+      }
+    },
+    {
+      "id": "amazon/nova-2-lite-v1",
+      "label": "Nova 2 Lite",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.3,
+        "output": 2.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 65535
+      }
+    },
+    {
+      "id": "amazon/nova-lite-v1",
+      "label": "Nova Lite 1.0",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.06,
+        "output": 0.24
+      },
+      "limits": {
+        "context": 300000,
+        "output": 5120
+      }
+    },
+    {
+      "id": "amazon/nova-micro-v1",
+      "label": "Nova Micro 1.0",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.035,
+        "output": 0.14
+      },
+      "limits": {
+        "context": 128000,
+        "output": 5120
+      }
+    },
+    {
+      "id": "amazon/nova-premier-v1",
+      "label": "Nova Premier 1.0",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 12.5,
+        "cache_read": 0.625
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 32000
+      }
+    },
+    {
+      "id": "amazon/nova-pro-v1",
+      "label": "Nova Pro 1.0",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.8,
+        "output": 3.2
+      },
+      "limits": {
+        "context": 300000,
+        "output": 5120
+      }
+    },
+    {
+      "id": "anthropic/claude-3-haiku",
+      "label": "Claude 3 Haiku",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 1.25,
+        "cache_read": 0.03,
+        "cache_write": 0.3
+      },
+      "limits": {
+        "context": 200000,
+        "output": 4096
+      }
+    },
+    {
+      "id": "anthropic/claude-fable-5",
+      "label": "Claude Fable 5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 10.0,
+        "output": 50.0,
+        "cache_read": 1.0,
+        "cache_write": 12.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-4",
+      "label": "Claude Opus 4",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 15.0,
+        "output": 75.0,
+        "cache_read": 1.5,
+        "cache_write": 18.75
+      },
+      "limits": {
+        "context": 200000,
+        "output": 32000
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-4.6",
+      "label": "Claude Opus 4.6",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-4.7",
+      "label": "Claude Opus 4.7",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-4.7-fast",
+      "label": "Claude Opus 4.7 (Fast)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 30.0,
+        "output": 150.0,
+        "cache_read": 3.0,
+        "cache_write": 37.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-4.8",
+      "label": "Claude Opus 4.8",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-4.8-fast",
+      "label": "Claude Opus 4.8 (Fast)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 10.0,
+        "output": 50.0,
+        "cache_read": 1.0,
+        "cache_write": 12.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "anthropic/claude-sonnet-4",
+      "label": "Claude Sonnet 4",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_read": 0.3,
+        "cache_write": 3.75
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 64000
+      }
+    },
+    {
+      "id": "anthropic/claude-sonnet-4.6",
+      "label": "Claude Sonnet 4.6",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_read": 0.3,
+        "cache_write": 3.75
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "anthropic/claude-sonnet-5",
+      "label": "Claude Sonnet 5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 10.0,
+        "cache_read": 0.2,
+        "cache_write": 2.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "arcee-ai/trinity-large-thinking",
+      "label": "Trinity Large Thinking",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.22,
+        "output": 0.85,
+        "cache_read": 0.06
+      },
+      "limits": {
+        "context": 262144,
+        "output": 262144
+      }
+    },
+    {
+      "id": "arcee-ai/virtuoso-large",
+      "label": "Virtuoso Large",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.75,
+        "output": 1.2
+      },
+      "limits": {
+        "context": 131072,
+        "output": 64000
+      }
+    },
+    {
+      "id": "bytedance-seed/seed-1.6",
+      "label": "Seed 1.6",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 2.0
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "bytedance-seed/seed-1.6-flash",
+      "label": "Seed 1.6 Flash",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.075,
+        "output": 0.3
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "bytedance-seed/seed-2.0-lite",
+      "label": "Seed-2.0-Lite",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 2.0
+      },
+      "limits": {
+        "context": 262144,
+        "output": 131072
+      }
+    },
+    {
+      "id": "bytedance-seed/seed-2.0-mini",
+      "label": "Seed-2.0-Mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.4
+      },
+      "limits": {
+        "context": 262144,
+        "output": 131072
+      }
+    },
+    {
+      "id": "cohere/north-mini-code:free",
+      "label": "North Mini Code (free)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.0,
+        "output": 0.0
+      },
+      "limits": {
+        "context": 256000,
+        "output": 64000
+      }
+    },
+    {
+      "id": "deepseek/deepseek-chat",
+      "label": "DeepSeek Chat",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 0.2574,
+        "output": 1.0287,
+        "cache_read": 0.0028
+      },
+      "limits": {
+        "context": 163840,
+        "output": 16000
+      }
+    },
+    {
+      "id": "deepseek/deepseek-chat-v3-0324",
+      "label": "DeepSeek V3 0324",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.27,
+        "output": 1.12,
+        "cache_read": 0.135
+      },
+      "limits": {
+        "context": 163840,
+        "output": 65536
+      }
+    },
+    {
+      "id": "deepseek/deepseek-chat-v3.1",
+      "label": "DeepSeek V3.1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.25,
+        "output": 0.95,
+        "cache_read": 0.13
+      },
+      "limits": {
+        "context": 163840,
+        "output": 32768
+      }
+    },
+    {
+      "id": "deepseek/deepseek-r1-0528",
+      "label": "R1 0528",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.5,
+        "output": 2.15,
+        "cache_read": 0.35
+      },
+      "limits": {
+        "context": 163840,
+        "output": 32768
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v3.1-terminus",
+      "label": "DeepSeek V3.1 Terminus",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.27,
+        "output": 1.0,
+        "cache_read": 0.135
+      },
+      "limits": {
+        "context": 163840,
+        "output": 32768
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v3.2-exp",
+      "label": "DeepSeek V3.2 Exp",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.27,
+        "output": 0.41
+      },
+      "limits": {
+        "context": 163840,
+        "output": 65536
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4-pro",
+      "label": "DeepSeek V4 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.435,
+        "output": 0.87,
+        "reasoning": 0.87,
+        "cache_read": 0.003625
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 384000
+      }
+    },
+    {
+      "id": "google/gemini-2.5-flash-lite",
+      "label": "Gemini 2.5 Flash-Lite",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.4,
+        "cache_read": 0.01,
+        "input_audio": 0.3,
+        "reasoning": 0.4,
+        "cache_write": 0.083333
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65535
+      }
+    },
+    {
+      "id": "google/gemini-2.5-pro-preview",
+      "label": "Gemini 2.5 Pro Preview 06-05",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 10.0,
+        "reasoning": 10.0,
+        "cache_read": 0.125,
+        "cache_write": 0.375
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "google/gemini-2.5-pro-preview-05-06",
+      "label": "Gemini 2.5 Pro Preview 05-06",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 10.0,
+        "reasoning": 10.0,
+        "cache_read": 0.125,
+        "cache_write": 0.375
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65535
+      }
+    },
+    {
+      "id": "google/gemini-3-flash-preview",
+      "label": "Gemini 3 Flash Preview",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.5,
+        "output": 3.0,
+        "cache_read": 0.05,
+        "input_audio": 1.0,
+        "reasoning": 3.0,
+        "cache_write": 0.083333
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "google/gemini-3-pro-image",
+      "label": "google/gemini-3-pro-image",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 2.0,
+        "output": 12.0,
+        "reasoning": 12.0,
+        "cache_read": 0.2,
+        "cache_write": 0.375
+      },
+      "limits": {
+        "context": 131072
+      }
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite",
+      "label": "Gemini 3.1 Flash Lite",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 1.5,
+        "cache_read": 0.025,
+        "input_audio": 0.5,
+        "reasoning": 1.5,
+        "cache_write": 0.083333
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite-preview",
+      "label": "Gemini 3.1 Flash Lite Preview",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 1.5,
+        "cache_read": 0.025,
+        "input_audio": 0.5,
+        "reasoning": 1.5,
+        "cache_write": 0.083333
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "google/gemini-3.1-pro-preview",
+      "label": "Gemini 3.1 Pro Preview",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 12.0,
+        "cache_read": 0.2,
+        "reasoning": 12.0,
+        "cache_write": 0.375
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "google/gemini-3.1-pro-preview-customtools",
+      "label": "Gemini 3.1 Pro Preview Custom Tools",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 12.0,
+        "cache_read": 0.2,
+        "reasoning": 12.0,
+        "cache_write": 0.375
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "google/gemini-3.5-flash",
+      "label": "Gemini 3.5 Flash",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.5,
+        "output": 9.0,
+        "cache_read": 0.15,
+        "input_audio": 1.5,
+        "reasoning": 9.0,
+        "cache_write": 0.083333
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "google/gemma-3-12b-it",
+      "label": "Gemma 3 12B",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.05,
+        "output": 0.15
+      },
+      "limits": {
+        "context": 131072,
+        "output": 16384
+      }
+    },
+    {
+      "id": "google/gemma-3-27b-it",
+      "label": "Gemma 3 27B",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.08,
+        "output": 0.45,
+        "cache_read": 0.04
+      },
+      "limits": {
+        "context": 262144,
+        "output": 131072
+      }
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it",
+      "label": "Gemma 4 26B A4B IT",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.07,
+        "output": 0.34
+      },
+      "limits": {
+        "context": 262144,
+        "output": 16384
+      }
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it:free",
+      "label": "Gemma 4 26B A4B  (free)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.0,
+        "output": 0.0
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "google/gemma-4-31b-it",
+      "label": "Gemma 4 31B IT",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.34,
+        "cache_read": 0.1
+      },
+      "limits": {
+        "context": 262144,
+        "output": 262144
+      }
+    },
+    {
+      "id": "google/gemma-4-31b-it:free",
+      "label": "Gemma 4 31B (free)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.0,
+        "output": 0.0
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "ibm-granite/granite-4.1-8b",
+      "label": "Granite 4.1 8B",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.05,
+        "output": 0.1,
+        "cache_read": 0.05
+      },
+      "limits": {
+        "context": 131072,
+        "output": 131072
+      }
+    },
+    {
+      "id": "inception/mercury-2",
+      "label": "Mercury 2",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.25,
+        "output": 0.75,
+        "cache_read": 0.025
+      },
+      "limits": {
+        "context": 128000,
+        "output": 50000
+      }
+    },
+    {
+      "id": "inclusionai/ling-2.6-1t",
+      "label": "Ling-2.6-1T",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.075,
+        "output": 0.625,
+        "cache_read": 0.015
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "inclusionai/ling-2.6-flash",
+      "label": "Ling-2.6-flash",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.01,
+        "output": 0.03,
+        "cache_read": 0.002
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "inclusionai/ling-3.0-flash",
+      "label": "Ling-3.0-flash",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.021,
+        "output": 0.063,
+        "cache_read": 0.0042
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "inclusionai/ling-3.0-tiny:free",
+      "label": "Ling 3.0 Tiny (free)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.0,
+        "output": 0.0
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "inclusionai/ring-2.6-1t",
+      "label": "Ring-2.6-1T",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.075,
+        "output": 0.625,
+        "cache_read": 0.015
+      },
+      "limits": {
+        "context": 262144,
+        "output": 65536
+      }
+    },
+    {
+      "id": "kwaipilot/kat-coder-air-v2.5",
+      "label": "KAT-Coder-Air V2.5",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.15,
+        "output": 0.6,
+        "cache_read": 0.03
+      },
+      "limits": {
+        "context": 256000,
+        "output": 80000
+      }
+    },
+    {
+      "id": "kwaipilot/kat-coder-pro-v2",
+      "label": "KAT-Coder-Pro V2",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.3,
+        "output": 1.2,
+        "cache_read": 0.06
+      },
+      "limits": {
+        "context": 262144,
+        "output": 80000
+      }
+    },
+    {
+      "id": "kwaipilot/kat-coder-pro-v2.5",
+      "label": "KAT-Coder-Pro V2.5",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.74,
+        "output": 2.96,
+        "cache_read": 0.15
+      },
+      "limits": {
+        "context": 256000,
+        "output": 80000
+      }
+    },
+    {
+      "id": "meituan/longcat-2.0",
+      "label": "LongCat 2.0",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.3,
+        "output": 1.2,
+        "cache_read": 0.006
+      },
+      "limits": {
+        "context": 1048756,
+        "output": 262144
+      }
+    },
+    {
+      "id": "meta-llama/llama-3.1-70b-instruct",
+      "label": "Llama 3.1 70B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.4,
+        "output": 0.4
+      },
+      "limits": {
+        "context": 131072,
+        "output": 16384
+      }
+    },
+    {
+      "id": "meta-llama/llama-3.1-8b-instruct",
+      "label": "Llama 3.1 8B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.05,
+        "output": 0.08,
+        "cache_read": 0.025
+      },
+      "limits": {
+        "context": 131072,
+        "output": 131072
+      }
+    },
+    {
+      "id": "meta-llama/llama-4-maverick",
+      "label": "Llama 4 Maverick",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.2,
+        "output": 0.8
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 16384
+      }
+    },
+    {
+      "id": "meta-llama/llama-4-scout",
+      "label": "Llama 4 Scout",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.3
+      },
+      "limits": {
+        "context": 1310720,
+        "output": 16384
+      }
+    },
+    {
+      "id": "minimax/minimax-m1",
+      "label": "MiniMax M1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.55,
+        "output": 2.2
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 40000
+      }
+    },
+    {
+      "id": "mistralai/codestral-2508",
+      "label": "Codestral 2508",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 0.3,
+        "output": 0.9,
+        "cache_read": 0.03
+      },
+      "limits": {
+        "context": 256000,
+        "output": 256000
+      }
+    },
+    {
+      "id": "mistralai/ministral-14b-2512",
+      "label": "Ministral 3 14B 2512",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.2,
+        "output": 0.2,
+        "cache_read": 0.02
+      },
+      "limits": {
+        "context": 262144,
+        "output": 262144
+      }
+    },
+    {
+      "id": "mistralai/ministral-3b-2512",
+      "label": "Ministral 3 3B 2512",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.1,
+        "cache_read": 0.01
+      },
+      "limits": {
+        "context": 131072,
+        "output": 131072
+      }
+    },
+    {
+      "id": "mistralai/ministral-8b-2512",
+      "label": "Ministral 3 8B 2512",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.15,
+        "output": 0.15,
+        "cache_read": 0.015
+      },
+      "limits": {
+        "context": 262144,
+        "output": 262144
+      }
+    },
+    {
+      "id": "mistralai/mistral-large",
+      "label": "Mistral Large",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 6.0,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 128000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "mistralai/mistral-large-2407",
+      "label": "Mistral Large 2407",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 6.0,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 131072,
+        "output": 131072
+      }
+    },
+    {
+      "id": "mistralai/mistral-medium-3",
+      "label": "Mistral Medium 3",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.4,
+        "output": 2.0,
+        "cache_read": 0.04
+      },
+      "limits": {
+        "context": 131072,
+        "output": 131072
+      }
+    },
+    {
+      "id": "mistralai/mistral-medium-3-5",
+      "label": "Mistral Medium 3.5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.5,
+        "output": 7.5
+      },
+      "limits": {
+        "context": 262144,
+        "output": 262144
+      }
+    },
+    {
+      "id": "mistralai/mistral-medium-3.1",
+      "label": "Mistral Medium 3.1",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.4,
+        "output": 2.0,
+        "cache_read": 0.04
+      },
+      "limits": {
+        "context": 131072,
+        "output": 262144
+      }
+    },
+    {
+      "id": "mistralai/mistral-saba",
+      "label": "Saba",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 0.2,
+        "output": 0.6,
+        "cache_read": 0.02
+      },
+      "limits": {
+        "context": 32768,
+        "output": 32768
+      }
+    },
+    {
+      "id": "mistralai/mistral-small-3.2-24b-instruct",
+      "label": "Mistral Small 3.2 24B",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.09375,
+        "output": 0.25
+      },
+      "limits": {
+        "context": 256000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "mistralai/mixtral-8x22b-instruct",
+      "label": "Mixtral 8x22B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 6.0,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 65536,
+        "output": 65536
+      }
+    },
+    {
+      "id": "mistralai/voxtral-small-24b-2507",
+      "label": "Voxtral Small 24B 2507",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.3,
+        "cache_read": 0.01
+      },
+      "limits": {
+        "context": 32000,
+        "output": 32000
+      }
+    },
+    {
+      "id": "moonshotai/kimi-k2",
+      "label": "Kimi K2 0711",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.57,
+        "output": 2.3
+      },
+      "limits": {
+        "context": 131072,
+        "output": 100352
+      }
+    },
+    {
+      "id": "moonshotai/kimi-k2-0905",
+      "label": "Kimi K2 0905",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.6,
+        "output": 2.5
+      },
+      "limits": {
+        "context": 262144,
+        "output": 100352
+      }
+    },
+    {
+      "id": "nex-agi/nex-n2-mini",
+      "label": "Nex-N2-Mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.025,
+        "output": 0.1,
+        "cache_read": 0.0025
+      },
+      "limits": {
+        "context": 262144,
+        "output": 262144
+      }
+    },
+    {
+      "id": "nex-agi/nex-n2-pro",
+      "label": "Nex-N2-Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 1.0,
+        "cache_read": 0.025
+      },
+      "limits": {
+        "context": 262144,
+        "output": 262144
+      }
+    },
+    {
+      "id": "openai/gpt-3.5-turbo",
+      "label": "GPT-3.5-turbo",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.5,
+        "output": 1.5,
+        "cache_read": 0.0
+      },
+      "limits": {
+        "context": 16385,
+        "output": 4096
+      }
+    },
+    {
+      "id": "openai/gpt-3.5-turbo-0613",
+      "label": "GPT-3.5 Turbo (older v0613)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 1.0,
+        "output": 2.0
+      },
+      "limits": {
+        "context": 4095,
+        "output": 4096
+      }
+    },
+    {
+      "id": "openai/gpt-3.5-turbo-16k",
+      "label": "GPT-3.5 Turbo 16k",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 3.0,
+        "output": 4.0
+      },
+      "limits": {
+        "context": 16385,
+        "output": 4096
+      }
+    },
+    {
+      "id": "openai/gpt-4",
+      "label": "GPT-4",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 30.0,
+        "output": 60.0
+      },
+      "limits": {
+        "context": 8191,
+        "output": 4096
+      }
+    },
+    {
+      "id": "openai/gpt-4-turbo",
+      "label": "GPT-4 Turbo",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 10.0,
+        "output": 30.0
+      },
+      "limits": {
+        "context": 128000,
+        "output": 4096
+      }
+    },
+    {
+      "id": "openai/gpt-4-turbo-preview",
+      "label": "GPT-4 Turbo Preview",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 10.0,
+        "output": 30.0
+      },
+      "limits": {
+        "context": 128000,
+        "output": 4096
+      }
+    },
+    {
+      "id": "openai/gpt-4.1",
+      "label": "GPT-4.1",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 8.0,
+        "cache_read": 0.5
+      },
+      "limits": {
+        "context": 1047576,
+        "output": 32768
+      }
+    },
+    {
+      "id": "openai/gpt-4.1-mini",
+      "label": "GPT-4.1 mini",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.4,
+        "output": 1.6,
+        "cache_read": 0.1
+      },
+      "limits": {
+        "context": 1047576,
+        "output": 32768
+      }
+    },
+    {
+      "id": "openai/gpt-4.1-nano",
+      "label": "GPT-4.1 nano",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.4,
+        "cache_read": 0.025
+      },
+      "limits": {
+        "context": 1047576,
+        "output": 32768
+      }
+    },
+    {
+      "id": "openai/gpt-4o",
+      "label": "GPT-4o",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 10.0,
+        "cache_read": 1.25
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-4o-2024-05-13",
+      "label": "GPT-4o (2024-05-13)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 15.0
+      },
+      "limits": {
+        "context": 128000,
+        "output": 4096
+      }
+    },
+    {
+      "id": "openai/gpt-4o-2024-08-06",
+      "label": "GPT-4o (2024-08-06)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 10.0,
+        "cache_read": 1.25
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-4o-2024-11-20",
+      "label": "GPT-4o (2024-11-20)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 10.0,
+        "cache_read": 1.25
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "label": "GPT-4o mini",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.15,
+        "output": 0.6,
+        "cache_read": 0.075
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-4o-mini-2024-07-18",
+      "label": "GPT-4o-mini (2024-07-18)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.15,
+        "output": 0.6,
+        "cache_read": 0.075
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-5-mini",
+      "label": "GPT-5 Mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.25,
+        "output": 2.0,
+        "cache_read": 0.025
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5-nano",
+      "label": "GPT-5 Nano",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.05,
+        "output": 0.4,
+        "cache_read": 0.005
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5-pro",
+      "label": "GPT-5 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 15.0,
+        "output": 120.0
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.1",
+      "label": "GPT-5.1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 10.0,
+        "cache_read": 0.125
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.2",
+      "label": "GPT-5.2",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.2-chat",
+      "label": "GPT-5.2 Chat",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-5.2-pro",
+      "label": "GPT-5.2 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 21.0,
+        "output": 168.0
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.3-chat",
+      "label": "GPT-5.3 Chat",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-5.3-codex",
+      "label": "GPT-5.3 Codex",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.75,
+        "output": 14.0,
+        "cache_read": 0.175
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.4",
+      "label": "GPT-5.4",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 15.0,
+        "cache_read": 0.25
+      },
+      "limits": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.4-mini",
+      "label": "GPT-5.4 mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.75,
+        "output": 4.5,
+        "cache_read": 0.075
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.4-nano",
+      "label": "GPT-5.4 nano",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.2,
+        "output": 1.25,
+        "cache_read": 0.02
+      },
+      "limits": {
+        "context": 400000,
+        "input": 272000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.4-pro",
+      "label": "GPT-5.4 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 30.0,
+        "output": 180.0
+      },
+      "limits": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.5",
+      "label": "GPT-5.5",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 30.0,
+        "cache_read": 0.5
+      },
+      "limits": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-5.5-pro",
+      "label": "GPT-5.5 Pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 30.0,
+        "output": 180.0
+      },
+      "limits": {
+        "context": 1050000,
+        "input": 922000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-audio",
+      "label": "GPT Audio",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 10.0
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-audio-mini",
+      "label": "GPT Audio Mini",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 0.6,
+        "output": 2.4
+      },
+      "limits": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "openai/gpt-chat-latest",
+      "label": "GPT Chat Latest",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 30.0,
+        "cache_read": 0.5
+      },
+      "limits": {
+        "context": 400000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "openai/gpt-oss-safeguard-20b",
+      "label": "gpt-oss-safeguard-20b",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.075,
+        "output": 0.3,
+        "cache_read": 0.0375
+      },
+      "limits": {
+        "context": 131072,
+        "output": 65536
+      }
+    },
+    {
+      "id": "openai/o1",
+      "label": "o1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 15.0,
+        "output": 60.0,
+        "cache_read": 7.5
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "openai/o1-pro",
+      "label": "o1-pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 150.0,
+        "output": 600.0
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "openai/o3",
+      "label": "o3",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 8.0,
+        "cache_read": 0.5
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "openai/o3-mini",
+      "label": "o3-mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 1.1,
+        "output": 4.4,
+        "cache_read": 0.55
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "openai/o3-mini-high",
+      "label": "o3 Mini High",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": true,
+      "cost": {
+        "input": 1.1,
+        "output": 4.4,
+        "cache_read": 0.55
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "openai/o3-pro",
+      "label": "o3-pro",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 20.0,
+        "output": 80.0
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "openai/o4-mini",
+      "label": "o4-mini",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.1,
+        "output": 4.4,
+        "cache_read": 0.275
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "openai/o4-mini-high",
+      "label": "o4 Mini High",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.1,
+        "output": 4.4,
+        "cache_read": 0.275
+      },
+      "limits": {
+        "context": 200000,
+        "output": 100000
+      }
+    },
+    {
+      "id": "openrouter/auto",
+      "label": "Auto Router",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "limits": {
+        "context": 2000000,
+        "output": 2000000
+      }
+    },
+    {
+      "id": "openrouter/free",
+      "label": "Free Models Router",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.0,
+        "output": 0.0
+      },
+      "limits": {
+        "context": 200000,
+        "input": 200000,
+        "output": 8000
+      }
+    },
+    {
+      "id": "poolside/laguna-s-2.1",
+      "label": "Laguna S 2.1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.09,
+        "output": 0.18,
+        "cache_read": 0.009
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 131072
+      }
+    },
+    {
+      "id": "poolside/laguna-s-2.1:free",
+      "label": "Laguna S 2.1 (free)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.0,
+        "output": 0.0
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen-2.5-72b-instruct",
+      "label": "Qwen2.5 72B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.36,
+        "output": 0.4
+      },
+      "limits": {
+        "context": 32768,
+        "output": 16384
+      }
+    },
+    {
+      "id": "qwen/qwen-2.5-7b-instruct",
+      "label": "Qwen2.5 7B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.1,
+        "output": 0.2
+      },
+      "limits": {
+        "context": 32768,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen-plus-2025-07-28",
+      "label": "Qwen Plus 0728",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.26,
+        "output": 0.78
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen-plus-2025-07-28:thinking",
+      "label": "Qwen Plus 0728 (thinking)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.4,
+        "output": 1.2,
+        "cache_write": 0.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3-14b",
+      "label": "Qwen3 14B",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.2275,
+        "output": 0.91
+      },
+      "limits": {
+        "context": 131072,
+        "output": 8192
+      }
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b-2507",
+      "label": "Qwen3 235B A22B Instruct 2507",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.09,
+        "output": 0.55
+      },
+      "limits": {
+        "context": 262144,
+        "output": 16384
+      }
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b-thinking-2507",
+      "label": "Qwen3 235B A22B Thinking 2507",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.23,
+        "output": 2.3
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3-30b-a3b",
+      "label": "Qwen3 30B A3B",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.12,
+        "output": 0.5
+      },
+      "limits": {
+        "context": 131072,
+        "output": 16384
+      }
+    },
+    {
+      "id": "qwen/qwen3-30b-a3b-instruct-2507",
+      "label": "Qwen3 30B A3B Instruct 2507",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.04815,
+        "output": 0.19305
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32000
+      }
+    },
+    {
+      "id": "qwen/qwen3-30b-a3b-thinking-2507",
+      "label": "Qwen3 30B A3B Thinking 2507",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.2,
+        "output": 2.4
+      },
+      "limits": {
+        "context": 81920,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3-8b",
+      "label": "Qwen3 8B",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.117,
+        "output": 0.455
+      },
+      "limits": {
+        "context": 131072,
+        "output": 8192
+      }
+    },
+    {
+      "id": "qwen/qwen3-coder",
+      "label": "Qwen3 Coder 480B A35B",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.3,
+        "output": 1.0,
+        "cache_read": 0.1
+      },
+      "limits": {
+        "context": 262144,
+        "output": 65536
+      }
+    },
+    {
+      "id": "qwen/qwen3-max-thinking",
+      "label": "Qwen3 Max Thinking",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.78,
+        "output": 3.9
+      },
+      "limits": {
+        "context": 262144,
+        "output": 65536
+      }
+    },
+    {
+      "id": "qwen/qwen3-vl-235b-a22b-instruct",
+      "label": "Qwen3 VL 235B A22B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.21,
+        "output": 1.9,
+        "cache_read": 0.1
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3-vl-235b-a22b-thinking",
+      "label": "Qwen3 VL 235B A22B Thinking",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.4,
+        "output": 4.0
+      },
+      "limits": {
+        "context": 131072,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3-vl-30b-a3b-instruct",
+      "label": "Qwen3 VL 30B A3B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.15,
+        "output": 0.6
+      },
+      "limits": {
+        "context": 262144,
+        "output": 16384
+      }
+    },
+    {
+      "id": "qwen/qwen3-vl-30b-a3b-thinking",
+      "label": "Qwen3 VL 30B A3B Thinking",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.2,
+        "output": 2.4
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3-vl-32b-instruct",
+      "label": "Qwen3 VL 32B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.104,
+        "output": 0.416
+      },
+      "limits": {
+        "context": 131072,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3-vl-8b-instruct",
+      "label": "Qwen3 VL 8B Instruct",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.117,
+        "output": 0.455
+      },
+      "limits": {
+        "context": 262144,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3-vl-8b-thinking",
+      "label": "Qwen3 VL 8B Thinking",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.18,
+        "output": 2.1
+      },
+      "limits": {
+        "context": 131072,
+        "output": 32768
+      }
+    },
+    {
+      "id": "qwen/qwen3.5-flash-02-23",
+      "label": "Qwen3.5-Flash",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.065,
+        "output": 0.26
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 65536
+      }
+    },
+    {
+      "id": "qwen/qwen3.5-plus-02-15",
+      "label": "Qwen3.5 Plus 2026-02-15",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.26,
+        "output": 1.56
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 65536
+      }
+    },
+    {
+      "id": "qwen/qwen3.5-plus-20260420",
+      "label": "Qwen3.5 Plus 2026-04-20",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.3,
+        "output": 1.8,
+        "cache_write": 0.375
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 65536
+      }
+    },
+    {
+      "id": "rekaai/reka-edge",
+      "label": "Reka Edge",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.1,
+        "output": 0.1
+      },
+      "limits": {
+        "context": 16384,
+        "output": 16384
+      }
+    },
+    {
+      "id": "relace/relace-search",
+      "label": "Relace Search",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 1.0,
+        "output": 3.0
+      },
+      "limits": {
+        "context": 256000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "sao10k/l3.1-euryale-70b",
+      "label": "Llama 3.1 Euryale 70B v2.2",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.85,
+        "output": 0.85
+      },
+      "limits": {
+        "context": 131072,
+        "output": 16384
+      }
+    },
+    {
+      "id": "thedrummer/unslopnemo-12b",
+      "label": "UnslopNemo 12B",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.4,
+        "output": 0.4
+      },
+      "limits": {
+        "context": 1024000,
+        "output": 1024000
+      }
+    },
+    {
+      "id": "upstage/solar-pro-3",
+      "label": "Solar Pro 3",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.15,
+        "output": 0.6,
+        "cache_read": 0.015
+      },
+      "limits": {
+        "context": 131072,
+        "output": 131072
+      }
+    },
+    {
+      "id": "x-ai/grok-4.20",
+      "label": "Grok 4.20",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 2.5,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 2000000,
+        "output": 2000000
+      }
+    },
+    {
+      "id": "x-ai/grok-4.3",
+      "label": "Grok 4.3",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 2.5,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 1000000
+      }
+    },
+    {
+      "id": "x-ai/grok-build-0.1",
+      "label": "Grok Build 0.1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.0,
+        "output": 2.0,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 256000,
+        "output": 256000
+      }
+    },
+    {
+      "id": "~anthropic/claude-fable-latest",
+      "label": "Claude Fable Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 10.0,
+        "output": 50.0,
+        "cache_read": 1.0,
+        "cache_write": 12.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "~anthropic/claude-haiku-latest",
+      "label": "Anthropic Claude Haiku Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.0,
+        "output": 5.0,
+        "cache_read": 0.1,
+        "cache_write": 1.25
+      },
+      "limits": {
+        "context": 200000,
+        "output": 64000
+      }
+    },
+    {
+      "id": "~anthropic/claude-opus-latest",
+      "label": "Claude Opus Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "~anthropic/claude-sonnet-latest",
+      "label": "Anthropic Claude Sonnet Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 10.0,
+        "cache_read": 0.2,
+        "cache_write": 2.5
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "~deepseek/deepseek-v4-flash-latest",
+      "label": "DeepSeek V4 Flash Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": false,
+      "fileInput": false,
+      "cost": {
+        "input": 0.09,
+        "output": 0.18,
+        "cache_read": 0.018
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "~google/gemini-flash-latest",
+      "label": "Google Gemini Flash Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.5,
+        "output": 7.5,
+        "reasoning": 7.5,
+        "cache_read": 0.15,
+        "cache_write": 0.083333
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "~google/gemini-pro-latest",
+      "label": "Google Gemini Pro Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 12.0,
+        "reasoning": 12.0,
+        "cache_read": 0.2,
+        "cache_write": 0.375
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 65536
+      }
+    },
+    {
+      "id": "~moonshotai/kimi-latest",
+      "label": "MoonshotAI Kimi Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.5,
+        "output": 14.0,
+        "cache_read": 0.29
+      },
+      "limits": {
+        "context": 1048576,
+        "output": 1048576
+      }
+    },
+    {
+      "id": "~openai/gpt-latest",
+      "label": "OpenAI GPT Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 5.0,
+        "output": 30.0,
+        "cache_read": 0.5,
+        "cache_write": 6.25
+      },
+      "limits": {
+        "context": 1050000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "~openai/gpt-mini-latest",
+      "label": "OpenAI GPT Mini Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 0.75,
+        "output": 4.5,
+        "cache_read": 0.075
+      },
+      "limits": {
+        "context": 400000,
+        "output": 128000
+      }
+    },
+    {
+      "id": "~x-ai/grok-latest",
+      "label": "Grok Latest",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 2.0,
+        "output": 6.0,
+        "cache_read": 0.3
+      },
+      "limits": {
+        "context": 500000,
+        "output": 1000000
+      }
+    }
+  ],
+  "xai": [
+    {
+      "id": "grok-4.20-0309-non-reasoning",
+      "label": "Grok 4.20 (Non-Reasoning)",
+      "reasoning": false,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 2.5,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 30000
+      }
+    },
+    {
+      "id": "grok-4.20-0309-reasoning",
+      "label": "Grok 4.20 (Reasoning)",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 2.5,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 30000
+      }
+    },
+    {
+      "id": "grok-4.3",
+      "label": "Grok 4.3",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.25,
+        "output": 2.5,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 1000000,
+        "output": 30000
+      }
+    },
+    {
+      "id": "grok-build-0.1",
+      "label": "Grok Build 0.1",
+      "reasoning": true,
+      "toolCalling": true,
+      "imageInput": true,
+      "fileInput": true,
+      "cost": {
+        "input": 1.0,
+        "output": 2.0,
+        "cache_read": 0.2
+      },
+      "limits": {
+        "context": 256000,
+        "output": 256000
+      }
+    }
+  ]
+}

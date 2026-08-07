@@ -224,7 +224,17 @@ final class FakeCoderApi
     capabilities: ModelCapabilitiesDto(
       streaming: CapabilitySupport.supported,
       toolCalling: CapabilitySupport.supported,
-      reasoningEffort: CapabilitySupport.supported,
+      controls: <ModelControlDescriptorDto>[
+        ModelControlDescriptorDto(
+          id: 'reasoning_effort',
+          label: 'Reasoning effort',
+          kind: ModelControlKind.choice,
+          presentation: ModelControlPresentation.menuChip,
+          choices: <ModelControlChoiceDto>[
+            ModelControlChoiceDto(id: 'medium', label: 'Medium'),
+          ],
+        ),
+      ],
       source: CapabilitySource.bundled,
     ),
   );
@@ -238,7 +248,6 @@ final class FakeCoderApi
     model: AgentModelSelectionDto(
       source: AgentModelSource.session,
     ),
-    reasoningEffort: 'medium',
     permissionMode: PermissionMode.ask,
     toolIds: <String>['read_file'],
     callableAgentIds: <String>[],
@@ -393,10 +402,15 @@ final class FakeCoderApi
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
       StreamController<ClientConnectionState>.broadcast(sync: true);
+  final StreamController<ProviderCatalogDto> _catalogUpdates =
+      StreamController<ProviderCatalogDto>.broadcast(sync: true);
   bool _closed = false;
 
   /// Whether [close] released this fake client.
   bool get isClosed => _closed;
+
+  @override
+  Stream<ProviderCatalogDto> get catalogUpdates => _catalogUpdates.stream;
 
   /// Paths registered through the fake, in call order.
   final List<String> registeredPaths = <String>[];
@@ -862,9 +876,9 @@ final class FakeCoderApi
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
-    String? reasoningEffort,
+    Map<String, ModelControlValueDto> modelControls =
+        const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
-    String? serviceTier,
   }) async {
     final agent = SessionDto(
       id: id,
@@ -875,9 +889,8 @@ final class FakeCoderApi
       status: SessionStatus.idle,
       mode: mode,
       model: model,
-      reasoningEffort: reasoningEffort,
+      modelControls: modelControls,
       permissionMode: permissionMode,
-      serviceTier: serviceTier,
       createdAt: _now,
       updatedAt: _now,
     );
@@ -903,12 +916,27 @@ final class FakeCoderApi
       updatedSessionModels.add((sessionId: sessionId, model: patch.model));
       updated = updated.copyWith(model: patch.model);
     }
-    if (patch.hasReasoningEffort) {
+    if (patch.hasModelControls) {
+      final controls = patch.modelControls;
+      final effort = controls['reasoning_effort']?.map(
+        stringValue: (value) => value.value,
+        boolValue: (_) => null,
+        intValue: (_) => null,
+      );
       updatedSessionReasoningEfforts.add((
         sessionId: sessionId,
-        reasoningEffort: patch.reasoningEffort,
+        reasoningEffort: effort,
       ));
-      updated = updated.copyWith(reasoningEffort: patch.reasoningEffort);
+      final fast = controls['fast_mode']?.map(
+        stringValue: (_) => false,
+        boolValue: (value) => value.value,
+        intValue: (_) => false,
+      );
+      updatedSessionServiceTiers.add((
+        sessionId: sessionId,
+        serviceTier: fast == true ? 'priority' : null,
+      ));
+      updated = updated.copyWith(modelControls: controls);
     }
     if (patch.hasPermissionMode) {
       if (sessionPermissionSetError case final error?) throw error;
@@ -917,13 +945,6 @@ final class FakeCoderApi
         permissionMode: patch.permissionMode,
       ));
       updated = updated.copyWith(permissionMode: patch.permissionMode);
-    }
-    if (patch.hasServiceTier) {
-      updatedSessionServiceTiers.add((
-        sessionId: sessionId,
-        serviceTier: patch.serviceTier,
-      ));
-      updated = updated.copyWith(serviceTier: patch.serviceTier);
     }
     _agents[index] = updated;
     emit(SessionUpdatedClientEvent(updated));
@@ -1444,14 +1465,14 @@ final class FakeCoderApi
     String? apiKey,
   }) async {
     if (apiKey != null) credentials[id] = apiKey;
-    for (final modelId in config.manualModelIds) {
+    for (final manualModel in config.models) {
       _models
           .putIfAbsent(id, () => <ProviderModelDto>[])
           .add(
             ProviderModelDto(
               connectionId: id,
-              id: modelId,
-              label: modelId,
+              id: manualModel.id,
+              label: manualModel.label,
               source: ProviderModelSource.manual,
               capabilities: const ModelCapabilitiesDto(
                 streaming: CapabilitySupport.supported,
@@ -1487,17 +1508,17 @@ final class FakeCoderApi
     String? apiKey,
   }) async {
     if (apiKey != null) credentials[connectionId] = apiKey;
-    for (final modelId in config.manualModelIds) {
+    for (final manualModel in config.models) {
       final models = _models.putIfAbsent(
         connectionId,
         () => <ProviderModelDto>[],
       );
-      if (models.any((model) => model.id == modelId)) continue;
+      if (models.any((model) => model.id == manualModel.id)) continue;
       models.add(
         ProviderModelDto(
           connectionId: connectionId,
-          id: modelId,
-          label: modelId,
+          id: manualModel.id,
+          label: manualModel.label,
           source: ProviderModelSource.manual,
           capabilities: const ModelCapabilitiesDto(
             streaming: CapabilitySupport.supported,
@@ -1654,6 +1675,7 @@ final class FakeCoderApi
     _closed = true;
     await _events.close();
     await _states.close();
+    await _catalogUpdates.close();
   }
 }
 

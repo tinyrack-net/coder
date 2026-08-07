@@ -185,9 +185,9 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
     required String agentDefinitionId,
     @Default(SessionMode.normal) SessionMode mode,
     SessionModelSelectionDto? model,
-    String? reasoningEffort,
+    @Default(<String, ModelControlValueDto>{})
+    Map<String, ModelControlValueDto> modelControls,
     PermissionMode? permissionMode,
-    String? serviceTier,
   }) = _SessionCreateParamsDto;
 
   /// Decodes session creation parameters.
@@ -206,12 +206,11 @@ abstract class SessionSettingsPatchDto with _$SessionSettingsPatchDto {
     SessionMode? mode,
     @Default(false) bool hasModel,
     SessionModelSelectionDto? model,
-    @Default(false) bool hasReasoningEffort,
-    String? reasoningEffort,
+    @Default(false) bool hasModelControls,
+    @Default(<String, ModelControlValueDto>{})
+    Map<String, ModelControlValueDto> modelControls,
     @Default(false) bool hasPermissionMode,
     PermissionMode? permissionMode,
-    @Default(false) bool hasServiceTier,
-    String? serviceTier,
   }) = _SessionSettingsPatchDto;
 
   /// Decodes a session settings patch.

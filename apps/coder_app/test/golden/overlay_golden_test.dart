@@ -574,7 +574,7 @@ class _ComposerSuggestionsGoldenHost extends StatelessWidget {
               agentDefinitionId: null,
               selection: null,
               onAgentChanged: (_) {},
-              onModelChanged: (_) {},
+              onModelChanged: (_, _) {},
               mode: SessionMode.normal,
               onModeChanged: (_) {},
             ),

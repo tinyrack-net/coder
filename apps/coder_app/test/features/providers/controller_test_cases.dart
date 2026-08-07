@@ -61,7 +61,9 @@ void _registerProvidersControllerTests() {
           baseUrl: 'http://127.0.0.1:9000/v1',
           wireFormatId: 'openai-chat-completions',
           authenticationRequired: false,
-          manualModelIds: <String>['manual'],
+          models: <ManualProviderModelDto>[
+            ManualProviderModelDto(id: 'manual', label: 'manual'),
+          ],
         ),
       );
       expect(custom.displayName, 'Custom');

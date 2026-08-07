@@ -853,6 +853,11 @@
     "description": "Shown when provider settings has no daemon state."
   },
   "providerSettingsRefreshCatalog": "Refresh catalog",
+  "providerSettingsCatalogStatus": "Catalog metadata",
+  "providerSettingsCatalogBundled": "Bundled snapshot",
+  "providerSettingsCatalogCached": "Last-known-good cache",
+  "providerSettingsCatalogFresh": "Recently refreshed",
+  "providerSettingsCatalogStale": "Refresh due; local metadata remains available",
   "providerSettingsDefaultModelTitle": "Default model",
   "@providerSettingsDefaultModelTitle": {
     "description": "Section title of the daemon-wide default model."
