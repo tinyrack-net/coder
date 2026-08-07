@@ -5,8 +5,8 @@ import 'package:coder_app/src/attachment_export_io.dart'
     if (dart.library.js_interop) 'package:coder_app/src/attachment_export_web.dart'
     as export_platform;
 import 'package:coder_client/coder_client.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 /// Maximum bytes accepted for a pending attachment.
 const int maxPendingAttachmentBytes = 50 * 1024 * 1024;
@@ -92,8 +92,8 @@ abstract interface class AttachmentInputPort {
   /// Reads file and image items from the platform clipboard.
   Future<List<PendingAttachment>> pasteFiles();
 
-  /// Reads file items from a native drag event.
-  Future<List<PendingAttachment>> droppedFiles(PerformDropEvent event);
+  /// Reads file items delivered by a native drop.
+  Future<List<PendingAttachment>> droppedFiles(List<DropwellFile> files);
 }
 
 /// Saves desktop downloads or opens the mobile system share sheet.
@@ -115,20 +115,20 @@ final attachmentExportProvider = Provider<AttachmentExportPort>(
 );
 
 /// Names a clipboard item that arrives without a filename.
-String defaultAttachmentName(FileFormat format) => switch (format) {
-  final value when identical(value, Formats.png) => 'pasted-image.png',
-  final value when identical(value, Formats.jpeg) => 'pasted-image.jpg',
-  final value when identical(value, Formats.webp) => 'pasted-image.webp',
-  final value when identical(value, Formats.gif) => 'pasted-image.gif',
+String defaultAttachmentName(String? mimeHint) => switch (mimeHint) {
+  'image/png' => 'pasted-image.png',
+  'image/jpeg' => 'pasted-image.jpg',
+  'image/webp' => 'pasted-image.webp',
+  'image/gif' => 'pasted-image.gif',
   _ => 'pasted-file',
 };
 
-/// Derives a media type from a clipboard format or a filename extension.
-String mimeFromAttachmentName(String name, {FileFormat? format}) {
-  if (identical(format, Formats.png)) return 'image/png';
-  if (identical(format, Formats.jpeg)) return 'image/jpeg';
-  if (identical(format, Formats.webp)) return 'image/webp';
-  if (identical(format, Formats.gif)) return 'image/gif';
+/// Derives a media type from a platform hint or a filename extension.
+///
+/// The hint wins when the platform gave one: it looked at the file, and an
+/// extension can be missing, wrong, or belong to a name the platform invented.
+String mimeFromAttachmentName(String name, {String? mimeHint}) {
+  if (mimeHint != null && mimeHint.isNotEmpty) return mimeHint;
   final extension = name.toLowerCase().split('.').last;
   return switch (extension) {
     'png' => 'image/png',

@@ -16,13 +16,13 @@ import 'package:coder_app/src/tray_menu_model.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/pump_until.dart';
@@ -1976,8 +1976,9 @@ final class _E2eAttachmentInput implements AttachmentInputPort {
       const <PendingAttachment>[];
 
   @override
-  Future<List<PendingAttachment>> droppedFiles(PerformDropEvent event) async =>
-      const <PendingAttachment>[];
+  Future<List<PendingAttachment>> droppedFiles(
+    List<DropwellFile> files,
+  ) async => const <PendingAttachment>[];
 }
 
 Future<ProviderConnectionDto> _waitForProviderModels(

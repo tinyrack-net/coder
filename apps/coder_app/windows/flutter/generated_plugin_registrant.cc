@@ -6,30 +6,27 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <dropwell/dropwell_plugin_c_api.h>
 #include <file_selector_windows/file_selector_windows.h>
 #include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
-#include <irondash_engine_context/irondash_engine_context_plugin_c_api.h>
 #include <screen_retriever_windows/screen_retriever_windows_plugin_c_api.h>
 #include <share_plus/share_plus_windows_plugin_c_api.h>
-#include <super_native_extensions/super_native_extensions_plugin_c_api.h>
 #include <tinyrack_ui/tinyrack_ui_plugin_c_api.h>
 #include <tray_manager/tray_manager_plugin.h>
 #include <url_launcher_windows/url_launcher_windows.h>
 #include <window_manager/window_manager_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
+  DropwellPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("DropwellPluginCApi"));
   FileSelectorWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FileSelectorWindows"));
   FlutterSecureStorageWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterSecureStorageWindowsPlugin"));
-  IrondashEngineContextPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("IrondashEngineContextPluginCApi"));
   ScreenRetrieverWindowsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("ScreenRetrieverWindowsPluginCApi"));
   SharePlusWindowsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("SharePlusWindowsPluginCApi"));
-  SuperNativeExtensionsPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("SuperNativeExtensionsPluginCApi"));
   TinyrackUiPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("TinyrackUiPluginCApi"));
   TrayManagerPluginRegisterWithRegistrar(

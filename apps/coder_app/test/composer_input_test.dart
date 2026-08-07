@@ -8,11 +8,11 @@ import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/fuzzy_match.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
@@ -960,6 +960,7 @@ final class _OneFileAttachmentInput implements AttachmentInputPort {
       const <PendingAttachment>[];
 
   @override
-  Future<List<PendingAttachment>> droppedFiles(PerformDropEvent event) async =>
-      const <PendingAttachment>[];
+  Future<List<PendingAttachment>> droppedFiles(
+    List<DropwellFile> files,
+  ) async => const <PendingAttachment>[];
 }

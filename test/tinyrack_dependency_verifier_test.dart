@@ -68,6 +68,28 @@ packages:
     );
   });
 
+  test('pins dropwell to the flutter-packages repository', () {
+    final root = Directory.systemTemp.createTempSync('tinyrack-sources-');
+    addTearDown(() => root.deleteSync(recursive: true));
+    // The repository is the part a reader cannot check by eye: every Tinyrack
+    // source looks alike, and a package resolved from the wrong one still
+    // builds.
+    File(p.join(root.path, 'pubspec.yaml')).writeAsStringSync('''
+name: fixture
+dependencies:
+  dropwell:
+    git:
+      url: https://github.com/tinyrack-net/dart-packages.git
+      ref: eb1ce41c61127b7854287f4318d0fb5a104180e2
+      path: packages/dropwell
+''');
+
+    expect(
+      verifier.verify(root.path).map((violation) => violation.rule),
+      contains('tinyrack_git_repository'),
+    );
+  });
+
   test('accepts exact Tinyrack Git sources and ignores build output', () {
     final root = Directory.systemTemp.createTempSync('tinyrack-sources-');
     addTearDown(() => root.deleteSync(recursive: true));

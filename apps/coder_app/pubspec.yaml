@@ -11,6 +11,11 @@ dependencies:
   coder_client: ^0.1.0
   coder_daemon: ^0.1.0
   coder_protocol: ^0.1.0
+  dropwell:
+    git:
+      url: https://github.com/tinyrack-net/flutter-packages.git
+      ref: eb1ce41c61127b7854287f4318d0fb5a104180e2
+      path: packages/dropwell
   file_selector: ^1.0.3
   flutter:
     sdk: flutter
@@ -27,8 +32,6 @@ dependencies:
   riverpod_annotation: 4.0.3
   share_plus: ^12.0.2
   shared_preferences: ^2.5.4
-  super_clipboard: ^0.9.1
-  super_drag_and_drop: ^0.9.1
   tinyrack_ui:
     git:
       url: https://github.com/tinyrack-net/design.git

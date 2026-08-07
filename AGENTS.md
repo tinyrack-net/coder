@@ -8,8 +8,8 @@ the user explicitly requests them.
 ## Tinyrack dependency sources
 
 Consume packages owned by `tinyrack-net`, including `tinyrack_ui`, `cliweave`,
-`dartage`, and `shipworld`, from their public Git repositories at exact
-40-character commit SHAs. Do not use pub.dev, moving branches or tags, path
+`dartage`, `shipworld`, and `dropwell`, from their public Git repositories at
+exact 40-character commit SHAs. Do not use pub.dev, moving branches or tags, path
 dependencies, or `dependency_overrides` for these packages. Run
 `dart run melos tinyrack-sources:check` after changing dependencies.
 

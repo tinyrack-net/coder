@@ -19,10 +19,10 @@ import 'package:coder_app/src/model_picker_options.dart';
 import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/session_title.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Service tier the fast-mode toggle selects.
@@ -1217,14 +1217,12 @@ class _SessionComposerState extends State<SessionComposer> {
     );
     final input = widget.attachmentInput;
     if (input == null || !input.supportsDrop) return content;
-    return DropRegion(
-      formats: Formats.standardFormats,
-      onDropOver: (_) => editable ? DropOperation.copy : DropOperation.none,
-      onDropEnter: (_) => setState(() => _dragging = true),
-      onDropLeave: (_) => setState(() => _dragging = false),
-      onPerformDrop: (event) async {
+    return DropwellRegion(
+      enabled: editable,
+      onHoverChanged: (hovering) => setState(() => _dragging = hovering),
+      onDrop: (files) async {
         setState(() => _dragging = false);
-        await _addFiles(input.droppedFiles(event));
+        await _addFiles(input.droppedFiles(files));
       },
       child: content,
     );

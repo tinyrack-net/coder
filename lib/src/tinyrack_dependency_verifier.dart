@@ -57,6 +57,10 @@ final class TinyrackDependencyVerifier {
           repository: 'https://github.com/tinyrack-net/dart-packages.git',
           packagePath: 'packages/shipworld',
         ),
+        'dropwell': _TinyrackSource(
+          repository: 'https://github.com/tinyrack-net/flutter-packages.git',
+          packagePath: 'packages/dropwell',
+        ),
       };
   static const Set<String> _ignoredDirectories = <String>{
     '.dart_tool',

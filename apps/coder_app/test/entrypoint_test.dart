@@ -9,6 +9,7 @@ import 'package:coder_app/src/desktop_startup.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fake_coder_api.dart';
@@ -87,8 +88,13 @@ void main() {
     // A browser has no filesystem, so both ports need a web implementation or
     // the composer silently loses file support.
     expect(createAttachmentExport(), isA<WebAttachmentExport>());
-    // super_drag_and_drop ships a web implementation, so drop stays available.
-    expect(const WebAttachmentInput().supportsDrop, isTrue);
+    // Drop support is dropwell's answer, not this adapter's: repeating the
+    // claim here is how the two would drift apart. What the adapter owes is
+    // to report whatever the running platform says.
+    expect(
+      const WebAttachmentInput().supportsDrop,
+      DropwellPlatform.instance.supportsDrop,
+    );
   });
 
   testWidgets(
