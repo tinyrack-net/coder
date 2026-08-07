@@ -114,7 +114,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     return LayoutBuilder(
       key: const ValueKey<String>('mcp-settings-page'),
       builder: (context, constraints) {
-        if (constraints.maxWidth < TRBreakpoints.medium) {
+        if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
           _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
           syncSettingsPaneBackHandler(
             context,
