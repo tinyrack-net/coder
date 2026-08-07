@@ -229,7 +229,7 @@ void main() {
       'coder_protocol',
       'coder_app',
       'coder_cli',
-      'coder_mcp',
+      'coder_client',
     ]) {
       final violations = verifier.verifySource(
         package: package,
