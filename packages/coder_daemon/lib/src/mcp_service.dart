@@ -61,9 +61,9 @@ final class McpServerResourceTemplate {
 /// Connections are established in the background and never block a turn: only
 /// servers that are already ready contribute tools, and a server that cannot
 /// start degrades to a diagnostic rather than failing the daemon or the turn.
-final class McpService implements AgentToolCatalog {
+final class McpRuntime implements AgentToolCatalog {
   /// Creates a service reading its servers from the daemon configuration.
-  McpService({
+  McpRuntime({
     required this._store,
     required this._credentials,
     required this._transports,
@@ -537,7 +537,7 @@ final class _Connection {
   final McpServerConfigDto config;
   final String sourcePath;
   final McpConfigScope scope;
-  final McpService service;
+  final McpRuntime service;
 
   /// Whether a user server of the same id already owns this name.
   final bool shadowed;

@@ -16,6 +16,7 @@ import 'package:coder_daemon/src/file_index.dart';
 import 'package:coder_daemon/src/git_workspace.dart';
 import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_daemon/src/mcp_resource_tools.dart';
+import 'package:coder_daemon/src/mcp_server_service.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/mcp_transports.dart';
 import 'package:coder_daemon/src/multi_agent.dart';
@@ -27,6 +28,8 @@ import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/server.dart';
+import 'package:coder_daemon/src/session_interactions.dart';
+import 'package:coder_daemon/src/session_settings.dart';
 import 'package:coder_daemon/src/skills.dart';
 import 'package:coder_daemon/src/terminal_service.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
@@ -151,7 +154,7 @@ abstract final class DaemonApplication {
         plugins: openAIFamilyPlugins(clock: clock, openAIOAuth: oauthGateway),
         wireProtocols: openAIWireProtocols(),
       );
-      final providers = ProviderService(
+      final providers = ProviderConnectionService(
         repository: database.providerDao,
         credentials: credentials,
         settings: database.settingsDao,
@@ -170,6 +173,7 @@ abstract final class DaemonApplication {
         fixedProvider: provider,
       );
       await providers.initialize();
+      final models = ProviderModelResolver(providers);
       // A bare API key in daemon config has always meant the first vendor's
       // platform key; the composition root is where that convention lives.
       final apiKeyDefinition = providerRegistry.plugins.first.id;
@@ -196,7 +200,7 @@ abstract final class DaemonApplication {
       final gitignore =
           gitignoreEnvironment ??
           GitignoreEnvironment.fromEnvironment(Platform.environment);
-      final mcp = McpService(
+      final mcp = McpRuntime(
         store: FileMcpConfigStore(config.configDirectory),
         credentials: credentials,
         transports: IoMcpTransportFactory(clientVersion: config.version),
@@ -209,6 +213,7 @@ abstract final class DaemonApplication {
       // Reads mcp.json only; every handshake runs in the background so one
       // unstartable server cannot hold up daemon boot.
       await mcp.initialize();
+      final mcpServers = McpServerService(mcp);
       // Assigned once the session service it drives exists; the registry reads
       // it per turn rather than capturing null here.
       MultiAgentService? multiAgent;
@@ -229,7 +234,7 @@ abstract final class DaemonApplication {
       );
       await agentDefinitions.initialize();
       final userHome = config.userHomeDirectory;
-      final skills = SkillService(
+      final skills = SkillCatalogService(
         store: FileSkillStore(
           roots: <SkillFiles>[
             // A daemon without a resolved user home stays away from any
@@ -279,40 +284,52 @@ abstract final class DaemonApplication {
         const Duration(minutes: 5),
         (_) => execSessions.sweepIdle(),
       );
-      final service = SessionService(
+      final sessionInteractions = SessionInteractionCoordinator(
+        timeline: database.timelineDao,
+        events: events.add,
+        ids: ids,
+        clock: clock,
+      );
+      final service = SessionTurnCoordinator(
         sessions: database.sessionDao,
         definitions: agentDefinitions,
         worktrees: database.worktreeDao,
         timeline: database.timelineDao,
-        providers: providers,
+        models: models,
         events: events.add,
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: clock,
-        ids: ids,
         attachments: attachments,
         toolRegistry: toolRegistry,
         externalTools: _McpToolSource(mcp),
         execHostFor: (id) => SessionExecHost(execSessions, id),
         skills: skills,
         settings: database.settingsDao,
+        interactions: sessionInteractions,
       );
       multiAgent = MultiAgentService(
         sessions: database.sessionDao,
         mailbox: database.agentMailboxDao,
         timeline: database.timelineDao,
         getDefinition: agentDefinitions.get,
-        validateModel: providers.validateAgentModel,
-        fallbackModel: providers.fallbackModel,
+        validateModel: models.validateAgentModel,
+        fallbackModel: models.fallbackModel,
         events: events.add,
         clock: clock,
         ids: ids,
       )..runtime = service;
       service.multiAgent = multiAgent;
+      final sessionSettings = SessionSettingsService(
+        sessions: database.sessionDao,
+        models: models,
+        hasActiveTurn: service.hasActiveTurn,
+        events: events.add,
+      );
       final fileIndex = GitAwareFileIndexGateway(
         const IoCommandRunner(),
         clock,
       );
-      final workspaceService = WorkspaceService(
+      final workspaceOperations = WorkspaceOperations(
         database.workspaceDao,
         database.worktreeDao,
         database.sessionDao,
@@ -326,7 +343,9 @@ abstract final class DaemonApplication {
       );
       // Sessions that belong to no project run here, so the home checkout has
       // to exist before the first client connects.
-      await workspaceService.provisionHome(config.userHomeDirectory);
+      final workspaceCatalog = WorkspaceCatalogService(workspaceOperations);
+      final worktreeLifecycle = WorktreeLifecycleService(workspaceOperations);
+      await workspaceCatalog.provisionHome(config.userHomeDirectory);
       final terminals = TerminalService(
         gateway: const PtyworldTerminalGateway(),
         worktreePath: (worktreeId) async {
@@ -383,17 +402,22 @@ abstract final class DaemonApplication {
         },
       );
       final rpc = DaemonRpcServer(
-        workspaces: workspaceService,
+        workspaces: workspaceCatalog,
+        worktreeLifecycle: worktreeLifecycle,
         sessionRepository: database.sessionDao,
         timeline: database.timelineDao,
         agents: service,
+        sessionSettings: sessionSettings,
+        sessionInteractions: sessionInteractions,
         attachments: attachments,
         agentDefinitions: agentDefinitions,
         mcp: mcp,
+        mcpServers: mcpServers,
         worktrees: database.worktreeDao,
         skills: skills,
         commands: commands,
         providers: providers,
+        models: models,
         providerAuth: providerAuth,
         terminals: terminals,
         settings: database.settingsDao,
@@ -403,11 +427,7 @@ abstract final class DaemonApplication {
         events: events.stream,
         allowedOrigins: config.allowedOrigins,
       );
-      final http = await shelf_io.serve(
-        rpc.call,
-        config.host,
-        config.port,
-      );
+      final http = await shelf_io.serve(rpc.call, config.host, config.port);
       final presentationHost = config.host == '0.0.0.0'
           ? '127.0.0.1'
           : config.host;
@@ -471,8 +491,8 @@ class _LocalDaemonHandle implements DaemonHandle {
   final CoderDatabase _database;
   final StreamController<WireEnvelope> _events;
   final AgentDefinitionService _agentDefinitions;
-  final McpService _mcp;
-  final SkillService _skills;
+  final McpRuntime _mcp;
+  final SkillCatalogService _skills;
   final RandomAccessFile _lock;
   final Timer _attachmentCleanup;
   final Timer _execSweep;
@@ -515,7 +535,7 @@ class _LocalDaemonHandle implements DaemonHandle {
 final class _McpToolSource implements ExternalToolSource {
   const _McpToolSource(this._mcp);
 
-  final McpService _mcp;
+  final McpRuntime _mcp;
 
   @override
   AgentTool? Function(String id) lookupFor(String workspaceRoot) {

@@ -726,7 +726,7 @@ final class _ServiceFixture {
          plugins: openAIFamilyPlugins(clock: _Clock(now)),
          wireProtocols: openAIWireProtocols(),
        ) {
-    service = ProviderService(
+    service = ProviderConnectionService(
       repository: repository,
       credentials: credentials,
       settings: settings,
@@ -749,7 +749,7 @@ final class _ServiceFixture {
   final _Refresher refresher = _Refresher();
   final _Clock clock;
   final ProviderRegistry registry;
-  late final ProviderService service;
+  late final ProviderConnectionService service;
 }
 
 final class _Refresher implements ProviderCredentialRefresher {

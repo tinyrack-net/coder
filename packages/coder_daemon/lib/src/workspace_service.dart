@@ -8,9 +8,9 @@ import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
 /// Repository and checkout lifecycle application service.
-final class WorkspaceService {
+final class WorkspaceOperations {
   /// Creates a workspace service from typed persistence and host ports.
-  const WorkspaceService(
+  const WorkspaceOperations(
     this._workspaces,
     this._worktrees,
     this._agents,
@@ -481,6 +481,129 @@ final class WorkspaceService {
   Future<WorktreeDto> _requireWorktree(String id) async =>
       await _worktrees.getById(id) ??
       (throw StateError('Worktree not found: $id'));
+}
+
+/// Repository registration and discovery operations used by RPC callers.
+abstract interface class WorkspaceCatalogPort {
+  /// Returns every registered workspace and active checkout.
+  Future<WorkspaceCatalogDto> catalog();
+
+  /// Ensures the optional user-home workspace exists.
+  Future<WorktreeDto?> provisionHome(String? userHome);
+
+  /// Registers a directory or repository.
+  Future<WorkspaceRegisterResultDto> register(
+    WorkspaceRegisterParamsDto request,
+  );
+
+  /// Refreshes discovered checkout metadata.
+  Future<WorkspaceCatalogDto> refresh(String workspaceId);
+
+  /// Removes a project registration.
+  Future<void> unregister(String workspaceId);
+
+  /// Suggests host directories matching a query.
+  Future<List<DirectorySuggestionDto>> suggestDirectories(
+    String query,
+    int limit,
+  );
+
+  /// Searches files within an active worktree.
+  Future<FileSearchResultDto> searchFiles(FileSearchParamsDto request);
+
+  /// Resolves the root directory of a registered workspace.
+  Future<String> workspaceRoot(String workspaceId);
+}
+
+/// Worktree and project-settings operations used by RPC callers.
+abstract interface class WorktreeLifecyclePort {
+  /// Lists branches available to a Git workspace.
+  Future<List<GitBranchDto>> listBranches(String workspaceId);
+
+  /// Reads project settings from a workspace root.
+  Future<ProjectSettingsResultDto> getProjectSettings(String workspaceId);
+
+  /// Writes project settings to a workspace root.
+  Future<ProjectSettingsResultDto> saveProjectSettings(
+    ProjectSettingsSaveParamsDto request,
+  );
+
+  /// Creates one managed checkout.
+  Future<WorktreeResultDto> createWorktree(WorktreeCreateParamsDto request);
+
+  /// Reports archive risks without changing the checkout.
+  Future<WorktreeArchivePreviewDto> previewArchive(String worktreeId);
+
+  /// Archives a checkout after enforcing safety rules.
+  Future<WorktreeResultDto> archive(
+    String worktreeId, {
+    required bool force,
+  });
+}
+
+/// Cohesive workspace catalog view over shared workspace operations.
+final class WorkspaceCatalogService implements WorkspaceCatalogPort {
+  /// Creates the workspace catalog service.
+  const WorkspaceCatalogService(this._operations);
+
+  final WorkspaceOperations _operations;
+
+  @override
+  Future<WorkspaceCatalogDto> catalog() => _operations.catalog();
+  @override
+  Future<WorktreeDto?> provisionHome(String? userHome) =>
+      _operations.provisionHome(userHome);
+  @override
+  Future<WorkspaceRegisterResultDto> register(
+    WorkspaceRegisterParamsDto request,
+  ) => _operations.register(request);
+  @override
+  Future<WorkspaceCatalogDto> refresh(String workspaceId) =>
+      _operations.refresh(workspaceId);
+  @override
+  Future<void> unregister(String workspaceId) =>
+      _operations.unregister(workspaceId);
+  @override
+  Future<List<DirectorySuggestionDto>> suggestDirectories(
+    String query,
+    int limit,
+  ) => _operations.suggestDirectories(query, limit);
+  @override
+  Future<FileSearchResultDto> searchFiles(FileSearchParamsDto request) =>
+      _operations.searchFiles(request);
+  @override
+  Future<String> workspaceRoot(String workspaceId) =>
+      _operations.workspaceRoot(workspaceId);
+}
+
+/// Cohesive managed-worktree lifecycle view over shared workspace operations.
+final class WorktreeLifecycleService implements WorktreeLifecyclePort {
+  /// Creates the managed-worktree lifecycle service.
+  const WorktreeLifecycleService(this._operations);
+
+  final WorkspaceOperations _operations;
+
+  @override
+  Future<List<GitBranchDto>> listBranches(String workspaceId) =>
+      _operations.listBranches(workspaceId);
+  @override
+  Future<ProjectSettingsResultDto> getProjectSettings(String workspaceId) =>
+      _operations.getProjectSettings(workspaceId);
+  @override
+  Future<ProjectSettingsResultDto> saveProjectSettings(
+    ProjectSettingsSaveParamsDto request,
+  ) => _operations.saveProjectSettings(request);
+  @override
+  Future<WorktreeResultDto> createWorktree(WorktreeCreateParamsDto request) =>
+      _operations.createWorktree(request);
+  @override
+  Future<WorktreeArchivePreviewDto> previewArchive(String worktreeId) =>
+      _operations.previewArchive(worktreeId);
+  @override
+  Future<WorktreeResultDto> archive(
+    String worktreeId, {
+    required bool force,
+  }) => _operations.archive(worktreeId, force: force);
 }
 
 String _normalizeBranch(String input) {

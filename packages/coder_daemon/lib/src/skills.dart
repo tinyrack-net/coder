@@ -918,9 +918,9 @@ final class _SkillMarkdownDocument {
 }
 
 /// Application service exposing skills to RPC callers and to turns.
-final class SkillService {
+final class SkillCatalogService {
   /// Creates a skill application service.
-  SkillService({required this.store});
+  SkillCatalogService({required this.store});
 
   /// Source-of-truth catalog backing this service.
   final FileSkillStore store;

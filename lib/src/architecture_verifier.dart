@@ -300,8 +300,12 @@ final class ArchitectureVerifier {
     }
     if (package == 'coder_daemon') {
       return path.endsWith('/agent_service.dart') ||
+          path.endsWith('/session_interactions.dart') ||
+          path.endsWith('/session_settings.dart') ||
           path.endsWith('/mcp_service.dart') ||
-          path.endsWith('/provider_service.dart');
+          path.endsWith('/mcp_server_service.dart') ||
+          path.endsWith('/provider_service.dart') ||
+          path.endsWith('/workspace_service.dart');
     }
     return package == 'coder_agent' && path.endsWith('/runtime.dart');
   }

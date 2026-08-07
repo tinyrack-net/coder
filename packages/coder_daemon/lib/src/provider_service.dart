@@ -45,6 +45,35 @@ final class ProviderConnectionFailure implements Exception {
   String toString() => 'ProviderConnectionFailure($code): $message';
 }
 
+/// Resolves configured model selections into executable provider instances.
+final class ProviderModelResolver {
+  /// Creates a model resolver over the provider connection registry.
+  const ProviderModelResolver(this._connections);
+
+  final ProviderConnectionService _connections;
+
+  /// Returns the daemon-global fallback model, when one is runnable.
+  Future<SessionModelSelectionDto?> fallbackModel() =>
+      _connections.fallbackModel();
+
+  /// Resolves a Markdown agent model selection.
+  Future<ResolvedAgentModel> resolveAgentModel(
+    AgentModelSelectionDto selection,
+  ) => _connections.resolveAgentModel(selection);
+
+  /// Resolves one explicit provider connection and model.
+  Future<ResolvedAgentModel> resolveExplicitModel(
+    String connectionId,
+    String modelId,
+  ) => _connections.resolveExplicitModel(connectionId, modelId);
+
+  /// Validates that one model is runnable on its connection.
+  Future<ProviderModelDto> validateAgentModel(
+    String connectionId,
+    String modelId,
+  ) => _connections.validateAgentModel(connectionId, modelId);
+}
+
 /// Definition id recorded for connections built from custom configuration.
 ///
 /// Not a vendor: only the presence of [ProviderConnectionDto.customConfig]
@@ -59,9 +88,9 @@ const String customProviderDefinitionId = 'custom';
 const String defaultModelSettingKey = 'provider.defaultModel';
 
 /// Owns provider connections while keeping runtime details out of the protocol.
-final class ProviderService implements ProviderOAuthConnector {
+final class ProviderConnectionService implements ProviderOAuthConnector {
   /// Creates the provider connection service.
-  factory ProviderService({
+  factory ProviderConnectionService({
     required ProviderRepository repository,
     required CredentialRepository credentials,
     required SettingsRepository settings,
@@ -73,7 +102,7 @@ final class ProviderService implements ProviderOAuthConnector {
     ModelProviderFactory? providerFactory,
     ProviderCredentialRefresher? oauthRefresher,
     ModelProvider? fixedProvider,
-  }) => ProviderService._(
+  }) => ProviderConnectionService._(
     repository: repository,
     credentials: credentials,
     settings: settings,
@@ -87,7 +116,7 @@ final class ProviderService implements ProviderOAuthConnector {
     fixedProvider: fixedProvider,
   );
 
-  ProviderService._({
+  ProviderConnectionService._({
     required this._repository,
     required this._credentials,
     required this._settings,

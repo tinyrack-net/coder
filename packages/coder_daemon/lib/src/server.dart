@@ -7,11 +7,15 @@ import 'package:coder_daemon/src/agent_service.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
 import 'package:coder_daemon/src/commands.dart';
 import 'package:coder_daemon/src/config.dart';
+import 'package:coder_daemon/src/mcp_server_service.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
+import 'package:coder_daemon/src/rpc_dispatch.dart';
+import 'package:coder_daemon/src/session_interactions.dart';
+import 'package:coder_daemon/src/session_settings.dart';
 import 'package:coder_daemon/src/skills.dart';
 import 'package:coder_daemon/src/terminal_service.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
@@ -26,16 +30,21 @@ class DaemonRpcServer {
   /// Creates a [DaemonRpcServer].
   DaemonRpcServer({
     required this.workspaces,
+    required this.worktreeLifecycle,
     required this.sessionRepository,
     required this.timeline,
     required this.agents,
+    required this.sessionSettings,
+    required this.sessionInteractions,
     required this.attachments,
     required this.agentDefinitions,
     required this.mcp,
+    required this.mcpServers,
     required this.worktrees,
     required this.skills,
     required this.commands,
     required this.providers,
+    required this.models,
     required this.providerAuth,
     required this.terminals,
     required this.settings,
@@ -107,10 +116,16 @@ class DaemonRpcServer {
   }
 
   /// The workspaces public API member.
-  final WorkspaceService workspaces;
+  final WorkspaceCatalogPort workspaces;
+
+  /// Manages Git worktree and project-settings lifecycles.
+  final WorktreeLifecyclePort worktreeLifecycle;
 
   /// Connects and reports external MCP servers.
-  final McpService mcp;
+  final McpRuntime mcp;
+
+  /// Administers persisted user MCP servers.
+  final McpAdminPort mcpServers;
 
   /// Resolves a worktree id to the checkout its MCP scope belongs to.
   final WorktreeRepository worktrees;
@@ -122,7 +137,13 @@ class DaemonRpcServer {
   final TimelineRepository timeline;
 
   /// The agents public API member.
-  final SessionService agents;
+  final SessionTurnCoordinator agents;
+
+  /// Mutates session preferences independently of turn execution.
+  final SessionSettingsPort sessionSettings;
+
+  /// Resolves client-mediated interactions for running turns.
+  final SessionInteractionPort sessionInteractions;
 
   /// Daemon-owned attachment payload service.
   final AttachmentService attachments;
@@ -131,13 +152,16 @@ class DaemonRpcServer {
   final AgentDefinitionService agentDefinitions;
 
   /// The skills public API member.
-  final SkillService skills;
+  final SkillCatalogService skills;
 
   /// Markdown-backed agent command catalog.
   final CommandService commands;
 
   /// The providers public API member.
-  final ProviderService providers;
+  final ProviderConnectionService providers;
+
+  /// Resolves and validates model selections for session requests.
+  final ProviderModelResolver models;
 
   /// Transient provider authorization coordinator.
   final ProviderAuthCoordinator providerAuth;
@@ -192,10 +216,7 @@ class DaemonRpcServer {
           'version': serverInfo.version,
           'protocolVersion': serverInfo.protocolVersion,
         }),
-        headers: <String, String>{
-          'content-type': 'application/json',
-          ...cors,
-        },
+        headers: <String, String>{'content-type': 'application/json', ...cors},
       );
     }
     final isAttachmentRequest =
@@ -315,15 +336,20 @@ class DaemonRpcServer {
     final session = _ClientSession(
       channel: channel,
       workspaces: workspaces,
+      worktreeLifecycle: worktreeLifecycle,
       sessionRepository: sessionRepository,
       timeline: timeline,
       agents: agents,
+      sessionSettings: sessionSettings,
+      sessionInteractions: sessionInteractions,
       agentDefinitions: agentDefinitions,
       mcp: mcp,
+      mcpServers: mcpServers,
       worktrees: worktrees,
       skills: skills,
       commands: commands,
       providers: providers,
+      models: models,
       providerAuth: providerAuth,
       terminals: terminals,
       settings: settings,
@@ -387,15 +413,20 @@ class _ClientSession {
   _ClientSession({
     required this.channel,
     required this.workspaces,
+    required this.worktreeLifecycle,
     required this.sessionRepository,
     required this.timeline,
     required this.agents,
+    required this.sessionSettings,
+    required this.sessionInteractions,
     required this.agentDefinitions,
     required this.mcp,
+    required this.mcpServers,
     required this.worktrees,
     required this.skills,
     required this.commands,
     required this.providers,
+    required this.models,
     required this.providerAuth,
     required this.terminals,
     required this.settings,
@@ -405,16 +436,21 @@ class _ClientSession {
   });
 
   final WebSocketChannel channel;
-  final WorkspaceService workspaces;
+  final WorkspaceCatalogPort workspaces;
+  final WorktreeLifecyclePort worktreeLifecycle;
   final SessionRepository sessionRepository;
   final TimelineRepository timeline;
-  final SessionService agents;
+  final SessionTurnCoordinator agents;
+  final SessionSettingsPort sessionSettings;
+  final SessionInteractionPort sessionInteractions;
   final AgentDefinitionService agentDefinitions;
-  final McpService mcp;
+  final McpRuntime mcp;
+  final McpAdminPort mcpServers;
   final WorktreeRepository worktrees;
-  final SkillService skills;
+  final SkillCatalogService skills;
   final CommandService commands;
-  final ProviderService providers;
+  final ProviderConnectionService providers;
+  final ProviderModelResolver models;
   final ProviderAuthCoordinator providerAuth;
   final TerminalService terminals;
   final SettingsRepository settings;
@@ -428,82 +464,7 @@ class _ClientSession {
   void start() {
     _peer = json_rpc.Peer(channel.cast<String>());
     _peer.registerMethod(RpcMethod.hello, _hello);
-    for (final method in <String>[
-      RpcMethod.workspaceCatalog,
-      RpcMethod.workspaceRegister,
-      RpcMethod.workspaceRefresh,
-      RpcMethod.workspaceUnregister,
-      RpcMethod.directorySuggest,
-      RpcMethod.fileSearch,
-      RpcMethod.gitBranchesList,
-      RpcMethod.worktreeCreate,
-      RpcMethod.worktreeArchivePreview,
-      RpcMethod.worktreeArchive,
-      RpcMethod.projectSettingsGet,
-      RpcMethod.projectSettingsSave,
-      RpcMethod.agentDefinitionList,
-      RpcMethod.agentDefinitionGet,
-      RpcMethod.agentDefinitionCreate,
-      RpcMethod.agentDefinitionUpdate,
-      RpcMethod.agentDefinitionArchive,
-      RpcMethod.agentDefinitionReset,
-      RpcMethod.agentDefinitionValidate,
-      RpcMethod.agentToolCatalog,
-      RpcMethod.mcpServerList,
-      RpcMethod.mcpServerAdd,
-      RpcMethod.mcpServerUpdate,
-      RpcMethod.mcpServerRemove,
-      RpcMethod.mcpServerTest,
-      RpcMethod.mcpSecretSet,
-      RpcMethod.commandList,
-      RpcMethod.skillList,
-      RpcMethod.skillGet,
-      RpcMethod.skillCreate,
-      RpcMethod.skillUpdate,
-      RpcMethod.skillDelete,
-      RpcMethod.skillSetEnabled,
-      RpcMethod.sessionList,
-      RpcMethod.sessionSubagentList,
-      RpcMethod.sessionCreate,
-      RpcMethod.sessionModelSet,
-      RpcMethod.sessionModeSet,
-      RpcMethod.sessionReasoningEffortSet,
-      RpcMethod.sessionPermissionModeSet,
-      RpcMethod.sessionServiceTierSet,
-
-      RpcMethod.terminalList,
-      RpcMethod.terminalCreate,
-      RpcMethod.terminalAttach,
-      RpcMethod.terminalWrite,
-      RpcMethod.terminalResize,
-      RpcMethod.terminalTerminate,
-      RpcMethod.terminalShellGet,
-      RpcMethod.terminalShellSet,
-      RpcMethod.permissionDefaultModeGet,
-      RpcMethod.permissionDefaultModeSet,
-      RpcMethod.providerCatalog,
-      RpcMethod.providerConnectionsList,
-      RpcMethod.providerConnectApiKey,
-      RpcMethod.providerConnectNone,
-      RpcMethod.providerAuthStart,
-      RpcMethod.providerAuthStatus,
-      RpcMethod.providerAuthCancel,
-      RpcMethod.providerDisconnect,
-      RpcMethod.providerCatalogRefresh,
-      RpcMethod.providerModelsList,
-      RpcMethod.providerDefaultModelGet,
-      RpcMethod.providerDefaultModelSet,
-      RpcMethod.providerCustomCreate,
-      RpcMethod.providerCustomUpdate,
-      RpcMethod.providerCustomDelete,
-      RpcMethod.turnStart,
-      RpcMethod.turnCancel,
-      RpcMethod.sessionCompact,
-      RpcMethod.approvalResolve,
-      RpcMethod.userQuestionAnswer,
-      RpcMethod.sessionPendingInput,
-      RpcMethod.timelineSubscribe,
-    ]) {
+    for (final method in daemonRpcMethods) {
       _peer.registerMethod(
         method,
         (json_rpc.Parameters parameters) => _invoke(method, parameters),
@@ -526,10 +487,7 @@ class _ClientSession {
     _handshakeComplete = true;
     return serverInfo
         .copyWith(
-          features: <String, bool>{
-            ...serverInfo.features,
-            'jsonRpc2': true,
-          },
+          features: <String, bool>{...serverInfo.features, 'jsonRpc2': true},
         )
         .toJson();
   }
@@ -634,9 +592,7 @@ class _ClientSession {
       case RpcMethod.workspaceUnregister:
         final request = WorkspaceIdParamsDto.fromJson(payload);
         await workspaces.unregister(request.workspaceId);
-        return const WorkspaceUnregisterResultDto(
-          unregistered: true,
-        ).toJson();
+        return const WorkspaceUnregisterResultDto(unregistered: true).toJson();
       case RpcMethod.directorySuggest:
         final request = DirectorySuggestParamsDto.fromJson(payload);
         return DirectorySuggestResultDto(
@@ -652,27 +608,27 @@ class _ClientSession {
       case RpcMethod.gitBranchesList:
         final request = GitBranchesListParamsDto.fromJson(payload);
         return GitBranchesListResultDto(
-          branches: await workspaces.listBranches(request.workspaceId),
+          branches: await worktreeLifecycle.listBranches(request.workspaceId),
         ).toJson();
       case RpcMethod.worktreeCreate:
         final request = WorktreeCreateParamsDto.fromJson(payload);
-        return (await workspaces.createWorktree(request)).toJson();
+        return (await worktreeLifecycle.createWorktree(request)).toJson();
       case RpcMethod.projectSettingsGet:
         final request = ProjectSettingsGetParamsDto.fromJson(payload);
-        return (await workspaces.getProjectSettings(
+        return (await worktreeLifecycle.getProjectSettings(
           request.workspaceId,
         )).toJson();
       case RpcMethod.projectSettingsSave:
         final request = ProjectSettingsSaveParamsDto.fromJson(payload);
-        return (await workspaces.saveProjectSettings(request)).toJson();
+        return (await worktreeLifecycle.saveProjectSettings(request)).toJson();
       case RpcMethod.worktreeArchivePreview:
         final request = WorktreeIdParamsDto.fromJson(payload);
         return WorktreeArchivePreviewResultDto(
-          preview: await workspaces.previewArchive(request.worktreeId),
+          preview: await worktreeLifecycle.previewArchive(request.worktreeId),
         ).toJson();
       case RpcMethod.worktreeArchive:
         final request = WorktreeArchiveParamsDto.fromJson(payload);
-        return (await workspaces.archive(
+        return (await worktreeLifecycle.archive(
           request.worktreeId,
           force: request.force,
         )).toJson();
@@ -736,25 +692,25 @@ class _ClientSession {
       case RpcMethod.mcpServerAdd:
         final request = McpServerParamsDto.fromJson(payload);
         return McpServerStateResultDto(
-          state: await mcp.addUserServer(request.server),
+          state: await mcpServers.add(request.server),
         ).toJson();
       case RpcMethod.mcpServerUpdate:
         final request = McpServerParamsDto.fromJson(payload);
         return McpServerStateResultDto(
-          state: await mcp.updateUserServer(request.server),
+          state: await mcpServers.update(request.server),
         ).toJson();
       case RpcMethod.mcpServerRemove:
         final request = McpServerIdParamsDto.fromJson(payload);
-        await mcp.removeUserServer(request.id);
+        await mcpServers.remove(request.id);
         return const <String, dynamic>{};
       case RpcMethod.mcpServerTest:
         final request = McpServerParamsDto.fromJson(payload);
         return McpServerStateResultDto(
-          state: await mcp.testServer(request.server),
+          state: await mcpServers.test(request.server),
         ).toJson();
       case RpcMethod.mcpSecretSet:
         final request = McpSecretParamsDto.fromJson(payload);
-        await mcp.setSecret(request.key, request.value);
+        await mcpServers.setSecret(request.key, request.value);
         return const <String, dynamic>{};
       case RpcMethod.commandList:
         final commandRequest = CommandListParamsDto.fromJson(payload);
@@ -849,9 +805,9 @@ class _ClientSession {
         // Without an override the definition resolves through the daemon
         // fallback chain, which only fails when nothing is connected.
         if (requestedModel == null) {
-          await providers.resolveAgentModel(definition.model);
+          await models.resolveAgentModel(definition.model);
         } else {
-          await providers.validateAgentModel(
+          await models.validateAgentModel(
             requestedModel.providerConnectionId,
             requestedModel.modelId,
           );
@@ -877,29 +833,35 @@ class _ClientSession {
         return SessionResultDto(session: session).toJson();
       case RpcMethod.sessionModeSet:
         final request = SessionModeSetParamsDto.fromJson(payload);
-        final session = await agents.setMode(request.sessionId, request.mode);
+        final session = await sessionSettings.setMode(
+          request.sessionId,
+          request.mode,
+        );
         return SessionResultDto(session: session).toJson();
       case RpcMethod.sessionModelSet:
         final request = SessionModelSetParamsDto.fromJson(payload);
-        final session = await agents.setModel(request.sessionId, request.model);
+        final session = await sessionSettings.setModel(
+          request.sessionId,
+          request.model,
+        );
         return SessionResultDto(session: session).toJson();
       case RpcMethod.sessionReasoningEffortSet:
         final request = SessionReasoningEffortSetParamsDto.fromJson(payload);
-        final session = await agents.setReasoningEffort(
+        final session = await sessionSettings.setReasoningEffort(
           request.sessionId,
           request.reasoningEffort,
         );
         return SessionResultDto(session: session).toJson();
       case RpcMethod.sessionPermissionModeSet:
         final request = SessionPermissionModeSetParamsDto.fromJson(payload);
-        final session = await agents.setPermissionMode(
+        final session = await sessionSettings.setPermissionMode(
           request.sessionId,
           request.permissionMode,
         );
         return SessionResultDto(session: session).toJson();
       case RpcMethod.sessionServiceTierSet:
         final request = SessionServiceTierSetParamsDto.fromJson(payload);
-        final session = await agents.setServiceTier(
+        final session = await sessionSettings.setServiceTier(
           request.sessionId,
           request.serviceTier,
         );
@@ -1072,19 +1034,19 @@ class _ClientSession {
         return const <String, dynamic>{};
       case RpcMethod.approvalResolve:
         final request = ApprovalResolveParamsDto.fromJson(payload);
-        final approval = await agents.resolveApproval(
+        final approval = await sessionInteractions.resolveApproval(
           request.approvalId,
           approved: request.approved,
         );
         return ApprovalResultDto(approval: approval).toJson();
       case RpcMethod.sessionPendingInput:
-        agents.notePendingInput(
+        sessionInteractions.notePendingInput(
           SessionPendingInputParamsDto.fromJson(payload).sessionId,
         );
         return const <String, dynamic>{};
       case RpcMethod.userQuestionAnswer:
         final request = UserQuestionAnswerParamsDto.fromJson(payload);
-        final answered = await agents.answerUserQuestion(
+        final answered = await sessionInteractions.answerUserQuestion(
           request.requestId,
           request.answers,
         );

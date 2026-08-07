@@ -24,10 +24,10 @@ void main() {
   late _FakeTransports transports;
   late _FakeCredentials credentials;
 
-  McpService build({
+  McpRuntime build({
     Map<String, String> environment = const <String, String>{},
     McpTimerFactory? timerFactory,
-  }) => McpService(
+  }) => McpRuntime(
     store: store,
     credentials: credentials,
     transports: transports,

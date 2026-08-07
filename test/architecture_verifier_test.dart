@@ -197,6 +197,29 @@ void main() {
     );
   });
 
+  test('every daemon application boundary rejects concrete infrastructure', () {
+    for (final file in const <String>[
+      'session_interactions.dart',
+      'session_settings.dart',
+      'mcp_server_service.dart',
+      'workspace_service.dart',
+    ]) {
+      final violations = verifier.verifySource(
+        package: 'coder_daemon',
+        path: 'packages/coder_daemon/lib/src/$file',
+        source: "import 'dart:io';\nfinal process = Process.start;",
+      );
+      expect(
+        violations.map((violation) => violation.rule),
+        containsAll(<String>[
+          'application_infrastructure_import',
+          'application_concrete_dependency',
+        ]),
+        reason: file,
+      );
+    }
+  });
+
   test('coverage thresholds report both line and branch failures', () {
     const coverage = CoverageVerifier('/workspace');
     final result = coverage.validate(
