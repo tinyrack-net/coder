@@ -994,12 +994,23 @@ Map<String, dynamic> _$ProviderDefinitionDtoToJson(
   'documentationUrl': instance.documentationUrl,
 };
 
+_ProviderWireFormatDto _$ProviderWireFormatDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderWireFormatDto(
+  id: json['id'] as String,
+  label: json['label'] as String,
+);
+
+Map<String, dynamic> _$ProviderWireFormatDtoToJson(
+  _ProviderWireFormatDto instance,
+) => <String, dynamic>{'id': instance.id, 'label': instance.label};
+
 _CustomProviderConfigDto _$CustomProviderConfigDtoFromJson(
   Map<String, dynamic> json,
 ) => _CustomProviderConfigDto(
   name: json['name'] as String,
   baseUrl: json['baseUrl'] as String,
-  apiFormat: $enumDecode(_$ProviderApiFormatEnumMap, json['apiFormat']),
+  wireFormatId: json['wireFormatId'] as String,
   authenticationRequired: json['authenticationRequired'] as bool,
   strictToolSchema: json['strictToolSchema'] as bool? ?? false,
   manualModelIds:
@@ -1014,15 +1025,10 @@ Map<String, dynamic> _$CustomProviderConfigDtoToJson(
 ) => <String, dynamic>{
   'name': instance.name,
   'baseUrl': instance.baseUrl,
-  'apiFormat': _$ProviderApiFormatEnumMap[instance.apiFormat]!,
+  'wireFormatId': instance.wireFormatId,
   'authenticationRequired': instance.authenticationRequired,
   'strictToolSchema': instance.strictToolSchema,
   'manualModelIds': instance.manualModelIds,
-};
-
-const _$ProviderApiFormatEnumMap = {
-  ProviderApiFormat.responses: 'responses',
-  ProviderApiFormat.chatCompletions: 'chatCompletions',
 };
 
 _ProviderConnectionDto _$ProviderConnectionDtoFromJson(
@@ -1180,6 +1186,14 @@ _ProviderCatalogDto _$ProviderCatalogDtoFromJson(Map<String, dynamic> json) =>
           .toList(),
       source: $enumDecode(_$ProviderCatalogSourceEnumMap, json['source']),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      wireFormats:
+          (json['wireFormats'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    ProviderWireFormatDto.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <ProviderWireFormatDto>[],
     );
 
 Map<String, dynamic> _$ProviderCatalogDtoToJson(_ProviderCatalogDto instance) =>
@@ -1187,6 +1201,7 @@ Map<String, dynamic> _$ProviderCatalogDtoToJson(_ProviderCatalogDto instance) =>
       'definitions': instance.definitions,
       'source': _$ProviderCatalogSourceEnumMap[instance.source]!,
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'wireFormats': instance.wireFormats,
     };
 
 const _$ProviderCatalogSourceEnumMap = {

@@ -168,6 +168,10 @@ final class BuiltInProviderCatalog {
     definitions: <ProviderDefinitionDto>[
       for (final plugin in _registry.plugins) plugin.definition,
     ],
+    wireFormats: <ProviderWireFormatDto>[
+      for (final wire in _registry.wireProtocols)
+        ProviderWireFormatDto(id: wire.id, label: wire.label),
+    ],
     source: _refreshedModels == null
         ? ProviderCatalogSource.bundled
         : ProviderCatalogSource.refreshed,

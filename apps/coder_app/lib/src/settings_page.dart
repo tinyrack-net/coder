@@ -249,9 +249,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _addCustom() async {
+    final wireFormats =
+        ref.read(_provider).value?.catalog.wireFormats ??
+        const <ProviderWireFormatDto>[];
     final draft = await showTRDialog<_CustomDraft>(
       context: context,
-      builder: (context) => const _CustomProviderDialog(),
+      builder: (context) => _CustomProviderDialog(wireFormats: wireFormats),
     );
     if (draft == null) return;
     final connection = await ref
@@ -278,10 +281,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _editCustom(ProviderConnectionDto connection) async {
+    final wireFormats =
+        ref.read(_provider).value?.catalog.wireFormats ??
+        const <ProviderWireFormatDto>[];
     final draft = await showTRDialog<_CustomDraft>(
       context: context,
-      builder: (context) =>
-          _CustomProviderDialog(initial: connection.customConfig),
+      builder: (context) => _CustomProviderDialog(
+        initial: connection.customConfig,
+        wireFormats: wireFormats,
+      ),
     );
     if (draft == null) return;
     await ref
@@ -686,9 +694,12 @@ final class _CustomDraft {
 }
 
 class _CustomProviderDialog extends StatefulWidget {
-  const _CustomProviderDialog({this.initial});
+  const _CustomProviderDialog({required this.wireFormats, this.initial});
 
   final CustomProviderConfigDto? initial;
+
+  /// The wire protocols this daemon serves; the first one is the default.
+  final List<ProviderWireFormatDto> wireFormats;
 
   @override
   State<_CustomProviderDialog> createState() => _CustomProviderDialogState();
@@ -699,7 +710,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
   late final TextEditingController _baseUrl;
   late final TextEditingController _apiKey;
   late final TextEditingController _models;
-  late ProviderApiFormat _apiFormat;
+  late String _wireFormatId;
   late bool _authenticationRequired;
 
   @override
@@ -714,7 +725,8 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
     _models = TextEditingController(
       text: initial?.manualModelIds.join(', ') ?? '',
     );
-    _apiFormat = initial?.apiFormat ?? ProviderApiFormat.chatCompletions;
+    _wireFormatId =
+        initial?.wireFormatId ?? widget.wireFormats.firstOrNull?.id ?? '';
     _authenticationRequired = initial?.authenticationRequired ?? true;
   }
 
@@ -748,19 +760,19 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
                 label: 'Base URL',
               ),
               const SizedBox(height: TRSpacing.medium),
-              TRSelectFormField<ProviderApiFormat>(
-                initialValue: _apiFormat,
+              TRSelectFormField<String>(
+                initialValue: _wireFormatId,
                 label: l10n.providerSettingsApiFormat,
-                items: ProviderApiFormat.values
+                items: widget.wireFormats
                     .map(
-                      (format) => TRSelectItem<ProviderApiFormat>(
-                        value: format,
-                        label: format.name,
+                      (format) => TRSelectItem<String>(
+                        value: format.id,
+                        label: format.label,
                       ),
                     )
                     .toList(growable: false),
                 onValueChange: (value) {
-                  if (value != null) setState(() => _apiFormat = value);
+                  if (value != null) setState(() => _wireFormatId = value);
                 },
               ),
               CoderSwitchRow(
@@ -816,7 +828,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
         config: CustomProviderConfigDto(
           name: name,
           baseUrl: baseUrl,
-          apiFormat: _apiFormat,
+          wireFormatId: _wireFormatId,
           authenticationRequired: _authenticationRequired,
           manualModelIds: _models.text
               .split(',')

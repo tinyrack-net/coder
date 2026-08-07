@@ -177,11 +177,15 @@ List<ProviderPlugin> openAIFamilyPlugins({
 }
 
 /// The wire protocols this package offers to custom connections.
+///
+/// Chat Completions first: most custom endpoints are local OpenAI-compatible
+/// servers, and the first registered format is what a new custom connection
+/// defaults to.
 List<ProviderWireProtocol> openAIWireProtocols({
   Dio Function(ProviderEndpoint endpoint)? dioFactory,
 }) => <ProviderWireProtocol>[
-  OpenAIResponsesWire(dioFactory: dioFactory),
   OpenAIChatCompletionsWire(dioFactory: dioFactory),
+  OpenAIResponsesWire(dioFactory: dioFactory),
 ];
 
 const ProviderAuthMethodDto _apiKey = ProviderAuthMethodDto(

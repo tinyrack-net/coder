@@ -543,7 +543,7 @@ void main() {
   const customConfig = CustomProviderConfigDto(
     name: 'Custom',
     baseUrl: 'http://localhost:11434/v1',
-    apiFormat: ProviderApiFormat.chatCompletions,
+    wireFormatId: 'openai-chat-completions',
     authenticationRequired: true,
     manualModelIds: <String>['model'],
   );
@@ -1497,7 +1497,6 @@ void main() {
       ...WorktreeKind.values,
       ...WorktreeCreateMode.values,
       ...WorktreeHookPhase.values,
-      ...ProviderApiFormat.values,
       ...ProviderAuthKind.values,
       ...ProviderAuthFlow.values,
       ...ProviderCredentialOrigin.values,

@@ -162,7 +162,7 @@ void main() {
       const config = CustomProviderConfigDto(
         name: 'Lab',
         baseUrl: 'http://127.0.0.1:9000/v1/',
-        apiFormat: ProviderApiFormat.chatCompletions,
+        wireFormatId: openAIChatCompletionsWireId,
         authenticationRequired: true,
       );
 
@@ -402,7 +402,7 @@ void main() {
       const noAuth = CustomProviderConfigDto(
         name: '  Local Lab  ',
         baseUrl: 'http://127.0.0.1:9000/v1///',
-        apiFormat: ProviderApiFormat.responses,
+        wireFormatId: openAIResponsesWireId,
         authenticationRequired: false,
         manualModelIds: <String>[' manual ', '', 'manual'],
       );

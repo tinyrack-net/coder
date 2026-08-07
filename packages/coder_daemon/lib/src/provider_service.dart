@@ -725,7 +725,7 @@ final class ProviderService implements ProviderOAuthConnector {
   _adapterSourceFor(ProviderConnectionDto connection) {
     final custom = connection.customConfig;
     if (custom != null) {
-      final wire = _registry.requireWire(_wireIdFor(custom));
+      final wire = _registry.requireWire(custom.wireFormatId);
       return (
         createProvider: wire.createProvider,
         discoverModels: wire.discoverModels,
@@ -749,14 +749,6 @@ final class ProviderService implements ProviderOAuthConnector {
       connection,
     ).discoverModels(endpoint, credential);
   }
-
-  // TODO(wire-format): the protocol still stores an enum named after the two
-  // OpenAI APIs; once it stores the wire id itself this mapping disappears.
-  static String _wireIdFor(CustomProviderConfigDto config) =>
-      switch (config.apiFormat) {
-        ProviderApiFormat.responses => 'openai-responses',
-        ProviderApiFormat.chatCompletions => 'openai-chat-completions',
-      };
 
   ProviderCredential? _credentialFor(ProviderConnectionDto connection) =>
       switch (connection.credentialOrigin) {
@@ -804,7 +796,7 @@ final class ProviderService implements ProviderOAuthConnector {
     return ApiKeyCredential(apiKey);
   }
 
-  static CustomProviderConfigDto _validateCustom(
+  CustomProviderConfigDto _validateCustom(
     CustomProviderConfigDto config,
   ) {
     final uri = Uri.tryParse(config.baseUrl);
@@ -813,6 +805,11 @@ final class ProviderService implements ProviderOAuthConnector {
         (uri.scheme != 'http' && uri.scheme != 'https')) {
       throw const FormatException(
         'Custom provider base URL must be an absolute HTTP(S) URL.',
+      );
+    }
+    if (_registry.findWire(config.wireFormatId) == null) {
+      throw FormatException(
+        'Unknown provider wire format: ${config.wireFormatId}',
       );
     }
     return config.copyWith(

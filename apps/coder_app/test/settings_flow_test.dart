@@ -304,7 +304,7 @@ void main() {
       customConfig: const CustomProviderConfigDto(
         name: 'Lab',
         baseUrl: 'http://127.0.0.1:9000/v1',
-        apiFormat: ProviderApiFormat.chatCompletions,
+        wireFormatId: 'openai-chat-completions',
         authenticationRequired: true,
         manualModelIds: <String>['model-a'],
       ),
