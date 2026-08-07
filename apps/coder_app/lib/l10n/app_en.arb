@@ -1496,6 +1496,18 @@
   "@chatQuestionSubmit": {
     "description": "Button that submits answers to the agent's questions."
   },
+  "chatQuestionNext": "Next",
+  "@chatQuestionNext": {
+    "description": "Button that advances to the next agent question."
+  },
+  "chatQuestionNavigation": "Questions",
+  "@chatQuestionNavigation": {
+    "description": "Screen-reader name of the agent question tab strip."
+  },
+  "chatQuestionSubmitting": "Submitting answers",
+  "@chatQuestionSubmitting": {
+    "description": "Screen-reader status while agent question answers are submitted."
+  },
   "chatQuestionOther": "Other",
   "@chatQuestionOther": {
     "description": "Choice that lets the user type a free-form answer."

@@ -182,6 +182,36 @@ void main() {
           ),
         ],
       ),
+      UserQuestionItemDto(
+        id: 'theme',
+        header: 'Theme',
+        question: 'Which theme should the editor use?',
+        options: <UserQuestionOptionDto>[
+          UserQuestionOptionDto(
+            label: 'System',
+            description: 'Follow the operating system.',
+          ),
+          UserQuestionOptionDto(
+            label: 'Dark',
+            description: 'Always use the dark theme.',
+          ),
+        ],
+      ),
+      UserQuestionItemDto(
+        id: 'review',
+        header: 'Review',
+        question: 'How should changes be reviewed?',
+        options: <UserQuestionOptionDto>[
+          UserQuestionOptionDto(
+            label: 'Pull request',
+            description: 'Require review before merging.',
+          ),
+          UserQuestionOptionDto(
+            label: 'Direct',
+            description: 'Merge directly after checks pass.',
+          ),
+        ],
+      ),
     ],
     status: UserQuestionStatus.pending,
     createdAt: now,
