@@ -233,14 +233,7 @@ Future<CoderApi> _connectToDaemon(int port, String token) async {
   while (DateTime.now().isBefore(deadline)) {
     try {
       return await CoderClient.connect(
-        endpoint: HostEndpoint(
-          websocketUri: Uri(
-            scheme: 'ws',
-            host: '127.0.0.1',
-            port: port,
-            path: '/v3/ws',
-          ),
-        ),
+        endpoint: HostEndpoint.parse('127.0.0.1:$port'),
         credentials: DaemonCredentials(bearerToken: token),
         clientId: 'ibus-e2e-setup',
         clientKind: 'integration-test',

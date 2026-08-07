@@ -239,7 +239,6 @@ void main() {
       expect(client.mcp, same(client));
       expect(client.terminals, same(client));
       expect(client.attachments, same(client));
-      expect(client.events, isA<Stream<ClientEvent>>());
       expect(client.sessions.sessionUpdates, isA<Stream<SessionDto>>());
       expect(
         client.sessions.timelineEvents,
@@ -362,8 +361,8 @@ void main() {
       addTearDown(subscription.cancel);
       addTearDown(client.close);
 
-      expect(client.serverInfo.protocolVersion, coderProtocolVersion);
-      expect(connector.lastUri, Uri.parse('ws://127.0.0.1:7337/v3/ws'));
+      expect(client.serverInfo.protocolVersion, coderProtocolMajor);
+      expect(connector.lastUri, Uri.parse('ws://127.0.0.1:7337/v4/ws'));
       expect(
         connector.lastHeaders,
         const <String, String>{
@@ -403,7 +402,10 @@ void main() {
       expect(search.truncated, isTrue);
       expect(
         connector.requests
-            .lastWhere((request) => request.method == RpcMethod.fileSearch)
+            .lastWhere(
+              (request) =>
+                  request.method == workspacesSearchFilesProcedure.name,
+            )
             .payload,
         const FileSearchParamsDto(
           worktreeId: 'worktree-1',
@@ -460,7 +462,8 @@ void main() {
       expect(
         connector.requests
             .lastWhere(
-              (request) => request.method == RpcMethod.sessionSubagentList,
+              (request) =>
+                  request.method == sessionsListSubagentsProcedure.name,
             )
             .payload,
         SessionSubagentListParamsDto(sessionId: agent.id).toJson(),
@@ -625,7 +628,9 @@ void main() {
       );
       expect(
         connector.requests
-            .lastWhere((request) => request.method == RpcMethod.commandList)
+            .lastWhere(
+              (request) => request.method == promptsListCommandsProcedure.name,
+            )
             .payload,
         const CommandListParamsDto(workspaceId: 'workspace').toJson(),
       );
@@ -694,7 +699,8 @@ void main() {
       expect(
         connector.requests
             .lastWhere(
-              (request) => request.method == RpcMethod.providerDefaultModelSet,
+              (request) =>
+                  request.method == providersSetDefaultModelProcedure.name,
             )
             .payload,
         const DefaultModelDto().toJson(),
@@ -743,42 +749,69 @@ void main() {
         timeline,
       ]);
 
-      final events = <ClientEvent>[];
-      final eventSubscription = client.events.listen(events.add);
-      addTearDown(eventSubscription.cancel);
+      final timelines = <TimelineEventDto>[];
+      final sessions = <SessionDto>[];
+      final approvals = <ApprovalRequestDto>[];
+      final questions = <UserQuestionRequestDto>[];
+      final authUpdates = <ProviderAuthAttemptDto>[];
+      final terminalOutput = <TerminalOutputDto>[];
+      final terminalUpdates = <TerminalDto>[];
+      var agentChanges = 0;
+      var skillChanges = 0;
+      var commandChanges = 0;
+      final eventSubscriptions = <StreamSubscription<Object?>>[
+        client.sessions.timelineEvents.listen(timelines.add),
+        client.sessions.sessionUpdates.listen(sessions.add),
+        client.sessions.approvalRequests.listen(approvals.add),
+        client.sessions.questionRequests.listen(questions.add),
+        client.agents.definitionChanges.listen((_) => agentChanges += 1),
+        client.prompts.skillChanges.listen((_) => skillChanges += 1),
+        client.prompts.commandChanges.listen((_) => commandChanges += 1),
+        client.providers.authUpdates.listen(authUpdates.add),
+        client.terminals.output.listen(terminalOutput.add),
+        client.terminals.terminalUpdates.listen(terminalUpdates.add),
+      ];
+      addTearDown(() async {
+        for (final subscription in eventSubscriptions) {
+          await subscription.cancel();
+        }
+      });
       connector.connections.single.peer
-        ..sendNotification(RpcNotification.timelineEvent, timeline.toJson())
         ..sendNotification(
-          RpcNotification.timelineEvent,
+          sessionsTimelineEventNotification.name,
+          timeline.toJson(),
+        )
+        ..sendNotification(
+          sessionsTimelineEventNotification.name,
           timeline.copyWith(sequence: 3).toJson(),
         )
-        ..sendNotification(RpcNotification.sessionUpdated, agent.toJson())
+        ..sendNotification(sessionsUpdatedNotification.name, agent.toJson())
         ..sendNotification(
-          RpcNotification.agentDefinitionsChanged,
+          agentsChangedNotification.name,
           const <String, dynamic>{},
         )
         ..sendNotification(
-          RpcNotification.skillsChanged,
+          promptsSkillsChangedNotification.name,
           const <String, dynamic>{},
         )
         ..sendNotification(
-          RpcNotification.commandsChanged,
+          promptsCommandsChangedNotification.name,
           const <String, dynamic>{},
         )
         ..sendNotification(
-          RpcNotification.approvalRequested,
+          sessionsApprovalRequestedNotification.name,
           approval.toJson(),
         )
         ..sendNotification(
-          RpcNotification.userQuestionRequested,
+          sessionsQuestionRequestedNotification.name,
           userQuestion.toJson(),
         )
         ..sendNotification(
-          RpcNotification.providerAuthUpdated,
+          providersAuthUpdatedNotification.name,
           attempt.toJson(),
         )
         ..sendNotification(
-          RpcNotification.terminalOutput,
+          terminalsOutputNotification.name,
           const TerminalOutputDto(
             terminalId: 'terminal',
             sequence: 1,
@@ -786,97 +819,82 @@ void main() {
           ).toJson(),
         )
         ..sendNotification(
-          RpcNotification.terminalUpdated,
+          terminalsUpdatedNotification.name,
           terminal.toJson(),
         );
       await Future<void>.delayed(Duration.zero);
 
-      expect(events.whereType<TimelineClientEvent>(), hasLength(1));
-      expect(
-        events.whereType<SessionUpdatedClientEvent>().single.session,
-        agent,
-      );
-      expect(
-        events.whereType<AgentDefinitionsChangedClientEvent>(),
-        hasLength(1),
-      );
-      expect(events.whereType<SkillsChangedClientEvent>(), hasLength(1));
-      expect(events.whereType<CommandsChangedClientEvent>(), hasLength(1));
-      expect(
-        events.whereType<ApprovalRequestedClientEvent>().single.approval,
-        approval,
-      );
-      expect(
-        events.whereType<UserQuestionRequestedClientEvent>().single.request,
-        userQuestion,
-      );
-      expect(
-        events.whereType<ProviderAuthUpdatedClientEvent>().single.attempt,
-        attempt,
-      );
-      expect(events.whereType<TerminalOutputClientEvent>(), hasLength(1));
-      expect(events.whereType<TerminalUpdatedClientEvent>(), hasLength(1));
+      expect(timelines, <TimelineEventDto>[timeline.copyWith(sequence: 3)]);
+      expect(sessions, <SessionDto>[agent]);
+      expect(agentChanges, 1);
+      expect(skillChanges, 1);
+      expect(commandChanges, 1);
+      expect(approvals, <ApprovalRequestDto>[approval]);
+      expect(questions, <UserQuestionRequestDto>[userQuestion]);
+      expect(authUpdates, <ProviderAuthAttemptDto>[attempt]);
+      expect(terminalOutput, hasLength(1));
+      expect(terminalUpdates, <TerminalDto>[terminal]);
       await client.terminateTerminal(terminal.id);
       expect(
         connector.requests.map((request) => request.method),
         containsAll(<String>[
-          RpcMethod.workspaceCatalog,
-          RpcMethod.workspaceRegister,
-          RpcMethod.workspaceRefresh,
-          RpcMethod.workspaceUnregister,
-          RpcMethod.directorySuggest,
-          RpcMethod.fileSearch,
-          RpcMethod.gitBranchesList,
-          RpcMethod.worktreeCreate,
-          RpcMethod.worktreeArchivePreview,
-          RpcMethod.worktreeArchive,
-          RpcMethod.projectSettingsGet,
-          RpcMethod.projectSettingsSave,
-          RpcMethod.sessionList,
-          RpcMethod.sessionSubagentList,
-          RpcMethod.sessionCreate,
-          RpcMethod.sessionUpdateSettings,
-          RpcMethod.agentDefinitionList,
-          RpcMethod.agentDefinitionGet,
-          RpcMethod.agentDefinitionCreate,
-          RpcMethod.agentDefinitionUpdate,
-          RpcMethod.agentDefinitionArchive,
-          RpcMethod.agentDefinitionReset,
-          RpcMethod.agentDefinitionValidate,
-          RpcMethod.agentToolCatalog,
-          RpcMethod.mcpServerList,
-          RpcMethod.mcpServerAdd,
-          RpcMethod.mcpServerUpdate,
-          RpcMethod.mcpServerRemove,
-          RpcMethod.mcpServerTest,
-          RpcMethod.mcpSecretSet,
-          RpcMethod.commandList,
-          RpcMethod.skillList,
-          RpcMethod.skillGet,
-          RpcMethod.skillCreate,
-          RpcMethod.skillUpdate,
-          RpcMethod.skillDelete,
-          RpcMethod.skillSetEnabled,
-          RpcMethod.providerCatalog,
-          RpcMethod.providerConnectionsList,
-          RpcMethod.providerConnectApiKey,
-          RpcMethod.providerConnectNone,
-          RpcMethod.providerAuthStart,
-          RpcMethod.providerAuthStatus,
-          RpcMethod.providerAuthCancel,
-          RpcMethod.providerDisconnect,
-          RpcMethod.providerCatalogRefresh,
-          RpcMethod.providerModelsList,
-          RpcMethod.providerCustomCreate,
-          RpcMethod.providerCustomUpdate,
-          RpcMethod.providerCustomDelete,
-          RpcMethod.turnStart,
-          RpcMethod.turnCancel,
-          RpcMethod.sessionCompact,
-          RpcMethod.approvalResolve,
-          RpcMethod.userQuestionAnswer,
-          RpcMethod.sessionPendingInput,
-          RpcMethod.timelineSubscribe,
+          workspacesCatalogProcedure.name,
+          workspacesRegisterProcedure.name,
+          workspacesRefreshProcedure.name,
+          workspacesUnregisterProcedure.name,
+          workspacesSuggestDirectoriesProcedure.name,
+          workspacesSearchFilesProcedure.name,
+          workspacesListBranchesProcedure.name,
+          workspacesCreateWorktreeProcedure.name,
+          workspacesPreviewArchiveProcedure.name,
+          workspacesArchiveWorktreeProcedure.name,
+          workspacesGetProjectSettingsProcedure.name,
+          workspacesSaveProjectSettingsProcedure.name,
+          sessionsListProcedure.name,
+          sessionsListSubagentsProcedure.name,
+          sessionsCreateProcedure.name,
+          sessionsUpdateSettingsProcedure.name,
+          agentsListProcedure.name,
+          agentsGetProcedure.name,
+          agentsCreateProcedure.name,
+          agentsUpdateProcedure.name,
+          agentsArchiveProcedure.name,
+          agentsResetProcedure.name,
+          agentsValidateProcedure.name,
+          agentsListToolsProcedure.name,
+          mcpListServersProcedure.name,
+          mcpAddServerProcedure.name,
+          mcpUpdateServerProcedure.name,
+          mcpRemoveServerProcedure.name,
+          mcpTestServerProcedure.name,
+          mcpSetSecretProcedure.name,
+          promptsListCommandsProcedure.name,
+          promptsListSkillsProcedure.name,
+          promptsGetSkillProcedure.name,
+          promptsCreateSkillProcedure.name,
+          promptsUpdateSkillProcedure.name,
+          promptsDeleteSkillProcedure.name,
+          promptsSetSkillEnabledProcedure.name,
+          providersCatalogProcedure.name,
+          providersListConnectionsProcedure.name,
+          providersConnectApiKeyProcedure.name,
+          providersConnectNoneProcedure.name,
+          providersStartAuthProcedure.name,
+          providersGetAuthProcedure.name,
+          providersCancelAuthProcedure.name,
+          providersDisconnectProcedure.name,
+          providersRefreshCatalogProcedure.name,
+          providersListModelsProcedure.name,
+          providersCreateCustomProcedure.name,
+          providersUpdateCustomProcedure.name,
+          providersDeleteCustomProcedure.name,
+          sessionsStartTurnProcedure.name,
+          sessionsCancelTurnProcedure.name,
+          sessionsCompactProcedure.name,
+          sessionsResolveApprovalProcedure.name,
+          sessionsAnswerQuestionProcedure.name,
+          sessionsNotePendingInputProcedure.name,
+          sessionsSubscribeTimelineProcedure.name,
         ]),
       );
       expect(states, isNot(contains(ClientConnectionState.disconnected)));
@@ -934,13 +952,14 @@ void main() {
     final connector = _TestConnector(
       onConfigure: (peer, requests) {
         _registerHello(peer, requests);
-        peer.registerMethod(RpcMethod.workspaceCatalog, (_) {
+        peer.registerMethod(workspacesCatalogProcedure.name, (_) {
           throw json_rpc.RpcException(
             -32000,
             'Workspace unavailable',
             data: const <String, dynamic>{
               'code': 'workspace_unavailable',
               'retryable': true,
+              'details': <String, dynamic>{},
             },
           );
         });
@@ -975,7 +994,7 @@ void main() {
       onConfigure: (peer, requests) {
         _registerHello(peer, requests);
         peer.registerMethod(
-          RpcMethod.workspaceCatalog,
+          workspacesCatalogProcedure.name,
           (_) => Completer<Map<String, dynamic>>().future,
         );
       },
@@ -1002,14 +1021,14 @@ void main() {
       final connector = _TestConnector(
         onConfigure: (peer, requests) {
           _registerHello(peer, requests);
-          peer.registerMethod(RpcMethod.timelineSubscribe, (
+          peer.registerMethod(sessionsSubscribeTimelineProcedure.name, (
             json_rpc.Parameters parameters,
           ) {
             final request = TimelineSubscribeParamsDto.fromJson(
               Map<String, dynamic>.from(parameters.asMap),
             );
             requests.add((
-              method: RpcMethod.timelineSubscribe,
+              method: sessionsSubscribeTimelineProcedure.name,
               payload: request.toJson(),
             ));
             return const TimelineResultDto(
@@ -1038,7 +1057,10 @@ void main() {
 
       expect(connector.connections, hasLength(2));
       final subscriptions = connector.requests
-          .where((request) => request.method == RpcMethod.timelineSubscribe)
+          .where(
+            (request) =>
+                request.method == sessionsSubscribeTimelineProcedure.name,
+          )
           .toList(growable: false);
       expect(subscriptions, hasLength(2));
       expect(subscriptions.last.payload['afterSequence'], 7);
@@ -1113,15 +1135,17 @@ final class _TestWebSocketSink extends DelegatingStreamSink<Object?>
 }
 
 void _registerHello(json_rpc.Peer peer, List<_Request> requests) {
-  peer.registerMethod(RpcMethod.hello, (json_rpc.Parameters parameters) {
+  peer.registerMethod(systemHelloProcedure.name, (
+    json_rpc.Parameters parameters,
+  ) {
     requests.add((
-      method: RpcMethod.hello,
+      method: systemHelloProcedure.name,
       payload: Map<String, dynamic>.from(parameters.asMap),
     ));
     return const ServerInfoDto(
       serverId: 'server',
       version: 'test',
-      protocolVersion: coderProtocolVersion,
+      protocolVersion: coderProtocolMajor,
       features: <String, bool>{},
     ).toJson();
   });
@@ -1174,25 +1198,25 @@ void _registerFixtureMethods(
     lastSequence: 0,
   );
   final responses = <String, Map<String, dynamic>>{
-    RpcMethod.workspaceCatalog: WorkspaceCatalogResultDto(
+    workspacesCatalogProcedure.name: WorkspaceCatalogResultDto(
       catalog: workspaceCatalog,
     ).toJson(),
-    RpcMethod.workspaceRegister: WorkspaceRegisterResultDto(
+    workspacesRegisterProcedure.name: WorkspaceRegisterResultDto(
       workspace: workspace,
       worktrees: <WorktreeDto>[worktree],
     ).toJson(),
-    RpcMethod.workspaceRefresh: WorkspaceCatalogResultDto(
+    workspacesRefreshProcedure.name: WorkspaceCatalogResultDto(
       catalog: workspaceCatalog,
     ).toJson(),
-    RpcMethod.workspaceUnregister: const WorkspaceUnregisterResultDto(
+    workspacesUnregisterProcedure.name: const WorkspaceUnregisterResultDto(
       unregistered: true,
     ).toJson(),
-    RpcMethod.directorySuggest: const DirectorySuggestResultDto(
+    workspacesSuggestDirectoriesProcedure.name: const DirectorySuggestResultDto(
       suggestions: <DirectorySuggestionDto>[
         DirectorySuggestionDto(path: '/workspace', name: 'Workspace'),
       ],
     ).toJson(),
-    RpcMethod.fileSearch: const FileSearchResultDto(
+    workspacesSearchFilesProcedure.name: const FileSearchResultDto(
       matches: <FileMatchDto>[
         FileMatchDto(
           relativePath: 'lib/app.dart',
@@ -1204,7 +1228,7 @@ void _registerFixtureMethods(
       ],
       truncated: true,
     ).toJson(),
-    RpcMethod.commandList: const CommandListResultDto(
+    promptsListCommandsProcedure.name: const CommandListResultDto(
       commands: <AgentCommandDto>[
         AgentCommandDto(
           id: 'review',
@@ -1217,16 +1241,19 @@ void _registerFixtureMethods(
         ),
       ],
     ).toJson(),
-    RpcMethod.gitBranchesList: const GitBranchesListResultDto(
+    workspacesListBranchesProcedure.name: const GitBranchesListResultDto(
       branches: <GitBranchDto>[
         GitBranchDto(name: 'main', current: true, checkedOut: true),
       ],
     ).toJson(),
-    RpcMethod.worktreeCreate: WorktreeResultDto(worktree: worktree).toJson(),
-    RpcMethod.worktreeArchivePreview: const WorktreeArchivePreviewResultDto(
-      preview: archivePreview,
+    workspacesCreateWorktreeProcedure.name: WorktreeResultDto(
+      worktree: worktree,
     ).toJson(),
-    RpcMethod.worktreeArchive: WorktreeResultDto(
+    workspacesPreviewArchiveProcedure.name:
+        const WorktreeArchivePreviewResultDto(
+          preview: archivePreview,
+        ).toJson(),
+    workspacesArchiveWorktreeProcedure.name: WorktreeResultDto(
       worktree: worktree,
       hookRuns: const <WorktreeHookRunDto>[
         WorktreeHookRunDto(
@@ -1238,141 +1265,149 @@ void _registerFixtureMethods(
         ),
       ],
     ).toJson(),
-    RpcMethod.projectSettingsGet: const ProjectSettingsResultDto(
+    workspacesGetProjectSettingsProcedure.name: const ProjectSettingsResultDto(
       settings: ProjectSettingsDto(setup: <String>['npm ci']),
       sourcePath: '/workspace/coder.json',
     ).toJson(),
-    RpcMethod.projectSettingsSave: const ProjectSettingsResultDto(
+    workspacesSaveProjectSettingsProcedure.name: const ProjectSettingsResultDto(
       settings: ProjectSettingsDto(setup: <String>['npm ci']),
       sourcePath: '/workspace/coder.json',
     ).toJson(),
-    RpcMethod.sessionList: SessionListResultDto(
+    sessionsListProcedure.name: SessionListResultDto(
       sessions: <SessionDto>[agent],
     ).toJson(),
-    RpcMethod.sessionSubagentList: SessionListResultDto(
+    sessionsListSubagentsProcedure.name: SessionListResultDto(
       sessions: <SessionDto>[agent],
     ).toJson(),
-    RpcMethod.sessionCreate: SessionResultDto(session: agent).toJson(),
-    RpcMethod.sessionUpdateSettings: SessionResultDto(session: agent).toJson(),
+    sessionsCreateProcedure.name: SessionResultDto(session: agent).toJson(),
+    sessionsUpdateSettingsProcedure.name: SessionResultDto(
+      session: agent,
+    ).toJson(),
 
-    RpcMethod.terminalList: const TerminalListResultDto(
+    terminalsListProcedure.name: const TerminalListResultDto(
       terminals: <TerminalDto>[terminal],
     ).toJson(),
-    RpcMethod.terminalCreate: const TerminalResultDto(
+    terminalsCreateProcedure.name: const TerminalResultDto(
       terminal: terminal,
     ).toJson(),
-    RpcMethod.terminalAttach: const TerminalAttachResultDto(
+    terminalsAttachProcedure.name: const TerminalAttachResultDto(
       terminal: terminal,
       replay: <TerminalOutputDto>[],
     ).toJson(),
-    RpcMethod.terminalWrite: const <String, dynamic>{},
-    RpcMethod.terminalResize: const TerminalResultDto(
+    terminalsWriteProcedure.name: const <String, dynamic>{},
+    terminalsResizeProcedure.name: const TerminalResultDto(
       terminal: terminal,
     ).toJson(),
-    RpcMethod.terminalTerminate: const <String, dynamic>{},
-    RpcMethod.terminalShellGet: const TerminalShellDto(
+    terminalsTerminateProcedure.name: const <String, dynamic>{},
+    terminalsGetDefaultShellProcedure.name: const TerminalShellDto(
       shell: ShellSpecDto(executable: '/bin/sh'),
     ).toJson(),
-    RpcMethod.terminalShellSet: const TerminalShellDto(
-      shell: ShellSpecDto(executable: '/bin/sh'),
-    ).toJson(),
-    RpcMethod.agentDefinitionList: AgentDefinitionListResultDto(
+    terminalsSetDefaultShellProcedure.name: const <String, dynamic>{},
+    agentsListProcedure.name: AgentDefinitionListResultDto(
       definitions: <AgentDefinitionDto>[agentDefinition],
     ).toJson(),
-    RpcMethod.agentDefinitionGet: AgentDefinitionResultDto(
+    agentsGetProcedure.name: AgentDefinitionResultDto(
       definition: agentDefinition,
     ).toJson(),
-    RpcMethod.agentDefinitionCreate: AgentDefinitionResultDto(
+    agentsCreateProcedure.name: AgentDefinitionResultDto(
       definition: agentDefinition,
     ).toJson(),
-    RpcMethod.agentDefinitionUpdate: AgentDefinitionResultDto(
+    agentsUpdateProcedure.name: AgentDefinitionResultDto(
       definition: agentDefinition,
     ).toJson(),
-    RpcMethod.agentDefinitionArchive: const <String, dynamic>{},
-    RpcMethod.agentDefinitionReset: AgentDefinitionResultDto(
+    agentsArchiveProcedure.name: const <String, dynamic>{},
+    agentsResetProcedure.name: AgentDefinitionResultDto(
       definition: agentDefinition,
     ).toJson(),
-    RpcMethod.agentDefinitionValidate: AgentDefinitionResultDto(
+    agentsValidateProcedure.name: AgentDefinitionResultDto(
       definition: agentDefinition,
     ).toJson(),
-    RpcMethod.agentToolCatalog: AgentToolCatalogResultDto(
+    agentsListToolsProcedure.name: AgentToolCatalogResultDto(
       tools: <AgentToolDefinitionDto>[agentTool],
     ).toJson(),
-    RpcMethod.mcpServerList: McpServersResultDto(
+    mcpListServersProcedure.name: McpServersResultDto(
       servers: <McpServerStateDto>[mcpServer],
     ).toJson(),
-    RpcMethod.mcpServerAdd: McpServerStateResultDto(state: mcpServer).toJson(),
-    RpcMethod.mcpServerUpdate: McpServerStateResultDto(
+    mcpAddServerProcedure.name: McpServerStateResultDto(
       state: mcpServer,
     ).toJson(),
-    RpcMethod.mcpServerRemove: const <String, dynamic>{},
-    RpcMethod.mcpServerTest: McpServerStateResultDto(state: mcpServer).toJson(),
-    RpcMethod.mcpSecretSet: const <String, dynamic>{},
-    RpcMethod.skillList: SkillListResultDto(
+    mcpUpdateServerProcedure.name: McpServerStateResultDto(
+      state: mcpServer,
+    ).toJson(),
+    mcpRemoveServerProcedure.name: const <String, dynamic>{},
+    mcpTestServerProcedure.name: McpServerStateResultDto(
+      state: mcpServer,
+    ).toJson(),
+    mcpSetSecretProcedure.name: const <String, dynamic>{},
+    promptsListSkillsProcedure.name: SkillListResultDto(
       skills: <SkillDto>[skill],
     ).toJson(),
-    RpcMethod.skillGet: SkillResultDto(skill: skill).toJson(),
-    RpcMethod.skillCreate: SkillResultDto(skill: skill).toJson(),
-    RpcMethod.skillUpdate: SkillResultDto(skill: skill).toJson(),
-    RpcMethod.skillDelete: const <String, dynamic>{},
-    RpcMethod.skillSetEnabled: SkillResultDto(skill: skill).toJson(),
-    RpcMethod.providerCatalog: ProviderCatalogResultDto(
+    promptsGetSkillProcedure.name: SkillResultDto(skill: skill).toJson(),
+    promptsCreateSkillProcedure.name: SkillResultDto(skill: skill).toJson(),
+    promptsUpdateSkillProcedure.name: SkillResultDto(skill: skill).toJson(),
+    promptsDeleteSkillProcedure.name: const <String, dynamic>{},
+    promptsSetSkillEnabledProcedure.name: SkillResultDto(skill: skill).toJson(),
+    providersCatalogProcedure.name: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
         definitions: <ProviderDefinitionDto>[definition],
         source: ProviderCatalogSource.bundled,
         updatedAt: workspace.createdAt,
       ),
     ).toJson(),
-    RpcMethod.providerConnectionsList: ProviderConnectionsResultDto(
+    providersListConnectionsProcedure.name: ProviderConnectionsResultDto(
       connections: <ProviderConnectionDto>[connection],
     ).toJson(),
-    RpcMethod.providerConnectApiKey: ProviderConnectionResultDto(
+    providersConnectApiKeyProcedure.name: ProviderConnectionResultDto(
       connection: connection,
     ).toJson(),
-    RpcMethod.providerConnectNone: ProviderConnectionResultDto(
+    providersConnectNoneProcedure.name: ProviderConnectionResultDto(
       connection: connection,
     ).toJson(),
-    RpcMethod.providerAuthStart: ProviderAuthAttemptResultDto(
+    providersStartAuthProcedure.name: ProviderAuthAttemptResultDto(
       attempt: attempt,
     ).toJson(),
-    RpcMethod.providerAuthStatus: ProviderAuthAttemptResultDto(
+    providersGetAuthProcedure.name: ProviderAuthAttemptResultDto(
       attempt: attempt,
     ).toJson(),
-    RpcMethod.providerAuthCancel: const <String, dynamic>{},
-    RpcMethod.providerDisconnect: const <String, dynamic>{},
-    RpcMethod.providerCatalogRefresh: ProviderCatalogResultDto(
+    providersCancelAuthProcedure.name: const <String, dynamic>{},
+    providersDisconnectProcedure.name: const <String, dynamic>{},
+    providersRefreshCatalogProcedure.name: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
         definitions: <ProviderDefinitionDto>[definition],
         source: ProviderCatalogSource.refreshed,
         updatedAt: workspace.createdAt,
       ),
     ).toJson(),
-    RpcMethod.providerModelsList: ProviderModelsResultDto(
+    providersListModelsProcedure.name: ProviderModelsResultDto(
       models: <ProviderModelDto>[model],
     ).toJson(),
-    RpcMethod.providerDefaultModelGet: const DefaultModelDto(
+    providersGetDefaultModelProcedure.name: const DefaultModelDto(
       model: SessionModelSelectionDto(
         providerConnectionId: 'openai',
         modelId: 'gpt-5.6-sol',
       ),
     ).toJson(),
-    RpcMethod.providerDefaultModelSet: const <String, dynamic>{},
-    RpcMethod.providerCustomCreate: ProviderConnectionResultDto(
+    providersSetDefaultModelProcedure.name: const <String, dynamic>{},
+    providersCreateCustomProcedure.name: ProviderConnectionResultDto(
       connection: connection,
     ).toJson(),
-    RpcMethod.providerCustomUpdate: ProviderConnectionResultDto(
+    providersUpdateCustomProcedure.name: ProviderConnectionResultDto(
       connection: connection,
     ).toJson(),
-    RpcMethod.providerCustomDelete: const <String, dynamic>{},
-    RpcMethod.turnStart: const TurnStartResultDto(created: true).toJson(),
-    RpcMethod.turnCancel: const <String, dynamic>{},
-    RpcMethod.sessionCompact: const <String, dynamic>{},
-    RpcMethod.approvalResolve: ApprovalResultDto(approval: approval).toJson(),
-    RpcMethod.sessionPendingInput: const <String, dynamic>{},
-    RpcMethod.userQuestionAnswer: UserQuestionResultDto(
+    providersDeleteCustomProcedure.name: const <String, dynamic>{},
+    sessionsStartTurnProcedure.name: const TurnStartResultDto(
+      created: true,
+    ).toJson(),
+    sessionsCancelTurnProcedure.name: const <String, dynamic>{},
+    sessionsCompactProcedure.name: const <String, dynamic>{},
+    sessionsResolveApprovalProcedure.name: ApprovalResultDto(
+      approval: approval,
+    ).toJson(),
+    sessionsNotePendingInputProcedure.name: const <String, dynamic>{},
+    sessionsAnswerQuestionProcedure.name: UserQuestionResultDto(
       request: userQuestion,
     ).toJson(),
-    RpcMethod.timelineSubscribe: TimelineResultDto(
+    sessionsSubscribeTimelineProcedure.name: TimelineResultDto(
       events: <TimelineEventDto>[timeline],
     ).toJson(),
   };

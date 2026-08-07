@@ -17,7 +17,7 @@ final class DaemonConnectionFlags {
     required this.token,
   });
 
-  /// Configuration directory whose `v3/secrets.json` holds credentials.
+  /// Configuration directory whose `v4/secrets.json` holds credentials.
   final String? home;
 
   /// Daemon address as `host:port`.
@@ -32,7 +32,7 @@ FlagSet<DaemonConnectionFlags, CoderCliContext> daemonConnectionFlagSet() {
   return FlagSet.one(
         ParsedFlag.optional<String, CoderCliContext>(
           name: 'home',
-          brief: 'Configuration directory holding v3/secrets.json',
+          brief: 'Configuration directory holding v4/secrets.json',
           parse: stringParser,
           placeholder: 'directory',
         ),

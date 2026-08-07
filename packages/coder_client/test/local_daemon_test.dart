@@ -20,11 +20,11 @@ void main() {
       );
       expect(
         directories.configDirectory,
-        p.join('/xdg/config', 'tinyrack-coder'),
+        p.posix.join('/xdg/config', 'tinyrack-coder'),
       );
       expect(
         directories.stateDirectory,
-        p.join('/xdg/state', 'tinyrack-coder'),
+        p.posix.join('/xdg/state', 'tinyrack-coder'),
       );
       expect(directories.userHomeDirectory, '/home/test');
     });
@@ -38,11 +38,11 @@ void main() {
       );
       expect(
         directories.configDirectory,
-        p.join('/home/test', '.config', 'tinyrack-coder'),
+        p.posix.join('/home/test', '.config', 'tinyrack-coder'),
       );
       expect(
         directories.stateDirectory,
-        p.join('/home/test', '.local', 'state', 'tinyrack-coder'),
+        p.posix.join('/home/test', '.local', 'state', 'tinyrack-coder'),
       );
     });
 
@@ -57,7 +57,7 @@ void main() {
         );
         expect(
           directories.configDirectory,
-          p.join(
+          p.posix.join(
             '/Users/test',
             'Library',
             'Application Support',
@@ -103,11 +103,11 @@ void main() {
       );
       expect(
         directories.configDirectory,
-        p.join('/home/test', '.config', 'tinyrack-coder'),
+        p.posix.join('/home/test', '.config', 'tinyrack-coder'),
       );
       expect(
         directories.stateDirectory,
-        p.join('/home/test', '.local', 'state', 'tinyrack-coder'),
+        p.posix.join('/home/test', '.local', 'state', 'tinyrack-coder'),
       );
     });
 
@@ -120,7 +120,7 @@ void main() {
       );
       expect(
         directories.configDirectory,
-        p.join('.', '.config', 'tinyrack-coder'),
+        p.posix.join('.', '.config', 'tinyrack-coder'),
       );
       expect(directories.userHomeDirectory, '.');
     });
@@ -239,7 +239,7 @@ void main() {
     tearDown(() => directory.deleteSync(recursive: true));
 
     void write(Object? value) {
-      final versionDirectory = Directory(p.join(directory.path, 'v3'))
+      final versionDirectory = Directory(p.join(directory.path, 'v4'))
         ..createSync();
       File(
         p.join(versionDirectory.path, 'secrets.json'),

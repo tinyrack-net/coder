@@ -7,6 +7,66 @@ import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
+sealed class ClientEvent {
+  const ClientEvent();
+}
+
+extension TypedClientEventStream on Stream<ClientEvent> {
+  Stream<T> whereType<T extends ClientEvent>() =>
+      where((event) => event is T).cast<T>();
+}
+
+final class TimelineClientEvent extends ClientEvent {
+  const TimelineClientEvent(this.event);
+  final TimelineEventDto event;
+}
+
+final class SessionUpdatedClientEvent extends ClientEvent {
+  const SessionUpdatedClientEvent(this.session);
+  final SessionDto session;
+}
+
+final class TerminalOutputClientEvent extends ClientEvent {
+  const TerminalOutputClientEvent(this.output);
+  final TerminalOutputDto output;
+}
+
+final class TerminalUpdatedClientEvent extends ClientEvent {
+  const TerminalUpdatedClientEvent(this.terminal);
+  final TerminalDto terminal;
+}
+
+final class AgentDefinitionsChangedClientEvent extends ClientEvent {
+  const AgentDefinitionsChangedClientEvent();
+}
+
+final class McpServersChangedClientEvent extends ClientEvent {
+  const McpServersChangedClientEvent();
+}
+
+final class SkillsChangedClientEvent extends ClientEvent {
+  const SkillsChangedClientEvent();
+}
+
+final class CommandsChangedClientEvent extends ClientEvent {
+  const CommandsChangedClientEvent();
+}
+
+final class ApprovalRequestedClientEvent extends ClientEvent {
+  const ApprovalRequestedClientEvent(this.approval);
+  final ApprovalRequestDto approval;
+}
+
+final class UserQuestionRequestedClientEvent extends ClientEvent {
+  const UserQuestionRequestedClientEvent(this.request);
+  final UserQuestionRequestDto request;
+}
+
+final class ProviderAuthUpdatedClientEvent extends ClientEvent {
+  const ProviderAuthUpdatedClientEvent(this.attempt);
+  final ProviderAuthAttemptDto attempt;
+}
+
 /// An in-memory [CoderApi] used by notifier and widget tests.
 final class FakeCoderApi
     implements
@@ -98,7 +158,7 @@ final class FakeCoderApi
   static const ServerInfoDto _defaultServerInfo = ServerInfoDto(
     serverId: 'server',
     version: 'test',
-    protocolVersion: coderProtocolVersion,
+    protocolVersion: coderProtocolMajor,
     features: <String, bool>{},
   );
   static final ProviderCatalogDto _defaultCatalog = ProviderCatalogDto(

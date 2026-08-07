@@ -12,6 +12,23 @@ void main() {
     FlutterSecureStorage.setMockInitialValues(<String, String>{});
   });
 
+  test('v4 app storage does not read or remove the v3 document', () async {
+    const legacyKey = 'tinyrack_coder.app_document_v3';
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      legacyKey: '{"version":3,"settings":{},"profiles":[]}',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final store = SharedPreferencesAppStore(preferences);
+
+    expect(await store.listProfiles(), isEmpty);
+    expect(await store.loadSettings(), const AppSettings());
+    expect(preferences.getString(legacyKey), isNotNull);
+    expect(
+      preferences.getString(SharedPreferencesAppStore.documentKey),
+      isNull,
+    );
+  });
+
   test(
     'persists typed settings and profiles without bearer tokens',
     () async {
@@ -126,6 +143,7 @@ void main() {
     () async {
       FlutterSecureStorage.setMockInitialValues(<String, String>{
         'unrelated.plugin.key': 'keep-me',
+        'tinyrack_coder.remote_host_token.legacy': 'v3-secret',
       });
       const credentials = SecureRemoteHostCredentialStore(
         FlutterSecureStorage(),
@@ -140,6 +158,12 @@ void main() {
       expect(
         await const FlutterSecureStorage().read(key: 'unrelated.plugin.key'),
         'keep-me',
+      );
+      expect(
+        await const FlutterSecureStorage().read(
+          key: 'tinyrack_coder.remote_host_token.legacy',
+        ),
+        'v3-secret',
       );
     },
     tags: const <String>['feature_test__settings_reset__unit'],
@@ -204,11 +228,11 @@ void main() {
     'documents written before the language and startup settings load '
     'with their defaults',
     () async {
-      // The key is simply absent in v3 documents written by earlier builds,
+      // The key is simply absent in v4 documents written by earlier builds,
       // which must keep loading rather than resetting every stored setting.
       SharedPreferences.setMockInitialValues(<String, Object>{
         SharedPreferencesAppStore.documentKey: jsonEncode(<String, Object?>{
-          'version': 3,
+          'version': 4,
           'settings': <String, Object?>{
             'embeddedDaemonEnabled': true,
             'embeddedDaemonExposure': 'allInterfaces',
@@ -267,7 +291,7 @@ void main() {
     final invalidDocuments = <Object>[
       <Object>[],
       <String, Object?>{
-        'version': 3,
+        'version': 4,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'invalid',
@@ -278,12 +302,12 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 3,
+        'version': 4,
         'settings': <String, Object?>{},
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 3,
+        'version': 4,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -296,7 +320,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 3,
+        'version': 4,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -309,7 +333,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 3,
+        'version': 4,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -322,7 +346,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 3,
+        'version': 4,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -335,7 +359,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 3,
+        'version': 4,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -348,7 +372,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 3,
+        'version': 4,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',

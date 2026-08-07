@@ -21,6 +21,6 @@ void main() {
     expect(decoded.reasoningEffort, isNull);
     expect(decoded.hasPermissionMode, isFalse);
     expect(decoded.mode, SessionMode.plan);
-    expect(RpcMethod.sessionUpdateSettings, 'sessions.updateSettings');
+    expect(sessionsUpdateSettingsProcedure.name, 'sessions.updateSettings');
   });
 }

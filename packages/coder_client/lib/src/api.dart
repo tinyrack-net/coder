@@ -38,106 +38,7 @@ enum ClientConnectionState {
   disconnected,
 }
 
-/// ClientEvent defines a public contract.
-sealed class ClientEvent {
-  const ClientEvent();
-}
-
-/// Type-safe filtering for the heterogeneous internal client event stream.
-extension TypedClientEventStream on Stream<ClientEvent> {
-  /// Keeps only events assignable to [T].
-  Stream<T> whereType<T extends ClientEvent>() =>
-      where((event) => event is T).cast<T>();
-}
-
-/// TimelineClientEvent defines a public contract.
-final class TimelineClientEvent extends ClientEvent {
-  /// Creates a [TimelineClientEvent].
-  const TimelineClientEvent(this.event);
-
-  /// The event public API member.
-  final TimelineEventDto event;
-}
-
-/// SessionUpdatedClientEvent defines a public contract.
-final class SessionUpdatedClientEvent extends ClientEvent {
-  /// Creates a [SessionUpdatedClientEvent].
-  const SessionUpdatedClientEvent(this.session);
-
-  /// The agent public API member.
-  final SessionDto session;
-}
-
-/// Reports ordered output from a terminal.
-final class TerminalOutputClientEvent extends ClientEvent {
-  /// Creates a terminal output event.
-  const TerminalOutputClientEvent(this.output);
-
-  /// Ordered output received from the daemon.
-  final TerminalOutputDto output;
-}
-
-/// Reports terminal metadata changes.
-final class TerminalUpdatedClientEvent extends ClientEvent {
-  /// Creates a terminal metadata event.
-  const TerminalUpdatedClientEvent(this.terminal);
-
-  /// Updated daemon-owned terminal.
-  final TerminalDto terminal;
-}
-
-/// Signals that the daemon's Markdown agent files changed.
-final class AgentDefinitionsChangedClientEvent extends ClientEvent {
-  /// Creates a catalog invalidation event.
-  const AgentDefinitionsChangedClientEvent();
-}
-
-/// Signals that an MCP server's configuration or connection changed.
-final class McpServersChangedClientEvent extends ClientEvent {
-  /// Creates an MCP server invalidation event.
-  const McpServersChangedClientEvent();
-}
-
-/// Signals that the daemon's skill catalog changed.
-final class SkillsChangedClientEvent extends ClientEvent {
-  /// Creates a catalog invalidation event.
-  const SkillsChangedClientEvent();
-}
-
-/// Signals that the daemon's agent command catalog changed.
-final class CommandsChangedClientEvent extends ClientEvent {
-  /// Creates a command catalog invalidation event.
-  const CommandsChangedClientEvent();
-}
-
-/// ApprovalRequestedClientEvent defines a public contract.
-final class ApprovalRequestedClientEvent extends ClientEvent {
-  /// Creates a [ApprovalRequestedClientEvent].
-  const ApprovalRequestedClientEvent(this.approval);
-
-  /// The approval public API member.
-  final ApprovalRequestDto approval;
-}
-
-/// Reports that the agent is blocked on a question for the user.
-final class UserQuestionRequestedClientEvent extends ClientEvent {
-  /// Creates a [UserQuestionRequestedClientEvent].
-  const UserQuestionRequestedClientEvent(this.request);
-
-  /// The pending question.
-  final UserQuestionRequestDto request;
-}
-
-/// Reports state changes for an interactive provider OAuth attempt.
-final class ProviderAuthUpdatedClientEvent extends ClientEvent {
-  /// Creates an OAuth attempt event.
-  const ProviderAuthUpdatedClientEvent(this.attempt);
-
-  /// Current authorization attempt state.
-  final ProviderAuthAttemptDto attempt;
-}
-
-/// Workspace operations exposed by the v3 client.
+/// Workspace operations exposed by the v4 client.
 abstract interface class WorkspacesApi {
   /// Returns repositories and active checkouts atomically.
   Future<WorkspaceCatalogDto> getWorkspaceCatalog();
@@ -200,7 +101,7 @@ abstract interface class WorkspacesApi {
   });
 }
 
-/// Session operations and updates exposed by the v3 client.
+/// Session operations and updates exposed by the v4 client.
 abstract interface class SessionsApi {
   /// Session lifecycle updates.
   Stream<SessionDto> get sessionUpdates;
@@ -275,7 +176,7 @@ abstract interface class SessionsApi {
   });
 }
 
-/// Agent-definition operations exposed by the v3 client.
+/// Agent-definition operations exposed by the v4 client.
 abstract interface class AgentsApi {
   /// Emits whenever the agent-definition catalog changes.
   Stream<void> get definitionChanges;
@@ -323,7 +224,7 @@ abstract interface class AgentsApi {
   );
 }
 
-/// Prompt, command, and skill operations exposed by the v3 client.
+/// Prompt, command, and skill operations exposed by the v4 client.
 abstract interface class PromptsApi {
   /// Emits whenever the skill catalog changes.
   Stream<void> get skillChanges;
@@ -369,7 +270,7 @@ abstract interface class PromptsApi {
   });
 }
 
-/// Provider operations exposed by the v3 client.
+/// Provider operations exposed by the v4 client.
 abstract interface class ProvidersApi {
   /// Provider authorization updates.
   Stream<ProviderAuthAttemptDto> get authUpdates;
@@ -434,7 +335,7 @@ abstract interface class ProvidersApi {
   Future<void> deleteCustomProvider(String connectionId);
 }
 
-/// MCP operations exposed by the v3 client.
+/// MCP operations exposed by the v4 client.
 abstract interface class McpApi {
   /// Emits whenever MCP server state changes.
   Stream<void> get serverChanges;
@@ -458,7 +359,7 @@ abstract interface class McpApi {
   Future<void> setMcpSecret(String key, String value);
 }
 
-/// Terminal operations and output exposed by the v3 client.
+/// Terminal operations and output exposed by the v4 client.
 abstract interface class TerminalsApi {
   /// Ordered terminal output chunks.
   Stream<TerminalOutputDto> get output;
@@ -504,7 +405,7 @@ abstract interface class TerminalsApi {
   Future<void> setTerminalShell(ShellSpecDto? shell);
 }
 
-/// Attachment transfer operations exposed by the v3 client.
+/// Attachment transfer operations exposed by the v4 client.
 abstract interface class AttachmentsApi {
   /// Uploads an attachment.
   Future<AttachmentDto> uploadAttachment({
@@ -547,7 +448,7 @@ abstract interface class CoderApi {
   /// Connection-state changes.
   Stream<ClientConnectionState> get states;
 
-  /// Metadata returned by the v3 handshake.
+  /// Metadata returned by the v4 handshake.
   ServerInfoDto get serverInfo;
 
   /// Closes the connection and all feature streams.

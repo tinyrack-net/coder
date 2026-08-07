@@ -11,7 +11,12 @@ import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 /// CoderClientException defines a public contract.
 class CoderClientException implements Exception {
   /// Creates a [CoderClientException].
-  const CoderClientException(this.message, {this.code, this.retryable = false});
+  const CoderClientException(
+    this.message, {
+    this.code,
+    this.retryable = false,
+    this.details = const <String, dynamic>{},
+  });
 
   /// The message public API member.
   final String message;
@@ -21,6 +26,9 @@ class CoderClientException implements Exception {
 
   /// The retryable public API member.
   final bool retryable;
+
+  /// Structured, non-sensitive failure context supplied by the daemon.
+  final Map<String, dynamic> details;
 
   @override
   String toString() =>
@@ -85,8 +93,27 @@ class CoderClient
   final WebSocketConnector _connector;
   final Duration _requestTimeout;
   final Duration Function(int attempt) _reconnectDelay;
-  final StreamController<ClientEvent> _events =
-      StreamController<ClientEvent>.broadcast();
+  final StreamController<SessionDto> _sessionUpdates =
+      StreamController<SessionDto>.broadcast();
+  final StreamController<TimelineEventDto> _timelineEvents =
+      StreamController<TimelineEventDto>.broadcast();
+  final StreamController<ApprovalRequestDto> _approvalRequests =
+      StreamController<ApprovalRequestDto>.broadcast();
+  final StreamController<UserQuestionRequestDto> _questionRequests =
+      StreamController<UserQuestionRequestDto>.broadcast();
+  final StreamController<void> _agentChanges =
+      StreamController<void>.broadcast();
+  final StreamController<void> _skillChanges =
+      StreamController<void>.broadcast();
+  final StreamController<void> _commandChanges =
+      StreamController<void>.broadcast();
+  final StreamController<ProviderAuthAttemptDto> _providerAuthUpdates =
+      StreamController<ProviderAuthAttemptDto>.broadcast();
+  final StreamController<void> _mcpChanges = StreamController<void>.broadcast();
+  final StreamController<TerminalOutputDto> _terminalOutput =
+      StreamController<TerminalOutputDto>.broadcast();
+  final StreamController<TerminalDto> _terminalUpdates =
+      StreamController<TerminalDto>.broadcast();
   final StreamController<ClientConnectionState> _states =
       StreamController<ClientConnectionState>.broadcast();
   final Map<String, int> _timelineSubscriptions = <String, int>{};
@@ -96,11 +123,6 @@ class CoderClient
   bool _closed = false;
   bool _connecting = false;
   int _reconnectAttempt = 0;
-
-  /// Raw transport events retained for daemon contract-test assertions.
-  ///
-  /// Product consumers use the typed streams on the feature APIs.
-  Stream<ClientEvent> get events => _events.stream;
 
   @override
   Stream<ClientConnectionState> get states => _states.stream;
@@ -130,56 +152,38 @@ class CoderClient
   AttachmentsApi get attachments => this;
 
   @override
-  Stream<SessionDto> get sessionUpdates => _events.stream
-      .whereType<SessionUpdatedClientEvent>()
-      .map((event) => event.session);
+  Stream<SessionDto> get sessionUpdates => _sessionUpdates.stream;
 
   @override
-  Stream<TimelineEventDto> get timelineEvents => _events.stream
-      .whereType<TimelineClientEvent>()
-      .map((event) => event.event);
+  Stream<TimelineEventDto> get timelineEvents => _timelineEvents.stream;
 
   @override
-  Stream<ApprovalRequestDto> get approvalRequests => _events.stream
-      .whereType<ApprovalRequestedClientEvent>()
-      .map((event) => event.approval);
+  Stream<ApprovalRequestDto> get approvalRequests => _approvalRequests.stream;
 
   @override
-  Stream<UserQuestionRequestDto> get questionRequests => _events.stream
-      .whereType<UserQuestionRequestedClientEvent>()
-      .map((event) => event.request);
+  Stream<UserQuestionRequestDto> get questionRequests =>
+      _questionRequests.stream;
 
   @override
-  Stream<void> get definitionChanges => _events.stream
-      .whereType<AgentDefinitionsChangedClientEvent>()
-      .map((_) {});
+  Stream<void> get definitionChanges => _agentChanges.stream;
 
   @override
-  Stream<void> get skillChanges =>
-      _events.stream.whereType<SkillsChangedClientEvent>().map((_) {});
+  Stream<void> get skillChanges => _skillChanges.stream;
 
   @override
-  Stream<void> get commandChanges =>
-      _events.stream.whereType<CommandsChangedClientEvent>().map((_) {});
+  Stream<void> get commandChanges => _commandChanges.stream;
 
   @override
-  Stream<ProviderAuthAttemptDto> get authUpdates => _events.stream
-      .whereType<ProviderAuthUpdatedClientEvent>()
-      .map((event) => event.attempt);
+  Stream<ProviderAuthAttemptDto> get authUpdates => _providerAuthUpdates.stream;
 
   @override
-  Stream<void> get serverChanges =>
-      _events.stream.whereType<McpServersChangedClientEvent>().map((_) {});
+  Stream<void> get serverChanges => _mcpChanges.stream;
 
   @override
-  Stream<TerminalOutputDto> get output => _events.stream
-      .whereType<TerminalOutputClientEvent>()
-      .map((event) => event.output);
+  Stream<TerminalOutputDto> get output => _terminalOutput.stream;
 
   @override
-  Stream<TerminalDto> get terminalUpdates => _events.stream
-      .whereType<TerminalUpdatedClientEvent>()
-      .map((event) => event.terminal);
+  Stream<TerminalDto> get terminalUpdates => _terminalUpdates.stream;
   @override
   ServerInfoDto get serverInfo =>
       _serverInfo ??
@@ -202,38 +206,30 @@ class CoderClient
       );
       final peer = json_rpc.Peer(channel.cast<String>());
       _peer = peer;
-      for (final type in <String>[
-        RpcNotification.timelineEvent,
-        RpcNotification.sessionUpdated,
-        RpcNotification.agentDefinitionsChanged,
-        RpcNotification.skillsChanged,
-        RpcNotification.commandsChanged,
-        RpcNotification.approvalRequested,
-        RpcNotification.userQuestionRequested,
-        RpcNotification.providerAuthUpdated,
-        RpcNotification.mcpServersChanged,
-        RpcNotification.terminalOutput,
-        RpcNotification.terminalUpdated,
-      ]) {
-        peer.registerMethod(type, (json_rpc.Parameters parameters) {
+      for (final notification in rpcNotifications) {
+        peer.registerMethod(notification.name, (
+          json_rpc.Parameters parameters,
+        ) {
           _handleNotification(
-            type,
+            notification.name,
             Map<String, dynamic>.from(parameters.asMap),
           );
         });
       }
       unawaited(peer.listen().whenComplete(_handleSocketDone));
       final hello = await peer.sendRequest(
-        RpcMethod.hello,
-        HelloParamsDto(
-          clientId: _clientId,
-          clientKind: _clientKind,
-          protocolMajor: coderProtocolMajor,
-          clientVersion: _clientVersion,
-          capabilities: const <String, bool>{'timelineCatchup': true},
-        ).toJson(),
+        systemHelloProcedure.name,
+        systemHelloProcedure.encodeParams(
+          HelloParamsDto(
+            clientId: _clientId,
+            clientKind: _clientKind,
+            protocolMajor: coderProtocolMajor,
+            clientVersion: _clientVersion,
+            capabilities: const <String, bool>{'timelineCatchup': true},
+          ),
+        ),
       );
-      _serverInfo = ServerInfoDto.fromJson(
+      _serverInfo = systemHelloProcedure.decodeResult(
         Map<String, dynamic>.from(hello as Map),
       );
       _reconnectAttempt = 0;
@@ -245,9 +241,7 @@ class CoderClient
           subscribeTimeline(entry.key, afterSequence: entry.value).then((
             events,
           ) {
-            for (final event in events) {
-              _events.add(TimelineClientEvent(event));
-            }
+            events.forEach(_timelineEvents.add);
           }),
         );
       }
@@ -256,10 +250,8 @@ class CoderClient
       ).entries) {
         unawaited(
           attachTerminal(entry.key, afterSequence: entry.value).then((result) {
-            _events.add(TerminalUpdatedClientEvent(result.terminal));
-            for (final output in result.replay) {
-              _events.add(TerminalOutputClientEvent(output));
-            }
+            _terminalUpdates.add(result.terminal);
+            result.replay.forEach(_terminalOutput.add);
           }),
         );
       }
@@ -275,55 +267,63 @@ class CoderClient
   void _handleNotification(String type, Map<String, dynamic> parameters) {
     try {
       switch (type) {
-        case RpcNotification.timelineEvent:
-          final event = TimelineEventDto.fromJson(parameters);
+        case final name when name == sessionsTimelineEventNotification.name:
+          final event = sessionsTimelineEventNotification.decode(parameters);
           final current = _timelineSubscriptions[event.sessionId] ?? 0;
           if (event.sequence <= current) return;
           _timelineSubscriptions[event.sessionId] = event.sequence;
-          _events.add(TimelineClientEvent(event));
-        case RpcNotification.sessionUpdated:
-          _events.add(
-            SessionUpdatedClientEvent(SessionDto.fromJson(parameters)),
+          _timelineEvents.add(event);
+        case final name when name == sessionsUpdatedNotification.name:
+          _sessionUpdates.add(sessionsUpdatedNotification.decode(parameters));
+        case final name when name == agentsChangedNotification.name:
+          agentsChangedNotification.decode(parameters);
+          _agentChanges.add(null);
+        case final name when name == mcpChangedNotification.name:
+          mcpChangedNotification.decode(parameters);
+          _mcpChanges.add(null);
+        case final name when name == promptsSkillsChangedNotification.name:
+          promptsSkillsChangedNotification.decode(parameters);
+          _skillChanges.add(null);
+        case final name when name == promptsCommandsChangedNotification.name:
+          promptsCommandsChangedNotification.decode(parameters);
+          _commandChanges.add(null);
+        case final name when name == sessionsApprovalRequestedNotification.name:
+          _approvalRequests.add(
+            sessionsApprovalRequestedNotification.decode(parameters),
           );
-        case RpcNotification.agentDefinitionsChanged:
-          _events.add(const AgentDefinitionsChangedClientEvent());
-        case RpcNotification.mcpServersChanged:
-          _events.add(const McpServersChangedClientEvent());
-        case RpcNotification.skillsChanged:
-          _events.add(const SkillsChangedClientEvent());
-        case RpcNotification.commandsChanged:
-          _events.add(const CommandsChangedClientEvent());
-        case RpcNotification.approvalRequested:
-          _events.add(
-            ApprovalRequestedClientEvent(
-              ApprovalRequestDto.fromJson(parameters),
-            ),
+        case final name when name == sessionsQuestionRequestedNotification.name:
+          _questionRequests.add(
+            sessionsQuestionRequestedNotification.decode(parameters),
           );
-        case RpcNotification.userQuestionRequested:
-          _events.add(
-            UserQuestionRequestedClientEvent(
-              UserQuestionRequestDto.fromJson(parameters),
-            ),
+        case final name when name == providersAuthUpdatedNotification.name:
+          _providerAuthUpdates.add(
+            providersAuthUpdatedNotification.decode(parameters),
           );
-        case RpcNotification.providerAuthUpdated:
-          _events.add(
-            ProviderAuthUpdatedClientEvent(
-              ProviderAuthAttemptDto.fromJson(parameters),
-            ),
-          );
-        case RpcNotification.terminalOutput:
-          final output = TerminalOutputDto.fromJson(parameters);
+        case final name when name == terminalsOutputNotification.name:
+          final output = terminalsOutputNotification.decode(parameters);
           final current = _terminalSubscriptions[output.terminalId];
           if (current == null || output.sequence <= current) return;
           _terminalSubscriptions[output.terminalId] = output.sequence;
-          _events.add(TerminalOutputClientEvent(output));
-        case RpcNotification.terminalUpdated:
-          _events.add(
-            TerminalUpdatedClientEvent(TerminalDto.fromJson(parameters)),
-          );
+          _terminalOutput.add(output);
+        case final name when name == terminalsUpdatedNotification.name:
+          _terminalUpdates.add(terminalsUpdatedNotification.decode(parameters));
       }
     } on FormatException catch (error, stackTrace) {
-      _events.addError(error, stackTrace);
+      for (final controller in <StreamController<Object?>>[
+        _sessionUpdates,
+        _timelineEvents,
+        _approvalRequests,
+        _questionRequests,
+        _agentChanges,
+        _skillChanges,
+        _commandChanges,
+        _providerAuthUpdates,
+        _mcpChanges,
+        _terminalOutput,
+        _terminalUpdates,
+      ]) {
+        controller.addError(error, stackTrace);
+      }
     }
   }
 
@@ -342,9 +342,9 @@ class CoderClient
     );
   }
 
-  Future<Map<String, dynamic>> _request(
-    String method,
-    Map<String, dynamic> payload,
+  Future<R> _call<P extends Object, R extends Object>(
+    RpcProcedure<P, R> procedure,
+    P params,
   ) async {
     try {
       final result =
@@ -353,17 +353,25 @@ class CoderClient
                     'Not connected.',
                     retryable: true,
                   )))
-              .sendRequest(method, payload)
+              .sendRequest(procedure.name, procedure.encodeParams(params))
               .timeout(_requestTimeout);
-      return Map<String, dynamic>.from(result as Map);
+      return procedure.decodeResult(
+        Map<String, dynamic>.from(result as Map),
+      );
     } on json_rpc.RpcException catch (error) {
-      final data = error.data is Map
-          ? error.data! as Map
-          : const <dynamic, dynamic>{};
+      RpcFailureDto? failure;
+      if (error.data case final Map<Object?, Object?> data) {
+        try {
+          failure = RpcFailureDto.fromJson(Map<String, dynamic>.from(data));
+        } on FormatException {
+          failure = null;
+        }
+      }
       throw CoderClientException(
         error.message,
-        code: data['code'] as String?,
-        retryable: data['retryable'] == true,
+        code: failure?.code,
+        retryable: failure?.retryable ?? false,
+        details: failure?.details ?? const <String, dynamic>{},
       );
       // json_rpc_2 reports a closed peer as a StateError and offers no typed
       // alternative; converting it keeps shutdown races off the error zone.
@@ -375,11 +383,11 @@ class CoderClient
 
   @override
   Future<WorkspaceCatalogDto> getWorkspaceCatalog() async {
-    final response = await _request(
-      RpcMethod.workspaceCatalog,
-      const <String, dynamic>{},
+    final response = await _call(
+      workspacesCatalogProcedure,
+      const EmptyParamsDto(),
     );
-    return WorkspaceCatalogResultDto.fromJson(response).catalog;
+    return response.catalog;
   }
 
   @override
@@ -389,32 +397,32 @@ class CoderClient
     required String rootPath,
     required String name,
   }) async {
-    final response = await _request(
-      RpcMethod.workspaceRegister,
+    final response = await _call(
+      workspacesRegisterProcedure,
       WorkspaceRegisterParamsDto(
         workspaceId: workspaceId,
         checkoutId: checkoutId,
         rootPath: rootPath,
         name: name,
-      ).toJson(),
+      ),
     );
-    return WorkspaceRegisterResultDto.fromJson(response);
+    return response;
   }
 
   @override
   Future<WorkspaceCatalogDto> refreshWorkspace(String workspaceId) async {
-    final response = await _request(
-      RpcMethod.workspaceRefresh,
-      WorkspaceIdParamsDto(workspaceId: workspaceId).toJson(),
+    final response = await _call(
+      workspacesRefreshProcedure,
+      WorkspaceIdParamsDto(workspaceId: workspaceId),
     );
-    return WorkspaceCatalogResultDto.fromJson(response).catalog;
+    return response.catalog;
   }
 
   @override
   Future<void> unregisterWorkspace(String workspaceId) async {
-    await _request(
-      RpcMethod.workspaceUnregister,
-      WorkspaceIdParamsDto(workspaceId: workspaceId).toJson(),
+    await _call(
+      workspacesUnregisterProcedure,
+      WorkspaceIdParamsDto(workspaceId: workspaceId),
     );
   }
 
@@ -423,11 +431,11 @@ class CoderClient
     String query, {
     int limit = 30,
   }) async {
-    final response = await _request(
-      RpcMethod.directorySuggest,
-      DirectorySuggestParamsDto(query: query, limit: limit).toJson(),
+    final response = await _call(
+      workspacesSuggestDirectoriesProcedure,
+      DirectorySuggestParamsDto(query: query, limit: limit),
     );
-    return DirectorySuggestResultDto.fromJson(response).suggestions;
+    return response.suggestions;
   }
 
   @override
@@ -436,35 +444,35 @@ class CoderClient
     required String query,
     int limit = 50,
   }) async {
-    final response = await _request(
-      RpcMethod.fileSearch,
+    final response = await _call(
+      workspacesSearchFilesProcedure,
       FileSearchParamsDto(
         worktreeId: worktreeId,
         query: query,
         limit: limit,
-      ).toJson(),
+      ),
     );
-    return FileSearchResultDto.fromJson(response);
+    return response;
   }
 
   @override
   Future<List<GitBranchDto>> listGitBranches(String workspaceId) async {
-    final response = await _request(
-      RpcMethod.gitBranchesList,
-      GitBranchesListParamsDto(workspaceId: workspaceId).toJson(),
+    final response = await _call(
+      workspacesListBranchesProcedure,
+      GitBranchesListParamsDto(workspaceId: workspaceId),
     );
-    return GitBranchesListResultDto.fromJson(response).branches;
+    return response.branches;
   }
 
   @override
   Future<ProjectSettingsResultDto> getProjectSettings(
     String workspaceId,
   ) async {
-    final response = await _request(
-      RpcMethod.projectSettingsGet,
-      ProjectSettingsGetParamsDto(workspaceId: workspaceId).toJson(),
+    final response = await _call(
+      workspacesGetProjectSettingsProcedure,
+      ProjectSettingsGetParamsDto(workspaceId: workspaceId),
     );
-    return ProjectSettingsResultDto.fromJson(response);
+    return response;
   }
 
   @override
@@ -472,14 +480,14 @@ class CoderClient
     String workspaceId,
     ProjectSettingsDto settings,
   ) async {
-    final response = await _request(
-      RpcMethod.projectSettingsSave,
+    final response = await _call(
+      workspacesSaveProjectSettingsProcedure,
       ProjectSettingsSaveParamsDto(
         workspaceId: workspaceId,
         settings: settings,
-      ).toJson(),
+      ),
     );
-    return ProjectSettingsResultDto.fromJson(response);
+    return response;
   }
 
   @override
@@ -490,28 +498,28 @@ class CoderClient
     required String branchName,
     String? baseBranch,
   }) async {
-    final response = await _request(
-      RpcMethod.worktreeCreate,
+    final response = await _call(
+      workspacesCreateWorktreeProcedure,
       WorktreeCreateParamsDto(
         id: id,
         workspaceId: workspaceId,
         mode: mode,
         branchName: branchName,
         baseBranch: baseBranch,
-      ).toJson(),
+      ),
     );
-    return WorktreeResultDto.fromJson(response);
+    return response;
   }
 
   @override
   Future<WorktreeArchivePreviewDto> previewWorktreeArchive(
     String worktreeId,
   ) async {
-    final response = await _request(
-      RpcMethod.worktreeArchivePreview,
-      WorktreeIdParamsDto(worktreeId: worktreeId).toJson(),
+    final response = await _call(
+      workspacesPreviewArchiveProcedure,
+      WorktreeIdParamsDto(worktreeId: worktreeId),
     );
-    return WorktreeArchivePreviewResultDto.fromJson(response).preview;
+    return response.preview;
   }
 
   @override
@@ -519,29 +527,29 @@ class CoderClient
     String worktreeId, {
     bool force = false,
   }) async {
-    final response = await _request(
-      RpcMethod.worktreeArchive,
-      WorktreeArchiveParamsDto(worktreeId: worktreeId, force: force).toJson(),
+    final response = await _call(
+      workspacesArchiveWorktreeProcedure,
+      WorktreeArchiveParamsDto(worktreeId: worktreeId, force: force),
     );
-    return WorktreeResultDto.fromJson(response);
+    return response;
   }
 
   @override
   Future<List<SessionDto>> listSessions({String? worktreeId}) async {
-    final response = await _request(
-      RpcMethod.sessionList,
-      SessionListParamsDto(worktreeId: worktreeId).toJson(),
+    final response = await _call(
+      sessionsListProcedure,
+      SessionListParamsDto(worktreeId: worktreeId),
     );
-    return SessionListResultDto.fromJson(response).sessions;
+    return response.sessions;
   }
 
   @override
   Future<List<SessionDto>> listSubagents(String sessionId) async {
-    final response = await _request(
-      RpcMethod.sessionSubagentList,
-      SessionSubagentListParamsDto(sessionId: sessionId).toJson(),
+    final response = await _call(
+      sessionsListSubagentsProcedure,
+      SessionSubagentListParamsDto(sessionId: sessionId),
     );
-    return SessionListResultDto.fromJson(response).sessions;
+    return response.sessions;
   }
 
   @override
@@ -556,8 +564,8 @@ class CoderClient
     PermissionMode? permissionMode,
     String? serviceTier,
   }) async {
-    final response = await _request(
-      RpcMethod.sessionCreate,
+    final response = await _call(
+      sessionsCreateProcedure,
       SessionCreateParamsDto(
         id: id,
         worktreeId: worktreeId,
@@ -568,9 +576,9 @@ class CoderClient
         reasoningEffort: reasoningEffort,
         permissionMode: permissionMode,
         serviceTier: serviceTier,
-      ).toJson(),
+      ),
     );
-    return SessionResultDto.fromJson(response).session;
+    return response.session;
   }
 
   @override
@@ -578,23 +586,23 @@ class CoderClient
     String sessionId,
     SessionSettingsPatchDto patch,
   ) async {
-    final response = await _request(
-      RpcMethod.sessionUpdateSettings,
+    final response = await _call(
+      sessionsUpdateSettingsProcedure,
       SessionSettingsUpdateParamsDto(
         sessionId: sessionId,
         patch: patch,
-      ).toJson(),
+      ),
     );
-    return SessionResultDto.fromJson(response).session;
+    return response.session;
   }
 
   @override
   Future<PermissionSettingsDto> getDefaultPermissionMode() async {
-    final response = await _request(
-      RpcMethod.permissionDefaultModeGet,
-      const <String, dynamic>{},
+    final response = await _call(
+      agentsGetDefaultPermissionModeProcedure,
+      const EmptyParamsDto(),
     );
-    return PermissionSettingsDto.fromJson(response);
+    return response;
   }
 
   @override
@@ -602,20 +610,20 @@ class CoderClient
     PermissionMode permissionMode,
   ) async {
     final settings = PermissionSettingsDto(defaultMode: permissionMode);
-    final response = await _request(
-      RpcMethod.permissionDefaultModeSet,
-      settings.toJson(),
+    final response = await _call(
+      agentsSetDefaultPermissionModeProcedure,
+      settings,
     );
-    return PermissionSettingsDto.fromJson(response);
+    return response;
   }
 
   @override
   Future<List<TerminalDto>> listTerminals(String worktreeId) async {
-    final response = await _request(
-      RpcMethod.terminalList,
-      TerminalListParamsDto(worktreeId: worktreeId).toJson(),
+    final response = await _call(
+      terminalsListProcedure,
+      TerminalListParamsDto(worktreeId: worktreeId),
     );
-    return TerminalListResultDto.fromJson(response).terminals;
+    return response.terminals;
   }
 
   @override
@@ -626,17 +634,17 @@ class CoderClient
     required int columns,
     required int rows,
   }) async {
-    final response = await _request(
-      RpcMethod.terminalCreate,
+    final response = await _call(
+      terminalsCreateProcedure,
       TerminalCreateParamsDto(
         id: id,
         worktreeId: worktreeId,
         title: title,
         columns: columns,
         rows: rows,
-      ).toJson(),
+      ),
     );
-    return TerminalResultDto.fromJson(response).terminal;
+    return response.terminal;
   }
 
   @override
@@ -645,14 +653,14 @@ class CoderClient
     int afterSequence = 0,
   }) async {
     _terminalSubscriptions[terminalId] = afterSequence;
-    final response = await _request(
-      RpcMethod.terminalAttach,
+    final response = await _call(
+      terminalsAttachProcedure,
       TerminalAttachParamsDto(
         terminalId: terminalId,
         afterSequence: afterSequence,
-      ).toJson(),
+      ),
     );
-    final result = TerminalAttachResultDto.fromJson(response);
+    final result = response;
     for (final output in result.replay) {
       final current = _terminalSubscriptions[terminalId] ?? 0;
       if (output.sequence > current) {
@@ -663,9 +671,9 @@ class CoderClient
   }
 
   @override
-  Future<void> writeTerminal(String terminalId, String data) => _request(
-    RpcMethod.terminalWrite,
-    TerminalWriteParamsDto(terminalId: terminalId, data: data).toJson(),
+  Future<void> writeTerminal(String terminalId, String data) => _call(
+    terminalsWriteProcedure,
+    TerminalWriteParamsDto(terminalId: terminalId, data: data),
   );
 
   @override
@@ -674,57 +682,57 @@ class CoderClient
     required int columns,
     required int rows,
   }) async {
-    final response = await _request(
-      RpcMethod.terminalResize,
+    final response = await _call(
+      terminalsResizeProcedure,
       TerminalResizeParamsDto(
         terminalId: terminalId,
         columns: columns,
         rows: rows,
-      ).toJson(),
+      ),
     );
-    return TerminalResultDto.fromJson(response).terminal;
+    return response.terminal;
   }
 
   @override
   Future<void> terminateTerminal(String terminalId) async {
-    await _request(
-      RpcMethod.terminalTerminate,
-      TerminalIdParamsDto(terminalId: terminalId).toJson(),
+    await _call(
+      terminalsTerminateProcedure,
+      TerminalIdParamsDto(terminalId: terminalId),
     );
     _terminalSubscriptions.remove(terminalId);
   }
 
   @override
   Future<ShellSpecDto?> getTerminalShell() async {
-    final response = await _request(
-      RpcMethod.terminalShellGet,
-      const <String, dynamic>{},
+    final response = await _call(
+      terminalsGetDefaultShellProcedure,
+      const EmptyParamsDto(),
     );
-    return TerminalShellDto.fromJson(response).shell;
+    return response.shell;
   }
 
   @override
-  Future<void> setTerminalShell(ShellSpecDto? shell) => _request(
-    RpcMethod.terminalShellSet,
-    TerminalShellDto(shell: shell).toJson(),
+  Future<void> setTerminalShell(ShellSpecDto? shell) => _call(
+    terminalsSetDefaultShellProcedure,
+    TerminalShellDto(shell: shell),
   );
 
   @override
   Future<List<AgentDefinitionDto>> listAgentDefinitions() async {
-    final response = await _request(
-      RpcMethod.agentDefinitionList,
-      const <String, dynamic>{},
+    final response = await _call(
+      agentsListProcedure,
+      const EmptyParamsDto(),
     );
-    return AgentDefinitionListResultDto.fromJson(response).definitions;
+    return response.definitions;
   }
 
   @override
   Future<AgentDefinitionDto> getAgentDefinition(String id) async {
-    final response = await _request(
-      RpcMethod.agentDefinitionGet,
-      AgentDefinitionIdParamsDto(id: id).toJson(),
+    final response = await _call(
+      agentsGetProcedure,
+      AgentDefinitionIdParamsDto(id: id),
     );
-    return AgentDefinitionResultDto.fromJson(response).definition;
+    return response.definition;
   }
 
   @override
@@ -732,11 +740,11 @@ class CoderClient
     String id,
     AgentDefinitionDto definition,
   ) async {
-    final response = await _request(
-      RpcMethod.agentDefinitionCreate,
-      AgentDefinitionCreateParamsDto(id: id, definition: definition).toJson(),
+    final response = await _call(
+      agentsCreateProcedure,
+      AgentDefinitionCreateParamsDto(id: id, definition: definition),
     );
-    return AgentDefinitionResultDto.fromJson(response).definition;
+    return response.definition;
   }
 
   @override
@@ -745,30 +753,30 @@ class CoderClient
     required String expectedContentHash,
     bool force = false,
   }) async {
-    final response = await _request(
-      RpcMethod.agentDefinitionUpdate,
+    final response = await _call(
+      agentsUpdateProcedure,
       AgentDefinitionUpdateParamsDto(
         definition: definition,
         expectedContentHash: expectedContentHash,
         force: force,
-      ).toJson(),
+      ),
     );
-    return AgentDefinitionResultDto.fromJson(response).definition;
+    return response.definition;
   }
 
   @override
-  Future<void> archiveAgentDefinition(String id) => _request(
-    RpcMethod.agentDefinitionArchive,
-    AgentDefinitionIdParamsDto(id: id).toJson(),
+  Future<void> archiveAgentDefinition(String id) => _call(
+    agentsArchiveProcedure,
+    AgentDefinitionIdParamsDto(id: id),
   );
 
   @override
   Future<AgentDefinitionDto> resetAgentDefinition(String id) async {
-    final response = await _request(
-      RpcMethod.agentDefinitionReset,
-      AgentDefinitionIdParamsDto(id: id).toJson(),
+    final response = await _call(
+      agentsResetProcedure,
+      AgentDefinitionIdParamsDto(id: id),
     );
-    return AgentDefinitionResultDto.fromJson(response).definition;
+    return response.definition;
   }
 
   @override
@@ -776,101 +784,101 @@ class CoderClient
     String id,
     String markdown,
   ) async {
-    final response = await _request(
-      RpcMethod.agentDefinitionValidate,
-      AgentDefinitionValidateParamsDto(id: id, markdown: markdown).toJson(),
+    final response = await _call(
+      agentsValidateProcedure,
+      AgentDefinitionValidateParamsDto(id: id, markdown: markdown),
     );
-    return AgentDefinitionResultDto.fromJson(response).definition;
+    return response.definition;
   }
 
   @override
   Future<List<AgentToolDefinitionDto>> listAgentTools({
     String? worktreeId,
   }) async {
-    final response = await _request(
-      RpcMethod.agentToolCatalog,
-      AgentToolCatalogParamsDto(worktreeId: worktreeId).toJson(),
+    final response = await _call(
+      agentsListToolsProcedure,
+      AgentToolCatalogParamsDto(worktreeId: worktreeId),
     );
-    return AgentToolCatalogResultDto.fromJson(response).tools;
+    return response.tools;
   }
 
   @override
   Future<List<McpServerStateDto>> listMcpServers({String? worktreeId}) async {
-    final response = await _request(
-      RpcMethod.mcpServerList,
-      McpServersParamsDto(worktreeId: worktreeId).toJson(),
+    final response = await _call(
+      mcpListServersProcedure,
+      McpServersParamsDto(worktreeId: worktreeId),
     );
-    return McpServersResultDto.fromJson(response).servers;
+    return response.servers;
   }
 
   @override
   Future<McpServerStateDto> addMcpServer(McpServerConfigDto server) async {
-    final response = await _request(
-      RpcMethod.mcpServerAdd,
-      McpServerParamsDto(server: server).toJson(),
+    final response = await _call(
+      mcpAddServerProcedure,
+      McpServerParamsDto(server: server),
     );
-    return McpServerStateResultDto.fromJson(response).state;
+    return response.state;
   }
 
   @override
   Future<McpServerStateDto> updateMcpServer(McpServerConfigDto server) async {
-    final response = await _request(
-      RpcMethod.mcpServerUpdate,
-      McpServerParamsDto(server: server).toJson(),
+    final response = await _call(
+      mcpUpdateServerProcedure,
+      McpServerParamsDto(server: server),
     );
-    return McpServerStateResultDto.fromJson(response).state;
+    return response.state;
   }
 
   @override
   Future<void> removeMcpServer(String id) async {
-    await _request(
-      RpcMethod.mcpServerRemove,
-      McpServerIdParamsDto(id: id).toJson(),
+    await _call(
+      mcpRemoveServerProcedure,
+      McpServerIdParamsDto(id: id),
     );
   }
 
   @override
   Future<McpServerStateDto> testMcpServer(McpServerConfigDto server) async {
-    final response = await _request(
-      RpcMethod.mcpServerTest,
-      McpServerParamsDto(server: server).toJson(),
+    final response = await _call(
+      mcpTestServerProcedure,
+      McpServerParamsDto(server: server),
     );
-    return McpServerStateResultDto.fromJson(response).state;
+    return response.state;
   }
 
   @override
   Future<void> setMcpSecret(String key, String value) async {
-    await _request(
-      RpcMethod.mcpSecretSet,
-      McpSecretParamsDto(key: key, value: value).toJson(),
+    await _call(
+      mcpSetSecretProcedure,
+      McpSecretParamsDto(key: key, value: value),
     );
   }
 
   @override
   Future<List<AgentCommandDto>> listCommands({String? workspaceId}) async {
-    final response = await _request(
-      RpcMethod.commandList,
-      CommandListParamsDto(workspaceId: workspaceId).toJson(),
+    final response = await _call(
+      promptsListCommandsProcedure,
+      CommandListParamsDto(workspaceId: workspaceId),
     );
-    return CommandListResultDto.fromJson(response).commands;
+    return response.commands;
   }
 
   @override
   Future<List<SkillDto>> listSkills({String? workspaceId}) async {
-    final response = await _request(
-      RpcMethod.skillList,
-      SkillScopeParamsDto(workspaceId: workspaceId).toJson(),
+    final response = await _call(
+      promptsListSkillsProcedure,
+      SkillScopeParamsDto(workspaceId: workspaceId),
     );
-    return SkillListResultDto.fromJson(response).skills;
+    return response.skills;
   }
 
   @override
   Future<SkillDto> getSkill(String id, {String? workspaceId}) async {
-    final response = await _request(
-      RpcMethod.skillGet,
-      SkillIdParamsDto(id: id, workspaceId: workspaceId).toJson(),
+    final response = await _call(
+      promptsGetSkillProcedure,
+      SkillIdParamsDto(id: id, workspaceId: workspaceId),
     );
-    return SkillResultDto.fromJson(response).skill;
+    return response.skill;
   }
 
   @override
@@ -882,8 +890,8 @@ class CoderClient
     required String body,
     String? workspaceId,
   }) async {
-    final response = await _request(
-      RpcMethod.skillCreate,
+    final response = await _call(
+      promptsCreateSkillProcedure,
       SkillCreateParamsDto(
         id: id,
         source: source,
@@ -891,9 +899,9 @@ class CoderClient
         description: description,
         body: body,
         workspaceId: workspaceId,
-      ).toJson(),
+      ),
     );
-    return SkillResultDto.fromJson(response).skill;
+    return response.skill;
   }
 
   @override
@@ -903,22 +911,22 @@ class CoderClient
     bool force = false,
     String? workspaceId,
   }) async {
-    final response = await _request(
-      RpcMethod.skillUpdate,
+    final response = await _call(
+      promptsUpdateSkillProcedure,
       SkillUpdateParamsDto(
         skill: skill,
         expectedContentHash: expectedContentHash,
         force: force,
         workspaceId: workspaceId,
-      ).toJson(),
+      ),
     );
-    return SkillResultDto.fromJson(response).skill;
+    return response.skill;
   }
 
   @override
-  Future<void> deleteSkill(String id, {String? workspaceId}) => _request(
-    RpcMethod.skillDelete,
-    SkillIdParamsDto(id: id, workspaceId: workspaceId).toJson(),
+  Future<void> deleteSkill(String id, {String? workspaceId}) => _call(
+    promptsDeleteSkillProcedure,
+    SkillIdParamsDto(id: id, workspaceId: workspaceId),
   );
 
   @override
@@ -927,33 +935,33 @@ class CoderClient
     required bool enabled,
     String? workspaceId,
   }) async {
-    final response = await _request(
-      RpcMethod.skillSetEnabled,
+    final response = await _call(
+      promptsSetSkillEnabledProcedure,
       SkillSetEnabledParamsDto(
         id: id,
         enabled: enabled,
         workspaceId: workspaceId,
-      ).toJson(),
+      ),
     );
-    return SkillResultDto.fromJson(response).skill;
+    return response.skill;
   }
 
   @override
   Future<ProviderCatalogDto> listProviderCatalog() async {
-    final response = await _request(
-      RpcMethod.providerCatalog,
-      const <String, dynamic>{},
+    final response = await _call(
+      providersCatalogProcedure,
+      const EmptyParamsDto(),
     );
-    return ProviderCatalogResultDto.fromJson(response).catalog;
+    return response.catalog;
   }
 
   @override
   Future<List<ProviderConnectionDto>> listProviderConnections() async {
-    final response = await _request(
-      RpcMethod.providerConnectionsList,
-      const <String, dynamic>{},
+    final response = await _call(
+      providersListConnectionsProcedure,
+      const EmptyParamsDto(),
     );
-    return ProviderConnectionsResultDto.fromJson(response).connections;
+    return response.connections;
   }
 
   @override
@@ -961,23 +969,23 @@ class CoderClient
     String definitionId,
     String apiKey,
   ) async {
-    final response = await _request(
-      RpcMethod.providerConnectApiKey,
+    final response = await _call(
+      providersConnectApiKeyProcedure,
       ProviderConnectApiKeyParamsDto(
         definitionId: definitionId,
         apiKey: apiKey,
-      ).toJson(),
+      ),
     );
-    return ProviderConnectionResultDto.fromJson(response).connection;
+    return response.connection;
   }
 
   @override
   Future<ProviderConnectionDto> connectProviderNone(String definitionId) async {
-    final response = await _request(
-      RpcMethod.providerConnectNone,
-      ProviderConnectNoneParamsDto(definitionId: definitionId).toJson(),
+    final response = await _call(
+      providersConnectNoneProcedure,
+      ProviderConnectNoneParamsDto(definitionId: definitionId),
     );
-    return ProviderConnectionResultDto.fromJson(response).connection;
+    return response.connection;
   }
 
   @override
@@ -985,74 +993,74 @@ class CoderClient
     String definitionId,
     String methodId,
   ) async {
-    final response = await _request(
-      RpcMethod.providerAuthStart,
+    final response = await _call(
+      providersStartAuthProcedure,
       ProviderAuthStartParamsDto(
         definitionId: definitionId,
         methodId: methodId,
-      ).toJson(),
+      ),
     );
-    return ProviderAuthAttemptResultDto.fromJson(response).attempt;
+    return response.attempt;
   }
 
   @override
   Future<ProviderAuthAttemptDto> providerAuthStatus(String attemptId) async {
-    final response = await _request(
-      RpcMethod.providerAuthStatus,
-      ProviderAuthAttemptParamsDto(attemptId: attemptId).toJson(),
+    final response = await _call(
+      providersGetAuthProcedure,
+      ProviderAuthAttemptParamsDto(attemptId: attemptId),
     );
-    return ProviderAuthAttemptResultDto.fromJson(response).attempt;
+    return response.attempt;
   }
 
   @override
   Future<void> cancelProviderAuth(String attemptId) async {
-    await _request(
-      RpcMethod.providerAuthCancel,
-      ProviderAuthAttemptParamsDto(attemptId: attemptId).toJson(),
+    await _call(
+      providersCancelAuthProcedure,
+      ProviderAuthAttemptParamsDto(attemptId: attemptId),
     );
   }
 
   @override
   Future<void> disconnectProvider(String connectionId) async {
-    await _request(
-      RpcMethod.providerDisconnect,
-      ProviderConnectionIdParamsDto(connectionId: connectionId).toJson(),
+    await _call(
+      providersDisconnectProcedure,
+      ProviderConnectionIdParamsDto(connectionId: connectionId),
     );
   }
 
   @override
   Future<ProviderCatalogDto> refreshProviderCatalog() async {
-    final response = await _request(
-      RpcMethod.providerCatalogRefresh,
-      const <String, dynamic>{},
+    final response = await _call(
+      providersRefreshCatalogProcedure,
+      const EmptyParamsDto(),
     );
-    return ProviderCatalogResultDto.fromJson(response).catalog;
+    return response.catalog;
   }
 
   @override
   Future<List<ProviderModelDto>> listProviderModels(
     String connectionId,
   ) async {
-    final response = await _request(
-      RpcMethod.providerModelsList,
-      ProviderConnectionIdParamsDto(connectionId: connectionId).toJson(),
+    final response = await _call(
+      providersListModelsProcedure,
+      ProviderConnectionIdParamsDto(connectionId: connectionId),
     );
-    return ProviderModelsResultDto.fromJson(response).models;
+    return response.models;
   }
 
   @override
   Future<SessionModelSelectionDto?> getDefaultModel() async {
-    final response = await _request(
-      RpcMethod.providerDefaultModelGet,
-      const <String, dynamic>{},
+    final response = await _call(
+      providersGetDefaultModelProcedure,
+      const EmptyParamsDto(),
     );
-    return DefaultModelDto.fromJson(response).model;
+    return response.model;
   }
 
   @override
-  Future<void> setDefaultModel(SessionModelSelectionDto? model) => _request(
-    RpcMethod.providerDefaultModelSet,
-    DefaultModelDto(model: model).toJson(),
+  Future<void> setDefaultModel(SessionModelSelectionDto? model) => _call(
+    providersSetDefaultModelProcedure,
+    DefaultModelDto(model: model),
   );
 
   @override
@@ -1061,15 +1069,15 @@ class CoderClient
     CustomProviderConfigDto config, {
     String? apiKey,
   }) async {
-    final response = await _request(
-      RpcMethod.providerCustomCreate,
+    final response = await _call(
+      providersCreateCustomProcedure,
       ProviderCustomCreateParamsDto(
         id: id,
         config: config,
         apiKey: apiKey,
-      ).toJson(),
+      ),
     );
-    return ProviderConnectionResultDto.fromJson(response).connection;
+    return response.connection;
   }
 
   @override
@@ -1078,22 +1086,22 @@ class CoderClient
     CustomProviderConfigDto config, {
     String? apiKey,
   }) async {
-    final response = await _request(
-      RpcMethod.providerCustomUpdate,
+    final response = await _call(
+      providersUpdateCustomProcedure,
       ProviderCustomUpdateParamsDto(
         connectionId: connectionId,
         config: config,
         apiKey: apiKey,
-      ).toJson(),
+      ),
     );
-    return ProviderConnectionResultDto.fromJson(response).connection;
+    return response.connection;
   }
 
   @override
   Future<void> deleteCustomProvider(String connectionId) async {
-    await _request(
-      RpcMethod.providerCustomDelete,
-      ProviderConnectionIdParamsDto(connectionId: connectionId).toJson(),
+    await _call(
+      providersDeleteCustomProcedure,
+      ProviderConnectionIdParamsDto(connectionId: connectionId),
     );
   }
 
@@ -1104,14 +1112,14 @@ class CoderClient
     required String prompt,
     List<String> attachmentIds = const <String>[],
   }) async {
-    await _request(
-      RpcMethod.turnStart,
+    await _call(
+      sessionsStartTurnProcedure,
       TurnStartParamsDto(
         sessionId: sessionId,
         turnId: turnId,
         prompt: prompt,
         attachmentIds: attachmentIds,
-      ).toJson(),
+      ),
     );
   }
 
@@ -1127,7 +1135,7 @@ class CoderClient
       final request =
           http.StreamedRequest(
               'POST',
-              _endpoint.httpBaseUri.resolve('v3/attachments'),
+              _endpoint.httpBaseUri.resolve('v4/attachments'),
             )
             ..headers['authorization'] = 'Bearer ${_credentials.bearerToken}'
             ..headers['content-type'] = mimeType
@@ -1165,7 +1173,7 @@ class CoderClient
     final request = http.Request(
       'GET',
       _endpoint.httpBaseUri.resolve(
-        'v3/attachments/${Uri.encodeComponent(id)}',
+        'v4/attachments/${Uri.encodeComponent(id)}',
       ),
     )..headers['authorization'] = 'Bearer ${_credentials.bearerToken}';
     final response = await client.send(request);
@@ -1207,17 +1215,17 @@ class CoderClient
 
   @override
   Future<void> cancelTurn(String sessionId) async {
-    await _request(
-      RpcMethod.turnCancel,
-      SessionIdParamsDto(sessionId: sessionId).toJson(),
+    await _call(
+      sessionsCancelTurnProcedure,
+      SessionIdParamsDto(sessionId: sessionId),
     );
   }
 
   @override
   Future<void> compactSession(String sessionId) async {
-    await _request(
-      RpcMethod.sessionCompact,
-      SessionIdParamsDto(sessionId: sessionId).toJson(),
+    await _call(
+      sessionsCompactProcedure,
+      SessionIdParamsDto(sessionId: sessionId),
     );
   }
 
@@ -1226,20 +1234,20 @@ class CoderClient
     required String approvalId,
     required bool approved,
   }) async {
-    await _request(
-      RpcMethod.approvalResolve,
+    await _call(
+      sessionsResolveApprovalProcedure,
       ApprovalResolveParamsDto(
         approvalId: approvalId,
         approved: approved,
-      ).toJson(),
+      ),
     );
   }
 
   @override
   Future<void> notePendingInput(String sessionId) async {
-    await _request(
-      RpcMethod.sessionPendingInput,
-      SessionPendingInputParamsDto(sessionId: sessionId).toJson(),
+    await _call(
+      sessionsNotePendingInputProcedure,
+      SessionPendingInputParamsDto(sessionId: sessionId),
     );
   }
 
@@ -1247,15 +1255,13 @@ class CoderClient
   Future<UserQuestionRequestDto> answerUserQuestion({
     required String requestId,
     required List<UserQuestionAnswerDto> answers,
-  }) async => UserQuestionResultDto.fromJson(
-    await _request(
-      RpcMethod.userQuestionAnswer,
-      UserQuestionAnswerParamsDto(
-        requestId: requestId,
-        answers: answers,
-      ).toJson(),
+  }) async => (await _call(
+    sessionsAnswerQuestionProcedure,
+    UserQuestionAnswerParamsDto(
+      requestId: requestId,
+      answers: answers,
     ),
-  ).request;
+  )).request;
 
   @override
   Future<List<TimelineEventDto>> subscribeTimeline(
@@ -1263,14 +1269,14 @@ class CoderClient
     int afterSequence = 0,
   }) async {
     _timelineSubscriptions[sessionId] = afterSequence;
-    final response = await _request(
-      RpcMethod.timelineSubscribe,
+    final response = await _call(
+      sessionsSubscribeTimelineProcedure,
       TimelineSubscribeParamsDto(
         sessionId: sessionId,
         afterSequence: afterSequence,
-      ).toJson(),
+      ),
     );
-    final events = TimelineResultDto.fromJson(response).events;
+    final events = response.events;
     for (final event in events) {
       final current = _timelineSubscriptions[sessionId] ?? 0;
       if (event.sequence > current) {
@@ -1286,7 +1292,19 @@ class CoderClient
     _closed = true;
     _states.add(ClientConnectionState.disconnected);
     await _peer?.close();
-    await _events.close();
+    await Future.wait(<Future<void>>[
+      _sessionUpdates.close(),
+      _timelineEvents.close(),
+      _approvalRequests.close(),
+      _questionRequests.close(),
+      _agentChanges.close(),
+      _skillChanges.close(),
+      _commandChanges.close(),
+      _providerAuthUpdates.close(),
+      _mcpChanges.close(),
+      _terminalOutput.close(),
+      _terminalUpdates.close(),
+    ]);
     await _states.close();
   }
 }

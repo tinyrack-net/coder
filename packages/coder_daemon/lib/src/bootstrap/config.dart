@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
-import 'package:coder_client/local_daemon.dart';
 import 'package:coder_daemon/src/bootstrap/version.g.dart';
+import 'package:coder_protocol/local_host.dart';
 
 /// Supplies process environment and operating-system information to config.
 ///
@@ -10,7 +11,19 @@ import 'package:coder_daemon/src/bootstrap/version.g.dart';
 typedef DaemonEnvironment = LocalDaemonEnvironment;
 
 /// Production [DaemonEnvironment] backed by `dart:io`.
-typedef IoDaemonEnvironment = IoLocalDaemonEnvironment;
+final class IoDaemonEnvironment implements DaemonEnvironment {
+  /// Creates the production adapter.
+  const IoDaemonEnvironment();
+
+  @override
+  Map<String, String> get values => Platform.environment;
+  @override
+  bool get isLinux => Platform.isLinux;
+  @override
+  bool get isMacOS => Platform.isMacOS;
+  @override
+  bool get isWindows => Platform.isWindows;
+}
 
 /// Browser origins allowed to reach the daemon without extra configuration.
 ///

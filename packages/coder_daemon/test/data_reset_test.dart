@@ -62,9 +62,9 @@ final class _RecordingDataFiles implements DaemonDataFiles {
 void main() {
   // Canonical, matching what _RecordingDataFiles records.
   String home(String entry) =>
-      p.canonicalize(p.join('/state/tinyrack-coder', 'v3', entry));
+      p.canonicalize(p.join('/state/tinyrack-coder', 'v4', entry));
   String config(String entry) =>
-      p.canonicalize(p.join('/config/tinyrack-coder', 'v3', entry));
+      p.canonicalize(p.join('/config/tinyrack-coder', 'v4', entry));
 
   DaemonDataReset reset(
     DaemonDataFiles files, {
@@ -120,7 +120,7 @@ void main() {
         files.deleted,
         isNot(contains(p.canonicalize('/config/tinyrack-coder'))),
       );
-      expect(DaemonDataReset.preservedHomeEntries, <String>['v3/worktrees']);
+      expect(DaemonDataReset.preservedHomeEntries, <String>['v4/worktrees']);
     },
     tags: const <String>['feature_test__settings_reset__unit'],
   );
@@ -142,8 +142,8 @@ void main() {
     () async {
       final files = _RecordingDataFiles(
         entries: <String>{
-          p.join('/shared', 'v3', 'coder.sqlite'),
-          p.join('/shared', 'v3', 'secrets.json'),
+          p.join('/shared', 'v4', 'coder.sqlite'),
+          p.join('/shared', 'v4', 'secrets.json'),
         },
       );
 
@@ -154,8 +154,8 @@ void main() {
       ).eraseAll();
 
       expect(files.deleted, <String>[
-        p.canonicalize(p.join('/shared', 'v3', 'coder.sqlite')),
-        p.canonicalize(p.join('/shared', 'v3', 'secrets.json')),
+        p.canonicalize(p.join('/shared', 'v4', 'coder.sqlite')),
+        p.canonicalize(p.join('/shared', 'v4', 'secrets.json')),
       ]);
       expect(
         files.calls.where((call) => call.startsWith('dir:')).length +
@@ -221,6 +221,70 @@ void main() {
     tags: const <String>['feature_test__settings_reset__unit'],
   );
 
+  test(
+    'v4 reset never touches preserved v2 or v3 namespaces',
+    () async {
+      final files = _RecordingDataFiles(
+        entries: <String>{
+          p.join('/state/tinyrack-coder', 'v2'),
+          p.join('/state/tinyrack-coder', 'v3'),
+          home('coder.sqlite'),
+        },
+        directories: <String>{
+          p.join('/state/tinyrack-coder', 'v2'),
+          p.join('/state/tinyrack-coder', 'v3'),
+        },
+      );
+
+      await reset(files).eraseAll();
+
+      expect(files.deleted, <String>[home('coder.sqlite')]);
+    },
+    tags: const <String>['feature_test__settings_reset__unit'],
+  );
+
+  test(
+    'legacy cleanup requires and removes only explicit versions',
+    () async {
+      final files = _RecordingDataFiles(
+        entries: <String>{
+          p.join('/state/tinyrack-coder', 'v2'),
+          p.join('/config/tinyrack-coder', 'v2'),
+          p.join('/state/tinyrack-coder', 'v3'),
+        },
+        directories: <String>{
+          p.join('/state/tinyrack-coder', 'v2'),
+          p.join('/config/tinyrack-coder', 'v2'),
+          p.join('/state/tinyrack-coder', 'v3'),
+        },
+      );
+      final cleanup = DaemonLegacyDataCleanup(
+        configDirectory: '/config/tinyrack-coder',
+        homeDirectory: '/state/tinyrack-coder',
+        files: files,
+      );
+
+      await cleanup.erase(versions: const <int>{2});
+
+      expect(
+        files.deleted,
+        containsAll(<String>[
+          p.canonicalize(p.join('/state/tinyrack-coder', 'v2')),
+          p.canonicalize(p.join('/config/tinyrack-coder', 'v2')),
+        ]),
+      );
+      expect(
+        files.deleted,
+        isNot(contains(p.canonicalize(p.join('/state/tinyrack-coder', 'v3')))),
+      );
+      await expectLater(
+        cleanup.erase(versions: const <int>{4}),
+        throwsArgumentError,
+      );
+    },
+    tags: const <String>['feature_test__settings_reset__unit'],
+  );
+
   group('NativeDaemonDataFiles', () {
     late Directory root;
 
@@ -235,21 +299,21 @@ void main() {
       () async {
         final state = Directory(p.join(root.path, 'state'));
         final configRoot = Directory(p.join(root.path, 'config'));
-        final stateV3 = Directory(p.join(state.path, 'v3'));
-        final configV3 = Directory(p.join(configRoot.path, 'v3'));
-        await stateV3.create(recursive: true);
-        await configV3.create(recursive: true);
-        await File(p.join(stateV3.path, 'coder.sqlite')).writeAsString('db');
-        await File(p.join(stateV3.path, 'daemon.lock')).writeAsString('');
-        await Directory(p.join(stateV3.path, 'attachments')).create();
+        final stateV4 = Directory(p.join(state.path, 'v4'));
+        final configV4 = Directory(p.join(configRoot.path, 'v4'));
+        await stateV4.create(recursive: true);
+        await configV4.create(recursive: true);
+        await File(p.join(stateV4.path, 'coder.sqlite')).writeAsString('db');
+        await File(p.join(stateV4.path, 'daemon.lock')).writeAsString('');
+        await Directory(p.join(stateV4.path, 'attachments')).create();
         await File(
-          p.join(stateV3.path, 'worktrees', 'repo', 'main.dart'),
+          p.join(stateV4.path, 'worktrees', 'repo', 'main.dart'),
         ).create(recursive: true);
         await File(
-          p.join(configV3.path, 'secrets.json'),
+          p.join(configV4.path, 'secrets.json'),
         ).writeAsString('{}');
         await File(
-          p.join(configV3.path, 'agents', 'coder.md'),
+          p.join(configV4.path, 'agents', 'coder.md'),
         ).create(recursive: true);
 
         await DaemonDataReset(
@@ -258,25 +322,25 @@ void main() {
         ).eraseAll();
 
         expect(
-          File(p.join(stateV3.path, 'coder.sqlite')).existsSync(),
+          File(p.join(stateV4.path, 'coder.sqlite')).existsSync(),
           isFalse,
         );
-        expect(File(p.join(stateV3.path, 'daemon.lock')).existsSync(), isFalse);
+        expect(File(p.join(stateV4.path, 'daemon.lock')).existsSync(), isFalse);
         expect(
-          Directory(p.join(stateV3.path, 'attachments')).existsSync(),
-          isFalse,
-        );
-        expect(
-          File(p.join(configV3.path, 'secrets.json')).existsSync(),
+          Directory(p.join(stateV4.path, 'attachments')).existsSync(),
           isFalse,
         );
         expect(
-          Directory(p.join(configV3.path, 'agents')).existsSync(),
+          File(p.join(configV4.path, 'secrets.json')).existsSync(),
+          isFalse,
+        );
+        expect(
+          Directory(p.join(configV4.path, 'agents')).existsSync(),
           isFalse,
         );
         expect(
           File(
-            p.join(stateV3.path, 'worktrees', 'repo', 'main.dart'),
+            p.join(stateV4.path, 'worktrees', 'repo', 'main.dart'),
           ).existsSync(),
           isTrue,
         );
@@ -290,12 +354,12 @@ void main() {
       'refuses to erase while another process holds the daemon lock',
       () async {
         final state = Directory(p.join(root.path, 'locked'));
-        final stateV3 = Directory(p.join(state.path, 'v3'));
-        await stateV3.create(recursive: true);
-        await File(p.join(stateV3.path, 'coder.sqlite')).writeAsString('db');
+        final stateV4 = Directory(p.join(state.path, 'v4'));
+        await stateV4.create(recursive: true);
+        await File(p.join(stateV4.path, 'coder.sqlite')).writeAsString('db');
         final holder = await DaemonLockHolder.start(
           root: root,
-          lockPath: p.join(stateV3.path, 'daemon.lock'),
+          lockPath: p.join(stateV4.path, 'daemon.lock'),
         );
 
         try {
@@ -313,7 +377,7 @@ void main() {
             ),
           );
           expect(
-            File(p.join(stateV3.path, 'coder.sqlite')).existsSync(),
+            File(p.join(stateV4.path, 'coder.sqlite')).existsSync(),
             isTrue,
           );
         } finally {

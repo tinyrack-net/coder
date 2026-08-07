@@ -41,7 +41,7 @@ void main() {
     () async {
       await settingsFile().writeAsString(
         jsonEncode(<String, dynamic>{
-          'schemaVersion': 3,
+          'schemaVersion': 4,
           'worktree': <String, dynamic>{
             'setup': <String>['npm ci', '  ', ' npm run build '],
             'teardown': <String>['docker compose down'],
@@ -74,7 +74,7 @@ void main() {
   test('preserves unknown keys and drops empty hook lists on save', () async {
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 3,
+        'schemaVersion': 4,
         'scripts': <String, dynamic>{
           'typecheck': <String, dynamic>{'command': 'npm run typecheck'},
         },
@@ -116,7 +116,7 @@ void main() {
     expect(
       await settingsFile().readAsString(),
       '{\n'
-      '  "schemaVersion": 3,\n'
+      '  "schemaVersion": 4,\n'
       '  "worktree": {\n'
       '    "teardown": [\n'
       '      "docker compose down"\n'
@@ -129,7 +129,7 @@ void main() {
   test('removes the worktree section when every hook is cleared', () async {
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 3,
+        'schemaVersion': 4,
         'worktree': <String, dynamic>{
           'setup': <String>['npm ci'],
         },
@@ -143,7 +143,7 @@ void main() {
 
     expect(
       await settingsFile().readAsString(),
-      '{\n  "schemaVersion": 3\n}\n',
+      '{\n  "schemaVersion": 4\n}\n',
     );
   });
 
@@ -177,7 +177,7 @@ void main() {
 
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 3,
+        'schemaVersion': 4,
         'worktree': 'nope',
       }),
     );
@@ -185,7 +185,7 @@ void main() {
 
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 3,
+        'schemaVersion': 4,
         'worktree': <String, dynamic>{'setup': 'npm ci'},
       }),
     );
@@ -193,13 +193,29 @@ void main() {
 
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 3,
+        'schemaVersion': 4,
         'worktree': <String, dynamic>{
           'setup': <Object>[42],
         },
       }),
     );
     await expectLater(store.load(root.path), throwsA(isA<FormatException>()));
+  });
+
+  test('schema 3 project settings stay untouched', () async {
+    const store = FileProjectSettingsStore();
+    final legacy = jsonEncode(<String, dynamic>{
+      'schemaVersion': 3,
+      'worktree': <String, dynamic>{},
+    });
+    await settingsFile().writeAsString(legacy);
+
+    await expectLater(
+      store.load(root.path),
+      throwsA(isA<FormatException>()),
+    );
+
+    expect(await settingsFile().readAsString(), legacy);
   });
 
   test('runs hook commands through the platform shell', () async {

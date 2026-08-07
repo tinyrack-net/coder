@@ -34,7 +34,8 @@ void main() {
 
       await tester.tap(refresh);
       await tester.pumpAndSettle();
-      expect(find.textContaining('planned catalog outage'), findsOneWidget);
+      expect(find.textContaining('internal_error'), findsOneWidget);
+      expect(find.textContaining('planned catalog outage'), findsNothing);
       expect(
         (await assertions.providers.listProviderCatalog()).source,
         ProviderCatalogSource.bundled,
@@ -42,7 +43,7 @@ void main() {
 
       await tester.tap(refresh);
       await tester.pumpAndSettle();
-      expect(find.textContaining('planned catalog outage'), findsNothing);
+      expect(find.textContaining('internal_error'), findsNothing);
       expect(metadata.calls, 2);
       expect(
         (await assertions.providers.listProviderCatalog()).source,

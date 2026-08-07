@@ -5,38 +5,47 @@ import 'package:test/test.dart';
 void main() {
   test('every authenticated RPC method has one feature owner', () {
     expect(
-      daemonRpcMethodGroups.keys,
+      daemonRpcProcedureGroups.keys,
       <String>[
-        'workspace',
+        'workspaces',
         'agents',
-        'mcp',
         'prompts',
-        'sessions',
-        'terminal',
         'providers',
+        'mcp',
+        'sessions',
+        'terminals',
       ],
     );
-    expect(daemonRpcMethods.toSet(), hasLength(daemonRpcMethods.length));
     expect(
-      daemonRpcMethodGroups['workspace'],
+      daemonRpcProcedures.map((procedure) => procedure.name).toSet(),
+      hasLength(daemonRpcProcedures.length),
+    );
+    expect(
+      daemonRpcProcedureGroups['workspaces']?.map(
+        (procedure) => procedure.name,
+      ),
       containsAll(<String>[
-        RpcMethod.workspaceCatalog,
-        RpcMethod.worktreeCreate,
+        workspacesCatalogProcedure.name,
+        workspacesCreateWorktreeProcedure.name,
       ]),
     );
     expect(
-      daemonRpcMethodGroups['sessions'],
+      daemonRpcProcedureGroups['sessions']?.map(
+        (procedure) => procedure.name,
+      ),
       containsAll(<String>[
-        RpcMethod.sessionCreate,
-        RpcMethod.turnStart,
-        RpcMethod.approvalResolve,
+        sessionsCreateProcedure.name,
+        sessionsStartTurnProcedure.name,
+        sessionsResolveApprovalProcedure.name,
       ]),
     );
     expect(
-      daemonRpcMethodGroups['providers'],
+      daemonRpcProcedureGroups['providers']?.map(
+        (procedure) => procedure.name,
+      ),
       containsAll(<String>[
-        RpcMethod.providerCatalog,
-        RpcMethod.providerCustomDelete,
+        providersCatalogProcedure.name,
+        providersDeleteCustomProcedure.name,
       ]),
     );
   });
