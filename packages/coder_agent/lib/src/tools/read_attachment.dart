@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -40,4 +41,29 @@ class ReadAttachmentTool extends AgentTool {
     final attachment = await _reader.read(arguments['id'] as String);
     return ToolResult(output: jsonEncode(attachment.toJson()));
   }
+}
+
+/// Registers resolving an attachment id the session already owns.
+final class ReadAttachmentToolProvider extends SelectableToolProvider {
+  /// Creates a [ReadAttachmentToolProvider].
+  const ReadAttachmentToolProvider();
+
+  @override
+  String get id => 'read_attachment';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description:
+        'Resolve an attachment ID to validated metadata and a '
+        'readable path.',
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    ReadAttachmentTool(reader: scope.attachmentReader),
+  ];
 }

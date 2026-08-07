@@ -4,6 +4,7 @@ import 'dart:io' show FileSystemException;
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
 import 'package:coder_agent/src/tools/exec_sessions.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
@@ -412,4 +413,29 @@ Future<ExecSessionChunk> _readWithCancellation(
     throw const AgentCancelledException();
   }
   return chunk;
+}
+
+/// Registers running shell commands, and writing to the ones still running.
+final class ExecCommandToolProvider extends SelectableToolProvider {
+  /// Creates a [ExecCommandToolProvider].
+  const ExecCommandToolProvider();
+
+  @override
+  String get id => 'exec_command';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description:
+        'Run shell commands, on pipes or in a pseudo-terminal, '
+        'including REPLs and servers driven across several calls.',
+    risk: ToolRisk.command,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    ExecCommandTool(host: scope.execHost),
+    WriteStdinTool(host: scope.execHost),
+  ];
 }

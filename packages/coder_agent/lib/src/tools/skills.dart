@@ -3,6 +3,7 @@ import 'dart:io' show FileSystemException;
 
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
@@ -297,4 +298,26 @@ class SkillTool extends AgentTool {
           .toList(growable: false),
     }),
   );
+}
+
+/// Registers the skill tools, in a worktree that publishes any.
+///
+/// Hidden rather than selectable: a skill is content the workspace carries, so
+/// the tools appear because the worktree has skills rather than because an
+/// agent asked for them.
+final class SkillToolProvider implements AgentToolProvider {
+  /// Creates a [SkillToolProvider].
+  const SkillToolProvider();
+
+  @override
+  String get id => 'skills';
+
+  @override
+  AgentToolDefinitionDto? get catalogEntry => null;
+
+  @override
+  List<AgentTool> create(AgentToolScope scope) =>
+      scope.skills.summaries().isEmpty
+      ? const <AgentTool>[]
+      : <AgentTool>[ListSkillsTool(scope.skills), SkillTool(scope.skills)];
 }

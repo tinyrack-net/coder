@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:coder_agent/src/gitignore.dart';
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_agent/src/workspace_walk.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -143,4 +144,30 @@ class GlobTool extends AgentTool {
     if (relative == '.') return '';
     return _fileSystem.path.split(relative).join('/');
   }
+}
+
+/// Registers the workspace file-name search.
+final class GlobToolProvider extends SelectableToolProvider {
+  /// Creates a [GlobToolProvider].
+  const GlobToolProvider({required GitignoreEnvironment gitignoreEnvironment})
+    : _gitignore = gitignoreEnvironment;
+
+  final GitignoreEnvironment _gitignore;
+
+  @override
+  String get id => 'glob';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description: GlobTool(gitignoreEnvironment: _gitignore).description,
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    GlobTool(gitignoreEnvironment: _gitignore),
+  ];
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -186,4 +187,29 @@ class AskUserTool extends AgentTool {
     output: jsonEncode(<String, dynamic>{'error': reason}),
     isError: true,
   );
+}
+
+/// Registers raising multiple-choice questions to the user.
+final class AskUserToolProvider extends SelectableToolProvider {
+  /// Creates a [AskUserToolProvider].
+  const AskUserToolProvider();
+
+  @override
+  String get id => 'ask_user';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description:
+        'Ask the user multiple-choice questions and wait for the '
+        'answers.',
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    AskUserTool(coordinator: scope.questions),
+  ];
 }

@@ -5,6 +5,7 @@ import 'package:coder_agent/coder_agent.dart' show AttachFileTool;
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart' show AttachFileTool;
 import 'package:coder_agent/src/tools/attach_file.dart' show AttachFileTool;
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
@@ -180,4 +181,29 @@ class ViewImageTool extends AgentTool {
     output: jsonEncode(<String, dynamic>{'error': reason}),
     isError: true,
   );
+}
+
+/// Registers putting a workspace image into the model context.
+final class ViewImageToolProvider extends SelectableToolProvider {
+  /// Creates a [ViewImageToolProvider].
+  const ViewImageToolProvider();
+
+  @override
+  String get id => 'view_image';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description:
+        'Look at an image file in the workspace, such as a screenshot '
+        'or a design mock-up.',
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    ViewImageTool(publisher: scope.attachmentPublisher),
+  ];
 }

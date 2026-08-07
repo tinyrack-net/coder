@@ -9,6 +9,7 @@ export 'src/tools/context_tools.dart';
 export 'src/tools/exec_sessions.dart';
 export 'src/tools/exec_tools.dart';
 export 'src/tools/skills.dart';
+export 'src/tools/tool_registry.dart';
 export 'src/tools/tool_search.dart';
 export 'src/usage.dart';
 export 'src/workspace_walk.dart';

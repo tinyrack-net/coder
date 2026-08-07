@@ -14,14 +14,15 @@ import 'package:coder_protocol/coder_protocol.dart';
 /// Signature used by DaemonEventSink.
 typedef DaemonEventSink = void Function(WireEnvelope event);
 
-/// Signature used by AgentToolsFactory.
-typedef AgentToolsFactory =
-    Iterable<AgentTool> Function(
-      Iterable<String> ids,
-      String workspaceRoot,
-      String sessionId,
-      String turnId,
-    );
+/// Resolves the tools published at runtime rather than compiled in.
+///
+/// MCP servers publish their tools as they connect, and a worktree's own
+/// servers only exist for turns running in that worktree, so the lookup is
+/// prepared per turn rather than held as a fixed map.
+abstract interface class ExternalToolSource {
+  /// Prepares [workspaceRoot] and returns the lookup this turn resolves with.
+  AgentTool? Function(String id) lookupFor(String workspaceRoot);
+}
 
 /// Resolves the pseudo-terminals one coder session owns.
 typedef ExecHostFactory = ExecSessionHost Function(String sessionId);
@@ -39,7 +40,8 @@ class SessionService implements SessionRuntimePort {
     required this._safetyIdentifier,
     required this._clock,
     required this._ids,
-    required this._toolsFactory,
+    required this._toolRegistry,
+    required this._externalTools,
     required this._skills,
     required this._attachments,
     required this._execHostFor,
@@ -56,7 +58,8 @@ class SessionService implements SessionRuntimePort {
   final String _safetyIdentifier;
   final Clock _clock;
   final IdGenerator _ids;
-  final AgentToolsFactory _toolsFactory;
+  final AgentToolRegistry _toolRegistry;
+  final ExternalToolSource _externalTools;
   final SkillService _skills;
   final AttachmentService _attachments;
   final SettingsRepository _settings;
@@ -207,30 +210,32 @@ class SessionService implements SessionRuntimePort {
     // skills that were committed to it.
     final skills = await _skills.viewFor(worktree.path);
     final skillSummaries = skills.summaries();
-    final tools = <AgentTool>[
-      ..._toolsFactory(definition.toolIds, worktree.path, sessionId, turnId),
-      CurrentTimeTool(clock: agentClock),
-      SleepTool(clock: agentClock),
-      GetContextRemainingTool(),
-      NewContextTool(),
-      AskUserTool(
-        coordinator: _DatabaseUserQuestionCoordinator(
-          timeline: _timeline,
-          events: _events,
-          pending: _pendingQuestions,
-          ids: _ids,
-          clock: _clock,
-          sessionId: sessionId,
-          turnId: turnId,
-          reportStatus: reportStatus,
-        ),
+    final scope = AgentToolScope(
+      session: session,
+      definition: definition,
+      selectedToolIds: _toolRegistry.resolveIds(definition.toolIds).toSet(),
+      workspaceRoot: worktree.path,
+      turnId: turnId,
+      attachmentPublisher: TurnAttachmentPublisher(_attachments, turnId),
+      attachmentReader: SessionAttachmentReader(_attachments, sessionId),
+      clock: agentClock,
+      questions: _DatabaseUserQuestionCoordinator(
+        timeline: _timeline,
+        events: _events,
+        pending: _pendingQuestions,
+        ids: _ids,
+        clock: _clock,
+        sessionId: sessionId,
+        turnId: turnId,
+        reportStatus: reportStatus,
       ),
-      if (skillSummaries.isNotEmpty) ...<AgentTool>[
-        ListSkillsTool(skills),
-        SkillTool(skills),
-      ],
-      ...?multiAgent?.collaborationToolsFor(session, definition, turnId),
-    ];
+      execHost: _execHostFor(sessionId),
+      skills: skills,
+    );
+    final tools = _toolRegistry.toolsFor(
+      scope,
+      external: _externalTools.lookupFor(worktree.path),
+    );
 
     final runner = AgentRunner(
       provider: resolvedModel.provider,

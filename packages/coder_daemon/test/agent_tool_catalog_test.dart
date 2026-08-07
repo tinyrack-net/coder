@@ -11,6 +11,14 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
+  // A registry standing in for the daemon's, with the runtime-backed
+  // capabilities stubbed: nothing here needs a live MCP pool or supervisor.
+  final registry = builtInAgentToolRegistry(
+    gitignoreEnvironment: const GitignoreEnvironment.none(),
+    mcpResourceHostFor: (_) => throw UnimplementedError(),
+    multiAgent: () => null,
+  );
+
   const readFile = AgentToolDefinitionDto(
     id: 'read_file',
     name: 'read_file',
@@ -32,81 +40,77 @@ void main() {
   );
 
   test('read-only built-in tools are always on', () {
-    expect(alwaysOnBuiltInToolIds, <String>{
+    expect(registry.alwaysOnIds, <String>{
       'list_directory',
       'read_file',
       'search_text',
       'glob',
-      'attach_file',
-      'read_attachment',
       'update_plan',
-      'ask_user',
-      'view_image',
+      'attach_file',
       'current_time',
       'sleep',
+      'view_image',
+      'ask_user',
+      'read_attachment',
     });
   });
 
   test('resolution forces the always-on tools ahead of the chosen ones', () {
     expect(
-      resolveAgentToolIds(const <String>['exec_command']),
+      registry.resolveIds(const <String>['exec_command']),
       <String>[
         'list_directory',
         'read_file',
         'search_text',
         'glob',
-        'attach_file',
-        'read_attachment',
         'update_plan',
-        'ask_user',
-        'view_image',
+        'attach_file',
         'current_time',
         'sleep',
+        'view_image',
+        'ask_user',
+        'read_attachment',
         'exec_command',
       ],
     );
     // An agent that still lists a read tool gets it once, not twice.
     expect(
-      resolveAgentToolIds(const <String>['read_file', 'mcp__repo__lint']),
+      registry.resolveIds(const <String>['read_file', 'mcp__repo__lint']),
       <String>[
         'list_directory',
         'read_file',
         'search_text',
         'glob',
-        'attach_file',
-        'read_attachment',
         'update_plan',
-        'ask_user',
-        'view_image',
+        'attach_file',
         'current_time',
         'sleep',
+        'view_image',
+        'ask_user',
+        'read_attachment',
         'mcp__repo__lint',
       ],
     );
     expect(
-      resolveAgentToolIds(const <String>[]),
+      registry.resolveIds(const <String>[]),
       <String>[
         'list_directory',
         'read_file',
         'search_text',
         'glob',
-        'attach_file',
-        'read_attachment',
         'update_plan',
-        'ask_user',
-        'view_image',
+        'attach_file',
         'current_time',
         'sleep',
+        'view_image',
+        'ask_user',
+        'read_attachment',
       ],
     );
   });
 
   test('the built-in catalog advertises every compiled-in tool', () {
-    final definitions = builtInAgentToolDefinitions(
-      workspaceBuiltInTools(
-        gitignoreEnvironment: const GitignoreEnvironment.none(),
-      ),
-    );
+    final definitions = registry.catalog;
 
     // Pins the public catalog so moving a definition next to its tool cannot
     // silently drop an entry, change a risk, or make an opt-in tool always-on.
@@ -145,13 +149,9 @@ void main() {
   });
 
   test('every always-on tool id is one the catalog actually advertises', () {
-    final advertised = builtInAgentToolDefinitions(
-      workspaceBuiltInTools(
-        gitignoreEnvironment: const GitignoreEnvironment.none(),
-      ),
-    ).map((tool) => tool.id).toSet();
+    final advertised = registry.catalog.map((tool) => tool.id).toSet();
 
-    expect(alwaysOnBuiltInToolIds.difference(advertised), isEmpty);
+    expect(registry.alwaysOnIds.difference(advertised), isEmpty);
   });
 
   test('a static catalog reports its tools and never changes', () async {
@@ -215,6 +215,7 @@ void main() {
           ]),
           dynamicCatalog,
         ]),
+        alwaysOnToolIds: registry.alwaysOnIds,
       );
       await service.initialize();
     });
@@ -279,6 +280,7 @@ void main() {
         tools: const StaticAgentToolCatalog(<AgentToolDefinitionDto>[
           runCommand,
         ]),
+        alwaysOnToolIds: registry.alwaysOnIds,
       );
       addTearDown(bare.close);
       await bare.initialize();
@@ -308,19 +310,19 @@ void main() {
 
         expect(coder.toolIds, <String>['apply_patch', 'exec_command']);
         expect(
-          resolveAgentToolIds(coder.toolIds),
+          registry.resolveIds(coder.toolIds),
           <String>[
             'list_directory',
             'read_file',
             'search_text',
             'glob',
-            'attach_file',
-            'read_attachment',
             'update_plan',
-            'ask_user',
-            'view_image',
+            'attach_file',
             'current_time',
             'sleep',
+            'view_image',
+            'ask_user',
+            'read_attachment',
             'apply_patch',
             'exec_command',
           ],

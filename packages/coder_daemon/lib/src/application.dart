@@ -192,15 +192,6 @@ abstract final class DaemonApplication {
       final gitignore =
           gitignoreEnvironment ??
           GitignoreEnvironment.fromEnvironment(Platform.environment);
-      final builtInTools = workspaceBuiltInTools(
-        gitignoreEnvironment: gitignore,
-      );
-      final toolById = <String, AgentTool>{
-        for (final tool in builtInTools) tool.name: tool,
-      };
-      final builtInCatalog = StaticAgentToolCatalog(
-        builtInAgentToolDefinitions(builtInTools),
-      );
       final mcp = McpService(
         store: FileMcpConfigStore(config.configDirectory),
         credentials: credentials,
@@ -214,12 +205,23 @@ abstract final class DaemonApplication {
       // Reads mcp.json only; every handshake runs in the background so one
       // unstartable server cannot hold up daemon boot.
       await mcp.initialize();
+      // Assigned once the session service it drives exists; the registry reads
+      // it per turn rather than capturing null here.
+      MultiAgentService? multiAgent;
+      final toolRegistry = builtInAgentToolRegistry(
+        gitignoreEnvironment: gitignore,
+        mcpResourceHostFor: (workspaceRoot) =>
+            SessionMcpResourceHost(mcp, workspaceRoot),
+        multiAgent: () => multiAgent,
+      );
+      final builtInCatalog = StaticAgentToolCatalog(toolRegistry.catalog);
       final agentDefinitions = AgentDefinitionService(
         store: FileAgentDefinitionStore(config.configDirectory),
         tools: CompositeAgentToolCatalog(<AgentToolCatalog>[
           builtInCatalog,
           mcp,
         ]),
+        alwaysOnToolIds: toolRegistry.alwaysOnIds,
       );
       await agentDefinitions.initialize();
       final userHome = config.userHomeDirectory;
@@ -284,76 +286,13 @@ abstract final class DaemonApplication {
         clock: clock,
         ids: ids,
         attachments: attachments,
-        toolsFactory: (ids, workspaceRoot, sessionId, turnId) {
-          // Starting a turn is what marks a worktree as in use: its project
-          // servers connect in the background and join from the next turn,
-          // and worktrees nothing has touched lately are released.
-          unawaited(mcp.ensureProject(workspaceRoot));
-          mcp.releaseIdleProjects();
-          final execHost = SessionExecHost(execSessions, sessionId);
-          // Withhold MCP tools only once there are enough of them to crowd
-          // the context; below the threshold nothing changes for the user.
-          final mcpExposure =
-              mcp.tools(workspaceRoot: workspaceRoot).length >
-                  mcpDeferralThreshold
-              ? ToolExposure.deferred
-              : ToolExposure.advertised;
-          return resolveAgentToolIds(ids)
-              .expand<AgentTool?>(
-                (id) => switch (id) {
-                  'attach_file' => <AgentTool?>[
-                    AttachFileTool(
-                      publisher: TurnAttachmentPublisher(attachments, turnId),
-                    ),
-                  ],
-                  'read_attachment' => <AgentTool?>[
-                    ReadAttachmentTool(
-                      reader: SessionAttachmentReader(attachments, sessionId),
-                    ),
-                  ],
-                  'view_image' => <AgentTool?>[
-                    ViewImageTool(
-                      publisher: TurnAttachmentPublisher(attachments, turnId),
-                    ),
-                  ],
-                  // One capability, two tools: nobody can enable writing to a
-                  // shell without being able to start one.
-                  'list_mcp_resources' => <AgentTool?>[
-                    ListMcpResourcesTool(
-                      host: SessionMcpResourceHost(mcp, workspaceRoot),
-                    ),
-                  ],
-                  'list_mcp_resource_templates' => <AgentTool?>[
-                    ListMcpResourceTemplatesTool(
-                      host: SessionMcpResourceHost(mcp, workspaceRoot),
-                    ),
-                  ],
-                  'read_mcp_resource' => <AgentTool?>[
-                    ReadMcpResourceTool(
-                      host: SessionMcpResourceHost(mcp, workspaceRoot),
-                    ),
-                  ],
-                  'exec_command' => <AgentTool?>[
-                    ExecCommandTool(host: execHost),
-                    WriteStdinTool(host: execHost),
-                  ],
-                  _ => <AgentTool?>[
-                    toolById[id] ??
-                        mcp.tool(
-                          id,
-                          workspaceRoot: workspaceRoot,
-                          exposure: mcpExposure,
-                        ),
-                  ],
-                },
-              )
-              .whereType<AgentTool>();
-        },
+        toolRegistry: toolRegistry,
+        externalTools: _McpToolSource(mcp),
         execHostFor: (id) => SessionExecHost(execSessions, id),
         skills: skills,
         settings: database.settingsDao,
       );
-      final multiAgent = MultiAgentService(
+      multiAgent = MultiAgentService(
         sessions: database.sessionDao,
         mailbox: database.agentMailboxDao,
         timeline: database.timelineDao,
@@ -561,5 +500,30 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _database.close();
     await _lock.unlock();
     await _lock.close();
+  }
+}
+
+/// Resolves MCP tools for one turn, and marks the worktree as in use.
+///
+/// Starting a turn is what marks a worktree as in use: its project servers
+/// connect in the background and join from the next turn, and worktrees nothing
+/// has touched lately are released.
+final class _McpToolSource implements ExternalToolSource {
+  const _McpToolSource(this._mcp);
+
+  final McpService _mcp;
+
+  @override
+  AgentTool? Function(String id) lookupFor(String workspaceRoot) {
+    unawaited(_mcp.ensureProject(workspaceRoot));
+    _mcp.releaseIdleProjects();
+    // Withhold MCP tools only once there are enough of them to crowd the
+    // context; below the threshold nothing changes for the user.
+    final exposure =
+        _mcp.tools(workspaceRoot: workspaceRoot).length > mcpDeferralThreshold
+        ? ToolExposure.deferred
+        : ToolExposure.advertised;
+    return (id) =>
+        _mcp.tool(id, workspaceRoot: workspaceRoot, exposure: exposure);
   }
 }

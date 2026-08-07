@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -134,4 +135,27 @@ class UpdatePlanTool extends AgentTool {
     output: jsonEncode(<String, dynamic>{'error': reason}),
     isError: true,
   );
+}
+
+/// Registers the shared plan the host UI renders.
+final class UpdatePlanToolProvider extends SelectableToolProvider {
+  /// Creates a [UpdatePlanToolProvider].
+  const UpdatePlanToolProvider();
+
+  @override
+  String get id => 'update_plan';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description: UpdatePlanTool().description,
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    UpdatePlanTool(),
+  ];
 }

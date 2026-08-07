@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Reports how much of the context window is left.
@@ -88,4 +89,26 @@ class NewContextTool extends AgentTool {
       }),
     );
   }
+}
+
+/// Registers the context-window tools.
+///
+/// Hidden rather than selectable: how a turn measures and retires its own
+/// context window is part of how the runtime works, not a capability a user
+/// grants an agent.
+final class ContextWindowToolProvider implements AgentToolProvider {
+  /// Creates a [ContextWindowToolProvider].
+  const ContextWindowToolProvider();
+
+  @override
+  String get id => 'context_window';
+
+  @override
+  AgentToolDefinitionDto? get catalogEntry => null;
+
+  @override
+  List<AgentTool> create(AgentToolScope scope) => <AgentTool>[
+    GetContextRemainingTool(),
+    NewContextTool(),
+  ];
 }

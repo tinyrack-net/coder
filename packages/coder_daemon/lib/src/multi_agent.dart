@@ -820,3 +820,40 @@ final class _MailboxTurnInputSource implements TurnInputSource {
     ];
   }
 }
+
+/// Registers the collaboration tools a turn may drive subagents with.
+///
+/// Selection is not by id alone: a subagent is handed the tools by its
+/// parentage, because an agent that was spawned has to be able to answer the
+/// agent that spawned it.
+final class CollaborationToolProvider implements AgentToolProvider {
+  /// Creates a provider reading the supervisor at turn time.
+  ///
+  /// The supervisor is wired after the session service it drives, so reading
+  /// it per turn is what keeps the registry from capturing a null at boot.
+  const CollaborationToolProvider(this._multiAgent);
+
+  final MultiAgentService? Function() _multiAgent;
+
+  @override
+  String get id => collaborationCapabilityId;
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => const AgentToolDefinitionDto(
+    id: collaborationCapabilityId,
+    name: collaborationCapabilityId,
+    description:
+        'Spawn, message, wait on, interrupt, and list collaborating '
+        'subagents that share this workspace.',
+    risk: ToolRisk.read,
+  );
+
+  @override
+  List<AgentTool> create(AgentToolScope scope) =>
+      _multiAgent()?.collaborationToolsFor(
+        scope.session,
+        scope.definition,
+        scope.turnId,
+      ) ??
+      const <AgentTool>[];
+}

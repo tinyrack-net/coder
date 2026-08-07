@@ -307,6 +307,7 @@ Review the requested code without modifying it.
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       final service = AgentDefinitionService(
+        alwaysOnToolIds: const <String>{},
         store: store,
         tools: const StaticAgentToolCatalog(<AgentToolDefinitionDto>[
           AgentToolDefinitionDto(
@@ -436,6 +437,7 @@ Review the requested code without modifying it.
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       final service = AgentDefinitionService(
+        alwaysOnToolIds: const <String>{},
         store: store,
         tools: const StaticAgentToolCatalog(<AgentToolDefinitionDto>[
           AgentToolDefinitionDto(

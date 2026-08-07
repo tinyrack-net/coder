@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
@@ -67,4 +68,27 @@ class ListDirectoryTool extends AgentTool {
       ),
     );
   }
+}
+
+/// Registers the workspace directory listing.
+final class ListDirectoryToolProvider extends SelectableToolProvider {
+  /// Creates a [ListDirectoryToolProvider].
+  const ListDirectoryToolProvider();
+
+  @override
+  String get id => 'list_directory';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description: ListDirectoryTool().description,
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    ListDirectoryTool(),
+  ];
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
@@ -59,4 +60,27 @@ class ReadFileTool extends AgentTool {
     if (offset >= lines.length) return const ToolResult(output: '');
     return ToolResult(output: lines.sublist(offset, end).join('\n'));
   }
+}
+
+/// Registers the workspace file reader.
+final class ReadFileToolProvider extends SelectableToolProvider {
+  /// Creates a [ReadFileToolProvider].
+  const ReadFileToolProvider();
+
+  @override
+  String get id => 'read_file';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description: ReadFileTool().description,
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    ReadFileTool(),
+  ];
 }

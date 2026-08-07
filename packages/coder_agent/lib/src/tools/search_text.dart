@@ -4,6 +4,7 @@ import 'dart:io' show FileSystemException;
 
 import 'package:coder_agent/src/gitignore.dart';
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_agent/src/workspace_walk.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -203,4 +204,31 @@ class SearchTextTool extends AgentTool {
       .sublist(start.clamp(0, lines.length), end.clamp(0, lines.length))
       .map(_clip)
       .toList(growable: false);
+}
+
+/// Registers the workspace content search.
+final class SearchTextToolProvider extends SelectableToolProvider {
+  /// Creates a [SearchTextToolProvider].
+  const SearchTextToolProvider({
+    required GitignoreEnvironment gitignoreEnvironment,
+  }) : _gitignore = gitignoreEnvironment;
+
+  final GitignoreEnvironment _gitignore;
+
+  @override
+  String get id => 'search_text';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description: SearchTextTool(gitignoreEnvironment: _gitignore).description,
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    SearchTextTool(gitignoreEnvironment: _gitignore),
+  ];
 }

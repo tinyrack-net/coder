@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Why a [SleepTool] call stopped waiting.
@@ -161,4 +162,51 @@ class SleepTool extends AgentTool {
       }),
     );
   }
+}
+
+/// Registers reading the wall clock.
+final class CurrentTimeToolProvider extends SelectableToolProvider {
+  /// Creates a [CurrentTimeToolProvider].
+  const CurrentTimeToolProvider();
+
+  @override
+  String get id => 'current_time';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => const AgentToolDefinitionDto(
+    id: 'current_time',
+    name: 'current_time',
+    description: 'Get the current time in UTC.',
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    CurrentTimeTool(clock: scope.clock),
+  ];
+}
+
+/// Registers pausing before checking something again.
+final class SleepToolProvider extends SelectableToolProvider {
+  /// Creates a [SleepToolProvider].
+  const SleepToolProvider();
+
+  @override
+  String get id => 'sleep';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => const AgentToolDefinitionDto(
+    id: 'sleep',
+    name: 'sleep',
+    description:
+        'Pause before checking something again; ends early on new user input.',
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    SleepTool(clock: scope.clock),
+  ];
 }

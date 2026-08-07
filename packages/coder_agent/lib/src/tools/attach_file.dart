@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
@@ -73,4 +74,28 @@ class AttachFileTool extends AgentTool {
       attachments: <ConversationAttachment>[attachment],
     );
   }
+}
+
+/// Registers publishing a workspace file to the conversation.
+final class AttachFileToolProvider extends SelectableToolProvider {
+  /// Creates a [AttachFileToolProvider].
+  const AttachFileToolProvider();
+
+  @override
+  String get id => 'attach_file';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description:
+        'Attach a regular file from the workspace to the conversation.',
+    risk: ToolRisk.read,
+    alwaysOn: true,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    AttachFileTool(publisher: scope.attachmentPublisher),
+  ];
 }

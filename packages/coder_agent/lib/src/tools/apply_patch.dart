@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/patch/unified_diff.dart';
+import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
@@ -221,4 +222,26 @@ class _PlannedChange {
       }
     }
   }
+}
+
+/// Registers the unified-diff writer.
+final class ApplyPatchToolProvider extends SelectableToolProvider {
+  /// Creates a [ApplyPatchToolProvider].
+  const ApplyPatchToolProvider();
+
+  @override
+  String get id => 'apply_patch';
+
+  @override
+  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+    id: id,
+    name: id,
+    description: ApplyPatchTool().description,
+    risk: ToolRisk.write,
+  );
+
+  @override
+  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
+    ApplyPatchTool(),
+  ];
 }
