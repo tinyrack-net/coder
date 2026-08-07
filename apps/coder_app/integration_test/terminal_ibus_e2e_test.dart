@@ -346,7 +346,11 @@ Future<void> _ensureHangulMode(File probe) async {
   );
   if (latin) {
     expect(probe.readAsBytesSync(), utf8.encode('g'));
-    await _keys(<String>['Hangul']);
+    // A newly-created GTK input context can start in the engine's Latin mode
+    // even though `ibus engine` already reports `hangul`. Use the configured
+    // physical switch chord here as well; the synthetic Hangul keysym is not a
+    // reliable mode switch on GitHub-hosted X11 sessions.
+    await _toggleLanguage();
     return;
   }
 
