@@ -1,7 +1,9 @@
+export 'src/clock.dart';
 export 'src/compaction.dart';
 export 'src/gitignore.dart';
 export 'src/model.dart';
 export 'src/plan_mode_prompt.dart';
+export 'src/provider_plugin.dart';
 export 'src/runtime.dart';
 export 'src/tools.dart';
 export 'src/tools/clock_tools.dart';

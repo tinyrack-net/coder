@@ -6,20 +6,7 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-/// Public API exposed by this library.
-abstract interface class Clock {
-  /// The nowUtc public API member.
-  DateTime nowUtc();
-}
-
-/// SystemClock defines a public contract.
-final class SystemClock implements Clock {
-  /// Creates a [SystemClock].
-  const SystemClock();
-
-  @override
-  DateTime nowUtc() => DateTime.now().toUtc();
-}
+export 'package:coder_agent/coder_agent.dart' show Clock, SystemClock;
 
 /// Public API exposed by this library.
 abstract interface class IdGenerator {

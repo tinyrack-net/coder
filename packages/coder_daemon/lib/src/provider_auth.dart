@@ -1,67 +1,17 @@
 import 'dart:async';
 
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/ports.dart';
-import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
-/// One running OAuth browser or device-code session.
-abstract interface class ProviderOAuthSession {
-  /// URL the user must open to continue authorization.
-  String get authorizationUrl;
-
-  /// Optional code shown for device authorization.
-  String? get userCode;
-
-  /// Optional user-facing instructions.
-  String? get instructions;
-
-  /// UTC expiration instant for the attempt.
-  DateTime get expiresAt;
-
-  /// Completes with tokens after the remote authorization succeeds.
-  Future<OAuthCredential> get completion;
-
-  /// Cancels the callback server or device polling loop.
-  Future<void> cancel();
-}
-
-/// Starts OpenAI OAuth sessions and refreshes rotating tokens.
-abstract interface class ProviderOAuthGateway {
-  /// Starts one browser or device-code authorization session.
-  Future<ProviderOAuthSession> start(ProviderAuthFlow flow);
-
-  /// Refreshes one OAuth credential, preserving refresh-token rotation.
-  Future<OAuthCredential> refresh(OAuthCredential credential);
-}
-
-/// Typed OAuth refresh failure with an explicit reauthentication decision.
-final class OAuthRefreshFailure implements Exception {
-  /// Creates a refresh failure safe to persist as connection status metadata.
-  const OAuthRefreshFailure(this.message, {required this.reauthRequired});
-
-  /// Human-readable failure without credential material.
-  final String message;
-
-  /// Whether the refresh token is permanently unusable.
-  final bool reauthRequired;
-
-  @override
-  String toString() => 'OAuthRefreshFailure: $message';
-}
-
-/// Typed failure raised while authorizing, before any credential exists.
-final class OAuthAuthorizationFailure implements Exception {
-  /// Creates an authorization failure safe to show as attempt metadata.
-  const OAuthAuthorizationFailure(this.message);
-
-  /// Human-readable failure without credential material.
-  final String message;
-
-  /// The coordinator publishes `'$error'` straight to the attempt tile, so the
-  /// bare sentence is the user-facing text.
-  @override
-  String toString() => message;
-}
+// The OAuth port types moved to the vendor-neutral port layer so a vendor
+// package can implement its own gateway; daemon consumers keep this path.
+export 'package:coder_agent/coder_agent.dart'
+    show
+        OAuthAuthorizationFailure,
+        OAuthRefreshFailure,
+        ProviderOAuthGateway,
+        ProviderOAuthSession;
 
 /// Refreshes one connection credential while preserving token rotation.
 abstract interface class ProviderCredentialRefresher {

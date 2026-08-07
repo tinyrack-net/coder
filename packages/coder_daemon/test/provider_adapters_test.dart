@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
-import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:dio/dio.dart';

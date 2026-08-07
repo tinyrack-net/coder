@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_adapters.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_daemon/src/provider_catalog.dart';

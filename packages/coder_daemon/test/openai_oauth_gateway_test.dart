@@ -2,10 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/openai_oauth_gateway.dart';
-import 'package:coder_daemon/src/ports.dart';
-import 'package:coder_daemon/src/provider_auth.dart';
-import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:dio/dio.dart';
 import 'package:test/test.dart';

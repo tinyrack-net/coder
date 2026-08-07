@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/credential_store.dart';
 import 'package:coder_daemon/src/repositories.dart';
 import 'package:test/test.dart';

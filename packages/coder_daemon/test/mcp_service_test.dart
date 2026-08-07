@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/mcp_config.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
-import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_mcp/coder_mcp.dart';
 import 'package:coder_protocol/coder_protocol.dart';

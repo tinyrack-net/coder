@@ -1,5 +1,4 @@
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:dio/dio.dart';
@@ -45,30 +44,6 @@ final class ProviderRuntimeConfig {
   /// Responses surface and answers 400 for a request that carries either, so
   /// the model capability alone cannot decide whether to send them.
   final bool supportsPlatformRequestFields;
-}
-
-/// Classifies model discovery failures without leaking transport exceptions.
-enum ProviderDiscoveryFailureKind {
-  /// The supplied credential was rejected.
-  invalidCredential,
-
-  /// Discovery is temporarily or permanently unavailable.
-  unavailable,
-}
-
-/// Typed failure returned by a provider model discovery adapter.
-final class ProviderDiscoveryFailure implements Exception {
-  /// Creates a discovery failure.
-  const ProviderDiscoveryFailure(this.kind, this.message);
-
-  /// Stable failure classification.
-  final ProviderDiscoveryFailureKind kind;
-
-  /// User-safe diagnostic message.
-  final String message;
-
-  @override
-  String toString() => 'ProviderDiscoveryFailure($kind): $message';
 }
 
 /// Discovers model identifiers from an OpenAI-compatible endpoint.
