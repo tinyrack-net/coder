@@ -875,26 +875,9 @@ void main() {
       // The real desktop runner can move primary focus while the asynchronous
       // search replaces the loading row. Restore it explicitly so Escape is
       // delivered to the composer's suggestions controller.
-      final suggestionDismissInput = find.descendant(
-        of: find.byKey(composer),
-        matching: find.byType(EditableText),
-      );
-      for (var attempt = 0; attempt < 2; attempt += 1) {
-        await tester.tap(suggestionDismissInput);
-        await pumpUntilCondition(
-          tester,
-          () => tester
-              .widget<EditableText>(suggestionDismissInput)
-              .focusNode
-              .hasFocus,
-          'the composer to regain focus before dismissing suggestions',
-        );
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
-        await tester.pump();
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
-        await tester.pumpAndSettle();
-        if (find.text('파일 없음').evaluate().isEmpty) break;
-      }
+      await tester.tap(find.byKey(composer));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await pumpUntilGone(tester, find.text('파일 없음'));
 
       await _submitComposerPrompt(tester, composer, send, 'Delegate review');
