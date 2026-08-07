@@ -64,7 +64,7 @@ void main() {
         }
       });
 
-      const expected = '한글 abc 안녕 붙여넣기 👩🏽\u200d💻';
+      const expected = '한글 abc 안녕 붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
       final expectedBytes = utf8.encode(expected);
       final artifactDirectory =
           Platform.environment['TINYRACK_IBUS_ARTIFACT_DIR'];
@@ -206,6 +206,8 @@ void main() {
       // Copy is disabled with no selection, so the first enabled native GTK
       // menu item reached by Down is Paste.
       await _keys(<String>['Down', 'Return']);
+      await _keys(<String>['1', 'BackSpace']);
+      await _chord(<String>['Alt_L'], 'BackSpace');
 
       await _waitUntil(
         () =>
@@ -223,6 +225,7 @@ void main() {
     tags: const <String>[
       'feature_test__terminal_lifecycle__e2e',
       'feature_test__terminal_lifecycle__platformSmoke',
+      'feature_scenario__terminal_lifecycle__keyboard_context_menu_input__e2e',
     ],
   );
 }
@@ -338,6 +341,22 @@ Future<void> _toggleLanguage() async {
     'keyup',
     'Shift_L',
   ]);
+}
+
+Future<void> _chord(List<String> modifiers, String key) async {
+  final arguments = <String>['keydown', '--clearmodifiers'];
+  for (final modifier in modifiers) {
+    arguments.addAll(<String>[modifier, 'sleep', '0.04', 'keydown']);
+  }
+  arguments
+    ..addAll(<String>[key, 'sleep', '0.04', 'keyup', key])
+    ..addAll(<String>[
+      for (final modifier in modifiers.reversed) ...<String>[
+        'keyup',
+        modifier,
+      ],
+    ]);
+  await _run('xdotool', arguments);
 }
 
 Future<void> _ensureHangulMode(File probe) async {

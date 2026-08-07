@@ -8,6 +8,7 @@ import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -54,11 +55,17 @@ const _terminal = TerminalDto(
 /// the only way a test can see what was handed over.
 final class _RecordingPresenter implements TRContextMenuPresenter {
   final openings = <List<TRMenuElement>>[];
+  VoidCallback? _onClose;
 
   List<String> get lastIds => <String>[
     for (final element in openings.last)
       if (element case TRMenuActionElement(:final id)) id else '-',
   ];
+
+  void dismiss() {
+    _onClose?.call();
+    _onClose = null;
+  }
 
   @override
   Widget buildHost({
@@ -73,6 +80,7 @@ final class _RecordingPresenter implements TRContextMenuPresenter {
     presenter: this,
     controller: controller,
     itemsBuilder: itemsBuilder,
+    onClose: onClose,
     child: child,
   );
 }
@@ -83,12 +91,14 @@ final class _RecordingHost extends StatefulWidget {
     required this.controller,
     required this.itemsBuilder,
     required this.child,
+    this.onClose,
   });
 
   final _RecordingPresenter presenter;
   final TRContextMenuController controller;
   final TRMenuElementsBuilder itemsBuilder;
   final Widget child;
+  final VoidCallback? onClose;
 
   @override
   State<_RecordingHost> createState() => _RecordingHostState();
@@ -109,8 +119,11 @@ final class _RecordingHostState extends State<_RecordingHost>
   }
 
   @override
-  void openAt(Offset globalPosition) =>
-      widget.presenter.openings.add(widget.itemsBuilder(context));
+  void openAt(Offset globalPosition) {
+    widget.presenter
+      ..openings.add(widget.itemsBuilder(context))
+      .._onClose = widget.onClose;
+  }
 
   @override
   void close() {}
@@ -134,7 +147,7 @@ Future<void> _openTerminalMenu(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _pumpTerminal(
+Future<FakeCoderApi> _pumpTerminal(
   WidgetTester tester, {
   required TRContextMenuPresenter presenter,
 }) async {
@@ -178,6 +191,7 @@ Future<void> _pumpTerminal(
     ),
   );
   await tester.pumpAndSettle();
+  return api;
 }
 
 void main() {
@@ -299,6 +313,51 @@ void main() {
       expect(
         enabled(presenter.openings.last, 'terminal-menu-clear-selection'),
         isTrue,
+      );
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'native menu dismissal restores input before paste continues',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async => call.method == 'Clipboard.getData'
+            ? <String, Object?>{'text': 'pasted text'}
+            : null,
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      final presenter = _RecordingPresenter();
+      final api = await _pumpTerminal(tester, presenter: presenter);
+      await _openTerminalMenu(tester);
+      final paste = presenter.openings.last
+          .whereType<TRMenuActionElement>()
+          .singleWhere((element) => element.id == 'terminal-menu-paste');
+
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      presenter.dismiss();
+      paste.onPressed();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<TerminalView>(),
+        isNotNull,
+      );
+      expect(tester.testTextInput.hasAnyClients, isTrue);
+      expect(
+        api.terminalWrites.map((write) => write.data).join(),
+        'pasted text\u007f',
       );
     },
     tags: const <String>['feature_test__terminal_lifecycle__widget'],
