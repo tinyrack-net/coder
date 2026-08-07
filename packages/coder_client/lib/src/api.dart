@@ -129,9 +129,9 @@ abstract interface class SessionsApi {
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
-    String? reasoningEffort,
+    Map<String, ModelControlValueDto> modelControls =
+        const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
-    String? serviceTier,
   });
 
   /// Atomically updates nullable session execution settings.
@@ -274,6 +274,9 @@ abstract interface class PromptsApi {
 abstract interface class ProvidersApi {
   /// Provider authorization updates.
   Stream<ProviderAuthAttemptDto> get authUpdates;
+
+  /// Catalog state emitted after asynchronous refresh attempts.
+  Stream<ProviderCatalogDto> get catalogUpdates;
 
   /// Lists built-in provider definitions.
   Future<ProviderCatalogDto> listProviderCatalog();

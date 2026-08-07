@@ -1183,34 +1183,25 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _reasoningEffortMeta = const VerificationMeta(
-    'reasoningEffort',
+  static const VerificationMeta _modelControlsJsonMeta = const VerificationMeta(
+    'modelControlsJson',
   );
   @override
-  late final GeneratedColumn<String> reasoningEffort = GeneratedColumn<String>(
-    'reasoning_effort',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
+  late final GeneratedColumn<String> modelControlsJson =
+      GeneratedColumn<String>(
+        'model_controls_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('{}'),
+      );
   static const VerificationMeta _permissionModeMeta = const VerificationMeta(
     'permissionMode',
   );
   @override
   late final GeneratedColumn<String> permissionMode = GeneratedColumn<String>(
     'permission_mode',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _serviceTierMeta = const VerificationMeta(
-    'serviceTier',
-  );
-  @override
-  late final GeneratedColumn<String> serviceTier = GeneratedColumn<String>(
-    'service_tier',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -1289,9 +1280,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     mode,
     modelConnectionId,
     modelId,
-    reasoningEffort,
+    modelControlsJson,
     permissionMode,
-    serviceTier,
     currentContextEpoch,
     contextTokensUsed,
     contextWindowTokens,
@@ -1430,12 +1420,12 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
       );
     }
-    if (data.containsKey('reasoning_effort')) {
+    if (data.containsKey('model_controls_json')) {
       context.handle(
-        _reasoningEffortMeta,
-        reasoningEffort.isAcceptableOrUnknown(
-          data['reasoning_effort']!,
-          _reasoningEffortMeta,
+        _modelControlsJsonMeta,
+        modelControlsJson.isAcceptableOrUnknown(
+          data['model_controls_json']!,
+          _modelControlsJsonMeta,
         ),
       );
     }
@@ -1445,15 +1435,6 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         permissionMode.isAcceptableOrUnknown(
           data['permission_mode']!,
           _permissionModeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('service_tier')) {
-      context.handle(
-        _serviceTierMeta,
-        serviceTier.isAcceptableOrUnknown(
-          data['service_tier']!,
-          _serviceTierMeta,
         ),
       );
     }
@@ -1573,17 +1554,13 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}model_id'],
       ),
-      reasoningEffort: attachedDatabase.typeMapping.read(
+      modelControlsJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}reasoning_effort'],
-      ),
+        data['${effectivePrefix}model_controls_json'],
+      )!,
       permissionMode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}permission_mode'],
-      ),
-      serviceTier: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}service_tier'],
       ),
       currentContextEpoch: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -1663,14 +1640,11 @@ class Session extends DataClass implements Insertable<Session> {
   /// Model pinned for this session; null inherits the agent definition.
   final String? modelId;
 
-  /// Reasoning effort for this session; null inherits the agent definition.
-  final String? reasoningEffort;
+  /// JSON-encoded typed model-control values for this session.
+  final String modelControlsJson;
 
   /// Permission mode for this session; null inherits the agent definition.
   final String? permissionMode;
-
-  /// Provider service tier for this session; null uses the provider default.
-  final String? serviceTier;
 
   /// Live context window; `new_context` bumps it to hide older history.
   final int currentContextEpoch;
@@ -1706,9 +1680,8 @@ class Session extends DataClass implements Insertable<Session> {
     required this.mode,
     this.modelConnectionId,
     this.modelId,
-    this.reasoningEffort,
+    required this.modelControlsJson,
     this.permissionMode,
-    this.serviceTier,
     required this.currentContextEpoch,
     required this.contextTokensUsed,
     this.contextWindowTokens,
@@ -1752,14 +1725,9 @@ class Session extends DataClass implements Insertable<Session> {
     if (!nullToAbsent || modelId != null) {
       map['model_id'] = Variable<String>(modelId);
     }
-    if (!nullToAbsent || reasoningEffort != null) {
-      map['reasoning_effort'] = Variable<String>(reasoningEffort);
-    }
+    map['model_controls_json'] = Variable<String>(modelControlsJson);
     if (!nullToAbsent || permissionMode != null) {
       map['permission_mode'] = Variable<String>(permissionMode);
-    }
-    if (!nullToAbsent || serviceTier != null) {
-      map['service_tier'] = Variable<String>(serviceTier);
     }
     map['current_context_epoch'] = Variable<int>(currentContextEpoch);
     map['context_tokens_used'] = Variable<int>(contextTokensUsed);
@@ -1807,15 +1775,10 @@ class Session extends DataClass implements Insertable<Session> {
       modelId: modelId == null && nullToAbsent
           ? const Value.absent()
           : Value(modelId),
-      reasoningEffort: reasoningEffort == null && nullToAbsent
-          ? const Value.absent()
-          : Value(reasoningEffort),
+      modelControlsJson: Value(modelControlsJson),
       permissionMode: permissionMode == null && nullToAbsent
           ? const Value.absent()
           : Value(permissionMode),
-      serviceTier: serviceTier == null && nullToAbsent
-          ? const Value.absent()
-          : Value(serviceTier),
       currentContextEpoch: Value(currentContextEpoch),
       contextTokensUsed: Value(contextTokensUsed),
       contextWindowTokens: contextWindowTokens == null && nullToAbsent
@@ -1850,9 +1813,8 @@ class Session extends DataClass implements Insertable<Session> {
         json['modelConnectionId'],
       ),
       modelId: serializer.fromJson<String?>(json['modelId']),
-      reasoningEffort: serializer.fromJson<String?>(json['reasoningEffort']),
+      modelControlsJson: serializer.fromJson<String>(json['modelControlsJson']),
       permissionMode: serializer.fromJson<String?>(json['permissionMode']),
-      serviceTier: serializer.fromJson<String?>(json['serviceTier']),
       currentContextEpoch: serializer.fromJson<int>(
         json['currentContextEpoch'],
       ),
@@ -1884,9 +1846,8 @@ class Session extends DataClass implements Insertable<Session> {
       'mode': serializer.toJson<String>(mode),
       'modelConnectionId': serializer.toJson<String?>(modelConnectionId),
       'modelId': serializer.toJson<String?>(modelId),
-      'reasoningEffort': serializer.toJson<String?>(reasoningEffort),
+      'modelControlsJson': serializer.toJson<String>(modelControlsJson),
       'permissionMode': serializer.toJson<String?>(permissionMode),
-      'serviceTier': serializer.toJson<String?>(serviceTier),
       'currentContextEpoch': serializer.toJson<int>(currentContextEpoch),
       'contextTokensUsed': serializer.toJson<int>(contextTokensUsed),
       'contextWindowTokens': serializer.toJson<int?>(contextWindowTokens),
@@ -1912,9 +1873,8 @@ class Session extends DataClass implements Insertable<Session> {
     String? mode,
     Value<String?> modelConnectionId = const Value.absent(),
     Value<String?> modelId = const Value.absent(),
-    Value<String?> reasoningEffort = const Value.absent(),
+    String? modelControlsJson,
     Value<String?> permissionMode = const Value.absent(),
-    Value<String?> serviceTier = const Value.absent(),
     int? currentContextEpoch,
     int? contextTokensUsed,
     Value<int?> contextWindowTokens = const Value.absent(),
@@ -1943,13 +1903,10 @@ class Session extends DataClass implements Insertable<Session> {
         ? modelConnectionId.value
         : this.modelConnectionId,
     modelId: modelId.present ? modelId.value : this.modelId,
-    reasoningEffort: reasoningEffort.present
-        ? reasoningEffort.value
-        : this.reasoningEffort,
+    modelControlsJson: modelControlsJson ?? this.modelControlsJson,
     permissionMode: permissionMode.present
         ? permissionMode.value
         : this.permissionMode,
-    serviceTier: serviceTier.present ? serviceTier.value : this.serviceTier,
     currentContextEpoch: currentContextEpoch ?? this.currentContextEpoch,
     contextTokensUsed: contextTokensUsed ?? this.contextTokensUsed,
     contextWindowTokens: contextWindowTokens.present
@@ -1988,15 +1945,12 @@ class Session extends DataClass implements Insertable<Session> {
           ? data.modelConnectionId.value
           : this.modelConnectionId,
       modelId: data.modelId.present ? data.modelId.value : this.modelId,
-      reasoningEffort: data.reasoningEffort.present
-          ? data.reasoningEffort.value
-          : this.reasoningEffort,
+      modelControlsJson: data.modelControlsJson.present
+          ? data.modelControlsJson.value
+          : this.modelControlsJson,
       permissionMode: data.permissionMode.present
           ? data.permissionMode.value
           : this.permissionMode,
-      serviceTier: data.serviceTier.present
-          ? data.serviceTier.value
-          : this.serviceTier,
       currentContextEpoch: data.currentContextEpoch.present
           ? data.currentContextEpoch.value
           : this.currentContextEpoch,
@@ -2030,9 +1984,8 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('mode: $mode, ')
           ..write('modelConnectionId: $modelConnectionId, ')
           ..write('modelId: $modelId, ')
-          ..write('reasoningEffort: $reasoningEffort, ')
+          ..write('modelControlsJson: $modelControlsJson, ')
           ..write('permissionMode: $permissionMode, ')
-          ..write('serviceTier: $serviceTier, ')
           ..write('currentContextEpoch: $currentContextEpoch, ')
           ..write('contextTokensUsed: $contextTokensUsed, ')
           ..write('contextWindowTokens: $contextWindowTokens, ')
@@ -2060,9 +2013,8 @@ class Session extends DataClass implements Insertable<Session> {
     mode,
     modelConnectionId,
     modelId,
-    reasoningEffort,
+    modelControlsJson,
     permissionMode,
-    serviceTier,
     currentContextEpoch,
     contextTokensUsed,
     contextWindowTokens,
@@ -2089,9 +2041,8 @@ class Session extends DataClass implements Insertable<Session> {
           other.mode == this.mode &&
           other.modelConnectionId == this.modelConnectionId &&
           other.modelId == this.modelId &&
-          other.reasoningEffort == this.reasoningEffort &&
+          other.modelControlsJson == this.modelControlsJson &&
           other.permissionMode == this.permissionMode &&
-          other.serviceTier == this.serviceTier &&
           other.currentContextEpoch == this.currentContextEpoch &&
           other.contextTokensUsed == this.contextTokensUsed &&
           other.contextWindowTokens == this.contextWindowTokens &&
@@ -2116,9 +2067,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String> mode;
   final Value<String?> modelConnectionId;
   final Value<String?> modelId;
-  final Value<String?> reasoningEffort;
+  final Value<String> modelControlsJson;
   final Value<String?> permissionMode;
-  final Value<String?> serviceTier;
   final Value<int> currentContextEpoch;
   final Value<int> contextTokensUsed;
   final Value<int?> contextWindowTokens;
@@ -2142,9 +2092,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.mode = const Value.absent(),
     this.modelConnectionId = const Value.absent(),
     this.modelId = const Value.absent(),
-    this.reasoningEffort = const Value.absent(),
+    this.modelControlsJson = const Value.absent(),
     this.permissionMode = const Value.absent(),
-    this.serviceTier = const Value.absent(),
     this.currentContextEpoch = const Value.absent(),
     this.contextTokensUsed = const Value.absent(),
     this.contextWindowTokens = const Value.absent(),
@@ -2169,9 +2118,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.mode = const Value.absent(),
     this.modelConnectionId = const Value.absent(),
     this.modelId = const Value.absent(),
-    this.reasoningEffort = const Value.absent(),
+    this.modelControlsJson = const Value.absent(),
     this.permissionMode = const Value.absent(),
-    this.serviceTier = const Value.absent(),
     this.currentContextEpoch = const Value.absent(),
     this.contextTokensUsed = const Value.absent(),
     this.contextWindowTokens = const Value.absent(),
@@ -2203,9 +2151,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? mode,
     Expression<String>? modelConnectionId,
     Expression<String>? modelId,
-    Expression<String>? reasoningEffort,
+    Expression<String>? modelControlsJson,
     Expression<String>? permissionMode,
-    Expression<String>? serviceTier,
     Expression<int>? currentContextEpoch,
     Expression<int>? contextTokensUsed,
     Expression<int>? contextWindowTokens,
@@ -2230,9 +2177,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (mode != null) 'mode': mode,
       if (modelConnectionId != null) 'model_connection_id': modelConnectionId,
       if (modelId != null) 'model_id': modelId,
-      if (reasoningEffort != null) 'reasoning_effort': reasoningEffort,
+      if (modelControlsJson != null) 'model_controls_json': modelControlsJson,
       if (permissionMode != null) 'permission_mode': permissionMode,
-      if (serviceTier != null) 'service_tier': serviceTier,
       if (currentContextEpoch != null)
         'current_context_epoch': currentContextEpoch,
       if (contextTokensUsed != null) 'context_tokens_used': contextTokensUsed,
@@ -2261,9 +2207,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String>? mode,
     Value<String?>? modelConnectionId,
     Value<String?>? modelId,
-    Value<String?>? reasoningEffort,
+    Value<String>? modelControlsJson,
     Value<String?>? permissionMode,
-    Value<String?>? serviceTier,
     Value<int>? currentContextEpoch,
     Value<int>? contextTokensUsed,
     Value<int?>? contextWindowTokens,
@@ -2288,9 +2233,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       mode: mode ?? this.mode,
       modelConnectionId: modelConnectionId ?? this.modelConnectionId,
       modelId: modelId ?? this.modelId,
-      reasoningEffort: reasoningEffort ?? this.reasoningEffort,
+      modelControlsJson: modelControlsJson ?? this.modelControlsJson,
       permissionMode: permissionMode ?? this.permissionMode,
-      serviceTier: serviceTier ?? this.serviceTier,
       currentContextEpoch: currentContextEpoch ?? this.currentContextEpoch,
       contextTokensUsed: contextTokensUsed ?? this.contextTokensUsed,
       contextWindowTokens: contextWindowTokens ?? this.contextWindowTokens,
@@ -2351,14 +2295,11 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (modelId.present) {
       map['model_id'] = Variable<String>(modelId.value);
     }
-    if (reasoningEffort.present) {
-      map['reasoning_effort'] = Variable<String>(reasoningEffort.value);
+    if (modelControlsJson.present) {
+      map['model_controls_json'] = Variable<String>(modelControlsJson.value);
     }
     if (permissionMode.present) {
       map['permission_mode'] = Variable<String>(permissionMode.value);
-    }
-    if (serviceTier.present) {
-      map['service_tier'] = Variable<String>(serviceTier.value);
     }
     if (currentContextEpoch.present) {
       map['current_context_epoch'] = Variable<int>(currentContextEpoch.value);
@@ -2400,9 +2341,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('mode: $mode, ')
           ..write('modelConnectionId: $modelConnectionId, ')
           ..write('modelId: $modelId, ')
-          ..write('reasoningEffort: $reasoningEffort, ')
+          ..write('modelControlsJson: $modelControlsJson, ')
           ..write('permissionMode: $permissionMode, ')
-          ..write('serviceTier: $serviceTier, ')
           ..write('currentContextEpoch: $currentContextEpoch, ')
           ..write('contextTokensUsed: $contextTokensUsed, ')
           ..write('contextWindowTokens: $contextWindowTokens, ')
@@ -8742,9 +8682,8 @@ typedef $$SessionsTableCreateCompanionBuilder =
       Value<String> mode,
       Value<String?> modelConnectionId,
       Value<String?> modelId,
-      Value<String?> reasoningEffort,
+      Value<String> modelControlsJson,
       Value<String?> permissionMode,
-      Value<String?> serviceTier,
       Value<int> currentContextEpoch,
       Value<int> contextTokensUsed,
       Value<int?> contextWindowTokens,
@@ -8770,9 +8709,8 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String> mode,
       Value<String?> modelConnectionId,
       Value<String?> modelId,
-      Value<String?> reasoningEffort,
+      Value<String> modelControlsJson,
       Value<String?> permissionMode,
-      Value<String?> serviceTier,
       Value<int> currentContextEpoch,
       Value<int> contextTokensUsed,
       Value<int?> contextWindowTokens,
@@ -9030,18 +8968,13 @@ class $$SessionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get reasoningEffort => $composableBuilder(
-    column: $table.reasoningEffort,
+  ColumnFilters<String> get modelControlsJson => $composableBuilder(
+    column: $table.modelControlsJson,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<String> get permissionMode => $composableBuilder(
     column: $table.permissionMode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get serviceTier => $composableBuilder(
-    column: $table.serviceTier,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9364,18 +9297,13 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get reasoningEffort => $composableBuilder(
-    column: $table.reasoningEffort,
+  ColumnOrderings<String> get modelControlsJson => $composableBuilder(
+    column: $table.modelControlsJson,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<String> get permissionMode => $composableBuilder(
     column: $table.permissionMode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get serviceTier => $composableBuilder(
-    column: $table.serviceTier,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9528,18 +9456,13 @@ class $$SessionsTableAnnotationComposer
   GeneratedColumn<String> get modelId =>
       $composableBuilder(column: $table.modelId, builder: (column) => column);
 
-  GeneratedColumn<String> get reasoningEffort => $composableBuilder(
-    column: $table.reasoningEffort,
+  GeneratedColumn<String> get modelControlsJson => $composableBuilder(
+    column: $table.modelControlsJson,
     builder: (column) => column,
   );
 
   GeneratedColumn<String> get permissionMode => $composableBuilder(
     column: $table.permissionMode,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get serviceTier => $composableBuilder(
-    column: $table.serviceTier,
     builder: (column) => column,
   );
 
@@ -9839,9 +9762,8 @@ class $$SessionsTableTableManager
                 Value<String> mode = const Value.absent(),
                 Value<String?> modelConnectionId = const Value.absent(),
                 Value<String?> modelId = const Value.absent(),
-                Value<String?> reasoningEffort = const Value.absent(),
+                Value<String> modelControlsJson = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
-                Value<String?> serviceTier = const Value.absent(),
                 Value<int> currentContextEpoch = const Value.absent(),
                 Value<int> contextTokensUsed = const Value.absent(),
                 Value<int?> contextWindowTokens = const Value.absent(),
@@ -9865,9 +9787,8 @@ class $$SessionsTableTableManager
                 mode: mode,
                 modelConnectionId: modelConnectionId,
                 modelId: modelId,
-                reasoningEffort: reasoningEffort,
+                modelControlsJson: modelControlsJson,
                 permissionMode: permissionMode,
-                serviceTier: serviceTier,
                 currentContextEpoch: currentContextEpoch,
                 contextTokensUsed: contextTokensUsed,
                 contextWindowTokens: contextWindowTokens,
@@ -9893,9 +9814,8 @@ class $$SessionsTableTableManager
                 Value<String> mode = const Value.absent(),
                 Value<String?> modelConnectionId = const Value.absent(),
                 Value<String?> modelId = const Value.absent(),
-                Value<String?> reasoningEffort = const Value.absent(),
+                Value<String> modelControlsJson = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
-                Value<String?> serviceTier = const Value.absent(),
                 Value<int> currentContextEpoch = const Value.absent(),
                 Value<int> contextTokensUsed = const Value.absent(),
                 Value<int?> contextWindowTokens = const Value.absent(),
@@ -9919,9 +9839,8 @@ class $$SessionsTableTableManager
                 mode: mode,
                 modelConnectionId: modelConnectionId,
                 modelId: modelId,
-                reasoningEffort: reasoningEffort,
+                modelControlsJson: modelControlsJson,
                 permissionMode: permissionMode,
-                serviceTier: serviceTier,
                 currentContextEpoch: currentContextEpoch,
                 contextTokensUsed: contextTokensUsed,
                 contextWindowTokens: contextWindowTokens,

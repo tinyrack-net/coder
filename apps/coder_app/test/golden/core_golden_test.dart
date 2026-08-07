@@ -871,7 +871,11 @@ Widget _composerState(
               model: AgentModelSelectionDto(
                 source: AgentModelSource.session,
               ),
-              reasoningEffort: 'medium',
+              modelControls: <String, ModelControlValueDto>{
+                'reasoning_effort': ModelControlValueDto.stringValue(
+                  value: 'medium',
+                ),
+              },
               permissionMode: PermissionMode.ask,
               toolIds: <String>[],
               callableAgentIds: <String>[],
@@ -886,7 +890,7 @@ Widget _composerState(
             modelId: 'gpt-5.6-sol',
           ),
           onAgentChanged: (_) {},
-          onModelChanged: (_) {},
+          onModelChanged: (_, _) {},
           mode: SessionMode.normal,
           onModeChanged: (_) {},
           enabled: enabled,
@@ -1009,7 +1013,14 @@ Widget _settings(ThemeMode mode) {
           capabilities: ModelCapabilitiesDto(
             streaming: CapabilitySupport.supported,
             toolCalling: CapabilitySupport.supported,
-            reasoningEffort: CapabilitySupport.supported,
+            controls: <ModelControlDescriptorDto>[
+              ModelControlDescriptorDto(
+                id: 'reasoning_effort',
+                label: 'Reasoning effort',
+                kind: ModelControlKind.choice,
+                presentation: ModelControlPresentation.menuChip,
+              ),
+            ],
             source: CapabilitySource.bundled,
           ),
         ),

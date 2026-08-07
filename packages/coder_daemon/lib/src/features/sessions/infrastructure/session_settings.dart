@@ -14,20 +14,11 @@ abstract interface class SessionSettingsPort {
   /// Switches one session between planning and normal collaboration.
   Future<SessionDto> setMode(String sessionId, SessionMode mode);
 
-  /// Sets or clears the reasoning effort inherited by future turns.
-  Future<SessionDto> setReasoningEffort(
-    String sessionId,
-    String? reasoningEffort,
-  );
-
   /// Sets or clears the permission override observed at tool boundaries.
   Future<SessionDto> setPermissionMode(
     String sessionId,
     PermissionMode? permissionMode,
   );
-
-  /// Sets or clears the provider service tier used by future turns.
-  Future<SessionDto> setServiceTier(String sessionId, String? serviceTier);
 
   /// Sets or clears the provider and model override used by future turns.
   Future<SessionDto> setModel(
@@ -65,10 +56,7 @@ final class SessionSettingsService implements SessionSettingsPort {
   ) async {
     await _requireSession(sessionId);
     final changesIdleSettings =
-        patch.mode != null ||
-        patch.hasModel ||
-        patch.hasReasoningEffort ||
-        patch.hasServiceTier;
+        patch.mode != null || patch.hasModel || patch.hasModelControls;
     if (changesIdleSettings) _requireIdle(sessionId, 'settings');
     if (patch.hasModel && patch.model != null) {
       await _models.validateAgentModel(
@@ -78,28 +66,45 @@ final class SessionSettingsService implements SessionSettingsPort {
     }
 
     var session = (await _sessions.getById(sessionId))!;
+    final targetModel = patch.hasModel ? patch.model : session.model;
+    var targetControls = patch.hasModelControls
+        ? patch.modelControls
+        : session.modelControls;
+    if (targetModel == null) {
+      if (patch.hasModelControls && targetControls.isNotEmpty) {
+        throw const FormatException(
+          'Model controls require an explicit provider model.',
+        );
+      }
+      targetControls = const <String, ModelControlValueDto>{};
+    } else if (patch.hasModelControls) {
+      await _models.validateModelControls(
+        targetModel.providerConnectionId,
+        targetModel.modelId,
+        targetControls,
+      );
+    } else if (patch.hasModel) {
+      targetControls = await _models.retainValidModelControls(
+        targetModel.providerConnectionId,
+        targetModel.modelId,
+        targetControls,
+      );
+    }
     if (patch.mode != null) {
       session = await _sessions.updateMode(sessionId, patch.mode!);
     }
-    if (patch.hasModel) {
-      session = await _sessions.updateModel(sessionId, patch.model);
-    }
-    if (patch.hasReasoningEffort) {
-      session = await _sessions.updateReasoningEffort(
+    if (patch.hasModel || patch.hasModelControls) {
+      session = await _sessions.updateModelSettings(
         sessionId,
-        patch.reasoningEffort,
+        hasModel: patch.hasModel,
+        model: patch.model,
+        modelControls: targetControls,
       );
     }
     if (patch.hasPermissionMode) {
       session = await _sessions.updatePermissionMode(
         sessionId,
         patch.permissionMode,
-      );
-    }
-    if (patch.hasServiceTier) {
-      session = await _sessions.updateServiceTier(
-        sessionId,
-        patch.serviceTier,
       );
     }
     return _emit(session);
@@ -113,18 +118,6 @@ final class SessionSettingsService implements SessionSettingsPort {
   }
 
   @override
-  Future<SessionDto> setReasoningEffort(
-    String sessionId,
-    String? reasoningEffort,
-  ) async {
-    await _requireSession(sessionId);
-    _requireIdle(sessionId, 'reasoning effort');
-    return _emit(
-      await _sessions.updateReasoningEffort(sessionId, reasoningEffort),
-    );
-  }
-
-  @override
   Future<SessionDto> setPermissionMode(
     String sessionId,
     PermissionMode? permissionMode,
@@ -133,16 +126,6 @@ final class SessionSettingsService implements SessionSettingsPort {
     return _emit(
       await _sessions.updatePermissionMode(sessionId, permissionMode),
     );
-  }
-
-  @override
-  Future<SessionDto> setServiceTier(
-    String sessionId,
-    String? serviceTier,
-  ) async {
-    await _requireSession(sessionId);
-    _requireIdle(sessionId, 'service tier');
-    return _emit(await _sessions.updateServiceTier(sessionId, serviceTier));
   }
 
   @override
@@ -158,7 +141,22 @@ final class SessionSettingsService implements SessionSettingsPort {
         model.modelId,
       );
     }
-    return _emit(await _sessions.updateModel(sessionId, model));
+    final current = (await _sessions.getById(sessionId))!;
+    final controls = model == null
+        ? const <String, ModelControlValueDto>{}
+        : await _models.retainValidModelControls(
+            model.providerConnectionId,
+            model.modelId,
+            current.modelControls,
+          );
+    return _emit(
+      await _sessions.updateModelSettings(
+        sessionId,
+        hasModel: true,
+        model: model,
+        modelControls: controls,
+      ),
+    );
   }
 
   Future<void> _requireSession(String sessionId) async {

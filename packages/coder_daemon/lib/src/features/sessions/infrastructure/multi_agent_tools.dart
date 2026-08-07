@@ -77,10 +77,6 @@ final class SpawnAgentTool extends AgentTool {
         'type': <String>['string', 'null'],
         'description': 'Model ID override on your provider connection.',
       },
-      'reasoning_effort': <String, dynamic>{
-        'type': <String>['string', 'null'],
-        'description': 'Reasoning effort override for the subagent.',
-      },
     },
     'required': <String>[
       'task_name',
@@ -88,7 +84,6 @@ final class SpawnAgentTool extends AgentTool {
       'agent_type',
       'fork_turns',
       'model',
-      'reasoning_effort',
     ],
     'additionalProperties': false,
   };
@@ -108,7 +103,6 @@ final class SpawnAgentTool extends AgentTool {
         agentType: arguments['agent_type'] as String?,
         forkTurns: arguments['fork_turns'] as String? ?? 'none',
         model: arguments['model'] as String?,
-        reasoningEffort: arguments['reasoning_effort'] as String?,
       );
       return ToolResult(
         output: jsonEncode(<String, dynamic>{'task_name': path}),

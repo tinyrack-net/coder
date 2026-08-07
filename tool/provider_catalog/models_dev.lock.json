@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/anomalyco/models.dev.git",
+  "commit": "5261b4401a7c9184b8242ae6ef4816d0dc148ce7",
+  "sourcePaths": [
+    "providers/openai/models/**/*.toml",
+    "providers/anthropic/models/**/*.toml",
+    "providers/google/models/**/*.toml",
+    "providers/deepseek/models/**/*.toml",
+    "providers/openrouter/models/**/*.toml",
+    "providers/groq/models/**/*.toml",
+    "providers/xai/models/**/*.toml"
+  ],
+  "verifiedAt": "2026-08-07T15:41:55.737067Z"
+}

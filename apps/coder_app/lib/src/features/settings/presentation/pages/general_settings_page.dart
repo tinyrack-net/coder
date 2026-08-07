@@ -15,6 +15,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 /// so a reader who cannot read the current language can still find their own.
 const Map<String, String> languageEndonyms = <String, String>{
   'ko': '한국어',
+  'ja': '日本語',
   'en': 'English',
 };
 

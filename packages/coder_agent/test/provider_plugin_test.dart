@@ -82,6 +82,12 @@ final class _FakeWire implements ProviderWireProtocol {
   String get label => 'Fake wire';
 
   @override
+  Set<String> get supportedControlIds => const <String>{};
+
+  @override
+  List<AgentModelControlDescriptor> get controlDescriptors => const [];
+
+  @override
   ModelProvider createProvider(ModelProviderRequest request) =>
       _FakeModelProvider(request.connectionId);
 

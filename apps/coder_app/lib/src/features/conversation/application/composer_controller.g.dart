@@ -185,7 +185,7 @@ final class SessionComposerDraftControllerProvider
 }
 
 String _$sessionComposerDraftControllerHash() =>
-    r'35c8518316989fb5a4c0ecbfeeb39d9dd779fdee';
+    r'1f63d998cfef7557cbefbe3ad6ae731196d3d7d8';
 
 /// Holds the composer selection used to create the next session.
 

@@ -38,9 +38,9 @@ class SessionsController extends _$SessionsController {
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
-    String? reasoningEffort,
+    Map<String, ModelControlValueDto> modelControls =
+        const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
-    String? serviceTier,
   }) async {
     final worktreeId = _worktreeId;
     if (worktreeId == null) {
@@ -57,9 +57,8 @@ class SessionsController extends _$SessionsController {
         agentDefinitionId: agentDefinitionId,
         mode: mode,
         model: model,
-        reasoningEffort: reasoningEffort,
+        modelControls: modelControls,
         permissionMode: permissionMode,
-        serviceTier: serviceTier,
       );
       state = AsyncData<List<SessionDto>>(<SessionDto>[session, ...previous]);
       return session;
@@ -92,27 +91,36 @@ class SessionsController extends _$SessionsController {
   Future<SessionDto> setModel(
     String sessionId,
     SessionModelSelectionDto? model,
+    Map<String, ModelControlValueDto> modelControls,
   ) => _apply(
     sessionId,
-    (session) => session.copyWith(model: model),
-    (api) => api.sessions.updateSettings(
-      sessionId,
-      SessionSettingsPatchDto(hasModel: true, model: model),
+    (session) => session.copyWith(
+      model: model,
+      modelControls: modelControls,
     ),
-  );
-
-  /// Sets or clears the reasoning effort override of one session.
-  Future<SessionDto> setReasoningEffort(
-    String sessionId,
-    String? reasoningEffort,
-  ) => _apply(
-    sessionId,
-    (session) => session.copyWith(reasoningEffort: reasoningEffort),
     (api) => api.sessions.updateSettings(
       sessionId,
       SessionSettingsPatchDto(
-        hasReasoningEffort: true,
-        reasoningEffort: reasoningEffort,
+        hasModel: true,
+        model: model,
+        hasModelControls: true,
+        modelControls: modelControls,
+      ),
+    ),
+  );
+
+  /// Replaces the typed controls for one session's selected model.
+  Future<SessionDto> setModelControls(
+    String sessionId,
+    Map<String, ModelControlValueDto> modelControls,
+  ) => _apply(
+    sessionId,
+    (session) => session.copyWith(modelControls: modelControls),
+    (api) => api.sessions.updateSettings(
+      sessionId,
+      SessionSettingsPatchDto(
+        hasModelControls: true,
+        modelControls: modelControls,
       ),
     ),
   );
@@ -129,22 +137,6 @@ class SessionsController extends _$SessionsController {
       SessionSettingsPatchDto(
         hasPermissionMode: true,
         permissionMode: permissionMode,
-      ),
-    ),
-  );
-
-  /// Sets or clears the provider service tier of one session.
-  Future<SessionDto> setServiceTier(
-    String sessionId,
-    String? serviceTier,
-  ) => _apply(
-    sessionId,
-    (session) => session.copyWith(serviceTier: serviceTier),
-    (api) => api.sessions.updateSettings(
-      sessionId,
-      SessionSettingsPatchDto(
-        hasServiceTier: true,
-        serviceTier: serviceTier,
       ),
     ),
   );

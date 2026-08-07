@@ -24,7 +24,11 @@ void main() {
     promptEnabled: true,
     systemPrompt: 'prompt',
     model: model,
-    reasoningEffort: 'medium',
+    modelControls: <String, ModelControlValueDto>{
+      'reasoning_effort': const ModelControlValueDto.stringValue(
+        value: 'medium',
+      ),
+    },
     permissionMode: PermissionMode.ask,
     toolIds: const <String>['read_file'],
     callableAgentIds: const <String>[],

@@ -304,7 +304,11 @@ void main() {
 
 CompactionTarget _target() => const CompactionTarget(
   model: 'gpt-test',
-  reasoningEffort: 'medium',
+  modelControls: <String, AgentModelControlValue>{
+    AgentModelControlIds.reasoningEffort: AgentModelControlStringValue(
+      value: 'medium',
+    ),
+  },
   safetyIdentifier: 'tester',
 );
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/exec_tools.dart';
 import 'package:coder_agent/src/usage.dart';
@@ -71,22 +72,18 @@ class CompactionTarget {
   /// Creates a [CompactionTarget].
   const CompactionTarget({
     required this.model,
-    required this.reasoningEffort,
     required this.safetyIdentifier,
-    this.serviceTier,
+    this.modelControls = const <String, AgentModelControlValue>{},
   });
 
   /// The model that writes the summary; the one that produced the work.
   final String model;
 
-  /// The reasoningEffort public API member.
-  final String reasoningEffort;
-
   /// The safetyIdentifier public API member.
   final String safetyIdentifier;
 
-  /// Provider service tier; null uses the provider default.
-  final String? serviceTier;
+  /// Model-specific settings preserved for the summarization request.
+  final Map<String, AgentModelControlValue> modelControls;
 }
 
 /// Replaces a spent context window with a summary of the work so far.
@@ -159,8 +156,7 @@ class ConversationCompactor {
   ) async {
     final request = ModelRequest(
       model: target.model,
-      reasoningEffort: target.reasoningEffort,
-      serviceTier: target.serviceTier,
+      modelControls: target.modelControls,
       instructions: CompactionPolicy.summarizationInstructions,
       history: List<ConversationItem>.unmodifiable(input),
       // The summary turn must not act on the workspace, and advertising tools
