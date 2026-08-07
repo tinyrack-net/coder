@@ -104,7 +104,7 @@ final class FeatureVerifier {
     this.workspaceRoot, {
     required this.contracts,
     this.apiPath = 'packages/coder_client/lib/src/api.dart',
-    this.routePath = 'apps/coder_app/lib/src/app.dart',
+    this.routePath = 'apps/coder_app/lib/src/app/router/app_router.dart',
     this.forbiddenProductionTerms = const <String>[],
   });
 

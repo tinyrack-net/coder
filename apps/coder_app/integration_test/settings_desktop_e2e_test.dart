@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/coder_icons.dart';
-import 'package:coder_app/src/desktop_bootstrap.dart';
-import 'package:coder_app/src/desktop_shell.dart';
-import 'package:coder_app/src/host_models.dart';
-import 'package:coder_app/src/host_ports.dart';
-import 'package:coder_app/src/tray_menu_model.dart';
+import 'package:coder_app/src/app/coder_app.dart';
+import 'package:coder_app/src/app/composition/app_services.dart';
+import 'package:coder_app/src/features/desktop/domain/tray_menu_model.dart';
+import 'package:coder_app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
+import 'package:coder_app/src/features/desktop/infrastructure/desktop_shell.dart';
+import 'package:coder_app/src/features/hosts/domain/host_models.dart';
+import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
+import 'package:coder_app/src/shared/presentation/coder_icons.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:flutter/foundation.dart';

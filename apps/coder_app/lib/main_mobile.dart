@@ -1,8 +1,8 @@
-import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/attachment_io.dart';
-import 'package:coder_app/src/boot/bootstrap_gate.dart';
-import 'package:coder_app/src/remote_bootstrap.dart';
+import 'package:coder_app/src/app/coder_app.dart';
+import 'package:coder_app/src/app/composition/app_services.dart';
+import 'package:coder_app/src/features/boot/presentation/bootstrap_gate.dart';
+import 'package:coder_app/src/features/conversation/infrastructure/attachment_io.dart';
+import 'package:coder_app/src/features/hosts/infrastructure/remote_bootstrap.dart';
 import 'package:flutter/material.dart';
 
 /// Starts the mobile widget tree with an injectable remote-only bootstrap.

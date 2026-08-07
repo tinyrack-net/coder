@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/host_models.dart';
-import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/app/composition/app_services.dart';
+import 'package:coder_app/src/features/hosts/domain/host_models.dart';
+import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 

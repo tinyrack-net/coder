@@ -1,0 +1,195 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/features/conversation/application/chat_timeline_model.dart';
+import 'package:coder_app/src/features/conversation/application/chat_tool_presentation.dart';
+import 'package:coder_app/src/features/conversation/presentation/chat_code_block.dart';
+import 'package:coder_app/src/features/conversation/presentation/chat_diff_view.dart';
+import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
+
+/// Maps a tool glyph to its semantic Lucide icon.
+IconData chatToolIcon(ChatToolGlyph glyph) => switch (glyph) {
+  ChatToolGlyph.read => CoderIcons.document,
+  ChatToolGlyph.list => CoderIcons.folderOpen,
+  ChatToolGlyph.search => CoderIcons.search,
+  ChatToolGlyph.edit => CoderIcons.edit,
+  ChatToolGlyph.run => CoderIcons.terminal,
+  ChatToolGlyph.delegate => CoderIcons.network,
+  ChatToolGlyph.plan => CoderIcons.checklist,
+  ChatToolGlyph.ask => CoderIcons.chat,
+  ChatToolGlyph.resource => CoderIcons.extension,
+  ChatToolGlyph.tools => CoderIcons.tool,
+  ChatToolGlyph.clock => CoderIcons.time,
+  ChatToolGlyph.context => CoderIcons.gauge,
+  ChatToolGlyph.image => CoderIcons.image,
+  ChatToolGlyph.generic => CoderIcons.tool,
+};
+
+/// One tool call rendered as a collapsed CLI-style line.
+///
+/// Tapping the row reveals the full request and result instead of dumping raw
+/// JSON into the conversation. Expansion is owned by the enclosing list so it
+/// survives scrolling and newly arriving events.
+class ChatToolCard extends StatefulWidget {
+  /// Creates a tool card.
+  const ChatToolCard({
+    required this.activity,
+    this.expanded = false,
+    this.onToggle,
+    super.key,
+  });
+
+  /// The merged tool call rendered by this card.
+  final ChatToolActivity activity;
+
+  /// Whether the request and result are visible.
+  final bool expanded;
+
+  /// Called when the row is tapped.
+  final VoidCallback? onToggle;
+
+  @override
+  State<ChatToolCard> createState() => _ChatToolCardState();
+}
+
+class _ChatToolCardState extends State<ChatToolCard> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final activity = widget.activity;
+    final expanded = widget.expanded;
+    final onToggle = widget.onToggle;
+    final theme = Theme.of(context);
+    final presentation = describeToolActivity(
+      AppLocalizations.of(context),
+      activity,
+    );
+    final statusColor = switch (activity.status) {
+      ChatToolStatus.failed => theme.colorScheme.error,
+      ChatToolStatus.denied => theme.colorScheme.outline,
+      ChatToolStatus.running || ChatToolStatus.succeeded =>
+        presentation.isFailure
+            ? theme.colorScheme.error
+            : theme.colorScheme.primary,
+    };
+    final hasBody =
+        presentation.body is! ChatToolEmptyBody ||
+        presentation.argumentBody is! ChatToolEmptyBody;
+    return Semantics(
+      button: true,
+      expanded: expanded,
+      label: presentation.title,
+      child: FocusableActionDetector(
+        enabled: hasBody && onToggle != null,
+        mouseCursor: hasBody && onToggle != null
+            ? SystemMouseCursors.click
+            : MouseCursor.defer,
+        // The card is a tab stop, so it has to say where the keyboard is. It
+        // drew nothing at all, which left the focus invisible on the one
+        // control in the transcript that takes it.
+        onShowFocusHighlight: (focused) => setState(() => _focused = focused),
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              if (hasBody) onToggle?.call();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: hasBody ? onToggle : null,
+          child: Container(
+            // The ring is always present and only changes colour, so taking
+            // the focus never reflows the transcript line beneath it.
+            foregroundDecoration: BoxDecoration(
+              border: Border.all(
+                color: _focused
+                    ? context.tinyrackTheme.focus
+                    : Colors.transparent,
+                width: TRControlMetrics.focusWidth,
+              ),
+              borderRadius: const BorderRadius.all(TRRadii.medium),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(chatToolIcon(presentation.glyph), color: statusColor),
+                    const SizedBox(width: TRSpacing.small),
+                    Flexible(
+                      child: TRText(
+                        presentation.title,
+                        variant: TRTextVariant.code,
+                        truncate: true,
+                      ),
+                    ),
+                    if (presentation.resultLine != null) ...<Widget>[
+                      const SizedBox(width: TRSpacing.small),
+                      if (activity.status == ChatToolStatus.running)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: SizedBox.square(
+                            dimension: 12,
+                            child: TRSpinner(
+                              label: AppLocalizations.of(context).commonRunning,
+                            ),
+                          ),
+                        ),
+                      Flexible(
+                        child: TRText(
+                          presentation.resultLine!,
+                          variant: TRTextVariant.bodySm,
+                          color: presentation.isFailure
+                              ? TRTextColor.danger
+                              : TRTextColor.muted,
+                          truncate: true,
+                        ),
+                      ),
+                    ],
+                    if (hasBody)
+                      Icon(
+                        expanded ? CoderIcons.collapse : CoderIcons.expand,
+                        color: context.tinyrackTheme.textMuted,
+                      ),
+                  ],
+                ),
+                if (expanded) ...<Widget>[
+                  const SizedBox(height: TRSpacing.small),
+                  _ChatToolBodyView(body: presentation.argumentBody),
+                  if (presentation.argumentBody is! ChatToolEmptyBody &&
+                      presentation.body is! ChatToolEmptyBody)
+                    const SizedBox(height: TRSpacing.small),
+                  _ChatToolBodyView(body: presentation.body),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatToolBodyView extends StatelessWidget {
+  const _ChatToolBodyView({required this.body});
+
+  final ChatToolBody body;
+
+  @override
+  Widget build(BuildContext context) => switch (body) {
+    ChatToolEmptyBody() => const SizedBox.shrink(),
+    ChatToolTextBody(:final text) => ChatCodeBlock(text: text),
+    ChatToolDiffBody(:final files) => ChatDiffView(files: files),
+  };
+}

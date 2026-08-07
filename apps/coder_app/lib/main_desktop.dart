@@ -1,11 +1,11 @@
-import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/attachment_io.dart';
-import 'package:coder_app/src/boot/bootstrap_gate.dart';
-import 'package:coder_app/src/desktop_bootstrap.dart';
-import 'package:coder_app/src/desktop_shell.dart';
-import 'package:coder_app/src/desktop_startup.dart';
-import 'package:coder_app/src/workspace/directory_picker_io.dart';
+import 'package:coder_app/src/app/coder_app.dart';
+import 'package:coder_app/src/app/composition/app_services.dart';
+import 'package:coder_app/src/features/boot/presentation/bootstrap_gate.dart';
+import 'package:coder_app/src/features/conversation/infrastructure/attachment_io.dart';
+import 'package:coder_app/src/features/desktop/application/desktop_startup.dart';
+import 'package:coder_app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
+import 'package:coder_app/src/features/desktop/infrastructure/desktop_shell.dart';
+import 'package:coder_app/src/features/workspace/infrastructure/directory_picker_io.dart';
 import 'package:flutter/material.dart';
 
 /// Everything the desktop entrypoint resolves before it can build [CoderApp].

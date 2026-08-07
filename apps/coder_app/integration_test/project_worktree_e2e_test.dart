@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/coder_icons.dart';
+import 'package:coder_app/src/app/coder_app.dart';
+import 'package:coder_app/src/shared/presentation/coder_icons.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

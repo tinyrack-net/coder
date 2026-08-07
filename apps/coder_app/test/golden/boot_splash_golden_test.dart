@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
-import 'package:coder_app/src/boot/boot_splash.dart';
+import 'package:coder_app/src/features/boot/presentation/boot_splash.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

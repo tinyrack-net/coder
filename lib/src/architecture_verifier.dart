@@ -103,8 +103,10 @@ final class ArchitectureVerifier {
 
   static bool _mayNameTools(String package, String path) {
     if (package != 'coder_app') return true;
-    return path.contains('/chat/tools/') ||
-        path.endsWith('/chat/chat_timeline_model.dart');
+    return path.contains('/features/conversation/presentation/tools/') ||
+        path.endsWith(
+          '/features/conversation/application/chat_timeline_model.dart',
+        );
   }
 
   // Packages resolved from outside this workspace that must still stay behind
@@ -214,6 +216,11 @@ final class ArchitectureVerifier {
       final importedPackage = RegExp(
         "import 'package:([a-zA-Z0-9_]+)/",
       ).firstMatch(line)?.group(1);
+      if (package == 'coder_app') {
+        violations.addAll(
+          _verifyCoderAppLayerImport(path: path, line: index + 1, source: line),
+        );
+      }
       if (importedPackage != null &&
           importedPackage != package &&
           _isForbidden(package, importedPackage)) {
@@ -256,9 +263,20 @@ final class ArchitectureVerifier {
         'package:dio/',
         'package:drift/',
         'package:file_selector/',
+        'package:flutter/material.dart',
+        'package:flutter/services.dart',
+        'package:flutter/widgets.dart',
         'package:flutter_secure_storage/',
+        'package:go_router/',
+        'package:launch_at_startup/',
         'package:path_provider/',
+        'package:share_plus/',
+        'package:shared_preferences/',
+        'package:tinyrack_ui/',
+        'package:tray_manager/',
+        'package:url_launcher/',
         'package:uuid/',
+        'package:window_manager/',
       ]) {
         if (line.contains(forbidden)) {
           violations.add(
@@ -296,7 +314,7 @@ final class ArchitectureVerifier {
 
   bool _isApplicationLayer(String package, String path) {
     if (package == 'coder_app') {
-      return path.endsWith('/controller.dart');
+      return path.contains('/src/features/') && path.contains('/application/');
     }
     if (package == 'coder_daemon') {
       return path.endsWith('/agent_service.dart') ||
@@ -304,5 +322,70 @@ final class ArchitectureVerifier {
           path.endsWith('/provider_service.dart');
     }
     return package == 'coder_agent' && path.endsWith('/runtime.dart');
+  }
+
+  Iterable<ArchitectureViolation> _verifyCoderAppLayerImport({
+    required String path,
+    required int line,
+    required String source,
+  }) sync* {
+    final import = RegExp(
+      "import 'package:coder_app/src/([^']+)';",
+    ).firstMatch(source);
+    final importedPath = import?.group(1);
+
+    if (path.contains('/src/shared/') &&
+        importedPath?.startsWith('features/') == true) {
+      yield ArchitectureViolation(
+        path: path,
+        line: line,
+        rule: 'shared_feature_dependency',
+        message: 'Shared code must not depend on a product feature.',
+      );
+    }
+
+    final sourceFeature = RegExp(
+      '/src/features/([^/]+)/',
+    ).firstMatch(path)?.group(1);
+    final importedFeature = importedPath == null
+        ? null
+        : RegExp('^features/([^/]+)/').firstMatch(importedPath)?.group(1);
+    final importsFeatureView =
+        importedPath != null &&
+        RegExp(
+          '^features/[^/]+/presentation/(pages|widgets)/',
+        ).hasMatch(importedPath);
+    if (sourceFeature != null &&
+        importedFeature != null &&
+        sourceFeature != importedFeature &&
+        importsFeatureView) {
+      yield ArchitectureViolation(
+        path: path,
+        line: line,
+        rule: 'feature_presentation_dependency',
+        message:
+            "A feature must not import another feature's page or widget; "
+            'compose it in app/ or promote a feature-neutral component to '
+            'shared/.',
+      );
+    }
+
+    if (!path.contains('/src/features/') || !path.contains('/domain/')) {
+      return;
+    }
+    final frameworkPackage = RegExp(
+      "import 'package:(flutter|flutter_riverpod|riverpod_annotation|go_router|"
+      'tinyrack_ui|file_selector|flutter_secure_storage|launch_at_startup|'
+      'share_plus|shared_preferences|tray_manager|url_launcher|uuid|'
+      'window_manager)/',
+    ).hasMatch(source);
+    if (frameworkPackage) {
+      yield ArchitectureViolation(
+        path: path,
+        line: line,
+        rule: 'domain_framework_dependency',
+        message: 'Feature domain code must stay independent of frameworks.',
+      );
+    }
   }
 }
