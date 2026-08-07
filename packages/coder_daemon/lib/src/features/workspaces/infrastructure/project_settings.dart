@@ -7,6 +7,9 @@ import 'package:path/path.dart' as p;
 /// Filename holding project-scoped configuration in a workspace root.
 const String projectSettingsFileName = '.coder/config.json';
 
+String _projectSettingsPath(String rootPath) =>
+    p.join(rootPath, '.coder', 'config.json');
+
 /// Schema shared by project worktree and MCP configuration.
 const int projectConfigSchemaVersion = 3;
 
@@ -28,8 +31,7 @@ final class FileProjectSettingsStore implements ProjectSettingsStore {
   const FileProjectSettingsStore();
 
   @override
-  String sourcePath(String rootPath) =>
-      p.join(rootPath, projectSettingsFileName);
+  String sourcePath(String rootPath) => _projectSettingsPath(rootPath);
 
   @override
   Future<ProjectSettingsDto> load(String rootPath) async {
@@ -119,7 +121,7 @@ final class FileProjectSettingsStore implements ProjectSettingsStore {
     if (value is! List) {
       throw FormatException(
         'invalid_project_settings: "worktree.$key" must be an array of '
-        'strings in ${p.join(rootPath, projectSettingsFileName)}.',
+        'strings in ${_projectSettingsPath(rootPath)}.',
       );
     }
     final commands = <String>[];
@@ -127,7 +129,7 @@ final class FileProjectSettingsStore implements ProjectSettingsStore {
       if (entry is! String) {
         throw FormatException(
           'invalid_project_settings: "worktree.$key" must contain only '
-          'strings in ${p.join(rootPath, projectSettingsFileName)}.',
+          'strings in ${_projectSettingsPath(rootPath)}.',
         );
       }
       if (entry.trim().isNotEmpty) commands.add(entry.trim());
@@ -140,14 +142,14 @@ final class FileProjectSettingsStore implements ProjectSettingsStore {
     if (value is! Map<String, dynamic>) {
       throw FormatException(
         'invalid_project_settings: "worktree.shell" must be an object in '
-        '${p.join(rootPath, projectSettingsFileName)}.',
+        '${_projectSettingsPath(rootPath)}.',
       );
     }
     final shell = ShellSpecDto.fromJson(value);
     if (shell.executable.trim().isEmpty) {
       throw FormatException(
         'invalid_project_settings: "worktree.shell.executable" must not be '
-        'empty in ${p.join(rootPath, projectSettingsFileName)}.',
+        'empty in ${_projectSettingsPath(rootPath)}.',
       );
     }
     return shell;

@@ -75,7 +75,7 @@ final class FileMcpConfigStore implements McpConfigStore {
         if (rootPath == null) {
           throw ArgumentError.notNull('rootPath');
         }
-        return p.join(rootPath, projectMcpConfigFileName);
+        return p.join(rootPath, '.coder', 'config.json');
     }
   }
 
