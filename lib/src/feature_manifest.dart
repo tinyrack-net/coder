@@ -99,6 +99,15 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'settings.async.loading',
+    description:
+        'Keeps settings navigation usable while asynchronous reads show '
+        'shape-preserving skeletons and transition to loaded content.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'settings.reset',
     description:
         'Erases embedded daemon data and every device-local app setting '

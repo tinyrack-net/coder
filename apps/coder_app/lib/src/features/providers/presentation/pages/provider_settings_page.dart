@@ -48,8 +48,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final asyncState = ref.watch(_provider);
-    final body = asyncState.when(
-      loading: () => const Center(child: TRSpinner()),
+    final body = SettingsAsyncContent<ProviderSettingsState?>(
+      state: asyncState,
+      loading: SettingsSkeletonLayout.form(
+        semanticLabel: l10n.settingsLoading,
+      ),
       error: (error, stackTrace) => Center(child: TRText.inherit('$error')),
       data: (state) => state == null
           ? Center(child: TRText.inherit(l10n.providerSettingsRequiresDaemon))
@@ -142,11 +145,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _chooseDefaultModel() async {
     final l10n = AppLocalizations.of(context);
-    final options = await loadModelPickerOptions(ref, widget.hostId);
-    if (!mounted) return;
     final chosen = await showModelPicker(
       context,
-      options: options,
+      loadOptions: () => loadModelPickerOptions(ref, widget.hostId),
       currentSelection: ref.read(_provider).value?.defaultModel,
       title: l10n.providerSettingsDefaultModelTitle,
       inheritLabel: l10n.providerSettingsDefaultModelAutomatic,

@@ -212,6 +212,18 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settingsTitle;
 
+  /// Accessible status for a settings skeleton while data is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading settings'**
+  String get settingsLoading;
+
+  /// Non-blocking error shown when refreshing already visible settings fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not refresh settings: {error}'**
+  String settingsRefreshFailed(String error);
+
   /// Settings sidebar heading over the app-wide categories.
   ///
   /// In en, this message translates to:

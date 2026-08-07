@@ -36,8 +36,11 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(agentDefinitionsControllerProvider(widget.hostId));
-    return state.when(
-      loading: () => const Center(child: TRSpinner()),
+    return SettingsAsyncContent<AgentDefinitionsState>(
+      state: state,
+      loading: SettingsSkeletonLayout.listDetail(
+        semanticLabel: AppLocalizations.of(context).settingsLoading,
+      ),
       error: (error, _) => _AgentSettingsError(
         error: error,
         onRetry: () => ref.invalidate(

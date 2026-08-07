@@ -76,6 +76,19 @@
   "@settingsTitle": {
     "description": "Title of the settings shell."
   },
+  "settingsLoading": "Loading settings",
+  "@settingsLoading": {
+    "description": "Accessible status for a settings skeleton while data is loading."
+  },
+  "settingsRefreshFailed": "Could not refresh settings: {error}",
+  "@settingsRefreshFailed": {
+    "description": "Non-blocking error shown when refreshing already visible settings fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "settingsSectionApp": "App",
   "@settingsSectionApp": {
     "description": "Settings sidebar heading over the app-wide categories."

@@ -362,13 +362,11 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
 
   Future<void> _chooseModel(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    final options = await loadModelPickerOptions(ref, widget.hostId);
-    if (!context.mounted) return;
     // Clearing the override always means "follow the fallback chain"; only the
     // first step of that chain differs per agent.
     final chosen = await showModelPicker(
       context,
-      options: options,
+      loadOptions: () => loadModelPickerOptions(ref, widget.hostId),
       currentSelection: widget.selection,
       title: l10n.composerSelectModel,
       inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed

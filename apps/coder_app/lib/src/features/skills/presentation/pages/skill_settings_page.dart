@@ -65,8 +65,13 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
               ),
               const TRSeparator(variant: TRSeparatorVariant.muted),
               Expanded(
-                child: state.when(
-                  loading: () => const Center(child: TRSpinner()),
+                child: SettingsAsyncContent<List<SkillDto>>(
+                  state: state,
+                  loading: SettingsSkeletonLayout.listDetail(
+                    semanticLabel: AppLocalizations.of(
+                      context,
+                    ).settingsLoading,
+                  ),
                   error: (error, _) => _SkillSettingsError(
                     error: error,
                     onRetry: () => ref.invalidate(provider),
@@ -77,9 +82,12 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
             ],
           );
         }
-        return state.when(
-          loading: () => _buildDesktopSurface(
-            collection: const Center(child: TRSpinner()),
+        return SettingsAsyncContent<List<SkillDto>>(
+          state: state,
+          loading: _buildDesktopSurface(
+            collection: SettingsSkeletonLayout.form(
+              semanticLabel: AppLocalizations.of(context).settingsLoading,
+            ),
           ),
           error: (error, _) => _buildDesktopSurface(
             collection: _SkillSettingsError(

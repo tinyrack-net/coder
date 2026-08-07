@@ -73,7 +73,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     if (!mounted) return;
     final requested = widget.hostId;
     if (requested == null || requested == _adoptedRouteHost) return;
-    final registry = ref.read(hostRegistryControllerProvider).asData?.value;
+    final registry = ref.read(hostRegistryControllerProvider).value;
     if (registry == null) return;
     _adoptedRouteHost = requested;
     if (!registry.runtimes.containsKey(requested)) return;
@@ -86,7 +86,9 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   @override
   Widget build(BuildContext context) {
     _adoptRouteHost();
-    final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
+    final registryState = ref.watch(hostRegistryControllerProvider);
+    final registry = registryState.value;
+    final registryLoading = registryState.isLoading && !registryState.hasValue;
     final hosts =
         registry?.runtimes.values.toList(growable: false) ??
         const <HostRuntimeSnapshot>[];
@@ -96,18 +98,34 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       SettingsCategory.general => const GeneralSettingsPage(embedded: true),
       SettingsCategory.project => _HostScopedDetail(
         host: host,
+        loading: registryLoading,
+        loadingChild: SettingsSkeletonLayout.listDetail(
+          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        ),
         builder: (hostId) => ProjectSettingsPage(hostId: hostId),
       ),
       SettingsCategory.agent => _HostScopedDetail(
         host: host,
+        loading: registryLoading,
+        loadingChild: SettingsSkeletonLayout.listDetail(
+          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        ),
         builder: (hostId) => AgentSettingsPage(hostId: hostId),
       ),
       SettingsCategory.mcp => _HostScopedDetail(
         host: host,
+        loading: registryLoading,
+        loadingChild: SettingsSkeletonLayout.listDetail(
+          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        ),
         builder: (hostId) => McpSettingsPage(hostId: hostId),
       ),
       SettingsCategory.skill => _HostScopedDetail(
         host: host,
+        loading: registryLoading,
+        loadingChild: SettingsSkeletonLayout.listDetail(
+          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        ),
         builder: (hostId) => SkillSettingsPage(
           hostId: hostId,
           workspaceId: widget.workspaceId,
@@ -117,10 +135,18 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       ),
       SettingsCategory.provider => _HostScopedDetail(
         host: host,
+        loading: registryLoading,
+        loadingChild: SettingsSkeletonLayout.form(
+          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        ),
         builder: (hostId) => SettingsPage(hostId: hostId, embedded: true),
       ),
       SettingsCategory.permission => _HostScopedDetail(
         host: host,
+        loading: registryLoading,
+        loadingChild: SettingsSkeletonLayout.form(
+          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        ),
         builder: (hostId) => PermissionSettingsPage(hostId: hostId),
       ),
       SettingsCategory.daemon => const AppSettingsPage(embedded: true),
@@ -167,6 +193,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                       _DaemonSelect(
                         hosts: hosts,
                         hostId: hostId,
+                        loading: registryLoading,
                         showLabel: true,
                       ),
                   ],
@@ -187,6 +214,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                   selected: widget.category,
                   hosts: hosts,
                   hostId: hostId,
+                  loading: registryLoading,
                 ),
               ),
               Expanded(child: detail),
@@ -203,11 +231,13 @@ class _SettingsSidebar extends StatelessWidget {
     required this.selected,
     required this.hosts,
     required this.hostId,
+    required this.loading,
   });
 
   final SettingsCategory selected;
   final List<HostRuntimeSnapshot> hosts;
   final String? hostId;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +254,11 @@ class _SettingsSidebar extends StatelessWidget {
             horizontal: TRSpacing.extraSmall,
             vertical: TRSpacing.extraSmall,
           ),
-          child: _DaemonSelect(hosts: hosts, hostId: hostId),
+          child: _DaemonSelect(
+            hosts: hosts,
+            hostId: hostId,
+            loading: loading,
+          ),
         ),
         _scopeNav(context, l10n, SettingsCategoryScope.daemon),
       ],
@@ -297,11 +331,14 @@ class _DaemonSelect extends ConsumerWidget {
   const _DaemonSelect({
     required this.hosts,
     required this.hostId,
+    required this.loading,
     this.showLabel = false,
   });
 
   final List<HostRuntimeSnapshot> hosts;
   final String? hostId;
+
+  final bool loading;
 
   /// Whether to draw the field label, for layouts without a section heading.
   final bool showLabel;
@@ -309,6 +346,18 @@ class _DaemonSelect extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    if (loading) {
+      return Semantics(
+        label: l10n.settingsLoading,
+        container: true,
+        child: const ExcludeSemantics(
+          child: TRSkeleton(
+            key: ValueKey<String>('settings-daemon-select-loading'),
+            shape: TRSkeletonShape.rectangle,
+          ),
+        ),
+      );
+    }
     // Where a section heading already names this control the field label is
     // dropped, so the screen-reader name is carried here instead.
     // The pane is narrower than a daemon label, so the trigger takes the
@@ -412,14 +461,22 @@ void _goToSettingsCategory(BuildContext context, SettingsCategory category) {
 /// The daemon itself is chosen in the sidebar, so this only explains why a
 /// page cannot render yet.
 class _HostScopedDetail extends StatelessWidget {
-  const _HostScopedDetail({required this.host, required this.builder});
+  const _HostScopedDetail({
+    required this.host,
+    required this.loading,
+    required this.loadingChild,
+    required this.builder,
+  });
 
   final HostRuntimeSnapshot? host;
+  final bool loading;
+  final Widget loadingChild;
   final Widget Function(String hostId) builder;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    if (loading) return loadingChild;
     final host = this.host;
     if (host == null) {
       return Center(child: TRText.inherit(l10n.settingsRequiresOnlineDaemon));
