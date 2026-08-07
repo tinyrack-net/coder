@@ -21,7 +21,6 @@ void main() {
         'coder_protocol',
         'coder_provider_openai',
         'coder_workspace',
-        'tinyrack_pty',
       ]);
     });
 
@@ -32,7 +31,6 @@ void main() {
         'coder_mcp',
         'coder_protocol',
         'coder_provider_openai',
-        'tinyrack_pty',
       });
       // `coder_agent` is a dev dependency of the app and still forces a rebuild
       // of its tests, so the graph keeps both dependency sections.
@@ -56,6 +54,32 @@ void main() {
       expect(
         graph.packageNames.where((n) => graph.package(n).usesBuildRunner),
         <String>['coder_app', 'coder_daemon', 'coder_protocol'],
+      );
+    });
+
+    // `p.relative` yields `packages\coder_cli` on Windows, which never matched
+    // the POSIX key a Git diff produces. Every path then looked unrecognised
+    // and forced a full run, so the whole feature was a no-op there. The bug
+    // is invisible on a POSIX host, hence the hand-built graph.
+    test('a Windows-style package directory still matches a Git path', () {
+      final windows = WorkspaceGraph(<String, WorkspacePackage>{
+        'coder_cli': const WorkspacePackage(
+          name: 'coder_cli',
+          directory: r'packages\coder_cli',
+          isFlutter: false,
+          usesBuildRunner: false,
+          dependencies: <String>{},
+        ),
+      });
+
+      expect(windows.packageForDirectory('packages/coder_cli'), 'coder_cli');
+      expect(
+        CiImpactPlanner(windows)
+            .plan(
+              changedFiles: <String>[r'packages\coder_cli\lib\src\runner.dart'],
+            )
+            .affectedPackages,
+        <String>{'coder_cli'},
       );
     });
 
@@ -113,11 +137,11 @@ void main() {
       expect(graph.dependentsClosure(<String>{'coder_app'}), <String>{
         'coder_app',
       });
-      expect(graph.dependentsClosure(<String>{'tinyrack_pty'}), <String>{
+      expect(graph.dependentsClosure(<String>{'coder_mcp'}), <String>{
         'coder_app',
         'coder_cli',
         'coder_daemon',
-        'tinyrack_pty',
+        'coder_mcp',
       });
     });
   });
@@ -185,16 +209,11 @@ void main() {
     });
 
     test('non-Dart platform sources map to their owning package', () {
-      final native = planFor(<String>[
-        'packages/tinyrack_pty/src/tinyrack_pty.c',
+      final entitlements = planFor(<String>[
+        'packages/coder_cli/macos/Release.entitlements',
       ]);
-      expect(native.affectedPackages, <String>{
-        'coder_app',
-        'coder_cli',
-        'coder_daemon',
-        'tinyrack_pty',
-      });
-      expect(native.runDesktopBuild, isTrue);
+      expect(entitlements.affectedPackages, <String>{'coder_cli'});
+      expect(entitlements.runCli, isTrue);
 
       final android = planFor(<String>[
         'apps/coder_app/android/build.gradle.kts',
@@ -245,17 +264,13 @@ void main() {
       final plan = CiImpactPlanner(graph).fullPlan();
 
       expect(plan.full, isTrue);
-      expect(plan.dartScopes, <String>[
-        'coder_agent',
-        'coder_cli',
-        'coder_client',
-        'coder_daemon',
-        'coder_mcp',
-        'coder_protocol',
-        'coder_provider_openai',
-        'coder_workspace',
-        'tinyrack_pty',
-      ]);
+      // Derived rather than spelled out: the exact roster is already pinned by
+      // `loads every workspace package`, and repeating it here only means two
+      // tests to edit every time a package is added or removed.
+      expect(
+        plan.dartScopes,
+        graph.packageNames.where((n) => !graph.package(n).isFlutter).toList(),
+      );
       expect(plan.runDartTests, isTrue);
       expect(plan.runFlutter, isTrue);
       expect(plan.runGenerated, isTrue);

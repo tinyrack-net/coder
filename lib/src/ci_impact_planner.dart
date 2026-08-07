@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+/// Rewrites [path] with forward slashes, whatever the host separator is.
+String toPosixPath(String path) => path.replaceAll(r'\', '/');
+
 /// One package in the Pub workspace.
 final class WorkspacePackage {
   /// Creates a [WorkspacePackage].
@@ -60,7 +63,7 @@ final class WorkspaceGraph {
       if (!manifest.existsSync()) continue;
       final package = _readManifest(
         manifest.readAsStringSync(),
-        p.relative(directory, from: root),
+        toPosixPath(p.relative(directory, from: root)),
       );
       packages[package.name] = package;
     }
@@ -117,9 +120,14 @@ final class WorkspaceGraph {
   }
 
   /// The package owning [directory], or `null` when nothing owns it.
+  ///
+  /// Both sides are normalised to forward slashes: a manifest path comes from
+  /// `p.relative`, which uses the host separator, while a changed path comes
+  /// from Git, which always uses `/`.
   String? packageForDirectory(String directory) {
+    final wanted = toPosixPath(directory);
     for (final package in _packages.values) {
-      if (package.directory == directory) return package.name;
+      if (toPosixPath(package.directory) == wanted) return package.name;
     }
     return null;
   }
@@ -296,7 +304,7 @@ final class CiImpactPlanner {
   CiImpactPlan plan({required Iterable<String> changedFiles}) {
     final seeds = <String>{};
     for (final file in changedFiles) {
-      final path = p.posix.normalize(file.replaceAll(r'\', '/'));
+      final path = p.posix.normalize(toPosixPath(file));
       if (_isIgnored(path)) continue;
       if (_isWorkspaceWide(path)) return fullPlan();
       final owner = _ownerOf(path);
