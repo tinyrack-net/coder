@@ -8,7 +8,17 @@ import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// An in-memory [CoderApi] used by notifier and widget tests.
-final class FakeCoderApi implements CoderApi {
+final class FakeCoderApi
+    implements
+        CoderApi,
+        WorkspacesApi,
+        SessionsApi,
+        AgentsApi,
+        PromptsApi,
+        ProvidersApi,
+        McpApi,
+        TerminalsApi,
+        AttachmentsApi {
   /// Creates a configurable [FakeCoderApi].
   FakeCoderApi({
     ServerInfoDto? serverInfo,
@@ -446,11 +456,84 @@ final class FakeCoderApi implements CoderApi {
   /// Emits a transport connection state.
   void emitState(ClientConnectionState state) => _states.add(state);
 
-  @override
   Stream<ClientEvent> get events => eventStream ?? _events.stream;
 
   @override
   Stream<ClientConnectionState> get states => _states.stream;
+
+  @override
+  WorkspacesApi get workspaces => this;
+
+  @override
+  SessionsApi get sessions => this;
+
+  @override
+  AgentsApi get agents => this;
+
+  @override
+  PromptsApi get prompts => this;
+
+  @override
+  ProvidersApi get providers => this;
+
+  @override
+  McpApi get mcp => this;
+
+  @override
+  TerminalsApi get terminals => this;
+
+  @override
+  AttachmentsApi get attachments => this;
+
+  @override
+  Stream<SessionDto> get sessionUpdates => events
+      .whereType<SessionUpdatedClientEvent>()
+      .map((event) => event.session);
+
+  @override
+  Stream<TimelineEventDto> get timelineEvents =>
+      events.whereType<TimelineClientEvent>().map((event) => event.event);
+
+  @override
+  Stream<ApprovalRequestDto> get approvalRequests => events
+      .whereType<ApprovalRequestedClientEvent>()
+      .map((event) => event.approval);
+
+  @override
+  Stream<UserQuestionRequestDto> get questionRequests => events
+      .whereType<UserQuestionRequestedClientEvent>()
+      .map((event) => event.request);
+
+  @override
+  Stream<void> get definitionChanges =>
+      events.whereType<AgentDefinitionsChangedClientEvent>().map((_) {});
+
+  @override
+  Stream<void> get skillChanges =>
+      events.whereType<SkillsChangedClientEvent>().map((_) {});
+
+  @override
+  Stream<void> get commandChanges =>
+      events.whereType<CommandsChangedClientEvent>().map((_) {});
+
+  @override
+  Stream<ProviderAuthAttemptDto> get authUpdates => events
+      .whereType<ProviderAuthUpdatedClientEvent>()
+      .map((event) => event.attempt);
+
+  @override
+  Stream<void> get serverChanges =>
+      events.whereType<McpServersChangedClientEvent>().map((_) {});
+
+  @override
+  Stream<TerminalOutputDto> get output => events
+      .whereType<TerminalOutputClientEvent>()
+      .map((event) => event.output);
+
+  @override
+  Stream<TerminalDto> get terminalUpdates => events
+      .whereType<TerminalUpdatedClientEvent>()
+      .map((event) => event.terminal);
 
   @override
   ServerInfoDto get serverInfo => _serverInfo;
@@ -724,63 +807,47 @@ final class FakeCoderApi implements CoderApi {
   }
 
   @override
-  Future<SessionDto> updateSessionMode(
+  Future<SessionDto> updateSettings(
     String sessionId,
-    SessionMode mode,
+    SessionSettingsPatchDto patch,
   ) async {
     await _beforeSessionUpdate();
-    updatedSessionModes.add((sessionId: sessionId, mode: mode));
     final index = _agents.indexWhere((agent) => agent.id == sessionId);
     if (index < 0) throw StateError('Session not found: $sessionId');
-    final updated = _agents[index].copyWith(mode: mode);
+    var updated = _agents[index];
+    if (patch.mode case final mode?) {
+      updatedSessionModes.add((sessionId: sessionId, mode: mode));
+      updated = updated.copyWith(mode: mode);
+    }
+    if (patch.hasModel) {
+      updatedSessionModels.add((sessionId: sessionId, model: patch.model));
+      updated = updated.copyWith(model: patch.model);
+    }
+    if (patch.hasReasoningEffort) {
+      updatedSessionReasoningEfforts.add((
+        sessionId: sessionId,
+        reasoningEffort: patch.reasoningEffort,
+      ));
+      updated = updated.copyWith(reasoningEffort: patch.reasoningEffort);
+    }
+    if (patch.hasPermissionMode) {
+      if (sessionPermissionSetError case final error?) throw error;
+      updatedSessionPermissionModes.add((
+        sessionId: sessionId,
+        permissionMode: patch.permissionMode,
+      ));
+      updated = updated.copyWith(permissionMode: patch.permissionMode);
+    }
+    if (patch.hasServiceTier) {
+      updatedSessionServiceTiers.add((
+        sessionId: sessionId,
+        serviceTier: patch.serviceTier,
+      ));
+      updated = updated.copyWith(serviceTier: patch.serviceTier);
+    }
     _agents[index] = updated;
     emit(SessionUpdatedClientEvent(updated));
     return updated;
-  }
-
-  @override
-  Future<SessionDto> updateSessionModel(
-    String sessionId,
-    SessionModelSelectionDto? model,
-  ) async {
-    updatedSessionModels.add((sessionId: sessionId, model: model));
-    final index = _agents.indexWhere((agent) => agent.id == sessionId);
-    if (index < 0) throw StateError('Session not found: $sessionId');
-    final updated = _agents[index].copyWith(model: model);
-    _agents[index] = updated;
-    emit(SessionUpdatedClientEvent(updated));
-    return updated;
-  }
-
-  @override
-  Future<SessionDto> updateSessionReasoningEffort(
-    String sessionId,
-    String? reasoningEffort,
-  ) async {
-    updatedSessionReasoningEfforts.add((
-      sessionId: sessionId,
-      reasoningEffort: reasoningEffort,
-    ));
-    return _replaceSession(
-      sessionId,
-      (session) => session.copyWith(reasoningEffort: reasoningEffort),
-    );
-  }
-
-  @override
-  Future<SessionDto> updateSessionPermissionMode(
-    String sessionId,
-    PermissionMode? permissionMode,
-  ) async {
-    if (sessionPermissionSetError case final error?) throw error;
-    updatedSessionPermissionModes.add((
-      sessionId: sessionId,
-      permissionMode: permissionMode,
-    ));
-    return _replaceSession(
-      sessionId,
-      (session) => session.copyWith(permissionMode: permissionMode),
-    );
   }
 
   @override
@@ -794,33 +861,6 @@ final class FakeCoderApi implements CoderApi {
     if (defaultPermissionSetError case final error?) throw error;
     _defaultPermissionMode = permissionMode;
     return PermissionSettingsDto(defaultMode: permissionMode);
-  }
-
-  @override
-  Future<SessionDto> updateSessionServiceTier(
-    String sessionId,
-    String? serviceTier,
-  ) async {
-    updatedSessionServiceTiers.add((
-      sessionId: sessionId,
-      serviceTier: serviceTier,
-    ));
-    return _replaceSession(
-      sessionId,
-      (session) => session.copyWith(serviceTier: serviceTier),
-    );
-  }
-
-  SessionDto _replaceSession(
-    String sessionId,
-    SessionDto Function(SessionDto session) update,
-  ) {
-    final index = _agents.indexWhere((agent) => agent.id == sessionId);
-    if (index < 0) throw StateError('Session not found: $sessionId');
-    final updated = update(_agents[index]);
-    _agents[index] = updated;
-    emit(SessionUpdatedClientEvent(updated));
-    return updated;
   }
 
   @override

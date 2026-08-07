@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/credential_store.dart';
-import 'package:coder_daemon/src/repositories.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/credential_store.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -64,10 +64,10 @@ void main() {
       expect(reloaded.bearerToken, 'daemon-secret');
 
       final credentialsJson = await File(
-        '${directory.path}/credentials.json',
+        '${directory.path}/secrets.json',
       ).readAsString();
       expect(jsonDecode(credentialsJson), <String, dynamic>{
-        'version': 5,
+        'schemaVersion': 1,
         'daemon': <String, dynamic>{'bearerToken': 'daemon-secret'},
         'providerCredentials': <String, dynamic>{
           'deepseek': <String, dynamic>{
@@ -90,7 +90,7 @@ void main() {
 
       if (!Platform.isWindows) {
         expect(
-          File('${directory.path}/credentials.json').statSync().mode & 0x1ff,
+          File('${directory.path}/secrets.json').statSync().mode & 0x1ff,
           0x180,
         );
       }
@@ -102,10 +102,10 @@ void main() {
       'coder-obsolete-credential-test-',
     );
     addTearDown(() => directory.delete(recursive: true));
-    final file = File('${directory.path}/credentials.json');
+    final file = File('${directory.path}/secrets.json');
     await file.writeAsString(
       jsonEncode(<String, dynamic>{
-        'version': 3,
+        'schemaVersion': 0,
         'daemon': <String, dynamic>{
           'bearerToken': 'bearer',
           'adminToken': 'obsolete',
@@ -158,9 +158,9 @@ void main() {
       'coder-credential-mcp-invalid-',
     );
     addTearDown(() => directory.delete(recursive: true));
-    await File('${directory.path}/credentials.json').writeAsString(
+    await File('${directory.path}/secrets.json').writeAsString(
       jsonEncode(<String, dynamic>{
-        'version': 5,
+        'schemaVersion': 1,
         'providerCredentials': <String, dynamic>{},
         'mcpSecrets': <String, dynamic>{'github.token': 42},
       }),

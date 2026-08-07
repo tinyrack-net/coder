@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:coder_daemon/src/commands.dart';
+import 'package:coder_daemon/src/features/prompts/infrastructure/commands.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';

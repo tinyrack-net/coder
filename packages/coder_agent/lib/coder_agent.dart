@@ -1,5 +1,6 @@
 export 'src/clock.dart';
 export 'src/compaction.dart';
+export 'src/contracts.dart';
 export 'src/gitignore.dart';
 export 'src/model.dart';
 export 'src/plan_mode_prompt.dart';

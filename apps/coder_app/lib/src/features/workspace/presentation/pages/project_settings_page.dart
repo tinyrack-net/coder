@@ -371,7 +371,9 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
               executable: _hostShellExecutable.text.trim(),
               arguments: parseHookCommands(_hostShellArguments.text),
             );
-      await registry.runtimes[widget.hostId]!.api!.setTerminalShell(hostShell);
+      await registry.runtimes[widget.hostId]!.api!.terminals.setTerminalShell(
+        hostShell,
+      );
       await ref
           .read(
             projectSettingsControllerProvider(
@@ -408,7 +410,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
   Future<void> _loadHostShell() async {
     try {
       final registry = await ref.read(hostRegistryControllerProvider.future);
-      final shell = await registry.runtimes[widget.hostId]!.api!
+      final shell = await registry.runtimes[widget.hostId]!.api!.terminals
           .getTerminalShell();
       if (!mounted) return;
       _hostShellExecutable.text = shell?.executable ?? '';

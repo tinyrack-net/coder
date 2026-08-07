@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coder_app/src/features/hosts/application/host_controller.dart';
-import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -14,7 +13,7 @@ part 'agent_commands_controller.g.dart';
 /// daemon-config sources; naming a workspace layers its `.agents/commands` on
 /// top.
 class AgentCommandsController extends _$AgentCommandsController {
-  StreamSubscription<ClientEvent>? _events;
+  StreamSubscription<void>? _events;
 
   @override
   Future<List<AgentCommandDto>> build(
@@ -22,17 +21,15 @@ class AgentCommandsController extends _$AgentCommandsController {
     String? workspaceId,
   ) async {
     final api = await watchHostApi(ref, hostId);
-    _events = api.events.listen((event) {
-      if (event is CommandsChangedClientEvent) unawaited(refresh());
-    });
+    _events = api.prompts.commandChanges.listen((_) => unawaited(refresh()));
     ref.onDispose(() => unawaited(_events?.cancel()));
-    return api.listCommands(workspaceId: workspaceId);
+    return api.prompts.listCommands(workspaceId: workspaceId);
   }
 
   /// Reloads the catalog from the daemon.
   Future<void> refresh() async {
     final api = await requireHostApi(ref, hostId);
-    final commands = await api.listCommands(workspaceId: workspaceId);
+    final commands = await api.prompts.listCommands(workspaceId: workspaceId);
     if (!ref.mounted) return;
     state = AsyncData<List<AgentCommandDto>>(commands);
   }

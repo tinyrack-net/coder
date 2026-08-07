@@ -1,5 +1,5 @@
-import 'package:coder_daemon/src/database.dart';
-import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/database.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:drift/native.dart';
 import 'package:test/test.dart';

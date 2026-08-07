@@ -577,7 +577,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           });
           return;
         }
-        final created = await api.createWorktree(
+        final created = await api.workspaces.createWorktree(
           id: ref.read(appIdGeneratorProvider).generate(),
           workspaceId: project.workspace.id,
           mode: WorktreeCreateMode.newBranch,

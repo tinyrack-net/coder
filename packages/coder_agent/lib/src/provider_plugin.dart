@@ -1,5 +1,6 @@
+import 'package:coder_agent/src/contracts.dart';
+
 import 'package:coder_agent/src/model.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Secret credential material held only inside the daemon.
 ///
@@ -70,7 +71,7 @@ final class ModelProviderRequest {
     required this.connectionId,
     required this.endpoint,
     required this.credential,
-    this.capabilities = const ModelCapabilitiesDto(),
+    this.capabilities = const AgentModelCapabilities(),
   });
 
   /// Connection identifier exposed to the agent runtime.
@@ -86,7 +87,7 @@ final class ModelProviderRequest {
   ///
   /// The whole DTO rather than a fixed set of booleans, so a vendor can read
   /// the fields its own API documents without widening a shared signature.
-  final ModelCapabilitiesDto capabilities;
+  final AgentModelCapabilities capabilities;
 }
 
 /// Classifies model discovery failures without leaking transport exceptions.
@@ -156,13 +157,13 @@ final class ProviderCatalogModel {
   final String label;
 
   /// Capabilities sourced from the bundled catalog.
-  final ModelCapabilitiesDto capabilities;
+  final AgentModelCapabilities capabilities;
 
   /// Optional catalog pricing metadata.
-  final ModelPricingDto? pricing;
+  final AgentModelPricing? pricing;
 
   /// Optional catalog token limits.
-  final ModelLimitsDto? limits;
+  final AgentModelLimits? limits;
 }
 
 /// One running OAuth browser or device-code session.
@@ -189,7 +190,7 @@ abstract interface class ProviderOAuthSession {
 /// Starts one vendor's OAuth sessions and refreshes rotating tokens.
 abstract interface class ProviderOAuthGateway {
   /// Starts one browser or device-code authorization session.
-  Future<ProviderOAuthSession> start(ProviderAuthFlow flow);
+  Future<ProviderOAuthSession> start(AgentProviderAuthFlow flow);
 
   /// Refreshes one OAuth credential, preserving refresh-token rotation.
   Future<OAuthCredential> refresh(OAuthCredential credential);
@@ -238,7 +239,7 @@ abstract base class ProviderPlugin {
   String get id;
 
   /// Public metadata safe to send to clients.
-  ProviderDefinitionDto get definition;
+  AgentProviderDefinition get definition;
 
   /// Credential environment variables recognized by the daemon.
   List<String> get environmentVariables => const <String>[];
@@ -250,7 +251,7 @@ abstract base class ProviderPlugin {
   ///
   /// The endpoint may depend on the credential: a subscription OAuth can speak
   /// to a different backend than the platform API key does.
-  ProviderEndpoint endpoint(ProviderAuthKind authKind);
+  ProviderEndpoint endpoint(AgentProviderAuthKind authKind);
 
   /// Builds the executable adapter for one resolved model.
   ModelProvider createProvider(ModelProviderRequest request);
@@ -274,8 +275,8 @@ abstract base class ProviderPlugin {
   ///
   /// A public catalog reports what it knows about every vendor; the vendor
   /// itself may know more, such as inputs its API accepts for every model.
-  ModelCapabilitiesDto refineRemoteCapabilities(
-    ModelCapabilitiesDto capabilities,
+  AgentModelCapabilities refineRemoteCapabilities(
+    AgentModelCapabilities capabilities,
   ) => capabilities;
 }
 

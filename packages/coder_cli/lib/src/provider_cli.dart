@@ -45,38 +45,39 @@ final class CoderApiProviderCliBackend implements ProviderCliBackend {
   final CoderApi _api;
 
   @override
-  Future<ProviderCatalogDto> catalog() => _api.listProviderCatalog();
+  Future<ProviderCatalogDto> catalog() => _api.providers.listProviderCatalog();
 
   @override
   Future<List<ProviderConnectionDto>> connections() =>
-      _api.listProviderConnections();
+      _api.providers.listProviderConnections();
 
   @override
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
     String apiKey,
-  ) => _api.connectProviderApiKey(definitionId, apiKey);
+  ) => _api.providers.connectProviderApiKey(definitionId, apiKey);
 
   @override
   Future<ProviderConnectionDto> connectNone(String definitionId) =>
-      _api.connectProviderNone(definitionId);
+      _api.providers.connectProviderNone(definitionId);
 
   @override
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
     String methodId,
-  ) => _api.startProviderAuth(definitionId, methodId);
+  ) => _api.providers.startProviderAuth(definitionId, methodId);
 
   @override
   Future<ProviderAuthAttemptDto> authStatus(String attemptId) =>
-      _api.providerAuthStatus(attemptId);
+      _api.providers.providerAuthStatus(attemptId);
 
   @override
   Future<void> disconnect(String connectionId) =>
-      _api.disconnectProvider(connectionId);
+      _api.providers.disconnectProvider(connectionId);
 
   @override
-  Future<ProviderCatalogDto> refreshCatalog() => _api.refreshProviderCatalog();
+  Future<ProviderCatalogDto> refreshCatalog() =>
+      _api.providers.refreshProviderCatalog();
 }
 
 /// Lists configured provider connections with their catalog names.

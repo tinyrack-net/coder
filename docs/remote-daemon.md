@@ -44,10 +44,10 @@ instead, base64url encoded because a subprotocol may only contain RFC 7230
 token characters:
 
 ```
-Sec-WebSocket-Protocol: tinyrack.coder.v2, tinyrack.coder.token.<base64url>
+Sec-WebSocket-Protocol: tinyrack.coder.v3, tinyrack.coder.token.<base64url>
 ```
 
-The daemon accepts either credential and echoes back only `tinyrack.coder.v2`,
+The daemon accepts either credential and echoes back only `tinyrack.coder.v3`,
 so the token never appears in a response. This is the same secret with the
 same complete access; a subprotocol is a transport detail, not a weaker
 credential.
@@ -66,7 +66,7 @@ The default allows the official web app only. Setting the variable to `none`
 turns browser access off entirely. **Requests without an `Origin` header are
 unaffected**, which is every native client and `coder-cli`, so this gate never
 changes their behaviour. The same allowlist drives the CORS headers on
-`/health` and `/attachments`.
+`/v3/health` and `/v3/attachments`.
 
 ### Reaching a daemon on your own machine
 
@@ -124,7 +124,7 @@ coder.example.com {
 }
 ```
 
-Register `wss://coder.example.com/ws` in the app and enter the bearer token.
+Register `wss://coder.example.com/v3/ws` in the app and enter the bearer token.
 
 ## Nginx
 
@@ -140,7 +140,7 @@ server {
 
   # ssl_certificate and TLS policy are operator-managed.
 
-  location /ws {
+  location /v3/ws {
     proxy_pass http://127.0.0.1:7337;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -153,16 +153,16 @@ server {
 ## Local files and development resets
 
 Daemon bearer, API-key, and OAuth credentials are stored atomically in
-`credentials.json`. On POSIX systems the configuration directory is mode
+`v3/secrets.json`. On POSIX systems the configuration directory is mode
 `0700` and the file is mode `0600`; secrets are not stored in SQLite, protocol
 payloads, or logs.
 
 This repository is in active development and does not migrate older internal
-credential formats. An existing version-3 `credentials.json` produces an
+credential formats. An incompatible `v3/secrets.json` produces an
 `incompatible_credentials` error with its exact path. Stop the daemon and
 explicitly remove that file to reset it. An old `auth.json` is ignored and is
 not deleted automatically; remove it manually after confirming it is no longer
-needed.
+needed. Normal startup and reset do not read, rewrite, or delete v2 data.
 
 The app accepts both `ws://` and `wss://` profiles without warnings or policy
 enforcement. Transport security, network isolation, and TLS are deployment

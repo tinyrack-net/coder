@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:coder_daemon/src/ports.dart';
-import 'package:coder_daemon/src/project_settings.dart';
+import 'package:coder_daemon/src/features/workspaces/infrastructure/project_settings.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -12,18 +12,19 @@ void main() {
 
   setUp(() async {
     root = await Directory.systemTemp.createTemp('coder-project-settings-');
+    await Directory(p.join(root.path, '.coder')).create();
   });
 
   tearDown(() => root.delete(recursive: true));
 
-  File settingsFile() => File(p.join(root.path, projectSettingsFileName));
+  File settingsFile() => File(p.join(root.path, '.coder', 'config.json'));
 
   test('reports the workspace-root settings path', () {
     expect(
       const FileProjectSettingsStore().sourcePath(root.path),
       settingsFile().path,
     );
-    expect(projectSettingsFileName, 'coder.json');
+    expect(projectSettingsFileName, '.coder/config.json');
   });
 
   test('treats a missing or blank file as empty settings', () async {
@@ -40,6 +41,7 @@ void main() {
     () async {
       await settingsFile().writeAsString(
         jsonEncode(<String, dynamic>{
+          'schemaVersion': 3,
           'worktree': <String, dynamic>{
             'setup': <String>['npm ci', '  ', ' npm run build '],
             'teardown': <String>['docker compose down'],
@@ -72,6 +74,7 @@ void main() {
   test('preserves unknown keys and drops empty hook lists on save', () async {
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
+        'schemaVersion': 3,
         'scripts': <String, dynamic>{
           'typecheck': <String, dynamic>{'command': 'npm run typecheck'},
         },
@@ -113,6 +116,7 @@ void main() {
     expect(
       await settingsFile().readAsString(),
       '{\n'
+      '  "schemaVersion": 3,\n'
       '  "worktree": {\n'
       '    "teardown": [\n'
       '      "docker compose down"\n'
@@ -125,6 +129,7 @@ void main() {
   test('removes the worktree section when every hook is cleared', () async {
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
+        'schemaVersion': 3,
         'worktree': <String, dynamic>{
           'setup': <String>['npm ci'],
         },
@@ -136,7 +141,10 @@ void main() {
       const ProjectSettingsDto(),
     );
 
-    expect(await settingsFile().readAsString(), '{}\n');
+    expect(
+      await settingsFile().readAsString(),
+      '{\n  "schemaVersion": 3\n}\n',
+    );
   });
 
   test('writes nothing when clearing hooks without a file', () async {
@@ -168,12 +176,16 @@ void main() {
     await expectLater(store.load(root.path), throwsA(isA<FormatException>()));
 
     await settingsFile().writeAsString(
-      jsonEncode(<String, dynamic>{'worktree': 'nope'}),
+      jsonEncode(<String, dynamic>{
+        'schemaVersion': 3,
+        'worktree': 'nope',
+      }),
     );
     await expectLater(store.load(root.path), throwsA(isA<FormatException>()));
 
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
+        'schemaVersion': 3,
         'worktree': <String, dynamic>{'setup': 'npm ci'},
       }),
     );
@@ -181,6 +193,7 @@ void main() {
 
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
+        'schemaVersion': 3,
         'worktree': <String, dynamic>{
           'setup': <Object>[42],
         },

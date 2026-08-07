@@ -60,7 +60,7 @@ void main() {
 
       await tester.tap(toggleable);
       await tester.pumpAndSettle();
-      expect((await api.getSkill('commit')).isEnabled, isFalse);
+      expect((await api.prompts.getSkill('commit')).isEnabled, isFalse);
     },
     tags: const <String>[
       'feature_test__skill_management__widget',
@@ -93,7 +93,7 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
-        (await api.getSkill('commit')).body,
+        (await api.prompts.getSkill('commit')).body,
         'Stage each purpose on its own.',
       );
     },
@@ -124,7 +124,7 @@ void main() {
       expect(find.text('스킬을 저장하지 못했습니다'), findsOneWidget);
       await tester.tap(find.widgetWithText(TRButton, '덮어쓰기'));
       await tester.pumpAndSettle();
-      expect((await api.getSkill('commit')).body, 'Forced body.');
+      expect((await api.prompts.getSkill('commit')).body, 'Forced body.');
     },
     tags: const <String>['feature_test__skill_management__widget'],
   );
@@ -179,7 +179,10 @@ void main() {
 
       expect(find.text('release-notes'), findsWidgets);
       expect(
-        (await api.getSkill('release-notes', workspaceId: workspace.id)).source,
+        (await api.prompts.getSkill(
+          'release-notes',
+          workspaceId: workspace.id,
+        )).source,
         SkillSource.config,
       );
     },
@@ -203,13 +206,13 @@ void main() {
 
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
-      expect(await api.listSkills(), hasLength(2));
+      expect(await api.prompts.listSkills(), hasLength(2));
 
       await tester.tap(findAccessibleAction('스킬 삭제'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await tester.pumpAndSettle();
-      expect(await api.listSkills(), hasLength(1));
+      expect(await api.prompts.listSkills(), hasLength(1));
     },
     tags: const <String>['feature_test__skill_management__widget'],
   );

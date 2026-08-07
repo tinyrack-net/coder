@@ -4,7 +4,6 @@ library;
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -27,10 +26,10 @@ void main() {
       CurrentTimeTool(clock: clock),
       SleepTool(clock: clock),
     ]) {
-      expect(tool.risk, ToolRisk.read, reason: tool.name);
+      expect(tool.risk, AgentToolRisk.read, reason: tool.name);
       expect(
         const DefaultApprovalPolicy(
-          PermissionMode.readOnly,
+          AgentPermissionMode.readOnly,
         ).evaluateRisk(tool.risk),
         ApprovalEvaluation.allow,
         reason: tool.name,

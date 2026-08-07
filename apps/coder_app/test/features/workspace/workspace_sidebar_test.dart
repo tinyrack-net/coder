@@ -381,7 +381,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect((await api.getWorkspaceCatalog()).workspaces, isEmpty);
+      expect((await api.workspaces.getWorkspaceCatalog()).workspaces, isEmpty);
     },
     tags: const <String>['feature_test__workspace_registration__widget'],
   );

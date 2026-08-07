@@ -6,43 +6,36 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v21 exposes permission defaults and typed contracts', () {
-    expect(coderProtocolVersion, 21);
-    expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
-    expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
-    expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
-    expect(RpcMethod.directorySuggest, 'directory.suggest');
-    expect(RpcMethod.gitBranchesList, 'git.branches.list');
-    expect(RpcMethod.worktreeCreate, 'worktree.create');
-    expect(RpcMethod.worktreeArchivePreview, 'worktree.archive.preview');
-    expect(RpcMethod.worktreeArchive, 'worktree.archive');
-    expect(RpcMethod.projectSettingsGet, 'project.settings.get');
-    expect(RpcMethod.projectSettingsSave, 'project.settings.save');
-    expect(RpcMethod.permissionDefaultModeGet, 'permission.defaultMode.get');
-    expect(RpcMethod.permissionDefaultModeSet, 'permission.defaultMode.set');
-    expect(RpcMethod.agentDefinitionList, 'agentDefinition.list');
-    expect(RpcMethod.agentDefinitionUpdate, 'agentDefinition.update');
-    expect(RpcMethod.agentToolCatalog, 'agentTool.catalog');
-    expect(RpcMethod.skillList, 'skill.list');
-    expect(RpcMethod.skillGet, 'skill.get');
-    expect(RpcMethod.skillCreate, 'skill.create');
-    expect(RpcMethod.skillUpdate, 'skill.update');
-    expect(RpcMethod.skillDelete, 'skill.delete');
-    expect(RpcMethod.skillSetEnabled, 'skill.setEnabled');
-    expect(RpcNotification.skillsChanged, 'skills.changed');
-    expect(RpcMethod.fileSearch, 'file.search');
-    expect(RpcMethod.commandList, 'command.list');
-    expect(RpcNotification.commandsChanged, 'commands.changed');
-    expect(RpcMethod.sessionList, 'session.list');
-    expect(RpcMethod.sessionCreate, 'session.create');
-    expect(RpcMethod.sessionModelSet, 'session.model.set');
-    expect(RpcMethod.sessionModeSet, 'session.mode.set');
-    expect(
-      RpcMethod.sessionReasoningEffortSet,
-      'session.reasoningEffort.set',
-    );
-    expect(RpcMethod.sessionPermissionModeSet, 'session.permissionMode.set');
-    expect(RpcMethod.sessionServiceTierSet, 'session.serviceTier.set');
+  test('protocol v3 exposes permission defaults and typed contracts', () {
+    expect(coderProtocolVersion, 3);
+    expect(RpcMethod.workspaceCatalog, 'workspaces.catalog');
+    expect(RpcMethod.workspaceRefresh, 'workspaces.refresh');
+    expect(RpcMethod.workspaceUnregister, 'workspaces.unregister');
+    expect(RpcMethod.directorySuggest, 'workspaces.suggestDirectories');
+    expect(RpcMethod.gitBranchesList, 'workspaces.listBranches');
+    expect(RpcMethod.worktreeCreate, 'workspaces.createWorktree');
+    expect(RpcMethod.worktreeArchivePreview, 'workspaces.previewArchive');
+    expect(RpcMethod.worktreeArchive, 'workspaces.archiveWorktree');
+    expect(RpcMethod.projectSettingsGet, 'workspaces.getProjectSettings');
+    expect(RpcMethod.projectSettingsSave, 'workspaces.saveProjectSettings');
+    expect(RpcMethod.permissionDefaultModeGet, 'agents.getDefaultPermission');
+    expect(RpcMethod.permissionDefaultModeSet, 'agents.setDefaultPermission');
+    expect(RpcMethod.agentDefinitionList, 'agents.list');
+    expect(RpcMethod.agentDefinitionUpdate, 'agents.update');
+    expect(RpcMethod.agentToolCatalog, 'agents.listTools');
+    expect(RpcMethod.skillList, 'prompts.listSkills');
+    expect(RpcMethod.skillGet, 'prompts.getSkill');
+    expect(RpcMethod.skillCreate, 'prompts.createSkill');
+    expect(RpcMethod.skillUpdate, 'prompts.updateSkill');
+    expect(RpcMethod.skillDelete, 'prompts.deleteSkill');
+    expect(RpcMethod.skillSetEnabled, 'prompts.setSkillEnabled');
+    expect(RpcNotification.skillsChanged, 'prompts.skillsChanged');
+    expect(RpcMethod.fileSearch, 'workspaces.searchFiles');
+    expect(RpcMethod.commandList, 'prompts.listCommands');
+    expect(RpcNotification.commandsChanged, 'prompts.commandsChanged');
+    expect(RpcMethod.sessionList, 'sessions.list');
+    expect(RpcMethod.sessionCreate, 'sessions.create');
+    expect(RpcMethod.sessionUpdateSettings, 'sessions.updateSettings');
   });
 
   test(
@@ -99,12 +92,12 @@ void main() {
       SessionCreateParamsDto.fromJson,
     );
     _roundTrip(
-      const SessionModeSetParamsDto(
+      const SessionSettingsUpdateParamsDto(
         sessionId: 'session',
-        mode: SessionMode.normal,
+        patch: SessionSettingsPatchDto(mode: SessionMode.normal),
       ),
       (value) => value.toJson(),
-      SessionModeSetParamsDto.fromJson,
+      SessionSettingsUpdateParamsDto.fromJson,
     );
     expect(
       SessionDto.fromJson(
@@ -149,14 +142,20 @@ void main() {
       SessionCreateParamsDto.fromJson,
     );
     _roundTrip(
-      const SessionModelSetParamsDto(sessionId: 'session', model: selection),
+      const SessionSettingsUpdateParamsDto(
+        sessionId: 'session',
+        patch: SessionSettingsPatchDto(hasModel: true, model: selection),
+      ),
       (value) => value.toJson(),
-      SessionModelSetParamsDto.fromJson,
+      SessionSettingsUpdateParamsDto.fromJson,
     );
     _roundTrip(
-      const SessionModelSetParamsDto(sessionId: 'session'),
+      const SessionSettingsUpdateParamsDto(
+        sessionId: 'session',
+        patch: SessionSettingsPatchDto(hasModel: true),
+      ),
       (value) => value.toJson(),
-      SessionModelSetParamsDto.fromJson,
+      SessionSettingsUpdateParamsDto.fromJson,
     );
     expect(
       SessionDto.fromJson(
@@ -165,7 +164,7 @@ void main() {
       selection,
     );
     expect(
-      const SessionModelSetParamsDto(sessionId: 'session').model,
+      const SessionSettingsPatchDto(hasModel: true).model,
       isNull,
     );
   });
@@ -173,7 +172,7 @@ void main() {
   test(
     'multi-agent collaboration contracts round-trip',
     () {
-      expect(RpcMethod.sessionSubagentList, 'session.subagents.list');
+      expect(RpcMethod.sessionSubagentList, 'sessions.listAgents');
       expect(
         SessionStatus.values.map((value) => value.name),
         isNot(contains('waitingForSubagent')),
@@ -701,23 +700,16 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 21);
-    expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
-    expect(RpcMethod.sessionCreate, 'session.create');
-    expect(RpcMethod.sessionModelSet, 'session.model.set');
-    expect(RpcMethod.sessionModeSet, 'session.mode.set');
-    expect(
-      RpcMethod.sessionReasoningEffortSet,
-      'session.reasoningEffort.set',
-    );
-    expect(RpcMethod.sessionPermissionModeSet, 'session.permissionMode.set');
-    expect(RpcMethod.permissionDefaultModeGet, 'permission.defaultMode.get');
-    expect(RpcMethod.permissionDefaultModeSet, 'permission.defaultMode.set');
-    expect(RpcMethod.sessionServiceTierSet, 'session.serviceTier.set');
-    expect(RpcMethod.providerCatalog, 'provider.catalog');
-    expect(RpcMethod.providerAuthStart, 'provider.auth.start');
-    expect(RpcMethod.turnStart, 'turn.start');
-    expect(RpcNotification.timelineEvent, 'timeline.event');
+    expect(coderProtocolVersion, 3);
+    expect(RpcMethod.workspaceCatalog, 'workspaces.catalog');
+    expect(RpcMethod.sessionCreate, 'sessions.create');
+    expect(RpcMethod.sessionUpdateSettings, 'sessions.updateSettings');
+    expect(RpcMethod.permissionDefaultModeGet, 'agents.getDefaultPermission');
+    expect(RpcMethod.permissionDefaultModeSet, 'agents.setDefaultPermission');
+    expect(RpcMethod.providerCatalog, 'providers.catalog');
+    expect(RpcMethod.providerAuthStart, 'providers.startAuth');
+    expect(RpcMethod.turnStart, 'sessions.startTurn');
+    expect(RpcNotification.timelineEvent, 'sessions.timelineEvent');
   });
 
   test('MCP contracts round-trip and expose their defaults', () {
@@ -929,7 +921,7 @@ void main() {
       const HelloParamsDto(
         clientId: 'client',
         clientKind: 'desktop',
-        protocolVersion: coderProtocolVersion,
+        protocolMajor: coderProtocolMajor,
         capabilities: <String, bool>{'timelineCatchup': true},
       ),
       (value) => value.toJson(),
@@ -1334,8 +1326,11 @@ void main() {
         SessionStatus.waitingForInput,
       );
       expect(TurnStatus.values, contains(TurnStatus.waitingForInput));
-      expect(RpcMethod.userQuestionAnswer, 'userQuestion.answer');
-      expect(RpcNotification.userQuestionRequested, 'userQuestion.requested');
+      expect(RpcMethod.userQuestionAnswer, 'sessions.answerQuestion');
+      expect(
+        RpcNotification.userQuestionRequested,
+        'sessions.questionRequested',
+      );
     },
   );
 
@@ -1684,11 +1679,11 @@ void main() {
 
       expect(
         RpcMethod.providerDefaultModelGet,
-        'provider.defaultModel.get',
+        'providers.getDefaultModel',
       );
       expect(
         RpcMethod.providerDefaultModelSet,
-        'provider.defaultModel.set',
+        'providers.setDefaultModel',
       );
     },
     tags: const <String>['feature_test__provider_default_model__contract'],

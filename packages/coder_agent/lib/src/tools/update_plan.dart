@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Lifecycle of one step in an agent-authored plan.
 enum PlanStepStatus {
@@ -50,7 +50,7 @@ class UpdatePlanTool extends AgentTool {
       'starts or finishes. Keep at most one step in_progress.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -146,11 +146,11 @@ final class UpdatePlanToolProvider extends SelectableToolProvider {
   String get id => 'update_plan';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => AgentToolDefinition(
     id: id,
     name: id,
     description: UpdatePlanTool().description,
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
     alwaysOn: true,
   );
 

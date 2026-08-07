@@ -114,7 +114,7 @@ void main() {
     test('an unlisted origin is refused before authentication', () async {
       final response = await send(
         'GET',
-        'health',
+        'v3/health',
         headers: <String, String>{'origin': _blocked},
       );
       expect(response.statusCode, HttpStatus.forbidden);
@@ -123,7 +123,7 @@ void main() {
     test('a request without an origin is unaffected', () async {
       // Every native client and the CLI land here; the allowlist must not
       // change their behaviour.
-      final response = await send('GET', 'health');
+      final response = await send('GET', 'v3/health');
       expect(response.statusCode, HttpStatus.ok);
       expect(response.headers.value('access-control-allow-origin'), isNull);
     });
@@ -131,7 +131,7 @@ void main() {
     test('an allowed origin receives the CORS headers', () async {
       final response = await send(
         'GET',
-        'health',
+        'v3/health',
         headers: <String, String>{'origin': _allowed},
       );
       expect(response.statusCode, HttpStatus.ok);
@@ -161,7 +161,7 @@ void main() {
       // the request non-simple and therefore preflighted.
       final response = await send(
         'OPTIONS',
-        'attachments',
+        'v3/attachments',
         headers: <String, String>{
           'origin': _allowed,
           'access-control-request-method': 'POST',
@@ -185,7 +185,7 @@ void main() {
     });
 
     test('a preflight without an origin is not answered', () async {
-      final response = await send('OPTIONS', 'attachments');
+      final response = await send('OPTIONS', 'v3/attachments');
       expect(response.statusCode, HttpStatus.notFound);
     });
   });

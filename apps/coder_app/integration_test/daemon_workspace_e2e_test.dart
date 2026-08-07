@@ -82,7 +82,10 @@ void main() {
         tester,
         find.byKey(const ValueKey('workspace-new-button')),
       );
-      expect((await setup.getWorkspaceCatalog()).workspaces, isEmpty);
+      expect(
+        (await setup.workspaces.getWorkspaceCatalog()).workspaces,
+        isEmpty,
+      );
 
       await _openProjectDirectoryBrowser(tester);
       // The browser starts at the home the daemon reported, not the root.
@@ -103,7 +106,10 @@ void main() {
       expect(find.textContaining(missingPath), findsOneWidget);
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
-      expect((await setup.getWorkspaceCatalog()).workspaces, isEmpty);
+      expect(
+        (await setup.workspaces.getWorkspaceCatalog()).workspaces,
+        isEmpty,
+      );
 
       await _openProjectDirectoryBrowser(tester);
       await tester.enterText(
@@ -114,7 +120,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '이 폴더 선택'));
       await _pumpUntil(tester, find.text('registered-project'));
-      final catalog = await setup.getWorkspaceCatalog();
+      final catalog = await setup.workspaces.getWorkspaceCatalog();
       expect(catalog.workspaces.single.rootPath, workspace.path);
       expect(find.textContaining('Recovered daemon · '), findsOneWidget);
 
@@ -128,7 +134,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
-      expect((await setup.getWorkspaceCatalog()).workspaces, hasLength(1));
+      expect(
+        (await setup.workspaces.getWorkspaceCatalog()).workspaces,
+        hasLength(1),
+      );
 
       await tester.tap(menu);
       await tester.pumpAndSettle();
@@ -140,7 +149,10 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-unregister-confirm')),
       );
       await _pumpUntil(tester, find.text('아직 workspace가 없습니다.'));
-      expect((await setup.getWorkspaceCatalog()).workspaces, isEmpty);
+      expect(
+        (await setup.workspaces.getWorkspaceCatalog()).workspaces,
+        isEmpty,
+      );
 
       await tester.tap(find.byIcon(CoderIcons.settings));
       await tester.pumpAndSettle();

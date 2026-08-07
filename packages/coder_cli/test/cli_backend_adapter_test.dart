@@ -191,7 +191,17 @@ void main() {
 
 /// Forwards through [noSuchMethod] so the adapters can be checked without
 /// hand-writing the whole [CoderApi] surface.
-final class _RecordingApi implements CoderApi {
+final class _RecordingApi
+    implements
+        CoderApi,
+        WorkspacesApi,
+        SessionsApi,
+        AgentsApi,
+        PromptsApi,
+        ProvidersApi,
+        McpApi,
+        TerminalsApi,
+        AttachmentsApi {
   _RecordingApi(this._results);
 
   /// Pre-typed futures, because [noSuchMethod] cannot infer the return type
@@ -207,6 +217,30 @@ final class _RecordingApi implements CoderApi {
   /// Named arguments per member name.
   final Map<String, Map<Symbol, Object?>> named =
       <String, Map<Symbol, Object?>>{};
+
+  @override
+  WorkspacesApi get workspaces => this;
+
+  @override
+  SessionsApi get sessions => this;
+
+  @override
+  AgentsApi get agents => this;
+
+  @override
+  PromptsApi get prompts => this;
+
+  @override
+  ProvidersApi get providers => this;
+
+  @override
+  McpApi get mcp => this;
+
+  @override
+  TerminalsApi get terminals => this;
+
+  @override
+  AttachmentsApi get attachments => this;
 
   @override
   dynamic noSuchMethod(Invocation invocation) {

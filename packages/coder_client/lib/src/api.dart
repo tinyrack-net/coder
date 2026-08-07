@@ -43,6 +43,13 @@ sealed class ClientEvent {
   const ClientEvent();
 }
 
+/// Type-safe filtering for the heterogeneous internal client event stream.
+extension TypedClientEventStream on Stream<ClientEvent> {
+  /// Keeps only events assignable to [T].
+  Stream<T> whereType<T extends ClientEvent>() =>
+      where((event) => event is T).cast<T>();
+}
+
 /// TimelineClientEvent defines a public contract.
 final class TimelineClientEvent extends ClientEvent {
   /// Creates a [TimelineClientEvent].
@@ -130,21 +137,12 @@ final class ProviderAuthUpdatedClientEvent extends ClientEvent {
   final ProviderAuthAttemptDto attempt;
 }
 
-/// Public API exposed by this library.
-abstract interface class CoderApi {
-  /// The events public API member.
-  Stream<ClientEvent> get events;
-
-  /// The states public API member.
-  Stream<ClientConnectionState> get states;
-
-  /// The serverInfo public API member.
-  ServerInfoDto get serverInfo;
-
-  /// Returns the daemon's repositories and active checkouts atomically.
+/// Workspace operations exposed by the v3 client.
+abstract interface class WorkspacesApi {
+  /// Returns repositories and active checkouts atomically.
   Future<WorkspaceCatalogDto> getWorkspaceCatalog();
 
-  /// The registerWorkspace public API member.
+  /// Registers a repository checkout.
   Future<WorkspaceRegisterResultDto> registerWorkspace({
     required String workspaceId,
     required String checkoutId,
@@ -155,7 +153,7 @@ abstract interface class CoderApi {
   /// Refreshes Git metadata and checkout registrations.
   Future<WorkspaceCatalogDto> refreshWorkspace(String workspaceId);
 
-  /// Removes one repository registration.
+  /// Removes a repository registration.
   Future<void> unregisterWorkspace(String workspaceId);
 
   /// Searches directories on the daemon machine.
@@ -164,28 +162,26 @@ abstract interface class CoderApi {
     int limit = 30,
   });
 
-  /// Searches one worktree for files a composer mention can reference.
-  ///
-  /// An empty [query] returns the head of the index rather than no results.
+  /// Searches a worktree for files.
   Future<FileSearchResultDto> searchFiles({
     required String worktreeId,
     required String query,
     int limit = 50,
   });
 
-  /// Lists local branches in one Git repository.
+  /// Lists local branches in a repository.
   Future<List<GitBranchDto>> listGitBranches(String workspaceId);
 
-  /// Reads worktree lifecycle hooks from a repository root `coder.json`.
+  /// Reads project settings.
   Future<ProjectSettingsResultDto> getProjectSettings(String workspaceId);
 
-  /// Writes worktree lifecycle hooks into a repository root `coder.json`.
+  /// Saves project settings.
   Future<ProjectSettingsResultDto> saveProjectSettings(
     String workspaceId,
     ProjectSettingsDto settings,
   );
 
-  /// Creates a managed Git worktree and runs its configured setup hooks.
+  /// Creates a managed worktree.
   Future<WorktreeResultDto> createWorktree({
     required String id,
     required String workspaceId,
@@ -197,23 +193,34 @@ abstract interface class CoderApi {
   /// Previews archive safety conditions.
   Future<WorktreeArchivePreviewDto> previewWorktreeArchive(String worktreeId);
 
-  /// Archives a worktree after running its configured teardown hooks.
+  /// Archives a managed worktree.
   Future<WorktreeResultDto> archiveWorktree(
     String worktreeId, {
     bool force = false,
   });
+}
 
-  /// The listSessions public API member.
+/// Session operations and updates exposed by the v3 client.
+abstract interface class SessionsApi {
+  /// Session lifecycle updates.
+  Stream<SessionDto> get sessionUpdates;
+
+  /// Ordered timeline events.
+  Stream<TimelineEventDto> get timelineEvents;
+
+  /// Approval requests awaiting the user.
+  Stream<ApprovalRequestDto> get approvalRequests;
+
+  /// Questions awaiting the user.
+  Stream<UserQuestionRequestDto> get questionRequests;
+
+  /// Lists persisted sessions.
   Future<List<SessionDto>> listSessions({String? worktreeId});
 
-  /// Lists the collaboration tree containing [sessionId], root first,
-  /// ordered by agent path.
+  /// Lists one collaboration tree.
   Future<List<SessionDto>> listSubagents(String sessionId);
 
-  /// The createSession public API member.
-  ///
-  /// A non-null [model] pins the session to one provider connection and model
-  /// instead of inheriting the model selection of its agent definition.
+  /// Creates a session.
   Future<SessionDto> createSession({
     required String id,
     required String worktreeId,
@@ -226,153 +233,114 @@ abstract interface class CoderApi {
     String? serviceTier,
   });
 
-  /// Switches one session between planning and normal collaboration.
-  Future<SessionDto> updateSessionMode(String sessionId, SessionMode mode);
-
-  /// Sets or clears the provider and model override of one session.
-  ///
-  /// Passing a null [model] restores inheritance from the agent definition.
-  Future<SessionDto> updateSessionModel(
+  /// Atomically updates nullable session execution settings.
+  Future<SessionDto> updateSettings(
     String sessionId,
-    SessionModelSelectionDto? model,
+    SessionSettingsPatchDto patch,
   );
 
-  /// Sets or clears the reasoning effort override of one session.
-  ///
-  /// Passing a null [reasoningEffort] restores inheritance from the agent
-  /// definition.
-  Future<SessionDto> updateSessionReasoningEffort(
-    String sessionId,
-    String? reasoningEffort,
-  );
-
-  /// Sets or clears the permission mode override of one session.
-  ///
-  /// Passing a null [permissionMode] restores inheritance from the agent
-  /// definition.
-  Future<SessionDto> updateSessionPermissionMode(
-    String sessionId,
-    PermissionMode? permissionMode,
-  );
-
-  /// Reads the selected daemon's default permission mode.
-  Future<PermissionSettingsDto> getDefaultPermissionMode();
-
-  /// Replaces the selected daemon's default permission mode.
-  Future<PermissionSettingsDto> setDefaultPermissionMode(
-    PermissionMode permissionMode,
-  );
-
-  /// Sets or clears the provider service tier of one session.
-  ///
-  /// Passing a null [serviceTier] restores the provider default tier.
-  Future<SessionDto> updateSessionServiceTier(
-    String sessionId,
-    String? serviceTier,
-  );
-
-  /// Lists live terminals for a worktree.
-  Future<List<TerminalDto>> listTerminals(String worktreeId);
-
-  /// Creates and starts a terminal.
-  Future<TerminalDto> createTerminal({
-    required String id,
-    required String worktreeId,
-    required String title,
-    required int columns,
-    required int rows,
+  /// Starts a turn.
+  Future<void> startTurn({
+    required String sessionId,
+    required String turnId,
+    required String prompt,
+    List<String> attachmentIds = const <String>[],
   });
 
-  /// Attaches to a terminal and replays output after a sequence.
-  Future<TerminalAttachResultDto> attachTerminal(
-    String terminalId, {
+  /// Cancels a running turn.
+  Future<void> cancelTurn(String sessionId);
+
+  /// Compacts a session context.
+  Future<void> compactSession(String sessionId);
+
+  /// Resolves a pending approval.
+  Future<void> resolveApproval({
+    required String approvalId,
+    required bool approved,
+  });
+
+  /// Reports queued user input.
+  Future<void> notePendingInput(String sessionId);
+
+  /// Answers a pending user question.
+  Future<UserQuestionRequestDto> answerUserQuestion({
+    required String requestId,
+    required List<UserQuestionAnswerDto> answers,
+  });
+
+  /// Subscribes to a session timeline.
+  Future<List<TimelineEventDto>> subscribeTimeline(
+    String sessionId, {
     int afterSequence = 0,
   });
+}
 
-  /// Writes user input to a terminal.
-  Future<void> writeTerminal(String terminalId, String data);
+/// Agent-definition operations exposed by the v3 client.
+abstract interface class AgentsApi {
+  /// Emits whenever the agent-definition catalog changes.
+  Stream<void> get definitionChanges;
 
-  /// Changes terminal character-cell dimensions.
-  Future<TerminalDto> resizeTerminal(
-    String terminalId, {
-    required int columns,
-    required int rows,
-  });
-
-  /// Terminates a terminal and its shell process.
-  Future<void> terminateTerminal(String terminalId);
-
-  /// Reads the daemon host shell override, or null for the OS default.
-  Future<ShellSpecDto?> getTerminalShell();
-
-  /// Replaces or clears the daemon host shell override.
-  Future<void> setTerminalShell(ShellSpecDto? shell);
-
-  /// Lists all visible Markdown-backed agent definitions.
+  /// Lists agent definitions.
   Future<List<AgentDefinitionDto>> listAgentDefinitions();
 
-  /// Returns one Markdown-backed agent definition.
+  /// Reads an agent definition.
   Future<AgentDefinitionDto> getAgentDefinition(String id);
 
-  /// Creates one custom Markdown-backed agent definition.
+  /// Creates an agent definition.
   Future<AgentDefinitionDto> createAgentDefinition(
     String id,
     AgentDefinitionDto definition,
   );
 
-  /// Updates one definition with optimistic concurrency control.
+  /// Updates an agent definition.
   Future<AgentDefinitionDto> updateAgentDefinition(
     AgentDefinitionDto definition, {
     required String expectedContentHash,
     bool force = false,
   });
 
-  /// Archives a custom definition while preserving existing sessions.
+  /// Archives an agent definition.
   Future<void> archiveAgentDefinition(String id);
 
-  /// Restores the built-in Coder definition.
+  /// Resets a built-in agent definition.
   Future<AgentDefinitionDto> resetAgentDefinition(String id);
 
-  /// Validates a Markdown document without writing it.
+  /// Validates an agent definition without saving it.
   Future<AgentDefinitionDto> validateAgentDefinition(
     String id,
     String markdown,
   );
 
-  /// Lists tools available to agent definitions.
-  ///
-  /// A worktree adds the tools its own MCP servers publish, so a caller with
-  /// no worktree in hand sees only the daemon-wide set.
+  /// Lists tools available to an agent.
   Future<List<AgentToolDefinitionDto>> listAgentTools({String? worktreeId});
 
-  /// Lists configured MCP servers and their live connection state.
-  Future<List<McpServerStateDto>> listMcpServers({String? worktreeId});
+  /// Reads the daemon default permission mode.
+  Future<PermissionSettingsDto> getDefaultPermissionMode();
 
-  /// Adds one user-scoped MCP server.
-  Future<McpServerStateDto> addMcpServer(McpServerConfigDto server);
+  /// Replaces the daemon default permission mode.
+  Future<PermissionSettingsDto> setDefaultPermissionMode(
+    PermissionMode permissionMode,
+  );
+}
 
-  /// Replaces one user-scoped MCP server.
-  Future<McpServerStateDto> updateMcpServer(McpServerConfigDto server);
+/// Prompt, command, and skill operations exposed by the v3 client.
+abstract interface class PromptsApi {
+  /// Emits whenever the skill catalog changes.
+  Stream<void> get skillChanges;
 
-  /// Removes one user-scoped MCP server.
-  Future<void> removeMcpServer(String id);
+  /// Emits whenever the command catalog changes.
+  Stream<void> get commandChanges;
 
-  /// Connects an unsaved configuration to check it works.
-  Future<McpServerStateDto> testMcpServer(McpServerConfigDto server);
-
-  /// Stores one secret an MCP configuration may reference.
-  Future<void> setMcpSecret(String key, String value);
-
-  /// Lists agent commands from the global sources plus one workspace.
+  /// Lists commands visible in a workspace.
   Future<List<AgentCommandDto>> listCommands({String? workspaceId});
 
-  /// Lists skills from the global sources plus one optional workspace.
+  /// Lists skills visible in a workspace.
   Future<List<SkillDto>> listSkills({String? workspaceId});
 
-  /// Returns one skill visible in the requested scope.
+  /// Reads a skill.
   Future<SkillDto> getSkill(String id, {String? workspaceId});
 
-  /// Creates one skill in a writable source.
+  /// Creates a skill.
   Future<SkillDto> createSkill({
     required String id,
     required SkillSource source,
@@ -382,7 +350,7 @@ abstract interface class CoderApi {
     String? workspaceId,
   });
 
-  /// Updates one skill using optimistic concurrency.
+  /// Updates a skill.
   Future<SkillDto> updateSkill(
     SkillDto skill, {
     required String expectedContentHash,
@@ -390,86 +358,155 @@ abstract interface class CoderApi {
     String? workspaceId,
   });
 
-  /// Archives one skill.
+  /// Archives a skill.
   Future<void> deleteSkill(String id, {String? workspaceId});
 
-  /// Turns one skill on or off.
+  /// Changes whether a skill is enabled.
   Future<SkillDto> setSkillEnabled(
     String id, {
     required bool enabled,
     String? workspaceId,
   });
+}
 
-  /// The listProviderCatalog public API member.
+/// Provider operations exposed by the v3 client.
+abstract interface class ProvidersApi {
+  /// Provider authorization updates.
+  Stream<ProviderAuthAttemptDto> get authUpdates;
+
+  /// Lists built-in provider definitions.
   Future<ProviderCatalogDto> listProviderCatalog();
 
-  /// Returns configured provider connections.
+  /// Lists configured provider connections.
   Future<List<ProviderConnectionDto>> listProviderConnections();
 
-  /// Connects a built-in provider with an API key.
+  /// Connects a provider with an API key.
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey,
   );
 
-  /// Connects a local built-in provider without authentication.
+  /// Connects a provider without credentials.
   Future<ProviderConnectionDto> connectProviderNone(String definitionId);
 
-  /// Starts an interactive provider authorization flow.
+  /// Starts provider authorization.
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
     String methodId,
   );
 
-  /// Returns the latest state of an authorization attempt.
+  /// Reads provider authorization state.
   Future<ProviderAuthAttemptDto> providerAuthStatus(String attemptId);
 
-  /// Cancels a pending authorization attempt.
+  /// Cancels provider authorization.
   Future<void> cancelProviderAuth(String attemptId);
 
-  /// Disconnects a provider while preserving historical agent data.
+  /// Disconnects a provider.
   Future<void> disconnectProvider(String connectionId);
 
-  /// Explicitly refreshes public provider and model metadata.
+  /// Refreshes provider metadata.
   Future<ProviderCatalogDto> refreshProviderCatalog();
 
-  /// The listProviderModels public API member.
+  /// Lists models for a connection.
   Future<List<ProviderModelDto>> listProviderModels(String connectionId);
 
-  /// Reads the daemon-global default model, or null when unset.
-  ///
-  /// A null result means the daemon resolves the first usable provider model.
+  /// Reads the default model.
   Future<SessionModelSelectionDto?> getDefaultModel();
 
-  /// Replaces or clears the daemon-global default model.
+  /// Replaces the default model.
   Future<void> setDefaultModel(SessionModelSelectionDto? model);
 
-  /// Creates an advanced custom provider connection.
+  /// Creates a custom provider.
   Future<ProviderConnectionDto> createCustomProvider(
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
   });
 
-  /// Updates an advanced custom provider connection.
+  /// Updates a custom provider.
   Future<ProviderConnectionDto> updateCustomProvider(
     String connectionId,
     CustomProviderConfigDto config, {
     String? apiKey,
   });
 
-  /// Deletes an advanced custom provider connection.
+  /// Deletes a custom provider.
   Future<void> deleteCustomProvider(String connectionId);
+}
 
-  /// The startTurn public API member.
-  Future<void> startTurn({
-    required String sessionId,
-    required String turnId,
-    required String prompt,
-    List<String> attachmentIds = const <String>[],
+/// MCP operations exposed by the v3 client.
+abstract interface class McpApi {
+  /// Emits whenever MCP server state changes.
+  Stream<void> get serverChanges;
+
+  /// Lists MCP server state.
+  Future<List<McpServerStateDto>> listMcpServers({String? worktreeId});
+
+  /// Adds an MCP server.
+  Future<McpServerStateDto> addMcpServer(McpServerConfigDto server);
+
+  /// Updates an MCP server.
+  Future<McpServerStateDto> updateMcpServer(McpServerConfigDto server);
+
+  /// Removes an MCP server.
+  Future<void> removeMcpServer(String id);
+
+  /// Tests an MCP server configuration.
+  Future<McpServerStateDto> testMcpServer(McpServerConfigDto server);
+
+  /// Stores an MCP secret.
+  Future<void> setMcpSecret(String key, String value);
+}
+
+/// Terminal operations and output exposed by the v3 client.
+abstract interface class TerminalsApi {
+  /// Ordered terminal output chunks.
+  Stream<TerminalOutputDto> get output;
+
+  /// Terminal lifecycle and size updates.
+  Stream<TerminalDto> get terminalUpdates;
+
+  /// Lists live terminals.
+  Future<List<TerminalDto>> listTerminals(String worktreeId);
+
+  /// Creates a terminal.
+  Future<TerminalDto> createTerminal({
+    required String id,
+    required String worktreeId,
+    required String title,
+    required int columns,
+    required int rows,
   });
 
-  /// Streams one file into the daemon-owned attachment store.
+  /// Attaches to a terminal.
+  Future<TerminalAttachResultDto> attachTerminal(
+    String terminalId, {
+    int afterSequence = 0,
+  });
+
+  /// Writes terminal input.
+  Future<void> writeTerminal(String terminalId, String data);
+
+  /// Resizes a terminal.
+  Future<TerminalDto> resizeTerminal(
+    String terminalId, {
+    required int columns,
+    required int rows,
+  });
+
+  /// Terminates a terminal.
+  Future<void> terminateTerminal(String terminalId);
+
+  /// Reads the terminal shell override.
+  Future<ShellSpecDto?> getTerminalShell();
+
+  /// Replaces the terminal shell override.
+  Future<void> setTerminalShell(ShellSpecDto? shell);
+}
+
+/// Attachment transfer operations exposed by the v3 client.
+abstract interface class AttachmentsApi {
+  /// Uploads an attachment.
   Future<AttachmentDto> uploadAttachment({
     required String fileName,
     required String mimeType,
@@ -477,41 +514,42 @@ abstract interface class CoderApi {
     required Stream<List<int>> bytes,
   });
 
-  /// Opens an authenticated attachment download stream.
+  /// Downloads an attachment.
   Future<AttachmentDownload> downloadAttachment(String id);
+}
 
-  /// The cancelTurn public API member.
-  Future<void> cancelTurn(String sessionId);
+/// Root client API for connection lifecycle and feature-scoped operations.
+abstract interface class CoderApi {
+  /// Workspace-scoped operations.
+  WorkspacesApi get workspaces;
 
-  /// Summarizes the session's conversation and starts a fresh context window.
-  ///
-  /// Only valid between turns: the running turn owns the live history, and
-  /// rewriting it underneath would strand a tool call mid-round.
-  Future<void> compactSession(String sessionId);
+  /// Session-scoped operations.
+  SessionsApi get sessions;
 
-  /// The resolveApproval public API member.
-  Future<void> resolveApproval({
-    required String approvalId,
-    required bool approved,
-  });
+  /// Agent-definition operations.
+  AgentsApi get agents;
 
-  /// Tells the daemon a prompt is queued, so a sleeping agent wakes early.
-  ///
-  /// Best-effort: a lost notice only means a longer wait.
-  Future<void> notePendingInput(String sessionId);
+  /// Prompt, command, and skill operations.
+  PromptsApi get prompts;
 
-  /// Answers a pending agent question and lets its turn continue.
-  Future<UserQuestionRequestDto> answerUserQuestion({
-    required String requestId,
-    required List<UserQuestionAnswerDto> answers,
-  });
+  /// Provider operations.
+  ProvidersApi get providers;
 
-  /// The subscribeTimeline public API member.
-  Future<List<TimelineEventDto>> subscribeTimeline(
-    String sessionId, {
-    int afterSequence = 0,
-  });
+  /// MCP server operations.
+  McpApi get mcp;
 
-  /// The close public API member.
+  /// Terminal operations.
+  TerminalsApi get terminals;
+
+  /// Attachment operations.
+  AttachmentsApi get attachments;
+
+  /// Connection-state changes.
+  Stream<ClientConnectionState> get states;
+
+  /// Metadata returned by the v3 handshake.
+  ServerInfoDto get serverInfo;
+
+  /// Closes the connection and all feature streams.
   Future<void> close();
 }

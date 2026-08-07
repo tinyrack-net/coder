@@ -10,16 +10,21 @@ _HelloParamsDto _$HelloParamsDtoFromJson(Map<String, dynamic> json) =>
     _HelloParamsDto(
       clientId: json['clientId'] as String,
       clientKind: json['clientKind'] as String,
-      protocolVersion: (json['protocolVersion'] as num).toInt(),
+      protocolMajor: (json['protocolMajor'] as num).toInt(),
       capabilities: Map<String, bool>.from(json['capabilities'] as Map),
+      protocolRevision:
+          (json['protocolRevision'] as num?)?.toInt() ?? coderProtocolRevision,
+      clientVersion: json['clientVersion'] as String? ?? 'unknown',
     );
 
 Map<String, dynamic> _$HelloParamsDtoToJson(_HelloParamsDto instance) =>
     <String, dynamic>{
       'clientId': instance.clientId,
       'clientKind': instance.clientKind,
-      'protocolVersion': instance.protocolVersion,
+      'protocolMajor': instance.protocolMajor,
       'capabilities': instance.capabilities,
+      'protocolRevision': instance.protocolRevision,
+      'clientVersion': instance.clientVersion,
     };
 
 _WorkspaceRegisterParamsDto _$WorkspaceRegisterParamsDtoFromJson(
@@ -201,81 +206,55 @@ const _$PermissionModeEnumMap = {
   PermissionMode.fullAccess: 'fullAccess',
 };
 
-_SessionModeSetParamsDto _$SessionModeSetParamsDtoFromJson(
+_SessionSettingsPatchDto _$SessionSettingsPatchDtoFromJson(
   Map<String, dynamic> json,
-) => _SessionModeSetParamsDto(
-  sessionId: json['sessionId'] as String,
-  mode: $enumDecode(_$SessionModeEnumMap, json['mode']),
-);
-
-Map<String, dynamic> _$SessionModeSetParamsDtoToJson(
-  _SessionModeSetParamsDto instance,
-) => <String, dynamic>{
-  'sessionId': instance.sessionId,
-  'mode': _$SessionModeEnumMap[instance.mode]!,
-};
-
-_SessionModelSetParamsDto _$SessionModelSetParamsDtoFromJson(
-  Map<String, dynamic> json,
-) => _SessionModelSetParamsDto(
-  sessionId: json['sessionId'] as String,
+) => _SessionSettingsPatchDto(
+  mode: $enumDecodeNullable(_$SessionModeEnumMap, json['mode']),
+  hasModel: json['hasModel'] as bool? ?? false,
   model: json['model'] == null
       ? null
       : SessionModelSelectionDto.fromJson(
           json['model'] as Map<String, dynamic>,
         ),
-);
-
-Map<String, dynamic> _$SessionModelSetParamsDtoToJson(
-  _SessionModelSetParamsDto instance,
-) => <String, dynamic>{
-  'sessionId': instance.sessionId,
-  'model': instance.model,
-};
-
-_SessionReasoningEffortSetParamsDto
-_$SessionReasoningEffortSetParamsDtoFromJson(Map<String, dynamic> json) =>
-    _SessionReasoningEffortSetParamsDto(
-      sessionId: json['sessionId'] as String,
-      reasoningEffort: json['reasoningEffort'] as String?,
-    );
-
-Map<String, dynamic> _$SessionReasoningEffortSetParamsDtoToJson(
-  _SessionReasoningEffortSetParamsDto instance,
-) => <String, dynamic>{
-  'sessionId': instance.sessionId,
-  'reasoningEffort': instance.reasoningEffort,
-};
-
-_SessionPermissionModeSetParamsDto _$SessionPermissionModeSetParamsDtoFromJson(
-  Map<String, dynamic> json,
-) => _SessionPermissionModeSetParamsDto(
-  sessionId: json['sessionId'] as String,
+  hasReasoningEffort: json['hasReasoningEffort'] as bool? ?? false,
+  reasoningEffort: json['reasoningEffort'] as String?,
+  hasPermissionMode: json['hasPermissionMode'] as bool? ?? false,
   permissionMode: $enumDecodeNullable(
     _$PermissionModeEnumMap,
     json['permissionMode'],
   ),
-);
-
-Map<String, dynamic> _$SessionPermissionModeSetParamsDtoToJson(
-  _SessionPermissionModeSetParamsDto instance,
-) => <String, dynamic>{
-  'sessionId': instance.sessionId,
-  'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
-};
-
-_SessionServiceTierSetParamsDto _$SessionServiceTierSetParamsDtoFromJson(
-  Map<String, dynamic> json,
-) => _SessionServiceTierSetParamsDto(
-  sessionId: json['sessionId'] as String,
+  hasServiceTier: json['hasServiceTier'] as bool? ?? false,
   serviceTier: json['serviceTier'] as String?,
 );
 
-Map<String, dynamic> _$SessionServiceTierSetParamsDtoToJson(
-  _SessionServiceTierSetParamsDto instance,
+Map<String, dynamic> _$SessionSettingsPatchDtoToJson(
+  _SessionSettingsPatchDto instance,
+) => <String, dynamic>{
+  'mode': _$SessionModeEnumMap[instance.mode],
+  'hasModel': instance.hasModel,
+  'model': instance.model,
+  'hasReasoningEffort': instance.hasReasoningEffort,
+  'reasoningEffort': instance.reasoningEffort,
+  'hasPermissionMode': instance.hasPermissionMode,
+  'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
+  'hasServiceTier': instance.hasServiceTier,
+  'serviceTier': instance.serviceTier,
+};
+
+_SessionSettingsUpdateParamsDto _$SessionSettingsUpdateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SessionSettingsUpdateParamsDto(
+  sessionId: json['sessionId'] as String,
+  patch: SessionSettingsPatchDto.fromJson(
+    json['patch'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$SessionSettingsUpdateParamsDtoToJson(
+  _SessionSettingsUpdateParamsDto instance,
 ) => <String, dynamic>{
   'sessionId': instance.sessionId,
-  'serviceTier': instance.serviceTier,
+  'patch': instance.patch,
 };
 
 _AgentDefinitionIdParamsDto _$AgentDefinitionIdParamsDtoFromJson(

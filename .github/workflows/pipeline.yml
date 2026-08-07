@@ -120,10 +120,10 @@ jobs:
         run: >-
           dart run tool/verify_coverage.dart
           --scope=coder_agent
+          --scope=coder_cli
           --scope=coder_client
           --scope=coder_daemon
           --scope=coder_protocol
-          --scope=coder_provider_openai
 
   coverage-flutter-linux:
     name: Flutter coverage

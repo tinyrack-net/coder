@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Why a [SleepTool] call stopped waiting.
 enum SleepOutcome {
@@ -61,7 +61,7 @@ class CurrentTimeTool extends AgentTool {
       'today.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   // An empty object still has to declare its shape: strict schemas reject a
   // bare `{}` on both provider APIs.
@@ -106,7 +106,7 @@ class SleepTool extends AgentTool {
       '${maxSleepDuration.inSeconds}s.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -173,11 +173,11 @@ final class CurrentTimeToolProvider extends SelectableToolProvider {
   String get id => 'current_time';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => const AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => const AgentToolDefinition(
     id: 'current_time',
     name: 'current_time',
     description: 'Get the current time in UTC.',
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
     alwaysOn: true,
   );
 
@@ -196,12 +196,12 @@ final class SleepToolProvider extends SelectableToolProvider {
   String get id => 'sleep';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => const AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => const AgentToolDefinition(
     id: 'sleep',
     name: 'sleep',
     description:
         'Pause before checking something again; ends early on new user input.',
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
     alwaysOn: true,
   );
 

@@ -428,8 +428,31 @@ final class FeatureVerifier {
   }
 
   Set<String> _apiMethods(String source) {
+    final methods = _interfaceMethods(source, 'CoderApi');
+    const features = <String, String>{
+      'WorkspacesApi': 'workspaces',
+      'SessionsApi': 'sessions',
+      'AgentsApi': 'agents',
+      'PromptsApi': 'prompts',
+      'ProvidersApi': 'providers',
+      'McpApi': 'mcp',
+      'TerminalsApi': 'terminals',
+      'AttachmentsApi': 'attachments',
+    };
+    for (final MapEntry(key: interfaceName, value: owner) in features.entries) {
+      methods.addAll(
+        _interfaceMethods(
+          source,
+          interfaceName,
+        ).map((method) => '$owner.$method'),
+      );
+    }
+    return methods;
+  }
+
+  Set<String> _interfaceMethods(String source, String interfaceName) {
     final declaration = RegExp(
-      r'abstract interface class CoderApi\s*\{',
+      'abstract interface class $interfaceName\\s*\\{',
     ).firstMatch(source);
     if (declaration == null) return <String>{};
     var depth = 1;

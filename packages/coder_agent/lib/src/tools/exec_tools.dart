@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
 import 'package:coder_agent/src/tools/exec_sessions.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
 import 'package:platform/platform.dart';
@@ -158,7 +158,7 @@ class ExecCommandTool extends AgentTool {
       'and servers you want to keep alive.';
 
   @override
-  ToolRisk get risk => ToolRisk.command;
+  AgentToolRisk get risk => AgentToolRisk.command;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -298,7 +298,7 @@ class WriteStdinTool extends AgentTool {
       'writing. Include a trailing newline when the program expects a line.';
 
   @override
-  ToolRisk get risk => ToolRisk.command;
+  AgentToolRisk get risk => AgentToolRisk.command;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -424,13 +424,13 @@ final class ExecCommandToolProvider extends SelectableToolProvider {
   String get id => 'exec_command';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => AgentToolDefinition(
     id: id,
     name: id,
     description:
         'Run shell commands, on pipes or in a pseudo-terminal, '
         'including REPLs and servers driven across several calls.',
-    risk: ToolRisk.command,
+    risk: AgentToolRisk.command,
   );
 
   @override

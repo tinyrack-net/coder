@@ -151,9 +151,12 @@ void _registerSessionsAppFlows() {
       );
       await tester.pumpAndSettle();
       expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
-      expect(await api.listSessions(worktreeId: checkout.id), <SessionDto>[
-        first,
-      ]);
+      expect(
+        await api.sessions.listSessions(worktreeId: checkout.id),
+        <SessionDto>[
+          first,
+        ],
+      );
 
       await tester.tap(
         find.byKey(const ValueKey('workspace-all-sessions-menu')),
@@ -197,7 +200,7 @@ void _registerSessionsAppFlows() {
 
       expect(find.byType(TRTerminalView), findsOneWidget);
       expect(find.text('Terminal 1'), findsOneWidget);
-      final terminal = (await api.listTerminals(checkout.id)).single;
+      final terminal = (await api.terminals.listTerminals(checkout.id)).single;
       await tester.tap(
         find.byKey(ValueKey<String>('tr-tabs-close-${terminal.id}')),
       );
@@ -213,7 +216,7 @@ void _registerSessionsAppFlows() {
       await tester.tap(find.byKey(const ValueKey('terminal-close-confirm')));
       await tester.pumpAndSettle();
       expect(
-        (await api.listTerminals(checkout.id)).single.status,
+        (await api.terminals.listTerminals(checkout.id)).single.status,
         TerminalStatus.exited,
       );
       expect(find.byType(TRTerminalView), findsNothing);
@@ -879,7 +882,7 @@ void _registerSessionsAppFlows() {
       await tester.tap(find.byKey(const ValueKey('model-option-inherit')));
       await tester.pumpAndSettle();
       expect(api.updatedSessionModels.last.model, isNull);
-      expect((await api.listSessions()).single.model, isNull);
+      expect((await api.sessions.listSessions()).single.model, isNull);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
   );

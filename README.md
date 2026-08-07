@@ -23,7 +23,7 @@ locally stored credential configured from the Settings screen:
 dart run melos run run:daemon
 ```
 
-The default endpoint is `ws://127.0.0.1:7337/ws`. Override the state/config
+The default endpoint is `ws://127.0.0.1:7337/v3/ws`. Override the state/config
 directory and listener with `TINYRACK_CODER_HOME` and
 `TINYRACK_CODER_LISTEN`. Without an override, Linux uses the XDG config/state
 directories, macOS uses Application Support, and Windows uses AppData.
@@ -86,4 +86,4 @@ authentication-header, and development-data reset examples.
 
 See [`docs/mcp.md`](docs/mcp.md) for configuring external MCP servers, the
 secret reference syntax, and the trust implications of a repository-declared
-`.mcp.json`.
+`.coder/config.json`.

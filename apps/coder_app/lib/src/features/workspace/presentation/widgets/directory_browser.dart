@@ -162,7 +162,10 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
       _error = null;
     });
     try {
-      final entries = await widget.api.suggestDirectories(query, limit: 200);
+      final entries = await widget.api.workspaces.suggestDirectories(
+        query,
+        limit: 200,
+      );
       // A slower earlier request must never overwrite a newer listing.
       if (!mounted || id != _requestId) return;
       setState(() {

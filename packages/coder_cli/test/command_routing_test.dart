@@ -385,7 +385,7 @@ final class _FakeHandle implements DaemonHandle {
 }
 
 /// A [CoderClient] stand-in answering only the calls the CLI makes.
-final class _FakeClient implements CoderClient {
+final class _FakeClient implements CoderClient, ProvidersApi, AgentsApi {
   _FakeClient(this.now);
 
   final DateTime now;
@@ -398,6 +398,12 @@ final class _FakeClient implements CoderClient {
   final List<String> validatedMarkdown = <String>[];
   int refreshes = 0;
   bool closed = false;
+
+  @override
+  ProvidersApi get providers => this;
+
+  @override
+  AgentsApi get agents => this;
 
   ProviderConnectionDto _connection(String id, String name) =>
       ProviderConnectionDto(

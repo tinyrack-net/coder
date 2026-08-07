@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/features/hosts/application/host_controller.dart';
-import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -11,7 +10,7 @@ part 'terminals_controller.g.dart';
 @riverpod
 /// Owns the live terminal catalog for one connected worktree.
 class TerminalsController extends _$TerminalsController {
-  StreamSubscription<ClientEvent>? _events;
+  StreamSubscription<TerminalDto>? _events;
 
   @override
   Future<List<TerminalDto>> build(String hostId, String worktreeId) async {
@@ -20,10 +19,8 @@ class TerminalsController extends _$TerminalsController {
     )).runtimes[hostId];
     if (runtime?.connected != true) return const <TerminalDto>[];
     final api = runtime!.api!;
-    _events = api.events.listen((event) {
-      if (event case TerminalUpdatedClientEvent(
-        :final terminal,
-      ) when terminal.worktreeId == worktreeId) {
+    _events = api.terminals.terminalUpdates.listen((terminal) {
+      if (terminal.worktreeId == worktreeId) {
         final current = state.asData?.value ?? const <TerminalDto>[];
         state = AsyncData<List<TerminalDto>>(<TerminalDto>[
           terminal,
@@ -32,14 +29,14 @@ class TerminalsController extends _$TerminalsController {
       }
     });
     ref.onDispose(() => unawaited(_events?.cancel()));
-    return api.listTerminals(worktreeId);
+    return api.terminals.listTerminals(worktreeId);
   }
 
   /// Creates a terminal with a standard initial character grid.
   Future<TerminalDto> create() async {
     final api = await requireHostApi(ref, hostId);
     final current = state.asData?.value ?? const <TerminalDto>[];
-    final terminal = await api.createTerminal(
+    final terminal = await api.terminals.createTerminal(
       id: ref.read(appIdGeneratorProvider).generate(),
       worktreeId: worktreeId,
       title: 'Terminal ${current.length + 1}',

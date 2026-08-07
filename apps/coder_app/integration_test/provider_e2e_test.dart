@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_app/src/app/coder_app.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
 import 'package:coder_daemon/coder_daemon.dart';
@@ -35,7 +36,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('planned catalog outage'), findsOneWidget);
       expect(
-        (await assertions.listProviderCatalog()).source,
+        (await assertions.providers.listProviderCatalog()).source,
         ProviderCatalogSource.bundled,
       );
 
@@ -44,11 +45,11 @@ void main() {
       expect(find.textContaining('planned catalog outage'), findsNothing);
       expect(metadata.calls, 2);
       expect(
-        (await assertions.listProviderCatalog()).source,
+        (await assertions.providers.listProviderCatalog()).source,
         ProviderCatalogSource.refreshed,
       );
       expect(
-        (await assertions.refreshProviderCatalog()).source,
+        (await assertions.providers.refreshProviderCatalog()).source,
         ProviderCatalogSource.refreshed,
       );
     },
@@ -110,7 +111,8 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async {
-          final connections = await assertions.listProviderConnections();
+          final connections = await assertions.providers
+              .listProviderConnections();
           return connections.any(
             (connection) =>
                 connection.definitionId == 'openai' &&
@@ -120,13 +122,13 @@ void main() {
         'the OAuth connection to report connected',
       );
 
-      final connection = (await assertions.listProviderConnections())
+      final connection = (await assertions.providers.listProviderConnections())
           .singleWhere((item) => item.definitionId == 'openai');
       expect(connection.credentialOrigin, ProviderCredentialOrigin.oauth);
       expect(connection.status, ProviderConnectionStatus.connected);
       // The ChatGPT endpoint has no `/models` listing, so the connected
       // catalog is the bundled one and discovery never runs.
-      final oauthModels = (await assertions.listProviderModels(
+      final oauthModels = (await assertions.providers.listProviderModels(
         connection.id,
       )).map((model) => model.id);
       expect(oauthModels, contains('gpt-5.6-sol'));
@@ -137,7 +139,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        (await assertions.listProviderCatalog()).source,
+        (await assertions.providers.listProviderCatalog()).source,
         ProviderCatalogSource.refreshed,
       );
     },
@@ -237,7 +239,7 @@ final class _ControlledOAuthGateway implements ProviderOAuthGateway {
       credential;
 
   @override
-  Future<ProviderOAuthSession> start(ProviderAuthFlow flow) async {
+  Future<ProviderOAuthSession> start(AgentProviderAuthFlow flow) async {
     final session = _ControlledOAuthSession(flow);
     sessions.add(session);
     return session;
@@ -247,7 +249,7 @@ final class _ControlledOAuthGateway implements ProviderOAuthGateway {
 final class _ControlledOAuthSession implements ProviderOAuthSession {
   _ControlledOAuthSession(this.flow);
 
-  final ProviderAuthFlow flow;
+  final AgentProviderAuthFlow flow;
   final Completer<({OAuthCredential? credential, String? error})> _result =
       Completer<({OAuthCredential? credential, String? error})>();
   bool cancelled = false;

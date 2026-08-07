@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/memory.dart';
 import 'package:platform/platform.dart';
 import 'package:test/test.dart';
@@ -70,7 +69,7 @@ void main() {
       );
       expect(list.name, 'list_directory');
       expect(list.description, contains('List'));
-      expect(list.risk, ToolRisk.read);
+      expect(list.risk, AgentToolRisk.read);
       expect(list.strictJsonSchema['additionalProperties'], isFalse);
 
       final read = ReadFileTool(fileSystem: fileSystem, platform: platform);
@@ -100,7 +99,7 @@ void main() {
       );
       expect(read.name, 'read_file');
       expect(read.description, contains('UTF-8'));
-      expect(read.risk, ToolRisk.read);
+      expect(read.risk, AgentToolRisk.read);
       expect(read.strictJsonSchema['required'], hasLength(3));
 
       final search = SearchTextTool(fileSystem: fileSystem, platform: platform);
@@ -133,7 +132,7 @@ void main() {
       );
       expect(search.name, 'search_text');
       expect(search.description, contains('Search'));
-      expect(search.risk, ToolRisk.read);
+      expect(search.risk, AgentToolRisk.read);
       expect(search.strictJsonSchema['required'], hasLength(7));
     },
   );
@@ -377,7 +376,7 @@ void main() {
       final tool = GlobTool(fileSystem: fileSystem, platform: platform);
 
       expect(tool.name, 'glob');
-      expect(tool.risk, ToolRisk.read);
+      expect(tool.risk, AgentToolRisk.read);
       expect(tool.strictJsonSchema['additionalProperties'], isFalse);
       expect(tool.strictJsonSchema['required'], <String>[
         'pattern',
@@ -492,7 +491,7 @@ void main() {
       expect(fileSystem.file('/workspace/delete.txt').existsSync(), isFalse);
       expect(tool.name, 'apply_patch');
       expect(tool.description, contains('unified diff'));
-      expect(tool.risk, ToolRisk.write);
+      expect(tool.risk, AgentToolRisk.write);
       expect(tool.strictJsonSchema['required'], <String>['patch']);
 
       await expectLater(

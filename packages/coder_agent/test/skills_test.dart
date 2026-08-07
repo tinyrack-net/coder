@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -101,7 +100,7 @@ void main() {
       final tool = ListSkillsTool(_CountedCatalog(1));
 
       expect(tool.name, 'list_skills');
-      expect(tool.risk, ToolRisk.read);
+      expect(tool.risk, AgentToolRisk.read);
       expect(tool.strict, isTrue);
       expect(tool.strictJsonSchema['additionalProperties'], isFalse);
       expect(tool.strictJsonSchema['required'], <String>['cursor']);
@@ -113,7 +112,7 @@ void main() {
     () {
       final tool = SkillTool(_FakeCatalog(directory: skill.path));
       expect(tool.name, 'skill');
-      expect(tool.risk, ToolRisk.read);
+      expect(tool.risk, AgentToolRisk.read);
       expect(tool.strictJsonSchema, <String, dynamic>{
         'type': 'object',
         'properties': <String, dynamic>{
@@ -335,31 +334,8 @@ final class _UnusedPorts
 }
 
 AgentToolScope _skillScope(SkillCatalog skills) => AgentToolScope(
-  session: SessionDto(
-    id: 'session-1',
-    worktreeId: 'worktree-1',
-    title: 'test',
-    agentDefinitionId: 'coder',
-    origin: SessionOrigin.manual,
-    status: SessionStatus.idle,
-    createdAt: DateTime.utc(2026),
-    updatedAt: DateTime.utc(2026),
-  ),
-  definition: const AgentDefinitionDto(
-    id: 'coder',
-    name: 'Coder',
-    description: 'test',
-    mode: AgentMode.primary,
-    promptEnabled: true,
-    systemPrompt: '',
-    model: AgentModelSelectionDto(source: AgentModelSource.session),
-    reasoningEffort: 'medium',
-    permissionMode: PermissionMode.ask,
-    toolIds: <String>[],
-    callableAgentIds: <String>[],
-    contentHash: '',
-    sourcePath: '',
-  ),
+  session: const AgentSessionContext(id: 'session-1'),
+  definition: const AgentDefinitionContext(id: 'coder'),
   selectedToolIds: const <String>{},
   workspaceRoot: '/workspace',
   turnId: 'turn-1',

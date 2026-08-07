@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
 import 'package:platform/platform.dart';
@@ -148,7 +148,7 @@ class ListSkillsTool extends AgentTool {
       'description each. Load one with the `skill` tool before acting on it.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
@@ -223,7 +223,7 @@ class SkillTool extends AgentTool {
       'its bundled files.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
@@ -316,7 +316,7 @@ final class SkillToolProvider extends AgentToolProvider {
   String get id => 'skills';
 
   @override
-  AgentToolDefinitionDto? get catalogEntry => null;
+  AgentToolDefinition? get catalogEntry => null;
 
   @override
   List<AgentTool> create(AgentToolScope scope) =>

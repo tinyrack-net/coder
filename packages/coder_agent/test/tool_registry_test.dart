@@ -2,9 +2,9 @@
 library;
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_agent/testing.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
+
+import 'support/conformance.dart';
 
 void main() {
   final registry = AgentToolRegistry(_providers());
@@ -118,7 +118,7 @@ void main() {
     expect(names, isNot(contains(listSkillsToolName)));
     expect(turn.promptFragments, isEmpty);
     // No exec capability in the turn, so its policy never joins the chain.
-    const inner = DefaultApprovalPolicy(PermissionMode.ask);
+    const inner = DefaultApprovalPolicy(AgentPermissionMode.ask);
     expect(identical(turn.decoratePolicy(inner), inner), isTrue);
   });
 
@@ -131,7 +131,7 @@ void main() {
 
     final policy = registry
         .build(scope)
-        .decoratePolicy(const DefaultApprovalPolicy(PermissionMode.ask));
+        .decoratePolicy(const DefaultApprovalPolicy(AgentPermissionMode.ask));
 
     expect(
       policy.evaluate(
@@ -140,7 +140,7 @@ void main() {
           workspaceRoot: '/workspace',
           name: writeStdinToolName,
           arguments: <String, dynamic>{'session_id': 'shell-1'},
-          risk: ToolRisk.command,
+          risk: AgentToolRisk.command,
         ),
       ),
       ApprovalEvaluation.allow,
@@ -152,7 +152,7 @@ void main() {
           workspaceRoot: '/workspace',
           name: execCommandToolName,
           arguments: <String, dynamic>{'command': 'ls'},
-          risk: ToolRisk.command,
+          risk: AgentToolRisk.command,
         ),
       ),
       ApprovalEvaluation.ask,
@@ -195,11 +195,11 @@ final class _Mislabelled extends SelectableToolProvider {
   String get id => 'someone_else';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => const AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => const AgentToolDefinition(
     id: 'read_file',
     name: 'read_file',
     description: 'Claims an id it does not answer to.',
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
   );
 
   @override
@@ -211,31 +211,8 @@ AgentToolScope _scope({
   List<SkillSummary> skills = const <SkillSummary>[],
   ExecSessionHost? execHost,
 }) => AgentToolScope(
-  session: SessionDto(
-    id: 'session-1',
-    worktreeId: 'worktree-1',
-    title: 'test',
-    agentDefinitionId: 'coder',
-    origin: SessionOrigin.manual,
-    status: SessionStatus.idle,
-    createdAt: DateTime.utc(2026),
-    updatedAt: DateTime.utc(2026),
-  ),
-  definition: const AgentDefinitionDto(
-    id: 'coder',
-    name: 'Coder',
-    description: 'test',
-    mode: AgentMode.primary,
-    promptEnabled: true,
-    systemPrompt: '',
-    model: AgentModelSelectionDto(source: AgentModelSource.session),
-    reasoningEffort: 'medium',
-    permissionMode: PermissionMode.ask,
-    toolIds: <String>[],
-    callableAgentIds: <String>[],
-    contentHash: '',
-    sourcePath: '',
-  ),
+  session: const AgentSessionContext(id: 'session-1'),
+  definition: const AgentDefinitionContext(id: 'coder'),
   selectedToolIds: selected,
   workspaceRoot: '/workspace',
   turnId: 'turn-1',
@@ -299,7 +276,7 @@ final class _ExternalTool extends AgentTool {
   String get description => 'External tool $name.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>

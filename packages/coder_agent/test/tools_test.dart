@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -176,7 +175,7 @@ void main() {
       byteSize: 3,
       path: '/attachments/shot.blob',
       bytes: Uint8List.fromList(<int>[1, 2, 3]),
-      kind: AttachmentKind.image,
+      kind: AgentAttachmentKind.image,
       sha256: 'digest',
       createdAt: DateTime.utc(2026, 8, 3),
       imageDetail: 'high',
@@ -184,7 +183,7 @@ void main() {
 
     final decoded = ConversationAttachment.fromJson(attachment.toJson());
     expect(decoded.id, 'shot');
-    expect(decoded.kind, AttachmentKind.image);
+    expect(decoded.kind, AgentAttachmentKind.image);
     expect(decoded.sha256, 'digest');
     expect(decoded.createdAt, DateTime.utc(2026, 8, 3));
     expect(decoded.imageDetail, 'high');
@@ -240,7 +239,7 @@ void main() {
         final publisher = _RecordingAttachmentPublisher();
         final tool = ViewImageTool(publisher: publisher);
 
-        expect(tool.risk, ToolRisk.read);
+        expect(tool.risk, AgentToolRisk.read);
         final result = await tool.execute(<String, dynamic>{
           'path': 'shot.png',
           'detail': 'high',
@@ -374,10 +373,10 @@ void main() {
 
         // Asking must never raise an approval dialog and must survive a
         // read-only session, which is where planning happens.
-        expect(tool.risk, ToolRisk.read);
+        expect(tool.risk, AgentToolRisk.read);
         expect(
           const DefaultApprovalPolicy(
-            PermissionMode.readOnly,
+            AgentPermissionMode.readOnly,
           ).evaluateRisk(tool.risk),
           ApprovalEvaluation.allow,
         );
@@ -483,8 +482,8 @@ void main() {
       tags: const <String>['feature_test__turn_execution__unit'],
       () async {
         final tool = UpdatePlanTool();
-        expect(tool.risk, ToolRisk.read);
-        for (final mode in PermissionMode.values) {
+        expect(tool.risk, AgentToolRisk.read);
+        for (final mode in AgentPermissionMode.values) {
           expect(
             DefaultApprovalPolicy(mode).evaluateRisk(tool.risk),
             ApprovalEvaluation.allow,

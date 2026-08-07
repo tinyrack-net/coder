@@ -1,9 +1,10 @@
+import 'package:coder_agent/src/contracts.dart';
+
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/clock_tools.dart';
 import 'package:coder_agent/src/tools/exec_sessions.dart';
 import 'package:coder_agent/src/tools/skills.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Everything one turn's tools are built from.
 ///
@@ -28,10 +29,10 @@ final class AgentToolScope {
   });
 
   /// The session this turn belongs to.
-  final SessionDto session;
+  final AgentSessionContext session;
 
   /// The agent definition this turn runs as.
-  final AgentDefinitionDto definition;
+  final AgentDefinitionContext definition;
 
   /// Capability ids this turn runs with, always-on ones included.
   final Set<String> selectedToolIds;
@@ -86,7 +87,7 @@ abstract base class AgentToolProvider {
   /// A hidden capability is always built and never offered in settings: the
   /// context-window tools are part of how a turn works rather than a choice a
   /// user makes about one.
-  AgentToolDefinitionDto? get catalogEntry;
+  AgentToolDefinition? get catalogEntry;
 
   /// Builds this capability's tools, or none when it does not apply.
   List<AgentTool> create(AgentToolScope scope);
@@ -147,7 +148,7 @@ final class AgentToolRegistry {
   List<AgentToolProvider> get providers => _providers;
 
   /// Catalog entries for the capabilities a user may turn on or off.
-  List<AgentToolDefinitionDto> get catalog => <AgentToolDefinitionDto>[
+  List<AgentToolDefinition> get catalog => <AgentToolDefinition>[
     for (final provider in _providers) ?provider.catalogEntry,
   ];
 

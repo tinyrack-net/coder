@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:coder_daemon/coder_daemon.dart';
+import 'package:coder_daemon/src/features/attachments/infrastructure/attachment_service.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';

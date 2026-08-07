@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/ports.dart';
-import 'package:coder_daemon/src/provider_auth.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/openai/openai.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -236,7 +236,7 @@ final class _RetryGateway implements ProviderOAuthGateway {
   }
 
   @override
-  Future<ProviderOAuthSession> start(ProviderAuthFlow flow) =>
+  Future<ProviderOAuthSession> start(AgentProviderAuthFlow flow) =>
       Future<ProviderOAuthSession>.error(UnsupportedError('not used'));
 }
 
@@ -257,7 +257,7 @@ final class _Gateway implements ProviderOAuthGateway {
   int refreshCalls = 0;
 
   @override
-  Future<ProviderOAuthSession> start(ProviderAuthFlow flow) async =>
+  Future<ProviderOAuthSession> start(AgentProviderAuthFlow flow) async =>
       session = _Session(
         flow: flow,
         expiresAt: now.add(const Duration(minutes: 15)),
@@ -273,12 +273,12 @@ final class _Gateway implements ProviderOAuthGateway {
 final class _Session implements ProviderOAuthSession {
   _Session({required this.flow, required this.expiresAt});
 
-  final ProviderAuthFlow flow;
+  final AgentProviderAuthFlow flow;
   final Completer<OAuthCredential> completer = Completer<OAuthCredential>();
   bool cancelled = false;
 
   @override
-  String get authorizationUrl => flow == ProviderAuthFlow.oauthDevice
+  String get authorizationUrl => flow == AgentProviderAuthFlow.oauthDevice
       ? 'https://auth.example/device'
       : 'https://auth.example/authorize';
 
@@ -293,7 +293,7 @@ final class _Session implements ProviderOAuthSession {
 
   @override
   String? get userCode =>
-      flow == ProviderAuthFlow.oauthDevice ? 'CODE-1234' : null;
+      flow == AgentProviderAuthFlow.oauthDevice ? 'CODE-1234' : null;
 
   @override
   Future<void> cancel() async {

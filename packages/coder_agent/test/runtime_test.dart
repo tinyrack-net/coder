@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -63,50 +62,50 @@ void main() {
   test('permission policy covers every mode and tool risk', () {
     expect(
       const DefaultApprovalPolicy(
-        PermissionMode.ask,
-      ).evaluateRisk(ToolRisk.read),
+        AgentPermissionMode.ask,
+      ).evaluateRisk(AgentToolRisk.read),
       ApprovalEvaluation.allow,
     );
     expect(
       const DefaultApprovalPolicy(
-        PermissionMode.readOnly,
-      ).evaluateRisk(ToolRisk.write),
+        AgentPermissionMode.readOnly,
+      ).evaluateRisk(AgentToolRisk.write),
       ApprovalEvaluation.deny,
     );
     expect(
       const DefaultApprovalPolicy(
-        PermissionMode.workspaceWrite,
-      ).evaluateRisk(ToolRisk.write),
+        AgentPermissionMode.workspaceWrite,
+      ).evaluateRisk(AgentToolRisk.write),
       ApprovalEvaluation.allow,
     );
     expect(
       const DefaultApprovalPolicy(
-        PermissionMode.workspaceWrite,
-      ).evaluateRisk(ToolRisk.command),
+        AgentPermissionMode.workspaceWrite,
+      ).evaluateRisk(AgentToolRisk.command),
       ApprovalEvaluation.ask,
     );
     expect(
       const DefaultApprovalPolicy(
-        PermissionMode.workspaceWrite,
-      ).evaluateRisk(ToolRisk.dangerous),
+        AgentPermissionMode.workspaceWrite,
+      ).evaluateRisk(AgentToolRisk.dangerous),
       ApprovalEvaluation.ask,
     );
     expect(
       const DefaultApprovalPolicy(
-        PermissionMode.ask,
-      ).evaluateRisk(ToolRisk.dangerous),
+        AgentPermissionMode.ask,
+      ).evaluateRisk(AgentToolRisk.dangerous),
       ApprovalEvaluation.ask,
     );
     expect(
       const DefaultApprovalPolicy(
-        PermissionMode.readOnly,
-      ).evaluateRisk(ToolRisk.dangerous),
+        AgentPermissionMode.readOnly,
+      ).evaluateRisk(AgentToolRisk.dangerous),
       ApprovalEvaluation.deny,
     );
-    for (final risk in ToolRisk.values) {
+    for (final risk in AgentToolRisk.values) {
       expect(
         const DefaultApprovalPolicy(
-          PermissionMode.fullAccess,
+          AgentPermissionMode.fullAccess,
         ).evaluateRisk(risk),
         ApprovalEvaluation.allow,
         reason: 'full access must allow ${risk.name}',
@@ -115,7 +114,9 @@ void main() {
   });
 
   test('permission changes apply at the next tool boundary', () async {
-    final permissions = _MutablePermissionModeSource(PermissionMode.readOnly);
+    final permissions = _MutablePermissionModeSource(
+      AgentPermissionMode.readOnly,
+    );
     final harness = _RunnerHarness(
       _FakeProvider(<List<ModelEvent>>[
         _toolResponse('change_permission'),
@@ -247,7 +248,7 @@ void main() {
     final harness = _RunnerHarness(
       provider,
       tools: <AgentTool>[_EchoTool()],
-      permissionMode: PermissionMode.ask,
+      permissionMode: AgentPermissionMode.ask,
     );
 
     final result = await harness.runner.startTurn(
@@ -269,11 +270,11 @@ void main() {
     );
     expect(
       harness.statuses,
-      <SessionStatus>[
-        SessionStatus.running,
-        SessionStatus.waitingForApproval,
-        SessionStatus.running,
-        SessionStatus.idle,
+      <AgentSessionStatus>[
+        AgentSessionStatus.running,
+        AgentSessionStatus.waitingForApproval,
+        AgentSessionStatus.running,
+        AgentSessionStatus.idle,
       ],
     );
     expect(provider.requests.first.tools.single.name, 'echo');
@@ -302,7 +303,7 @@ void main() {
     final planProvider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
     await _RunnerHarness(planProvider).runner.startTurn(
       _request(
-        sessionMode: SessionMode.plan,
+        sessionMode: AgentSessionMode.plan,
         customSystemPrompt: 'Review every security boundary.',
       ),
       CancellationToken(),
@@ -371,12 +372,15 @@ void main() {
     for (final scenario
         in <
           ({
-            PermissionMode mode,
+            AgentPermissionMode mode,
             ApprovalDecision decision,
           })
         >[
-          (mode: PermissionMode.readOnly, decision: ApprovalDecision.approved),
-          (mode: PermissionMode.ask, decision: ApprovalDecision.denied),
+          (
+            mode: AgentPermissionMode.readOnly,
+            decision: ApprovalDecision.approved,
+          ),
+          (mode: AgentPermissionMode.ask, decision: ApprovalDecision.denied),
         ]) {
       final harness = _RunnerHarness(
         _FakeProvider(<List<ModelEvent>>[
@@ -719,7 +723,7 @@ void main() {
         harness.runner.startTurn(_request(), CancellationToken()),
         throwsA(isA<ModelContextOverflowException>()),
       );
-      expect(harness.statuses, contains(SessionStatus.failed));
+      expect(harness.statuses, contains(AgentSessionStatus.failed));
     },
   );
 
@@ -938,7 +942,7 @@ void main() {
       missingCompletion.runner.startTurn(_request(), CancellationToken()),
       throwsA(isA<StateError>()),
     );
-    expect(missingCompletion.statuses.last, SessionStatus.failed);
+    expect(missingCompletion.statuses.last, AgentSessionStatus.failed);
     expect(missingCompletion.events, contains('turn.failed'));
 
     final maxRounds = _RunnerHarness(
@@ -965,7 +969,7 @@ void main() {
         throwsA(isA<AgentCancelledException>()),
       );
       expect(before.events.last, 'turn.cancelled');
-      expect(before.statuses.last, SessionStatus.idle);
+      expect(before.statuses.last, AgentSessionStatus.idle);
 
       final during = _RunnerHarness(
         _FakeProvider(<List<ModelEvent>>[_toolResponse('cancel')]),
@@ -1008,7 +1012,7 @@ void main() {
       callId: 'call',
       name: 'echo',
       arguments: <String, dynamic>{},
-      risk: ToolRisk.read,
+      risk: AgentToolRisk.read,
       workspaceRoot: '/workspace',
       preview: 'preview',
     );
@@ -1025,7 +1029,7 @@ void main() {
     expect(invocation.callId, 'call');
     expect(invocation.name, 'echo');
     expect(invocation.arguments, isEmpty);
-    expect(invocation.risk, ToolRisk.read);
+    expect(invocation.risk, AgentToolRisk.read);
     expect(invocation.workspaceRoot, '/workspace');
     expect(invocation.preview, 'preview');
     expect(result.output, 'done');
@@ -1046,7 +1050,7 @@ void main() {
 
 AgentRunRequest _request({
   int maxToolRounds = 64,
-  SessionMode sessionMode = SessionMode.normal,
+  AgentSessionMode sessionMode = AgentSessionMode.normal,
   String? customSystemPrompt,
   List<String> toolPrompts = const <String>[],
   List<ConversationItem> history = const <ConversationItem>[
@@ -1159,7 +1163,7 @@ final class _RunnerHarness {
     void Function(List<ConversationItem> retain)? contextResets,
     TurnInputSource? pendingTurnInput,
     bool compacts = false,
-    PermissionMode permissionMode = PermissionMode.workspaceWrite,
+    AgentPermissionMode permissionMode = AgentPermissionMode.workspaceWrite,
     PermissionModeSource? permissions,
   }) {
     runner = AgentRunner(
@@ -1185,7 +1189,7 @@ final class _RunnerHarness {
 
   late AgentRunner runner;
   final List<String> events = <String>[];
-  final List<SessionStatus> statuses = <SessionStatus>[];
+  final List<AgentSessionStatus> statuses = <AgentSessionStatus>[];
   final List<String> statusErrors = <String>[];
   final List<ConversationItem> items = <ConversationItem>[];
 }
@@ -1193,19 +1197,19 @@ final class _RunnerHarness {
 final class _FixedPermissionModeSource implements PermissionModeSource {
   const _FixedPermissionModeSource(this.mode);
 
-  final PermissionMode mode;
+  final AgentPermissionMode mode;
 
   @override
-  Future<PermissionMode> currentMode() async => mode;
+  Future<AgentPermissionMode> currentMode() async => mode;
 }
 
 final class _MutablePermissionModeSource implements PermissionModeSource {
   _MutablePermissionModeSource(this.mode);
 
-  PermissionMode mode;
+  AgentPermissionMode mode;
 
   @override
-  Future<PermissionMode> currentMode() async => mode;
+  Future<AgentPermissionMode> currentMode() async => mode;
 }
 
 final class _PermissionChangingTool extends AgentTool {
@@ -1220,7 +1224,7 @@ final class _PermissionChangingTool extends AgentTool {
   String get description => 'Changes the permission mode.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema => const <String, dynamic>{
@@ -1234,7 +1238,7 @@ final class _PermissionChangingTool extends AgentTool {
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async {
-    permissions.mode = PermissionMode.fullAccess;
+    permissions.mode = AgentPermissionMode.fullAccess;
     return const ToolResult(output: 'changed');
   }
 }
@@ -1349,7 +1353,7 @@ class _EchoTool extends AgentTool {
   String get description => 'echo';
 
   @override
-  ToolRisk get risk => ToolRisk.write;
+  AgentToolRisk get risk => AgentToolRisk.write;
 
   @override
   Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
@@ -1381,7 +1385,7 @@ final class _ContextImageTool extends _EchoTool {
   String get name => 'image';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Future<ToolResult> execute(
@@ -1410,7 +1414,7 @@ final class _NewContextTool extends _EchoTool {
   String get name => 'new_context';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Future<ToolResult> execute(
@@ -1430,7 +1434,7 @@ final class _ContextProbeTool extends _EchoTool {
   String get name => 'probe';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Future<ToolResult> execute(
@@ -1451,7 +1455,7 @@ final class _DeferredTool extends _EchoTool {
   String get description => 'Echoes the value it is given.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   ToolExposure get exposure => ToolExposure.deferred;

@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/provider_catalog.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/openai/openai.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_catalog.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 
@@ -26,7 +26,7 @@ void main() {
       );
       final trustedEndpoint = registry
           .require('deepseek')
-          .endpoint(ProviderAuthKind.apiKey)
+          .endpoint(AgentProviderAuthKind.apiKey)
           .baseUrl;
 
       final refreshed = await catalog.refresh();
@@ -41,7 +41,10 @@ void main() {
       expect(model.limits!.context, 128000);
       expect(catalog.isRefreshedModel('deepseek', model.id), isTrue);
       expect(
-        registry.require('deepseek').endpoint(ProviderAuthKind.apiKey).baseUrl,
+        registry
+            .require('deepseek')
+            .endpoint(AgentProviderAuthKind.apiKey)
+            .baseUrl,
         trustedEndpoint,
       );
       expect(registry.find('attacker'), isNull);

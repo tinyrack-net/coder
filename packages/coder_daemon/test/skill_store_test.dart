@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/coder_daemon.dart';
+import 'package:coder_daemon/src/features/prompts/infrastructure/skills.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';

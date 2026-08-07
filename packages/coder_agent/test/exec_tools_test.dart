@@ -5,7 +5,6 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/memory.dart';
 import 'package:platform/platform.dart';
@@ -432,7 +431,7 @@ void main() {
   test('both tools publish a strict schema and a readable preview', () async {
     final exec = ExecCommandTool(host: host);
     expect(exec.name, 'exec_command');
-    expect(exec.risk, ToolRisk.command);
+    expect(exec.risk, AgentToolRisk.command);
     expect(exec.description, contains('exit code'));
     final execSchema = exec.strictJsonSchema;
     expect(execSchema['additionalProperties'], isFalse);
@@ -461,7 +460,7 @@ void main() {
 
     final stdin = WriteStdinTool(host: host);
     expect(stdin.name, 'write_stdin');
-    expect(stdin.risk, ToolRisk.command);
+    expect(stdin.risk, AgentToolRisk.command);
     expect(stdin.description, contains('standard input'));
     expect(stdin.strictJsonSchema['required'], <String>[
       'session_id',
@@ -543,12 +542,12 @@ void main() {
           callId: 'call',
           name: name,
           arguments: arguments,
-          risk: ToolRisk.command,
+          risk: AgentToolRisk.command,
           workspaceRoot: '/workspace',
         );
 
     test('a session is approved once, not per keystroke', () async {
-      const inner = DefaultApprovalPolicy(PermissionMode.ask);
+      const inner = DefaultApprovalPolicy(AgentPermissionMode.ask);
       final policy = ExecSessionApprovalPolicy(
         inner,
         host,
@@ -597,7 +596,7 @@ void main() {
     });
 
     test('a read-only session is never unlocked by an approved id', () {
-      const inner = DefaultApprovalPolicy(PermissionMode.readOnly);
+      const inner = DefaultApprovalPolicy(AgentPermissionMode.readOnly);
       final policy = ExecSessionApprovalPolicy(
         inner,
         host,
@@ -616,7 +615,7 @@ void main() {
     });
 
     test('an allow from the inner policy passes straight through', () {
-      const inner = DefaultApprovalPolicy(PermissionMode.workspaceWrite);
+      const inner = DefaultApprovalPolicy(AgentPermissionMode.workspaceWrite);
       final policy = ExecSessionApprovalPolicy(
         inner,
         host,
@@ -629,7 +628,7 @@ void main() {
             callId: 'call',
             name: 'read_file',
             arguments: <String, dynamic>{},
-            risk: ToolRisk.read,
+            risk: AgentToolRisk.read,
             workspaceRoot: '/workspace',
           ),
         ),

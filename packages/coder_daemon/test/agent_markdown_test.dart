@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:coder_daemon/src/agent_definitions.dart';
+import 'package:coder_daemon/src/features/agents/infrastructure/agent_definitions.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 

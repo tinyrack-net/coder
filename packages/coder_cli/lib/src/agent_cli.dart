@@ -31,22 +31,24 @@ final class CoderApiAgentCliBackend implements AgentCliBackend {
   final CoderApi _api;
 
   @override
-  Future<List<AgentDefinitionDto>> list() => _api.listAgentDefinitions();
+  Future<List<AgentDefinitionDto>> list() => _api.agents.listAgentDefinitions();
 
   @override
   Future<AgentDefinitionDto> validate(String id, String markdown) =>
-      _api.validateAgentDefinition(id, markdown);
+      _api.agents.validateAgentDefinition(id, markdown);
 
   @override
   Future<AgentDefinitionDto> apply(
     String id,
     AgentDefinitionDto definition,
   ) async {
-    final existing = (await _api.listAgentDefinitions())
+    final existing = (await _api.agents.listAgentDefinitions())
         .where((item) => item.id == id)
         .firstOrNull;
-    if (existing == null) return _api.createAgentDefinition(id, definition);
-    return _api.updateAgentDefinition(
+    if (existing == null) {
+      return _api.agents.createAgentDefinition(id, definition);
+    }
+    return _api.agents.updateAgentDefinition(
       definition.copyWith(
         contentHash: existing.contentHash,
         sourcePath: existing.sourcePath,
@@ -57,10 +59,11 @@ final class CoderApiAgentCliBackend implements AgentCliBackend {
   }
 
   @override
-  Future<void> archive(String id) => _api.archiveAgentDefinition(id);
+  Future<void> archive(String id) => _api.agents.archiveAgentDefinition(id);
 
   @override
-  Future<AgentDefinitionDto> reset(String id) => _api.resetAgentDefinition(id);
+  Future<AgentDefinitionDto> reset(String id) =>
+      _api.agents.resetAgentDefinition(id);
 }
 
 /// Lists every active agent definition with its mode and staleness.

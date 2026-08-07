@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:coder_daemon/src/database.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/database.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 

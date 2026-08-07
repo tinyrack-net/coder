@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/tools/tool_search.dart';
 import 'package:coder_agent/src/usage.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// CancellationToken defines a public contract.
 class CancellationToken {
@@ -191,7 +191,7 @@ class ConversationAttachment {
         path: json['path']! as String,
         kind: json['kind'] == null
             ? null
-            : AttachmentKind.values.byName(json['kind']! as String),
+            : AgentAttachmentKind.values.byName(json['kind']! as String),
         sha256: json['sha256'] as String?,
         createdAt: json['createdAt'] == null
             ? null
@@ -218,7 +218,7 @@ class ConversationAttachment {
   final Uint8List? bytes;
 
   /// Broad preview kind from the daemon metadata snapshot.
-  final AttachmentKind? kind;
+  final AgentAttachmentKind? kind;
 
   /// Content digest from the daemon metadata snapshot.
   final String? sha256;
@@ -444,7 +444,7 @@ class ToolInvocation {
   final Map<String, dynamic> arguments;
 
   /// The risk public API member.
-  final ToolRisk risk;
+  final AgentToolRisk risk;
 
   /// The workspaceRoot public API member.
   final String workspaceRoot;
@@ -490,18 +490,19 @@ class DefaultApprovalPolicy implements ApprovalPolicy {
   const DefaultApprovalPolicy(this.mode);
 
   /// The mode public API member.
-  final PermissionMode mode;
+  final AgentPermissionMode mode;
 
   @override
   ApprovalEvaluation evaluate(ToolInvocation invocation) =>
       evaluateRisk(invocation.risk);
 
   /// Decides from a bare risk, ignoring which tool raised it.
-  ApprovalEvaluation evaluateRisk(ToolRisk risk) => switch ((mode, risk)) {
-    (PermissionMode.fullAccess, _) => ApprovalEvaluation.allow,
-    (_, ToolRisk.read) => ApprovalEvaluation.allow,
-    (PermissionMode.readOnly, _) => ApprovalEvaluation.deny,
-    (PermissionMode.workspaceWrite, ToolRisk.write) => ApprovalEvaluation.allow,
+  ApprovalEvaluation evaluateRisk(AgentToolRisk risk) => switch ((mode, risk)) {
+    (AgentPermissionMode.fullAccess, _) => ApprovalEvaluation.allow,
+    (_, AgentToolRisk.read) => ApprovalEvaluation.allow,
+    (AgentPermissionMode.readOnly, _) => ApprovalEvaluation.deny,
+    (AgentPermissionMode.workspaceWrite, AgentToolRisk.write) =>
+      ApprovalEvaluation.allow,
     _ => ApprovalEvaluation.ask,
   };
 }
@@ -577,7 +578,7 @@ class UserAnswer {
 /// Deliberately separate from [ApprovalCoordinator]: an approval is a binary
 /// gate the runtime applies from a tool's risk, while a question is raised by a
 /// tool body, returns structured content, and must work under every
-/// [PermissionMode].
+/// [AgentPermissionMode].
 abstract interface class UserQuestionCoordinator {
   /// Asks [questions] for the tool call [callId] and completes once answered.
   Future<List<UserAnswer>> ask(
@@ -672,7 +673,7 @@ abstract class AgentTool {
   String get description;
 
   /// The risk public API member.
-  ToolRisk get risk;
+  AgentToolRisk get risk;
 
   /// The strictJsonSchema public API member.
   Map<String, dynamic> get strictJsonSchema;

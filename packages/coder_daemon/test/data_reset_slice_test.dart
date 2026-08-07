@@ -24,13 +24,16 @@ void main() {
       // A managed checkout with unpushed work is exactly what a reset must
       // not take with it.
       final checkout = File(
-        p.join(home.path, 'worktrees', 'repo', 'main.dart'),
+        p.join(home.path, 'v3', 'worktrees', 'repo', 'main.dart'),
       );
       await checkout.create(recursive: true);
       await checkout.writeAsString('void main() {}');
-      expect(File(p.join(home.path, 'coder.sqlite')).existsSync(), isTrue);
       expect(
-        File(p.join(home.path, 'credentials.json')).existsSync(),
+        File(p.join(home.path, 'v3', 'coder.sqlite')).existsSync(),
+        isTrue,
+      );
+      expect(
+        File(p.join(home.path, 'v3', 'secrets.json')).existsSync(),
         isTrue,
       );
       await first.stop();
@@ -40,14 +43,26 @@ void main() {
         homeDirectory: config.homeDirectory,
       ).eraseAll();
 
-      expect(File(p.join(home.path, 'coder.sqlite')).existsSync(), isFalse);
       expect(
-        File(p.join(home.path, 'credentials.json')).existsSync(),
+        File(p.join(home.path, 'v3', 'coder.sqlite')).existsSync(),
         isFalse,
       );
-      expect(Directory(p.join(home.path, 'agents')).existsSync(), isFalse);
-      expect(Directory(p.join(home.path, 'skills')).existsSync(), isFalse);
-      expect(File(p.join(home.path, 'daemon.lock')).existsSync(), isFalse);
+      expect(
+        File(p.join(home.path, 'v3', 'secrets.json')).existsSync(),
+        isFalse,
+      );
+      expect(
+        Directory(p.join(home.path, 'v3', 'agents')).existsSync(),
+        isFalse,
+      );
+      expect(
+        Directory(p.join(home.path, 'v3', 'skills')).existsSync(),
+        isFalse,
+      );
+      expect(
+        File(p.join(home.path, 'v3', 'daemon.lock')).existsSync(),
+        isFalse,
+      );
       expect(checkout.existsSync(), isTrue);
       expect(await checkout.readAsString(), 'void main() {}');
 

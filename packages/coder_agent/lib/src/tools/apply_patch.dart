@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/patch/unified_diff.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
 import 'package:platform/platform.dart';
@@ -36,7 +36,7 @@ class ApplyPatchTool extends AgentTool {
       'with a /dev/null source, delete one with a /dev/null target, and move '
       'or rename one by naming different paths in the --- and +++ headers.';
   @override
-  ToolRisk get risk => ToolRisk.write;
+  AgentToolRisk get risk => AgentToolRisk.write;
   @override
   Map<String, dynamic> get strictJsonSchema =>
       strictToolObject(<String, Map<String, dynamic>>{
@@ -233,11 +233,11 @@ final class ApplyPatchToolProvider extends SelectableToolProvider {
   String get id => 'apply_patch';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => AgentToolDefinition(
     id: id,
     name: id,
     description: ApplyPatchTool().description,
-    risk: ToolRisk.write,
+    risk: AgentToolRisk.write,
   );
 
   @override

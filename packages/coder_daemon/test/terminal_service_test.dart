@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:coder_daemon/src/terminal_service.dart';
-import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_daemon/src/features/terminals/application/terminal_service.dart';
+import 'package:coder_daemon/src/features/terminals/domain/terminal.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -14,7 +14,7 @@ void main() {
       final service = TerminalService(
         gateway: _FakeTerminalGateway(process),
         worktreePath: (id) async => '/worktrees/$id',
-        shellFor: (id) async => const ShellSpecDto(executable: '/bin/zsh'),
+        shellFor: (id) async => const TerminalShell(executable: '/bin/zsh'),
         maxReplayBytes: 8,
       );
 
@@ -25,7 +25,7 @@ void main() {
         columns: 80,
         rows: 24,
       );
-      expect(created.status, TerminalStatus.running);
+      expect(created.status, TerminalLifecycle.running);
       expect(process.workingDirectory, '/worktrees/worktree-1');
 
       process.output.add('12345');
@@ -62,7 +62,7 @@ void main() {
       final service = TerminalService(
         gateway: _FakeTerminalGateway(process),
         worktreePath: (id) async => '/worktrees/$id',
-        shellFor: (id) async => const ShellSpecDto(executable: '/bin/zsh'),
+        shellFor: (id) async => const TerminalShell(executable: '/bin/zsh'),
         maxReplayBytes: maxReplayBytes,
       );
       await service.create(
@@ -125,7 +125,7 @@ void main() {
       final service = TerminalService(
         gateway: _FakeTerminalGateway(process),
         worktreePath: (id) async => '/worktrees/$id',
-        shellFor: (id) async => const ShellSpecDto(executable: '/bin/zsh'),
+        shellFor: (id) async => const TerminalShell(executable: '/bin/zsh'),
       );
       await service.create(
         id: 'terminal-1',
@@ -166,7 +166,7 @@ final class _FakeTerminalGateway implements TerminalGateway {
 
   @override
   Future<TerminalProcess> start({
-    required ShellSpecDto shell,
+    required TerminalShell shell,
     required String workingDirectory,
     required int columns,
     required int rows,

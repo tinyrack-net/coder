@@ -1,8 +1,8 @@
-import 'package:coder_daemon/src/database.dart';
-import 'package:coder_daemon/src/git_workspace.dart';
-import 'package:coder_daemon/src/ports.dart';
-import 'package:coder_daemon/src/project_settings.dart';
-import 'package:coder_daemon/src/workspace_service.dart';
+import 'package:coder_daemon/src/features/workspaces/infrastructure/git_workspace.dart';
+import 'package:coder_daemon/src/features/workspaces/infrastructure/project_settings.dart';
+import 'package:coder_daemon/src/features/workspaces/infrastructure/workspace_service.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/database.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:drift/native.dart';
 import 'package:test/test.dart';

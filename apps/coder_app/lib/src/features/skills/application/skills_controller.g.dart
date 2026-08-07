@@ -65,7 +65,7 @@ final class SkillsControllerProvider
   }
 }
 
-String _$skillsControllerHash() => r'695ba222865afc2a7e25ebde38089619de6eb508';
+String _$skillsControllerHash() => r'cfdca7b20635aca50378706fabebc90826308029';
 
 /// Loads and edits the skills one daemon offers, optionally for one project.
 ///

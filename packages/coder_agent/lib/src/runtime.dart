@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/src/compaction.dart';
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/plan_mode_prompt.dart';
 import 'package:coder_agent/src/tools/tool_search.dart';
 import 'package:coder_agent/src/usage.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Signature used by AgentEventCallback.
 typedef AgentEventCallback =
@@ -14,7 +14,7 @@ typedef AgentEventCallback =
 
 /// Signature used by SessionStatusCallback.
 typedef SessionStatusCallback =
-    FutureOr<void> Function(SessionStatus status, {String? error});
+    FutureOr<void> Function(AgentSessionStatus status, {String? error});
 
 /// Signature used by ProviderItemsCallback.
 typedef ProviderItemsCallback =
@@ -34,7 +34,7 @@ abstract interface class TurnInputSource {
 /// Supplies the permission mode in effect at the next tool boundary.
 abstract interface class PermissionModeSource {
   /// Returns the current effective permission mode.
-  Future<PermissionMode> currentMode();
+  Future<AgentPermissionMode> currentMode();
 }
 
 /// AgentRunRequest defines a public contract.
@@ -52,7 +52,7 @@ class AgentRunRequest {
     this.reasoningEffort = 'medium',
     this.serviceTier,
     this.maxToolRounds = 64,
-    this.sessionMode = SessionMode.normal,
+    this.sessionMode = AgentSessionMode.normal,
     this.customSystemPrompt,
     this.toolPrompts = const <String>[],
     this.contextWindowTokens,
@@ -106,7 +106,7 @@ class AgentRunRequest {
   final int maxToolRounds;
 
   /// Collaboration mode of the owning session.
-  final SessionMode sessionMode;
+  final AgentSessionMode sessionMode;
 
   /// Optional Markdown agent prompt appended after immutable safety rules.
   final String? customSystemPrompt;
@@ -151,7 +151,7 @@ class AgentRunner {
     this._contextResets,
     this._pendingTurnInput,
     this._compactor,
-    ApprovalPolicy Function(PermissionMode mode)? policyFactory,
+    ApprovalPolicy Function(AgentPermissionMode mode)? policyFactory,
   }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool},
        _policyFactory = policyFactory ?? DefaultApprovalPolicy.new {
     final deferred = _tools.values
@@ -186,7 +186,7 @@ class AgentRunner {
   final TurnInputSource? _pendingTurnInput;
 
   /// Builds the approval policy for a turn's permission mode.
-  final ApprovalPolicy Function(PermissionMode mode) _policyFactory;
+  final ApprovalPolicy Function(AgentPermissionMode mode) _policyFactory;
 
   /// Deferred tools a search has made visible to the model.
   final Set<String> _surfaced = <String>{};
@@ -252,7 +252,7 @@ class AgentRunner {
     // failed to shrink it is not repeated every round.
     var lastCompactionTokens = _unbounded;
     _restoreSurfaced(request.history);
-    await _onStatus(SessionStatus.running);
+    await _onStatus(AgentSessionStatus.running);
     if (_deferredCount > 0) {
       await _onEvent('tools.deferred', <String, dynamic>{
         'count': _deferredCount,
@@ -357,7 +357,7 @@ class AgentRunner {
           await _onEvent('turn.completed', <String, dynamic>{
             'toolRounds': toolRounds,
           });
-          await _onStatus(SessionStatus.idle);
+          await _onStatus(AgentSessionStatus.idle);
           return AgentRunResult(
             conversationItems: persisted,
             toolRounds: toolRounds,
@@ -411,11 +411,11 @@ class AgentRunner {
             ).evaluate(invocation);
             var approved = policy == ApprovalEvaluation.allow;
             if (policy == ApprovalEvaluation.ask) {
-              await _onStatus(SessionStatus.waitingForApproval);
+              await _onStatus(AgentSessionStatus.waitingForApproval);
               approved =
                   await _approvals.request(invocation, cancellation) ==
                   ApprovalDecision.approved;
-              await _onStatus(SessionStatus.running);
+              await _onStatus(AgentSessionStatus.running);
             }
             if (policy == ApprovalEvaluation.deny || !approved) {
               final item = ToolResultConversationItem(
@@ -503,11 +503,11 @@ class AgentRunner {
       }
     } on AgentCancelledException {
       await _onEvent('turn.cancelled', const <String, dynamic>{});
-      await _onStatus(SessionStatus.idle);
+      await _onStatus(AgentSessionStatus.idle);
       rethrow;
     } catch (error) {
       await _onEvent('turn.failed', <String, dynamic>{'error': '$error'});
-      await _onStatus(SessionStatus.failed, error: '$error');
+      await _onStatus(AgentSessionStatus.failed, error: '$error');
       rethrow;
     }
   }
@@ -591,7 +591,7 @@ class AgentRunner {
 
   String _instructions(AgentRunRequest request) {
     final customPrompt = request.customSystemPrompt?.trim();
-    final planning = request.sessionMode == SessionMode.plan
+    final planning = request.sessionMode == AgentSessionMode.plan
         ? '\n${planModeInstructions()}'
         : '';
     return '''

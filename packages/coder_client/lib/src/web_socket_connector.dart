@@ -6,7 +6,7 @@ import 'package:coder_client/src/web_socket_connector_io.dart'
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Subprotocol that identifies a Tinyrack Coder client.
-const String coderWebSocketProtocol = 'tinyrack.coder.v2';
+const String coderWebSocketProtocol = 'tinyrack.coder.v3';
 
 /// Prefix of the subprotocol that carries the bearer token.
 const String coderWebSocketTokenPrefix = 'tinyrack.coder.token.';

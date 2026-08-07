@@ -16,6 +16,7 @@ void main() {
 
   setUp(() async {
     home = await Directory.systemTemp.createTemp('coder-daemon-lock-');
+    await Directory(p.join(home.path, 'v3')).create();
   });
 
   tearDown(() => deleteWithRetry(home));
@@ -23,7 +24,7 @@ void main() {
   test(
     'a daemon over a home another process holds reports the running daemon',
     () async {
-      final lockPath = p.join(home.path, 'daemon.lock');
+      final lockPath = p.join(home.path, 'v3', 'daemon.lock');
       final holder = await DaemonLockHolder.start(
         root: home,
         lockPath: lockPath,
@@ -37,7 +38,7 @@ void main() {
               .having(
                 (failure) => failure.homeDirectory,
                 'homeDirectory',
-                home.path,
+                p.join(home.path, 'v3'),
               )
               .having(
                 (failure) => failure.diagnostic,
@@ -55,7 +56,7 @@ void main() {
     () async {
       final holder = await DaemonLockHolder.start(
         root: home,
-        lockPath: p.join(home.path, 'daemon.lock'),
+        lockPath: p.join(home.path, 'v3', 'daemon.lock'),
       );
       await holder.stop();
 
@@ -72,7 +73,7 @@ void main() {
     () async {
       final holder = await DaemonLockHolder.start(
         root: home,
-        lockPath: p.join(home.path, 'daemon.lock'),
+        lockPath: p.join(home.path, 'v3', 'daemon.lock'),
       );
       addTearDown(holder.stop);
 

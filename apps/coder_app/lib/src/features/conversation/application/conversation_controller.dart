@@ -94,7 +94,10 @@ final class ConversationState {
 @riverpod
 /// ConversationController defines a public contract.
 class ConversationController extends _$ConversationController {
-  StreamSubscription<ClientEvent>? _events;
+  StreamSubscription<TimelineEventDto>? _timelineEvents;
+  StreamSubscription<ApprovalRequestDto>? _approvalEvents;
+  StreamSubscription<SessionDto>? _sessionEvents;
+  StreamSubscription<UserQuestionRequestDto>? _questionEvents;
   late String? _sessionId;
   // Both the idle session event and an explicit promotion can ask for a drain,
   // so one send is in flight at a time.
@@ -114,10 +117,16 @@ class ConversationController extends _$ConversationController {
       return const ConversationState();
     }
     final api = runtime!.api!;
-    final timeline = await api.subscribeTimeline(sessionId);
-    _events = api.events.listen(_handleEvent);
+    final timeline = await api.sessions.subscribeTimeline(sessionId);
+    _timelineEvents = api.sessions.timelineEvents.listen(_handleTimeline);
+    _approvalEvents = api.sessions.approvalRequests.listen(_handleApproval);
+    _sessionEvents = api.sessions.sessionUpdates.listen(_handleSession);
+    _questionEvents = api.sessions.questionRequests.listen(_handleQuestion);
     ref
-      ..onDispose(() => unawaited(_events?.cancel()))
+      ..onDispose(() => unawaited(_timelineEvents?.cancel()))
+      ..onDispose(() => unawaited(_approvalEvents?.cancel()))
+      ..onDispose(() => unawaited(_sessionEvents?.cancel()))
+      ..onDispose(() => unawaited(_questionEvents?.cancel()))
       ..onDispose(() => _drainRetry?.cancel());
     return ConversationState(
       timeline: timeline,
@@ -140,7 +149,7 @@ class ConversationController extends _$ConversationController {
     final uploaded = <AttachmentDto>[];
     for (final attachment in attachments) {
       uploaded.add(
-        await api.uploadAttachment(
+        await api.attachments.uploadAttachment(
           fileName: attachment.fileName,
           mimeType: attachment.mimeType,
           byteSize: attachment.byteSize,
@@ -149,7 +158,7 @@ class ConversationController extends _$ConversationController {
       );
     }
     try {
-      await api.startTurn(
+      await api.sessions.startTurn(
         sessionId: sessionId,
         turnId: ref.read(appIdGeneratorProvider).generate(),
         prompt: prompt.trim(),
@@ -168,7 +177,7 @@ class ConversationController extends _$ConversationController {
 
   Future<bool> _hasRunningTurn(CoderApi api, String sessionId) async {
     try {
-      final session = (await api.listSessions())
+      final session = (await api.sessions.listSessions())
           .where((session) => session.id == sessionId)
           .firstOrNull;
       return session != null &&
@@ -184,7 +193,7 @@ class ConversationController extends _$ConversationController {
     final sessionId = _sessionId;
     if (sessionId != null) {
       final api = await requireHostApi(ref, hostId);
-      await api.cancelTurn(sessionId);
+      await api.sessions.cancelTurn(sessionId);
     }
   }
 
@@ -225,7 +234,7 @@ class ConversationController extends _$ConversationController {
       return;
     }
     try {
-      await api.notePendingInput(sessionId);
+      await api.sessions.notePendingInput(sessionId);
     } on Object {
       // Not state, so a lost notice is not worth surfacing. The settled check
       // below is liveness rather than a notice, so it still has to run.
@@ -288,7 +297,7 @@ class ConversationController extends _$ConversationController {
   /// session update, and no such update is coming, which strands the prompt.
   Future<void> _drainIfAlreadySettled(CoderApi api, String sessionId) async {
     if (state.asData?.value.queued.isEmpty ?? true) return;
-    final session = (await api.listSessions())
+    final session = (await api.sessions.listSessions())
         .where((session) => session.id == sessionId)
         .firstOrNull;
     if (session == null) return;
@@ -385,7 +394,7 @@ class ConversationController extends _$ConversationController {
     required bool approved,
   }) async {
     final api = await requireHostApi(ref, hostId);
-    await api.resolveApproval(
+    await api.sessions.resolveApproval(
       approvalId: approvalId,
       approved: approved,
     );
@@ -406,7 +415,10 @@ class ConversationController extends _$ConversationController {
     List<UserQuestionAnswerDto> answers,
   ) async {
     final api = await requireHostApi(ref, hostId);
-    await api.answerUserQuestion(requestId: requestId, answers: answers);
+    await api.sessions.answerUserQuestion(
+      requestId: requestId,
+      answers: answers,
+    );
     if (!ref.mounted) return;
     final current = state.asData?.value;
     if (current == null) return;
@@ -418,70 +430,69 @@ class ConversationController extends _$ConversationController {
     );
   }
 
-  void _handleEvent(ClientEvent clientEvent) {
-    if (!ref.mounted) return;
-    final current = state.asData?.value;
+  ConversationState? get _currentEventState {
+    if (!ref.mounted) return null;
+    return state.asData?.value;
+  }
+
+  void _handleTimeline(TimelineEventDto event) {
+    final current = _currentEventState;
     if (current == null) return;
-    switch (clientEvent) {
-      case TimelineClientEvent(:final event):
-        if (event.sessionId != _sessionId ||
-            current.timeline.any((item) => item.sequence == event.sequence)) {
-          return;
-        }
-        final approvals = Map<String, ApprovalRequestDto>.of(current.approvals);
-        final approval = _approvalFromTimeline(event);
-        if (approval != null) approvals[approval.id] = approval;
-        if (event.type == 'approval.resolved') {
-          approvals.remove(event.data['approvalId']);
-        }
-        final timeline = <TimelineEventDto>[...current.timeline, event];
-        state = AsyncData<ConversationState>(
-          current.copyWith(
-            timeline: timeline,
-            approvals: approvals,
-            questions: _pendingQuestions(timeline),
-          ),
-        );
-      case ApprovalRequestedClientEvent(:final approval):
-        if (approval.sessionId == _sessionId) {
-          state = AsyncData<ConversationState>(
-            current.copyWith(
-              approvals: <String, ApprovalRequestDto>{
-                ...current.approvals,
-                approval.id: approval,
-              },
-            ),
-          );
-        }
-      case SessionUpdatedClientEvent(:final session):
-        // A waiting prompt only exists because a turn was running, so a
-        // settled session is the signal to start the next one.
-        if (session.id == _sessionId &&
-            current.queued.isNotEmpty &&
-            (session.status == SessionStatus.idle ||
-                session.status == SessionStatus.failed)) {
-          unawaited(drainQueue());
-        }
-      case UserQuestionRequestedClientEvent(:final request):
-        if (request.sessionId == _sessionId) {
-          state = AsyncData<ConversationState>(
-            current.copyWith(
-              questions: <String, UserQuestionRequestDto>{
-                ...current.questions,
-                request.id: request,
-              },
-            ),
-          );
-        }
-      case ProviderAuthUpdatedClientEvent():
-      case AgentDefinitionsChangedClientEvent():
-      case McpServersChangedClientEvent():
-      case SkillsChangedClientEvent():
-      case CommandsChangedClientEvent():
-      case TerminalOutputClientEvent():
-      case TerminalUpdatedClientEvent():
-        break;
+    if (event.sessionId != _sessionId ||
+        current.timeline.any((item) => item.sequence == event.sequence)) {
+      return;
     }
+    final approvals = Map<String, ApprovalRequestDto>.of(current.approvals);
+    final approval = _approvalFromTimeline(event);
+    if (approval != null) approvals[approval.id] = approval;
+    if (event.type == 'approval.resolved') {
+      approvals.remove(event.data['approvalId']);
+    }
+    final timeline = <TimelineEventDto>[...current.timeline, event];
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        timeline: timeline,
+        approvals: approvals,
+        questions: _pendingQuestions(timeline),
+      ),
+    );
+  }
+
+  void _handleApproval(ApprovalRequestDto approval) {
+    final current = _currentEventState;
+    if (current == null || approval.sessionId != _sessionId) return;
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        approvals: <String, ApprovalRequestDto>{
+          ...current.approvals,
+          approval.id: approval,
+        },
+      ),
+    );
+  }
+
+  void _handleSession(SessionDto session) {
+    final current = _currentEventState;
+    if (current == null) return;
+    if (session.id == _sessionId &&
+        current.queued.isNotEmpty &&
+        (session.status == SessionStatus.idle ||
+            session.status == SessionStatus.failed)) {
+      unawaited(drainQueue());
+    }
+  }
+
+  void _handleQuestion(UserQuestionRequestDto request) {
+    final current = _currentEventState;
+    if (current == null || request.sessionId != _sessionId) return;
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        questions: <String, UserQuestionRequestDto>{
+          ...current.questions,
+          request.id: request,
+        },
+      ),
+    );
   }
 
   Map<String, ApprovalRequestDto> _pendingApprovals(

@@ -55,9 +55,9 @@ melos:
     test:widget:
       run: dart run melos test:flutter
     test:contract:
-      run: dart run melos exec --no-flutter --scope=coder_protocol --scope=coder_client --scope=coder_cli --scope=coder_provider_openai --scope=coder_daemon -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
+      run: dart run melos exec --no-flutter --scope=coder_protocol --scope=coder_client --scope=coder_cli --scope=coder_daemon -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
     test:vertical-slice:
-      run: dart test packages/coder_daemon/test/daemon_integration_test.dart --test-randomize-ordering-seed=random
+      run: dart test packages/coder_daemon/test/vertical_slice --test-randomize-ordering-seed=random
     test:golden:
       run: dart run melos exec --flutter --scope=coder_app -- flutter test test/golden --tags=golden --test-randomize-ordering-seed=random
     test:coverage:dart:

@@ -2,9 +2,9 @@
 library;
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_agent/testing.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
+
+import 'support/conformance.dart';
 
 void main() {
   providerPluginConformanceTests('a well-formed plugin', _FakePlugin.new);
@@ -66,9 +66,9 @@ void main() {
     final plugin = _FakePlugin();
     expect(plugin.environmentVariables, isEmpty);
     expect(plugin.oauth, isNull);
-    const remote = ModelCapabilitiesDto(
-      streaming: CapabilitySupport.supported,
-      toolCalling: CapabilitySupport.supported,
+    const remote = AgentModelCapabilities(
+      streaming: AgentCapabilitySupport.supported,
+      toolCalling: AgentCapabilitySupport.supported,
     );
     expect(identical(plugin.refineRemoteCapabilities(remote), remote), isTrue);
   });
@@ -97,16 +97,16 @@ final class _FakePlugin extends ProviderPlugin {
   String get id => 'fake';
 
   @override
-  ProviderDefinitionDto get definition => const ProviderDefinitionDto(
+  AgentProviderDefinition get definition => const AgentProviderDefinition(
     id: 'fake',
     name: 'Fake',
     description: 'A vendor used by the conformance suite.',
-    authMethods: <ProviderAuthMethodDto>[
-      ProviderAuthMethodDto(
+    authMethods: <AgentProviderAuthMethod>[
+      AgentProviderAuthMethod(
         id: 'api-key',
         label: 'API key',
-        kind: ProviderAuthKind.apiKey,
-        flow: ProviderAuthFlow.apiKey,
+        kind: AgentProviderAuthKind.apiKey,
+        flow: AgentProviderAuthFlow.apiKey,
       ),
     ],
     recommendedModelIds: <String>['fake-model'],
@@ -117,15 +117,15 @@ final class _FakePlugin extends ProviderPlugin {
     ProviderCatalogModel(
       id: 'fake-model',
       label: 'Fake Model',
-      capabilities: ModelCapabilitiesDto(
-        streaming: CapabilitySupport.supported,
-        toolCalling: CapabilitySupport.supported,
+      capabilities: AgentModelCapabilities(
+        streaming: AgentCapabilitySupport.supported,
+        toolCalling: AgentCapabilitySupport.supported,
       ),
     ),
   ];
 
   @override
-  ProviderEndpoint endpoint(ProviderAuthKind authKind) =>
+  ProviderEndpoint endpoint(AgentProviderAuthKind authKind) =>
       const ProviderEndpoint(baseUrl: 'https://fake.example/v1');
 
   @override

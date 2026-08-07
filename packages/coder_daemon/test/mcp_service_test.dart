@@ -4,11 +4,11 @@ library;
 import 'dart:async';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/mcp_config.dart';
-import 'package:coder_daemon/src/mcp_service.dart';
-import 'package:coder_daemon/src/repositories.dart';
-import 'package:coder_mcp/coder_mcp.dart';
-import 'package:coder_mcp/testing.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_config.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_service.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/testing.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 

@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
 import 'package:platform/platform.dart';
@@ -33,7 +33,7 @@ class AttachFileTool extends AgentTool {
       'Attach a regular file from the workspace to the conversation.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -85,12 +85,12 @@ final class AttachFileToolProvider extends SelectableToolProvider {
   String get id => 'attach_file';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => AgentToolDefinition(
     id: id,
     name: id,
     description:
         'Attach a regular file from the workspace to the conversation.',
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
     alwaysOn: true,
   );
 

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Resolves attachment metadata and its safe daemon-local fallback path.
 class ReadAttachmentTool extends AgentTool {
@@ -24,7 +24,7 @@ class ReadAttachmentTool extends AgentTool {
       'Resolve an attachment ID to validated metadata and a readable path.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -52,13 +52,13 @@ final class ReadAttachmentToolProvider extends SelectableToolProvider {
   String get id => 'read_attachment';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => AgentToolDefinition(
     id: id,
     name: id,
     description:
         'Resolve an attachment ID to validated metadata and a '
         'readable path.',
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
     alwaysOn: true,
   );
 
