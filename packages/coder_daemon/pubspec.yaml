@@ -19,9 +19,13 @@ dependencies:
   drift: 2.34.3
   json_rpc_2: ^4.1.0
   path: ^1.9.1
+  ptyworld:
+    git:
+      url: https://github.com/tinyrack-net/dart-packages.git
+      ref: 1c59d79ef94d6890f0b04045a23445b207bd7150
+      path: packages/ptyworld
   shelf: ^1.4.2
   shelf_web_socket: ^3.0.0
-  tinyrack_pty: ^0.1.0
   uuid: ^4.6.0
   web_socket_channel: ^3.0.3
   yaml: ^3.1.3

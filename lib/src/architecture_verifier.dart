@@ -54,16 +54,12 @@ final class ArchitectureVerifier {
           'coder_provider_openai',
         },
         'coder_mcp': <String>{},
-        // The PTY package wraps a native terminal and must stay reusable
-        // outside Coder, so it depends on nothing in this workspace.
-        'tinyrack_pty': <String>{},
         'coder_daemon': <String>{
           'coder_agent',
           'coder_client',
           'coder_mcp',
           'coder_protocol',
           'coder_provider_openai',
-          'tinyrack_pty',
         },
         'coder_app': <String>{
           'coder_client',
@@ -71,6 +67,26 @@ final class ArchitectureVerifier {
           'coder_protocol',
         },
       };
+
+  // Packages resolved from outside this workspace that must still stay behind
+  // one boundary. `ptyworld` spawns native pseudo-terminals, so only the
+  // daemon's terminal gateway may reach it; every other package goes through
+  // the daemon. Without this map those imports would be unrestricted, because
+  // enforcement is otherwise keyed off `_allowedInternalDependencies`, and
+  // that failure would be silent.
+  static const Map<String, Set<String>> _restrictedExternalPackages =
+      <String, Set<String>>{
+        'ptyworld': <String>{'coder_daemon'},
+      };
+
+  /// Whether [consumer] is forbidden from depending on [dependency].
+  static bool _isForbidden(String consumer, String dependency) {
+    if (_allowedInternalDependencies.containsKey(dependency)) {
+      return !_allowedInternalDependencies[consumer]!.contains(dependency);
+    }
+    final allowedConsumers = _restrictedExternalPackages[dependency];
+    return allowedConsumers != null && !allowedConsumers.contains(consumer);
+  }
 
   /// Runs every architecture check and returns all violations.
   List<ArchitectureViolation> verify() {
@@ -92,11 +108,9 @@ final class ArchitectureVerifier {
   ) {
     final path = p.join(directory, 'pubspec.yaml');
     final dependencies = _productionDependencies(File(path).readAsLinesSync());
-    final allowed = _allowedInternalDependencies[package]!;
     return <ArchitectureViolation>[
       for (final dependency in dependencies)
-        if (_allowedInternalDependencies.containsKey(dependency) &&
-            !allowed.contains(dependency))
+        if (_isForbidden(package, dependency))
           ArchitectureViolation(
             path: p.relative(path, from: workspaceRoot),
             line: 0,
@@ -162,8 +176,7 @@ final class ArchitectureVerifier {
       ).firstMatch(line)?.group(1);
       if (importedPackage != null &&
           importedPackage != package &&
-          _allowedInternalDependencies.containsKey(importedPackage) &&
-          !_allowedInternalDependencies[package]!.contains(importedPackage)) {
+          _isForbidden(package, importedPackage)) {
         violations.add(
           ArchitectureViolation(
             path: path,

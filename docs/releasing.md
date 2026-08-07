@@ -42,7 +42,7 @@ database and provider stack and is built with `dart build cli` rather than
 bundle/
   bin/coder-cli
   lib/libsqlite3.<ext>
-  lib/libtinyrack_pty.<ext>
+  lib/libptyworld.<ext>
 ```
 
 The CLI artifacts are therefore **archives, not bare executables**: the

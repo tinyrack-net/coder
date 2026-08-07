@@ -11,7 +11,7 @@ dependencies:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: c766f0090705e01f1f37c6d7ab62b9ca41e984e9
+      ref: 1c59d79ef94d6890f0b04045a23445b207bd7150
       path: packages/cliweave
   coder_client: ^0.1.0
   coder_daemon: ^0.1.0
