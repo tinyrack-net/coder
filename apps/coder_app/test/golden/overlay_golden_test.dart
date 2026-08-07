@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
+// Alchemist's public golden API captures a subtree. This test needs its
+// adapter hook so a root-overlay menu is included in the captured scene.
+import 'package:alchemist/src/golden_test_adapter.dart' as alchemist_adapter;
 import 'package:coder_app/src/app/coder_app.dart';
 import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/app/router/app_router.dart';
@@ -10,15 +13,21 @@ import 'package:coder_app/src/features/conversation/presentation/widgets/compose
 import 'package:coder_app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
+import 'package:coder_app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:coder_app/src/shared/presentation/model_picker.dart';
 import 'package:coder_app/src/shared/presentation/permission_picker.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:termworld/termworld.dart';
+// The focus source exposes test-only modality controls specifically so one
+// widget test's pointer input cannot decide another test's focus visuals.
+import 'package:tinyrack_ui/src/internal/focus_source.dart' as focus_source;
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../support/fake_coder_api.dart';
@@ -70,10 +79,14 @@ void main() {
       'desktop title bar file menu is open',
       fileName: 'desktop_file_menu_open',
       constraints: const BoxConstraints.tightFor(width: 1000, height: 620),
-      pumpBeforeTest: (tester) async {
+      whilePerforming: (tester) async {
         await tester.pumpAndSettle();
         await tester.tap(find.text('파일'));
         await tester.pumpAndSettle();
+        return () async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        };
       },
       builder: _desktopApp,
     ),
@@ -84,12 +97,16 @@ void main() {
       'desktop about dialog uses the Tinyrack layer',
       fileName: 'desktop_about_dialog',
       constraints: const BoxConstraints.tightFor(width: 1000, height: 620),
-      pumpBeforeTest: (tester) async {
+      whilePerforming: (tester) async {
         await tester.pumpAndSettle();
         await tester.tap(find.text('도움말'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Tinyrack Coder 정보'));
         await tester.pumpAndSettle();
+        return () async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        };
       },
       builder: _desktopApp,
     ),
@@ -101,14 +118,29 @@ void main() {
       fileName: 'composer_chip_menu_without_tooltip',
       constraints: const BoxConstraints.tightFor(width: 720, height: 480),
       whilePerforming: (tester) async {
-        await tester.tap(find.byKey(const ValueKey('golden-project-chip')));
+        tester
+            .state<_ComposerChipGoldenAppState>(
+              find.byType(_ComposerChipGoldenApp),
+            )
+            .stabilizeLayout();
         await tester.pumpAndSettle();
-        FocusManager.instance.primaryFocus?.unfocus();
+        focus_source.TRFocusSource.instance.debugSetKeyboardModality(true);
+        await tester.tap(find.byKey(const ValueKey('golden-project-chip')));
         await tester.pumpAndSettle();
         FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();
         expect(find.text('프로젝트 선택'), findsNothing);
         expect(find.text('추가'), findsOneWidget);
+        final defaultExpectation = alchemist_adapter.goldenFileExpectationFn;
+        alchemist_adapter.goldenFileExpectationFn = (actual, golden) =>
+            () async {
+              try {
+                await expectLater(find.byType(View), matchesGoldenFile(golden));
+              } finally {
+                alchemist_adapter.goldenFileExpectationFn = defaultExpectation;
+                focus_source.TRFocusSource.instance.debugReset();
+              }
+            };
         return null;
       },
       builder: _composerChipApp,
@@ -180,9 +212,50 @@ void main() {
           find.byKey(const ValueKey<String>('terminal-menu-clear-screen')),
           findsOneWidget,
         );
-        return null;
+        return () async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        };
       },
       builder: _terminalApp,
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'terminal IME preedit replaces its cursor with an underline',
+      fileName: 'terminal_ime_preedit',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      whilePerforming: (tester) async {
+        final surface = find.byKey(
+          const ValueKey<String>('tr-terminal-surface'),
+        );
+        final inputFocus = tester.widget<Focus>(
+          find.descendant(of: surface, matching: find.byType(Focus)),
+        );
+        inputFocus.focusNode?.requestFocus();
+        await tester.pump();
+        expect(tester.testTextInput.hasAnyClients, isTrue);
+        tester.testTextInput.updateEditingValue(
+          const TextEditingValue(
+            text: '한',
+            selection: TextSelection.collapsed(offset: 1),
+            composing: TextRange(start: 0, end: 1),
+          ),
+        );
+        await tester.pump();
+        final terminal = tester.widget<TerminalView>(
+          find.byType(TerminalView),
+        );
+        final paint = find.descendant(
+          of: find.byType(TerminalView),
+          matching: find.byType(CustomPaint),
+        );
+        expect(paint, paints..paragraph());
+        expect(paint, isNot(paints..rect(color: terminal.theme.cursor)));
+        return null;
+      },
+      builder: _terminalImeApp,
     ),
   );
 
@@ -350,31 +423,86 @@ class _TerminalGoldenHostState extends State<_TerminalGoldenHost> {
   );
 }
 
-Widget _composerChipApp() => MaterialApp(
-  debugShowCheckedModeBanner: false,
-  locale: testLocale,
-  localizationsDelegates: testLocalizationsDelegates,
-  supportedLocales: testSupportedLocales,
-  theme: testLightTheme,
-  darkTheme: testDarkTheme,
-  themeMode: ThemeMode.dark,
-  home: Scaffold(
-    body: Center(
-      child: TRTooltipProvider(
-        child: ComposerChip(
-          valueKey: const ValueKey('golden-project-chip'),
-          icon: Icons.folder_outlined,
-          label: 'Coder',
-          tooltip: '프로젝트 선택',
-          menuChildren: <Widget>[
-            TRMenuItem(onPressed: () {}, child: const Text('Coder · test')),
-            TRMenuItem(onPressed: () {}, child: const Text('추가')),
-          ],
+Widget _terminalImeApp() => const _TerminalImeGoldenApp();
+
+class _TerminalImeGoldenApp extends StatefulWidget {
+  const _TerminalImeGoldenApp();
+
+  @override
+  State<_TerminalImeGoldenApp> createState() => _TerminalImeGoldenAppState();
+}
+
+class _TerminalImeGoldenAppState extends State<_TerminalImeGoldenApp> {
+  late final TerminalEmulator _emulator = TerminalEmulator()..write('input: ');
+  late final TerminalViewController _controller = TerminalViewController(
+    emulator: _emulator,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _emulator.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: testLightTheme,
+    darkTheme: testDarkTheme,
+    themeMode: ThemeMode.dark,
+    home: Scaffold(
+      body: CoderTerminalView(
+        emulator: _emulator,
+        controller: _controller,
+        autofocus: true,
+      ),
+    ),
+  );
+}
+
+Widget _composerChipApp() => const _ComposerChipGoldenApp();
+
+class _ComposerChipGoldenApp extends StatefulWidget {
+  const _ComposerChipGoldenApp();
+
+  @override
+  State<_ComposerChipGoldenApp> createState() => _ComposerChipGoldenAppState();
+}
+
+class _ComposerChipGoldenAppState extends State<_ComposerChipGoldenApp> {
+  int _layoutGeneration = 0;
+
+  void stabilizeLayout() => setState(() => _layoutGeneration++);
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    locale: testLocale,
+    localizationsDelegates: testLocalizationsDelegates,
+    supportedLocales: testSupportedLocales,
+    theme: testLightTheme,
+    darkTheme: testDarkTheme,
+    themeMode: ThemeMode.dark,
+    home: Scaffold(
+      body: Center(
+        child: TRTooltipProvider(
+          child: ComposerChip(
+            key: ValueKey<int>(_layoutGeneration),
+            valueKey: const ValueKey('golden-project-chip'),
+            icon: Icons.folder_outlined,
+            label: 'Coder',
+            tooltip: '프로젝트 선택',
+            menuChildren: <Widget>[
+              TRMenuItem(onPressed: () {}, child: const Text('Coder · test')),
+              TRMenuItem(onPressed: () {}, child: const Text('추가')),
+            ],
+          ),
         ),
       ),
     ),
-  ),
-);
+  );
+}
 
 class _PermissionPickerGoldenHost extends StatelessWidget {
   const _PermissionPickerGoldenHost({required this.mode});

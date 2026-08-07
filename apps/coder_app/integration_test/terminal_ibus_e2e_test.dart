@@ -10,6 +10,7 @@ import 'package:coder_app/src/app/composition/app_services.dart';
 import 'package:coder_app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
+import 'package:coder_app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:coder_app/src/features/workspace/application/directory_picker_port.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
@@ -64,7 +65,7 @@ void main() {
         }
       });
 
-      const expected = '한글 abc 안녕 붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
+      const expected = '한글 abc 안녕 \u001bz붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
       final expectedBytes = utf8.encode(expected);
       final artifactDirectory =
           Platform.environment['TINYRACK_IBUS_ARTIFACT_DIR'];
@@ -143,9 +144,33 @@ void main() {
         tester,
         find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
       );
+      final terminalView = tester.widget<CoderTerminalView>(
+        find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
+      );
+      const wrapReadyMarker = '__CODER_WRAP_PROBE_READY__';
+      await setupClient.terminals.writeTerminal(
+        terminal.id,
+        "stty -echo; printf '\\r\\n$wrapReadyMarker\\r\\n'\r",
+      );
+      await _waitUntil(
+        () => terminalView.emulator.lines.any(
+          (line) => line
+              .map((cell) => cell.text)
+              .join()
+              .contains(
+                wrapReadyMarker,
+              ),
+        ),
+        'the shell to disable echo before the wrapped-row probe',
+      );
+      await tester.pumpAndSettle();
+      const wrappedProbe =
+          '\r\n\u001b[2K\u001b[999C\u001b[5DWRAPQWxy\b \b\b \b\b \b\r\n';
+      final encodedWrappedProbe = base64Encode(utf8.encode(wrappedProbe));
       await setupClient.terminals.writeTerminal(
         terminal.id,
         r"printf '\033[?2004l'; stty raw -echo; "
+        "printf '%s' '$encodedWrappedProbe' | base64 --decode; "
         ": > '${modeProbe.path}'; touch '${modeReady.path}'; "
         "dd bs=1 count=1 of='${modeProbe.path}' status=none; "
         ": > '${capture.path}'; touch '${ready.path}'; "
@@ -183,14 +208,56 @@ void main() {
         ready.existsSync,
         'the PTY byte recorder to follow the mode probe',
       );
-      await _keys(<String>[...'gksrmf'.split(''), 'space']);
+      final wrappedEraseObserved = await _waitForOptional(
+        () => terminalView.emulator.lines.any(
+          (line) => line
+              .map((cell) => cell.text)
+              .join()
+              .trimRight()
+              .endsWith(
+                'WRAPQ',
+              ),
+        ),
+        const Duration(seconds: 15),
+      );
+      final terminalRows = terminalView.emulator.lines
+          .map(
+            (line) => line.map((cell) => cell.text).join().trimRight(),
+          )
+          .toList();
+      expect(
+        wrappedEraseObserved,
+        isTrue,
+        reason:
+            'Expected Backspace to erase W across the WRAPQW '
+            'soft-wrap boundary; rows=$terminalRows',
+      );
+      await _keys(<String>['g', 'k']);
+      if (artifactDirectory != null) {
+        await _run('scrot', <String>[
+          '--overwrite',
+          '$artifactDirectory/ime-preedit.png',
+        ]);
+      }
+      await _keys(<String>[...'srmf'.split(''), 'space']);
       await _toggleLanguage();
       await _keys(<String>['a', 'b', 'c', 'space']);
       await _toggleLanguage();
       await _keys(<String>[...'dkssud'.split(''), 'space']);
+      await _toggleLanguage();
 
       const pasted = '붙여넣기 👩🏽\u200d💻';
       clipboard = await _setClipboard(pasted);
+      await _clickFinder(tester, windowId, terminalSurface, button: 3);
+      await _keys(<String>['Escape']);
+      await _waitForTerminalFocus(tester);
+      await _keys(<String>['z']);
+      await _waitUntil(
+        () =>
+            capture.existsSync() &&
+            capture.lengthSync() >= utf8.encode('한글 abc 안녕 \u001bz').length,
+        'terminal input to resume after native-menu cancellation',
+      );
       await _clickFinder(tester, windowId, terminalSurface, button: 3);
       final nativeMenuGesture = await tester.startGesture(
         tester.getTopLeft(terminalSurface) + const Offset(24, 24),
