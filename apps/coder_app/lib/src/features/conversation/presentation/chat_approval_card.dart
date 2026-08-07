@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:coder_app/src/features/conversation/application/chat_tool_presentation.dart';
 import 'package:coder_app/src/features/conversation/application/conversation_controller.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_code_block.dart';
@@ -11,18 +12,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Renders an actionable tool approval request.
-class ApprovalCard extends ConsumerWidget {
+class ApprovalCard extends ConsumerStatefulWidget {
   /// Creates an [ApprovalCard].
-  const ApprovalCard({required this.hostId, required this.approval, super.key});
+  const ApprovalCard({
+    this.hostId,
+    this.approval,
+    this.interaction,
+    super.key,
+  }) : assert(
+         approval != null || interaction != null,
+         'An approval or timeline interaction is required.',
+       );
 
   /// Stable host profile containing the approval's agent.
-  final String hostId;
+  final String? hostId;
 
   /// The pending approval rendered by this card.
-  final ApprovalRequestDto approval;
+  final ApprovalRequestDto? approval;
+
+  /// Timeline interaction, including a persisted decision when resolved.
+  final ChatApprovalInteraction? interaction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ApprovalCard> createState() => _ApprovalCardState();
+}
+
+class _ApprovalCardState extends ConsumerState<ApprovalCard> {
+  bool _submitting = false;
+  Object? _error;
+
+  ApprovalRequestDto get approval =>
+      widget.interaction?.approval ?? widget.approval!;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -46,20 +69,41 @@ class ApprovalCard extends ConsumerWidget {
               const SizedBox(height: TRSpacing.small),
               _preview(context),
               const SizedBox(height: TRSpacing.small),
+              if (_error case final error?) ...<Widget>[
+                TRText('$error', color: TRTextColor.danger),
+                const SizedBox(height: TRSpacing.small),
+              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
-                  TRButton(
-                    appearance: TRAppearance.ghost,
-                    onPressed: () => _resolve(ref, approved: false),
-                    child: TRText.inherit(l10n.chatApprovalDeny),
-                  ),
-                  const SizedBox(width: TRSpacing.small),
-                  TRButton(
-                    intent: TRIntent.primary,
-                    onPressed: () => _resolve(ref, approved: true),
-                    child: TRText.inherit(l10n.chatApprovalAllow),
-                  ),
+                  if (widget.interaction?.status ==
+                      ChatInteractionStatus.resolved)
+                    TRText(
+                      widget.interaction!.approved == true
+                          ? l10n.chatApprovalAllow
+                          : l10n.chatApprovalDeny,
+                      variant: TRTextVariant.label,
+                      color: widget.interaction!.approved == true
+                          ? TRTextColor.primary
+                          : TRTextColor.muted,
+                    )
+                  else ...<Widget>[
+                    TRButton(
+                      appearance: TRAppearance.ghost,
+                      onPressed: _submitting || widget.hostId == null
+                          ? null
+                          : () => _resolve(approved: false),
+                      child: TRText.inherit(l10n.chatApprovalDeny),
+                    ),
+                    const SizedBox(width: TRSpacing.small),
+                    TRButton(
+                      intent: TRIntent.primary,
+                      onPressed: _submitting || widget.hostId == null
+                          ? null
+                          : () => _resolve(approved: true),
+                      child: TRText.inherit(l10n.chatApprovalAllow),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -85,11 +129,24 @@ class ApprovalCard extends ConsumerWidget {
         : body(context, preview);
   }
 
-  void _resolve(WidgetRef ref, {required bool approved}) => unawaited(
-    ref
-        .read(
-          conversationControllerProvider(hostId, approval.sessionId).notifier,
-        )
-        .resolveApproval(approval.id, approved: approved),
-  );
+  void _resolve({required bool approved}) => unawaited(() async {
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(
+            conversationControllerProvider(
+              widget.hostId!,
+              approval.sessionId,
+            ).notifier,
+          )
+          .resolveApproval(approval.id, approved: approved);
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }());
 }

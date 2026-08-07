@@ -49,10 +49,13 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
   /// withdraw tools while the daemon runs, so a cached list goes stale.
   Future<void> refresh() async {
     final api = await requireHostApi(ref, hostId);
+    final definitions = await api.agents.listAgentDefinitions();
+    final tools = await api.agents.listAgentTools();
+    if (!ref.mounted) return;
     state = AsyncData<AgentDefinitionsState>(
       AgentDefinitionsState(
-        definitions: await api.agents.listAgentDefinitions(),
-        tools: await api.agents.listAgentTools(),
+        definitions: definitions,
+        tools: tools,
       ),
     );
   }

@@ -48,5 +48,10 @@
   "goalStart": "Goalを開始",
   "goalReplaceTitle": "現在のGoalを置き換えますか？",
   "goalReplaceDescription": "新しいGoalを開始し、記録された使用量をリセットします。",
-  "goalReplaceAction": "Goalを置き換える"
+  "goalReplaceAction": "Goalを置き換える",
+  "workspaceSplitRight": "右に分割",
+  "workspaceSplitDown": "下に分割",
+  "workspaceResizePanes": "ペインのサイズを変更",
+  "workspaceSwitchTab": "タブを切り替え",
+  "workspaceMoveTabToPane": "アクティブなタブを別のペインに移動"
 }

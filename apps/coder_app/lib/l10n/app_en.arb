@@ -347,6 +347,26 @@
   "@workspaceAllSessions": {
     "description": "Tooltip that lists every session of the open checkout."
   },
+  "workspaceSplitRight": "Split right",
+  "@workspaceSplitRight": {
+    "description": "Splits a workspace pane with a new pane on the right."
+  },
+  "workspaceSplitDown": "Split down",
+  "@workspaceSplitDown": {
+    "description": "Splits a workspace pane with a new pane below."
+  },
+  "workspaceResizePanes": "Resize panes",
+  "@workspaceResizePanes": {
+    "description": "Accessible label for a draggable pane separator."
+  },
+  "workspaceSwitchTab": "Switch tab",
+  "@workspaceSwitchTab": {
+    "description": "Title of the mobile sheet listing every open tab."
+  },
+  "workspaceMoveTabToPane": "Move active tab to pane",
+  "@workspaceMoveTabToPane": {
+    "description": "Moves the active tab to another pane without dragging."
+  },
   "workspaceCloseTab": "Close tab",
   "@workspaceCloseTab": {
     "description": "Tooltip that closes one session tab."

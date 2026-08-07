@@ -904,12 +904,16 @@ class DraftSessionPane extends ConsumerWidget {
   /// Creates a [DraftSessionPane].
   const DraftSessionPane({
     required this.selection,
+    required this.draftId,
     required this.onCreated,
     super.key,
   });
 
   /// Worktree the new session belongs to.
   final WorkspaceSelection selection;
+
+  /// Stable identity that isolates this draft from drafts in other panes.
+  final String draftId;
 
   /// Called after the session exists and its first turn has started.
   final ValueChanged<SessionDto> onCreated;
@@ -931,6 +935,7 @@ class DraftSessionPane extends ConsumerWidget {
       sessionComposerDraftControllerProvider(
         selection.hostId,
         selection.worktreeId,
+        draftId,
       ),
     );
     final definitions = selectableAgentDefinitions(
@@ -956,6 +961,7 @@ class DraftSessionPane extends ConsumerWidget {
       sessionComposerDraftControllerProvider(
         selection.hostId,
         selection.worktreeId,
+        draftId,
       ).notifier,
     );
     return Column(

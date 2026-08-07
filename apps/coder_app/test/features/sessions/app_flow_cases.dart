@@ -122,6 +122,125 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
+    'desktop workspace splits panes and mobile presents every tab in a sheet',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final first = session('one');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[first],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: first.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      final draftClose = find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'tr-tabs-close-draft:',
+            ),
+      );
+      expect(draftClose, findsOneWidget);
+      await tester.tap(draftClose);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('workspace-split-right')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('workspace-split-right')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-pane')), findsNWidgets(2));
+      expect(find.byType(TRSplitView), findsOneWidget);
+      await tester.drag(
+        find.byKey(const ValueKey<String>('tr-split-view-separator')),
+        const Offset(TRSpacing.threeExtraLarge, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TRSplitView>(find.byType(TRSplitView)).ratio,
+        greaterThan(0.5),
+      );
+
+      final sourceTab = find.byKey(
+        const ValueKey<String>('tr-tabs-tab-one'),
+      );
+      final targetStrip = find.byType(TRTabs).last;
+      await tester.dragFrom(
+        tester.getCenter(sourceTab),
+        tester.getCenter(targetStrip) - tester.getCenter(sourceTab),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRSplitView), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-split-right')));
+      await tester.pumpAndSettle();
+      expect(find.byType(TRSplitView), findsOneWidget);
+
+      await tester.binding.setSurfaceSize(const Size(390, 760));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-split-right')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-tab-sheet')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('workspace-tab-row-session:one')),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'workspace-tab-row-draft:',
+              ),
+        ),
+        findsWidgets,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-tab-row-session:one')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-tab-sheet')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('conversation-pane-session:one')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
+      );
+      await tester.pumpAndSettle();
+      final sessionRow = find.byKey(
+        const ValueKey('workspace-tab-row-session:one'),
+      );
+      await tester.tap(
+        find.descendant(of: sessionRow, matching: find.byType(TRIconButton)),
+      );
+      await tester.pumpAndSettle();
+      expect(sessionRow, findsNothing);
+    },
+    tags: const <String>['feature_test__session_tabs__widget'],
+  );
+
+  testWidgets(
     'session tabs close locally and reopen from the picker',
     (
       tester,

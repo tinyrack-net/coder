@@ -317,6 +317,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get workspaceAllSessions => 'All sessions';
 
   @override
+  String get workspaceSplitRight => '右に分割';
+
+  @override
+  String get workspaceSplitDown => '下に分割';
+
+  @override
+  String get workspaceResizePanes => 'ペインのサイズを変更';
+
+  @override
+  String get workspaceSwitchTab => 'タブを切り替え';
+
+  @override
+  String get workspaceMoveTabToPane => 'アクティブなタブを別のペインに移動';
+
+  @override
   String get workspaceCloseTab => 'Close tab';
 
   @override
