@@ -165,7 +165,7 @@ void _registerSessionsAppFlows() {
       expect(find.byType(TRSplitView), findsOneWidget);
       await tester.drag(
         find.byKey(const ValueKey<String>('tr-split-view-separator')),
-        const Offset(TRSpacing.fiveExtraLarge, 0),
+        const Offset(TRSpacing.threeExtraLarge, 0),
       );
       await tester.pumpAndSettle();
       expect(

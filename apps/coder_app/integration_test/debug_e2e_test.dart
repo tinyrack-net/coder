@@ -1527,7 +1527,7 @@ void main() {
       );
       await tester.drag(
         find.byKey(const ValueKey<String>('tr-split-view-separator')),
-        const Offset(TRSpacing.fiveExtraLarge, 0),
+        const Offset(TRSpacing.threeExtraLarge, 0),
       );
       await tester.pumpAndSettle();
       final sourceTab = find.byKey(

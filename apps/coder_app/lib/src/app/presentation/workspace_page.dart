@@ -28,6 +28,7 @@ import 'package:coder_app/src/features/terminals/presentation/coder_terminal_vie
 import 'package:coder_app/src/features/workspace/application/workspace_controller.dart';
 import 'package:coder_app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/coder_page_shell.dart';
 import 'package:coder_client/coder_client.dart';
@@ -78,7 +79,9 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     return CoderPageShell(
       appBar: CoderPageHeader(
         // The toggle keeps one position in both states: the very top left.
-        leading: MediaQuery.sizeOf(context).width < TRBreakpoints.medium
+        leading:
+            MediaQuery.sizeOf(context).width <
+                CoderLayoutMetrics.compactBreakpoint
             ? null
             : TRIconButton(
                 appearance: TRAppearance.ghost,
@@ -126,7 +129,9 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
           );
           final detail = widget.selection == null
               ? NewWorkspacePane(
-                  showBack: constraints.maxWidth < TRBreakpoints.medium,
+                  showBack:
+                      constraints.maxWidth <
+                      CoderLayoutMetrics.compactBreakpoint,
                   onBack: () => const WorkspaceHomeRoute().replace(context),
                   onStarted: (selection, session) =>
                       _goSession(context, selection, session.id),
@@ -140,9 +145,11 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                   selection: widget.selection!,
                   requestedAgentId: widget.requestedAgentId,
                   requestedTerminalId: widget.requestedTerminalId,
-                  mobile: constraints.maxWidth < TRBreakpoints.medium,
+                  mobile:
+                      constraints.maxWidth <
+                      CoderLayoutMetrics.compactBreakpoint,
                 );
-          if (constraints.maxWidth < TRBreakpoints.medium) {
+          if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
             return widget.selection == null && !widget.compose
                 ? sidebar
                 : detail;
