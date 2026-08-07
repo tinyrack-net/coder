@@ -11,6 +11,7 @@ import 'package:coder_app/src/coder_selection_row.dart';
 import 'package:coder_app/src/desktop_shell.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_app/src/settings/settings_layout.dart';
 import 'package:coder_app/src/tray_menu_model.dart';
 import 'package:coder_client/coder_client.dart';
@@ -834,7 +835,7 @@ void main() {
 
       // An @ token completes into a worktree-relative path rather than
       // sending, and the completed prompt is what reaches the daemon.
-      await tester.enterText(find.byKey(composer), 'read @READ');
+      await _typeComposerPrompt(tester, composer, 'read @READ');
       await tester.pumpAndSettle();
       await pumpUntil(tester, find.text('README.md'));
       // Picked with the pointer rather than Enter: the catalog is still
@@ -852,7 +853,7 @@ void main() {
 
       // A query that matches nothing says so, and Escape hands Enter back to
       // sending so the typed text still goes out as prose.
-      await tester.enterText(find.byKey(composer), 'read @zzzzzz');
+      await _typeComposerPrompt(tester, composer, 'read @zzzzzz');
       await tester.pumpAndSettle();
       // The E2E app is pinned to Korean, so the empty row reads in Korean.
       await pumpUntil(tester, find.text('파일 없음'));
@@ -860,18 +861,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('파일 없음'), findsNothing);
 
-      await tester.enterText(find.byKey(composer), 'Delegate review');
-      await tester.pump();
-      expect(
-        tester.widget<TRTextField>(find.byKey(composer)).controller?.text,
-        isNotEmpty,
-      );
-      expect(
-        tester.widget<TRIconButton>(find.byKey(send)).onPressed,
-        isNotNull,
-      );
-      await tester.tap(find.byKey(send));
-      await tester.pump();
+      await _submitComposerPrompt(tester, composer, send, 'Delegate review');
       // The parent turn completes without waiting for the spawned child.
       await _pumpUntilWithSessionDiagnostics(
         tester,
@@ -1341,14 +1331,7 @@ void main() {
         'the attachment session to enter plan mode',
       );
       await tester.pumpAndSettle();
-      await _waitForComposerReady(tester, send);
-      await tester.enterText(find.byKey(composer), 'Plan the change');
-      await tester.pump();
-      expect(
-        tester.widget<TRIconButton>(find.byKey(send)).onPressed,
-        isNotNull,
-      );
-      await tester.tap(find.byKey(send));
+      await _submitComposerPrompt(tester, composer, send, 'Plan the change');
       await pumpUntil(tester, find.text('계획'));
       await pumpUntil(
         tester,
@@ -1382,10 +1365,25 @@ void main() {
       // and the chosen answer reaches the model. Implementing the plan started
       // a turn of its own, so this prompt may queue behind it; the wait spans
       // both turns.
-      await _waitForComposerReady(tester, send);
-      await tester.enterText(find.byKey(composer), 'Ask me about storage');
-      await tester.pump();
-      await tester.tap(find.byKey(send));
+      await _submitComposerPrompt(
+        tester,
+        composer,
+        send,
+        'Ask me about storage',
+      );
+      // The prompt has to leave the composer either way: straight into the
+      // transcript, or held as a queue chip behind the implement turn. Failing
+      // here separates "never left the client" from "the daemon never
+      // answered", which the 120s wait below cannot tell apart.
+      await pumpUntilCondition(
+        tester,
+        () =>
+            find.text('Ask me about storage').evaluate().isNotEmpty ||
+            tester
+                .widgetList<SessionComposer>(find.byType(SessionComposer))
+                .any((item) => item.queued.isNotEmpty),
+        'the storage prompt to leave the composer',
+      );
       await _pumpUntilWithSessionDiagnostics(
         tester,
         find.text('Storage'),
@@ -2182,22 +2180,26 @@ Future<void> _waitForComposerReady(
   'the composer to have a model selected',
 );
 
-Future<void> _submitComposerPrompt(
+/// Types [prompt] into the composer and proves it arrived.
+///
+/// `tester.enterText` grants focus and pumps once, which is not enough: the
+/// text goes to whichever field owns the input connection, so a rebuild racing
+/// the keystroke leaves the field empty. An empty field then makes the send a
+/// silent no-op, because the composer treats "nothing to send" as nothing to
+/// do. Callers that only type, such as the `@` mention steps, use this
+/// directly; everything else goes through [_submitComposerPrompt].
+Future<void> _typeComposerPrompt(
   WidgetTester tester,
   ValueKey<String> composerKey,
-  ValueKey<String> sendKey,
   String prompt,
 ) async {
-  await _waitForComposerReady(tester, sendKey);
   final composer = find.byKey(composerKey);
   final input = find.descendant(
     of: composer,
     matching: find.byType(EditableText),
   );
   await tester.tap(input);
-  // `testTextInput` delivers to whichever field owns the input connection, so
-  // typing before the tap lands writes the prompt nowhere and the field stays
-  // empty. Focus is the evidence that the connection is this composer's.
+  // Focus is the evidence that the input connection is this composer's.
   await pumpUntilCondition(
     tester,
     () => tester.widget<EditableText>(input).focusNode.hasFocus,
@@ -2206,6 +2208,16 @@ Future<void> _submitComposerPrompt(
   tester.testTextInput.enterText(prompt);
   await tester.pump();
   expect(tester.widget<TRTextField>(composer).controller?.text, prompt);
+}
+
+Future<void> _submitComposerPrompt(
+  WidgetTester tester,
+  ValueKey<String> composerKey,
+  ValueKey<String> sendKey,
+  String prompt,
+) async {
+  await _waitForComposerReady(tester, sendKey);
+  await _typeComposerPrompt(tester, composerKey, prompt);
   await tester.tap(find.byKey(sendKey));
   await tester.pump();
 }
@@ -2224,7 +2236,11 @@ Future<void> _replaceMcpFieldText(
   await tester.pump();
 }
 
-/// Waits for [finder], reporting every session's timeline when it never comes.
+/// Waits for [finder], reporting both sides when it never comes.
+///
+/// The daemon dump alone reads as innocent when the prompt never left the
+/// client, which is indistinguishable from a model that answered something
+/// else. The composer state is what tells those apart.
 Future<void> _pumpUntilWithSessionDiagnostics(
   WidgetTester tester,
   Finder finder,
@@ -2244,7 +2260,31 @@ Future<void> _pumpUntilWithSessionDiagnostics(
         )).map((event) => event.type).toList(growable: false),
       };
     }
-    throw TestFailure('${failure.message} Sessions: $diagnostics');
+    final composers = tester.widgetList<SessionComposer>(
+      find.byType(SessionComposer),
+    );
+    final client = <String, Object?>{
+      'busy': composers.map((item) => item.busy).toList(growable: false),
+      'queued': composers
+          .map(
+            (item) => item.queued
+                .map(
+                  (turn) =>
+                      '${turn.text} '
+                      '(attempts ${turn.attempts}, error ${turn.error})',
+                )
+                .toList(growable: false),
+          )
+          .toList(growable: false),
+      'composerText': tester
+          .widgetList<TRTextField>(find.byType(TRTextField))
+          .map((field) => field.controller?.text)
+          .where((text) => text != null && text.isNotEmpty)
+          .toList(growable: false),
+    };
+    throw TestFailure(
+      '${failure.message} Client: $client Sessions: $diagnostics',
+    );
   }
 }
 

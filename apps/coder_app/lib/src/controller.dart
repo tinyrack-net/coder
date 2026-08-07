@@ -836,6 +836,17 @@ const Duration composerFileSearchDebounce = Duration(milliseconds: 120);
 /// How long an idle empty-query result stays warm so reopening `@` is instant.
 const Duration composerFileSearchKeepAlive = Duration(seconds: 30);
 
+/// How long a failed queue release rests before it is tried again.
+const Duration conversationDrainRetryDelay = Duration(milliseconds: 250);
+
+/// Releases one queued prompt may be charged before it waits for the user.
+///
+/// The queue is released by session events, and the event that would have
+/// released a prompt is often the last one coming. A bounded retry is what
+/// keeps a prompt from waiting on an event that will never arrive, so the
+/// bound has to be small enough to stay invisible and finite by construction.
+const int conversationDrainMaxAttempts = 3;
+
 @riverpod
 /// Searches one worktree for the files an `@` query could mention.
 ///
@@ -1256,6 +1267,8 @@ final class QueuedTurn {
     required this.id,
     required this.text,
     required this.attachments,
+    this.attempts = 0,
+    this.error,
   });
 
   /// Identity used to edit or promote one entry.
@@ -1266,6 +1279,27 @@ final class QueuedTurn {
 
   /// Files that go up with the prompt.
   final List<PendingAttachment> attachments;
+
+  /// Releases already charged against this prompt's retry budget.
+  ///
+  /// Charged when a retry is armed rather than when a send fails, so every
+  /// path that can arm one shares a single budget and none can chain past it.
+  final int attempts;
+
+  /// Why the last release failed, once the budget is spent.
+  ///
+  /// Null while the prompt is merely waiting its turn, which is the state a
+  /// reader has to be able to tell apart from one that has stopped trying.
+  final String? error;
+
+  /// Returns a copy carrying a new retry budget or failure reason.
+  QueuedTurn copyWith({int? attempts, String? error}) => QueuedTurn(
+    id: id,
+    text: text,
+    attachments: attachments,
+    attempts: attempts ?? this.attempts,
+    error: error ?? this.error,
+  );
 }
 
 /// ConversationState defines a public contract.
@@ -1312,6 +1346,10 @@ class ConversationController extends _$ConversationController {
   // Both the idle session event and an explicit promotion can ask for a drain,
   // so one send is in flight at a time.
   bool _draining = false;
+  // A drain asked for while one runs, held rather than dropped: the request
+  // refused here is often the only signal that prompt was ever going to get.
+  bool _drainAgain = false;
+  Timer? _drainRetry;
 
   @override
   Future<ConversationState> build(String hostId, String? sessionId) async {
@@ -1325,7 +1363,9 @@ class ConversationController extends _$ConversationController {
     final api = runtime!.api!;
     final timeline = await api.subscribeTimeline(sessionId);
     _events = api.events.listen(_handleEvent);
-    ref.onDispose(() => unawaited(_events?.cancel()));
+    ref
+      ..onDispose(() => unawaited(_events?.cancel()))
+      ..onDispose(() => _drainRetry?.cancel());
     return ConversationState(
       timeline: timeline,
       approvals: _pendingApprovals(timeline),
@@ -1423,13 +1463,68 @@ class ConversationController extends _$ConversationController {
   Future<void> _notePendingInput() async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
+    final CoderApi api;
     try {
-      final api = await _requireHostApi(ref, hostId);
-      await api.notePendingInput(sessionId);
-      await _drainIfAlreadySettled(api, sessionId);
+      api = await _requireHostApi(ref, hostId);
     } on Object {
-      // Not state, so a lost notice is not worth surfacing.
+      // Without a connection there is no queue to release: reconnecting
+      // rebuilds this controller from scratch.
+      return;
     }
+    try {
+      await api.notePendingInput(sessionId);
+    } on Object {
+      // Not state, so a lost notice is not worth surfacing. The settled check
+      // below is liveness rather than a notice, so it still has to run.
+    }
+    try {
+      await _drainIfAlreadySettled(api, sessionId);
+    } on Object catch (error) {
+      // For a prompt queued after the turn settled this check is the only
+      // release it will ever get, so a failed check re-arms rather than
+      // stranding the prompt. The reason travels with it: every way of
+      // running out of budget has to end somewhere the reader can see.
+      _scheduleDrainRetry(error: '$error');
+    }
+  }
+
+  /// Arms one more release attempt, or stops and records why.
+  ///
+  /// The only place a retry timer is created. It charges the head's budget
+  /// before arming, which is what makes the chain finite by construction.
+  void _scheduleDrainRetry({required String error}) {
+    if (!ref.mounted) return;
+    final current = state.asData?.value;
+    final head = current?.queued.firstOrNull;
+    if (current == null || head == null) return;
+    if (head.attempts >= conversationDrainMaxAttempts) {
+      // Out of budget. The prompt stays, but it stops passing for one that is
+      // simply waiting its turn, so the reader knows to send or edit it.
+      if (head.error == null) {
+        state = AsyncData<ConversationState>(
+          current.copyWith(
+            queued: <QueuedTurn>[
+              head.copyWith(error: error),
+              ...current.queued.skip(1),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        queued: <QueuedTurn>[
+          head.copyWith(attempts: head.attempts + 1),
+          ...current.queued.skip(1),
+        ],
+      ),
+    );
+    _drainRetry?.cancel();
+    _drainRetry = Timer(
+      conversationDrainRetryDelay,
+      () => unawaited(drainQueue()),
+    );
   }
 
   /// Releases the queue when the turn it was waiting on has already finished.
@@ -1483,7 +1578,15 @@ class ConversationController extends _$ConversationController {
   /// Exactly one prompt leaves the queue per call: each queued follow-up earns
   /// its own turn, and the next one waits for that turn to settle in turn.
   Future<void> drainQueue() async {
-    if (_draining) return;
+    if (_draining) {
+      // Dropping the request drops the prompt when it was the last signal
+      // coming, so the running drain picks it up on its way out.
+      _drainAgain = true;
+      return;
+    }
+    // Cleared on the way in: a request that arrives from here on is about this
+    // run, and a stale flag would cost a pointless extra pass.
+    _drainAgain = false;
     final current = state.asData?.value;
     final next = current?.queued.firstOrNull;
     if (current == null || next == null) return;
@@ -1499,13 +1602,19 @@ class ConversationController extends _$ConversationController {
         attachments: next.attachments,
         queueWhenBusy: false,
       );
-    } on Exception {
+    } on Exception catch (error) {
       // The drain runs from a broadcast event with nobody to await it, so a
-      // failed send puts the prompt back rather than disappearing.
+      // failed send puts the prompt back rather than disappearing. The event
+      // that triggered this drain is often the last one coming, so putting it
+      // back is only half the job: it has to be re-armed too.
       _restoreQueuedTurn(next);
+      _scheduleDrainRetry(error: '$error');
     } finally {
       _draining = false;
     }
+    // drainQueue clears the flag on entry, so this hands over rather than
+    // racing: a request arriving during the next run is that run's to keep.
+    if (_drainAgain) await drainQueue();
   }
 
   void _restoreQueuedTurn(QueuedTurn item) {

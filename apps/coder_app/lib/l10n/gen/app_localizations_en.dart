@@ -998,6 +998,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String composerQueuedFailed(String reason) {
+    return 'Not sent · $reason';
+  }
+
+  @override
   String get composerAttachLabel => 'Attach files';
 
   @override

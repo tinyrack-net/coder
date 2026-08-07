@@ -213,6 +213,64 @@ void main() {
   );
 
   testWidgets(
+    'a queued prompt that stopped retrying shows why and stays actionable',
+    tags: const <String>['feature_test__conversation_turn_queue__widget'],
+    (tester) async {
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            busy: true,
+            queued: const <QueuedTurn>[
+              QueuedTurn(
+                id: 'q0',
+                text: 'follow up',
+                attachments: <PendingAttachment>[],
+                attempts: conversationDrainMaxAttempts,
+                error: 'Exception: offline',
+              ),
+            ],
+            onSubmit: (_) {},
+            onQueue: (_) {},
+            onQueuedEdit: (_) => null,
+            onQueuedSendNow: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // A prompt that has stopped trying must not read like one that is
+      // simply waiting its turn, or nobody knows to act on it.
+      final error = find.byKey(const ValueKey('queued-turn-0-error'));
+      expect(error, findsOneWidget);
+      expect(
+        tester.widget<TRText>(error).color,
+        TRTextColor.danger,
+      );
+      expect(find.textContaining('offline'), findsOneWidget);
+
+      // Both ways out stay open: the prompt is never stranded beyond reach.
+      expect(
+        tester
+            .widget<TRIconButton>(
+              find.byKey(const ValueKey('queued-turn-0-edit')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      expect(
+        tester
+            .widget<TRIconButton>(
+              find.byKey(const ValueKey('queued-turn-0-send')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+    },
+  );
+
+  testWidgets(
     'a failed send returns the prompt to the input',
     tags: const <String>['feature_test__turn_execution__widget'],
     (tester) async {

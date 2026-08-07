@@ -980,6 +980,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String composerQueuedFailed(String reason) {
+    return '전송되지 않음 · $reason';
+  }
+
+  @override
   String get composerAttachLabel => '파일 첨부';
 
   @override

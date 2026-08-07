@@ -1501,12 +1501,29 @@ class _QueuedTurnRow extends StatelessWidget {
         children: <Widget>[
           const Icon(CoderIcons.queue),
           Expanded(
-            child: Text(
-              turn.text.isEmpty
-                  ? l10n.composerQueuedAttachments(turn.attachments.length)
-                  : turn.text,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              spacing: TRSpacing.extraSmall,
+              children: <Widget>[
+                Text(
+                  turn.text.isEmpty
+                      ? l10n.composerQueuedAttachments(turn.attachments.length)
+                      : turn.text,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                // A prompt that has stopped retrying looks exactly like one
+                // waiting its turn, so the reason is what tells the reader
+                // there is something to act on.
+                if (turn.error case final error?)
+                  TRText(
+                    l10n.composerQueuedFailed(error),
+                    key: ValueKey<String>('${slotKey.value}-error'),
+                    variant: TRTextVariant.bodySm,
+                    color: TRTextColor.danger,
+                  ),
+              ],
             ),
           ),
           TRTooltip(
