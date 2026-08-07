@@ -203,6 +203,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                       selected: category,
                       hosts: hosts,
                       hostId: hostId,
+                      loading: registryLoading,
                     ),
                   ),
                   Expanded(child: detail),
@@ -456,10 +457,12 @@ class _DaemonSelect extends ConsumerWidget {
   const _DaemonSelect({
     required this.hosts,
     required this.hostId,
+    required this.loading,
   });
 
   final List<HostRuntimeSnapshot> hosts;
   final String? hostId;
+  final bool loading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
