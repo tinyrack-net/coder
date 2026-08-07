@@ -13,7 +13,7 @@ final class SharedPreferencesAppStore
   SharedPreferencesAppStore(this._preferences);
 
   /// Single versioned document key; legacy singleton keys are not read.
-  static const String documentKey = 'tinyrack_coder.app_document_v3';
+  static const String documentKey = 'tinyrack_coder.app_document_v4';
 
   final SharedPreferences _preferences;
   Future<void> _writes = Future<void>.value();
@@ -90,7 +90,7 @@ final class SecureRemoteHostCredentialStore
   /// Creates a secure remote host credential store.
   const SecureRemoteHostCredentialStore(this._storage);
 
-  static const String _prefix = 'tinyrack_coder.remote_host_token.';
+  static const String _prefix = 'tinyrack_coder.v4.remote_host_token.';
   final FlutterSecureStorage _storage;
 
   @override
@@ -127,9 +127,9 @@ final class _AppDocument {
   });
 
   factory _AppDocument.fromJson(Map<String, dynamic> json) {
-    if (json['version'] != 3) {
+    if (json['version'] != 4) {
       throw const FormatException(
-        'Incompatible app settings. Remove the app_document_v3 preference '
+        'Incompatible app settings. Remove the app_document_v4 preference '
         'to reset development data.',
       );
     }
@@ -163,7 +163,7 @@ final class _AppDocument {
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'version': 3,
+    'version': 4,
     'settings': <String, dynamic>{
       'embeddedDaemonEnabled': settings.embeddedDaemonEnabled,
       'embeddedDaemonExposure': settings.embeddedDaemonExposure.name,

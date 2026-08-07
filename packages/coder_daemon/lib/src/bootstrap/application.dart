@@ -6,35 +6,46 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/bootstrap/config.dart';
 import 'package:coder_daemon/src/features/agents/infrastructure/agent_definitions.dart';
 import 'package:coder_daemon/src/features/agents/infrastructure/built_in_tools.dart';
+import 'package:coder_daemon/src/features/agents/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/attachments/infrastructure/attachment_service.dart';
+import 'package:coder_daemon/src/features/attachments/transport/http_transport.dart';
 import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_config.dart';
 import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_resource_tools.dart';
 import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_server_service.dart';
 import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_service.dart';
 import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_transports.dart';
+import 'package:coder_daemon/src/features/mcp/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/prompts/infrastructure/commands.dart';
 import 'package:coder_daemon/src/features/prompts/infrastructure/skills.dart';
+import 'package:coder_daemon/src/features/prompts/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/credential_store.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/openai/openai.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_adapters.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_catalog.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
+import 'package:coder_daemon/src/features/providers/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/agent_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/exec_session_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_settings.dart';
+import 'package:coder_daemon/src/features/sessions/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/terminals/application/terminal_service.dart';
 import 'package:coder_daemon/src/features/terminals/domain/terminal.dart';
 import 'package:coder_daemon/src/features/terminals/infrastructure/portable_terminal.dart';
+import 'package:coder_daemon/src/features/terminals/transport/rpc_bindings.dart';
+import 'package:coder_daemon/src/features/terminals/transport/terminal_mapper.dart';
 import 'package:coder_daemon/src/features/workspaces/infrastructure/file_index.dart';
 import 'package:coder_daemon/src/features/workspaces/infrastructure/git_workspace.dart';
 import 'package:coder_daemon/src/features/workspaces/infrastructure/project_settings.dart';
 import 'package:coder_daemon/src/features/workspaces/infrastructure/workspace_service.dart';
+import 'package:coder_daemon/src/features/workspaces/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/database.dart';
 import 'package:coder_daemon/src/shared/ports/agent_protocol_mapping.dart';
 import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
+import 'package:coder_daemon/src/transport/rpc/binding.dart';
+import 'package:coder_daemon/src/transport/rpc/rpc_dispatch.dart';
 import 'package:coder_daemon/src/transport/rpc/server.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:crypto/crypto.dart';
@@ -83,11 +94,64 @@ abstract interface class DaemonHandle {
   Future<void> stop();
 }
 
+/// Typed host ports that customize daemon composition without exposing
+/// infrastructure adapters or feature services.
+final class DaemonHostOptions {
+  /// Creates optional host overrides.
+  const DaemonHostOptions({
+    this.provider,
+    this.clock,
+    this.ids,
+    this.modelDiscovery,
+    this.oauthGateway,
+    this.providerCatalogMetadataSource,
+    this.workspacePaths,
+    this.git,
+    this.projectSettings,
+    this.worktreeHooks,
+    this.gitignoreEnvironment,
+  });
+
+  /// Fixed provider used by deterministic embedded/test hosts.
+  final ModelProvider? provider;
+
+  /// Host clock.
+  final Clock? clock;
+
+  /// Host identifier generator.
+  final IdGenerator? ids;
+
+  /// Provider model discovery port.
+  final ProviderModelDiscovery? modelDiscovery;
+
+  /// Provider authorization port.
+  final ProviderOAuthGateway? oauthGateway;
+
+  /// Provider catalog metadata port.
+  final ProviderCatalogMetadataSource? providerCatalogMetadataSource;
+
+  /// Workspace path access port.
+  final WorkspacePathGateway? workspacePaths;
+
+  /// Git workspace port.
+  final GitWorkspaceGateway? git;
+
+  /// Project-settings persistence port.
+  final ProjectSettingsStore? projectSettings;
+
+  /// Worktree hook execution port.
+  final WorktreeHookRunner? worktreeHooks;
+
+  /// Gitignore environment supplied to search tools.
+  final GitignoreEnvironment? gitignoreEnvironment;
+}
+
 /// Public API exposed by this library.
 abstract final class DaemonApplication {
   /// The start public API member.
   static Future<DaemonHandle> start(
     DaemonConfig config, {
+    DaemonHostOptions options = const DaemonHostOptions(),
     ModelProvider? provider,
     Clock clock = const SystemClock(),
     IdGenerator ids = const UuidIdGenerator(),
@@ -100,8 +164,21 @@ abstract final class DaemonApplication {
     WorktreeHookRunner worktreeHooks = const ShellWorktreeHookRunner(),
     GitignoreEnvironment? gitignoreEnvironment,
   }) async {
-    final home = Directory(p.join(config.homeDirectory, 'v3'));
-    final configDirectory = p.join(config.configDirectory, 'v3');
+    final effectiveProvider = options.provider ?? provider;
+    final effectiveClock = options.clock ?? clock;
+    final effectiveIds = options.ids ?? ids;
+    final effectiveModelDiscovery = options.modelDiscovery ?? modelDiscovery;
+    final effectiveOAuthGateway = options.oauthGateway ?? oauthGateway;
+    final effectiveCatalogMetadataSource =
+        options.providerCatalogMetadataSource ?? providerCatalogMetadataSource;
+    final effectiveWorkspacePaths = options.workspacePaths ?? workspacePaths;
+    final effectiveGit = options.git ?? git;
+    final effectiveProjectSettings = options.projectSettings ?? projectSettings;
+    final effectiveWorktreeHooks = options.worktreeHooks ?? worktreeHooks;
+    final effectiveGitignoreEnvironment =
+        options.gitignoreEnvironment ?? gitignoreEnvironment;
+    final home = Directory(p.join(config.homeDirectory, 'v4'));
+    final configDirectory = p.join(config.configDirectory, 'v4');
     await home.create(recursive: true);
     final lockFile = File(p.join(home.path, 'daemon.lock'));
     final lock = await lockFile.open(mode: FileMode.append);
@@ -123,13 +200,13 @@ abstract final class DaemonApplication {
 
     final database = CoderDatabase(
       p.join(home.path, 'coder.sqlite'),
-      clock: clock,
+      clock: effectiveClock,
     );
     try {
       await database.runtimeDao.recoverInterruptedRuns();
       var serverId = await database.settingsDao.getValue('server.id');
       if (serverId == null) {
-        serverId = ids.generate();
+        serverId = effectiveIds.generate();
         await database.settingsDao.setValue('server.id', serverId);
       }
       final credentials = CredentialStore(configDirectory);
@@ -150,11 +227,16 @@ abstract final class DaemonApplication {
       if (credentials.bearerToken != token) {
         await credentials.setDaemonToken(token);
       }
-      final events = StreamController<WireEnvelope>.broadcast(sync: true);
+      final events = StreamController<OutboundNotification>.broadcast(
+        sync: true,
+      );
       // The whole vendor surface of this daemon: adding a vendor package
       // means adding its plugins and wire protocols to these two lists.
       final providerRegistry = ProviderRegistry(
-        plugins: openAIFamilyPlugins(clock: clock, openAIOAuth: oauthGateway),
+        plugins: openAIFamilyPlugins(
+          clock: effectiveClock,
+          openAIOAuth: effectiveOAuthGateway,
+        ),
         wireProtocols: openAIWireProtocols(),
       );
       final providers = ProviderConnectionService(
@@ -164,16 +246,16 @@ abstract final class DaemonApplication {
         environment: config.useEnvironmentCredentials
             ? Platform.environment
             : const <String, String>{},
-        clock: clock,
+        clock: effectiveClock,
         registry: providerRegistry,
         catalog: BuiltInProviderCatalog(
-          clock: clock,
+          clock: effectiveClock,
           registry: providerRegistry,
-          metadataSource: providerCatalogMetadataSource,
+          metadataSource: effectiveCatalogMetadataSource,
         ),
-        modelDiscovery: modelDiscovery,
+        modelDiscovery: effectiveModelDiscovery,
         oauthRefresher: OAuthCredentialRefresher(registry: providerRegistry),
-        fixedProvider: provider,
+        fixedProvider: effectiveProvider,
       );
       await providers.initialize();
       final models = ProviderModelResolver(providers);
@@ -187,13 +269,13 @@ abstract final class DaemonApplication {
       final providerAuth = ProviderAuthCoordinator(
         registry: providerRegistry,
         connector: providers,
-        ids: ids,
+        ids: effectiveIds,
       );
       final attachments = AttachmentService(
         repository: database.attachmentDao,
         blobs: NativeAttachmentBlobStore(p.join(home.path, 'attachments')),
-        clock: clock,
-        ids: ids,
+        clock: effectiveClock,
+        ids: effectiveIds,
       );
       await attachments.cleanupOrphans();
       // The composition root is the one place allowed to read the ambient
@@ -201,13 +283,13 @@ abstract final class DaemonApplication {
       // global git excludes live without any of them reaching for it. A test
       // passes its own so it never inherits the running user's.
       final gitignore =
-          gitignoreEnvironment ??
+          effectiveGitignoreEnvironment ??
           GitignoreEnvironment.fromEnvironment(Platform.environment);
       final mcp = McpRuntime(
         store: FileMcpConfigStore(configDirectory),
         credentials: credentials,
         transports: IoMcpTransportFactory(clientVersion: config.version),
-        clock: clock,
+        clock: effectiveClock,
         environment: config.useEnvironmentCredentials
             ? Platform.environment
             : const <String, String>{},
@@ -282,8 +364,8 @@ abstract final class DaemonApplication {
       final execSessions = ExecSessionService(
         gateway: const PtyworldTerminalGateway(),
         pipes: const IoPipeGateway(),
-        ids: ids,
-        clock: clock,
+        ids: effectiveIds,
+        clock: effectiveClock,
       );
       final execSweep = Timer.periodic(
         const Duration(minutes: 5),
@@ -292,8 +374,8 @@ abstract final class DaemonApplication {
       final sessionInteractions = SessionInteractionCoordinator(
         timeline: database.timelineDao,
         events: events.add,
-        ids: ids,
-        clock: clock,
+        ids: effectiveIds,
+        clock: effectiveClock,
       );
       final service = SessionTurnCoordinator(
         sessions: database.sessionDao,
@@ -303,7 +385,7 @@ abstract final class DaemonApplication {
         models: models,
         events: events.add,
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
-        clock: clock,
+        clock: effectiveClock,
         attachments: attachments,
         toolRegistry: toolRegistry,
         externalTools: _McpToolSource(mcp),
@@ -320,8 +402,8 @@ abstract final class DaemonApplication {
         validateModel: models.validateAgentModel,
         fallbackModel: models.fallbackModel,
         events: events.add,
-        clock: clock,
-        ids: ids,
+        clock: effectiveClock,
+        ids: effectiveIds,
       )..runtime = service;
       service.multiAgent = multiAgent;
       final sessionSettings = SessionSettingsService(
@@ -332,19 +414,19 @@ abstract final class DaemonApplication {
       );
       final fileIndex = GitAwareFileIndexGateway(
         const IoCommandRunner(),
-        clock,
+        effectiveClock,
       );
       final workspaceOperations = WorkspaceOperations(
         database.workspaceDao,
         database.worktreeDao,
         database.sessionDao,
-        workspacePaths,
-        git ?? const ProcessGitWorkspaceGateway(IoCommandRunner()),
-        clock,
+        effectiveWorkspacePaths,
+        effectiveGit ?? const ProcessGitWorkspaceGateway(IoCommandRunner()),
+        effectiveClock,
         p.join(home.path, 'worktrees'),
         fileIndex,
-        projectSettings,
-        worktreeHooks,
+        effectiveProjectSettings,
+        effectiveWorktreeHooks,
       );
       // Sessions that belong to no project run here, so the home checkout has
       // to exist before the first client connects.
@@ -371,7 +453,9 @@ abstract final class DaemonApplication {
           if (workspace == null) {
             throw const FormatException('Workspace not found.');
           }
-          final project = await projectSettings.load(workspace.rootPath);
+          final project = await effectiveProjectSettings.load(
+            workspace.rootPath,
+          );
           if (project.shell case final shell?) {
             return TerminalShell(
               executable: shell.executable,
@@ -400,7 +484,7 @@ abstract final class DaemonApplication {
       final info = ServerInfoDto(
         serverId: serverId,
         version: config.version,
-        protocolVersion: coderProtocolVersion,
+        protocolVersion: coderProtocolMajor,
         homeDirectory: config.osHomeDirectory,
         features: <String, bool>{
           'timelineCatchup': true,
@@ -415,27 +499,109 @@ abstract final class DaemonApplication {
           'terminals': true,
         },
       );
+      final notificationSubscriptions = <StreamSubscription<Object?>>[
+        providerAuth.events.listen((attempt) {
+          events.add(
+            OutboundNotification(providersAuthUpdatedNotification, attempt),
+          );
+        }),
+        agentDefinitions.changes.listen((_) {
+          events.add(
+            OutboundNotification(
+              agentsChangedNotification,
+              const EmptyResultDto(),
+            ),
+          );
+        }),
+        mcp.changes.listen((_) {
+          events.add(
+            OutboundNotification(
+              mcpChangedNotification,
+              const EmptyResultDto(),
+            ),
+          );
+        }),
+        skills.changes.listen((_) {
+          events.add(
+            OutboundNotification(
+              promptsSkillsChangedNotification,
+              const EmptyResultDto(),
+            ),
+          );
+        }),
+        commands.changes.listen((_) {
+          events.add(
+            OutboundNotification(
+              promptsCommandsChangedNotification,
+              const EmptyResultDto(),
+            ),
+          );
+        }),
+        terminals.events.listen((event) {
+          switch (event) {
+            case final TerminalOutput output:
+              events.add(
+                OutboundNotification(
+                  terminalsOutputNotification,
+                  terminalOutputToDto(output),
+                ),
+              );
+            case final Terminal terminal:
+              events.add(
+                OutboundNotification(
+                  terminalsUpdatedNotification,
+                  terminalToDto(terminal),
+                ),
+              );
+          }
+        }),
+      ];
+      final bindings = RpcBindingRegistry(
+        <RpcBindingDescriptor>[
+          ...workspaceRpcBindings(
+            workspaces: workspaceCatalog,
+            worktrees: worktreeLifecycle,
+          ),
+          ...agentRpcBindings(
+            definitions: agentDefinitions,
+            worktrees: database.worktreeDao,
+            settings: database.settingsDao,
+          ),
+          ...promptRpcBindings(
+            skills: skills,
+            commands: commands,
+            workspaces: workspaceCatalog,
+          ),
+          ...providerRpcBindings(
+            providers: providers,
+            auth: providerAuth,
+            agentDefinitions: agentDefinitions,
+          ),
+          ...mcpRpcBindings(
+            runtime: mcp,
+            servers: mcpServers,
+            worktrees: database.worktreeDao,
+          ),
+          ...sessionRpcBindings(
+            sessions: database.sessionDao,
+            timeline: database.timelineDao,
+            turns: service,
+            settings: sessionSettings,
+            interactions: sessionInteractions,
+            agentDefinitions: agentDefinitions,
+            models: models,
+            clock: effectiveClock,
+          ),
+          ...terminalRpcBindings(
+            terminals: terminals,
+            settings: database.settingsDao,
+          ),
+        ],
+        procedures: daemonRpcProcedures,
+      );
       final rpc = DaemonRpcServer(
-        workspaces: workspaceCatalog,
-        worktreeLifecycle: worktreeLifecycle,
-        sessionRepository: database.sessionDao,
-        timeline: database.timelineDao,
-        agents: service,
-        sessionSettings: sessionSettings,
-        sessionInteractions: sessionInteractions,
-        attachments: attachments,
-        agentDefinitions: agentDefinitions,
-        mcp: mcp,
-        mcpServers: mcpServers,
-        worktrees: database.worktreeDao,
-        skills: skills,
-        commands: commands,
-        providers: providers,
-        models: models,
-        providerAuth: providerAuth,
-        terminals: terminals,
-        settings: database.settingsDao,
-        clock: clock,
+        bindings: bindings,
+        attachments: AttachmentHttpTransport(attachments),
         serverInfo: info,
         token: token,
         events: events.stream,
@@ -454,7 +620,7 @@ abstract final class DaemonApplication {
           scheme: 'ws',
           host: presentationHost,
           port: http.port,
-          path: '/v3/ws',
+          path: '/v4/ws',
         ),
         serverIdValue: serverId,
         token: token,
@@ -469,6 +635,9 @@ abstract final class DaemonApplication {
         attachmentCleanup: attachmentCleanup,
         execSweep: execSweep,
         execSessions: execSessions,
+        providerAuth: providerAuth,
+        terminals: terminals,
+        notificationSubscriptions: notificationSubscriptions,
       );
     } catch (_) {
       await database.close();
@@ -495,6 +664,9 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._attachmentCleanup,
     required this._execSweep,
     required this._execSessions,
+    required this._providerAuth,
+    required this._terminals,
+    required this._notificationSubscriptions,
   }) : _serverId = serverIdValue;
 
   final Uri _endpoint;
@@ -503,7 +675,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final HttpServer _http;
   final DaemonRpcServer _rpc;
   final CoderDatabase _database;
-  final StreamController<WireEnvelope> _events;
+  final StreamController<OutboundNotification> _events;
   final AgentDefinitionService _agentDefinitions;
   final McpRuntime _mcp;
   final SkillCatalogService _skills;
@@ -511,6 +683,9 @@ class _LocalDaemonHandle implements DaemonHandle {
   final Timer _attachmentCleanup;
   final Timer _execSweep;
   final ExecSessionService _execSessions;
+  final ProviderAuthCoordinator _providerAuth;
+  final TerminalService _terminals;
+  final List<StreamSubscription<Object?>> _notificationSubscriptions;
   bool _stopped = false;
 
   @override
@@ -529,8 +704,13 @@ class _LocalDaemonHandle implements DaemonHandle {
     _attachmentCleanup.cancel();
     _execSweep.cancel();
     await _execSessions.close();
+    for (final subscription in _notificationSubscriptions) {
+      await subscription.cancel();
+    }
     await _http.close(force: true);
     await _rpc.close();
+    await _terminals.close();
+    await _providerAuth.close();
     await _mcp.close();
     await _agentDefinitions.close();
     await _skills.close();

@@ -481,7 +481,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'terminal.lifecycle',
     description:
         'Creates, attaches, resizes, restores, and terminates daemon-owned '
-        'interactive terminal tabs.',
+        'interactive terminal tabs with standard keyboard and pointer input.',
     apiMethods: <String>[
       'terminals.listTerminals',
       'terminals.createTerminal',
@@ -505,6 +505,13 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         description:
             'Creates a real PTY, writes and observes output, then terminates '
             'it.',
+        surfaces: _desktop,
+      ),
+      FeatureScenario(
+        id: 'keyboard_context_menu_input',
+        description:
+            'Pastes through the native terminal menu, restores focus, and '
+            'continues standard keyboard input.',
         surfaces: _desktop,
       ),
     ],

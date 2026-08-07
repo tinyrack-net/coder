@@ -11,7 +11,7 @@ void _registerSettingsAppFlows() {
         serverInfo: const ServerInfoDto(
           serverId: 'first-server',
           version: 'test',
-          protocolVersion: coderProtocolVersion,
+          protocolVersion: coderProtocolMajor,
           features: <String, bool>{},
         ),
       );
@@ -19,7 +19,7 @@ void _registerSettingsAppFlows() {
         serverInfo: const ServerInfoDto(
           serverId: 'second-server',
           version: 'test',
-          protocolVersion: coderProtocolVersion,
+          protocolVersion: coderProtocolMajor,
           features: <String, bool>{},
         ),
       );
@@ -129,7 +129,7 @@ void _registerSettingsAppFlows() {
         serverInfo: const ServerInfoDto(
           serverId: 'sidebar-server',
           version: 'test',
-          protocolVersion: coderProtocolVersion,
+          protocolVersion: coderProtocolMajor,
           features: <String, bool>{},
         ),
       );

@@ -4,6 +4,7 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent_tools.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
+import 'package:coder_daemon/src/transport/rpc/binding.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Catalog capability that turns on the six collaboration tools.
@@ -143,7 +144,7 @@ class MultiAgentService {
   final AgentDefinitionLookup _getDefinition;
   final AgentModelValidator _validateModel;
   final AgentModelFallback _fallbackModel;
-  final void Function(WireEnvelope event) _events;
+  final void Function(OutboundNotification event) _events;
   final Clock _clock;
   final IdGenerator _ids;
 
@@ -781,20 +782,14 @@ per tree.''';
       data: data,
     );
     _events(
-      WireEnvelope(
-        type: RpcNotification.timelineEvent,
-        payload: event.toJson(),
-      ),
+      OutboundNotification(sessionsTimelineEventNotification, event),
     );
   }
 
   void _emitSession(SessionDto? session) {
     if (session != null) {
       _events(
-        WireEnvelope(
-          type: RpcNotification.sessionUpdated,
-          payload: session.toJson(),
-        ),
+        OutboundNotification(sessionsUpdatedNotification, session),
       );
     }
   }

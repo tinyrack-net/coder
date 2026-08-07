@@ -2,7 +2,7 @@ import 'package:coder_client/coder_client.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('CoderApi exposes the v3 feature boundaries', () {
+  test('CoderApi exposes the v4 feature boundaries', () {
     final api = _ApiShapeProbe();
 
     expect(api.workspaces, isA<WorkspacesApi>());

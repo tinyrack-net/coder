@@ -14,7 +14,7 @@ Two files, one schema:
 
 | Scope     | Path                          | Who owns it                     |
 | --------- | ----------------------------- | ------------------------------- |
-| `user`    | `<config>/v3/config.json`              | You. Coder reads and writes it. |
+| `user`    | `<config>/v4/config.json`              | You. Coder reads and writes it. |
 | `project` | `<worktree root>/.coder/config.json`   | The repository. Read-only.      |
 
 `<config>` is the daemon configuration directory: `$XDG_CONFIG_HOME/tinyrack-coder`
@@ -64,7 +64,7 @@ Neither file ever holds a secret. Values in `env` and `headers` expand two
 references at connect time:
 
 - `${env:NAME}` reads the daemon process environment.
-- `${secret:key}` reads a value stored in `v3/secrets.json`, which is written
+- `${secret:key}` reads a value stored in `v4/secrets.json`, which is written
   through the settings UI and never sent back to a client.
 
 `$$` is a literal `$`; every other `$` is literal too, so `costs $5` needs no
@@ -151,7 +151,7 @@ connection instead of being restarted with the rest.
 
 ## Upgrading
 
-Protocol v3 starts with a fresh configuration namespace. There is no v2 reader
-or migration: configure servers in `v3/config.json` and reconnect providers in
-`v3/secrets.json`. Preserved legacy files remain untouched until an explicit
-legacy-cleanup operation is requested.
+Protocol v4 starts with a fresh configuration namespace. There is no v2/v3
+reader or migration: configure servers in `v4/config.json` and reconnect
+providers in `v4/secrets.json`. Preserved legacy files remain untouched until
+an explicit legacy-cleanup operation is requested.

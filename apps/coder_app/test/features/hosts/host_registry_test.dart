@@ -1226,7 +1226,7 @@ void main() {
 ServerInfoDto _serverInfo(String id) => ServerInfoDto(
   serverId: id,
   version: 'test',
-  protocolVersion: coderProtocolVersion,
+  protocolVersion: coderProtocolMajor,
   features: const <String, bool>{},
 );
 

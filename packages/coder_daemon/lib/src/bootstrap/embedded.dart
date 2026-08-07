@@ -118,7 +118,10 @@ Future<void> _embeddedDaemonMain(List<Object?> message) async {
   );
   final provider = message[2] as ModelProvider?;
   try {
-    final handle = await DaemonApplication.start(config, provider: provider);
+    final handle = await DaemonApplication.start(
+      config,
+      options: DaemonHostOptions(provider: provider),
+    );
     final commands = ReceivePort();
     ready.send(<Object?, Object?>{
       'endpoint': handle.boundEndpoint.toString(),

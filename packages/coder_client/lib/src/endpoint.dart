@@ -23,7 +23,7 @@ class HostEndpoint {
       hasWebSocketScheme ? normalized : 'ws://$normalized',
     );
     if (uri.path.isEmpty || uri.path == '/') {
-      uri = uri.replace(path: '/v3/ws');
+      uri = uri.replace(path: '/v4/ws');
     }
     if (uri.scheme != 'ws' && uri.scheme != 'wss') {
       throw FormatException('Endpoint must use ws:// or wss://.', address);

@@ -1,8 +1,31 @@
-import 'package:coder_protocol/src/protocol.dart';
+/// Type-erased view used to register a heterogeneous procedure catalog.
+abstract interface class RpcProcedureDescriptor {
+  /// Stable JSON-RPC method name.
+  String get name;
 
-/// A typed JSON-RPC procedure shared by client and daemon adapters.
-final class RpcProcedure<P, R> {
-  /// Creates a procedure descriptor with codecs for both directions.
+  /// Runtime request type retained after generic erasure.
+  Type get paramsType;
+
+  /// Runtime result type retained after generic erasure.
+  Type get resultType;
+
+  /// Decodes request parameters after generic erasure.
+  Object decodeParamsObject(Map<String, dynamic> json);
+
+  /// Encodes request parameters after generic erasure.
+  Map<String, dynamic> encodeParamsObject(Object value);
+
+  /// Decodes a result after generic erasure.
+  Object decodeResultObject(Map<String, dynamic> json);
+
+  /// Encodes a result after generic erasure.
+  Map<String, dynamic> encodeResultObject(Object value);
+}
+
+/// A typed JSON-RPC procedure shared by client and daemon transports.
+final class RpcProcedure<P extends Object, R extends Object>
+    implements RpcProcedureDescriptor {
+  /// Creates a procedure descriptor.
   const RpcProcedure({
     required this.name,
     required this.decodeParams,
@@ -11,7 +34,7 @@ final class RpcProcedure<P, R> {
     required this.encodeResult,
   });
 
-  /// Stable JSON-RPC method name.
+  @override
   final String name;
 
   /// Decodes request parameters.
@@ -25,145 +48,61 @@ final class RpcProcedure<P, R> {
 
   /// Encodes a successful result.
   final Map<String, dynamic> Function(R) encodeResult;
+
+  @override
+  Type get paramsType => P;
+  @override
+  Type get resultType => R;
+  @override
+  Object decodeParamsObject(Map<String, dynamic> json) => decodeParams(json);
+  @override
+  Map<String, dynamic> encodeParamsObject(Object value) =>
+      encodeParams(value as P);
+  @override
+  Object decodeResultObject(Map<String, dynamic> json) => decodeResult(json);
+  @override
+  Map<String, dynamic> encodeResultObject(Object value) =>
+      encodeResult(value as R);
+}
+
+/// Type-erased view used to register heterogeneous notifications.
+abstract interface class RpcNotificationDescriptor {
+  /// Stable JSON-RPC notification name.
+  String get name;
+
+  /// Runtime event type retained after generic erasure.
+  Type get eventType;
+
+  /// Decodes an event after generic erasure.
+  Object decodeObject(Map<String, dynamic> json);
+
+  /// Encodes an event after generic erasure.
+  Map<String, dynamic> encodeObject(Object value);
 }
 
 /// A typed JSON-RPC notification shared by transport adapters.
-final class RpcNotificationDescriptor<E> {
-  /// Creates a typed notification descriptor.
-  const RpcNotificationDescriptor({
+final class RpcNotification<E extends Object>
+    implements RpcNotificationDescriptor {
+  /// Creates a notification descriptor.
+  const RpcNotification({
     required this.name,
     required this.decode,
     required this.encode,
   });
 
-  /// Stable JSON-RPC notification name.
+  @override
   final String name;
 
-  /// Decodes a notification payload.
+  /// Decodes an event payload.
   final E Function(Map<String, dynamic>) decode;
 
-  /// Encodes a notification payload.
+  /// Encodes an event payload.
   final Map<String, dynamic> Function(E) encode;
+
+  @override
+  Type get eventType => E;
+  @override
+  Object decodeObject(Map<String, dynamic> json) => decode(json);
+  @override
+  Map<String, dynamic> encodeObject(Object value) => encode(value as E);
 }
-
-Map<String, dynamic> _identity(Map<String, dynamic> value) => value;
-
-RpcProcedure<Map<String, dynamic>, Map<String, dynamic>> _procedure(
-  String name,
-) => RpcProcedure<Map<String, dynamic>, Map<String, dynamic>>(
-  name: name,
-  decodeParams: _identity,
-  encodeParams: _identity,
-  decodeResult: _identity,
-  encodeResult: _identity,
-);
-
-RpcNotificationDescriptor<Map<String, dynamic>> _notification(String name) =>
-    RpcNotificationDescriptor<Map<String, dynamic>>(
-      name: name,
-      decode: _identity,
-      encode: _identity,
-    );
-
-/// Handshake descriptor registered before authenticated feature procedures.
-final RpcProcedure<Map<String, dynamic>, Map<String, dynamic>>
-systemHelloProcedure = _procedure(RpcMethod.hello);
-
-/// Complete v3 procedure catalog in deterministic registration order.
-final List<RpcProcedure<Map<String, dynamic>, Map<String, dynamic>>>
-rpcProcedures = List.unmodifiable(
-  <RpcProcedure<Map<String, dynamic>, Map<String, dynamic>>>[
-    systemHelloProcedure,
-    for (final name in <String>[
-      RpcMethod.workspaceCatalog,
-      RpcMethod.workspaceRegister,
-      RpcMethod.workspaceRefresh,
-      RpcMethod.workspaceUnregister,
-      RpcMethod.directorySuggest,
-      RpcMethod.fileSearch,
-      RpcMethod.gitBranchesList,
-      RpcMethod.worktreeCreate,
-      RpcMethod.worktreeArchivePreview,
-      RpcMethod.worktreeArchive,
-      RpcMethod.projectSettingsGet,
-      RpcMethod.projectSettingsSave,
-      RpcMethod.agentDefinitionList,
-      RpcMethod.agentDefinitionGet,
-      RpcMethod.agentDefinitionCreate,
-      RpcMethod.agentDefinitionUpdate,
-      RpcMethod.agentDefinitionArchive,
-      RpcMethod.agentDefinitionReset,
-      RpcMethod.agentDefinitionValidate,
-      RpcMethod.agentToolCatalog,
-      RpcMethod.mcpServerList,
-      RpcMethod.mcpServerAdd,
-      RpcMethod.mcpServerUpdate,
-      RpcMethod.mcpServerRemove,
-      RpcMethod.mcpServerTest,
-      RpcMethod.mcpSecretSet,
-      RpcMethod.commandList,
-      RpcMethod.skillList,
-      RpcMethod.skillGet,
-      RpcMethod.skillCreate,
-      RpcMethod.skillUpdate,
-      RpcMethod.skillDelete,
-      RpcMethod.skillSetEnabled,
-      RpcMethod.sessionList,
-      RpcMethod.sessionSubagentList,
-      RpcMethod.sessionCreate,
-      RpcMethod.sessionUpdateSettings,
-      RpcMethod.terminalList,
-      RpcMethod.terminalCreate,
-      RpcMethod.terminalAttach,
-      RpcMethod.terminalWrite,
-      RpcMethod.terminalResize,
-      RpcMethod.terminalTerminate,
-      RpcMethod.terminalShellGet,
-      RpcMethod.terminalShellSet,
-      RpcMethod.permissionDefaultModeGet,
-      RpcMethod.permissionDefaultModeSet,
-      RpcMethod.providerCatalog,
-      RpcMethod.providerConnectionsList,
-      RpcMethod.providerConnectApiKey,
-      RpcMethod.providerConnectNone,
-      RpcMethod.providerAuthStart,
-      RpcMethod.providerAuthStatus,
-      RpcMethod.providerAuthCancel,
-      RpcMethod.providerDisconnect,
-      RpcMethod.providerCatalogRefresh,
-      RpcMethod.providerModelsList,
-      RpcMethod.providerDefaultModelGet,
-      RpcMethod.providerDefaultModelSet,
-      RpcMethod.providerCustomCreate,
-      RpcMethod.providerCustomUpdate,
-      RpcMethod.providerCustomDelete,
-      RpcMethod.turnStart,
-      RpcMethod.turnCancel,
-      RpcMethod.sessionCompact,
-      RpcMethod.approvalResolve,
-      RpcMethod.userQuestionAnswer,
-      RpcMethod.sessionPendingInput,
-      RpcMethod.timelineSubscribe,
-    ])
-      _procedure(name),
-  ],
-);
-
-/// Complete v3 notification catalog.
-final List<RpcNotificationDescriptor<Map<String, dynamic>>> rpcNotifications =
-    List.unmodifiable(<RpcNotificationDescriptor<Map<String, dynamic>>>[
-      for (final name in <String>[
-        RpcNotification.timelineEvent,
-        RpcNotification.sessionUpdated,
-        RpcNotification.terminalOutput,
-        RpcNotification.terminalUpdated,
-        RpcNotification.agentDefinitionsChanged,
-        RpcNotification.mcpServersChanged,
-        RpcNotification.skillsChanged,
-        RpcNotification.commandsChanged,
-        RpcNotification.approvalRequested,
-        RpcNotification.userQuestionRequested,
-        RpcNotification.providerAuthUpdated,
-      ])
-        _notification(name),
-    ]);

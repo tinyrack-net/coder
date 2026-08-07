@@ -22,16 +22,16 @@ void main() {
 
   String userPath() => store.sourcePath(McpConfigScope.user);
 
-  Map<String, dynamic> v3Document(Map<String, dynamic> document) =>
+  Map<String, dynamic> v4Document(Map<String, dynamic> document) =>
       <String, dynamic>{
-        'schemaVersion': document['version'] == 1 ? 3 : document['version'],
+        'schemaVersion': document['version'] == 1 ? 4 : document['version'],
         'mcp': <String, dynamic>{
           'servers': document['servers'] ?? <String, dynamic>{},
         },
       };
 
   Future<void> writeUser(Map<String, dynamic> document) =>
-      File(userPath()).writeAsString(jsonEncode(v3Document(document)));
+      File(userPath()).writeAsString(jsonEncode(v4Document(document)));
 
   Future<void> writeProject(String root, String contents) async {
     final file = File(
@@ -39,7 +39,7 @@ void main() {
     );
     await file.parent.create(recursive: true);
     final document = jsonDecode(contents) as Map<String, dynamic>;
-    await file.writeAsString(jsonEncode(v3Document(document)));
+    await file.writeAsString(jsonEncode(v4Document(document)));
   }
 
   test('the user and project scopes name their own files', () {
@@ -127,7 +127,7 @@ void main() {
     );
 
     final contents = await File(userPath()).readAsString();
-    expect(contents, contains('\n  "schemaVersion": 3'));
+    expect(contents, contains('\n  "schemaVersion": 4'));
     if (!Platform.isWindows) {
       // Read the mode through dart:io rather than stat, whose flags differ
       // between GNU and BSD userlands.

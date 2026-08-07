@@ -239,11 +239,9 @@ void main() {
       final attached = await client.attachTerminal(terminal.id);
       expect(attached.terminal.id, terminal.id);
       const marker = 'coder-terminal-ready';
-      final output = client.events
-          .where((event) => event is TerminalOutputClientEvent)
-          .cast<TerminalOutputClientEvent>()
-          .where((event) => event.output.terminalId == terminal.id)
-          .map((event) => event.output.data)
+      final output = client.terminals.output
+          .where((output) => output.terminalId == terminal.id)
+          .map((output) => output.data)
           .firstWhere((data) => data.contains(marker))
           .timeout(_eventTimeout);
       await client.resizeTerminal(terminal.id, columns: 100, rows: 30);
@@ -317,10 +315,7 @@ void main() {
         agent.model,
       );
       expect(agent.mode, SessionMode.plan);
-      final normalFuture = client.events
-          .where((event) => event is SessionUpdatedClientEvent)
-          .cast<SessionUpdatedClientEvent>()
-          .map((event) => event.session)
+      final normalFuture = client.sessions.sessionUpdates
           .firstWhere((session) => session.mode == SessionMode.normal)
           .timeout(_eventTimeout);
       expect(
@@ -349,16 +344,10 @@ void main() {
       );
       expect(await client.subscribeTimeline(agent.id), isEmpty);
 
-      final approvalFuture = client.events
-          .where((event) => event is ApprovalRequestedClientEvent)
-          .cast<ApprovalRequestedClientEvent>()
-          .map((event) => event.approval)
-          .first
-          .timeout(_eventTimeout);
-      final completedFuture = client.events
-          .where((event) => event is TimelineClientEvent)
-          .cast<TimelineClientEvent>()
-          .map((event) => event.event)
+      final approvalFuture = client.sessions.approvalRequests.first.timeout(
+        _eventTimeout,
+      );
+      final completedFuture = client.sessions.timelineEvents
           .firstWhere((event) => event.type == 'turn.completed')
           .timeout(_eventTimeout);
       await client.startTurn(
@@ -611,10 +600,7 @@ void main() {
           modelId: 'gpt-5.6-sol',
         ),
       );
-      final timelineEvents = client.events
-          .where((event) => event is TimelineClientEvent)
-          .cast<TimelineClientEvent>()
-          .map((event) => event.event);
+      final timelineEvents = client.sessions.timelineEvents;
       final parentCompleted = timelineEvents
           .firstWhere(
             (event) =>
@@ -762,10 +748,7 @@ void main() {
           modelId: 'gpt-5.6-sol',
         ),
       );
-      final completed = client.events
-          .where((event) => event is TimelineClientEvent)
-          .cast<TimelineClientEvent>()
-          .map((event) => event.event)
+      final completed = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
                 event.sessionId == parent.id && event.type == 'turn.completed',
@@ -829,10 +812,7 @@ void main() {
       expect(client.serverInfo.features['mcp'], isTrue);
       expect(await client.mcp.listMcpServers(), isEmpty);
 
-      final changed = client.events
-          .where((event) => event is McpServersChangedClientEvent)
-          .first
-          .timeout(_eventTimeout);
+      final changed = client.mcp.serverChanges.first.timeout(_eventTimeout);
       await client.setMcpSecret('fake.prefix', 'secret-');
       final added = await client.addMcpServer(
         McpServerConfigDto(
@@ -894,16 +874,10 @@ void main() {
         ),
       );
       // A dangerous tool always asks, even under workspaceWrite.
-      final approvalFuture = client.events
-          .where((event) => event is ApprovalRequestedClientEvent)
-          .cast<ApprovalRequestedClientEvent>()
-          .map((event) => event.approval)
-          .first
-          .timeout(_eventTimeout);
-      final completed = client.events
-          .where((event) => event is TimelineClientEvent)
-          .cast<TimelineClientEvent>()
-          .map((event) => event.event)
+      final approvalFuture = client.sessions.approvalRequests.first.timeout(
+        _eventTimeout,
+      );
+      final completed = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
                 event.sessionId == session.id && event.type == 'turn.completed',
@@ -974,7 +948,7 @@ void main() {
       await projectConfig.parent.create(recursive: true);
       await projectConfig.writeAsString(
         jsonEncode(<String, dynamic>{
-          'schemaVersion': 3,
+          'schemaVersion': 4,
           'mcp': <String, dynamic>{
             'servers': <String, dynamic>{
               'repo': <String, dynamic>{
@@ -1112,18 +1086,17 @@ void main() {
         // Running a command always asks; approving the first one is what makes
         // every later write into that same session pass without another dialog.
         final approvals = <String>[];
-        final approvalSubscription = client.events
-            .where((event) => event is ApprovalRequestedClientEvent)
-            .cast<ApprovalRequestedClientEvent>()
-            .listen((event) {
-              approvals.add(event.approval.toolName);
-              unawaited(
-                client.resolveApproval(
-                  approvalId: event.approval.id,
-                  approved: true,
-                ),
-              );
-            });
+        final approvalSubscription = client.sessions.approvalRequests.listen((
+          approval,
+        ) {
+          approvals.add(approval.toolName);
+          unawaited(
+            client.resolveApproval(
+              approvalId: approval.id,
+              approved: true,
+            ),
+          );
+        });
         addTearDown(approvalSubscription.cancel);
         await client.startTurn(
           sessionId: session.id,
@@ -1650,26 +1623,17 @@ void main() {
       );
       await client.subscribeTimeline(session.id);
 
-      final questionFuture = client.events
-          .where((event) => event is UserQuestionRequestedClientEvent)
-          .cast<UserQuestionRequestedClientEvent>()
-          .map((event) => event.request)
-          .first
-          .timeout(_eventTimeout);
-      final waitingFuture = client.events
-          .where((event) => event is SessionUpdatedClientEvent)
-          .cast<SessionUpdatedClientEvent>()
-          .map((event) => event.session)
+      final questionFuture = client.sessions.questionRequests.first.timeout(
+        _eventTimeout,
+      );
+      final waitingFuture = client.sessions.sessionUpdates
           .firstWhere(
             (updated) =>
                 updated.id == session.id &&
                 updated.status == SessionStatus.waitingForInput,
           )
           .timeout(_eventTimeout);
-      final completedFuture = client.events
-          .where((event) => event is TimelineClientEvent)
-          .cast<TimelineClientEvent>()
-          .map((event) => event.event)
+      final completedFuture = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
                 event.sessionId == session.id && event.type == 'turn.completed',
@@ -1753,10 +1717,10 @@ void main() {
         'coder-mcp-broken-workspace-',
       );
       const bearerToken = 'mcp-broken-token-0123456789abcdef01234';
-      await Directory(p.join(home.path, 'v3')).create();
-      await File(p.join(home.path, 'v3', 'config.json')).writeAsString(
+      await Directory(p.join(home.path, 'v4')).create();
+      await File(p.join(home.path, 'v4', 'config.json')).writeAsString(
         jsonEncode(<String, dynamic>{
-          'schemaVersion': 3,
+          'schemaVersion': 4,
           'mcp': <String, dynamic>{
             'servers': <String, dynamic>{
               'broken': <String, dynamic>{
@@ -1810,10 +1774,7 @@ void main() {
           modelId: 'gpt-5.6-sol',
         ),
       );
-      final completed = client.events
-          .where((event) => event is TimelineClientEvent)
-          .cast<TimelineClientEvent>()
-          .map((event) => event.event)
+      final completed = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
                 event.sessionId == session.id && event.type == 'turn.completed',
@@ -1939,7 +1900,7 @@ void main() {
       );
       expect(
         File(
-          p.join(home.path, 'v3', 'skills', 'release', 'SKILL.md'),
+          p.join(home.path, 'v4', 'skills', 'release', 'SKILL.md'),
         ).existsSync(),
         isTrue,
       );
@@ -1968,10 +1929,7 @@ void main() {
           modelId: 'gpt-5.6-sol',
         ),
       );
-      final completed = client.events
-          .where((event) => event is TimelineClientEvent)
-          .cast<TimelineClientEvent>()
-          .map((event) => event.event)
+      final completed = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
                 event.sessionId == session.id && event.type == 'turn.completed',
@@ -2049,7 +2007,7 @@ void main() {
         contains('reviewer'),
       );
       expect(
-        File('${home.path}/v3/agents/reviewer.md').existsSync(),
+        File('${home.path}/v4/agents/reviewer.md').existsSync(),
         isTrue,
       );
       await firstClient.close();
@@ -2114,7 +2072,7 @@ void main() {
       unawaited(obsoletePeer.listen());
       await expectLater(
         obsoletePeer.sendRequest(
-          RpcMethod.hello,
+          systemHelloProcedure.name,
           const HelloParamsDto(
             clientId: 'obsolete-client',
             clientKind: 'test',
@@ -2131,6 +2089,35 @@ void main() {
         ),
       );
       await obsoletePeer.close();
+      final rawChannel = IOWebSocketChannel.connect(
+        handle.boundEndpoint,
+        headers: const <String, dynamic>{
+          'Authorization': 'Bearer remote-token-0123456789abcdef0123456789',
+        },
+      );
+      await rawChannel.ready;
+      final rawPeer = json_rpc.Peer(rawChannel.cast<String>());
+      unawaited(rawPeer.listen());
+      await rawPeer.sendRequest(
+        systemHelloProcedure.name,
+        const HelloParamsDto(
+          clientId: 'raw-client',
+          clientKind: 'test',
+          protocolMajor: coderProtocolMajor,
+          capabilities: <String, bool>{},
+        ).toJson(),
+      );
+      await expectLater(
+        rawPeer.sendRequest('sessions.unknown', const <String, dynamic>{}),
+        throwsA(
+          isA<json_rpc.RpcException>().having(
+            (error) => (error.data! as Map<String, dynamic>)['code'],
+            'typed code',
+            'unknown_method',
+          ),
+        ),
+      );
+      await rawPeer.close();
       final client = await CoderClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(
@@ -2542,7 +2529,7 @@ void main() {
       final unauthorized = await unauthorizedClient.getUrl(
         handle.boundEndpoint.replace(
           scheme: 'http',
-          path: '/v3/attachments/missing',
+          path: '/v4/attachments/missing',
         ),
       );
       expect(
@@ -2590,10 +2577,7 @@ void main() {
         ),
       );
       await client.subscribeTimeline(session.id);
-      final completed = client.events
-          .where((event) => event is TimelineClientEvent)
-          .cast<TimelineClientEvent>()
-          .map((event) => event.event)
+      final completed = client.sessions.timelineEvents
           .firstWhere((event) => event.type == 'turn.completed')
           .timeout(_eventTimeout);
       await client.startTurn(
@@ -2696,14 +2680,14 @@ void main() {
     expect(persisted.toString(), isNot(contains(token)));
     expect(persisted.toString(), isNot(contains(apiKey)));
     final credentials = await File(
-      '${config.path}/v3/secrets.json',
+      '${config.path}/v4/secrets.json',
     ).readAsString();
     expect(credentials, contains(token));
     expect(credentials, contains(apiKey));
     expect(File('${config.path}/auth.json').existsSync(), isFalse);
     if (!Platform.isWindows) {
       expect(
-        File('${config.path}/v3/secrets.json').statSync().mode & 0x1ff,
+        File('${config.path}/v4/secrets.json').statSync().mode & 0x1ff,
         0x180,
       );
     }
@@ -2816,10 +2800,9 @@ void main() {
       // idle session event itself, without waiting a further round trip. The
       // daemon must have released the session slot before broadcasting it.
       final drained = Completer<void>();
-      final subscription = client.events.listen((event) {
-        if (event is! SessionUpdatedClientEvent) return;
-        if (event.session.id != session.id) return;
-        if (event.session.status != SessionStatus.idle) return;
+      final subscription = client.sessions.sessionUpdates.listen((updated) {
+        if (updated.id != session.id) return;
+        if (updated.status != SessionStatus.idle) return;
         if (drained.isCompleted) return;
         drained.complete(
           client.startTurn(
@@ -3002,9 +2985,7 @@ void main() {
       expect(scoped.single.argumentHint, '<path>');
       expect(scoped.single.body, r'Review $ARGUMENTS.');
 
-      final changed = client.events
-          .where((event) => event is CommandsChangedClientEvent)
-          .first;
+      final changed = client.prompts.commandChanges.first;
       await _writeCommand(
         p.join(agentsHome.path, '.agents', 'commands'),
         name: 'ship',
