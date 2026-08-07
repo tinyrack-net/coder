@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Whether a tool is advertised to the model up front or found by searching.
 enum ToolExposure {
@@ -247,7 +247,7 @@ class ToolSearchTool extends AgentTool {
       'before assuming a capability is missing.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>

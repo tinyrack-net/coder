@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/gitignore.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 import 'package:coder_agent/src/workspace_walk.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
 import 'package:glob/glob.dart';
@@ -36,7 +36,7 @@ class GlobTool extends AgentTool {
       '`**/*_test.dart`. Files git ignores are skipped unless include_ignored '
       'is set. Use search_text to search file contents instead.';
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
   @override
   Map<String, dynamic> get strictJsonSchema => strictToolObject(
     <String, Map<String, dynamic>>{
@@ -158,11 +158,11 @@ final class GlobToolProvider extends SelectableToolProvider {
   String get id => 'glob';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => AgentToolDefinition(
     id: id,
     name: id,
     description: GlobTool(gitignoreEnvironment: _gitignore).description,
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
     alwaysOn: true,
   );
 

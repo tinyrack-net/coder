@@ -11,7 +11,7 @@ part 'sessions_controller.g.dart';
 @riverpod
 /// SessionsController defines a public contract.
 class SessionsController extends _$SessionsController {
-  StreamSubscription<ClientEvent>? _events;
+  StreamSubscription<SessionDto>? _events;
   late String? _worktreeId;
 
   @override
@@ -24,9 +24,9 @@ class SessionsController extends _$SessionsController {
       return const <SessionDto>[];
     }
     final api = runtime!.api!;
-    _events = api.events.listen(_handleEvent);
+    _events = api.sessions.sessionUpdates.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
-    return api.listSessions(worktreeId: worktreeId);
+    return api.sessions.listSessions(worktreeId: worktreeId);
   }
 
   /// The create public API member.
@@ -50,7 +50,7 @@ class SessionsController extends _$SessionsController {
     final previous = state.asData?.value ?? const <SessionDto>[];
     state = const AsyncLoading<List<SessionDto>>();
     try {
-      final session = await api.createSession(
+      final session = await api.sessions.createSession(
         id: ref.read(appIdGeneratorProvider).generate(),
         worktreeId: worktreeId,
         title: title,
@@ -73,7 +73,10 @@ class SessionsController extends _$SessionsController {
   Future<SessionDto> setMode(String sessionId, SessionMode mode) => _apply(
     sessionId,
     (session) => session.copyWith(mode: mode),
-    (api) => api.updateSessionMode(sessionId, mode),
+    (api) => api.sessions.updateSettings(
+      sessionId,
+      SessionSettingsPatchDto(mode: mode),
+    ),
   );
 
   /// Summarizes one session's conversation and starts a fresh window.
@@ -82,7 +85,7 @@ class SessionsController extends _$SessionsController {
   /// has actually replaced the window, and it emits the session itself.
   Future<void> compact(String sessionId) async {
     final api = await requireHostApi(ref, hostId);
-    await api.compactSession(sessionId);
+    await api.sessions.compactSession(sessionId);
   }
 
   /// Sets or clears the provider and model override of one session.
@@ -92,7 +95,10 @@ class SessionsController extends _$SessionsController {
   ) => _apply(
     sessionId,
     (session) => session.copyWith(model: model),
-    (api) => api.updateSessionModel(sessionId, model),
+    (api) => api.sessions.updateSettings(
+      sessionId,
+      SessionSettingsPatchDto(hasModel: true, model: model),
+    ),
   );
 
   /// Sets or clears the reasoning effort override of one session.
@@ -102,7 +108,13 @@ class SessionsController extends _$SessionsController {
   ) => _apply(
     sessionId,
     (session) => session.copyWith(reasoningEffort: reasoningEffort),
-    (api) => api.updateSessionReasoningEffort(sessionId, reasoningEffort),
+    (api) => api.sessions.updateSettings(
+      sessionId,
+      SessionSettingsPatchDto(
+        hasReasoningEffort: true,
+        reasoningEffort: reasoningEffort,
+      ),
+    ),
   );
 
   /// Sets or clears the permission mode override of one session.
@@ -112,7 +124,13 @@ class SessionsController extends _$SessionsController {
   ) => _apply(
     sessionId,
     (session) => session.copyWith(permissionMode: permissionMode),
-    (api) => api.updateSessionPermissionMode(sessionId, permissionMode),
+    (api) => api.sessions.updateSettings(
+      sessionId,
+      SessionSettingsPatchDto(
+        hasPermissionMode: true,
+        permissionMode: permissionMode,
+      ),
+    ),
   );
 
   /// Sets or clears the provider service tier of one session.
@@ -122,7 +140,13 @@ class SessionsController extends _$SessionsController {
   ) => _apply(
     sessionId,
     (session) => session.copyWith(serviceTier: serviceTier),
-    (api) => api.updateSessionServiceTier(sessionId, serviceTier),
+    (api) => api.sessions.updateSettings(
+      sessionId,
+      SessionSettingsPatchDto(
+        hasServiceTier: true,
+        serviceTier: serviceTier,
+      ),
+    ),
   );
 
   /// Shows a turn-setting change immediately and confirms it with the daemon.
@@ -152,11 +176,9 @@ class SessionsController extends _$SessionsController {
     }
   }
 
-  void _handleEvent(ClientEvent event) {
+  void _handleEvent(SessionDto session) {
     if (!ref.mounted) return;
-    if (event case SessionUpdatedClientEvent(
-      :final session,
-    ) when session.worktreeId == _worktreeId) {
+    if (session.worktreeId == _worktreeId) {
       _replace(session);
     }
   }

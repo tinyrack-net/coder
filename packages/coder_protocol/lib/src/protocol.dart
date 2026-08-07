@@ -1,267 +1,261 @@
 import 'dart:convert';
 
 /// The coderProtocolVersion public API member.
-const int coderProtocolVersion = 21;
+const int coderProtocolMajor = 3;
+
+/// Revision of the v3 contract. Major and revision must both match.
+const int coderProtocolRevision = 0;
+
+/// Integer retained in persisted server metadata and protocol DTOs.
+const int coderProtocolVersion = coderProtocolMajor;
 
 /// Public API exposed by this library.
 abstract final class RpcMethod {
   /// The hello public API member.
-  static const String hello = 'hello';
+  static const String hello = 'system.hello';
 
   /// Returns an atomic workspace and worktree catalog.
-  static const String workspaceCatalog = 'workspace.catalog';
+  static const String workspaceCatalog = 'workspaces.catalog';
 
   /// The workspaceRegister public API member.
-  static const String workspaceRegister = 'workspace.register';
+  static const String workspaceRegister = 'workspaces.register';
 
   /// Refreshes Git checkout and worktree metadata.
-  static const String workspaceRefresh = 'workspace.refresh';
+  static const String workspaceRefresh = 'workspaces.refresh';
 
   /// Removes a workspace registration without deleting its source checkout.
-  static const String workspaceUnregister = 'workspace.unregister';
+  static const String workspaceUnregister = 'workspaces.unregister';
 
   /// Searches directories on the daemon host.
-  static const String directorySuggest = 'directory.suggest';
+  static const String directorySuggest = 'workspaces.suggestDirectories';
 
   /// Searches worktree files for a composer file mention.
-  static const String fileSearch = 'file.search';
+  static const String fileSearch = 'workspaces.searchFiles';
 
   /// Lists local branches for a Git workspace.
-  static const String gitBranchesList = 'git.branches.list';
+  static const String gitBranchesList = 'workspaces.listBranches';
 
   /// Creates a managed Git worktree.
-  static const String worktreeCreate = 'worktree.create';
+  static const String worktreeCreate = 'workspaces.createWorktree';
 
   /// Returns archive risks without mutating a worktree.
-  static const String worktreeArchivePreview = 'worktree.archive.preview';
+  static const String worktreeArchivePreview = 'workspaces.previewArchive';
 
   /// Archives a worktree and removes it only when Coder owns it.
-  static const String worktreeArchive = 'worktree.archive';
+  static const String worktreeArchive = 'workspaces.archiveWorktree';
 
   /// Reads project settings from a workspace root `coder.json`.
-  static const String projectSettingsGet = 'project.settings.get';
+  static const String projectSettingsGet = 'workspaces.getProjectSettings';
 
   /// Writes worktree lifecycle hooks into a workspace root `coder.json`.
-  static const String projectSettingsSave = 'project.settings.save';
+  static const String projectSettingsSave = 'workspaces.saveProjectSettings';
 
   /// Lists Markdown-backed agent definitions.
-  static const String agentDefinitionList = 'agentDefinition.list';
+  static const String agentDefinitionList = 'agents.list';
 
   /// Returns one Markdown-backed agent definition.
-  static const String agentDefinitionGet = 'agentDefinition.get';
+  static const String agentDefinitionGet = 'agents.get';
 
   /// Creates one Markdown-backed agent definition.
-  static const String agentDefinitionCreate = 'agentDefinition.create';
+  static const String agentDefinitionCreate = 'agents.create';
 
   /// Updates one Markdown-backed agent definition.
-  static const String agentDefinitionUpdate = 'agentDefinition.update';
+  static const String agentDefinitionUpdate = 'agents.update';
 
   /// Archives one custom agent definition.
-  static const String agentDefinitionArchive = 'agentDefinition.archive';
+  static const String agentDefinitionArchive = 'agents.archive';
 
   /// Restores the built-in Coder definition.
-  static const String agentDefinitionReset = 'agentDefinition.reset';
+  static const String agentDefinitionReset = 'agents.reset';
 
   /// Validates Markdown without saving it.
-  static const String agentDefinitionValidate = 'agentDefinition.validate';
+  static const String agentDefinitionValidate = 'agents.validate';
 
   /// Returns tools available to agent definitions.
-  static const String agentToolCatalog = 'agentTool.catalog';
+  static const String agentToolCatalog = 'agents.listTools';
 
   /// Lists configured MCP servers and their live connection state.
-  static const String mcpServerList = 'mcp.servers.list';
+  static const String mcpServerList = 'mcp.listServers';
 
   /// Adds one user-scoped MCP server.
-  static const String mcpServerAdd = 'mcp.servers.add';
+  static const String mcpServerAdd = 'mcp.addServer';
 
   /// Replaces one user-scoped MCP server.
-  static const String mcpServerUpdate = 'mcp.servers.update';
+  static const String mcpServerUpdate = 'mcp.updateServer';
 
   /// Removes one user-scoped MCP server.
-  static const String mcpServerRemove = 'mcp.servers.remove';
+  static const String mcpServerRemove = 'mcp.removeServer';
 
   /// Connects one unsaved MCP server configuration to check it works.
-  static const String mcpServerTest = 'mcp.servers.test';
+  static const String mcpServerTest = 'mcp.testServer';
 
   /// Stores one secret an MCP configuration may reference.
-  static const String mcpSecretSet = 'mcp.servers.secret.set';
+  static const String mcpSecretSet = 'mcp.setSecret';
 
   /// Lists agent-provided slash commands visible in one scope.
-  static const String commandList = 'command.list';
+  static const String commandList = 'prompts.listCommands';
 
   /// Lists skills visible in one scope.
-  static const String skillList = 'skill.list';
+  static const String skillList = 'prompts.listSkills';
 
   /// Returns one skill.
-  static const String skillGet = 'skill.get';
+  static const String skillGet = 'prompts.getSkill';
 
   /// Creates one skill in a writable source.
-  static const String skillCreate = 'skill.create';
+  static const String skillCreate = 'prompts.createSkill';
 
   /// Updates one skill with optimistic concurrency.
-  static const String skillUpdate = 'skill.update';
+  static const String skillUpdate = 'prompts.updateSkill';
 
   /// Archives one skill.
-  static const String skillDelete = 'skill.delete';
+  static const String skillDelete = 'prompts.deleteSkill';
 
   /// Turns one skill on or off.
-  static const String skillSetEnabled = 'skill.setEnabled';
+  static const String skillSetEnabled = 'prompts.setSkillEnabled';
 
   /// Lists persisted sessions.
-  static const String sessionList = 'session.list';
+  static const String sessionList = 'sessions.list';
 
   /// Lists all sessions of one collaboration tree ordered by agent path.
-  static const String sessionSubagentList = 'session.subagents.list';
+  static const String sessionSubagentList = 'sessions.listAgents';
 
   /// Creates a persisted session.
-  static const String sessionCreate = 'session.create';
+  static const String sessionCreate = 'sessions.create';
 
-  /// Sets or clears the per-session provider and model override.
-  static const String sessionModelSet = 'session.model.set';
-
-  /// Switches one session between planning and normal collaboration.
-  static const String sessionModeSet = 'session.mode.set';
-
-  /// Sets or clears the per-session reasoning effort override.
-  static const String sessionReasoningEffortSet = 'session.reasoningEffort.set';
-
-  /// Sets or clears the per-session permission mode override.
-  static const String sessionPermissionModeSet = 'session.permissionMode.set';
-
-  /// Sets or clears the per-session provider service tier.
-  static const String sessionServiceTierSet = 'session.serviceTier.set';
+  /// Atomically patches model, mode, reasoning, permission, and service tier.
+  static const String sessionUpdateSettings = 'sessions.updateSettings';
 
   /// Lists live terminals in one worktree.
-  static const String terminalList = 'terminal.list';
+  static const String terminalList = 'terminals.list';
 
   /// Creates a daemon-owned terminal.
-  static const String terminalCreate = 'terminal.create';
+  static const String terminalCreate = 'terminals.create';
 
   /// Attaches to a terminal and returns replay output.
-  static const String terminalAttach = 'terminal.attach';
+  static const String terminalAttach = 'terminals.attach';
 
   /// Writes terminal input.
-  static const String terminalWrite = 'terminal.write';
+  static const String terminalWrite = 'terminals.write';
 
   /// Resizes a terminal PTY.
-  static const String terminalResize = 'terminal.resize';
+  static const String terminalResize = 'terminals.resize';
 
   /// Terminates a terminal PTY.
-  static const String terminalTerminate = 'terminal.terminate';
+  static const String terminalTerminate = 'terminals.terminate';
 
   /// Reads the daemon host's default terminal shell.
-  static const String terminalShellGet = 'terminal.shell.get';
+  static const String terminalShellGet = 'terminals.getDefaultShell';
 
   /// Replaces or clears the daemon host's default terminal shell.
-  static const String terminalShellSet = 'terminal.shell.set';
+  static const String terminalShellSet = 'terminals.setDefaultShell';
 
   /// Reads the daemon-global permission mode used by inheriting agents.
-  static const String permissionDefaultModeGet = 'permission.defaultMode.get';
+  static const String permissionDefaultModeGet = 'agents.getDefaultPermission';
 
   /// Replaces the daemon-global permission mode.
-  static const String permissionDefaultModeSet = 'permission.defaultMode.set';
+  static const String permissionDefaultModeSet = 'agents.setDefaultPermission';
 
   /// Returns immutable built-in provider definitions.
-  static const String providerCatalog = 'provider.catalog';
+  static const String providerCatalog = 'providers.catalog';
 
   /// Returns configured provider connections.
-  static const String providerConnectionsList = 'provider.connections.list';
+  static const String providerConnectionsList = 'providers.listConnections';
 
   /// Connects a built-in provider with an API key.
-  static const String providerConnectApiKey = 'provider.connect.apiKey';
+  static const String providerConnectApiKey = 'providers.connectApiKey';
 
   /// Connects a built-in provider that requires no credential.
-  static const String providerConnectNone = 'provider.connect.none';
+  static const String providerConnectNone = 'providers.connectNone';
 
   /// Starts an OAuth authorization flow.
-  static const String providerAuthStart = 'provider.auth.start';
+  static const String providerAuthStart = 'providers.startAuth';
 
   /// Returns one OAuth authorization attempt.
-  static const String providerAuthStatus = 'provider.auth.status';
+  static const String providerAuthStatus = 'providers.getAuth';
 
   /// Cancels one OAuth authorization attempt.
-  static const String providerAuthCancel = 'provider.auth.cancel';
+  static const String providerAuthCancel = 'providers.cancelAuth';
 
   /// Disconnects a configured provider connection.
-  static const String providerDisconnect = 'provider.disconnect';
+  static const String providerDisconnect = 'providers.disconnect';
 
   /// Explicitly refreshes model metadata from the catalog source.
-  static const String providerCatalogRefresh = 'provider.catalog.refresh';
+  static const String providerCatalogRefresh = 'providers.refreshCatalog';
 
   /// The providerModelsList public API member.
-  static const String providerModelsList = 'provider.models.list';
+  static const String providerModelsList = 'providers.listModels';
 
   /// Reads the daemon-global default model used when nothing else resolves.
-  static const String providerDefaultModelGet = 'provider.defaultModel.get';
+  static const String providerDefaultModelGet = 'providers.getDefaultModel';
 
   /// Replaces or clears the daemon-global default model.
-  static const String providerDefaultModelSet = 'provider.defaultModel.set';
+  static const String providerDefaultModelSet = 'providers.setDefaultModel';
 
   /// Creates an advanced custom connection speaking a registered wire format.
-  static const String providerCustomCreate = 'provider.custom.create';
+  static const String providerCustomCreate = 'providers.createCustom';
 
   /// Updates an advanced custom connection.
-  static const String providerCustomUpdate = 'provider.custom.update';
+  static const String providerCustomUpdate = 'providers.updateCustom';
 
   /// Deletes an advanced custom connection.
-  static const String providerCustomDelete = 'provider.custom.delete';
+  static const String providerCustomDelete = 'providers.deleteCustom';
 
   /// The turnStart public API member.
-  static const String turnStart = 'turn.start';
+  static const String turnStart = 'sessions.startTurn';
 
   /// The turnCancel public API member.
-  static const String turnCancel = 'turn.cancel';
+  static const String turnCancel = 'sessions.cancelTurn';
 
   /// Summarizes a session's context window and starts the next one.
-  static const String sessionCompact = 'session.compact';
+  static const String sessionCompact = 'sessions.compact';
 
   /// The approvalResolve public API member.
-  static const String approvalResolve = 'approval.resolve';
+  static const String approvalResolve = 'sessions.resolveApproval';
 
   /// Answers a pending agent question and unblocks its turn.
-  static const String userQuestionAnswer = 'userQuestion.answer';
+  static const String userQuestionAnswer = 'sessions.answerQuestion';
 
   /// Reports that the client has queued input for a session.
-  static const String sessionPendingInput = 'session.pendingInput';
+  static const String sessionPendingInput = 'sessions.notePendingInput';
 
   /// The timelineSubscribe public API member.
-  static const String timelineSubscribe = 'timeline.subscribe';
+  static const String timelineSubscribe = 'sessions.subscribeTimeline';
 }
 
 /// Public API exposed by this library.
 abstract final class RpcNotification {
   /// The timelineEvent public API member.
-  static const String timelineEvent = 'timeline.event';
+  static const String timelineEvent = 'sessions.timelineEvent';
 
   /// Reports one session lifecycle change.
-  static const String sessionUpdated = 'session.updated';
+  static const String sessionUpdated = 'sessions.updated';
 
   /// Streams one ordered terminal output chunk.
-  static const String terminalOutput = 'terminal.output';
+  static const String terminalOutput = 'terminals.output';
 
   /// Reports terminal lifecycle or size changes.
-  static const String terminalUpdated = 'terminal.updated';
+  static const String terminalUpdated = 'terminals.updated';
 
   /// Reports a Markdown agent catalog change.
-  static const String agentDefinitionsChanged = 'agentDefinitions.changed';
+  static const String agentDefinitionsChanged = 'agents.changed';
 
   /// Reports a skill catalog change.
-  static const String skillsChanged = 'skills.changed';
+  static const String skillsChanged = 'prompts.skillsChanged';
 
   /// Reports an agent command catalog change.
-  static const String commandsChanged = 'commands.changed';
+  static const String commandsChanged = 'prompts.commandsChanged';
 
   /// The approvalRequested public API member.
-  static const String approvalRequested = 'approval.requested';
+  static const String approvalRequested = 'sessions.approvalRequested';
 
   /// Reports that the agent is blocked on a question for the user.
-  static const String userQuestionRequested = 'userQuestion.requested';
+  static const String userQuestionRequested = 'sessions.questionRequested';
 
   /// Reports OAuth authorization attempt state changes.
-  static const String providerAuthUpdated = 'provider.auth.updated';
+  static const String providerAuthUpdated = 'providers.authUpdated';
 
   /// Reports an MCP server connection or configuration change.
-  static const String mcpServersChanged = 'mcp.servers.changed';
+  static const String mcpServersChanged = 'mcp.changed';
 }
 
 /// ProtocolException defines a public contract.

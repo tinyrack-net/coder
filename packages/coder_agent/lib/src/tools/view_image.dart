@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart' show AttachFileTool;
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart' show AttachFileTool;
 import 'package:coder_agent/src/tools/attach_file.dart' show AttachFileTool;
 import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
 import 'package:platform/platform.dart';
@@ -65,7 +65,7 @@ class ViewImageTool extends AgentTool {
       '$maxContextImagesPerTurn per turn.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -192,13 +192,13 @@ final class ViewImageToolProvider extends SelectableToolProvider {
   String get id => 'view_image';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => AgentToolDefinition(
     id: id,
     name: id,
     description:
         'Look at an image file in the workspace, such as a screenshot '
         'or a design mock-up.',
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
     alwaysOn: true,
   );
 

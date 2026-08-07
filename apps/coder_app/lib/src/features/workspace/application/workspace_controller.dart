@@ -67,7 +67,7 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
       registry.runtimes.values.where((item) => item.connected).map((
         runtime,
       ) async {
-        final catalog = await runtime.api!.getWorkspaceCatalog();
+        final catalog = await runtime.api!.workspaces.getWorkspaceCatalog();
         return MapEntry<String, WorkspaceCatalogDto>(runtime.id, catalog);
       }),
     );
@@ -85,7 +85,7 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
     String rootPath,
   ) async {
     final api = await requireHostApi(ref, hostId);
-    final result = await api.registerWorkspace(
+    final result = await api.workspaces.registerWorkspace(
       workspaceId: ref.read(appIdGeneratorProvider).generate(),
       checkoutId: ref.read(appIdGeneratorProvider).generate(),
       rootPath: rootPath,
@@ -98,7 +98,7 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
   /// Refreshes one daemon catalog without affecting other hosts.
   Future<void> refreshHost(String hostId) async {
     final api = await requireHostApi(ref, hostId);
-    final catalog = await api.getWorkspaceCatalog();
+    final catalog = await api.workspaces.getWorkspaceCatalog();
     final current = state.requireValue;
     state = AsyncData<UnifiedWorkspaceCatalogState>(
       UnifiedWorkspaceCatalogState(
@@ -122,7 +122,7 @@ Future<List<GitBranchDto>> gitBranches(
   String workspaceId,
 ) async {
   final api = await watchHostApi(ref, hostId);
-  return api.listGitBranches(workspaceId);
+  return api.workspaces.listGitBranches(workspaceId);
 }
 
 /// One session that belongs to no project, with the checkout that runs it.
@@ -148,14 +148,14 @@ class ProjectSettingsController extends _$ProjectSettingsController {
     String workspaceId,
   ) async {
     final api = await watchHostApi(ref, hostId);
-    return api.getProjectSettings(workspaceId);
+    return api.workspaces.getProjectSettings(workspaceId);
   }
 
   /// Replaces the worktree hook section on the daemon host.
   Future<void> save(ProjectSettingsDto settings) async {
     final api = await requireHostApi(ref, hostId);
     state = AsyncData<ProjectSettingsResultDto>(
-      await api.saveProjectSettings(workspaceId, settings),
+      await api.workspaces.saveProjectSettings(workspaceId, settings),
     );
   }
 }

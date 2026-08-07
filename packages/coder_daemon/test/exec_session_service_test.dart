@@ -5,9 +5,10 @@ import 'dart:async';
 import 'dart:io' show ProcessException;
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/exec_session_service.dart';
-import 'package:coder_daemon/src/ports.dart';
-import 'package:coder_daemon/src/terminal_service.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/exec_session_service.dart';
+import 'package:coder_daemon/src/features/terminals/application/terminal_service.dart';
+import 'package:coder_daemon/src/features/terminals/domain/terminal.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
@@ -452,7 +453,7 @@ final class _FakeGateway implements TerminalGateway {
 
   @override
   Future<TerminalProcess> start({
-    required ShellSpecDto shell,
+    required TerminalShell shell,
     required String workingDirectory,
     required int columns,
     required int rows,
@@ -476,7 +477,7 @@ final class _StartedTerminal {
     required this.process,
   });
 
-  final ShellSpecDto shell;
+  final TerminalShell shell;
   final String workingDirectory;
   final _FakeProcess process;
 }

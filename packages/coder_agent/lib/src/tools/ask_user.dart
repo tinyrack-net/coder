@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Largest number of questions one `ask_user` call may raise.
 const int maxUserQuestions = 3;
@@ -44,7 +44,7 @@ class AskUserTool extends AgentTool {
       'client always adds a free-form option, so never write one yourself.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -198,13 +198,13 @@ final class AskUserToolProvider extends SelectableToolProvider {
   String get id => 'ask_user';
 
   @override
-  AgentToolDefinitionDto get catalogEntry => AgentToolDefinitionDto(
+  AgentToolDefinition get catalogEntry => AgentToolDefinition(
     id: id,
     name: id,
     description:
         'Ask the user multiple-choice questions and wait for the '
         'answers.',
-    risk: ToolRisk.read,
+    risk: AgentToolRisk.read,
     alwaysOn: true,
   );
 

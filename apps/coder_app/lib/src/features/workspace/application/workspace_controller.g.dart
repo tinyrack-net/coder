@@ -114,7 +114,7 @@ final class WorkspaceCatalogControllerProvider
 }
 
 String _$workspaceCatalogControllerHash() =>
-    r'4351503fa25f22b32dde2059ee4ac80a8e1cee4c';
+    r'4537262f7be971fd6a73fe792157a0b2b710bfb7';
 
 /// Loads every online daemon catalog without merging daemon-local IDs.
 
@@ -207,7 +207,7 @@ final class GitBranchesProvider
   }
 }
 
-String _$gitBranchesHash() => r'e005a526a058c9d1291bae398e708ce6f5efe94a';
+String _$gitBranchesHash() => r'2a04178fc557eaedc66a8a4cfe1a36d04d832e9a';
 
 /// Lists local Git branches for one repository.
 
@@ -286,7 +286,7 @@ final class ProjectSettingsControllerProvider
 }
 
 String _$projectSettingsControllerHash() =>
-    r'0071f64e78724823e00810ea0927dcd82e623a07';
+    r'57aefc95e9654f24e44c23a7b60b937483358455';
 
 /// Loads and edits the `coder.json` worktree hooks of one project.
 

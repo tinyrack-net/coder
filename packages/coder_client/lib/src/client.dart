@@ -28,12 +28,23 @@ class CoderClientException implements Exception {
 }
 
 /// CoderClient defines a public contract.
-class CoderClient implements CoderApi {
+class CoderClient
+    implements
+        CoderApi,
+        WorkspacesApi,
+        SessionsApi,
+        AgentsApi,
+        PromptsApi,
+        ProvidersApi,
+        McpApi,
+        TerminalsApi,
+        AttachmentsApi {
   CoderClient._({
     required this._endpoint,
     required this._credentials,
     required this._clientId,
     required this._clientKind,
+    required this._clientVersion,
     required this._connector,
     required this._requestTimeout,
     required this._reconnectDelay,
@@ -45,6 +56,7 @@ class CoderClient implements CoderApi {
     required DaemonCredentials credentials,
     required String clientId,
     required String clientKind,
+    String clientVersion = 'unknown',
     WebSocketConnector? connector,
     Duration requestTimeout = const Duration(seconds: 60),
     Duration Function(int attempt)? reconnectDelay,
@@ -54,6 +66,7 @@ class CoderClient implements CoderApi {
       credentials: credentials,
       clientId: clientId,
       clientKind: clientKind,
+      clientVersion: clientVersion,
       connector: connector ?? createWebSocketConnector(),
       requestTimeout: requestTimeout,
       reconnectDelay:
@@ -68,6 +81,7 @@ class CoderClient implements CoderApi {
   final DaemonCredentials _credentials;
   final String _clientId;
   final String _clientKind;
+  final String _clientVersion;
   final WebSocketConnector _connector;
   final Duration _requestTimeout;
   final Duration Function(int attempt) _reconnectDelay;
@@ -83,10 +97,89 @@ class CoderClient implements CoderApi {
   bool _connecting = false;
   int _reconnectAttempt = 0;
 
-  @override
+  /// Raw transport events retained for daemon contract-test assertions.
+  ///
+  /// Product consumers use the typed streams on the feature APIs.
   Stream<ClientEvent> get events => _events.stream;
+
   @override
   Stream<ClientConnectionState> get states => _states.stream;
+
+  @override
+  WorkspacesApi get workspaces => this;
+
+  @override
+  SessionsApi get sessions => this;
+
+  @override
+  AgentsApi get agents => this;
+
+  @override
+  PromptsApi get prompts => this;
+
+  @override
+  ProvidersApi get providers => this;
+
+  @override
+  McpApi get mcp => this;
+
+  @override
+  TerminalsApi get terminals => this;
+
+  @override
+  AttachmentsApi get attachments => this;
+
+  @override
+  Stream<SessionDto> get sessionUpdates => _events.stream
+      .whereType<SessionUpdatedClientEvent>()
+      .map((event) => event.session);
+
+  @override
+  Stream<TimelineEventDto> get timelineEvents => _events.stream
+      .whereType<TimelineClientEvent>()
+      .map((event) => event.event);
+
+  @override
+  Stream<ApprovalRequestDto> get approvalRequests => _events.stream
+      .whereType<ApprovalRequestedClientEvent>()
+      .map((event) => event.approval);
+
+  @override
+  Stream<UserQuestionRequestDto> get questionRequests => _events.stream
+      .whereType<UserQuestionRequestedClientEvent>()
+      .map((event) => event.request);
+
+  @override
+  Stream<void> get definitionChanges => _events.stream
+      .whereType<AgentDefinitionsChangedClientEvent>()
+      .map((_) {});
+
+  @override
+  Stream<void> get skillChanges =>
+      _events.stream.whereType<SkillsChangedClientEvent>().map((_) {});
+
+  @override
+  Stream<void> get commandChanges =>
+      _events.stream.whereType<CommandsChangedClientEvent>().map((_) {});
+
+  @override
+  Stream<ProviderAuthAttemptDto> get authUpdates => _events.stream
+      .whereType<ProviderAuthUpdatedClientEvent>()
+      .map((event) => event.attempt);
+
+  @override
+  Stream<void> get serverChanges =>
+      _events.stream.whereType<McpServersChangedClientEvent>().map((_) {});
+
+  @override
+  Stream<TerminalOutputDto> get output => _events.stream
+      .whereType<TerminalOutputClientEvent>()
+      .map((event) => event.output);
+
+  @override
+  Stream<TerminalDto> get terminalUpdates => _events.stream
+      .whereType<TerminalUpdatedClientEvent>()
+      .map((event) => event.terminal);
   @override
   ServerInfoDto get serverInfo =>
       _serverInfo ??
@@ -135,7 +228,8 @@ class CoderClient implements CoderApi {
         HelloParamsDto(
           clientId: _clientId,
           clientKind: _clientKind,
-          protocolVersion: coderProtocolVersion,
+          protocolMajor: coderProtocolMajor,
+          clientVersion: _clientVersion,
           capabilities: const <String, bool>{'timelineCatchup': true},
         ).toJson(),
       );
@@ -480,54 +574,15 @@ class CoderClient implements CoderApi {
   }
 
   @override
-  Future<SessionDto> updateSessionMode(
+  Future<SessionDto> updateSettings(
     String sessionId,
-    SessionMode mode,
+    SessionSettingsPatchDto patch,
   ) async {
     final response = await _request(
-      RpcMethod.sessionModeSet,
-      SessionModeSetParamsDto(sessionId: sessionId, mode: mode).toJson(),
-    );
-    return SessionResultDto.fromJson(response).session;
-  }
-
-  @override
-  Future<SessionDto> updateSessionModel(
-    String sessionId,
-    SessionModelSelectionDto? model,
-  ) async {
-    final response = await _request(
-      RpcMethod.sessionModelSet,
-      SessionModelSetParamsDto(sessionId: sessionId, model: model).toJson(),
-    );
-    return SessionResultDto.fromJson(response).session;
-  }
-
-  @override
-  Future<SessionDto> updateSessionReasoningEffort(
-    String sessionId,
-    String? reasoningEffort,
-  ) async {
-    final response = await _request(
-      RpcMethod.sessionReasoningEffortSet,
-      SessionReasoningEffortSetParamsDto(
+      RpcMethod.sessionUpdateSettings,
+      SessionSettingsUpdateParamsDto(
         sessionId: sessionId,
-        reasoningEffort: reasoningEffort,
-      ).toJson(),
-    );
-    return SessionResultDto.fromJson(response).session;
-  }
-
-  @override
-  Future<SessionDto> updateSessionPermissionMode(
-    String sessionId,
-    PermissionMode? permissionMode,
-  ) async {
-    final response = await _request(
-      RpcMethod.sessionPermissionModeSet,
-      SessionPermissionModeSetParamsDto(
-        sessionId: sessionId,
-        permissionMode: permissionMode,
+        patch: patch,
       ).toJson(),
     );
     return SessionResultDto.fromJson(response).session;
@@ -552,21 +607,6 @@ class CoderClient implements CoderApi {
       settings.toJson(),
     );
     return PermissionSettingsDto.fromJson(response);
-  }
-
-  @override
-  Future<SessionDto> updateSessionServiceTier(
-    String sessionId,
-    String? serviceTier,
-  ) async {
-    final response = await _request(
-      RpcMethod.sessionServiceTierSet,
-      SessionServiceTierSetParamsDto(
-        sessionId: sessionId,
-        serviceTier: serviceTier,
-      ).toJson(),
-    );
-    return SessionResultDto.fromJson(response).session;
   }
 
   @override
@@ -1087,7 +1127,7 @@ class CoderClient implements CoderApi {
       final request =
           http.StreamedRequest(
               'POST',
-              _endpoint.httpBaseUri.resolve('attachments'),
+              _endpoint.httpBaseUri.resolve('v3/attachments'),
             )
             ..headers['authorization'] = 'Bearer ${_credentials.bearerToken}'
             ..headers['content-type'] = mimeType
@@ -1124,7 +1164,9 @@ class CoderClient implements CoderApi {
     final client = http.Client();
     final request = http.Request(
       'GET',
-      _endpoint.httpBaseUri.resolve('attachments/${Uri.encodeComponent(id)}'),
+      _endpoint.httpBaseUri.resolve(
+        'v3/attachments/${Uri.encodeComponent(id)}',
+      ),
     )..headers['authorization'] = 'Bearer ${_credentials.bearerToken}';
     final response = await client.send(request);
     if (response.statusCode != 200) {

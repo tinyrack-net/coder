@@ -49,7 +49,7 @@ final class LocalDaemonDirectories {
     required this.osHomeDirectory,
   });
 
-  /// Holds `credentials.json`.
+  /// Base directory whose v3 child holds daemon configuration.
   final String configDirectory;
 
   /// Holds the database and other recoverable state.
@@ -109,10 +109,10 @@ LocalDaemonDirectories resolveLocalDaemonDirectories({
 /// [configDirectory]. Writing credentials stays with the daemon; clients only
 /// ever read.
 Future<String?> readLocalDaemonBearerToken(String configDirectory) async {
-  final file = File(p.join(configDirectory, 'credentials.json'));
+  final file = File(p.join(configDirectory, 'v3', 'secrets.json'));
   if (!file.existsSync()) return null;
   final decoded = jsonDecode(await file.readAsString());
-  if (decoded is! Map<String, dynamic> || decoded['version'] != 5) {
+  if (decoded is! Map<String, dynamic> || decoded['schemaVersion'] != 1) {
     throw FormatException(
       'incompatible_credentials: explicitly remove ${file.path} to reset '
       'development credentials.',

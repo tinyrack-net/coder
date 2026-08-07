@@ -4,7 +4,6 @@ library;
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -168,7 +167,7 @@ void main() {
         onSurfaced: surfaced.addAll,
       );
 
-      expect(tool.risk, ToolRisk.read);
+      expect(tool.risk, AgentToolRisk.read);
       expect(tool.name, toolSearchToolName);
 
       final result = await tool.execute(<String, dynamic>{
@@ -249,7 +248,7 @@ final class _FakeTool extends AgentTool {
   final Map<String, dynamic> strictJsonSchema;
 
   @override
-  ToolRisk get risk => ToolRisk.dangerous;
+  AgentToolRisk get risk => AgentToolRisk.dangerous;
 
   @override
   ToolExposure get exposure => ToolExposure.deferred;

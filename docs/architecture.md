@@ -10,34 +10,30 @@ compile `main_mobile.dart`, whose bootstrap can only create a remote
 coder_app -> coder_client -> coder_protocol
     |                            ^
     +-- desktop only             |
-         coder_daemon -> coder_agent -> coder_provider_openai
+         coder_daemon -> coder_agent
               |
-              +-- coder_mcp -> external MCP servers
-              |
+              +-- provider infrastructure -> OpenAI-compatible APIs
+              +-- MCP infrastructure -> external MCP servers
               +-- Drift / SQLite
 ```
 
 ## Package boundaries
 
-- `coder_protocol`: platform-neutral, generated request/response and domain
-  DTOs for protocol version 2.
+- `coder_protocol`: platform-neutral, feature-scoped generated models,
+  requests, responses, events, and typed procedure descriptors for protocol
+  version 3.
 - `coder_client`: authenticated JSON-RPC 2.0 over WebSocket, reconnect, and
-  sequence-based timeline catch-up. `json_rpc_2` owns request correlation,
-  notifications, and structured transport errors.
+  sequence-based timeline catch-up. Its root `CoderApi` exposes lifecycle and
+  feature APIs such as `sessions`, `providers`, and `mcp`; each feature owns
+  its typed update streams.
 - `coder_agent`: provider-independent turn loop, approval policy, cancellation,
-  path-confined coding tools, and strict tool schemas.
-- `coder_provider_openai`: direct Responses and Chat Completions streaming
-  adapters plus OpenAI-compatible provider/model presets. Responses requests
-  use `store: false`; encrypted reasoning items remain opaque daemon-owned
-  conversation state.
-- `coder_mcp`: Model Context Protocol client, wire types, and the stdio and
-  Streamable HTTP transports. Depends on no other internal package: it knows
-  nothing about `AgentTool` or the daemon's DTOs, so the adapter that presents
-  an MCP tool as an `AgentTool` lives in `coder_daemon`. See
-  [`docs/mcp.md`](mcp.md).
-- `coder_daemon`: composition root, feature-scoped Drift DAOs, lifecycle
-  recovery, bearer authentication, WebSocket RPC server, embedded isolate,
-  and CLI.
+  path-confined coding tools, and strict tool schemas. It has no internal
+  package dependency and exposes every filesystem, process, network, clock,
+  and identity effect as a typed port.
+- `coder_daemon`: feature-first domain/application/infrastructure/transport
+  modules, provider and MCP adapters, Drift persistence, lifecycle recovery,
+  bearer authentication, WebSocket RPC host, and embedded isolate.
+- `coder_cli`: standalone daemon composition and feature-API command surface.
 - `coder_app`: feature-scoped Riverpod `AsyncNotifier` application state,
   typed go_router navigation, and adaptive Tinyrack UI. Controllers depend only
   on injected ports such as the transport-neutral `CoderApi`.
@@ -45,6 +41,11 @@ coder_app -> coder_client -> coder_protocol
 Dependencies point inward through DTOs and interfaces. `coder_agent` does not
 read databases or call the network. The daemon is the only package allowed to
 combine a provider, repositories, tools, and transports.
+
+The v3 WebSocket endpoint is `/v3/ws` with subprotocol
+`tinyrack.coder.v3`. `system.hello` requires protocol major 3 and revision 0.
+State and config start fresh under their respective `v3` directories; v2 data
+is neither read nor removed by normal startup or reset.
 
 ## Flutter application boundaries
 

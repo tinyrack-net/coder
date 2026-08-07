@@ -1,4 +1,4 @@
-import 'package:coder_daemon/src/rpc_dispatch.dart';
+import 'package:coder_daemon/src/transport/rpc/rpc_dispatch.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 

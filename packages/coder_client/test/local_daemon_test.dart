@@ -238,30 +238,34 @@ void main() {
     setUp(() => directory = Directory.systemTemp.createTempSync('coder-token'));
     tearDown(() => directory.deleteSync(recursive: true));
 
-    void write(Object? value) => File(
-      p.join(directory.path, 'credentials.json'),
-    ).writeAsStringSync(jsonEncode(value));
+    void write(Object? value) {
+      final versionDirectory = Directory(p.join(directory.path, 'v3'))
+        ..createSync();
+      File(
+        p.join(versionDirectory.path, 'secrets.json'),
+      ).writeAsStringSync(jsonEncode(value));
+    }
 
     test('returns null when no daemon has ever run here', () async {
       expect(await readLocalDaemonBearerToken(directory.path), isNull);
     });
 
     test('returns null when the file carries no daemon section', () async {
-      write(<String, dynamic>{'version': 5});
+      write(<String, dynamic>{'schemaVersion': 1});
       expect(await readLocalDaemonBearerToken(directory.path), isNull);
     });
 
     test('reads the token a running daemon provisioned', () async {
       write(<String, dynamic>{
-        'version': 5,
+        'schemaVersion': 1,
         'daemon': <String, dynamic>{'bearerToken': 'secret-token'},
         'providerCredentials': <String, dynamic>{},
       });
       expect(await readLocalDaemonBearerToken(directory.path), 'secret-token');
     });
 
-    test('names the file when the format predates version 5', () async {
-      write(<String, dynamic>{'version': 3});
+    test('names the file when the secrets schema is incompatible', () async {
+      write(<String, dynamic>{'schemaVersion': 0});
       await expectLater(
         readLocalDaemonBearerToken(directory.path),
         throwsA(
@@ -278,13 +282,16 @@ void main() {
     });
 
     test('rejects a malformed daemon section', () async {
-      write(<String, dynamic>{'version': 5, 'daemon': 'not-an-object'});
+      write(<String, dynamic>{
+        'schemaVersion': 1,
+        'daemon': 'not-an-object',
+      });
       await expectLater(
         readLocalDaemonBearerToken(directory.path),
         throwsA(isA<FormatException>()),
       );
       write(<String, dynamic>{
-        'version': 5,
+        'schemaVersion': 1,
         'daemon': <String, dynamic>{'bearerToken': 7},
       });
       await expectLater(

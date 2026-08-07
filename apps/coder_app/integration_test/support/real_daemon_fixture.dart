@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_app/src/app/composition/app_services.dart';
 import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/domain/host_ports.dart';

@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:coder_daemon/src/file_index.dart';
-import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/features/workspaces/infrastructure/file_index.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

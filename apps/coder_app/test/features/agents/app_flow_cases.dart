@@ -21,7 +21,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
-        (await api.getAgentDefinition('coder')).systemPrompt,
+        (await api.agents.getAgentDefinition('coder')).systemPrompt,
         'Always run focused tests.',
       );
       await tester.scrollUntilVisible(
@@ -75,7 +75,7 @@ void _registerAgentsAppFlows() {
       await tester.pumpAndSettle();
       expect(find.text('Reviewer'), findsWidgets);
       expect(
-        (await api.getAgentDefinition('reviewer')).mode,
+        (await api.agents.getAgentDefinition('reviewer')).mode,
         AgentMode.subagent,
       );
     },
@@ -249,7 +249,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, 'Overwrite'));
       await tester.pumpAndSettle();
 
-      final updated = await api.getAgentDefinition('coder');
+      final updated = await api.agents.getAgentDefinition('coder');
       expect(updated.promptEnabled, isFalse);
       expect(updated.model.providerConnectionId, 'openai');
       expect(updated.model.modelId, 'gpt-test');
@@ -259,7 +259,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
       await tester.pumpAndSettle();
       expect(
-        (await api.getAgentDefinition('coder')).systemPrompt,
+        (await api.agents.getAgentDefinition('coder')).systemPrompt,
         'Code carefully.',
       );
       await tester.tap(find.text('Reviewer').first);
@@ -267,7 +267,9 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
       await tester.pumpAndSettle();
       expect(
-        (await api.listAgentDefinitions()).map((definition) => definition.id),
+        (await api.agents.listAgentDefinitions()).map(
+          (definition) => definition.id,
+        ),
         isNot(contains('reviewer')),
       );
     },

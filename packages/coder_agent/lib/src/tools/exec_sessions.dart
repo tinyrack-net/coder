@@ -1,5 +1,6 @@
+import 'package:coder_agent/src/contracts.dart';
+
 import 'package:coder_agent/src/model.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// One drain of a live [ExecSession]'s output.
 class ExecSessionChunk {
@@ -76,7 +77,7 @@ abstract interface class ExecSessionHost {
 /// Without this, `ask` mode raises a dialog for every write into a session,
 /// which makes an interactive shell unusable. It only ever upgrades an ask to
 /// an allow: a denial from the inner policy — every non-read tool under
-/// [PermissionMode.readOnly] — is never overturned.
+/// [AgentPermissionMode.readOnly] — is never overturned.
 class ExecSessionApprovalPolicy implements ApprovalPolicy {
   /// Creates an [ExecSessionApprovalPolicy] over the tool it governs.
   const ExecSessionApprovalPolicy(

@@ -4,10 +4,9 @@ library;
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/mcp_resource_tools.dart';
-import 'package:coder_daemon/src/mcp_service.dart';
-import 'package:coder_mcp/coder_mcp.dart';
-import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_resource_tools.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_service.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -31,10 +30,10 @@ void main() {
       ListMcpResourceTemplatesTool(host: host),
       ReadMcpResourceTool(host: host),
     ]) {
-      expect(tool.risk, ToolRisk.read, reason: tool.name);
+      expect(tool.risk, AgentToolRisk.read, reason: tool.name);
       expect(
         const DefaultApprovalPolicy(
-          PermissionMode.readOnly,
+          AgentPermissionMode.readOnly,
         ).evaluateRisk(tool.risk),
         ApprovalEvaluation.allow,
         reason: tool.name,

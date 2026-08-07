@@ -1,11 +1,11 @@
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/provider_adapters.dart';
-import 'package:coder_daemon/src/provider_auth.dart';
-import 'package:coder_daemon/src/provider_catalog.dart';
-import 'package:coder_daemon/src/provider_service.dart';
-import 'package:coder_daemon/src/repositories.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/openai/openai.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_adapters.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_catalog.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -217,7 +217,7 @@ void main() {
       );
       expect(
         request.capabilities.reasoningEffort,
-        CapabilitySupport.supported,
+        AgentCapabilitySupport.supported,
       );
       await fixture.service.validateAgentModel('deepseek', 'deepseek-v4-pro');
       await expectLater(
@@ -318,7 +318,7 @@ void main() {
             .singleWhere((model) => model.id == 'gpt-5.6-sol')
             .capabilities
             .serviceTier,
-        CapabilitySupport.supported,
+        AgentCapabilitySupport.supported,
       );
     },
   );

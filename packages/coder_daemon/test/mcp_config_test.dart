@@ -4,7 +4,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:coder_daemon/src/mcp_config.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_config.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -22,21 +22,31 @@ void main() {
 
   String userPath() => store.sourcePath(McpConfigScope.user);
 
+  Map<String, dynamic> v3Document(Map<String, dynamic> document) =>
+      <String, dynamic>{
+        'schemaVersion': document['version'] == 1 ? 3 : document['version'],
+        'mcp': <String, dynamic>{
+          'servers': document['servers'] ?? <String, dynamic>{},
+        },
+      };
+
   Future<void> writeUser(Map<String, dynamic> document) =>
-      File(userPath()).writeAsString(jsonEncode(document));
+      File(userPath()).writeAsString(jsonEncode(v3Document(document)));
 
   Future<void> writeProject(String root, String contents) async {
-    await Directory(root).create(recursive: true);
-    await File(
+    final file = File(
       store.sourcePath(McpConfigScope.project, rootPath: root),
-    ).writeAsString(contents);
+    );
+    await file.parent.create(recursive: true);
+    final document = jsonDecode(contents) as Map<String, dynamic>;
+    await file.writeAsString(jsonEncode(v3Document(document)));
   }
 
   test('the user and project scopes name their own files', () {
-    expect(p.basename(userPath()), 'mcp.json');
+    expect(p.basename(userPath()), 'config.json');
     expect(
       store.sourcePath(McpConfigScope.project, rootPath: '/repo'),
-      p.join('/repo', '.mcp.json'),
+      p.join('/repo', '.coder', 'config.json'),
     );
     expect(
       () => store.sourcePath(McpConfigScope.project),
@@ -117,7 +127,7 @@ void main() {
     );
 
     final contents = await File(userPath()).readAsString();
-    expect(contents, contains('\n  "version": 1'));
+    expect(contents, contains('\n  "schemaVersion": 3'));
     if (!Platform.isWindows) {
       // Read the mode through dart:io rather than stat, whose flags differ
       // between GNU and BSD userlands.
@@ -314,7 +324,7 @@ void main() {
       expect(document.servers, hasLength(2));
     });
 
-    test('an unknown key is rejected rather than ignored', () async {
+    test('an unknown MCP server key is rejected rather than ignored', () async {
       await expectRejected(
         <String, dynamic>{
           'transport': 'stdio',
@@ -322,15 +332,6 @@ void main() {
           'transprot': 'typo',
         },
         because: 'unknown key',
-      );
-      await writeUser(<String, dynamic>{
-        'version': 1,
-        'servers': <String, dynamic>{},
-        'extra': true,
-      });
-      await expectLater(
-        store.load(McpConfigScope.user),
-        throwsA(isA<FormatException>()),
       );
     });
 

@@ -127,11 +127,13 @@ void main() {
     }
   });
 
-  test('adapter packages and the composition root may name their vendor', () {
+  test('provider infrastructure and the composition root may name vendors', () {
     expect(
       verifier.verifySource(
-        package: 'coder_provider_openai',
-        path: 'packages/coder_provider_openai/lib/src/plugins.dart',
+        package: 'coder_daemon',
+        path:
+            'packages/coder_daemon/lib/src/features/providers/'
+            'infrastructure/openai/plugins.dart',
         source: "const id = 'openai'; // ChatGPT subscription backend",
       ),
       isEmpty,
@@ -139,7 +141,7 @@ void main() {
     expect(
       verifier.verifySource(
         package: 'coder_daemon',
-        path: 'packages/coder_daemon/lib/src/application.dart',
+        path: 'packages/coder_daemon/lib/src/bootstrap/application.dart',
         source: 'final plugins = openAIFamilyPlugins(clock: clock);',
       ),
       isEmpty,
@@ -194,11 +196,16 @@ void main() {
     expect(violations.single.rule, 'source_dependency_direction');
   });
 
-  test('the MCP package stays independent of the agent and daemon', () {
-    for (final forbidden in const <String>['coder_agent', 'coder_daemon']) {
+  test('the agent package stays independent of every internal package', () {
+    for (final forbidden in const <String>[
+      'coder_protocol',
+      'coder_client',
+      'coder_daemon',
+      'coder_cli',
+    ]) {
       final violations = verifier.verifySource(
-        package: 'coder_mcp',
-        path: 'packages/coder_mcp/lib/src/client.dart',
+        package: 'coder_agent',
+        path: 'packages/coder_agent/lib/src/runtime.dart',
         source: "import 'package:$forbidden/$forbidden.dart';",
       );
       expect(violations.single.rule, 'source_dependency_direction');
@@ -206,8 +213,11 @@ void main() {
     expect(
       verifier.verifySource(
         package: 'coder_daemon',
-        path: 'packages/coder_daemon/lib/src/mcp_service.dart',
-        source: "import 'package:coder_mcp/coder_mcp.dart';",
+        path:
+            'packages/coder_daemon/lib/src/features/mcp/'
+            'infrastructure/mcp_service.dart',
+        source:
+            "import 'package:coder_daemon/src/features/mcp/infrastructure/mcp.dart';",
       ),
       isEmpty,
     );
@@ -357,7 +367,12 @@ end_of_record
         'packages/beta',
         'apps/ui',
       ]) {
-        Directory(p.join(root.path, path)).createSync(recursive: true);
+        final directory = Directory(
+          p.join(root.path, path),
+        )..createSync(recursive: true);
+        File(p.join(directory.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: ${p.basename(path)}\n',
+        );
       }
       final workspace = CoverageWorkspace(root.path);
 

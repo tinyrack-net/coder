@@ -83,7 +83,7 @@ final class ComposerFileSearchProvider
 }
 
 String _$composerFileSearchHash() =>
-    r'8ab23f81040156102f39cca3b307953f2bed2357';
+    r'da88f9e75aad4b3087a00c58b33f0a933980a9e7';
 
 /// Searches one worktree for the files an `@` query could mention.
 ///

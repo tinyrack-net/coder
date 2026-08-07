@@ -533,9 +533,10 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       );
       if (confirmed != true || !mounted) return;
       final registry = await ref.read(hostRegistryControllerProvider.future);
-      await registry.runtimes[widget.selection.hostId]!.api!.terminateTerminal(
-        id,
-      );
+      await registry.runtimes[widget.selection.hostId]!.api!.terminals
+          .terminateTerminal(
+            id,
+          );
     }
     await ref
         .read(sessionTabsControllerProvider(widget.selection).notifier)
@@ -559,7 +560,7 @@ class _TerminalPane extends ConsumerStatefulWidget {
 
 class _TerminalPaneState extends ConsumerState<_TerminalPane> {
   final TRTerminalController _controller = TRTerminalController();
-  StreamSubscription<ClientEvent>? _events;
+  StreamSubscription<TerminalOutputDto>? _events;
   CoderApi? _api;
   int _sequence = 0;
   Object? _error;
@@ -575,12 +576,10 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       final registry = await ref.read(hostRegistryControllerProvider.future);
       final api = registry.runtimes[widget.selection.hostId]!.api!;
       _api = api;
-      final attached = await api.attachTerminal(widget.terminal.id);
+      final attached = await api.terminals.attachTerminal(widget.terminal.id);
       attached.replay.forEach(_accept);
-      _events = api.events.listen((event) {
-        if (event case TerminalOutputClientEvent(
-          :final output,
-        ) when output.terminalId == widget.terminal.id) {
+      _events = api.terminals.output.listen((output) {
+        if (output.terminalId == widget.terminal.id) {
           _accept(output);
         }
       });
@@ -624,10 +623,11 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
         autofocus: true,
         contextMenuItems: _buildContextMenu,
         onInput: (data) => unawaited(
-          _api?.writeTerminal(widget.terminal.id, data) ?? Future<void>.value(),
+          _api?.terminals.writeTerminal(widget.terminal.id, data) ??
+              Future<void>.value(),
         ),
         onResize: (size) => unawaited(
-          _api?.resizeTerminal(
+          _api?.terminals.resizeTerminal(
                 widget.terminal.id,
                 columns: size.columns,
                 rows: size.rows,
@@ -1069,7 +1069,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final registry = await ref.read(hostRegistryControllerProvider.future);
     final api = registry.runtimes[widget.selection.hostId]?.api;
     if (api == null) throw StateError('Daemon is not connected.');
-    return readAttachmentDownload(await api.downloadAttachment(attachment.id));
+    return readAttachmentDownload(
+      await api.attachments.downloadAttachment(attachment.id),
+    );
   }
 
   Future<void> _exportAttachment(ChatAttachment attachment) async {

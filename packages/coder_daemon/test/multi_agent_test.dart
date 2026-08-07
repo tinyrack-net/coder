@@ -5,10 +5,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/database.dart';
-import 'package:coder_daemon/src/multi_agent.dart';
-import 'package:coder_daemon/src/multi_agent_tools.dart';
-import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent_tools.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/database.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:drift/native.dart';
 import 'package:test/test.dart';

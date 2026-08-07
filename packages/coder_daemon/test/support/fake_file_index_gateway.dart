@@ -1,4 +1,4 @@
-import 'package:coder_daemon/src/ports.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Records file search requests and replays scripted matches.

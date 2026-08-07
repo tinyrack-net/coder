@@ -4,7 +4,6 @@ library;
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -28,8 +27,8 @@ void main() {
       GetContextRemainingTool(),
       NewContextTool(),
     ]) {
-      expect(tool.risk, ToolRisk.read, reason: tool.name);
-      for (final mode in PermissionMode.values) {
+      expect(tool.risk, AgentToolRisk.read, reason: tool.name);
+      for (final mode in AgentPermissionMode.values) {
         expect(
           DefaultApprovalPolicy(mode).evaluateRisk(tool.risk),
           ApprovalEvaluation.allow,

@@ -16,13 +16,15 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'project hooks save to coder.json, preserve keys, and reload',
+    'project hooks save to .coder/config.json, preserve keys, and reload',
     (tester) async {
       final fixture = await _projectFixture('project-save');
       addTearDown(fixture.$1.dispose);
-      final settingsFile = File('${fixture.$2.path}/coder.json');
+      final settingsFile = File('${fixture.$2.path}/.coder/config.json');
+      await settingsFile.parent.create();
       await settingsFile.writeAsString(
         '${jsonEncode(<String, Object?>{
+          'schemaVersion': 3,
           'other': <String, Object?>{'keep': true},
         })}\n',
       );
@@ -66,14 +68,18 @@ void main() {
     (tester) async {
       final fixture = await _projectFixture('project-recovery');
       addTearDown(fixture.$1.dispose);
-      final settingsFile = File('${fixture.$2.path}/coder.json');
+      final settingsFile = File('${fixture.$2.path}/.coder/config.json');
+      await settingsFile.parent.create();
       await settingsFile.writeAsString('{not json\n');
 
       await _pumpProjectSettings(tester, fixture.$1, waitForEditor: false);
       await pumpUntil(tester, find.textContaining('invalid_project_settings'));
       expect(find.text('다시 시도'), findsOneWidget);
 
-      await settingsFile.writeAsString('{}\n', flush: true);
+      await settingsFile.writeAsString(
+        '${jsonEncode(<String, Object?>{'schemaVersion': 3})}\n',
+        flush: true,
+      );
       await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
       await pumpUntil(tester, _textInput('Setup (worktree 생성 후)'));
       expect(find.textContaining('invalid_project_settings'), findsNothing);
@@ -90,7 +96,7 @@ void main() {
       addTearDown(fixture.$1.dispose);
       final client = await fixture.$1.connect(clientId: 'setup-failure');
       addTearDown(client.close);
-      await client.saveProjectSettings(
+      await client.workspaces.saveProjectSettings(
         fixture.$3,
         ProjectSettingsDto(
           setup: <String>[
@@ -101,7 +107,7 @@ void main() {
 
       await tester.pumpWidget(CoderApp(services: fixture.$1.services));
       await pumpUntil(tester, find.text('Git Project E2E'));
-      final created = await client.createWorktree(
+      final created = await client.workspaces.createWorktree(
         id: 'failed-worktree',
         workspaceId: fixture.$3,
         mode: WorktreeCreateMode.newBranch,
@@ -114,7 +120,9 @@ void main() {
       expect(created.worktree.archivedAt, isNotNull);
       expect(Directory(created.worktree.path).existsSync(), isFalse);
       expect(
-        (await client.getWorkspaceCatalog()).worktrees.map((item) => item.id),
+        (await client.workspaces.getWorkspaceCatalog()).worktrees.map(
+          (item) => item.id,
+        ),
         isNot(contains('failed-worktree')),
       );
       expect(find.text('setup-must-fail'), findsNothing);
@@ -131,7 +139,7 @@ void main() {
       addTearDown(fixture.$1.dispose);
       final client = await fixture.$1.connect(clientId: 'archive-cancel');
       addTearDown(client.close);
-      final created = await client.createWorktree(
+      final created = await client.workspaces.createWorktree(
         id: 'cancelled-archive',
         workspaceId: fixture.$3,
         mode: WorktreeCreateMode.newBranch,
@@ -160,7 +168,9 @@ void main() {
 
       expect(Directory(created.worktree.path).existsSync(), isTrue);
       expect(
-        (await client.getWorkspaceCatalog()).worktrees.map((item) => item.id),
+        (await client.workspaces.getWorkspaceCatalog()).worktrees.map(
+          (item) => item.id,
+        ),
         contains('cancelled-archive'),
       );
       expect(find.text('archive-cancel'), findsWidgets);
@@ -176,7 +186,7 @@ Future<(RealDaemonFixture, Directory)> _projectFixture(String id) async {
   final root = Directory('${fixture.home.path}/project')..createSync();
   final client = await fixture.connect(clientId: '$id-setup');
   try {
-    await client.registerWorkspace(
+    await client.workspaces.registerWorkspace(
       workspaceId: id,
       checkoutId: '$id-main',
       rootPath: root.path,
@@ -207,7 +217,7 @@ Future<(RealDaemonFixture, Directory, String)> _gitProjectFixture(
   ]);
   final client = await fixture.connect(clientId: '$id-setup');
   try {
-    await client.registerWorkspace(
+    await client.workspaces.registerWorkspace(
       workspaceId: id,
       checkoutId: '$id-main',
       rootPath: root.path,

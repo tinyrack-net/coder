@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
 import 'package:coder_agent/src/tools/tool_registry.dart';
-import 'package:coder_protocol/coder_protocol.dart';
 
 /// Reports how much of the context window is left.
 ///
@@ -24,7 +24,7 @@ class GetContextRemainingTool extends AgentTool {
       'when it is running low.';
 
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -68,7 +68,7 @@ class NewContextTool extends AgentTool {
   // under readOnly, and its visibility is the timeline divider rather than an
   // approval dialog.
   @override
-  ToolRisk get risk => ToolRisk.read;
+  AgentToolRisk get risk => AgentToolRisk.read;
 
   @override
   Map<String, dynamic> get strictJsonSchema =>
@@ -104,7 +104,7 @@ final class ContextWindowToolProvider extends AgentToolProvider {
   String get id => 'context_window';
 
   @override
-  AgentToolDefinitionDto? get catalogEntry => null;
+  AgentToolDefinition? get catalogEntry => null;
 
   @override
   List<AgentTool> create(AgentToolScope scope) => <AgentTool>[

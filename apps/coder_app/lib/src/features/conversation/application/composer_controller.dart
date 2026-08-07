@@ -43,7 +43,10 @@ Future<List<FileMatchDto>> composerFileSearch(
     ref.onDispose(timer.cancel);
   }
   final api = await requireHostApi(ref, hostId);
-  final result = await api.searchFiles(worktreeId: worktreeId, query: query);
+  final result = await api.workspaces.searchFiles(
+    worktreeId: worktreeId,
+    query: query,
+  );
   return rankFileMatches(result.matches, query);
 }
 

@@ -54,7 +54,7 @@ final class ProviderSettingsState {
 @Riverpod(keepAlive: true)
 /// ProviderSettingsController defines a public contract.
 class ProviderSettingsController extends _$ProviderSettingsController {
-  StreamSubscription<ClientEvent>? _events;
+  StreamSubscription<ProviderAuthAttemptDto>? _events;
 
   @override
   Future<ProviderSettingsState?> build(String hostId) async {
@@ -63,12 +63,12 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     )).runtimes[hostId];
     if (runtime?.connected != true) return null;
     final api = runtime!.api!;
-    _events = api.events.listen(_handleEvent);
+    _events = api.providers.authUpdates.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
-    final connections = await api.listProviderConnections();
-    final defaultModel = await api.getDefaultModel();
+    final connections = await api.providers.listProviderConnections();
+    final defaultModel = await api.providers.getDefaultModel();
     return ProviderSettingsState(
-      catalog: await api.listProviderCatalog(),
+      catalog: await api.providers.listProviderCatalog(),
       connections: connections,
       defaultModel: defaultModel,
       models: await _resolutionModels(api, connections, defaultModel),
@@ -97,7 +97,9 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     };
     final loaded = <String, List<ProviderModelDto>>{};
     for (final connectionId in wanted) {
-      loaded[connectionId] = await api.listProviderModels(connectionId);
+      loaded[connectionId] = await api.providers.listProviderModels(
+        connectionId,
+      );
     }
     return loaded;
   }
@@ -105,7 +107,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Replaces or clears the daemon-global default model.
   Future<void> setDefaultModel(SessionModelSelectionDto? model) async {
     final api = await _requireConnection();
-    await api.setDefaultModel(model);
+    await api.providers.setDefaultModel(model);
     await _reload(api);
   }
 
@@ -115,7 +117,9 @@ class ProviderSettingsController extends _$ProviderSettingsController {
       hostRegistryControllerProvider.future,
     )).runtimes[hostId];
     if (runtime?.connected != true || state.asData?.value == null) return;
-    final models = await runtime!.api!.listProviderModels(connectionId);
+    final models = await runtime!.api!.providers.listProviderModels(
+      connectionId,
+    );
     final current = state.asData?.value;
     if (current == null) return;
     state = AsyncData<ProviderSettingsState?>(
@@ -134,7 +138,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String apiKey,
   ) async {
     final api = await _requireConnection();
-    final result = await api.connectProviderApiKey(
+    final result = await api.providers.connectProviderApiKey(
       definitionId,
       apiKey,
     );
@@ -145,7 +149,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Connects a local built-in provider without authentication.
   Future<ProviderConnectionDto> connectNone(String definitionId) async {
     final api = await _requireConnection();
-    final result = await api.connectProviderNone(definitionId);
+    final result = await api.providers.connectProviderNone(definitionId);
     await _reload(api);
     return result;
   }
@@ -156,7 +160,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String methodId,
   ) async {
     final api = await _requireConnection();
-    final attempt = await api.startProviderAuth(
+    final attempt = await api.providers.startProviderAuth(
       definitionId,
       methodId,
     );
@@ -177,20 +181,20 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Cancels an interactive authorization attempt.
   Future<void> cancelAuth(String attemptId) async {
     final api = await _requireConnection();
-    await api.cancelProviderAuth(attemptId);
+    await api.providers.cancelProviderAuth(attemptId);
   }
 
   /// Disconnects a provider connection while retaining history.
   Future<void> disconnect(String connectionId) async {
     final api = await _requireConnection();
-    await api.disconnectProvider(connectionId);
+    await api.providers.disconnectProvider(connectionId);
     await _reload(api);
   }
 
   /// Explicitly refreshes catalog metadata.
   Future<void> refreshCatalog() async {
     final api = await _requireConnection();
-    final catalog = await api.refreshProviderCatalog();
+    final catalog = await api.providers.refreshProviderCatalog();
     final current = state.asData?.value;
     if (current != null) {
       state = AsyncData<ProviderSettingsState?>(
@@ -206,7 +210,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String? apiKey,
   }) async {
     final api = await _requireConnection();
-    final result = await api.createCustomProvider(
+    final result = await api.providers.createCustomProvider(
       id,
       config,
       apiKey: apiKey,
@@ -222,7 +226,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String? apiKey,
   }) async {
     final api = await _requireConnection();
-    final result = await api.updateCustomProvider(
+    final result = await api.providers.updateCustomProvider(
       connectionId,
       config,
       apiKey: apiKey,
@@ -234,7 +238,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Deletes an advanced custom connection.
   Future<void> deleteCustom(String connectionId) async {
     final api = await _requireConnection();
-    await api.deleteCustomProvider(connectionId);
+    await api.providers.deleteCustomProvider(connectionId);
     await _reload(api);
   }
 
@@ -247,9 +251,9 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     final SessionModelSelectionDto? defaultModel;
     final Map<String, List<ProviderModelDto>> resolutionModels;
     try {
-      catalog = await api.listProviderCatalog();
-      connections = await api.listProviderConnections();
-      defaultModel = await api.getDefaultModel();
+      catalog = await api.providers.listProviderCatalog();
+      connections = await api.providers.listProviderConnections();
+      defaultModel = await api.providers.getDefaultModel();
       // Connecting or disconnecting changes which connection resolves first.
       resolutionModels = await _resolutionModels(
         api,
@@ -279,22 +283,20 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     );
   }
 
-  void _handleEvent(ClientEvent event) {
+  void _handleEvent(ProviderAuthAttemptDto attempt) {
     if (!ref.mounted) return;
-    if (event case ProviderAuthUpdatedClientEvent(:final attempt)) {
-      final current = state.asData?.value;
-      if (current == null) return;
-      state = AsyncData<ProviderSettingsState?>(
-        current.copyWith(
-          authAttempts: <String, ProviderAuthAttemptDto>{
-            ...current.authAttempts,
-            attempt.id: attempt,
-          },
-        ),
-      );
-      if (attempt.status == ProviderAuthAttemptStatus.succeeded) {
-        unawaited(_requireConnection().then(_reload));
-      }
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData<ProviderSettingsState?>(
+      current.copyWith(
+        authAttempts: <String, ProviderAuthAttemptDto>{
+          ...current.authAttempts,
+          attempt.id: attempt,
+        },
+      ),
+    );
+    if (attempt.status == ProviderAuthAttemptStatus.succeeded) {
+      unawaited(_requireConnection().then(_reload));
     }
   }
 }

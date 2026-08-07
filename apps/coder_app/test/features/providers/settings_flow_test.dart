@@ -89,7 +89,7 @@ void main() {
 
       expect(api.credentials['deepseek'], 'deepseek-secret');
       expect(
-        (await api.listProviderConnections()).map((item) => item.id),
+        (await api.providers.listProviderConnections()).map((item) => item.id),
         contains('deepseek'),
       );
       expect(find.text('DeepSeek'), findsWidgets);
@@ -198,9 +198,10 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('provider-add-ollama')));
       await tester.pumpAndSettle();
-      final ollama = (await api.listProviderConnections()).singleWhere(
-        (connection) => connection.id == 'ollama',
-      );
+      final ollama = (await api.providers.listProviderConnections())
+          .singleWhere(
+            (connection) => connection.id == 'ollama',
+          );
       expect(ollama.credentialOrigin, ProviderCredentialOrigin.none);
 
       final refresh = find.byKey(
@@ -210,7 +211,7 @@ void main() {
       await tester.tap(refresh);
       await tester.pumpAndSettle();
       expect(
-        (await api.listProviderCatalog()).source,
+        (await api.providers.listProviderCatalog()).source,
         ProviderCatalogSource.refreshed,
       );
     },
@@ -243,7 +244,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('planned catalog outage'), findsNothing);
       expect(
-        (await api.listProviderCatalog()).source,
+        (await api.providers.listProviderCatalog()).source,
         ProviderCatalogSource.refreshed,
       );
     },
@@ -277,9 +278,10 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
-      final custom = (await api.listProviderConnections()).singleWhere(
-        (connection) => connection.id == 'new-provider',
-      );
+      final custom = (await api.providers.listProviderConnections())
+          .singleWhere(
+            (connection) => connection.id == 'new-provider',
+          );
       expect(custom.displayName, 'Lab');
       expect(custom.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
       expect(custom.customConfig!.manualModelIds, <String>['lab-model']);
@@ -345,7 +347,7 @@ void main() {
     await tester.tap(find.widgetWithText(TRButton, '저장'));
     await tester.pumpAndSettle();
     expect(
-      (await api.listProviderConnections())
+      (await api.providers.listProviderConnections())
           .single
           .customConfig!
           .authenticationRequired,
@@ -358,7 +360,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TRButton, '취소'));
     await tester.pumpAndSettle();
-    expect(await api.listProviderConnections(), hasLength(1));
+    expect(await api.providers.listProviderConnections(), hasLength(1));
 
     await tester.tap(findAccessibleAction('연결 작업'));
     await tester.pumpAndSettle();
@@ -366,10 +368,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TRButton, '삭제'));
     await tester.pumpAndSettle();
-    expect(await api.listProviderConnections(), isEmpty);
+    expect(await api.providers.listProviderConnections(), isEmpty);
 
     // Re-add it to cover the softer disconnect lifecycle independently.
-    await api.createCustomProvider('custom-one', custom.customConfig!);
+    await api.providers.createCustomProvider(
+      'custom-one',
+      custom.customConfig!,
+    );
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
     await _pumpSettings(tester, api);
@@ -381,7 +386,7 @@ void main() {
     await tester.tap(find.widgetWithText(TRButton, '취소'));
     await tester.pumpAndSettle();
     expect(
-      (await api.listProviderConnections()).single.status,
+      (await api.providers.listProviderConnections()).single.status,
       isNot(ProviderConnectionStatus.disconnected),
     );
 

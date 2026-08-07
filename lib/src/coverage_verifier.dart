@@ -228,9 +228,11 @@ final class CoverageWorkspace {
   Iterable<String> _childDirectories(String name) {
     final directory = Directory(p.join(workspaceRoot, name));
     if (!directory.existsSync()) return const <String>[];
-    return directory.listSync().whereType<Directory>().map(
-      (entry) => entry.path,
-    );
+    return directory
+        .listSync()
+        .whereType<Directory>()
+        .where((entry) => File(p.join(entry.path, 'pubspec.yaml')).existsSync())
+        .map((entry) => entry.path);
   }
 }
 

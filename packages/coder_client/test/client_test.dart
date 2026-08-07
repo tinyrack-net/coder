@@ -231,6 +231,42 @@ void main() {
       );
       addTearDown(client.close);
 
+      expect(client.workspaces, same(client));
+      expect(client.sessions, same(client));
+      expect(client.agents, same(client));
+      expect(client.prompts, same(client));
+      expect(client.providers, same(client));
+      expect(client.mcp, same(client));
+      expect(client.terminals, same(client));
+      expect(client.attachments, same(client));
+      expect(client.events, isA<Stream<ClientEvent>>());
+      expect(client.sessions.sessionUpdates, isA<Stream<SessionDto>>());
+      expect(
+        client.sessions.timelineEvents,
+        isA<Stream<TimelineEventDto>>(),
+      );
+      expect(
+        client.sessions.approvalRequests,
+        isA<Stream<ApprovalRequestDto>>(),
+      );
+      expect(
+        client.sessions.questionRequests,
+        isA<Stream<UserQuestionRequestDto>>(),
+      );
+      expect(client.agents.definitionChanges, isA<Stream<void>>());
+      expect(client.prompts.skillChanges, isA<Stream<void>>());
+      expect(client.prompts.commandChanges, isA<Stream<void>>());
+      expect(
+        client.providers.authUpdates,
+        isA<Stream<ProviderAuthAttemptDto>>(),
+      );
+      expect(client.mcp.serverChanges, isA<Stream<void>>());
+      expect(client.terminals.output, isA<Stream<TerminalOutputDto>>());
+      expect(
+        client.terminals.terminalUpdates,
+        isA<Stream<TerminalDto>>(),
+      );
+
       final uploaded = await client.uploadAttachment(
         fileName: 'report.txt',
         mimeType: 'text/plain',
@@ -327,7 +363,7 @@ void main() {
       addTearDown(client.close);
 
       expect(client.serverInfo.protocolVersion, coderProtocolVersion);
-      expect(connector.lastUri, Uri.parse('ws://127.0.0.1:7337/ws'));
+      expect(connector.lastUri, Uri.parse('ws://127.0.0.1:7337/v3/ws'));
       expect(
         connector.lastHeaders,
         const <String, String>{
@@ -444,38 +480,83 @@ void main() {
         agent,
       );
       expect(
-        await client.updateSessionModel(
+        await client.updateSettings(
           agent.id,
-          const SessionModelSelectionDto(
-            providerConnectionId: 'provider',
-            modelId: 'model',
+          const SessionSettingsPatchDto(
+            hasModel: true,
+            model: SessionModelSelectionDto(
+              providerConnectionId: 'provider',
+              modelId: 'model',
+            ),
           ),
         ),
         agent,
       );
-      expect(await client.updateSessionModel(agent.id, null), agent);
       expect(
-        await client.updateSessionMode(agent.id, SessionMode.plan),
-        agent,
-      );
-      expect(
-        await client.updateSessionReasoningEffort(agent.id, 'high'),
-        agent,
-      );
-      expect(await client.updateSessionReasoningEffort(agent.id, null), agent);
-      expect(
-        await client.updateSessionPermissionMode(
+        await client.updateSettings(
           agent.id,
-          PermissionMode.workspaceWrite,
+          const SessionSettingsPatchDto(hasModel: true),
         ),
         agent,
       );
-      expect(await client.updateSessionPermissionMode(agent.id, null), agent);
       expect(
-        await client.updateSessionServiceTier(agent.id, 'priority'),
+        await client.updateSettings(
+          agent.id,
+          const SessionSettingsPatchDto(mode: SessionMode.plan),
+        ),
         agent,
       );
-      expect(await client.updateSessionServiceTier(agent.id, null), agent);
+      expect(
+        await client.updateSettings(
+          agent.id,
+          const SessionSettingsPatchDto(
+            hasReasoningEffort: true,
+            reasoningEffort: 'high',
+          ),
+        ),
+        agent,
+      );
+      expect(
+        await client.updateSettings(
+          agent.id,
+          const SessionSettingsPatchDto(hasReasoningEffort: true),
+        ),
+        agent,
+      );
+      expect(
+        await client.updateSettings(
+          agent.id,
+          const SessionSettingsPatchDto(
+            hasPermissionMode: true,
+            permissionMode: PermissionMode.workspaceWrite,
+          ),
+        ),
+        agent,
+      );
+      expect(
+        await client.updateSettings(
+          agent.id,
+          const SessionSettingsPatchDto(hasPermissionMode: true),
+        ),
+        agent,
+      );
+      expect(
+        await client.updateSettings(
+          agent.id,
+          const SessionSettingsPatchDto(
+            hasServiceTier: true,
+            serviceTier: 'priority',
+          ),
+        ),
+        agent,
+      );
+      expect(
+        await client.updateSettings(
+          agent.id,
+          const SessionSettingsPatchDto(hasServiceTier: true),
+        ),
+        agent,
+      );
 
       expect(await client.listTerminals(worktree.id), hasLength(1));
       final terminal = await client.createTerminal(
@@ -754,11 +835,7 @@ void main() {
           RpcMethod.sessionList,
           RpcMethod.sessionSubagentList,
           RpcMethod.sessionCreate,
-          RpcMethod.sessionModelSet,
-          RpcMethod.sessionModeSet,
-          RpcMethod.sessionReasoningEffortSet,
-          RpcMethod.sessionPermissionModeSet,
-          RpcMethod.sessionServiceTierSet,
+          RpcMethod.sessionUpdateSettings,
           RpcMethod.agentDefinitionList,
           RpcMethod.agentDefinitionGet,
           RpcMethod.agentDefinitionCreate,
@@ -1176,15 +1253,7 @@ void _registerFixtureMethods(
       sessions: <SessionDto>[agent],
     ).toJson(),
     RpcMethod.sessionCreate: SessionResultDto(session: agent).toJson(),
-    RpcMethod.sessionModelSet: SessionResultDto(session: agent).toJson(),
-    RpcMethod.sessionModeSet: SessionResultDto(session: agent).toJson(),
-    RpcMethod.sessionReasoningEffortSet: SessionResultDto(
-      session: agent,
-    ).toJson(),
-    RpcMethod.sessionPermissionModeSet: SessionResultDto(
-      session: agent,
-    ).toJson(),
-    RpcMethod.sessionServiceTierSet: SessionResultDto(session: agent).toJson(),
+    RpcMethod.sessionUpdateSettings: SessionResultDto(session: agent).toJson(),
 
     RpcMethod.terminalList: const TerminalListResultDto(
       terminals: <TerminalDto>[terminal],

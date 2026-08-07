@@ -14,8 +14,8 @@ Two files, one schema:
 
 | Scope     | Path                          | Who owns it                     |
 | --------- | ----------------------------- | ------------------------------- |
-| `user`    | `<config>/mcp.json`           | You. Coder reads and writes it. |
-| `project` | `<worktree root>/.mcp.json`   | The repository. Read-only.      |
+| `user`    | `<config>/v3/config.json`              | You. Coder reads and writes it. |
+| `project` | `<worktree root>/.coder/config.json`   | The repository. Read-only.      |
 
 `<config>` is the daemon configuration directory: `$XDG_CONFIG_HOME/tinyrack-coder`
 on Linux, `~/Library/Application Support/Tinyrack Coder` on macOS, and
@@ -23,19 +23,21 @@ on Linux, `~/Library/Application Support/Tinyrack Coder` on macOS, and
 
 ```jsonc
 {
-  "version": 1,
-  "servers": {
-    "github": {
-      "enabled": true,
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": { "GITHUB_TOKEN": "${secret:github.token}" }
-    },
-    "linear": {
-      "transport": "http",
-      "url": "https://mcp.linear.app/mcp",
-      "headers": { "Authorization": "Bearer ${env:LINEAR_API_KEY}" }
+  "schemaVersion": 3,
+  "mcp": {
+    "servers": {
+      "github": {
+        "enabled": true,
+        "transport": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": { "GITHUB_TOKEN": "${secret:github.token}" }
+      },
+      "linear": {
+        "transport": "http",
+        "url": "https://mcp.linear.app/mcp",
+        "headers": { "Authorization": "Bearer ${env:LINEAR_API_KEY}" }
+      }
     }
   }
 }
@@ -62,14 +64,14 @@ Neither file ever holds a secret. Values in `env` and `headers` expand two
 references at connect time:
 
 - `${env:NAME}` reads the daemon process environment.
-- `${secret:key}` reads a value stored in `credentials.json`, which is written
+- `${secret:key}` reads a value stored in `v3/secrets.json`, which is written
   through the settings UI and never sent back to a client.
 
 `$$` is a literal `$`; every other `$` is literal too, so `costs $5` needs no
 escaping. An unset reference fails the connection by name rather than resolving
 to an empty string and producing a confusing 401 later.
 
-A committed `.mcp.json` may not put a literal under a key whose name suggests a
+A committed `.coder/config.json` may not put a literal under a key whose name suggests a
 credential (`token`, `key`, `secret`, `auth`, `password`, and similar). Those
 must use a reference. This is the cheapest available guard against the most
 common way a token reaches a public repository.
@@ -88,14 +90,14 @@ accumulate child processes.
 
 ## Trust
 
-**A project `.mcp.json` runs without a prompt.** Opening a session in a cloned
+**A project `.coder/config.json` runs without a prompt.** Opening a session in a cloned
 repository is enough to launch whatever `command` it names, with your
 environment. Treat cloning a repository as running its code, because with a
-`.mcp.json` present it is.
+`.coder/config.json` present it is.
 
 The settings screen always shows the file that declares a server, so what is
 running is at least visible. If you work in repositories you do not trust,
-review `.mcp.json` before opening a session in them.
+review `.coder/config.json` before opening a session in them.
 
 ## Resources
 
@@ -149,7 +151,7 @@ connection instead of being restarted with the rest.
 
 ## Upgrading
 
-`credentials.json` moved to version 5 to hold `mcpSecrets`. Per repository
-policy there is no migration: delete the file and reconnect your providers.
-Provider API keys and the daemon bearer token are stored there, so this is a
-one-time reconnection, not a data loss you can avoid by waiting.
+Protocol v3 starts with a fresh configuration namespace. There is no v2 reader
+or migration: configure servers in `v3/config.json` and reconnect providers in
+`v3/secrets.json`. Preserved legacy files remain untouched until an explicit
+legacy-cleanup operation is requested.

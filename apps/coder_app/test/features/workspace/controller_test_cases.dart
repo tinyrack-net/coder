@@ -385,7 +385,10 @@ void _registerWorkspaceControllerTests() {
         store.settings.sessionTabs[selection.storageKey]?.selectedAgentId,
         second.id,
       );
-      expect(await api.listSessions(worktreeId: worktree.id), hasLength(2));
+      expect(
+        await api.sessions.listSessions(worktreeId: worktree.id),
+        hasLength(2),
+      );
     },
     tags: const <String>['feature_test__session_tabs__unit'],
   );

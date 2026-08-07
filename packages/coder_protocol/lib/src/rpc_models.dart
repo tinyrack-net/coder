@@ -1,4 +1,5 @@
 import 'package:coder_protocol/src/models.dart';
+import 'package:coder_protocol/src/protocol.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'rpc_models.freezed.dart';
@@ -11,8 +12,10 @@ abstract class HelloParamsDto with _$HelloParamsDto {
   const factory HelloParamsDto({
     required String clientId,
     required String clientKind,
-    required int protocolVersion,
+    required int protocolMajor,
     required Map<String, bool> capabilities,
+    @Default(coderProtocolRevision) int protocolRevision,
+    @Default('unknown') String clientVersion,
   }) = _HelloParamsDto;
 
   /// Creates a [HelloParamsDto].
@@ -193,89 +196,42 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
 }
 
 @freezed
-/// Switches the collaboration mode of one session.
-abstract class SessionModeSetParamsDto with _$SessionModeSetParamsDto {
-  /// Creates session mode parameters.
-  const factory SessionModeSetParamsDto({
-    required String sessionId,
-    required SessionMode mode,
-  }) = _SessionModeSetParamsDto;
-
-  /// Decodes session mode parameters.
-  factory SessionModeSetParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$SessionModeSetParamsDtoFromJson(json);
-}
-
-@freezed
-/// Sets or clears the provider and model override of one session.
-abstract class SessionModelSetParamsDto with _$SessionModelSetParamsDto {
-  /// Creates session model override parameters.
-  ///
-  /// A null [model] clears the override so the session inherits the model
-  /// selection of its agent definition again.
-  const factory SessionModelSetParamsDto({
-    required String sessionId,
+/// Nullable changes to session execution settings.
+///
+/// Each `has*` flag distinguishes an omitted field from an explicit null that
+/// clears an inherited override.
+abstract class SessionSettingsPatchDto with _$SessionSettingsPatchDto {
+  /// Creates an atomic session settings patch.
+  const factory SessionSettingsPatchDto({
+    SessionMode? mode,
+    @Default(false) bool hasModel,
     SessionModelSelectionDto? model,
-  }) = _SessionModelSetParamsDto;
-
-  /// Decodes session model override parameters.
-  factory SessionModelSetParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$SessionModelSetParamsDtoFromJson(json);
-}
-
-@freezed
-/// Sets or clears the reasoning effort override of one session.
-abstract class SessionReasoningEffortSetParamsDto
-    with _$SessionReasoningEffortSetParamsDto {
-  /// Creates session reasoning effort override parameters.
-  ///
-  /// A null [reasoningEffort] clears the override so the session inherits the
-  /// reasoning effort of its agent definition again.
-  const factory SessionReasoningEffortSetParamsDto({
-    required String sessionId,
+    @Default(false) bool hasReasoningEffort,
     String? reasoningEffort,
-  }) = _SessionReasoningEffortSetParamsDto;
-
-  /// Decodes session reasoning effort override parameters.
-  factory SessionReasoningEffortSetParamsDto.fromJson(
-    Map<String, dynamic> json,
-  ) => _$SessionReasoningEffortSetParamsDtoFromJson(json);
-}
-
-@freezed
-/// Sets or clears the permission mode override of one session.
-abstract class SessionPermissionModeSetParamsDto
-    with _$SessionPermissionModeSetParamsDto {
-  /// Creates session permission mode override parameters.
-  ///
-  /// A null [permissionMode] clears the override so the session inherits the
-  /// permission mode of its agent definition again.
-  const factory SessionPermissionModeSetParamsDto({
-    required String sessionId,
+    @Default(false) bool hasPermissionMode,
     PermissionMode? permissionMode,
-  }) = _SessionPermissionModeSetParamsDto;
+    @Default(false) bool hasServiceTier,
+    String? serviceTier,
+  }) = _SessionSettingsPatchDto;
 
-  /// Decodes session permission mode override parameters.
-  factory SessionPermissionModeSetParamsDto.fromJson(
-    Map<String, dynamic> json,
-  ) => _$SessionPermissionModeSetParamsDtoFromJson(json);
+  /// Decodes a session settings patch.
+  factory SessionSettingsPatchDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionSettingsPatchDtoFromJson(json);
 }
 
 @freezed
-/// Sets or clears the provider service tier of one session.
-abstract class SessionServiceTierSetParamsDto
-    with _$SessionServiceTierSetParamsDto {
-  /// Creates session service tier parameters.
-  ///
-  /// A null [serviceTier] clears the selection so the provider default applies.
-  const factory SessionServiceTierSetParamsDto({
+/// Parameters for the atomic `sessions.updateSettings` procedure.
+abstract class SessionSettingsUpdateParamsDto
+    with _$SessionSettingsUpdateParamsDto {
+  /// Creates update parameters for one session.
+  const factory SessionSettingsUpdateParamsDto({
     required String sessionId,
-    String? serviceTier,
-  }) = _SessionServiceTierSetParamsDto;
+    required SessionSettingsPatchDto patch,
+  }) = _SessionSettingsUpdateParamsDto;
 
-  /// Decodes session service tier parameters.
-  factory SessionServiceTierSetParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$SessionServiceTierSetParamsDtoFromJson(json);
+  /// Decodes session settings update parameters.
+  factory SessionSettingsUpdateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionSettingsUpdateParamsDtoFromJson(json);
 }
 
 @freezed

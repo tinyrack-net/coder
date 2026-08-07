@@ -173,7 +173,12 @@ Future<CoderClient> _connectCoderClient({
 }) {
   return CoderClient.connect(
     endpoint: HostEndpoint(
-      websocketUri: Uri(scheme: 'ws', host: host, port: port, path: '/ws'),
+      websocketUri: Uri(
+        scheme: 'ws',
+        host: host,
+        port: port,
+        path: '/v3/ws',
+      ),
     ),
     credentials: DaemonCredentials(bearerToken: bearerToken),
     clientId: clientId,

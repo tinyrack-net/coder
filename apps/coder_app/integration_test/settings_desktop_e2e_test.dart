@@ -233,16 +233,16 @@ void main() {
 
       // Unpushed work in a managed checkout has to survive the reset.
       final checkout = File(
-        _join(<String>[home.path, 'worktrees', 'repo', 'main.dart']),
+        _join(<String>[home.path, 'v3', 'worktrees', 'repo', 'main.dart']),
       );
       await checkout.create(recursive: true);
       await checkout.writeAsString('void main() {}');
       expect(
-        File(_join(<String>[home.path, 'coder.sqlite'])).existsSync(),
+        File(_join(<String>[home.path, 'v3', 'coder.sqlite'])).existsSync(),
         isTrue,
       );
       expect(
-        File(_join(<String>[home.path, 'credentials.json'])).existsSync(),
+        File(_join(<String>[home.path, 'v3', 'secrets.json'])).existsSync(),
         isTrue,
       );
 

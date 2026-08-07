@@ -689,7 +689,7 @@ enum McpConfigScope {
   /// The daemon's own `mcp.json`, owned and edited by the user.
   user,
 
-  /// A worktree's `.mcp.json`, committed alongside the code it serves.
+  /// A worktree's `.coder/config.json`, committed with the code it serves.
   project,
 }
 

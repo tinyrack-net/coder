@@ -153,13 +153,13 @@ void main() {
         clientKind: 'integration-test',
       );
       addTearDown(remoteClient.close);
-      await setupClient.registerWorkspace(
+      await setupClient.workspaces.registerWorkspace(
         workspaceId: 'workspace-e2e',
         checkoutId: 'checkout-e2e',
         rootPath: workspace.path,
         name: 'E2E Workspace',
       );
-      await setupClient.registerWorkspace(
+      await setupClient.workspaces.registerWorkspace(
         workspaceId: 'directory-workspace-e2e',
         checkoutId: 'directory-checkout-e2e',
         rootPath: directoryWorkspace.path,
@@ -168,34 +168,32 @@ void main() {
       final remoteWorkspaceName = remoteWorkspace.path
           .split(Platform.pathSeparator)
           .last;
-      await remoteClient.registerWorkspace(
+      await remoteClient.workspaces.registerWorkspace(
         workspaceId: 'remote-workspace-e2e',
         checkoutId: 'remote-checkout-e2e',
         rootPath: remoteWorkspace.path,
         name: remoteWorkspaceName,
       );
-      final terminal = await setupClient.createTerminal(
+      final terminal = await setupClient.terminals.createTerminal(
         id: 'terminal-e2e',
         worktreeId: 'checkout-e2e',
         title: 'E2E Terminal',
         columns: 80,
         rows: 24,
       );
-      await setupClient.attachTerminal(terminal.id);
+      await setupClient.terminals.attachTerminal(terminal.id);
       const terminalMarker = 'terminal-e2e-ready';
-      final terminalOutput = setupClient.events
-          .where((event) => event is TerminalOutputClientEvent)
-          .cast<TerminalOutputClientEvent>()
-          .where((event) => event.output.terminalId == terminal.id)
-          .map((event) => event.output.data)
+      final terminalOutput = setupClient.terminals.output
+          .where((output) => output.terminalId == terminal.id)
+          .map((output) => output.data)
           .firstWhere((data) => data.contains(terminalMarker))
           .timeout(const Duration(seconds: 30));
-      await setupClient.writeTerminal(
+      await setupClient.terminals.writeTerminal(
         terminal.id,
         "printf '$terminalMarker\\n'\r",
       );
       expect(await terminalOutput, contains(terminalMarker));
-      await setupClient.terminateTerminal(terminal.id);
+      await setupClient.terminals.terminateTerminal(terminal.id);
 
       final now = DateTime.utc(2026, 8, 3);
       final appStore = MemoryAppStore(
@@ -410,7 +408,7 @@ void main() {
       );
       final validReviewerSource = await reviewerFile.readAsString();
       await expectLater(
-        setupClient.validateAgentDefinition(
+        setupClient.agents.validateAgentDefinition(
           'reviewer',
           'this document has no frontmatter',
         ),
@@ -439,7 +437,9 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
       await tester.pumpAndSettle();
       expect(
-        (await setupClient.listAgentDefinitions()).map((item) => item.id),
+        (await setupClient.agents.listAgentDefinitions()).map(
+          (item) => item.id,
+        ),
         isNot(contains('temporary')),
       );
 
@@ -481,7 +481,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
-      final collaboratingCoder = await setupClient.getAgentDefinition('coder');
+      final collaboratingCoder = await setupClient.agents.getAgentDefinition(
+        'coder',
+      );
       expect(collaboratingCoder.callableAgentIds, <String>['reviewer']);
       expect(collaboratingCoder.toolIds, contains('collaboration'));
 
@@ -514,13 +516,13 @@ void main() {
       await pumpUntilGone(tester, find.text('스킬 추가'));
       await pumpUntilCondition(
         tester,
-        () async => (await setupClient.listSkills()).any(
+        () async => (await setupClient.prompts.listSkills()).any(
           (skill) => skill.id == 'e2e-skill',
         ),
         'the new skill to reach the daemon',
       );
       expect(
-        (await setupClient.getSkill('e2e-skill')).sourcePath,
+        (await setupClient.prompts.getSkill('e2e-skill')).sourcePath,
         startsWith(home.path),
       );
 
@@ -535,7 +537,7 @@ void main() {
       await tester.tap(commitSwitch);
       await pumpUntilCondition(
         tester,
-        () async => !(await setupClient.getSkill('commit')).isEnabled,
+        () async => !(await setupClient.prompts.getSkill('commit')).isEnabled,
         'the built-in skill to turn off',
       );
 
@@ -548,12 +550,12 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await pumpUntilCondition(
         tester,
-        () async => (await setupClient.listSkills()).every(
+        () async => (await setupClient.prompts.listSkills()).every(
           (skill) => skill.id != 'e2e-skill',
         ),
         'the skill to be archived',
       );
-      final invokedSkill = await setupClient.createSkill(
+      final invokedSkill = await setupClient.prompts.createSkill(
         id: 'invoke-e2e',
         source: SkillSource.config,
         name: 'invoke-e2e',
@@ -563,7 +565,7 @@ void main() {
       final invokedSkillFile = File(invokedSkill.sourcePath);
       final validSkillSource = await invokedSkillFile.readAsString();
       await expectLater(
-        setupClient.updateSkill(
+        setupClient.prompts.updateSkill(
           invokedSkill.copyWith(body: 'must not overwrite'),
           expectedContentHash: 'stale-content-hash',
         ),
@@ -690,7 +692,7 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async {
-          final servers = await setupClient.listMcpServers();
+          final servers = await setupClient.mcp.listMcpServers();
           if (servers.isEmpty) return false;
           final server = servers.single;
           if (server.status == McpServerStatus.failed &&
@@ -706,7 +708,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        (await setupClient.listMcpServers()).single.tools.single.toolId,
+        (await setupClient.mcp.listMcpServers()).single.tools.single.toolId,
         'mcp__e2e__echo',
       );
       final deleteServer = find.byKey(const ValueKey('mcp-server-delete'));
@@ -719,10 +721,10 @@ void main() {
         tester,
         find.byKey(const ValueKey('mcp-server-tile-e2e')),
       );
-      expect(await setupClient.listMcpServers(), isEmpty);
+      expect(await setupClient.mcp.listMcpServers(), isEmpty);
 
       // Reinstall the proven local server for the turn-execution scenarios.
-      await setupClient.addMcpServer(
+      await setupClient.mcp.addMcpServer(
         McpServerConfigDto(
           id: 'e2e',
           transport: McpTransportKind.stdio,
@@ -736,12 +738,14 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async =>
-            (await setupClient.listMcpServers()).single.status ==
+            (await setupClient.mcp.listMcpServers()).single.status ==
             McpServerStatus.ready,
         'the MCP turn server to reconnect',
       );
-      final coderDefinition = await setupClient.getAgentDefinition('coder');
-      await setupClient.updateAgentDefinition(
+      final coderDefinition = await setupClient.agents.getAgentDefinition(
+        'coder',
+      );
+      await setupClient.agents.updateAgentDefinition(
         coderDefinition.copyWith(
           toolIds: <String>[
             ...coderDefinition.toolIds,
@@ -782,17 +786,18 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
       await pumpUntilCondition(
         tester,
-        () async => (await setupClient.getWorkspaceCatalog()).worktrees.any(
-          (worktree) => worktree.branch == 'feature-e2e',
-        ),
+        () async =>
+            (await setupClient.workspaces.getWorkspaceCatalog()).worktrees.any(
+              (worktree) => worktree.branch == 'feature-e2e',
+            ),
         'the composer to create a worktree',
       );
       // The session route keeps the sidebar, so the new worktree is listed.
       await pumpUntil(tester, find.text('feature-e2e'));
       await tester.pumpAndSettle();
-      final managedWorktree = (await setupClient.getWorkspaceCatalog())
-          .worktrees
-          .singleWhere((worktree) => worktree.branch == 'feature-e2e');
+      final managedWorktree =
+          (await setupClient.workspaces.getWorkspaceCatalog()).worktrees
+              .singleWhere((worktree) => worktree.branch == 'feature-e2e');
       final managedMenu = find.byKey(
         ValueKey<String>('worktree-menu-${managedWorktree.id}'),
       );
@@ -874,7 +879,7 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async {
-          final sessions = await setupClient.listSessions(
+          final sessions = await setupClient.sessions.listSessions(
             worktreeId: 'checkout-e2e',
           );
           final child = sessions
@@ -893,7 +898,7 @@ void main() {
       expect(spawnedChild.taskName, 'review_task');
       expect(spawnedChild.agentPath, '/root/review_task');
       expect(
-        (await setupClient.listSubagents(spawnedChild.id)).map(
+        (await setupClient.sessions.listSubagents(spawnedChild.id)).map(
           (session) => session.id,
         ),
         contains(spawnedChild.id),
@@ -944,7 +949,7 @@ void main() {
         () => tester.widget<EditableText>(composerInput).focusNode.hasFocus,
         'the composer to take focus',
       );
-      final sessionsBefore = (await setupClient.listSessions(
+      final sessionsBefore = (await setupClient.sessions.listSessions(
         worktreeId: 'checkout-e2e',
       )).length;
       tester.testTextInput.enterText('/clear');
@@ -959,7 +964,9 @@ void main() {
         isEmpty,
       );
       expect(
-        (await setupClient.listSessions(worktreeId: 'checkout-e2e')).length,
+        (await setupClient.sessions.listSessions(
+          worktreeId: 'checkout-e2e',
+        )).length,
         sessionsBefore,
       );
 
@@ -974,10 +981,12 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async {
-          for (final session in await setupClient.listSessions(
+          for (final session in await setupClient.sessions.listSessions(
             worktreeId: 'checkout-e2e',
           )) {
-            final timeline = await setupClient.subscribeTimeline(session.id);
+            final timeline = await setupClient.sessions.subscribeTimeline(
+              session.id,
+            );
             final expanded = timeline
                 .where((event) => event.type == 'user.message')
                 .any(
@@ -1044,7 +1053,9 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async =>
-            (await setupClient.listSessions(worktreeId: 'checkout-e2e'))
+            (await setupClient.sessions.listSessions(
+                  worktreeId: 'checkout-e2e',
+                ))
                 .singleWhere(
                   (session) => session.origin == SessionOrigin.manual,
                 )
@@ -1067,7 +1078,7 @@ void main() {
       await File('${workspace.path}/agent-output.txt').writeAsString(
         'agent attachment\n',
       );
-      final attachmentSession = (await setupClient.listSessions(
+      final attachmentSession = (await setupClient.sessions.listSessions(
         worktreeId: 'checkout-e2e',
       )).singleWhere((session) => session.origin == SessionOrigin.manual);
       final attachButton = find
@@ -1105,7 +1116,7 @@ void main() {
         base64Decode(providerAttachments[1]['bytes']! as String),
         orderedEquals(documentBytes),
       );
-      final attachmentTimeline = await setupClient.subscribeTimeline(
+      final attachmentTimeline = await setupClient.sessions.subscribeTimeline(
         attachmentSession.id,
       );
       final uploadedSnapshots =
@@ -1144,7 +1155,7 @@ void main() {
       await tester.tap(find.byKey(send));
       await pumpUntilCondition(
         tester,
-        () async => (await setupClient.subscribeTimeline(
+        () async => (await setupClient.sessions.subscribeTimeline(
           attachmentSession.id,
         )).any((event) => event.type == 'assistant.attachment'),
         'the agent to publish its outbound attachment',
@@ -1153,14 +1164,16 @@ void main() {
         tester,
         find.textContaining('agent-output.txt'),
       );
-      final outboundTimeline = await setupClient.subscribeTimeline(
+      final outboundTimeline = await setupClient.sessions.subscribeTimeline(
         attachmentSession.id,
       );
       final outboundEvent = outboundTimeline.singleWhere(
         (event) => event.type == 'assistant.attachment',
       );
       final outboundId = outboundEvent.data['id']! as String;
-      final outboundDownload = await setupClient.downloadAttachment(outboundId);
+      final outboundDownload = await setupClient.attachments.downloadAttachment(
+        outboundId,
+      );
       expect(
         await outboundDownload.bytes.expand((chunk) => chunk).toList(),
         utf8.encode('agent attachment\n'),
@@ -1179,14 +1192,14 @@ void main() {
       );
       expect(File('${workspace.path}/rejected.txt').existsSync(), isFalse);
 
-      final liveMcpServer = (await setupClient.listMcpServers()).single;
+      final liveMcpServer = (await setupClient.mcp.listMcpServers()).single;
       expect(liveMcpServer.status, McpServerStatus.ready);
       expect(
         liveMcpServer.tools.map((tool) => tool.toolId),
         contains('mcp__e2e__echo'),
       );
       expect(
-        (await setupClient.listAgentTools()).map((tool) => tool.id),
+        (await setupClient.agents.listAgentTools()).map((tool) => tool.id),
         contains('mcp__e2e__echo'),
       );
       await _submitComposerPrompt(tester, composer, send, 'MCP echo');
@@ -1210,10 +1223,10 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '거부'));
       await pumpUntil(tester, find.text('MCP rejected', findRichText: true));
 
-      await setupClient.removeMcpServer('e2e');
+      await setupClient.mcp.removeMcpServer('e2e');
       await pumpUntilCondition(
         tester,
-        () async => (await setupClient.listAgentTools()).every(
+        () async => (await setupClient.agents.listAgentTools()).every(
           (tool) => tool.id != 'mcp__e2e__echo',
         ),
         'the offline MCP tool to leave the agent catalog',
@@ -1229,7 +1242,7 @@ void main() {
         tester,
         find.text('Skill loaded', findRichText: true),
       );
-      await setupClient.setSkillEnabled('invoke-e2e', enabled: false);
+      await setupClient.prompts.setSkillEnabled('invoke-e2e', enabled: false);
       await _submitComposerPrompt(tester, composer, send, 'Disabled E2E skill');
       await pumpUntil(
         tester,
@@ -1256,8 +1269,8 @@ void main() {
         find.text('Provider recovered', findRichText: true),
       );
 
-      final turnBranches = await setupClient.subscribeTimeline(
-        (await setupClient.listSessions(
+      final turnBranches = await setupClient.sessions.subscribeTimeline(
+        (await setupClient.sessions.listSessions(
           worktreeId: 'checkout-e2e',
         )).singleWhere((session) => session.origin == SessionOrigin.manual).id,
       );
@@ -1322,7 +1335,7 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async =>
-            (await setupClient.listSessions(
+            (await setupClient.sessions.listSessions(
                   worktreeId: 'checkout-e2e',
                 ))
                 .singleWhere((session) => session.id == attachmentSession.id)
@@ -1352,7 +1365,7 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async =>
-            (await setupClient.listSessions(
+            (await setupClient.sessions.listSessions(
                   worktreeId: 'checkout-e2e',
                 ))
                 .singleWhere((session) => session.id == attachmentSession.id)
@@ -1418,7 +1431,9 @@ void main() {
         clientId: 'e2e-reconnect',
         clientKind: 'integration-test',
       );
-      final agents = await reconnected.listSessions(worktreeId: 'checkout-e2e');
+      final agents = await reconnected.sessions.listSessions(
+        worktreeId: 'checkout-e2e',
+      );
       expect(agents, hasLength(2));
       expect(
         agents.every((session) => session.mode == SessionMode.normal),
@@ -1431,11 +1446,12 @@ void main() {
         (session) => session.origin == SessionOrigin.delegated,
       );
       expect(child.parentSessionId, parent.id);
-      final timeline = await reconnected.subscribeTimeline(parent.id);
+      final timeline = await reconnected.sessions.subscribeTimeline(parent.id);
       expect(timeline.map((event) => event.type), contains('turn.completed'));
-      final restoredAttachmentTimeline = await reconnected.subscribeTimeline(
-        parent.id,
-      );
+      final restoredAttachmentTimeline = await reconnected.sessions
+          .subscribeTimeline(
+            parent.id,
+          );
       expect(
         restoredAttachmentTimeline.map((event) => event.type),
         contains('assistant.attachment'),
@@ -1470,7 +1486,7 @@ void main() {
         find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
       );
       expect(
-        (await setupClient.listSessions(
+        (await setupClient.sessions.listSessions(
           worktreeId: 'checkout-e2e',
         )).map((session) => session.id),
         contains(parent.id),
@@ -1524,8 +1540,10 @@ void main() {
       await pumpUntil(tester, find.text('Model 자동 조회 실패'));
       await tester.tap(find.widgetWithText(TRButton, '나중에'));
       await pumpUntil(tester, find.text('E2E Provider'));
-      final degradedProvider = (await remoteClient.listProviderConnections())
-          .singleWhere((item) => item.displayName == 'E2E Provider');
+      final degradedProvider =
+          (await remoteClient.providers.listProviderConnections()).singleWhere(
+            (item) => item.displayName == 'E2E Provider',
+          );
       expect(degradedProvider.status, ProviderConnectionStatus.degraded);
 
       // Connections share one card, so the menu is addressed by the key its
@@ -1550,7 +1568,7 @@ void main() {
         'E2E Provider Edited',
       );
       expect(
-        (await remoteClient.listProviderModels(
+        (await remoteClient.providers.listProviderModels(
           providerConnection.id,
         )).map((model) => model.id),
         containsAll(<String>['e2e-model', selectedModelId]),
@@ -1581,7 +1599,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       expect(
-        (await remoteClient.listProviderConnections()).where(
+        (await remoteClient.providers.listProviderConnections()).where(
           (item) => item.id == providerConnection.id,
         ),
         hasLength(1),
@@ -1598,9 +1616,10 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await pumpUntilCondition(
         tester,
-        () async => (await remoteClient.listProviderConnections()).every(
-          (item) => item.id != providerConnection.id,
-        ),
+        () async =>
+            (await remoteClient.providers.listProviderConnections()).every(
+              (item) => item.id != providerConnection.id,
+            ),
         'custom provider to be deleted',
       );
 
@@ -1613,9 +1632,10 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async {
-          final matches = (await remoteClient.listProviderConnections())
-              .where((item) => item.id == 'deepseek')
-              .toList();
+          final matches =
+              (await remoteClient.providers.listProviderConnections())
+                  .where((item) => item.id == 'deepseek')
+                  .toList();
           return matches.isNotEmpty &&
               matches.single.status == ProviderConnectionStatus.error;
         },
@@ -1629,7 +1649,7 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async =>
-            (await remoteClient.listProviderConnections())
+            (await remoteClient.providers.listProviderConnections())
                 .singleWhere((item) => item.id == 'deepseek')
                 .status ==
             ProviderConnectionStatus.disconnected,
@@ -1647,9 +1667,10 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async {
-          final matches = (await remoteClient.listProviderConnections())
-              .where((item) => item.id == 'deepseek')
-              .toList();
+          final matches =
+              (await remoteClient.providers.listProviderConnections())
+                  .where((item) => item.id == 'deepseek')
+                  .toList();
           return matches.isNotEmpty &&
               matches.single.status == ProviderConnectionStatus.connected;
         },
@@ -1663,9 +1684,10 @@ void main() {
       await pumpUntilCondition(
         tester,
         () async {
-          final matches = (await remoteClient.listProviderConnections())
-              .where((item) => item.id == 'ollama')
-              .toList();
+          final matches =
+              (await remoteClient.providers.listProviderConnections())
+                  .where((item) => item.id == 'ollama')
+                  .toList();
           return matches.isNotEmpty &&
               matches.single.status == ProviderConnectionStatus.connected &&
               matches.single.credentialOrigin == ProviderCredentialOrigin.none;
@@ -1675,7 +1697,7 @@ void main() {
       await _disconnectProviderCard(tester, 'Ollama');
       await pumpUntilCondition(
         tester,
-        () async => (await remoteClient.listProviderConnections())
+        () async => (await remoteClient.providers.listProviderConnections())
             .where(
               (item) =>
                   (item.id == 'deepseek' || item.id == 'ollama') &&
@@ -1684,7 +1706,8 @@ void main() {
             .isEmpty,
         'connected providers to finish disconnecting',
       );
-      final remainingConnections = await remoteClient.listProviderConnections();
+      final remainingConnections = await remoteClient.providers
+          .listProviderConnections();
       expect(
         remainingConnections.where(
           (item) =>
@@ -1729,20 +1752,21 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
       await pumpUntilCondition(
         tester,
-        () async => (await setupClient.listSessions(
+        () async => (await setupClient.sessions.listSessions(
           worktreeId: 'directory-checkout-e2e',
         )).any((session) => session.title == 'Directory e2e'),
         'the directory checkout session to start',
       );
-      final directoryWorktrees = (await setupClient.getWorkspaceCatalog())
-          .worktrees
-          .where((item) => item.workspaceId == 'directory-workspace-e2e');
+      final directoryWorktrees =
+          (await setupClient.workspaces.getWorkspaceCatalog()).worktrees.where(
+            (item) => item.workspaceId == 'directory-workspace-e2e',
+          );
       expect(directoryWorktrees.single.id, 'directory-checkout-e2e');
 
       // A session can start without any project: the daemon provisioned the
       // user home as an implicit workspace that no project list offers, and
       // the sidebar lists the session outside every project.
-      final homeCatalog = await setupClient.getWorkspaceCatalog();
+      final homeCatalog = await setupClient.workspaces.getWorkspaceCatalog();
       final homeWorkspace = homeCatalog.workspaces.singleWhere(
         (item) => item.kind == WorkspaceKind.home,
       );
@@ -1778,7 +1802,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
       await pumpUntilCondition(
         tester,
-        () async => (await setupClient.listSessions(
+        () async => (await setupClient.sessions.listSessions(
           worktreeId: homeCheckout.id,
         )).any((session) => session.title == 'Home e2e'),
         'the project-less session to start in the home folder',
@@ -1983,11 +2007,11 @@ Future<ProviderConnectionDto> _waitForProviderModels(
   CoderApi api,
   String displayName,
 ) => awaitValue(() async {
-  final connection = (await api.listProviderConnections())
+  final connection = (await api.providers.listProviderConnections())
       .where((item) => item.displayName == displayName)
       .singleOrNull;
   if (connection == null) return null;
-  final models = await api.listProviderModels(connection.id);
+  final models = await api.providers.listProviderModels(connection.id);
   return models.isEmpty ? null : connection;
 }, '$displayName to discover models');
 
@@ -1996,7 +2020,7 @@ Future<void> _waitForAgentPrompt(
   String id,
   String prompt,
 ) => awaitCondition(
-  () async => (await api.getAgentDefinition(id)).systemPrompt == prompt,
+  () async => (await api.agents.getAgentDefinition(id)).systemPrompt == prompt,
   'the external agent file to reload',
 );
 
@@ -2005,7 +2029,7 @@ Future<AgentDefinitionDto> _waitForAgentDefinition(
   String id,
 ) => awaitValue(() async {
   try {
-    return await api.getAgentDefinition(id);
+    return await api.agents.getAgentDefinition(id);
   } on CoderClientException catch (error) {
     if (error.code != 'request_failed') rethrow;
     return null;
@@ -2249,13 +2273,15 @@ Future<void> _pumpUntilWithSessionDiagnostics(
   try {
     await pumpUntil(tester, finder, budget: e2eTurnBudget);
   } on TestFailure catch (failure) {
-    final sessions = await api.listSessions(worktreeId: 'checkout-e2e');
+    final sessions = await api.sessions.listSessions(
+      worktreeId: 'checkout-e2e',
+    );
     final diagnostics = <String, Object?>{};
     for (final session in sessions) {
       diagnostics[session.id] = <String, Object?>{
         'status': session.status.name,
         'definition': session.agentDefinitionId,
-        'events': (await api.subscribeTimeline(
+        'events': (await api.sessions.subscribeTimeline(
           session.id,
         )).map((event) => event.type).toList(growable: false),
       };

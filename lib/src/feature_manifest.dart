@@ -129,7 +129,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'workspace.catalog',
     description: 'Merges repositories and worktrees from every online host.',
-    apiMethods: <String>['getWorkspaceCatalog', 'refreshWorkspace'],
+    apiMethods: <String>[
+      'workspaces.getWorkspaceCatalog',
+      'workspaces.refreshWorkspace',
+    ],
     routes: <String>['WorkspaceHomeRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -155,9 +158,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'workspace.registration',
     description: 'Selects a daemon path and registers or removes a repository.',
     apiMethods: <String>[
-      'registerWorkspace',
-      'unregisterWorkspace',
-      'suggestDirectories',
+      'workspaces.registerWorkspace',
+      'workspaces.unregisterWorkspace',
+      'workspaces.suggestDirectories',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -315,7 +318,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Edits per-project worktree lifecycle hooks stored in the repository '
         "root's coder.json.",
-    apiMethods: <String>['getProjectSettings', 'saveProjectSettings'],
+    apiMethods: <String>[
+      'workspaces.getProjectSettings',
+      'workspaces.saveProjectSettings',
+    ],
     routes: <String>['ProjectSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -343,10 +349,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'Creates and safely archives Git worktrees, running the project '
         'setup and teardown hooks around each checkout.',
     apiMethods: <String>[
-      'listGitBranches',
-      'createWorktree',
-      'previewWorktreeArchive',
-      'archiveWorktree',
+      'workspaces.listGitBranches',
+      'workspaces.createWorktree',
+      'workspaces.previewWorktreeArchive',
+      'workspaces.archiveWorktree',
     ],
     routes: <String>['WorktreeRoute'],
     requiredLayers: <FeatureVerificationLayer>{
@@ -380,8 +386,8 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'Stores one daemon-global permission default and presents localized '
         'permission behavior for agents and sessions that inherit it.',
     apiMethods: <String>[
-      'getDefaultPermissionMode',
-      'setDefaultPermissionMode',
+      'agents.getDefaultPermissionMode',
+      'agents.setDefaultPermissionMode',
     ],
     routes: <String>['PermissionSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
@@ -398,13 +404,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'and changes the session model, mode, reasoning effort, permission '
         'mode, or provider service tier afterwards.',
     apiMethods: <String>[
-      'listSessions',
-      'createSession',
-      'updateSessionModel',
-      'updateSessionMode',
-      'updateSessionReasoningEffort',
-      'updateSessionPermissionMode',
-      'updateSessionServiceTier',
+      'sessions.listSessions',
+      'sessions.createSession',
+      'sessions.updateSettings',
     ],
     routes: <String>['SessionRoute'],
     requiredLayers: <FeatureVerificationLayer>{
@@ -477,12 +479,12 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'Creates, attaches, resizes, restores, and terminates daemon-owned '
         'interactive terminal tabs.',
     apiMethods: <String>[
-      'listTerminals',
-      'createTerminal',
-      'attachTerminal',
-      'writeTerminal',
-      'resizeTerminal',
-      'terminateTerminal',
+      'terminals.listTerminals',
+      'terminals.createTerminal',
+      'terminals.attachTerminal',
+      'terminals.writeTerminal',
+      'terminals.resizeTerminal',
+      'terminals.terminateTerminal',
     ],
     routes: <String>['TerminalRoute'],
     requiredLayers: <FeatureVerificationLayer>{
@@ -507,7 +509,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'terminal.settings',
     description:
         'Resolves and edits project and daemon-host shell configuration.',
-    apiMethods: <String>['getTerminalShell', 'setTerminalShell'],
+    apiMethods: <String>[
+      'terminals.getTerminalShell',
+      'terminals.setTerminalShell',
+    ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -519,10 +524,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'turn.execution',
     description: 'Streams, cancels, approves, rejects, and restores turns.',
     apiMethods: <String>[
-      'startTurn',
-      'cancelTurn',
-      'resolveApproval',
-      'subscribeTimeline',
+      'sessions.startTurn',
+      'sessions.cancelTurn',
+      'sessions.resolveApproval',
+      'sessions.subscribeTimeline',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -559,7 +564,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Queues prompts typed during a turn, starts them as it finishes, and '
         'tells the daemon so a sleeping agent wakes early.',
-    apiMethods: <String>['notePendingInput'],
+    apiMethods: <String>['sessions.notePendingInput'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -572,7 +577,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Blocks a turn on a structured agent question and records the user '
         'answer, including free-form input.',
-    apiMethods: <String>['answerUserQuestion'],
+    apiMethods: <String>['sessions.answerUserQuestion'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -639,7 +644,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'Summarizes the conversation and replaces the model context window '
         'when its token budget is spent, when the user asks, or when a '
         'provider refuses the history as too long.',
-    apiMethods: <String>['compactSession'],
+    apiMethods: <String>['sessions.compactSession'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -685,7 +690,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'conversation.attachments',
     description:
         'Uploads, sends, previews, exports, and restores user and agent files.',
-    apiMethods: <String>['uploadAttachment', 'downloadAttachment'],
+    apiMethods: <String>[
+      'attachments.uploadAttachment',
+      'attachments.downloadAttachment',
+    ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -717,14 +725,14 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Creates, validates, edits, archives, and resets Markdown Agents.',
     apiMethods: <String>[
-      'listAgentDefinitions',
-      'getAgentDefinition',
-      'createAgentDefinition',
-      'updateAgentDefinition',
-      'archiveAgentDefinition',
-      'resetAgentDefinition',
-      'validateAgentDefinition',
-      'listAgentTools',
+      'agents.listAgentDefinitions',
+      'agents.getAgentDefinition',
+      'agents.createAgentDefinition',
+      'agents.updateAgentDefinition',
+      'agents.archiveAgentDefinition',
+      'agents.resetAgentDefinition',
+      'agents.validateAgentDefinition',
+      'agents.listAgentTools',
     ],
     routes: <String>['AgentSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
@@ -758,12 +766,12 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'Adds, edits, tests, and removes external MCP servers and shows '
         'their connection status and discovered tools.',
     apiMethods: <String>[
-      'listMcpServers',
-      'addMcpServer',
-      'updateMcpServer',
-      'removeMcpServer',
-      'testMcpServer',
-      'setMcpSecret',
+      'mcp.listMcpServers',
+      'mcp.addMcpServer',
+      'mcp.updateMcpServer',
+      'mcp.removeMcpServer',
+      'mcp.testMcpServer',
+      'mcp.setMcpSecret',
     ],
     routes: <String>['McpSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
@@ -815,12 +823,12 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'Lists, creates, edits, toggles, and deletes skills from built-in, '
         'user-home, config, and project sources.',
     apiMethods: <String>[
-      'listSkills',
-      'getSkill',
-      'createSkill',
-      'updateSkill',
-      'deleteSkill',
-      'setSkillEnabled',
+      'prompts.listSkills',
+      'prompts.getSkill',
+      'prompts.createSkill',
+      'prompts.updateSkill',
+      'prompts.deleteSkill',
+      'prompts.setSkillEnabled',
     ],
     routes: <String>['SkillSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
@@ -872,7 +880,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Completes gitignore-aware worktree file paths from an @ token in the '
         'composer and inserts them into the prompt.',
-    apiMethods: <String>['searchFiles'],
+    apiMethods: <String>['workspaces.searchFiles'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -898,7 +906,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Completes client, skill, and agent commands from a / token and either '
         'runs the app action or expands the prompt.',
-    apiMethods: <String>['listCommands'],
+    apiMethods: <String>['prompts.listCommands'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -924,7 +932,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     description:
         'Spawns, messages, waits on, interrupts, and lists collaborating '
         'subagent sessions, and exposes them through the subagent track.',
-    apiMethods: <String>['listSubagents'],
+    apiMethods: <String>['sessions.listSubagents'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -951,10 +959,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'provider.catalog',
     description: 'Lists provider presets, connections, and available models.',
     apiMethods: <String>[
-      'listProviderCatalog',
-      'listProviderConnections',
-      'refreshProviderCatalog',
-      'listProviderModels',
+      'providers.listProviderCatalog',
+      'providers.listProviderConnections',
+      'providers.refreshProviderCatalog',
+      'providers.listProviderModels',
     ],
     routes: <String>['ProviderSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
@@ -985,7 +993,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'model, and edits the daemon default.',
     // ProviderSettingsRoute already belongs to provider.catalog; a route maps
     // to exactly one feature, and the card is only part of that page.
-    apiMethods: <String>['getDefaultModel', 'setDefaultModel'],
+    apiMethods: <String>[
+      'providers.getDefaultModel',
+      'providers.setDefaultModel',
+    ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -997,9 +1008,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'provider.connection.management',
     description: 'Connects and disconnects provider presets.',
     apiMethods: <String>[
-      'connectProviderApiKey',
-      'connectProviderNone',
-      'disconnectProvider',
+      'providers.connectProviderApiKey',
+      'providers.connectProviderNone',
+      'providers.disconnectProvider',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -1025,9 +1036,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'provider.oauth',
     description: 'Starts, observes, cancels, and refreshes provider OAuth.',
     apiMethods: <String>[
-      'startProviderAuth',
-      'providerAuthStatus',
-      'cancelProviderAuth',
+      'providers.startProviderAuth',
+      'providers.providerAuthStatus',
+      'providers.cancelProviderAuth',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -1053,9 +1064,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'provider.custom',
     description: 'Creates, edits, and removes advanced compatible providers.',
     apiMethods: <String>[
-      'createCustomProvider',
-      'updateCustomProvider',
-      'deleteCustomProvider',
+      'providers.createCustomProvider',
+      'providers.updateCustomProvider',
+      'providers.deleteCustomProvider',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,

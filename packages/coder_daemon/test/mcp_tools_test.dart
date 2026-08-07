@@ -4,10 +4,9 @@ library;
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/mcp_tools.dart';
-import 'package:coder_mcp/coder_mcp.dart';
-import 'package:coder_mcp/testing.dart';
-import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_tools.dart';
+import 'package:coder_daemon/src/features/mcp/infrastructure/testing.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -24,26 +23,26 @@ void main() {
     test('a tool the server calls read-only is graded as a read', () {
       expect(
         toolFor(<String, dynamic>{'readOnlyHint': true}).risk,
-        ToolRisk.read,
+        AgentToolRisk.read,
       );
     });
 
     test('anything else stays dangerous', () {
       // No annotations at all is the common case, and says nothing.
-      expect(toolFor(null).risk, ToolRisk.dangerous);
+      expect(toolFor(null).risk, AgentToolRisk.dangerous);
       expect(
         toolFor(<String, dynamic>{'readOnlyHint': false}).risk,
-        ToolRisk.dangerous,
+        AgentToolRisk.dangerous,
       );
       // "Not destructive" is still a change the user should get to see.
       expect(
         toolFor(<String, dynamic>{'destructiveHint': false}).risk,
-        ToolRisk.dangerous,
+        AgentToolRisk.dangerous,
       );
     });
 
     test('a read-only tool is still denied under a read-only policy', () {
-      const policy = DefaultApprovalPolicy(PermissionMode.readOnly);
+      const policy = DefaultApprovalPolicy(AgentPermissionMode.readOnly);
 
       // Grading relaxes the prompt, it does not grant anything: a read is
       // exactly what readOnly mode is meant to allow, and nothing more.
@@ -284,7 +283,7 @@ void main() {
 
       expect(tool.name, 'mcp__github__create_issue');
       expect(tool.description, 'Opens an issue.');
-      expect(tool.risk, ToolRisk.dangerous);
+      expect(tool.risk, AgentToolRisk.dangerous);
       expect(tool.strict, isFalse);
       expect(tool.strictJsonSchema['properties'], contains('title'));
       expect(

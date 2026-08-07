@@ -39,8 +39,7 @@ final class ArchitectureVerifier {
   static const Map<String, Set<String>> _allowedInternalDependencies =
       <String, Set<String>>{
         'coder_protocol': <String>{},
-        'coder_agent': <String>{'coder_protocol'},
-        'coder_provider_openai': <String>{'coder_agent', 'coder_protocol'},
+        'coder_agent': <String>{},
         'coder_client': <String>{'coder_protocol'},
         // The CLI hosts the daemon through `coder-cli daemon start`, so it
         // reaches the daemon's composition root and everything the daemon
@@ -49,17 +48,12 @@ final class ArchitectureVerifier {
           'coder_agent',
           'coder_client',
           'coder_daemon',
-          'coder_mcp',
           'coder_protocol',
-          'coder_provider_openai',
         },
-        'coder_mcp': <String>{},
         'coder_daemon': <String>{
           'coder_agent',
           'coder_client',
-          'coder_mcp',
           'coder_protocol',
-          'coder_provider_openai',
         },
         'coder_app': <String>{
           'coder_client',
@@ -98,8 +92,9 @@ final class ArchitectureVerifier {
   );
 
   static bool _mayNameVendors(String package, String path) =>
-      package.startsWith('coder_provider_') ||
-      (package == 'coder_daemon' && path.endsWith('/application.dart'));
+      package == 'coder_daemon' &&
+      (path.contains('/features/providers/infrastructure/') ||
+          path.contains('/bootstrap/'));
 
   static bool _mayNameTools(String package, String path) {
     if (package != 'coder_app') return true;
@@ -123,7 +118,8 @@ final class ArchitectureVerifier {
   /// Whether [consumer] is forbidden from depending on [dependency].
   static bool _isForbidden(String consumer, String dependency) {
     if (_allowedInternalDependencies.containsKey(dependency)) {
-      return !_allowedInternalDependencies[consumer]!.contains(dependency);
+      return !(_allowedInternalDependencies[consumer] ?? const <String>{})
+          .contains(dependency);
     }
     final allowedConsumers = _restrictedExternalPackages[dependency];
     return allowedConsumers != null && !allowedConsumers.contains(consumer);
@@ -233,6 +229,20 @@ final class ArchitectureVerifier {
           ),
         );
       }
+      if (package == 'coder_daemon' &&
+          (path.contains('/domain/') || path.contains('/application/')) &&
+          importedPackage == 'coder_protocol') {
+        violations.add(
+          ArchitectureViolation(
+            path: path,
+            line: index + 1,
+            rule: 'application_protocol_dependency',
+            message:
+                'Daemon domain and application code must map protocol DTOs '
+                'at a transport boundary.',
+          ),
+        );
+      }
       if (!_mayNameVendors(package, path) && _vendorIdentifier.hasMatch(line)) {
         violations.add(
           ArchitectureViolation(
@@ -317,7 +327,8 @@ final class ArchitectureVerifier {
       return path.contains('/src/features/') && path.contains('/application/');
     }
     if (package == 'coder_daemon') {
-      return path.endsWith('/agent_service.dart') ||
+      return path.contains('/application/') ||
+          path.endsWith('/agent_service.dart') ||
           path.endsWith('/session_interactions.dart') ||
           path.endsWith('/session_settings.dart') ||
           path.endsWith('/mcp_service.dart') ||

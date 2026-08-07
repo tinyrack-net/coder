@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coder_app/src/features/hosts/application/host_controller.dart';
-import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -25,23 +24,22 @@ final class AgentDefinitionsState {
 @riverpod
 /// Loads and edits one daemon's Markdown agent files.
 class AgentDefinitionsController extends _$AgentDefinitionsController {
-  StreamSubscription<ClientEvent>? _events;
+  final List<StreamSubscription<void>> _events = <StreamSubscription<void>>[];
 
   @override
   Future<AgentDefinitionsState> build(String hostId) async {
     final api = await watchHostApi(ref, hostId);
-    _events = api.events.listen((event) {
-      // An MCP server coming up changes the tool catalog, so both events
-      // invalidate this state.
-      if (event is AgentDefinitionsChangedClientEvent ||
-          event is McpServersChangedClientEvent) {
-        unawaited(refresh());
+    _events
+      ..add(api.agents.definitionChanges.listen((_) => unawaited(refresh())))
+      ..add(api.mcp.serverChanges.listen((_) => unawaited(refresh())));
+    ref.onDispose(() {
+      for (final subscription in _events) {
+        unawaited(subscription.cancel());
       }
     });
-    ref.onDispose(() => unawaited(_events?.cancel()));
     return AgentDefinitionsState(
-      definitions: await api.listAgentDefinitions(),
-      tools: await api.listAgentTools(),
+      definitions: await api.agents.listAgentDefinitions(),
+      tools: await api.agents.listAgentTools(),
     );
   }
 
@@ -53,8 +51,8 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
     final api = await requireHostApi(ref, hostId);
     state = AsyncData<AgentDefinitionsState>(
       AgentDefinitionsState(
-        definitions: await api.listAgentDefinitions(),
-        tools: await api.listAgentTools(),
+        definitions: await api.agents.listAgentDefinitions(),
+        tools: await api.agents.listAgentTools(),
       ),
     );
   }
@@ -65,7 +63,7 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
     AgentDefinitionDto definition,
   ) async {
     final api = await requireHostApi(ref, hostId);
-    final created = await api.createAgentDefinition(id, definition);
+    final created = await api.agents.createAgentDefinition(id, definition);
     await refresh();
     return created;
   }
@@ -77,7 +75,7 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
     bool force = false,
   }) async {
     final api = await requireHostApi(ref, hostId);
-    final updated = await api.updateAgentDefinition(
+    final updated = await api.agents.updateAgentDefinition(
       definition,
       expectedContentHash: expectedContentHash,
       force: force,
@@ -89,14 +87,14 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
   /// Archives one custom definition.
   Future<void> archive(String id) async {
     final api = await requireHostApi(ref, hostId);
-    await api.archiveAgentDefinition(id);
+    await api.agents.archiveAgentDefinition(id);
     await refresh();
   }
 
   /// Restores the built-in Coder definition.
   Future<AgentDefinitionDto> resetCoder() async {
     final api = await requireHostApi(ref, hostId);
-    final reset = await api.resetAgentDefinition('coder');
+    final reset = await api.agents.resetAgentDefinition('coder');
     await refresh();
     return reset;
   }
