@@ -1,6 +1,7 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/mcp/application/mcp_servers_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
@@ -106,7 +107,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     return LayoutBuilder(
       key: const ValueKey<String>('mcp-settings-page'),
       builder: (context, constraints) {
-        if (constraints.maxWidth < TRBreakpoints.medium) {
+        if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
           return selected == null && !_creating
               ? list
               : Column(
@@ -136,7 +137,10 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SizedBox(width: TRMeasurements.paneMd, child: list),
+            SizedBox(
+              width: CoderLayoutMetrics.settingsCollectionWidth,
+              child: list,
+            ),
             const TRSeparator(
               orientation: TRSeparatorOrientation.vertical,
               variant: TRSeparatorVariant.muted,
@@ -595,9 +599,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                     else
                       for (final tool in server.tools)
                         CoderListRow(
-                          key: ValueKey<String>(
-                            'mcp-tool-tile-${tool.toolId}',
-                          ),
+                          key: ValueKey<String>('mcp-tool-tile-${tool.toolId}'),
                           contentPadding: SettingsRow.flushPadding,
                           dense: true,
                           title: TRText.inherit(tool.toolId),
@@ -899,9 +901,7 @@ class _SecretDialogState extends State<_SecretDialog> {
           onPressed: () {
             final key = _key.text.trim();
             if (key.isEmpty) return;
-            Navigator.of(
-              context,
-            ).pop((key: key, value: _value.text));
+            Navigator.of(context).pop((key: key, value: _value.text));
           },
           child: TRText.inherit(
             MaterialLocalizations.of(context).saveButtonLabel,

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coder_app/src/features/boot/presentation/boot_splash.dart';
 import 'package:coder_app/src/features/boot/presentation/bootstrap_gate.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -97,10 +98,7 @@ void main() {
       // the web overlay are both fixed to this color, so following the system
       // here would flash on a light-mode machine.
       await tester.pumpWidget(
-        MaterialApp(
-          theme: TinyrackTheme.light(),
-          home: const BootSplash(),
-        ),
+        MaterialApp(theme: TinyrackTheme.light(), home: const BootSplash()),
       );
 
       final box = tester.widget<ColoredBox>(
@@ -115,13 +113,11 @@ void main() {
       );
       final mark = tester.widget<Image>(find.byType(Image));
       expect((mark.image as AssetImage).assetName, contains('brand/coder'));
-      expect(mark.width, TRMeasurements.brandMarkSm);
+      expect(mark.width, CoderLayoutMetrics.bootBrandMarkSize);
     });
   });
 }
 
 /// Stands in for the real app, which brings its own [MaterialApp].
-Widget _app(String value) => Directionality(
-  textDirection: TextDirection.ltr,
-  child: Text(value),
-);
+Widget _app(String value) =>
+    Directionality(textDirection: TextDirection.ltr, child: Text(value));

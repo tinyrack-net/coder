@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -69,7 +70,7 @@ Future<ModelPickerChoice?> showModelPicker(
     title: title,
     inheritLabel: inheritLabel,
   );
-  if (MediaQuery.sizeOf(context).width < TRBreakpoints.medium) {
+  if (MediaQuery.sizeOf(context).width < CoderLayoutMetrics.compactBreakpoint) {
     return showTRDrawer<ModelPickerChoice>(
       context: context,
       builder: (context) => TRDrawer(

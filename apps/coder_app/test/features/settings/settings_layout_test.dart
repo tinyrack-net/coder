@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter/material.dart';
@@ -184,15 +185,15 @@ void main() {
       // An unbounded column strands a label and its control at opposite edges
       // of a wide window, which is the defect this cap exists to prevent.
       final card = tester.getRect(find.byType(TRCard));
-      expect(card.width, lessThanOrEqualTo(TRMeasurements.readingWidthMd));
+      expect(
+        card.width,
+        lessThanOrEqualTo(CoderLayoutMetrics.settingsContentMaxWidth),
+      );
 
       // Centred, so a wide window does not strand the column against one
       // edge with a growing void beside it.
-      expect(card.width, TRMeasurements.readingWidthMd);
-      expect(
-        card.left,
-        moreOrLessEquals(1400 - card.right, epsilon: 0.5),
-      );
+      expect(card.width, CoderLayoutMetrics.settingsContentMaxWidth);
+      expect(card.left, moreOrLessEquals(1400 - card.right, epsilon: 0.5));
     });
 
     testWidgets('fills a pane narrower than the cap', (tester) async {
@@ -202,9 +203,7 @@ void main() {
             children: <Widget>[
               SettingsSection(
                 title: 'Section',
-                children: <Widget>[
-                  SettingsRow(title: TRText.inherit('Row')),
-                ],
+                children: <Widget>[SettingsRow(title: TRText.inherit('Row'))],
               ),
             ],
           ),
@@ -267,9 +266,7 @@ void main() {
             children: <Widget>[
               SettingsSection(
                 title: 'Boxed',
-                children: <Widget>[
-                  SettingsRow(title: TRText.inherit('Row')),
-                ],
+                children: <Widget>[SettingsRow(title: TRText.inherit('Row'))],
               ),
             ],
           ),
@@ -315,10 +312,7 @@ void main() {
       final heading = tester.getRect(find.text('Remotes'));
       final action = tester.getRect(find.byType(TRButton));
       expect(action.left, greaterThan(heading.right));
-      expect(
-        action.center.dy,
-        moreOrLessEquals(heading.center.dy, epsilon: 2),
-      );
+      expect(action.center.dy, moreOrLessEquals(heading.center.dy, epsilon: 2));
     });
   });
 
@@ -365,9 +359,7 @@ void main() {
               SettingsSection(
                 title: 'Reset',
                 banner: TRAlert(title: TRText.inherit('Failed')),
-                children: <Widget>[
-                  SettingsRow(title: TRText.inherit('Erase')),
-                ],
+                children: <Widget>[SettingsRow(title: TRText.inherit('Erase'))],
               ),
             ],
           ),
@@ -465,9 +457,7 @@ void main() {
       );
     });
 
-    testWidgets('activates from the row when it carries a tap', (
-      tester,
-    ) async {
+    testWidgets('activates from the row when it carries a tap', (tester) async {
       var taps = 0;
       await tester.pumpWidget(
         _host(
@@ -538,7 +528,7 @@ void main() {
               SettingsRow(title: TRText.inherit('Coder')),
             ],
           ),
-          width: TRMeasurements.paneMd,
+          width: CoderLayoutMetrics.settingsCollectionWidth,
         ),
       );
 

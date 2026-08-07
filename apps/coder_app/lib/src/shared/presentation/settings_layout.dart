@@ -1,4 +1,5 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -123,7 +124,7 @@ class _SettingsListDetailSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      if (constraints.maxWidth < TRBreakpoints.medium) {
+      if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
         return const _SettingsSkeletonListPane(
           key: ValueKey<String>('settings-skeleton-list-pane'),
         );
@@ -131,7 +132,7 @@ class _SettingsListDetailSkeleton extends StatelessWidget {
       return const Row(
         children: <Widget>[
           SizedBox(
-            width: TRMeasurements.paneMd,
+            width: CoderLayoutMetrics.settingsCollectionWidth,
             child: _SettingsSkeletonListPane(
               key: ValueKey<String>('settings-skeleton-list-pane'),
             ),
@@ -296,7 +297,7 @@ class SettingsScaffold extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                maxWidth: TRMeasurements.readingWidthMd,
+                maxWidth: CoderLayoutMetrics.settingsContentMaxWidth,
               ),
               child: child,
             ),
@@ -490,9 +491,7 @@ class SettingsRow extends StatelessWidget {
   );
 
   /// The inset a row draws at inside a container that supplies its own.
-  static const flushPadding = EdgeInsets.symmetric(
-    vertical: TRSpacing.medium,
-  );
+  static const flushPadding = EdgeInsets.symmetric(vertical: TRSpacing.medium);
 
   @override
   Widget build(BuildContext context) => CoderListRow(
@@ -640,7 +639,7 @@ class SettingsEmptyState extends StatelessWidget {
       padding: const EdgeInsets.all(TRSpacing.extraLarge),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-          maxWidth: TRMeasurements.readingWidthSm,
+          maxWidth: CoderLayoutMetrics.settingsEmptyStateMaxWidth,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
