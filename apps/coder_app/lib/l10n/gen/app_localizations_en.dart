@@ -317,6 +317,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceAllSessions => 'All sessions';
 
   @override
+  String get workspaceSplitRight => 'Split right';
+
+  @override
+  String get workspaceSplitDown => 'Split down';
+
+  @override
+  String get workspaceResizePanes => 'Resize panes';
+
+  @override
+  String get workspaceSwitchTab => 'Switch tab';
+
+  @override
+  String get workspaceMoveTabToPane => 'Move active tab to pane';
+
+  @override
   String get workspaceCloseTab => 'Close tab';
 
   @override

@@ -140,7 +140,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                   selection: widget.selection!,
                   requestedAgentId: widget.requestedAgentId,
                   requestedTerminalId: widget.requestedTerminalId,
-                  showBack: constraints.maxWidth < TRBreakpoints.medium,
+                  mobile: constraints.maxWidth < TRBreakpoints.medium,
                 );
           if (constraints.maxWidth < TRBreakpoints.medium) {
             return widget.selection == null && !widget.compose
@@ -229,14 +229,14 @@ class _SessionArea extends ConsumerStatefulWidget {
     required this.selection,
     this.requestedAgentId,
     this.requestedTerminalId,
-    this.showBack = false,
+    this.mobile = false,
     super.key,
   });
 
   final WorkspaceSelection selection;
   final String? requestedAgentId;
   final String? requestedTerminalId;
-  final bool showBack;
+  final bool mobile;
 
   @override
   ConsumerState<_SessionArea> createState() => _SessionAreaState();
@@ -244,34 +244,42 @@ class _SessionArea extends ConsumerStatefulWidget {
 
 class _SessionAreaState extends ConsumerState<_SessionArea> {
   // Selecting a session or terminal replaces the location rather than pushing,
-  // so this state outlives the change. These remember which id was opened
-  // instead of latching on "have I opened one", or the second location to name
-  // a session would never open it.
+  // so this state outlives the change. Remember each opened target so closing
+  // a local tab is not immediately undone while the route is being replaced.
   String? _openedAgentId;
   String? _openedTerminalId;
 
   @override
   Widget build(BuildContext context) {
     final provider = sessionTabsControllerProvider(widget.selection);
-    final tabs = ref.watch(provider);
-    final state = tabs.asData?.value;
+    final value = ref.watch(provider);
+    final workspace = value.asData?.value;
+    _openRequestedRoute(provider, workspace);
+    if (workspace == null) return const Center(child: TRSpinner());
+    return widget.mobile
+        ? _buildMobile(context, workspace)
+        : _buildNode(context, workspace, workspace.root);
+  }
+
+  void _openRequestedRoute(
+    SessionTabsControllerProvider provider,
+    SessionTabsState? workspace,
+  ) {
     if (widget.requestedAgentId != null &&
         widget.requestedAgentId != _openedAgentId &&
-        state != null &&
-        state.sessions.any((item) => item.id == widget.requestedAgentId)) {
+        workspace != null &&
+        workspace.sessions.any((item) => item.id == widget.requestedAgentId)) {
       _openedAgentId = widget.requestedAgentId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          unawaited(
-            ref.read(provider.notifier).open(widget.requestedAgentId!),
-          );
+          unawaited(ref.read(provider.notifier).open(widget.requestedAgentId!));
         }
       });
     }
     if (widget.requestedTerminalId != null &&
         widget.requestedTerminalId != _openedTerminalId &&
-        state != null &&
-        state.terminals.any(
+        workspace != null &&
+        workspace.terminals.any(
           (item) => item.id == widget.requestedTerminalId,
         )) {
       _openedTerminalId = widget.requestedTerminalId;
@@ -280,169 +288,405 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           unawaited(
             ref
                 .read(provider.notifier)
-                .openTerminal(
-                  widget.requestedTerminalId!,
-                ),
+                .openTerminal(widget.requestedTerminalId!),
           );
         }
       });
     }
+  }
+
+  Widget _buildNode(
+    BuildContext context,
+    SessionTabsState workspace,
+    WorkspacePaneNode node,
+  ) => switch (node) {
+    PaneNode() => _buildPane(context, workspace, node),
+    WorkspaceSplitNode() => TRSplitView(
+      key: ValueKey<String>('workspace-split-${node.id}'),
+      axis: node.axis == WorkspaceSplitAxis.horizontal
+          ? Axis.horizontal
+          : Axis.vertical,
+      ratio: node.ratio,
+      separatorLabel: AppLocalizations.of(context).workspaceResizePanes,
+      onRatioChanged: (ratio) => unawaited(
+        ref
+            .read(sessionTabsControllerProvider(widget.selection).notifier)
+            .resize(node.id, ratio),
+      ),
+      onRatioChangeEnd: (_) => unawaited(
+        ref
+            .read(sessionTabsControllerProvider(widget.selection).notifier)
+            .commitResize(),
+      ),
+      first: _buildNode(context, workspace, node.first),
+      second: _buildNode(context, workspace, node.second),
+    ),
+  };
+
+  Widget _buildPane(
+    BuildContext context,
+    SessionTabsState workspace,
+    PaneNode pane,
+  ) => LayoutBuilder(
+    builder: (context, constraints) {
+      final canSplitRight =
+          constraints.maxWidth >= TRMeasurements.splitPaneMinExtent * 2;
+      final canSplitDown =
+          constraints.maxHeight >= TRMeasurements.splitPaneMinExtent * 2;
+      final firstPane = pane.id == workspace.panes.first.id;
+      return KeyedSubtree(
+        key: const ValueKey<String>('workspace-pane'),
+        child: Column(
+          children: <Widget>[
+            TRTabs.bar(
+              key: ValueKey<String>(
+                firstPane
+                    ? 'session-tab-strip'
+                    : 'session-tab-strip-${pane.id}',
+              ),
+              semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
+              value: _controlValue(workspace.tabs[pane.activeTabId]!),
+              onValueChange: (value) => unawaited(
+                _activate(
+                  pane.id,
+                  pane.tabIds.firstWhere(
+                    (id) => _controlValue(workspace.tabs[id]!) == value,
+                  ),
+                ),
+              ),
+              tabs: <TRTabsTab>[
+                for (final tabId in pane.tabIds)
+                  _tab(context, workspace, workspace.tabs[tabId]!),
+              ],
+              dragConfiguration: TRTabsDragConfiguration(
+                groupId: pane.id,
+                onDrop: (details) => unawaited(_dropTab(workspace, details)),
+              ),
+              actions: <Widget>[
+                _newTabMenu(context, pane.id, firstPane),
+                TRIconButton(
+                  key: ValueKey<String>(
+                    firstPane
+                        ? 'workspace-split-right'
+                        : 'workspace-split-right-${pane.id}',
+                  ),
+                  appearance: TRAppearance.ghost,
+                  label: AppLocalizations.of(context).workspaceSplitRight,
+                  onPressed: canSplitRight
+                      ? () => unawaited(
+                          _split(pane.id, WorkspaceSplitAxis.horizontal),
+                        )
+                      : null,
+                  icon: const Icon(CoderIcons.splitRight),
+                ),
+                TRIconButton(
+                  key: ValueKey<String>(
+                    firstPane
+                        ? 'workspace-split-down'
+                        : 'workspace-split-down-${pane.id}',
+                  ),
+                  appearance: TRAppearance.ghost,
+                  label: AppLocalizations.of(context).workspaceSplitDown,
+                  onPressed: canSplitDown
+                      ? () => unawaited(
+                          _split(pane.id, WorkspaceSplitAxis.vertical),
+                        )
+                      : null,
+                  icon: const Icon(CoderIcons.splitDown),
+                ),
+                _allTabsMenu(context, workspace, pane, firstPane),
+              ],
+            ),
+            Expanded(
+              child: KeyedSubtree(
+                key: ValueKey<String>('workspace-content-${pane.activeTabId}'),
+                child: _content(workspace, workspace.tabs[pane.activeTabId]!),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  Widget _buildMobile(BuildContext context, SessionTabsState workspace) {
+    final entry = workspace.focusedTab!;
     return Column(
       children: <Widget>[
-        TRTabs.bar(
-          key: const ValueKey<String>('session-tab-strip'),
-          semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
-          value: state?.selectedTerminalId ?? state?.selectedAgentId,
-          onValueChange: _selectTab,
-          leading: widget.showBack
-              ? TRIconButton(
-                  appearance: TRAppearance.ghost,
-                  label: MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () => const WorkspaceHomeRoute().replace(context),
-                  icon: const Icon(CoderIcons.back),
-                )
-              : null,
-          tabs: <TRTabsTab>[
-            if (state != null) ...<TRTabsTab>[
-              for (final id in state.openAgentIds)
-                _sessionTab(
-                  context,
-                  state.sessions.where((item) => item.id == id).first,
-                ),
-              for (final id in state.openTerminalIds)
-                _terminalTab(
-                  context,
-                  state.terminals.where((item) => item.id == id).first,
-                ),
+        GestureDetector(
+          key: const ValueKey<String>('workspace-mobile-tab-trigger'),
+          behavior: HitTestBehavior.opaque,
+          onTap: () => unawaited(_showTabSheet()),
+          child: TRTabs.bar(
+            semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
+            value: _controlValue(entry),
+            onValueChange: (_) => unawaited(_showTabSheet()),
+            leading: TRIconButton(
+              appearance: TRAppearance.ghost,
+              label: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: () => const WorkspaceHomeRoute().replace(context),
+              icon: const Icon(CoderIcons.back),
+            ),
+            tabs: <TRTabsTab>[_tab(context, workspace, entry, closable: false)],
+            actions: <Widget>[
+              _newTabMenu(context, workspace.focusedPaneId, true),
             ],
-          ],
-          actions: <Widget>[
-            // Until the tabs load there is nothing to command, so the strip
-            // spins where the menus will be rather than offering menus that
-            // would open onto an empty list.
-            if (state == null)
-              const TRSpinner()
-            else ...<Widget>[
-              TRMenu.icon(
-                key: const ValueKey<String>('workspace-new-tab-menu'),
-                icon: const Icon(CoderIcons.add),
-                label: AppLocalizations.of(context).workspaceNewTab,
-                menuChildren: <Widget>[
-                  TRMenuItem(
-                    key: const ValueKey<String>('workspace-new-session'),
-                    onPressed: _startDraft,
-                    leadingIcon: const Icon(CoderIcons.chat),
-                    child: TRText.inherit(
-                      AppLocalizations.of(context).workspaceNewSession,
-                    ),
-                  ),
-                  TRMenuItem(
-                    key: const ValueKey<String>('workspace-new-terminal'),
-                    onPressed: _createTerminal,
-                    leadingIcon: const Icon(CoderIcons.terminal),
-                    child: TRText.inherit(
-                      AppLocalizations.of(context).workspaceNewTerminal,
-                    ),
-                  ),
-                ],
-              ),
-              TRMenu.icon(
-                key: const ValueKey('workspace-all-sessions-menu'),
-                icon: const Icon(CoderIcons.more),
-                label: AppLocalizations.of(context).workspaceAllSessions,
-                menuChildren: <Widget>[
-                  // Subagent sessions open through the subagent track of
-                  // their root conversation, never from the tab menu.
-                  for (final agent in state.sessions.where(
-                    (session) => !isSubagentSession(session),
-                  ))
-                    TRMenuItem(
-                      onPressed: () => _open(agent.id),
-                      child: TRText.inherit(agent.title),
-                    ),
-                  for (final terminal in state.terminals)
-                    TRMenuItem(
-                      leadingIcon: const Icon(CoderIcons.terminal),
-                      onPressed: () => _openTerminal(terminal.id),
-                      child: TRText.inherit(terminal.title),
-                    ),
-                ],
-              ),
-            ],
-          ],
+          ),
         ),
-        Expanded(
-          child: switch ((
-            state?.selectedTerminalId,
-            state?.selectedAgentId,
-          )) {
-            // Keyed per terminal because the pane's state owns that terminal's
-            // emulator, event subscription, and last-seen sequence. Reusing it
-            // across a tab switch would keep the previous terminal's sequence
-            // and silently drop the new one's replay.
-            (final terminalId?, _) => _TerminalPane(
-              key: ValueKey<String>('terminal-pane-$terminalId'),
-              selection: widget.selection,
-              terminal: state!.terminals
-                  .where((item) => item.id == terminalId)
-                  .first,
-            ),
-            (_, null) => DraftSessionPane(
-              selection: widget.selection,
-              onCreated: (session) =>
-                  _goSession(context, widget.selection, session.id),
-            ),
-            (_, final agentId?) => _ConversationPane(
-              selection: widget.selection,
-              agent: state!.sessions.where((item) => item.id == agentId).first,
-            ),
-          },
-        ),
+        Expanded(child: _content(workspace, entry)),
       ],
     );
   }
 
-  TRTabsTab _sessionTab(BuildContext context, SessionDto agent) {
-    final subagent = isSubagentSession(agent);
-    return TRTabsTab(
-      value: agent.id,
-      label: subagent ? agent.taskName ?? agent.title : agent.title,
-      leading: subagent ? SubagentStatusIcon(lifecycle: agent.lifecycle) : null,
-      onClose: () => unawaited(_close(agent.id)),
-      closeLabel: AppLocalizations.of(context).workspaceCloseTab,
-    );
-  }
-
-  TRTabsTab _terminalTab(BuildContext context, TerminalDto terminal) =>
-      TRTabsTab(
-        value: terminal.id,
-        label: terminal.title,
-        leading: const Icon(CoderIcons.terminal),
-        onClose: () => unawaited(_closeTerminal(terminal.id)),
+  TRTabsTab _tab(
+    BuildContext context,
+    SessionTabsState workspace,
+    WorkspaceTabEntry entry, {
+    bool closable = true,
+  }) => switch (entry.target) {
+    SessionTabTarget(:final sessionId) => () {
+      final session = workspace.sessions.firstWhere(
+        (item) => item.id == sessionId,
+      );
+      final subagent = isSubagentSession(session);
+      return TRTabsTab(
+        value: _controlValue(entry),
+        label: subagent ? session.taskName ?? session.title : session.title,
+        leading: subagent
+            ? SubagentStatusIcon(lifecycle: session.lifecycle)
+            : null,
+        onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
         closeLabel: AppLocalizations.of(context).workspaceCloseTab,
       );
+    }(),
+    TerminalTabTarget(:final terminalId) => TRTabsTab(
+      value: _controlValue(entry),
+      label: workspace.terminals
+          .firstWhere((item) => item.id == terminalId)
+          .title,
+      leading: const Icon(CoderIcons.terminal),
+      onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
+      closeLabel: AppLocalizations.of(context).workspaceCloseTab,
+    ),
+    DraftTabTarget() => TRTabsTab(
+      value: _controlValue(entry),
+      label: AppLocalizations.of(context).workspaceNewTab,
+      leading: const Icon(CoderIcons.chat),
+      onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
+      closeLabel: AppLocalizations.of(context).workspaceCloseTab,
+    ),
+  };
 
-  /// Routes a tab id to the right selector.
-  ///
-  /// Sessions and terminals share one strip, so the strip reports an id
-  /// without knowing which kind it names.
-  void _selectTab(String id) {
-    final state = ref
-        .read(sessionTabsControllerProvider(widget.selection))
-        .value;
-    if (state == null) return;
-    unawaited(
-      state.terminals.any((terminal) => terminal.id == id)
-          ? _selectTerminal(id)
-          : _select(id),
+  String _controlValue(WorkspaceTabEntry entry) => switch (entry.target) {
+    SessionTabTarget(:final sessionId) => sessionId,
+    TerminalTabTarget(:final terminalId) => terminalId,
+    DraftTabTarget() => entry.id,
+  };
+
+  Widget _content(SessionTabsState workspace, WorkspaceTabEntry entry) =>
+      switch (entry.target) {
+        TerminalTabTarget(:final terminalId) => _TerminalPane(
+          key: ValueKey<String>('terminal-pane-${entry.id}'),
+          selection: widget.selection,
+          terminal: workspace.terminals.firstWhere(
+            (item) => item.id == terminalId,
+          ),
+        ),
+        SessionTabTarget(:final sessionId) => _ConversationPane(
+          key: ValueKey<String>('conversation-pane-${entry.id}'),
+          selection: widget.selection,
+          agent: workspace.sessions.firstWhere((item) => item.id == sessionId),
+        ),
+        DraftTabTarget() => DraftSessionPane(
+          key: ValueKey<String>('draft-pane-${entry.id}'),
+          selection: widget.selection,
+          draftId: entry.id,
+          onCreated: (session) => _createdSession(entry, session),
+        ),
+      };
+
+  Widget _newTabMenu(
+    BuildContext context,
+    String paneId,
+    bool primary,
+  ) => TRMenu.icon(
+    key: ValueKey<String>(
+      primary ? 'workspace-new-tab-menu' : 'workspace-new-tab-menu-$paneId',
+    ),
+    icon: const Icon(CoderIcons.add),
+    label: AppLocalizations.of(context).workspaceNewTab,
+    menuChildren: <Widget>[
+      TRMenuItem(
+        key: primary ? const ValueKey<String>('workspace-new-session') : null,
+        onPressed: () => unawaited(_startDraft(paneId)),
+        leadingIcon: const Icon(CoderIcons.chat),
+        child: TRText.inherit(
+          AppLocalizations.of(context).workspaceNewSession,
+        ),
+      ),
+      TRMenuItem(
+        key: primary ? const ValueKey<String>('workspace-new-terminal') : null,
+        onPressed: () => unawaited(_createTerminal(paneId)),
+        leadingIcon: const Icon(CoderIcons.terminal),
+        child: TRText.inherit(
+          AppLocalizations.of(context).workspaceNewTerminal,
+        ),
+      ),
+    ],
+  );
+
+  Widget _allTabsMenu(
+    BuildContext context,
+    SessionTabsState workspace,
+    PaneNode pane,
+    bool primary,
+  ) => TRMenu.icon(
+    key: ValueKey<String>(
+      primary ? 'workspace-all-sessions-menu' : 'workspace-tabs-${pane.id}',
+    ),
+    icon: const Icon(CoderIcons.more),
+    label: AppLocalizations.of(context).workspaceAllSessions,
+    menuChildren: <Widget>[
+      for (final session in workspace.sessions.where(
+        (item) => !isSubagentSession(item),
+      ))
+        TRMenuItem(
+          onPressed: () => unawaited(_open(session.id)),
+          child: TRText.inherit(session.title),
+        ),
+      for (final terminal in workspace.terminals)
+        TRMenuItem(
+          leadingIcon: const Icon(CoderIcons.terminal),
+          onPressed: () => unawaited(_openTerminal(terminal.id)),
+          child: TRText.inherit(terminal.title),
+        ),
+      for (final target in workspace.panes.where((item) => item.id != pane.id))
+        TRMenuItem(
+          leadingIcon: const Icon(CoderIcons.movePane),
+          onPressed: () => unawaited(
+            _moveTab(
+              tabId: pane.activeTabId,
+              sourcePaneId: pane.id,
+              targetPaneId: target.id,
+              targetIndex: target.tabIds.length,
+            ),
+          ),
+          child: TRText.inherit(
+            AppLocalizations.of(context).workspaceMoveTabToPane,
+          ),
+        ),
+    ],
+  );
+
+  Future<void> _showTabSheet() {
+    final l10n = AppLocalizations.of(context);
+    return showTRDrawer<void>(
+      context: context,
+      useRootNavigator: false,
+      builder: (_) => TRDrawer(
+        key: const ValueKey<String>('workspace-tab-sheet'),
+        snapPoints: const <double>[0.8, 1],
+        title: TRText.inherit(l10n.workspaceSwitchTab),
+        content: Consumer(
+          builder: (_, ref, _) {
+            final workspace = ref
+                .watch(sessionTabsControllerProvider(widget.selection))
+                .requireValue;
+            return ListView(
+              shrinkWrap: true,
+              children: <Widget>[
+                for (final pane in workspace.panes)
+                  for (final tabId in pane.tabIds)
+                    _tabSheetRow(context, workspace, pane, tabId),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
-  Future<void> _select(String id) async {
+  Widget _tabSheetRow(
+    BuildContext context,
+    SessionTabsState workspace,
+    PaneNode pane,
+    String tabId,
+  ) {
+    final entry = workspace.tabs[tabId]!;
+    final tab = _tab(context, workspace, entry, closable: false);
+    return CoderListRow(
+      key: ValueKey<String>('workspace-tab-row-${entry.id}'),
+      leading: tab.leading,
+      title: TRText.inherit(tab.label),
+      selected: pane.id == workspace.focusedPaneId && pane.activeTabId == tabId,
+      onTap: () {
+        Navigator.of(context).pop();
+        unawaited(_activate(pane.id, tabId));
+      },
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (pane.id == workspace.focusedPaneId && pane.activeTabId == tabId)
+            const Icon(CoderIcons.check),
+          TRIconButton(
+            appearance: TRAppearance.ghost,
+            label: AppLocalizations.of(context).workspaceCloseTab,
+            onPressed: () => unawaited(_closeEntry(entry)),
+            icon: const Icon(CoderIcons.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _split(String paneId, WorkspaceSplitAxis axis) async {
     await ref
         .read(sessionTabsControllerProvider(widget.selection).notifier)
-        .select(id);
-    if (mounted) _goSession(context, widget.selection, id);
+        .split(paneId, axis);
+    if (mounted) _routeFocused();
+  }
+
+  Future<void> _dropTab(
+    SessionTabsState workspace,
+    TRTabDropDetails details,
+  ) {
+    final source = workspace.panes.firstWhere(
+      (item) => item.id == details.sourceGroupId,
+    );
+    final tabId = source.tabIds.firstWhere(
+      (id) => _controlValue(workspace.tabs[id]!) == details.value,
+    );
+    return _moveTab(
+      tabId: tabId,
+      sourcePaneId: details.sourceGroupId,
+      targetPaneId: details.targetGroupId,
+      targetIndex: details.targetIndex,
+    );
+  }
+
+  Future<void> _moveTab({
+    required String tabId,
+    required String sourcePaneId,
+    required String targetPaneId,
+    required int targetIndex,
+  }) async {
+    await ref
+        .read(sessionTabsControllerProvider(widget.selection).notifier)
+        .moveTab(
+          tabId: tabId,
+          sourcePaneId: sourcePaneId,
+          targetPaneId: targetPaneId,
+          targetIndex: targetIndex,
+        );
+    if (mounted) _routeFocused();
+  }
+
+  Future<void> _activate(String paneId, String tabId) async {
+    final notifier = ref.read(
+      sessionTabsControllerProvider(widget.selection).notifier,
+    );
+    await notifier.selectTab(paneId, tabId);
+    if (mounted) _routeFocused();
   }
 
   Future<void> _open(String id) async {
@@ -452,31 +696,27 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     if (mounted) _goSession(context, widget.selection, id);
   }
 
-  Future<void> _close(String id) async {
+  Future<void> _openTerminal(String id) async {
+    await ref
+        .read(sessionTabsControllerProvider(widget.selection).notifier)
+        .openTerminal(id);
+    if (mounted) _goTerminal(context, widget.selection, id);
+  }
+
+  Future<void> _startDraft(String paneId) async {
     final notifier = ref.read(
       sessionTabsControllerProvider(widget.selection).notifier,
     );
-    await notifier.close(id);
-    if (!mounted) return;
-    final selected = ref
-        .read(sessionTabsControllerProvider(widget.selection))
-        .requireValue
-        .selectedAgentId;
-    if (selected == null) {
-      _goWorktree(context, widget.selection);
-    } else {
-      _goSession(context, widget.selection, selected);
-    }
-  }
-
-  Future<void> _startDraft() async {
-    await ref
-        .read(sessionTabsControllerProvider(widget.selection).notifier)
-        .startDraft();
+    await notifier.focusPane(paneId);
+    await notifier.startDraft();
     if (mounted) _goWorktree(context, widget.selection);
   }
 
-  Future<void> _createTerminal() async {
+  Future<void> _createTerminal(String paneId) async {
+    final tabs = ref.read(
+      sessionTabsControllerProvider(widget.selection).notifier,
+    );
+    await tabs.focusPane(paneId);
     final terminal = await ref
         .read(
           terminalsControllerProvider(
@@ -485,18 +725,35 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           ).notifier,
         )
         .create();
-    await ref
-        .read(sessionTabsControllerProvider(widget.selection).notifier)
-        .addTerminal(terminal);
+    await tabs.addTerminal(terminal);
+    if (mounted) _goTerminal(context, widget.selection, terminal.id);
   }
 
-  Future<void> _selectTerminal(String id) => ref
-      .read(sessionTabsControllerProvider(widget.selection).notifier)
-      .selectTerminal(id);
+  Future<void> _createdSession(
+    WorkspaceTabEntry entry,
+    SessionDto session,
+  ) async {
+    await ref
+        .read(sessionTabsControllerProvider(widget.selection).notifier)
+        .add(session, draftTabId: entry.id);
+    if (mounted) _goSession(context, widget.selection, session.id);
+  }
 
-  Future<void> _openTerminal(String id) => ref
-      .read(sessionTabsControllerProvider(widget.selection).notifier)
-      .openTerminal(id);
+  Future<void> _closeEntry(WorkspaceTabEntry entry) async {
+    switch (entry.target) {
+      case SessionTabTarget(:final sessionId):
+        await ref
+            .read(sessionTabsControllerProvider(widget.selection).notifier)
+            .close(sessionId);
+      case TerminalTabTarget(:final terminalId):
+        await _closeTerminal(terminalId);
+      case DraftTabTarget():
+        await ref
+            .read(sessionTabsControllerProvider(widget.selection).notifier)
+            .closeTab(entry.id);
+    }
+    if (mounted) _routeFocused();
+  }
 
   Future<void> _closeTerminal(String id) async {
     final state = ref
@@ -543,6 +800,21 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     await ref
         .read(sessionTabsControllerProvider(widget.selection).notifier)
         .closeTerminal(id);
+  }
+
+  void _routeFocused() {
+    final entry = ref
+        .read(sessionTabsControllerProvider(widget.selection))
+        .requireValue
+        .focusedTab;
+    switch (entry?.target) {
+      case SessionTabTarget(:final sessionId):
+        _goSession(context, widget.selection, sessionId);
+      case TerminalTabTarget(:final terminalId):
+        _goTerminal(context, widget.selection, terminalId);
+      case DraftTabTarget() || null:
+        _goWorktree(context, widget.selection);
+    }
   }
 }
 
@@ -724,7 +996,11 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
 }
 
 class _ConversationPane extends ConsumerStatefulWidget {
-  const _ConversationPane({required this.selection, required this.agent});
+  const _ConversationPane({
+    required this.selection,
+    required this.agent,
+    super.key,
+  });
 
   final WorkspaceSelection selection;
   final SessionDto agent;
@@ -1124,5 +1400,18 @@ void _goSession(
     workspaceId: selection.workspaceId,
     worktreeId: selection.worktreeId,
     sessionId: sessionId,
+  ).replace(context);
+}
+
+void _goTerminal(
+  BuildContext context,
+  WorkspaceSelection selection,
+  String terminalId,
+) {
+  TerminalRoute(
+    hostId: selection.hostId,
+    workspaceId: selection.workspaceId,
+    worktreeId: selection.worktreeId,
+    terminalId: terminalId,
   ).replace(context);
 }

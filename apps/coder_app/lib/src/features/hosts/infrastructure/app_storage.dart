@@ -175,10 +175,17 @@ final class _AppDocument {
           .map(
             (entry) => <String, dynamic>{
               'key': entry.key,
-              'openAgentIds': entry.value.openAgentIds,
-              'selectedAgentId': entry.value.selectedAgentId,
-              'openTerminalIds': entry.value.openTerminalIds,
-              'selectedTerminalId': entry.value.selectedTerminalId,
+              'tabs': entry.value.tabs
+                  .map(
+                    (tab) => <String, dynamic>{
+                      'id': tab.id,
+                      'kind': tab.kind.name,
+                      'targetId': tab.targetId,
+                    },
+                  )
+                  .toList(growable: false),
+              'root': _panePreferenceToJson(entry.value.root),
+              'focusedPaneId': entry.value.focusedPaneId,
             },
           )
           .toList(growable: false),
@@ -228,24 +235,43 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
       throw const FormatException('Invalid session tab preference.');
     }
     final key = item['key'];
-    final openAgentIds = item['openAgentIds'];
-    final selectedAgentId = item['selectedAgentId'];
-    final openTerminalIds = item['openTerminalIds'] ?? const <dynamic>[];
-    final selectedTerminalId = item['selectedTerminalId'];
+    final rawTabs = item['tabs'];
+    final rawRoot = item['root'];
+    final focusedPaneId = item['focusedPaneId'];
+    // Flat tab documents were development-only state. Ignore that one
+    // workspace entry so the controller can initialize a fresh draft layout.
+    if (rawTabs == null && item.containsKey('openAgentIds')) continue;
     if (key is! String ||
-        openAgentIds is! List ||
-        openAgentIds.any((id) => id is! String) ||
-        (selectedAgentId != null && selectedAgentId is! String) ||
-        openTerminalIds is! List ||
-        openTerminalIds.any((id) => id is! String) ||
-        (selectedTerminalId != null && selectedTerminalId is! String)) {
+        rawTabs is! List ||
+        rawRoot is! Map<String, dynamic> ||
+        focusedPaneId is! String) {
       throw const FormatException('Invalid session tab preference values.');
     }
+    final parsedTabs = <WorkspaceTabPreference>[];
+    for (final rawTab in rawTabs) {
+      if (rawTab is! Map<String, dynamic>) {
+        throw const FormatException('Invalid workspace tab entry.');
+      }
+      final id = rawTab['id'];
+      final kind = rawTab['kind'];
+      final targetId = rawTab['targetId'];
+      if (id is! String ||
+          kind is! String ||
+          (targetId != null && targetId is! String)) {
+        throw const FormatException('Invalid workspace tab values.');
+      }
+      parsedTabs.add(
+        WorkspaceTabPreference(
+          id: id,
+          kind: WorkspaceTabTargetKind.values.byName(kind),
+          targetId: targetId as String?,
+        ),
+      );
+    }
     sessionTabs[key] = SessionTabPreference(
-      openAgentIds: openAgentIds.cast<String>(),
-      selectedAgentId: selectedAgentId as String?,
-      openTerminalIds: openTerminalIds.cast<String>(),
-      selectedTerminalId: selectedTerminalId as String?,
+      tabs: List<WorkspaceTabPreference>.unmodifiable(parsedTabs),
+      root: _panePreferenceFromJson(rawRoot),
+      focusedPaneId: focusedPaneId,
     );
   }
   return AppSettings(
@@ -263,6 +289,69 @@ AppSettings _settingsFromJson(Map<String, dynamic> json) {
     startMinimizedAtBoot: startMinimized as bool? ?? true,
     themeMode: _themeModeFromJson(themeMode),
   );
+}
+
+Map<String, dynamic> _panePreferenceToJson(
+  WorkspacePanePreferenceNode node,
+) => switch (node) {
+  WorkspacePanePreference() => <String, dynamic>{
+    'type': 'pane',
+    'id': node.id,
+    'tabIds': node.tabIds,
+    'activeTabId': node.activeTabId,
+  },
+  WorkspaceSplitPreference() => <String, dynamic>{
+    'type': 'split',
+    'id': node.id,
+    'axis': node.axis.name,
+    'ratio': node.ratio,
+    'first': _panePreferenceToJson(node.first),
+    'second': _panePreferenceToJson(node.second),
+  },
+};
+
+WorkspacePanePreferenceNode _panePreferenceFromJson(
+  Map<String, dynamic> json,
+) {
+  final type = json['type'];
+  final id = json['id'];
+  if (id is! String) throw const FormatException('Invalid pane identity.');
+  if (type == 'pane') {
+    final tabIds = json['tabIds'];
+    final activeTabId = json['activeTabId'];
+    if (tabIds is! List ||
+        tabIds.any((value) => value is! String) ||
+        activeTabId is! String) {
+      throw const FormatException('Invalid pane preference.');
+    }
+    return WorkspacePanePreference(
+      id: id,
+      tabIds: List<String>.unmodifiable(tabIds.cast<String>()),
+      activeTabId: activeTabId,
+    );
+  }
+  if (type == 'split') {
+    final axis = json['axis'];
+    final ratio = json['ratio'];
+    final first = json['first'];
+    final second = json['second'];
+    if (axis is! String ||
+        ratio is! num ||
+        ratio < 0 ||
+        ratio > 1 ||
+        first is! Map<String, dynamic> ||
+        second is! Map<String, dynamic>) {
+      throw const FormatException('Invalid split preference.');
+    }
+    return WorkspaceSplitPreference(
+      id: id,
+      axis: WorkspaceSplitAxis.values.byName(axis),
+      ratio: ratio.toDouble(),
+      first: _panePreferenceFromJson(first),
+      second: _panePreferenceFromJson(second),
+    );
+  }
+  throw const FormatException('Invalid pane preference type.');
 }
 
 AppThemeMode _themeModeFromJson(Object? value) => switch (value) {

@@ -141,7 +141,7 @@ final class SessionComposerDraftControllerProvider
   /// Holds the composer selection used to create the next session.
   SessionComposerDraftControllerProvider._({
     required SessionComposerDraftControllerFamily super.from,
-    required (String, String?) super.argument,
+    required (String, String?, String) super.argument,
   }) : super(
          retry: null,
          name: r'sessionComposerDraftControllerProvider',
@@ -185,7 +185,7 @@ final class SessionComposerDraftControllerProvider
 }
 
 String _$sessionComposerDraftControllerHash() =>
-    r'35c8518316989fb5a4c0ecbfeeb39d9dd779fdee';
+    r'c6adbf8c1531843b87c950cd8fd667027bc1a930';
 
 /// Holds the composer selection used to create the next session.
 
@@ -196,7 +196,7 @@ final class SessionComposerDraftControllerFamily extends $Family
           SessionComposerDraft,
           SessionComposerDraft,
           SessionComposerDraft,
-          (String, String?)
+          (String, String?, String)
         > {
   SessionComposerDraftControllerFamily._()
     : super(
@@ -212,8 +212,9 @@ final class SessionComposerDraftControllerFamily extends $Family
   SessionComposerDraftControllerProvider call(
     String hostId,
     String? worktreeId,
+    String draftId,
   ) => SessionComposerDraftControllerProvider._(
-    argument: (hostId, worktreeId),
+    argument: (hostId, worktreeId, draftId),
     from: this,
   );
 
@@ -225,11 +226,12 @@ final class SessionComposerDraftControllerFamily extends $Family
 
 abstract class _$SessionComposerDraftController
     extends $Notifier<SessionComposerDraft> {
-  late final _$args = ref.$arg as (String, String?);
+  late final _$args = ref.$arg as (String, String?, String);
   String get hostId => _$args.$1;
   String? get worktreeId => _$args.$2;
+  String get draftId => _$args.$3;
 
-  SessionComposerDraft build(String hostId, String? worktreeId);
+  SessionComposerDraft build(String hostId, String? worktreeId, String draftId);
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
@@ -242,6 +244,9 @@ abstract class _$SessionComposerDraftController
               Object?,
               Object?
             >;
-    return element.handleCreate(ref, () => build(_$args.$1, _$args.$2));
+    return element.handleCreate(
+      ref,
+      () => build(_$args.$1, _$args.$2, _$args.$3),
+    );
   }
 }

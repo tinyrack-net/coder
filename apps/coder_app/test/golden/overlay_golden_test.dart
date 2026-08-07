@@ -61,8 +61,13 @@ void main() {
       fileName: 'composer_chip_menu_without_tooltip',
       constraints: const BoxConstraints.tightFor(width: 720, height: 480),
       whilePerforming: (tester) async {
-        final chip = find.byKey(const ValueKey('golden-project-chip'));
-        await tester.tap(chip);
+        final otherFocus = FocusNode();
+        addTearDown(otherFocus.dispose);
+        FocusScope.of(
+          tester.element(find.byType(Scaffold)),
+        ).requestFocus(otherFocus);
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('golden-project-chip')));
         await tester.pumpAndSettle();
         expect(find.text('프로젝트 선택'), findsNothing);
         expect(find.text('추가'), findsOneWidget);
@@ -281,7 +286,7 @@ Widget _composerChipApp() => MaterialApp(
   localizationsDelegates: testLocalizationsDelegates,
   supportedLocales: testSupportedLocales,
   theme: testLightTheme,
-  darkTheme: testDarkTheme,
+  darkTheme: _composerChipTheme,
   themeMode: ThemeMode.dark,
   home: Scaffold(
     body: Center(
@@ -300,6 +305,16 @@ Widget _composerChipApp() => MaterialApp(
     ),
   ),
 );
+
+final ThemeData _composerChipTheme = () {
+  final theme = TinyrackTheme.dark();
+  final colors = theme.extension<TinyrackThemeData>()!;
+  return theme.copyWith(
+    extensions: <ThemeExtension<dynamic>>[
+      colors.copyWith(focus: colors.surfaceHover),
+    ],
+  );
+}();
 
 class _PermissionPickerGoldenHost extends StatelessWidget {
   const _PermissionPickerGoldenHost();

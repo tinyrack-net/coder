@@ -218,4 +218,13 @@ abstract final class CoderIcons {
 
   /// Semantic Lucide glyph.
   static const IconData hierarchy = LucideIcons.workflow;
+
+  /// Split the current pane with a new pane on its right.
+  static const IconData splitRight = LucideIcons.columns2;
+
+  /// Split the current pane with a new pane below it.
+  static const IconData splitDown = LucideIcons.rows2;
+
+  /// Move the active tab to another pane.
+  static const IconData movePane = LucideIcons.moveRight;
 }

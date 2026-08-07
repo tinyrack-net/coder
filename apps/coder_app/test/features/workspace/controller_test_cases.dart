@@ -371,23 +371,115 @@ void _registerWorkspaceControllerTests() {
         worktreeId: 'worktree',
       );
       final provider = sessionTabsControllerProvider(selection);
-      expect((await container.read(provider.future)).openAgentIds, <String>[
-        'agent',
-      ]);
+      final initial = await container.read(provider.future);
+      expect(initial.panes.single.tabIds, hasLength(1));
+      expect(initial.focusedTab?.target, isA<DraftTabTarget>());
 
+      await container
+          .read(provider.notifier)
+          .add(agent, draftTabId: initial.focusedTabId);
       await container.read(provider.notifier).open(second.id);
       await container.read(provider.notifier).close(agent.id);
 
-      expect(container.read(provider).requireValue.openAgentIds, <String>[
-        second.id,
-      ]);
+      final afterClose = container.read(provider).requireValue;
+      expect(afterClose.panes.single.tabIds, <String>['session:agent-2']);
       expect(
-        store.settings.sessionTabs[selection.storageKey]?.selectedAgentId,
-        second.id,
+        store.settings.sessionTabs[selection.storageKey]?.focusedPaneId,
+        afterClose.focusedPaneId,
       );
       expect(
         await api.sessions.listSessions(worktreeId: worktree.id),
         hasLength(2),
+      );
+    },
+    tags: const <String>['feature_test__session_tabs__unit'],
+  );
+
+  test(
+    'workspace tabs split, move, collapse empty panes, and persist ratios',
+    () async {
+      final second = agent.copyWith(id: 'agent-2', title: 'Second');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+        agents: <SessionDto>[agent, second],
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[_profile('server', now)],
+        tokens: const <String, String>{'server': 'token'},
+      );
+      final ids = _SequentialIdGenerator();
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(
+            AppServices(
+              settings: store,
+              profiles: store,
+              credentials: store,
+              clients: _HostClients(<String, CoderApi>{'server.test': api}),
+              clientKind: 'test',
+            ),
+          ),
+          appIdGeneratorProvider.overrideWithValue(ids),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      const selection = WorkspaceSelection(
+        hostId: 'server',
+        workspaceId: 'workspace',
+        worktreeId: 'worktree',
+      );
+      final provider = sessionTabsControllerProvider(selection);
+      final initial = await container.read(provider.future);
+      final originalPane = initial.focusedPaneId;
+      await container
+          .read(provider.notifier)
+          .add(agent, draftTabId: initial.focusedTabId);
+
+      await container
+          .read(provider.notifier)
+          .split(originalPane, WorkspaceSplitAxis.horizontal);
+      var current = container.read(provider).requireValue;
+      expect(current.panes, hasLength(2));
+      expect(current.tabs[current.focusedTabId]?.target, isA<DraftTabTarget>());
+      final split = current.root as WorkspaceSplitNode;
+      expect(split.ratio, 0.5);
+
+      await container
+          .read(provider.notifier)
+          .moveTab(
+            tabId: initial.focusedTabId,
+            sourcePaneId: originalPane,
+            targetPaneId: current.focusedPaneId,
+            targetIndex: 0,
+          );
+      current = container.read(provider).requireValue;
+      expect(current.panes, hasLength(1));
+      expect(current.panes.single.tabIds.first, initial.focusedTabId);
+      expect(
+        current.tabs[initial.focusedTabId]?.target,
+        const SessionTabTarget('agent'),
+      );
+
+      await container
+          .read(provider.notifier)
+          .split(current.focusedPaneId, WorkspaceSplitAxis.vertical);
+      current = container.read(provider).requireValue;
+      final vertical = current.root as WorkspaceSplitNode;
+      await container.read(provider.notifier).resize(vertical.id, 0.7);
+      await container.read(provider.notifier).commitResize();
+      expect(
+        store.settings.sessionTabs[selection.storageKey]?.root,
+        isA<WorkspaceSplitPreference>(),
+      );
+      expect(
+        (store.settings.sessionTabs[selection.storageKey]!.root
+                as WorkspaceSplitPreference)
+            .ratio,
+        0.7,
       );
     },
     tags: const <String>['feature_test__session_tabs__unit'],

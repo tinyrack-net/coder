@@ -285,6 +285,7 @@ void main() {
       final provider = sessionComposerDraftControllerProvider(
         'server',
         'worktree',
+        'draft:test',
       );
       const model = SessionModelSelectionDto(
         providerConnectionId: 'openai',
@@ -294,6 +295,18 @@ void main() {
       expect(container.read(provider).agentDefinitionId, isNull);
       container.read(provider.notifier).selectModel(model);
       expect(container.read(provider).model, model);
+      expect(
+        container
+            .read(
+              sessionComposerDraftControllerProvider(
+                'server',
+                'worktree',
+                'draft:other-pane',
+              ),
+            )
+            .model,
+        isNull,
+      );
       container.read(provider.notifier).selectAgent('planner');
       expect(container.read(provider).agentDefinitionId, 'planner');
       expect(container.read(provider).model, isNull);

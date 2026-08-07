@@ -121,8 +121,11 @@ final class SessionComposerDraft {
 /// Holds the composer selection used to create the next session.
 class SessionComposerDraftController extends _$SessionComposerDraftController {
   @override
-  SessionComposerDraft build(String hostId, String? worktreeId) =>
-      const SessionComposerDraft();
+  SessionComposerDraft build(
+    String hostId,
+    String? worktreeId,
+    String draftId,
+  ) => const SessionComposerDraft();
 
   /// Chooses the agent definition and drops every override bound to the old
   /// agent, so the new definition supplies its own defaults.
