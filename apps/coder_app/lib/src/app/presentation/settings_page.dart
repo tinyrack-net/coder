@@ -16,6 +16,7 @@ import 'package:coder_app/src/features/settings/presentation/pages/general_setti
 import 'package:coder_app/src/features/skills/presentation/pages/skill_settings_page.dart';
 import 'package:coder_app/src/features/workspace/presentation/pages/project_settings_page.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_page_shell.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter/material.dart';
@@ -410,11 +411,7 @@ class _SettingsSectionLabel extends StatelessWidget {
       TRSpacing.small,
       TRSpacing.medium,
     ),
-    child: TRText(
-      text,
-      variant: TRTextVariant.label,
-      color: TRTextColor.muted,
-    ),
+    child: TRText(text, variant: TRTextVariant.label, color: TRTextColor.muted),
   );
 }
 

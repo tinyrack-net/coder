@@ -1,3 +1,4 @@
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -110,7 +111,7 @@ class SettingsScaffold extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                maxWidth: TRMeasurements.readingWidthMd,
+                maxWidth: CoderLayoutMetrics.settingsContentMaxWidth,
               ),
               child: child,
             ),
@@ -304,9 +305,7 @@ class SettingsRow extends StatelessWidget {
   );
 
   /// The inset a row draws at inside a container that supplies its own.
-  static const flushPadding = EdgeInsets.symmetric(
-    vertical: TRSpacing.medium,
-  );
+  static const flushPadding = EdgeInsets.symmetric(vertical: TRSpacing.medium);
 
   @override
   Widget build(BuildContext context) => CoderListRow(
@@ -454,7 +453,7 @@ class SettingsEmptyState extends StatelessWidget {
       padding: const EdgeInsets.all(TRSpacing.extraLarge),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-          maxWidth: TRMeasurements.readingWidthSm,
+          maxWidth: CoderLayoutMetrics.settingsEmptyStateMaxWidth,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

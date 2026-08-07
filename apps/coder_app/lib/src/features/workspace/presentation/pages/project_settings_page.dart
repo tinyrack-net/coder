@@ -4,6 +4,7 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/hosts/application/host_controller.dart';
 import 'package:coder_app/src/features/workspace/application/workspace_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -69,7 +70,8 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         }
         return LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < TRBreakpoints.medium;
+            final compact =
+                constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
             if (!compact &&
                 !projects.any((project) => project.id == _selectedId)) {
               _selectedId = projects.first.id;
@@ -99,7 +101,10 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
             if (compact) return list;
             return Row(
               children: <Widget>[
-                SizedBox(width: TRMeasurements.paneMd, child: list),
+                SizedBox(
+                  width: CoderLayoutMetrics.settingsCollectionWidth,
+                  child: list,
+                ),
                 const TRSeparator(
                   orientation: TRSeparatorOrientation.vertical,
                   variant: TRSeparatorVariant.muted,
@@ -254,9 +259,8 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                 TRIconButton(
                   appearance: TRAppearance.ghost,
                   label: l10n.projectSettingsCopyPath,
-                  onPressed: () => Clipboard.setData(
-                    ClipboardData(text: value.sourcePath),
-                  ),
+                  onPressed: () =>
+                      Clipboard.setData(ClipboardData(text: value.sourcePath)),
                   icon: const Icon(CoderIcons.copy),
                 ),
                 TRButton(

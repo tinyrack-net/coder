@@ -1,5 +1,6 @@
 import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/app/router/app_router.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -85,7 +86,7 @@ void main() {
       expect(selector, findsOneWidget);
       expect(
         tester.getSize(selector).width,
-        TRMeasurements.paneMd - 2 * TRSpacing.large,
+        CoderLayoutMetrics.settingsCollectionWidth - 2 * TRSpacing.large,
       );
       expect(
         tester.getTopLeft(selector).dx,
@@ -142,10 +143,7 @@ void main() {
 
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
-      await tester.enterText(
-        _textInput('지시문 (Markdown)'),
-        'Forced body.',
-      );
+      await tester.enterText(_textInput('지시문 (Markdown)'), 'Forced body.');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
@@ -186,18 +184,9 @@ void main() {
 
       await tester.tap(findAccessibleAction('스킬 추가'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        _textInput('ID (디렉터리 이름)'),
-        'release-notes',
-      );
-      await tester.enterText(
-        _textInput('이름').last,
-        'release-notes',
-      );
-      await tester.enterText(
-        _textInput('설명').last,
-        'Writes release notes.',
-      );
+      await tester.enterText(_textInput('ID (디렉터리 이름)'), 'release-notes');
+      await tester.enterText(_textInput('이름').last, 'release-notes');
+      await tester.enterText(_textInput('설명').last, 'Writes release notes.');
       tester.testTextInput.hide();
       await tester.pumpAndSettle();
       final create = find.widgetWithText(TRButton, '생성');
@@ -304,9 +293,7 @@ Future<GoRouter> _pumpSkills(WidgetTester tester, FakeCoderApi api) async {
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
-        appServicesProvider.overrideWithValue(fakeAppServices(api)),
-      ],
+      overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
       child: MaterialApp.router(
         theme: testLightTheme,
         darkTheme: testDarkTheme,
