@@ -260,7 +260,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         currentLocation(router),
-        const GeneralSettingsRoute().location,
+        const SettingsHomeRoute().location,
       );
 
       await tester.tap(

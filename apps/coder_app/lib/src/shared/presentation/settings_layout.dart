@@ -2,6 +2,82 @@ import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+/// Coordinates a compact settings page's deepest locally managed pane.
+///
+/// The typed router owns settings categories, while list-detail features own
+/// their selected item. This controller lets the shared page header offer one
+/// Back affordance for both layers without moving feature state into routing.
+class SettingsPaneNavigationController extends ChangeNotifier {
+  Object? _owner;
+  VoidCallback? _onBack;
+
+  /// Whether a descendant currently has a local pane to leave.
+  bool get canGoBack => _onBack != null;
+
+  /// Registers [onBack] as the action for [owner]'s visible detail pane.
+  void setBackHandler(Object owner, VoidCallback onBack) {
+    if (identical(_owner, owner)) {
+      _onBack = onBack;
+      return;
+    }
+    _owner = owner;
+    _onBack = onBack;
+    notifyListeners();
+  }
+
+  /// Removes the handler when [owner] returns to its list pane or disposes.
+  void clearBackHandler(Object owner) {
+    if (!identical(_owner, owner)) return;
+    _owner = null;
+    _onBack = null;
+    notifyListeners();
+  }
+
+  /// Leaves the deepest locally managed pane.
+  void goBack() => _onBack?.call();
+}
+
+/// Supplies the compact settings pane coordinator to list-detail features.
+class SettingsPaneNavigationScope extends InheritedWidget {
+  /// Creates a settings pane navigation scope.
+  const SettingsPaneNavigationScope({
+    required this.controller,
+    required super.child,
+    super.key,
+  });
+
+  /// Controller shared with the settings page header.
+  final SettingsPaneNavigationController controller;
+
+  /// Returns the nearest controller, when hosted by the unified settings page.
+  static SettingsPaneNavigationController? maybeOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<SettingsPaneNavigationScope>()
+          ?.controller;
+
+  @override
+  bool updateShouldNotify(SettingsPaneNavigationScope oldWidget) =>
+      !identical(controller, oldWidget.controller);
+}
+
+/// Synchronizes a list-detail feature with the shared compact page header.
+void syncSettingsPaneBackHandler(
+  BuildContext context, {
+  required Object owner,
+  required bool active,
+  required VoidCallback onBack,
+}) {
+  final controller = SettingsPaneNavigationScope.maybeOf(context);
+  if (controller == null) return;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (active) {
+      controller.setBackHandler(owner, onBack);
+    } else {
+      controller.clearBackHandler(owner);
+    }
+  });
+}
+
 /// The scroll container every settings pane uses.
 ///
 /// Page padding, content width, and the gap between sections live here rather

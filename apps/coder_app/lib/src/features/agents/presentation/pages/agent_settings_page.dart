@@ -26,6 +26,13 @@ class AgentSettingsPage extends ConsumerStatefulWidget {
 
 class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   String? _selectedId;
+  SettingsPaneNavigationController? _paneNavigation;
+
+  @override
+  void dispose() {
+    _paneNavigation?.clearBackHandler(this);
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(AgentSettingsPage oldWidget) {
@@ -57,13 +64,19 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             final selected = value.definitions
                 .where((definition) => definition.id == _selectedId)
                 .firstOrNull;
+            _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
+            syncSettingsPaneBackHandler(
+              context,
+              owner: this,
+              active: compact && selected != null,
+              onBack: _showAgentList,
+            );
             if (compact && selected != null) {
               return _AgentEditor(
                 key: ValueKey<String>(selected.contentHash),
                 hostId: widget.hostId,
                 state: value,
                 definition: selected,
-                onBack: () => setState(() => _selectedId = null),
                 onArchived: () => setState(() => _selectedId = null),
               );
             }
@@ -141,6 +154,8 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       setState(() => _selectedId = created.id);
     }
   }
+
+  void _showAgentList() => setState(() => _selectedId = null);
 }
 
 class _AgentDefinitionList extends StatelessWidget {
@@ -210,7 +225,6 @@ class _AgentEditor extends StatefulWidget {
     required this.state,
     required this.definition,
     required this.onArchived,
-    this.onBack,
     super.key,
   });
 
@@ -218,7 +232,6 @@ class _AgentEditor extends StatefulWidget {
   final AgentDefinitionsState state;
   final AgentDefinitionDto definition;
   final VoidCallback onArchived;
-  final VoidCallback? onBack;
 
   @override
   State<_AgentEditor> createState() => _AgentEditorState();
@@ -283,15 +296,6 @@ class _AgentEditorState extends State<_AgentEditor> {
     return Column(
       children: <Widget>[
         SettingsPaneHeader.detail(
-          leading: widget.onBack == null
-              ? null
-              : TRIconButton(
-                  key: const ValueKey('agent-list-button'),
-                  appearance: TRAppearance.ghost,
-                  label: l10n.agentSettingsList,
-                  onPressed: widget.onBack,
-                  icon: const Icon(CoderIcons.back),
-                ),
           title: definition.name,
           subtitle: definition.sourcePath,
           actions: <Widget>[

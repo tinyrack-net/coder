@@ -65,6 +65,14 @@ void main() {
       location: const GeneralSettingsRoute().location,
     ),
     (
+      name: 'settings_home',
+      location: const SettingsHomeRoute().location,
+    ),
+    (
+      name: 'daemon_categories',
+      location: const DaemonCategoriesRoute(hostId: 'server').location,
+    ),
+    (
       name: 'mcp_settings',
       location: const McpSettingsRoute(hostId: 'server').location,
     ),

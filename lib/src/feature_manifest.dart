@@ -237,6 +237,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         'the screen they were opened from, moves laterally between settings '
         'categories and workspace selections without changing the stack, and '
         'still closes to a sensible destination when entered by deep link.',
+    routes: <String>['SettingsHomeRoute', 'DaemonCategoriesRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.widget,
     },
