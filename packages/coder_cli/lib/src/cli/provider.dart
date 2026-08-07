@@ -29,13 +29,14 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet()
         .and(
-          EnumFlag.optional<ProviderConnectMethod, CoderCliContext>(
+          // An open string rather than a closed enum: the valid ids are
+          // whatever the daemon's catalog advertises for the provider, so a
+          // new vendor's flows need no CLI release. providerConnect validates
+          // against the catalog and names the valid ids on a mistake.
+          ParsedFlag.optional<String, CoderCliContext>(
             name: 'method',
-            brief: 'Authentication method',
-            values: <String, ProviderConnectMethod>{
-              for (final method in ProviderConnectMethod.values)
-                method.id: method,
-            },
+            brief: 'Authentication method id from the provider catalog',
+            parse: stringParser,
             placeholder: 'method',
           ),
         )
@@ -73,7 +74,7 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
       backend: CoderApiProviderCliBackend(client),
       output: context.output,
       definitionId: args.id,
-      method: flags.method,
+      methodId: flags.method,
       apiKey: flags.apiKey,
       readSecret: context.readSecret,
       progress: context.progress,

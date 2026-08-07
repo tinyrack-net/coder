@@ -430,12 +430,12 @@ void main() {
     await _pumpSettings(tester, api);
 
     expect(find.text('연결 중 · 저장된 credential'), findsOneWidget);
-    expect(find.text('연결됨 · ChatGPT OAuth'), findsOneWidget);
+    expect(find.text('연결됨 · OAuth'), findsOneWidget);
     expect(find.text('오류 · 인증 없음'), findsOneWidget);
     expect(find.text('재로그인 필요 · Environment credential'), findsOneWidget);
     // A successful ChatGPT sign-in carries no error, so the card must not show
     // a "Limited connection" status or a danger-coloured diagnostic line.
-    expect(find.text('제한된 연결 · ChatGPT OAuth'), findsNothing);
+    expect(find.text('제한된 연결 · OAuth'), findsNothing);
     expect(find.textContaining('status code of 400'), findsNothing);
   });
 

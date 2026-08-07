@@ -435,20 +435,41 @@ final class _FakeClient implements CoderClient {
         id: 'openai',
         name: 'OpenAI',
         description: 'OpenAI',
-        authMethods: <ProviderAuthMethodDto>[],
+        authMethods: <ProviderAuthMethodDto>[
+          ProviderAuthMethodDto(
+            id: 'api-key',
+            label: 'API key',
+            kind: ProviderAuthKind.apiKey,
+            flow: ProviderAuthFlow.apiKey,
+          ),
+        ],
       ),
       ProviderDefinitionDto(
         id: 'deepseek',
         name: 'DeepSeek',
         description: 'Hosted',
-        authMethods: <ProviderAuthMethodDto>[],
+        authMethods: <ProviderAuthMethodDto>[
+          ProviderAuthMethodDto(
+            id: 'api-key',
+            label: 'API key',
+            kind: ProviderAuthKind.apiKey,
+            flow: ProviderAuthFlow.apiKey,
+          ),
+        ],
       ),
       ProviderDefinitionDto(
         id: 'ollama',
         name: 'Ollama',
         description: 'Local',
         local: true,
-        authMethods: <ProviderAuthMethodDto>[],
+        authMethods: <ProviderAuthMethodDto>[
+          ProviderAuthMethodDto(
+            id: 'none',
+            label: 'Connect',
+            kind: ProviderAuthKind.none,
+            flow: ProviderAuthFlow.none,
+          ),
+        ],
       ),
     ],
     source: ProviderCatalogSource.bundled,

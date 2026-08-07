@@ -702,11 +702,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsDefaultModelChoose => '변경';
 
   @override
-  String get providerSettingsOpenAiTitle => 'OpenAI 연결';
-
-  @override
-  String get providerSettingsOpenAiSubtitle =>
-      'ChatGPT 로그인은 공개 Codex 인증 흐름에 의존하는 실험적 기능입니다.';
+  String providerSettingsAuthTitle(String name) {
+    return '$name 연결';
+  }
 
   @override
   String get providerSettingsExperimental => '실험적';
@@ -810,6 +808,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerAuthStored => '저장된 credential';
+
+  @override
+  String get providerAuthOAuth => 'OAuth';
 
   @override
   String get providerAuthNone => '인증 없음';

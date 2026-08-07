@@ -175,35 +175,58 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _addDefinition(ProviderDefinitionDto definition) async {
-    if (definition.id == 'openai') {
-      await _showOpenAIAuth(definition);
+    // A definition with one way in connects directly; several raise a choice.
+    // The methods themselves come from the catalog, so this page never has to
+    // know which vendor offers what.
+    if (definition.authMethods.length > 1) {
+      await _showAuthMethods(definition);
       return;
     }
     final method = definition.authMethods.single;
-    if (method.flow == ProviderAuthFlow.none) {
-      await ref.read(_provider.notifier).connectNone(definition.id);
-      return;
-    }
-    await _showApiKey(definition);
+    await _connectWith(definition, method);
   }
 
-  Future<void> _showOpenAIAuth(ProviderDefinitionDto definition) async {
-    final methodId = await showTRDrawer<String>(
+  Future<void> _connectWith(
+    ProviderDefinitionDto definition,
+    ProviderAuthMethodDto method,
+  ) async {
+    switch (method.flow) {
+      case ProviderAuthFlow.none:
+        await ref.read(_provider.notifier).connectNone(definition.id);
+      case ProviderAuthFlow.apiKey:
+        await _showApiKey(definition);
+      case ProviderAuthFlow.oauthBrowser:
+      case ProviderAuthFlow.oauthDevice:
+        final attempt = await ref
+            .read(_provider.notifier)
+            .startAuth(definition.id, method.id);
+        final authorizationUrl = attempt.authorizationUrl;
+        if (method.flow == ProviderAuthFlow.oauthBrowser &&
+            authorizationUrl != null) {
+          await ref
+              .read(externalUrlOpenerProvider)
+              .open(Uri.parse(authorizationUrl));
+        }
+    }
+  }
+
+  Future<void> _showAuthMethods(ProviderDefinitionDto definition) async {
+    final method = await showTRDrawer<ProviderAuthMethodDto>(
       context: context,
       builder: (context) => TRDrawer(
         title: TRText.inherit(
-          AppLocalizations.of(context).providerSettingsOpenAiTitle,
+          AppLocalizations.of(
+            context,
+          ).providerSettingsAuthTitle(definition.name),
         ),
-        description: TRText.inherit(
-          AppLocalizations.of(context).providerSettingsOpenAiSubtitle,
-        ),
+        description: TRText.inherit(definition.description),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             for (final method in definition.authMethods)
               CoderListRow(
-                key: ValueKey('openai-auth-${method.id}'),
+                key: ValueKey('provider-auth-${method.id}'),
                 leading: Icon(
                   method.kind == ProviderAuthKind.oauth
                       ? CoderIcons.user
@@ -216,27 +239,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           context,
                         ).providerSettingsExperimental,
                       )
-                    : const TRText('OpenAI Platform'),
-                onTap: () => Navigator.pop(context, method.id),
+                    : TRText(definition.name),
+                onTap: () => Navigator.pop(context, method),
               ),
           ],
         ),
       ),
     );
-    if (!mounted || methodId == null) return;
-    if (methodId == 'api-key') {
-      await _showApiKey(definition);
-      return;
-    }
-    final attempt = await ref
-        .read(_provider.notifier)
-        .startAuth(definition.id, methodId);
-    final authorizationUrl = attempt.authorizationUrl;
-    if (methodId == 'chatgpt-browser' && authorizationUrl != null) {
-      await ref
-          .read(externalUrlOpenerProvider)
-          .open(Uri.parse(authorizationUrl));
-    }
+    if (!mounted || method == null) return;
+    await _connectWith(definition, method);
   }
 
   Future<void> _showApiKey(ProviderDefinitionDto definition) async {
@@ -919,6 +930,6 @@ String _authLabel(AppLocalizations l10n, ProviderCredentialOrigin origin) =>
     switch (origin) {
       ProviderCredentialOrigin.stored => l10n.providerAuthStored,
       ProviderCredentialOrigin.environment => 'Environment credential',
-      ProviderCredentialOrigin.oauth => 'ChatGPT OAuth',
+      ProviderCredentialOrigin.oauth => l10n.providerAuthOAuth,
       ProviderCredentialOrigin.none => l10n.providerAuthNone,
     };

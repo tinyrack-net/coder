@@ -217,8 +217,15 @@
   "providerSettingsDefaultModelNone": "연동된 프로바이더에 사용할 수 있는 모델이 없습니다.",
   "providerSettingsDefaultModelUnavailable": "이 모델을 사용할 수 없어 세션은 첫 번째 사용 가능한 모델을 사용합니다.",
   "providerSettingsDefaultModelChoose": "변경",
-  "providerSettingsOpenAiTitle": "OpenAI 연결",
-  "providerSettingsOpenAiSubtitle": "ChatGPT 로그인은 공개 Codex 인증 흐름에 의존하는 실험적 기능입니다.",
+  "providerSettingsAuthTitle": "{name} 연결",
+  "@providerSettingsAuthTitle": {
+    "description": "Title of the sheet choosing how to connect one provider.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerSettingsExperimental": "실험적",
   "providerSettingsDisconnectTitle": "Provider 연결 해제",
   "providerSettingsDisconnectBody": "{name} 연결을 해제할까요? 기존 agent 이력은 유지됩니다.",

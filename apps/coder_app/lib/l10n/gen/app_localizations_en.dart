@@ -712,11 +712,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsDefaultModelChoose => 'Change';
 
   @override
-  String get providerSettingsOpenAiTitle => 'OpenAI connection';
-
-  @override
-  String get providerSettingsOpenAiSubtitle =>
-      'ChatGPT sign-in is experimental and relies on the public Codex auth flow.';
+  String providerSettingsAuthTitle(String name) {
+    return '$name connection';
+  }
 
   @override
   String get providerSettingsExperimental => 'Experimental';
@@ -821,6 +819,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerAuthStored => 'Stored credential';
+
+  @override
+  String get providerAuthOAuth => 'OAuth';
 
   @override
   String get providerAuthNone => 'No credential';

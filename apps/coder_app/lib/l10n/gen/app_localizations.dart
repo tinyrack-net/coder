@@ -1400,17 +1400,11 @@ abstract class AppLocalizations {
   /// **'Change'**
   String get providerSettingsDefaultModelChoose;
 
-  /// Title of the OpenAI auth method sheet.
+  /// Title of the sheet choosing how to connect one provider.
   ///
   /// In en, this message translates to:
-  /// **'OpenAI connection'**
-  String get providerSettingsOpenAiTitle;
-
-  /// Warns that ChatGPT sign-in is experimental.
-  ///
-  /// In en, this message translates to:
-  /// **'ChatGPT sign-in is experimental and relies on the public Codex auth flow.'**
-  String get providerSettingsOpenAiSubtitle;
+  /// **'{name} connection'**
+  String providerSettingsAuthTitle(String name);
 
   /// Subtitle marking an experimental auth method.
   ///
@@ -1603,6 +1597,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stored credential'**
   String get providerAuthStored;
+
+  /// Credential label for a connection authorized over OAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'OAuth'**
+  String get providerAuthOAuth;
 
   /// Origin of a provider credential.
   ///

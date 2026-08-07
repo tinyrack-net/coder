@@ -79,29 +79,6 @@ final class CoderApiProviderCliBackend implements ProviderCliBackend {
   Future<ProviderCatalogDto> refreshCatalog() => _api.refreshProviderCatalog();
 }
 
-/// The authentication methods `provider connect` accepts.
-///
-/// The CLI surfaces these as a closed choice so that an unknown value is
-/// rejected by the argument scanner instead of by the daemon.
-enum ProviderConnectMethod {
-  /// Sends a secret the operator supplies.
-  apiKey('api-key'),
-
-  /// Connects a local provider that needs no credential.
-  none('none'),
-
-  /// Authorizes ChatGPT through a browser redirect.
-  chatgptBrowser('chatgpt-browser'),
-
-  /// Authorizes ChatGPT through a device code.
-  chatgptDevice('chatgpt-device');
-
-  const ProviderConnectMethod(this.id);
-
-  /// The wire identifier the daemon expects.
-  final String id;
-}
-
 /// Lists configured provider connections with their catalog names.
 Future<int> providerList({
   required ProviderCliBackend backend,
@@ -125,15 +102,17 @@ Future<int> providerList({
   return 0;
 }
 
-/// Connects the provider [definitionId] using [method].
+/// Connects the provider [definitionId] using the method named [methodId].
 ///
-/// When [method] is omitted the provider's own catalog entry decides: a local
-/// provider needs no credential, a hosted one takes an API key.
+/// The valid method ids are whatever the provider's catalog entry advertises,
+/// so the CLI accepts a new vendor's flows without a release. When [methodId]
+/// is omitted the entry decides: a local provider needs no credential, a
+/// hosted one takes an API key.
 Future<int> providerConnect({
   required ProviderCliBackend backend,
   required StringSink output,
   required String definitionId,
-  ProviderConnectMethod? method,
+  String? methodId,
   String? apiKey,
   Future<String> Function()? readSecret,
   CliProgress progress = const SilentCliProgress(),
@@ -144,24 +123,40 @@ Future<int> providerConnect({
     (item) => item.id == definitionId,
     orElse: () => throw StateError('Unknown provider: $definitionId'),
   );
-  final resolved =
-      method ??
-      (definition.local
-          ? ProviderConnectMethod.none
-          : ProviderConnectMethod.apiKey);
-  switch (resolved) {
-    case ProviderConnectMethod.apiKey:
+  final ProviderAuthMethodDto method;
+  if (methodId == null) {
+    final fallbackFlow = definition.local
+        ? ProviderAuthFlow.none
+        : ProviderAuthFlow.apiKey;
+    method = definition.authMethods.singleWhere(
+      (item) => item.flow == fallbackFlow,
+      orElse: () => throw StateError(
+        '$definitionId needs an explicit --method: '
+        '${definition.authMethods.map((item) => item.id).join(', ')}',
+      ),
+    );
+  } else {
+    method = definition.authMethods.singleWhere(
+      (item) => item.id == methodId,
+      orElse: () => throw StateError(
+        'Unknown method for $definitionId: $methodId. Valid methods: '
+        '${definition.authMethods.map((item) => item.id).join(', ')}',
+      ),
+    );
+  }
+  switch (method.flow) {
+    case ProviderAuthFlow.apiKey:
       final key = apiKey ?? await (readSecret?.call() ?? _missingSecret());
       await backend.connectApiKey(definitionId, key);
       output.writeln('Connected ${definition.name}.');
       return 0;
-    case ProviderConnectMethod.none:
+    case ProviderAuthFlow.none:
       await backend.connectNone(definitionId);
       output.writeln('Connected ${definition.name}.');
       return 0;
-    case ProviderConnectMethod.chatgptBrowser:
-    case ProviderConnectMethod.chatgptDevice:
-      final attempt = await backend.startAuth(definitionId, resolved.id);
+    case ProviderAuthFlow.oauthBrowser:
+    case ProviderAuthFlow.oauthDevice:
+      final attempt = await backend.startAuth(definitionId, method.id);
       output.writeln('Open ${attempt.authorizationUrl}');
       if (attempt.userCode case final code?) output.writeln('Code: $code');
       progress.start('Waiting for authorization');

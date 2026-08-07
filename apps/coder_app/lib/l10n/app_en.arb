@@ -867,13 +867,14 @@
   "@providerSettingsRefreshCatalog": {
     "description": "Tooltip that reloads the provider catalog."
   },
-  "providerSettingsOpenAiTitle": "OpenAI connection",
-  "@providerSettingsOpenAiTitle": {
-    "description": "Title of the OpenAI auth method sheet."
-  },
-  "providerSettingsOpenAiSubtitle": "ChatGPT sign-in is experimental and relies on the public Codex auth flow.",
-  "@providerSettingsOpenAiSubtitle": {
-    "description": "Warns that ChatGPT sign-in is experimental."
+  "providerSettingsAuthTitle": "{name} connection",
+  "@providerSettingsAuthTitle": {
+    "description": "Title of the sheet choosing how to connect one provider.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "providerSettingsExperimental": "Experimental",
   "@providerSettingsExperimental": {
@@ -1014,6 +1015,10 @@
   "providerAuthStored": "Stored credential",
   "@providerAuthStored": {
     "description": "Origin of a provider credential."
+  },
+  "providerAuthOAuth": "OAuth",
+  "@providerAuthOAuth": {
+    "description": "Credential label for a connection authorized over OAuth."
   },
   "providerAuthNone": "No credential",
   "@providerAuthNone": {
