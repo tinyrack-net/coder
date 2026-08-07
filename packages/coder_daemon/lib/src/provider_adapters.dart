@@ -14,6 +14,7 @@ final class ProviderRuntimeConfig {
     required this.apiFormat,
     required this.strictToolSchema,
     this.supportsModelDiscovery = true,
+    this.supportsPlatformRequestFields = true,
   });
 
   /// Connection identifier exposed to the agent runtime.
@@ -36,6 +37,14 @@ final class ProviderRuntimeConfig {
 
   /// Whether the endpoint supports strict tool schemas.
   final bool strictToolSchema;
+
+  /// Whether the endpoint accepts the platform-only Responses request fields.
+  ///
+  /// `service_tier` and `safety_identifier` are documented for
+  /// platform.openai.com. The ChatGPT subscription backend serves a narrower
+  /// Responses surface and answers 400 for a request that carries either, so
+  /// the model capability alone cannot decide whether to send them.
+  final bool supportsPlatformRequestFields;
 }
 
 /// Classifies model discovery failures without leaking transport exceptions.
@@ -170,7 +179,9 @@ final class OpenAICompatibleProviderFactory implements ModelProviderFactory {
       supportsReasoningEffort: supportsReasoningEffort,
       supportsImageInput: supportsImageInput,
       supportsFileInput: supportsFileInput,
-      supportsServiceTier: supportsServiceTier,
+      supportsServiceTier:
+          supportsServiceTier && config.supportsPlatformRequestFields,
+      supportsSafetyIdentifier: config.supportsPlatformRequestFields,
       strictToolSchema: config.strictToolSchema,
       additionalHeaders: <String, String>{
         if (credential is OAuthCredential) 'originator': 'tinyrack_coder',

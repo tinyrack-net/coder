@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_provider_openai/src/error_body.dart';
 import 'package:coder_provider_openai/src/sse.dart';
 import 'package:dio/dio.dart';
 
@@ -19,6 +20,7 @@ class OpenAIProviderConfig {
     this.supportsImageInput = true,
     this.supportsFileInput = true,
     this.supportsServiceTier = false,
+    this.supportsSafetyIdentifier = true,
     this.strictToolSchema = true,
     this.additionalHeaders = const <String, String>{},
   });
@@ -49,6 +51,13 @@ class OpenAIProviderConfig {
 
   /// Whether the endpoint accepts a `service_tier` request field.
   final bool supportsServiceTier;
+
+  /// Whether the endpoint accepts a `safety_identifier` request field.
+  ///
+  /// The field belongs to the platform Responses API. The ChatGPT subscription
+  /// backend serves a narrower surface and rejects the whole request when it
+  /// carries a parameter that surface does not define.
+  final bool supportsSafetyIdentifier;
 
   /// The strictToolSchema public API member.
   final bool strictToolSchema;
@@ -155,21 +164,22 @@ class OpenAIResponsesProvider implements ModelProvider {
         break;
       } on DioException catch (error) {
         if (CancelToken.isCancel(error)) throw const AgentCancelledException();
-        final body = error.response?.data;
+        final body = await decodeProviderErrorBody(error.response?.data);
+        final message = providerErrorMessage(body) ?? error.message ?? '$error';
         // An oversized prompt is rejected before the stream opens, so it has to
         // be classified here rather than among the SSE events.
-        if (isContextOverflowFailure(
-          contextOverflowCode(body),
-          body == null ? error.message ?? '$error' : '$body',
-        )) {
-          throw ModelContextOverflowException(
-            body == null ? error.message ?? '$error' : '$body',
-          );
+        if (isContextOverflowFailure(contextOverflowCode(body), message)) {
+          throw ModelContextOverflowException(message);
         }
-        lastError = error;
-        if (!_isRetryable(error) || attempt == _config.maxConnectAttempts) {
-          rethrow;
-        }
+        final retryable = _isRetryable(error);
+        // A raw DioException stringifies to its status code alone, so the
+        // rejection is restated here or the reason never reaches the turn.
+        final failure = OpenAIProviderException(
+          describeProviderFailure(error.response?.statusCode, message),
+          retryable: retryable,
+        );
+        lastError = failure;
+        if (!retryable || attempt == _config.maxConnectAttempts) throw failure;
         await Future<void>.delayed(
           Duration(milliseconds: 250 * (1 << (attempt - 1))),
         );
@@ -209,7 +219,8 @@ class OpenAIResponsesProvider implements ModelProvider {
     'stream': true,
     'store': false,
     'include': <String>['reasoning.encrypted_content'],
-    'safety_identifier': request.safetyIdentifier,
+    if (_config.supportsSafetyIdentifier)
+      'safety_identifier': request.safetyIdentifier,
   };
 
   List<Map<String, dynamic>> _responsesInput(List<ConversationItem> history) {

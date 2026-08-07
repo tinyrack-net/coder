@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_provider_openai/src/error_body.dart';
 import 'package:coder_provider_openai/src/openai_provider.dart';
 import 'package:coder_provider_openai/src/sse.dart';
 import 'package:dio/dio.dart';
@@ -55,12 +56,15 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
       yield* _modelEvents(stream, cancellation);
     } on DioException catch (error) {
       if (CancelToken.isCancel(error)) throw const AgentCancelledException();
-      final body = error.response?.data;
-      final message = body == null ? error.message ?? '$error' : '$body';
+      final body = await decodeProviderErrorBody(error.response?.data);
+      final message = providerErrorMessage(body) ?? error.message ?? '$error';
       if (isContextOverflowFailure(contextOverflowCode(body), message)) {
         throw ModelContextOverflowException(message);
       }
-      throw OpenAIProviderException(message, retryable: _isRetryable(error));
+      throw OpenAIProviderException(
+        describeProviderFailure(error.response?.statusCode, message),
+        retryable: _isRetryable(error),
+      );
     }
   }
 

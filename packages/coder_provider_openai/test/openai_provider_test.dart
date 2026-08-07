@@ -709,7 +709,89 @@ data: [DONE]
         ),
         dio: failingDio,
       ).stream(_request(), CancellationToken()).toList(),
-      throwsA(isA<DioException>()),
+      throwsA(isA<OpenAIProviderException>()),
+    );
+  });
+
+  test('both adapters report the words of a rejected stream', () async {
+    // Dio never decodes the body of a streaming response, so the adapters have
+    // to drain it themselves or the server's own explanation is lost.
+    const payload =
+        '{"error":{"message":"Unsupported parameter: \'service_tier\'.", '
+        '"type":"invalid_request_error","param":"service_tier"}}';
+    for (final build in <ModelProvider Function(Dio)>[
+      (dio) => OpenAIResponsesProvider(
+        const OpenAIProviderConfig(
+          requiresApiKey: false,
+          maxConnectAttempts: 1,
+        ),
+        dio: dio,
+      ),
+      (dio) => OpenAIChatCompletionsProvider(
+        const OpenAIProviderConfig(requiresApiKey: false),
+        dio: dio,
+      ),
+    ]) {
+      final dio = Dio()..httpClientAdapter = _StreamedStatusAdapter(payload);
+      await expectLater(
+        build(dio).stream(_request(), CancellationToken()).toList(),
+        throwsA(
+          isA<OpenAIProviderException>()
+              .having(
+                (error) => error.message,
+                'message',
+                contains("Unsupported parameter: 'service_tier'."),
+              )
+              .having((error) => error.message, 'status', contains('400')),
+        ),
+      );
+    }
+  });
+
+  test('a streamed overflow rejection is classified from its body', () async {
+    final dio = Dio()
+      ..httpClientAdapter = _StreamedStatusAdapter(
+        '{"error":{"code":"context_length_exceeded",'
+        '"message":"Your input exceeds the context window."}}',
+      );
+    await expectLater(
+      OpenAIResponsesProvider(
+        const OpenAIProviderConfig(
+          requiresApiKey: false,
+          maxConnectAttempts: 1,
+        ),
+        dio: dio,
+      ).stream(_request(), CancellationToken()).toList(),
+      throwsA(isA<ModelContextOverflowException>()),
+    );
+  });
+
+  test('the safety identifier is sent only where it is known', () async {
+    Future<Map<String, dynamic>> body({
+      required bool supportsSafetyIdentifier,
+    }) async {
+      final adapter = _RecordingAdapter(
+        'data: {"type":"response.completed","response":{"output":[]}}\n\n',
+      );
+      await OpenAIResponsesProvider(
+        OpenAIProviderConfig(
+          requiresApiKey: false,
+          supportsSafetyIdentifier: supportsSafetyIdentifier,
+        ),
+        dio: Dio()..httpClientAdapter = adapter,
+      ).stream(_request(), CancellationToken()).toList();
+      return Map<String, dynamic>.from(adapter.options!.data as Map);
+    }
+
+    expect(
+      await body(supportsSafetyIdentifier: true),
+      containsPair('safety_identifier', 'safe'),
+    );
+    // The ChatGPT subscription backend rejects the whole request when it
+    // carries a field only the platform Responses API defines.
+    expect(
+      await body(supportsSafetyIdentifier: false),
+      isNot(contains('safety_identifier')),
     );
   });
 
@@ -961,6 +1043,30 @@ final class _SequenceAdapter implements HttpClientAdapter {
     }
     return ResponseBody.fromString(fixture, 200);
   }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// Rejects every request the way a real server does: a 400 whose body arrives
+/// as an undecoded stream, because the request asked for `ResponseType.stream`.
+final class _StreamedStatusAdapter implements HttpClientAdapter {
+  _StreamedStatusAdapter(this.body);
+
+  final String body;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    body,
+    400,
+    headers: <String, List<String>>{
+      Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+    },
+  );
 
   @override
   void close({bool force = false}) {}

@@ -27,6 +27,7 @@ void main() {
           baseUrl: 'https://chatgpt.com/backend-api/codex',
           apiFormat: ProviderApiFormat.responses,
           strictToolSchema: true,
+          supportsPlatformRequestFields: false,
         ),
         credential: OAuthCredential(
           accessToken: 'access-secret',
@@ -45,6 +46,7 @@ void main() {
             const ModelRequest(
               model: 'gpt-5.6-sol',
               reasoningEffort: 'medium',
+              serviceTier: 'priority',
               instructions: 'test',
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
@@ -65,8 +67,24 @@ void main() {
         jsonEncode(adapter.options!.data),
         isNot(contains('refresh-secret')),
       );
+      // The Codex backend rejects the whole turn when it receives a field only
+      // the platform Responses API defines, even one the model supports there.
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      expect(body, isNot(contains('service_tier')));
+      expect(body, isNot(contains('safety_identifier')));
     },
   );
+
+  test('the platform runtime keeps the fields only that surface accepts', () {
+    const config = ProviderRuntimeConfig(
+      id: 'openai',
+      definitionId: 'openai',
+      baseUrl: 'https://api.openai.com/v1',
+      apiFormat: ProviderApiFormat.responses,
+      strictToolSchema: true,
+    );
+    expect(config.supportsPlatformRequestFields, isTrue);
+  });
 
   test('model discovery classifies credentials and parses model IDs', () async {
     final success = _Adapter(
