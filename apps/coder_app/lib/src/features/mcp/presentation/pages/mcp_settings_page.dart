@@ -91,7 +91,10 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
             }),
           )
         : selected == null
-        ? Center(child: TRText.inherit(l10n.mcpSettingsSelectServer))
+        ? SettingsEmptyState(
+            title: l10n.mcpSettingsSelectServer,
+            icon: const Icon(CoderIcons.extension),
+          )
         : _ServerEditor(
             key: ValueKey<String>('mcp-server-editor-${selected.config.id}'),
             hostId: widget.hostId,
@@ -867,24 +870,21 @@ class _SecretDialogState extends State<_SecretDialog> {
     return TRAlertDialog(
       key: const ValueKey<String>('mcp-secret-dialog'),
       title: TRText.inherit(l10n.mcpSettingsSecretSet),
-      content: SizedBox(
+      content: SettingsDialogForm(
         width: TRMeasurements.overlayWidthSm,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            TRTextField(
-              key: const ValueKey<String>('mcp-secret-key'),
-              controller: _key,
-              label: l10n.mcpSettingsSecretKey,
-            ),
-            TRTextField(
-              key: const ValueKey<String>('mcp-secret-value'),
-              controller: _value,
-              obscureText: true,
-              label: l10n.mcpSettingsSecretValue,
-            ),
-          ],
-        ),
+        children: <Widget>[
+          TRTextField(
+            key: const ValueKey<String>('mcp-secret-key'),
+            controller: _key,
+            label: l10n.mcpSettingsSecretKey,
+          ),
+          TRTextField(
+            key: const ValueKey<String>('mcp-secret-value'),
+            controller: _value,
+            obscureText: true,
+            label: l10n.mcpSettingsSecretValue,
+          ),
+        ],
       ),
       actions: <TRButton>[
         TRButton(

@@ -55,10 +55,9 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
       data: (value) {
         final projects = _projects(value);
         if (projects.isEmpty) {
-          return Center(
-            child: TRText(
-              AppLocalizations.of(context).projectSettingsNoProjects,
-            ),
+          return SettingsEmptyState(
+            title: AppLocalizations.of(context).projectSettingsNoProjects,
+            icon: const Icon(CoderIcons.folder),
           );
         }
         return LayoutBuilder(
@@ -94,12 +93,11 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                 ),
                 Expanded(
                   child: selected == null
-                      ? Center(
-                          child: TRText(
-                            AppLocalizations.of(
-                              context,
-                            ).projectSettingsSelectProject,
-                          ),
+                      ? SettingsEmptyState(
+                          title: AppLocalizations.of(
+                            context,
+                          ).projectSettingsSelectProject,
+                          icon: const Icon(CoderIcons.folder),
                         )
                       : _ProjectEditor(
                           key: ValueKey<String>(
@@ -256,7 +254,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   ),
                   icon: const Icon(CoderIcons.copy),
                 ),
-                const SizedBox(width: TRSpacing.small),
                 TRButton(
                   intent: TRIntent.primary,
                   onPressed: _saving ? null : _save,
