@@ -10,6 +10,9 @@ abstract interface class CliProgress {
   void succeed(String message);
 
   /// Marks the running step as failed.
+  ///
+  /// Failing a step does not end the command: a caller may report a failed
+  /// step and then continue with the next one.
   void fail(String message);
 }
 
