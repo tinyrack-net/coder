@@ -17,7 +17,7 @@ void main() {
 
   tearDown(() => root.delete(recursive: true));
 
-  File settingsFile() => File(p.join(root.path, projectSettingsFileName));
+  File settingsFile() => File(p.join(root.path, '.coder', 'config.json'));
 
   test('reports the workspace-root settings path', () {
     expect(
