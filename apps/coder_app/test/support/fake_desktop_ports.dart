@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:coder_app/src/desktop_shell.dart';
-import 'package:coder_app/src/tray_menu_model.dart';
+import 'package:coder_app/src/features/desktop/domain/tray_menu_model.dart';
+import 'package:coder_app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:flutter/foundation.dart';
 
 /// Records window control without opening a native window.

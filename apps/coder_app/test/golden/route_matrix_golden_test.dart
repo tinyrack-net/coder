@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
-import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/controller.dart';
+import 'package:coder_app/src/app/composition/app_providers.dart';
+import 'package:coder_app/src/app/router/app_router.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,19 +1,23 @@
 import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
-import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/attachment_io.dart';
-import 'package:coder_app/src/chat/chat_approval_card.dart';
-import 'package:coder_app/src/chat/chat_question_card.dart';
-import 'package:coder_app/src/chat/chat_timeline_model.dart';
-import 'package:coder_app/src/chat/chat_timeline_view.dart';
-import 'package:coder_app/src/controller.dart';
-import 'package:coder_app/src/desktop_title_bar.dart';
-import 'package:coder_app/src/external_url_opener.dart';
-import 'package:coder_app/src/host_models.dart';
-import 'package:coder_app/src/host_ports.dart';
-import 'package:coder_app/src/session_composer.dart';
+import 'package:coder_app/src/app/composition/app_providers.dart';
+import 'package:coder_app/src/app/composition/app_services.dart';
+import 'package:coder_app/src/app/platform/external_url_opener.dart';
+import 'package:coder_app/src/app/presentation/settings_page.dart';
+import 'package:coder_app/src/app/presentation/workspace_page.dart';
+import 'package:coder_app/src/features/conversation/application/chat_timeline_model.dart';
+import 'package:coder_app/src/features/conversation/application/composer_controller.dart';
+import 'package:coder_app/src/features/conversation/application/conversation_controller.dart';
+import 'package:coder_app/src/features/conversation/infrastructure/attachment_io.dart';
+import 'package:coder_app/src/features/conversation/presentation/chat_approval_card.dart';
+import 'package:coder_app/src/features/conversation/presentation/chat_question_card.dart';
+import 'package:coder_app/src/features/conversation/presentation/chat_timeline_view.dart';
+import 'package:coder_app/src/features/conversation/presentation/widgets/session_composer.dart';
+import 'package:coder_app/src/features/desktop/presentation/desktop_title_bar.dart';
+import 'package:coder_app/src/features/hosts/domain/host_models.dart';
+import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
+import 'package:coder_app/src/features/settings/domain/settings_category.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +26,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
-
 import '../support/localization.dart';
 
 void main() {

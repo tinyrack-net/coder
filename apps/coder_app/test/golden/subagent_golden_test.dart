@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
-import 'package:coder_app/src/subagents/subagent_track.dart';
-import 'package:coder_app/src/subagents/subagent_track_model.dart';
+import 'package:coder_app/src/features/conversation/application/subagent_track_model.dart';
+import 'package:coder_app/src/features/conversation/presentation/subagents/subagent_track.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 

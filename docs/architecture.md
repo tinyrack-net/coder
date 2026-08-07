@@ -39,12 +39,36 @@ coder_app -> coder_client -> coder_protocol
   recovery, bearer authentication, WebSocket RPC server, embedded isolate,
   and CLI.
 - `coder_app`: feature-scoped Riverpod `AsyncNotifier` application state,
-  typed go_router navigation, Reactive Forms settings, and adaptive Material 3
-  UI. Controllers depend only on the transport-neutral `CoderApi` port.
+  typed go_router navigation, and adaptive Tinyrack UI. Controllers depend only
+  on injected ports such as the transport-neutral `CoderApi`.
 
 Dependencies point inward through DTOs and interfaces. `coder_agent` does not
 read databases or call the network. The daemon is the only package allowed to
 combine a provider, repositories, tools, and transports.
+
+## Flutter application boundaries
+
+The Flutter client is organized by user-facing feature rather than by a global
+pages/controllers/widgets split. Each feature owns only the layers it needs:
+`application` for Riverpod state and commands, optional pure `domain` rules,
+`infrastructure` adapters, and `presentation` pages and widgets. App startup,
+provider overrides, typed routes, and cross-feature shells live under
+`lib/src/app`; feature-neutral helpers and UI composites live under
+`lib/src/shared`.
+
+Dependencies flow from presentation to application and domain. Domain code is
+framework-independent, application code cannot import Flutter widgets,
+navigation, or platform plugins, shared code cannot depend on a feature, and a
+feature cannot import another feature's page or widget. Cross-feature screen
+composition is performed by the app shell. These rules are executable in
+`ArchitectureVerifier` and run as part of `melos verify`.
+
+Riverpod controllers are the Flutter equivalent of feature stores and actions;
+they retain their `Controller` naming. The central typed router owns URL shape,
+while route targets remain feature pages or app-owned cross-feature shells.
+The app consumes `CoderApi` and `coder_protocol` DTOs directly because they are
+already transport-neutral contracts. A repository or use-case is added only
+for an app-owned source of truth or genuinely shared, multi-source logic.
 
 ## Runtime invariants
 

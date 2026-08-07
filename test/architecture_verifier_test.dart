@@ -11,7 +11,9 @@ void main() {
   test('valid application fixture depends only on an injected API', () {
     final violations = verifier.verifySource(
       package: 'coder_app',
-      path: 'apps/coder_app/lib/src/controller.dart',
+      path:
+          'apps/coder_app/lib/src/features/sessions/application/'
+          'sessions_controller.dart',
       source:
           "import 'package:coder_client/coder_client.dart';\n"
           'final CoderApi api = throw UnimplementedError();',
@@ -22,7 +24,9 @@ void main() {
   test('invalid application fixture reports imports and concrete calls', () {
     final violations = verifier.verifySource(
       package: 'coder_app',
-      path: 'apps/coder_app/lib/src/controller.dart',
+      path:
+          'apps/coder_app/lib/src/features/sessions/application/'
+          'sessions_controller.dart',
       source:
           "import 'dart:io';\n"
           "import 'package:uuid/uuid.dart';\n"
@@ -35,6 +39,69 @@ void main() {
         'application_infrastructure_import',
         'application_concrete_dependency',
       ]),
+    );
+  });
+
+  test('feature application directories enforce application rules', () {
+    final violations = verifier.verifySource(
+      package: 'coder_app',
+      path:
+          'apps/coder_app/lib/src/features/sessions/application/'
+          'sessions_controller.dart',
+      source: "import 'dart:io';\nfinal process = Process.start;",
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      containsAll(<String>[
+        'application_infrastructure_import',
+        'application_concrete_dependency',
+      ]),
+    );
+  });
+
+  test('feature presentation cannot import another feature presentation', () {
+    final violations = verifier.verifySource(
+      package: 'coder_app',
+      path:
+          'apps/coder_app/lib/src/features/sessions/presentation/'
+          'session_page.dart',
+      source: <String>[
+        "import 'package:coder_app/src/features/settings/presentation/pages/",
+        "settings_page.dart';",
+      ].join(),
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      contains('feature_presentation_dependency'),
+    );
+  });
+
+  test('shared code cannot depend on a feature', () {
+    final violations = verifier.verifySource(
+      package: 'coder_app',
+      path: 'apps/coder_app/lib/src/shared/presentation/list_row.dart',
+      source: <String>[
+        "import 'package:coder_app/src/features/workspace/domain/",
+        "workspace_selection.dart';",
+      ].join(),
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      contains('shared_feature_dependency'),
+    );
+  });
+
+  test('feature domain stays independent of framework layers', () {
+    final violations = verifier.verifySource(
+      package: 'coder_app',
+      path:
+          'apps/coder_app/lib/src/features/workspace/domain/'
+          'workspace_selection.dart',
+      source: "import 'package:flutter/widgets.dart';",
+    );
+    expect(
+      violations.map((violation) => violation.rule),
+      contains('domain_framework_dependency'),
     );
   });
 
@@ -92,8 +159,16 @@ void main() {
       // The presenter tree owns the names, the timeline builds the dedicated
       // cards, and other packages define the tools themselves.
       for (final (package, path) in const <(String, String)>[
-        ('coder_app', 'apps/coder_app/lib/src/chat/tools/apply_patch.dart'),
-        ('coder_app', 'apps/coder_app/lib/src/chat/chat_timeline_model.dart'),
+        (
+          'coder_app',
+          'apps/coder_app/lib/src/features/conversation/presentation/tools/'
+              'apply_patch.dart',
+        ),
+        (
+          'coder_app',
+          'apps/coder_app/lib/src/features/conversation/application/'
+              'chat_timeline_model.dart',
+        ),
         ('coder_agent', 'packages/coder_agent/lib/src/tools/apply_patch.dart'),
         ('coder_daemon', 'packages/coder_daemon/lib/src/built_in_tools.dart'),
       ]) {

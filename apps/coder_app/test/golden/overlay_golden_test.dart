@@ -1,16 +1,17 @@
 import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
-import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/composer_suggestions.dart';
-import 'package:coder_app/src/composer_suggestions_overlay.dart';
-import 'package:coder_app/src/composer_trigger.dart';
-import 'package:coder_app/src/controller.dart';
-import 'package:coder_app/src/host_models.dart';
-import 'package:coder_app/src/host_ports.dart';
-import 'package:coder_app/src/model_picker.dart';
-import 'package:coder_app/src/permission_picker.dart';
-import 'package:coder_app/src/session_composer.dart';
+import 'package:coder_app/src/app/coder_app.dart';
+import 'package:coder_app/src/app/composition/app_providers.dart';
+import 'package:coder_app/src/app/router/app_router.dart';
+import 'package:coder_app/src/features/conversation/application/composer_suggestions.dart';
+import 'package:coder_app/src/features/conversation/presentation/composer_trigger.dart';
+import 'package:coder_app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
+import 'package:coder_app/src/features/conversation/presentation/widgets/session_composer.dart';
+import 'package:coder_app/src/features/hosts/domain/host_models.dart';
+import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
+import 'package:coder_app/src/shared/presentation/model_picker.dart';
+import 'package:coder_app/src/shared/presentation/permission_picker.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';

@@ -1,7 +1,7 @@
-import 'package:coder_app/src/app.dart';
-import 'package:coder_app/src/app_services.dart';
-import 'package:coder_app/src/host_models.dart';
-import 'package:coder_app/src/host_ports.dart';
+import 'package:coder_app/src/app/coder_app.dart';
+import 'package:coder_app/src/app/composition/app_services.dart';
+import 'package:coder_app/src/features/hosts/domain/host_models.dart';
+import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
