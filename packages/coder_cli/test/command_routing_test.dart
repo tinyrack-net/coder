@@ -425,7 +425,11 @@ final class _FakeClient implements CoderClient, ProvidersApi, AgentsApi {
     promptEnabled: true,
     systemPrompt: 'prompt',
     model: const AgentModelSelectionDto(source: AgentModelSource.session),
-    reasoningEffort: 'medium',
+    modelControls: <String, ModelControlValueDto>{
+      'reasoning_effort': const ModelControlValueDto.stringValue(
+        value: 'medium',
+      ),
+    },
     permissionMode: PermissionMode.ask,
     toolIds: const <String>[],
     callableAgentIds: const <String>[],

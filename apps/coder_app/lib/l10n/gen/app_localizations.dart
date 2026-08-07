@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
+import 'app_localizations_ja.dart';
 import 'app_localizations_ko.dart';
 
 // ignore_for_file: type=lint
@@ -95,6 +96,7 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
+    Locale('ja'),
     Locale('ko'),
   ];
 
@@ -1363,6 +1365,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh catalog'**
   String get providerSettingsRefreshCatalog;
+
+  /// No description provided for @providerSettingsCatalogStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog metadata'**
+  String get providerSettingsCatalogStatus;
+
+  /// No description provided for @providerSettingsCatalogBundled.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundled snapshot'**
+  String get providerSettingsCatalogBundled;
+
+  /// No description provided for @providerSettingsCatalogCached.
+  ///
+  /// In en, this message translates to:
+  /// **'Last-known-good cache'**
+  String get providerSettingsCatalogCached;
+
+  /// No description provided for @providerSettingsCatalogFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently refreshed'**
+  String get providerSettingsCatalogFresh;
+
+  /// No description provided for @providerSettingsCatalogStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh due; local metadata remains available'**
+  String get providerSettingsCatalogStale;
 
   /// Section title of the daemon-wide default model.
   ///
@@ -3032,7 +3064,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'ko'].contains(locale.languageCode);
+      <String>['en', 'ja', 'ko'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -3043,6 +3075,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'en':
       return AppLocalizationsEn();
+    case 'ja':
+      return AppLocalizationsJa();
     case 'ko':
       return AppLocalizationsKo();
   }

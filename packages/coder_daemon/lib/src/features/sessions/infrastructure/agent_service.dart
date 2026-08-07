@@ -96,6 +96,16 @@ class SessionTurnCoordinator implements SessionTurnPort {
             sessionModel.providerConnectionId,
             sessionModel.modelId,
           );
+    final controls = sessionModel != null
+        ? session.modelControls
+        : definition.model.source == AgentModelSource.fixed
+        ? definition.modelControls
+        : const <String, ModelControlValueDto>{};
+    await _models.validateModelControls(
+      resolvedModel.connectionId,
+      resolvedModel.modelId,
+      controls,
+    );
     if (_activeTurns.containsKey(sessionId)) {
       throw StateError('Agent already has a running turn.');
     }
@@ -113,6 +123,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
         session: session,
         definition: definition,
         resolvedModel: resolvedModel,
+        modelControls: controls,
         worktree: worktree,
         sessionId: sessionId,
         turnId: turnId,
@@ -130,6 +141,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
     required SessionDto session,
     required AgentDefinitionDto definition,
     required ResolvedAgentModel resolvedModel,
+    required Map<String, ModelControlValueDto> modelControls,
     required WorktreeDto worktree,
     required String sessionId,
     required String turnId,
@@ -295,9 +307,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
           workspaceRoot: worktree.path,
           prompt: prompt,
           model: resolvedModel.modelId,
-          reasoningEffort:
-              session.reasoningEffort ?? definition.reasoningEffort,
-          serviceTier: session.serviceTier,
+          modelControls: agentModelControls(modelControls),
           history: history,
           attachments: turnAttachments,
           safetyIdentifier: _safetyIdentifier,
@@ -435,14 +445,22 @@ class SessionTurnCoordinator implements SessionTurnPort {
             sessionModel.providerConnectionId,
             sessionModel.modelId,
           );
+    final modelControls = sessionModel != null
+        ? session.modelControls
+        : definition.model.source == AgentModelSource.fixed
+        ? definition.modelControls
+        : const <String, ModelControlValueDto>{};
+    await _models.validateModelControls(
+      resolvedModel.connectionId,
+      resolvedModel.modelId,
+      modelControls,
+    );
     final compacted = await ConversationCompactor(resolvedModel.provider)
         .compact(
           history: history,
           target: CompactionTarget(
             model: resolvedModel.modelId,
-            reasoningEffort:
-                session.reasoningEffort ?? definition.reasoningEffort,
-            serviceTier: session.serviceTier,
+            modelControls: agentModelControls(modelControls),
             safetyIdentifier: _safetyIdentifier,
           ),
           cancellation: CancellationToken(),

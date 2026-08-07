@@ -691,6 +691,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsRefreshCatalog => 'Refresh catalog';
 
   @override
+  String get providerSettingsCatalogStatus => 'Catalog metadata';
+
+  @override
+  String get providerSettingsCatalogBundled => 'Bundled snapshot';
+
+  @override
+  String get providerSettingsCatalogCached => 'Last-known-good cache';
+
+  @override
+  String get providerSettingsCatalogFresh => 'Recently refreshed';
+
+  @override
+  String get providerSettingsCatalogStale =>
+      'Refresh due; local metadata remains available';
+
+  @override
   String get providerSettingsDefaultModelTitle => 'Default model';
 
   @override

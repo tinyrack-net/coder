@@ -681,6 +681,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsRefreshCatalog => 'Catalog 갱신';
 
   @override
+  String get providerSettingsCatalogStatus => 'Catalog 메타데이터';
+
+  @override
+  String get providerSettingsCatalogBundled => '번들된 스냅샷';
+
+  @override
+  String get providerSettingsCatalogCached => '마지막 정상 캐시';
+
+  @override
+  String get providerSettingsCatalogFresh => '최근 갱신됨';
+
+  @override
+  String get providerSettingsCatalogStale => '갱신 필요 · 로컬 메타데이터 사용 가능';
+
+  @override
   String get providerSettingsDefaultModelTitle => '기본 모델';
 
   @override

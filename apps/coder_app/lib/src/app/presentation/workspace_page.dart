@@ -971,7 +971,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                         // reachable while one is running.
                         agentEnabled: false,
                         onAgentChanged: (_) {},
-                        onModelChanged: (model) => unawaited(
+                        onModelChanged: (model, controls) => unawaited(
                           ref
                               .read(
                                 sessionsControllerProvider(
@@ -979,11 +979,13 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                                   widget.selection.worktreeId,
                                 ).notifier,
                               )
-                              .setModel(current.id, model),
+                              .setModel(current.id, model, controls),
                         ),
-                        reasoningEffort: current.reasoningEffort,
-                        onReasoningEffortChanged: (effort) => unawaited(
-                          _sessions(ref).setReasoningEffort(current.id, effort),
+                        modelControls: current.modelControls,
+                        onModelControlsChanged: (controls) => unawaited(
+                          _sessions(
+                            ref,
+                          ).setModelControls(current.id, controls),
                         ),
                         permissionMode: current.permissionMode,
                         onPermissionModeChanged: (mode) async {
@@ -991,10 +993,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                             ref,
                           ).setPermissionMode(current.id, mode);
                         },
-                        serviceTier: current.serviceTier,
-                        onServiceTierChanged: (tier) => unawaited(
-                          _sessions(ref).setServiceTier(current.id, tier),
-                        ),
                       ),
                       onModeToggled: () => unawaited(
                         _sessions(ref).setMode(

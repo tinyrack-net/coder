@@ -775,6 +775,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(worktreeModelSelector);
       await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('model-search-field')),
+        'gpt-5.6-sol',
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
@@ -833,6 +838,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(sessionModelSelector);
       await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('model-search-field')),
+        'gpt-5.6-sol',
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
@@ -865,9 +875,26 @@ void main() {
       // The real desktop runner can move primary focus while the asynchronous
       // search replaces the loading row. Restore it explicitly so Escape is
       // delivered to the composer's suggestions controller.
-      await tester.tap(find.byKey(composer));
-      await tester.pump();
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      final suggestionDismissInput = find.descendant(
+        of: find.byKey(composer),
+        matching: find.byType(EditableText),
+      );
+      for (var attempt = 0; attempt < 2; attempt += 1) {
+        await tester.tap(suggestionDismissInput);
+        await pumpUntilCondition(
+          tester,
+          () => tester
+              .widget<EditableText>(suggestionDismissInput)
+              .focusNode
+              .hasFocus,
+          'the composer to regain focus before dismissing suggestions',
+        );
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        if (find.text('파일 없음').evaluate().isEmpty) break;
+      }
       await pumpUntilGone(tester, find.text('파일 없음'));
 
       await _submitComposerPrompt(tester, composer, send, 'Delegate review');
@@ -1556,6 +1583,8 @@ void main() {
       final providerMenu = find.byKey(
         const ValueKey<String>('provider-actions-custom'),
       );
+      await tester.ensureVisible(providerMenu);
+      await tester.pumpAndSettle();
       await tester.tap(providerMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('고급 설정 편집'));
@@ -1778,11 +1807,11 @@ void main() {
       final homeCheckout = homeCatalog.worktrees.singleWhere(
         (item) => item.workspaceId == homeWorkspace.id,
       );
-      await pumpUntil(
-        tester,
-        find.byKey(const ValueKey('workspace-new-button')),
-      );
-      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      final newWorkspaceButton = find
+          .byKey(const ValueKey('workspace-new-button'))
+          .hitTestable();
+      await pumpUntil(tester, newWorkspaceButton);
+      await tester.tap(newWorkspaceButton);
       await pumpUntil(
         tester,
         find.byKey(const ValueKey('new-workspace-project')),

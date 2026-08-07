@@ -55,6 +55,7 @@ final class ProviderSettingsState {
 /// ProviderSettingsController defines a public contract.
 class ProviderSettingsController extends _$ProviderSettingsController {
   StreamSubscription<ProviderAuthAttemptDto>? _events;
+  StreamSubscription<ProviderCatalogDto>? _catalogEvents;
 
   @override
   Future<ProviderSettingsState?> build(String hostId) async {
@@ -64,7 +65,11 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     if (runtime?.connected != true) return null;
     final api = runtime!.api!;
     _events = api.providers.authUpdates.listen(_handleEvent);
-    ref.onDispose(() => unawaited(_events?.cancel()));
+    _catalogEvents = api.providers.catalogUpdates.listen(_handleCatalogEvent);
+    ref.onDispose(() {
+      unawaited(_events?.cancel());
+      unawaited(_catalogEvents?.cancel());
+    });
     final connections = await api.providers.listProviderConnections();
     final defaultModel = await api.providers.getDefaultModel();
     return ProviderSettingsState(
@@ -298,5 +303,14 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     if (attempt.status == ProviderAuthAttemptStatus.succeeded) {
       unawaited(_requireConnection().then(_reload));
     }
+  }
+
+  void _handleCatalogEvent(ProviderCatalogDto catalog) {
+    if (!ref.mounted) return;
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData<ProviderSettingsState?>(
+      current.copyWith(catalog: catalog),
+    );
   }
 }

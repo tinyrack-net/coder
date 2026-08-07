@@ -8,14 +8,13 @@ void main() {
   const source = '''
 ---
 # User comment must survive GUI edits.
-version: 2
+version: 3
 name: Reviewer
 description: Reviews code
 mode: subagent
 promptEnabled: true
 model:
   source: session
-reasoningEffort: medium
 permissionMode: readOnly
 tools:
   - read_file
@@ -142,7 +141,7 @@ Review the requested code without modifying it.
       'name: no-frontmatter',
       '---\nname: unclosed',
       '---\n- not\n- a-map\n---\n',
-      source.replaceFirst('version: 2', 'version: 1'),
+      source.replaceFirst('version: 3', 'version: 1'),
       source.replaceFirst('mode: subagent', 'mode: unknown'),
       source
           .replaceFirst('mode: subagent', 'mode: subagent')
@@ -155,8 +154,11 @@ Review the requested code without modifying it.
       source.replaceFirst('name: Reviewer\n', ''),
       source.replaceFirst('promptEnabled: true', 'promptEnabled: yes'),
       source.replaceFirst('tools:\n  - read_file\n  - future_tool', 'tools: 4'),
-      source.replaceFirst('version: 2', 'version: one'),
-      source.replaceFirst('reasoningEffort: medium', 'reasoningEffort: []'),
+      source.replaceFirst('version: 3', 'version: one'),
+      source.replaceFirst(
+        'permissionMode: readOnly',
+        'modelControls: []\npermissionMode: readOnly',
+      ),
       source.replaceFirst('permissionMode: readOnly', 'permissionMode: root'),
       source.replaceFirst('name: Reviewer', '1: invalid-key'),
     ];

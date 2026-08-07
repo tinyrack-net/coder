@@ -115,6 +115,20 @@ String? contextOverflowCode(Object? body) {
   return code is String ? code : null;
 }
 
+/// Reads a string-valued provider control.
+String? modelControlString(ModelRequest request, String id) =>
+    switch (request.modelControls[id]) {
+      AgentModelControlStringValue(:final value) => value,
+      _ => null,
+    };
+
+/// Reads a boolean-valued provider control.
+bool? modelControlBool(ModelRequest request, String id) =>
+    switch (request.modelControls[id]) {
+      AgentModelControlBoolValue(:final value) => value,
+      _ => null,
+    };
+
 /// OpenAIResponsesProvider defines a public contract.
 class OpenAIResponsesProvider implements ModelProvider {
   /// Creates a [OpenAIResponsesProvider].
@@ -195,10 +209,22 @@ class OpenAIResponsesProvider implements ModelProvider {
     'model': request.model,
     'instructions': request.instructions,
     'input': _responsesInput(request.history),
-    if (_config.supportsReasoningEffort)
-      'reasoning': <String, dynamic>{'effort': request.reasoningEffort},
-    if (_config.supportsServiceTier && request.serviceTier != null)
-      'service_tier': request.serviceTier,
+    if (_config.supportsReasoningEffort &&
+        modelControlString(request, AgentModelControlIds.reasoningEffort) !=
+            null)
+      'reasoning': <String, dynamic>{
+        'effort': modelControlString(
+          request,
+          AgentModelControlIds.reasoningEffort,
+        ),
+        'mode': ?modelControlString(
+          request,
+          AgentModelControlIds.reasoningMode,
+        ),
+      },
+    if (_config.supportsServiceTier &&
+        modelControlBool(request, AgentModelControlIds.fastMode) == true)
+      'service_tier': 'priority',
     'tools': request.tools
         .map(
           (tool) => <String, dynamic>{

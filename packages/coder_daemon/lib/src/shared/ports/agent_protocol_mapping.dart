@@ -42,14 +42,9 @@ AgentModelCapabilities agentCapabilities(ModelCapabilitiesDto value) =>
     AgentModelCapabilities(
       streaming: AgentCapabilitySupport.values.byName(value.streaming.name),
       toolCalling: AgentCapabilitySupport.values.byName(value.toolCalling.name),
-      reasoningEffort: AgentCapabilitySupport.values.byName(
-        value.reasoningEffort.name,
-      ),
       imageInput: AgentCapabilitySupport.values.byName(value.imageInput.name),
       fileInput: AgentCapabilitySupport.values.byName(value.fileInput.name),
-      serviceTier: AgentCapabilitySupport.values.byName(value.serviceTier.name),
-      supportedReasoningEfforts: value.supportedReasoningEfforts,
-      supportedServiceTiers: value.supportedServiceTiers,
+      controls: value.controls.map(agentControlDescriptor).toList(),
       source: AgentCapabilitySource.values.byName(value.source.name),
     );
 
@@ -58,16 +53,93 @@ ModelCapabilitiesDto protocolCapabilities(AgentModelCapabilities value) =>
     ModelCapabilitiesDto(
       streaming: CapabilitySupport.values.byName(value.streaming.name),
       toolCalling: CapabilitySupport.values.byName(value.toolCalling.name),
-      reasoningEffort: CapabilitySupport.values.byName(
-        value.reasoningEffort.name,
-      ),
       imageInput: CapabilitySupport.values.byName(value.imageInput.name),
       fileInput: CapabilitySupport.values.byName(value.fileInput.name),
-      serviceTier: CapabilitySupport.values.byName(value.serviceTier.name),
-      supportedReasoningEfforts: value.supportedReasoningEfforts,
-      supportedServiceTiers: value.supportedServiceTiers,
+      controls: value.controls.map(protocolControlDescriptor).toList(),
       source: CapabilitySource.values.byName(value.source.name),
     );
+
+/// Converts a protocol control descriptor to the agent domain.
+AgentModelControlDescriptor agentControlDescriptor(
+  ModelControlDescriptorDto value,
+) => AgentModelControlDescriptor(
+  id: value.id,
+  label: value.label,
+  kind: AgentModelControlKind.values.byName(value.kind.name),
+  presentation: AgentModelControlPresentation.values.byName(
+    value.presentation.name,
+  ),
+  description: value.description,
+  choices: <AgentModelControlChoice>[
+    for (final choice in value.choices)
+      AgentModelControlChoice(
+        id: choice.id,
+        label: choice.label,
+        description: choice.description,
+      ),
+  ],
+  minimum: value.minimum,
+  maximum: value.maximum,
+  step: value.step,
+  conflictsWith: value.conflictsWith,
+);
+
+/// Converts an agent control descriptor to the protocol contract.
+ModelControlDescriptorDto protocolControlDescriptor(
+  AgentModelControlDescriptor value,
+) => ModelControlDescriptorDto(
+  id: value.id,
+  label: value.label,
+  kind: ModelControlKind.values.byName(value.kind.name),
+  presentation: ModelControlPresentation.values.byName(value.presentation.name),
+  description: value.description,
+  choices: <ModelControlChoiceDto>[
+    for (final choice in value.choices)
+      ModelControlChoiceDto(
+        id: choice.id,
+        label: choice.label,
+        description: choice.description,
+      ),
+  ],
+  minimum: value.minimum,
+  maximum: value.maximum,
+  step: value.step,
+  conflictsWith: value.conflictsWith,
+);
+
+/// Converts protocol model-control values to the provider-neutral domain.
+Map<String, AgentModelControlValue> agentModelControls(
+  Map<String, ModelControlValueDto> values,
+) => <String, AgentModelControlValue>{
+  for (final entry in values.entries)
+    entry.key: switch (entry.value) {
+      ModelControlStringValueDto(:final value) => AgentModelControlStringValue(
+        value: value,
+      ),
+      ModelControlBoolValueDto(:final value) => AgentModelControlBoolValue(
+        value: value,
+      ),
+      ModelControlIntValueDto(:final value) => AgentModelControlIntValue(
+        value: value,
+      ),
+    },
+};
+
+/// Converts provider-neutral model-control values to protocol DTOs.
+Map<String, ModelControlValueDto> protocolModelControls(
+  Map<String, AgentModelControlValue> values,
+) => <String, ModelControlValueDto>{
+  for (final entry in values.entries)
+    entry.key: switch (entry.value) {
+      AgentModelControlStringValue(:final value) =>
+        ModelControlValueDto.stringValue(value: value),
+      AgentModelControlBoolValue(:final value) =>
+        ModelControlValueDto.boolValue(value: value),
+      AgentModelControlIntValue(:final value) => ModelControlValueDto.intValue(
+        value: value,
+      ),
+    },
+};
 
 /// Converts optional pricing to the protocol contract.
 ModelPricingDto? protocolPricing(AgentModelPricing? value) => value == null

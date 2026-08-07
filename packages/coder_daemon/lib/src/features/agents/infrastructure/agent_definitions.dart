@@ -593,7 +593,6 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
       'You are a coding agent. Read relevant code before editing and validate '
       'your work.',
   model: const AgentModelSelectionDto(source: AgentModelSource.session),
-  reasoningEffort: 'medium',
   // The read tools are always on, so only the opt-in ones are listed here.
   toolIds: const <String>['apply_patch', 'exec_command'],
   callableAgentIds: const <String>[],
@@ -859,7 +858,7 @@ final class AgentMarkdownCodec {
       throw const FormatException('Agent frontmatter must be a YAML map.');
     }
     final frontmatter = _stringMap(decoded);
-    if (_requiredInt(frontmatter, 'version') != 2) {
+    if (_requiredInt(frontmatter, 'version') != 3) {
       throw const FormatException('Unsupported agent Markdown version.');
     }
     final mode = _enumValue(
@@ -884,6 +883,12 @@ final class AgentMarkdownCodec {
         'Fixed agent models require providerConnectionId and modelId.',
       );
     }
+    final modelControls = _modelControls(frontmatter['modelControls']);
+    if (modelSource != AgentModelSource.fixed && modelControls.isNotEmpty) {
+      throw const FormatException(
+        'Only fixed agent models may declare modelControls.',
+      );
+    }
     final callableAgentIds = _stringList(frontmatter, 'callableAgents');
     if (mode == AgentMode.subagent && callableAgentIds.isNotEmpty) {
       throw const FormatException('Subagents cannot call other agents.');
@@ -901,7 +906,7 @@ final class AgentMarkdownCodec {
         providerConnectionId: providerConnectionId,
         modelId: modelId,
       ),
-      reasoningEffort: _requiredString(frontmatter, 'reasoningEffort'),
+      modelControls: modelControls,
       permissionMode: permissionMode == null
           ? null
           : _enumValue(
@@ -925,13 +930,16 @@ final class AgentMarkdownCodec {
   }) {
     final document = _AgentMarkdownDocument.parse(originalSource);
     final editor = YamlEditor(document.frontmatter)
-      ..update(<Object>['version'], 2)
+      ..update(<Object>['version'], 3)
       ..update(<Object>['name'], definition.name)
       ..update(<Object>['description'], definition.description)
       ..update(<Object>['mode'], definition.mode.name)
       ..update(<Object>['promptEnabled'], definition.promptEnabled)
       ..update(<Object>['model'], _modelMap(definition.model))
-      ..update(<Object>['reasoningEffort'], definition.reasoningEffort)
+      ..update(
+        <Object>['modelControls'],
+        _encodedModelControls(definition.modelControls),
+      )
       ..update(<Object>['tools'], definition.toolIds)
       ..update(<Object>['callableAgents'], definition.callableAgentIds);
     if (definition.permissionMode case final permissionMode?) {
@@ -948,13 +956,13 @@ final class AgentMarkdownCodec {
   String encodeNew(AgentDefinitionDto definition) {
     final editor = YamlEditor('')
       ..update(<Object>[], <String, Object?>{
-        'version': 2,
+        'version': 3,
         'name': definition.name,
         'description': definition.description,
         'mode': definition.mode.name,
         'promptEnabled': definition.promptEnabled,
         'model': _modelMap(definition.model),
-        'reasoningEffort': definition.reasoningEffort,
+        'modelControls': _encodedModelControls(definition.modelControls),
         if (definition.permissionMode case final permissionMode?)
           'permissionMode': permissionMode.name,
         'tools': definition.toolIds,
@@ -969,6 +977,17 @@ final class AgentMarkdownCodec {
         'providerConnectionId': ?model.providerConnectionId,
         'modelId': ?model.modelId,
       };
+
+  static Map<String, Object> _encodedModelControls(
+    Map<String, ModelControlValueDto> controls,
+  ) => <String, Object>{
+    for (final entry in controls.entries)
+      entry.key: switch (entry.value) {
+        ModelControlStringValueDto(:final value) => value,
+        ModelControlBoolValueDto(:final value) => value,
+        ModelControlIntValueDto(:final value) => value,
+      },
+  };
 }
 
 final class _AgentMarkdownDocument {
@@ -1028,6 +1047,24 @@ Object? _plainValue(Object? value) => switch (value) {
   YamlList() => value.nodes.map((node) => _plainValue(node.value)).toList(),
   _ => value,
 };
+
+Map<String, ModelControlValueDto> _modelControls(Object? value) {
+  if (value == null) return const <String, ModelControlValueDto>{};
+  if (value is! Map<String, Object?>) {
+    throw const FormatException('modelControls must be a map.');
+  }
+  return <String, ModelControlValueDto>{
+    for (final entry in value.entries)
+      entry.key: switch (entry.value) {
+        final String item => ModelControlValueDto.stringValue(value: item),
+        final bool item => ModelControlValueDto.boolValue(value: item),
+        final int item => ModelControlValueDto.intValue(value: item),
+        _ => throw FormatException(
+          'modelControls.${entry.key} must be a string, bool, or int.',
+        ),
+      },
+  };
+}
 
 Map<String, Object?> _requiredMap(Map<String, Object?> map, String key) {
   final value = map[key];

@@ -109,6 +109,8 @@ class CoderClient
       StreamController<void>.broadcast();
   final StreamController<ProviderAuthAttemptDto> _providerAuthUpdates =
       StreamController<ProviderAuthAttemptDto>.broadcast();
+  final StreamController<ProviderCatalogDto> _providerCatalogUpdates =
+      StreamController<ProviderCatalogDto>.broadcast();
   final StreamController<void> _mcpChanges = StreamController<void>.broadcast();
   final StreamController<TerminalOutputDto> _terminalOutput =
       StreamController<TerminalOutputDto>.broadcast();
@@ -175,6 +177,10 @@ class CoderClient
 
   @override
   Stream<ProviderAuthAttemptDto> get authUpdates => _providerAuthUpdates.stream;
+
+  @override
+  Stream<ProviderCatalogDto> get catalogUpdates =>
+      _providerCatalogUpdates.stream;
 
   @override
   Stream<void> get serverChanges => _mcpChanges.stream;
@@ -298,6 +304,10 @@ class CoderClient
         case final name when name == providersAuthUpdatedNotification.name:
           _providerAuthUpdates.add(
             providersAuthUpdatedNotification.decode(parameters),
+          );
+        case final name when name == providersCatalogUpdatedNotification.name:
+          _providerCatalogUpdates.add(
+            providersCatalogUpdatedNotification.decode(parameters),
           );
         case final name when name == terminalsOutputNotification.name:
           final output = terminalsOutputNotification.decode(parameters);
@@ -560,9 +570,9 @@ class CoderClient
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
-    String? reasoningEffort,
+    Map<String, ModelControlValueDto> modelControls =
+        const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
-    String? serviceTier,
   }) async {
     final response = await _call(
       sessionsCreateProcedure,
@@ -573,9 +583,8 @@ class CoderClient
         agentDefinitionId: agentDefinitionId,
         mode: mode,
         model: model,
-        reasoningEffort: reasoningEffort,
+        modelControls: modelControls,
         permissionMode: permissionMode,
-        serviceTier: serviceTier,
       ),
     );
     return response.session;
@@ -1301,6 +1310,7 @@ class CoderClient
       _skillChanges.close(),
       _commandChanges.close(),
       _providerAuthUpdates.close(),
+      _providerCatalogUpdates.close(),
       _mcpChanges.close(),
       _terminalOutput.close(),
       _terminalUpdates.close(),
