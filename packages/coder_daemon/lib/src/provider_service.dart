@@ -710,6 +710,7 @@ final class ProviderService implements ProviderOAuthConnector {
         apiFormat: ProviderApiFormat.responses,
         strictToolSchema: true,
         supportsModelDiscovery: false,
+        supportsPlatformRequestFields: false,
       );
     }
     return ProviderRuntimeConfig(

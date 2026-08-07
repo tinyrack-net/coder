@@ -6,6 +6,7 @@ import 'package:coder_daemon/src/provider_catalog.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -302,6 +303,16 @@ void main() {
       expect(fixture.refresher.calls, 1);
       expect(fixture.factory.lastCredential, same(rotated));
       expect(fixture.credentials.values['openai'], same(rotated));
+      // The subscription backend answers 400 for `service_tier` and
+      // `safety_identifier`, so the narrower surface has to be resolved here
+      // rather than inferred from the bundled model capabilities.
+      final config = fixture.factory.lastConfig!;
+      expect(config.baseUrl, 'https://chatgpt.com/backend-api/codex');
+      expect(config.supportsPlatformRequestFields, isFalse);
+      expect(
+        catalogCapabilities('openai', 'gpt-5.6-sol').serviceTier,
+        CapabilitySupport.supported,
+      );
     },
   );
 
