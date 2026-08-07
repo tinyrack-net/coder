@@ -1640,7 +1640,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('session-composer-permission-readOnly')),
+        find.byKey(const ValueKey('permission-option-readOnly')),
       );
       await tester.pumpAndSettle();
 
@@ -1677,7 +1677,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('session-composer-permission-inherit')),
+        find.byKey(const ValueKey('permission-option-inherit')),
       );
       await tester.pumpAndSettle();
       expect(api.updatedSessionPermissionModes.single.permissionMode, isNull);
@@ -1700,6 +1700,52 @@ void main() {
       );
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'a running chat restores permission and reports a daemon save failure',
+    (tester) async {
+      final running = session('running').copyWith(
+        status: SessionStatus.running,
+        permissionMode: PermissionMode.ask,
+      );
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[running],
+        sessionPermissionSetError: Exception('daemon rejected update'),
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-permission')),
+      );
+      await tester.pumpAndSettle();
+      final fullAccess = find.byKey(
+        const ValueKey('permission-option-fullAccess'),
+      );
+      await tester.ensureVisible(fullAccess);
+      await tester.tap(fullAccess);
+      await tester.pumpAndSettle();
+
+      expect(find.text('변경 전 확인'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('session-composer-permission-error')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__permission_settings__widget'],
   );
 
   testWidgets(

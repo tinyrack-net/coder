@@ -185,6 +185,9 @@ enum PermissionMode {
 
   /// Allows workspace file writes but asks before commands.
   workspaceWrite,
+
+  /// Allows every tool without asking for approval.
+  fullAccess,
 }
 
 /// Values supported by ApprovalStatus.
@@ -655,11 +658,11 @@ abstract class AgentDefinitionDto with _$AgentDefinitionDto {
     required String systemPrompt,
     required AgentModelSelectionDto model,
     required String reasoningEffort,
-    required PermissionMode permissionMode,
     required List<String> toolIds,
     required List<String> callableAgentIds,
     required String contentHash,
     required String sourcePath,
+    PermissionMode? permissionMode,
     @Default(false) bool isBuiltIn,
     @Default(false) bool isArchived,
     @Default(false) bool isStale,

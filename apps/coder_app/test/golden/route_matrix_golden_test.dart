@@ -81,6 +81,10 @@ void main() {
       location: const AgentSettingsRoute(hostId: 'server').location,
     ),
     (
+      name: 'permission_settings',
+      location: const PermissionSettingsRoute(hostId: 'server').location,
+    ),
+    (
       name: 'skill_settings',
       location: const SkillSettingsRoute(hostId: 'server').location,
     ),

@@ -266,6 +266,12 @@ abstract class AppLocalizations {
   /// **'Provider'**
   String get settingsCategoryProvider;
 
+  /// Settings sidebar entry for daemon permission defaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get settingsCategoryPermission;
+
   /// Settings sidebar entry for daemon connections.
   ///
   /// In en, this message translates to:
@@ -1751,14 +1757,92 @@ abstract class AppLocalizations {
   /// Permission mode asking before every mutation.
   ///
   /// In en, this message translates to:
-  /// **'Ask'**
+  /// **'Ask before changes'**
   String get composerPermissionAsk;
 
   /// Permission mode allowing workspace writes without asking.
   ///
   /// In en, this message translates to:
-  /// **'Write workspace'**
+  /// **'Workspace access'**
   String get composerPermissionWorkspaceWrite;
+
+  /// No description provided for @composerPermissionFullAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Full access'**
+  String get composerPermissionFullAccess;
+
+  /// No description provided for @permissionPickerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what the agent may do without asking.'**
+  String get permissionPickerDescription;
+
+  /// No description provided for @permissionDescriptionReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Can read files. File changes, commands, and write-capable external tools are blocked.'**
+  String get permissionDescriptionReadOnly;
+
+  /// No description provided for @permissionDescriptionAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads without asking. Asks before file changes, commands, and write-capable external tools.'**
+  String get permissionDescriptionAsk;
+
+  /// No description provided for @permissionDescriptionWorkspaceWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Can read and edit workspace files. Asks before commands and write-capable external tools.'**
+  String get permissionDescriptionWorkspaceWrite;
+
+  /// No description provided for @permissionDescriptionFullAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs file changes, commands, and external tools without asking. Use only for trusted work.'**
+  String get permissionDescriptionFullAccess;
+
+  /// No description provided for @permissionSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get permissionSettingsTitle;
+
+  /// No description provided for @permissionSettingsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Default permissions'**
+  String get permissionSettingsSection;
+
+  /// No description provided for @permissionSettingsSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents that do not choose their own permissions inherit this daemon default.'**
+  String get permissionSettingsSectionDescription;
+
+  /// No description provided for @permissionSettingsChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change default permissions'**
+  String get permissionSettingsChange;
+
+  /// No description provided for @permissionSettingsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update default permissions'**
+  String get permissionSettingsSaveFailed;
+
+  /// No description provided for @permissionChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change permissions'**
+  String get permissionChangeFailed;
+
+  /// No description provided for @permissionSettingsDaemonDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon default'**
+  String get permissionSettingsDaemonDefault;
 
   /// Label of the composer fast mode toggle.
   ///

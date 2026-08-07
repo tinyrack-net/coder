@@ -4200,7 +4200,7 @@ as int?,
 /// @nodoc
 mixin _$AgentDefinitionDto {
 
- String get id; String get name; String get description; AgentMode get mode; bool get promptEnabled; String get systemPrompt; AgentModelSelectionDto get model; String get reasoningEffort; PermissionMode get permissionMode; List<String> get toolIds; List<String> get callableAgentIds; String get contentHash; String get sourcePath; bool get isBuiltIn; bool get isArchived; bool get isStale; List<AgentDefinitionDiagnosticDto> get diagnostics;
+ String get id; String get name; String get description; AgentMode get mode; bool get promptEnabled; String get systemPrompt; AgentModelSelectionDto get model; String get reasoningEffort; List<String> get toolIds; List<String> get callableAgentIds; String get contentHash; String get sourcePath; PermissionMode? get permissionMode; bool get isBuiltIn; bool get isArchived; bool get isStale; List<AgentDefinitionDiagnosticDto> get diagnostics;
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4213,16 +4213,16 @@ $AgentDefinitionDtoCopyWith<AgentDefinitionDto> get copyWith => _$AgentDefinitio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&const DeepCollectionEquality().equals(other.toolIds, toolIds)&&const DeepCollectionEquality().equals(other.callableAgentIds, callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&const DeepCollectionEquality().equals(other.toolIds, toolIds)&&const DeepCollectionEquality().equals(other.callableAgentIds, callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,model,reasoningEffort,permissionMode,const DeepCollectionEquality().hash(toolIds),const DeepCollectionEquality().hash(callableAgentIds),contentHash,sourcePath,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(diagnostics));
+int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,model,reasoningEffort,const DeepCollectionEquality().hash(toolIds),const DeepCollectionEquality().hash(callableAgentIds),contentHash,sourcePath,permissionMode,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(diagnostics));
 
 @override
 String toString() {
-  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
+  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, model: $model, reasoningEffort: $reasoningEffort, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, permissionMode: $permissionMode, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
 }
 
 
@@ -4233,7 +4233,7 @@ abstract mixin class $AgentDefinitionDtoCopyWith<$Res>  {
   factory $AgentDefinitionDtoCopyWith(AgentDefinitionDto value, $Res Function(AgentDefinitionDto) _then) = _$AgentDefinitionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, AgentModelSelectionDto model, String reasoningEffort, PermissionMode permissionMode, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
+ String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, AgentModelSelectionDto model, String reasoningEffort, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, PermissionMode? permissionMode, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
 });
 
 
@@ -4250,7 +4250,7 @@ class _$AgentDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? model = null,Object? reasoningEffort = null,Object? permissionMode = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? model = null,Object? reasoningEffort = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? permissionMode = freezed,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -4260,12 +4260,12 @@ as AgentMode,promptEnabled: null == promptEnabled ? _self.promptEnabled : prompt
 as bool,systemPrompt: null == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
 as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as AgentModelSelectionDto,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String,permissionMode: null == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode,toolIds: null == toolIds ? _self.toolIds : toolIds // ignore: cast_nullable_to_non_nullable
+as String,toolIds: null == toolIds ? _self.toolIds : toolIds // ignore: cast_nullable_to_non_nullable
 as List<String>,callableAgentIds: null == callableAgentIds ? _self.callableAgentIds : callableAgentIds // ignore: cast_nullable_to_non_nullable
 as List<String>,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
 as String,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
-as String,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
+as String,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,isStale: null == isStale ? _self.isStale : isStale // ignore: cast_nullable_to_non_nullable
 as bool,diagnostics: null == diagnostics ? _self.diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
@@ -4363,10 +4363,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  String reasoningEffort,  PermissionMode permissionMode,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  String reasoningEffort,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.reasoningEffort,_that.permissionMode,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.reasoningEffort,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   return orElse();
 
 }
@@ -4384,10 +4384,10 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  String reasoningEffort,  PermissionMode permissionMode,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  String reasoningEffort,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)  $default,) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto():
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.reasoningEffort,_that.permissionMode,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.reasoningEffort,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -4404,10 +4404,10 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  String reasoningEffort,  PermissionMode permissionMode,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  String reasoningEffort,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.reasoningEffort,_that.permissionMode,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.reasoningEffort,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   return null;
 
 }
@@ -4419,7 +4419,7 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 @JsonSerializable()
 
 class _AgentDefinitionDto implements AgentDefinitionDto {
-  const _AgentDefinitionDto({required this.id, required this.name, required this.description, required this.mode, required this.promptEnabled, required this.systemPrompt, required this.model, required this.reasoningEffort, required this.permissionMode, required final  List<String> toolIds, required final  List<String> callableAgentIds, required this.contentHash, required this.sourcePath, this.isBuiltIn = false, this.isArchived = false, this.isStale = false, final  List<AgentDefinitionDiagnosticDto> diagnostics = const <AgentDefinitionDiagnosticDto>[]}): _toolIds = toolIds,_callableAgentIds = callableAgentIds,_diagnostics = diagnostics;
+  const _AgentDefinitionDto({required this.id, required this.name, required this.description, required this.mode, required this.promptEnabled, required this.systemPrompt, required this.model, required this.reasoningEffort, required final  List<String> toolIds, required final  List<String> callableAgentIds, required this.contentHash, required this.sourcePath, this.permissionMode, this.isBuiltIn = false, this.isArchived = false, this.isStale = false, final  List<AgentDefinitionDiagnosticDto> diagnostics = const <AgentDefinitionDiagnosticDto>[]}): _toolIds = toolIds,_callableAgentIds = callableAgentIds,_diagnostics = diagnostics;
   factory _AgentDefinitionDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionDtoFromJson(json);
 
 @override final  String id;
@@ -4430,7 +4430,6 @@ class _AgentDefinitionDto implements AgentDefinitionDto {
 @override final  String systemPrompt;
 @override final  AgentModelSelectionDto model;
 @override final  String reasoningEffort;
-@override final  PermissionMode permissionMode;
  final  List<String> _toolIds;
 @override List<String> get toolIds {
   if (_toolIds is EqualUnmodifiableListView) return _toolIds;
@@ -4447,6 +4446,7 @@ class _AgentDefinitionDto implements AgentDefinitionDto {
 
 @override final  String contentHash;
 @override final  String sourcePath;
+@override final  PermissionMode? permissionMode;
 @override@JsonKey() final  bool isBuiltIn;
 @override@JsonKey() final  bool isArchived;
 @override@JsonKey() final  bool isStale;
@@ -4471,16 +4471,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&const DeepCollectionEquality().equals(other._toolIds, _toolIds)&&const DeepCollectionEquality().equals(other._callableAgentIds, _callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&const DeepCollectionEquality().equals(other._toolIds, _toolIds)&&const DeepCollectionEquality().equals(other._callableAgentIds, _callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,model,reasoningEffort,permissionMode,const DeepCollectionEquality().hash(_toolIds),const DeepCollectionEquality().hash(_callableAgentIds),contentHash,sourcePath,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(_diagnostics));
+int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,model,reasoningEffort,const DeepCollectionEquality().hash(_toolIds),const DeepCollectionEquality().hash(_callableAgentIds),contentHash,sourcePath,permissionMode,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(_diagnostics));
 
 @override
 String toString() {
-  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
+  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, model: $model, reasoningEffort: $reasoningEffort, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, permissionMode: $permissionMode, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
 }
 
 
@@ -4491,7 +4491,7 @@ abstract mixin class _$AgentDefinitionDtoCopyWith<$Res> implements $AgentDefinit
   factory _$AgentDefinitionDtoCopyWith(_AgentDefinitionDto value, $Res Function(_AgentDefinitionDto) _then) = __$AgentDefinitionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, AgentModelSelectionDto model, String reasoningEffort, PermissionMode permissionMode, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
+ String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, AgentModelSelectionDto model, String reasoningEffort, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, PermissionMode? permissionMode, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
 });
 
 
@@ -4508,7 +4508,7 @@ class __$AgentDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? model = null,Object? reasoningEffort = null,Object? permissionMode = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? model = null,Object? reasoningEffort = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? permissionMode = freezed,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
   return _then(_AgentDefinitionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -4518,12 +4518,12 @@ as AgentMode,promptEnabled: null == promptEnabled ? _self.promptEnabled : prompt
 as bool,systemPrompt: null == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
 as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as AgentModelSelectionDto,reasoningEffort: null == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String,permissionMode: null == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode,toolIds: null == toolIds ? _self._toolIds : toolIds // ignore: cast_nullable_to_non_nullable
+as String,toolIds: null == toolIds ? _self._toolIds : toolIds // ignore: cast_nullable_to_non_nullable
 as List<String>,callableAgentIds: null == callableAgentIds ? _self._callableAgentIds : callableAgentIds // ignore: cast_nullable_to_non_nullable
 as List<String>,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
 as String,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
-as String,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
+as String,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,isStale: null == isStale ? _self.isStale : isStale // ignore: cast_nullable_to_non_nullable
 as bool,diagnostics: null == diagnostics ? _self._diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable

@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
 
-  test('protocol v20 exposes terminals and existing typed contracts', () {
-    expect(coderProtocolVersion, 20);
+  test('protocol v21 exposes permission defaults and typed contracts', () {
+    expect(coderProtocolVersion, 21);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.workspaceRefresh, 'workspace.refresh');
     expect(RpcMethod.workspaceUnregister, 'workspace.unregister');
@@ -18,6 +18,8 @@ void main() {
     expect(RpcMethod.worktreeArchive, 'worktree.archive');
     expect(RpcMethod.projectSettingsGet, 'project.settings.get');
     expect(RpcMethod.projectSettingsSave, 'project.settings.save');
+    expect(RpcMethod.permissionDefaultModeGet, 'permission.defaultMode.get');
+    expect(RpcMethod.permissionDefaultModeSet, 'permission.defaultMode.set');
     expect(RpcMethod.agentDefinitionList, 'agentDefinition.list');
     expect(RpcMethod.agentDefinitionUpdate, 'agentDefinition.update');
     expect(RpcMethod.agentToolCatalog, 'agentTool.catalog');
@@ -42,6 +44,21 @@ void main() {
     expect(RpcMethod.sessionPermissionModeSet, 'session.permissionMode.set');
     expect(RpcMethod.sessionServiceTierSet, 'session.serviceTier.set');
   });
+
+  test(
+    'daemon permission defaults round-trip with full access',
+    () {
+      const settings = PermissionSettingsDto(
+        defaultMode: PermissionMode.fullAccess,
+      );
+      expect(
+        PermissionSettingsDto.fromJson(settings.toJson()),
+        settings,
+      );
+      expect(const PermissionSettingsDto().defaultMode, PermissionMode.ask);
+    },
+    tags: const <String>['feature_test__permission_settings__contract'],
+  );
 
   test('session collaboration modes round-trip', () {
     final planning = SessionDto(
@@ -684,7 +701,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolVersion, 20);
+    expect(coderProtocolVersion, 21);
     expect(RpcMethod.workspaceCatalog, 'workspace.catalog');
     expect(RpcMethod.sessionCreate, 'session.create');
     expect(RpcMethod.sessionModelSet, 'session.model.set');
@@ -694,6 +711,8 @@ void main() {
       'session.reasoningEffort.set',
     );
     expect(RpcMethod.sessionPermissionModeSet, 'session.permissionMode.set');
+    expect(RpcMethod.permissionDefaultModeGet, 'permission.defaultMode.get');
+    expect(RpcMethod.permissionDefaultModeSet, 'permission.defaultMode.set');
     expect(RpcMethod.sessionServiceTierSet, 'session.serviceTier.set');
     expect(RpcMethod.providerCatalog, 'provider.catalog');
     expect(RpcMethod.providerAuthStart, 'provider.auth.start');

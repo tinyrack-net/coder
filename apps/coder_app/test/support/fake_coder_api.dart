@@ -45,6 +45,9 @@ final class FakeCoderApi implements CoderApi {
     List<AgentCommandDto>? commands,
     this.searchFilesGate,
     this.searchFilesError,
+    this.defaultPermissionSetError,
+    this.sessionPermissionSetError,
+    this._defaultPermissionMode = PermissionMode.ask,
   }) : mcpListResponses =
            mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
        directories = directories ?? const <String, List<String>>{},
@@ -209,6 +212,16 @@ final class FakeCoderApi implements CoderApi {
 
   /// Daemon-global default model saved through the provider settings API.
   SessionModelSelectionDto? get defaultModel => _defaultModel;
+  PermissionMode _defaultPermissionMode;
+
+  /// Error thrown when the daemon-global permission default is saved.
+  final Exception? defaultPermissionSetError;
+
+  /// Error thrown when a chat permission override is saved.
+  final Exception? sessionPermissionSetError;
+
+  /// Daemon-global default permission mode.
+  PermissionMode get defaultPermissionMode => _defaultPermissionMode;
   final List<AgentDefinitionDto> _agentDefinitions;
   final List<SkillDto> _skills;
   final List<SkillDto> _projectSkills;
@@ -732,6 +745,7 @@ final class FakeCoderApi implements CoderApi {
     String sessionId,
     PermissionMode? permissionMode,
   ) async {
+    if (sessionPermissionSetError case final error?) throw error;
     updatedSessionPermissionModes.add((
       sessionId: sessionId,
       permissionMode: permissionMode,
@@ -740,6 +754,19 @@ final class FakeCoderApi implements CoderApi {
       sessionId,
       (session) => session.copyWith(permissionMode: permissionMode),
     );
+  }
+
+  @override
+  Future<PermissionSettingsDto> getDefaultPermissionMode() async =>
+      PermissionSettingsDto(defaultMode: _defaultPermissionMode);
+
+  @override
+  Future<PermissionSettingsDto> setDefaultPermissionMode(
+    PermissionMode permissionMode,
+  ) async {
+    if (defaultPermissionSetError case final error?) throw error;
+    _defaultPermissionMode = permissionMode;
+    return PermissionSettingsDto(defaultMode: permissionMode);
   }
 
   @override

@@ -13,6 +13,7 @@ List<RouteBase> get $appRoutes => [
   $terminalRoute,
   $generalSettingsRoute,
   $providerSettingsRoute,
+  $permissionSettingsRoute,
   $projectSettingsRoute,
   $agentSettingsRoute,
   $mcpSettingsRoute,
@@ -231,6 +232,38 @@ mixin $ProviderSettingsRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/settings/providers',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $permissionSettingsRoute => GoRouteData.$route(
+  path: '/settings/permissions',
+  hasOverriddenOnExit: false,
+  factory: $PermissionSettingsRoute._fromState,
+);
+
+mixin $PermissionSettingsRoute on GoRouteData {
+  static PermissionSettingsRoute _fromState(GoRouterState state) =>
+      PermissionSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  PermissionSettingsRoute get _self => this as PermissionSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/permissions',
     queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
   );
 

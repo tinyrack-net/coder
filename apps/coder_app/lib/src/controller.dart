@@ -34,6 +34,35 @@ Future<CoderApi> _requireHostApi(Ref ref, String hostId) async {
   return _connectedApi(runtime);
 }
 
+@riverpod
+/// Owns the daemon-global permission default for one connected host.
+class PermissionSettingsController extends _$PermissionSettingsController {
+  @override
+  Future<PermissionSettingsDto> build(String hostId) async {
+    final api = await _requireHostApi(ref, hostId);
+    return api.getDefaultPermissionMode();
+  }
+
+  /// Persists and exposes a new daemon-global permission default.
+  Future<void> setDefaultMode(PermissionMode mode) async {
+    final previous = state;
+    state = AsyncData<PermissionSettingsDto>(
+      PermissionSettingsDto(defaultMode: mode),
+    );
+    try {
+      final api = await _requireHostApi(ref, hostId);
+      state = AsyncData<PermissionSettingsDto>(
+        await api.setDefaultPermissionMode(mode),
+      );
+    } on Object catch (error, stackTrace) {
+      state = previous.hasValue
+          ? AsyncData<PermissionSettingsDto>(previous.requireValue)
+          : AsyncError<PermissionSettingsDto>(error, stackTrace);
+      rethrow;
+    }
+  }
+}
+
 /// Resolves the API inside a `build`, re-running once the daemon connects.
 Future<CoderApi> _watchHostApi(Ref ref, String hostId) async {
   final runtime = (await ref.watch(

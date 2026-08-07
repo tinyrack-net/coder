@@ -453,6 +453,7 @@ abstract final class DaemonApplication {
         },
         execHostFor: (id) => SessionExecHost(execSessions, id),
         skills: skills,
+        settings: database.settingsDao,
       );
       final multiAgent = MultiAgentService(
         sessions: database.sessionDao,

@@ -126,6 +126,20 @@ void main() {
   );
 
   testWidgets(
+    'PermissionSettingsRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const PermissionSettingsRoute(hostId: 'server').location,
+      find.byKey(const ValueKey<String>('permission-settings-change')),
+    ),
+    tags: const <String>[
+      'route_test__permission_settings_route__widget',
+      'feature_test__permission_settings__widget',
+    ],
+  );
+
+  testWidgets(
     'ProjectSettingsRoute renders at desktop and mobile sizes',
     (tester) => _verifyRoute(
       tester,

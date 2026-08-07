@@ -479,6 +479,8 @@ class _ClientSession {
       RpcMethod.terminalTerminate,
       RpcMethod.terminalShellGet,
       RpcMethod.terminalShellSet,
+      RpcMethod.permissionDefaultModeGet,
+      RpcMethod.permissionDefaultModeSet,
       RpcMethod.providerCatalog,
       RpcMethod.providerConnectionsList,
       RpcMethod.providerConnectApiKey,
@@ -961,6 +963,20 @@ class _ClientSession {
           request.shell == null ? '' : jsonEncode(request.shell!.toJson()),
         );
         return const <String, dynamic>{};
+      case RpcMethod.permissionDefaultModeGet:
+        final stored = await settings.getValue('permission.defaultMode');
+        return PermissionSettingsDto(
+          defaultMode: stored == null || stored.isEmpty
+              ? PermissionMode.ask
+              : PermissionMode.values.byName(stored),
+        ).toJson();
+      case RpcMethod.permissionDefaultModeSet:
+        final request = PermissionSettingsDto.fromJson(payload);
+        await settings.setValue(
+          'permission.defaultMode',
+          request.defaultMode.name,
+        );
+        return request.toJson();
       case RpcMethod.providerCatalog:
         final catalog = await providers.catalog();
         return ProviderCatalogResultDto(catalog: catalog).toJson();

@@ -255,6 +255,14 @@ abstract interface class CoderApi {
     PermissionMode? permissionMode,
   );
 
+  /// Reads the selected daemon's default permission mode.
+  Future<PermissionSettingsDto> getDefaultPermissionMode();
+
+  /// Replaces the selected daemon's default permission mode.
+  Future<PermissionSettingsDto> setDefaultPermissionMode(
+    PermissionMode permissionMode,
+  );
+
   /// Sets or clears the provider service tier of one session.
   ///
   /// Passing a null [serviceTier] restores the provider default tier.

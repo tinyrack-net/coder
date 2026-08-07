@@ -198,6 +198,7 @@ const _$PermissionModeEnumMap = {
   PermissionMode.readOnly: 'readOnly',
   PermissionMode.ask: 'ask',
   PermissionMode.workspaceWrite: 'workspaceWrite',
+  PermissionMode.fullAccess: 'fullAccess',
 };
 
 _SessionModeSetParamsDto _$SessionModeSetParamsDtoFromJson(
@@ -878,6 +879,20 @@ _TerminalShellDto _$TerminalShellDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$TerminalShellDtoToJson(_TerminalShellDto instance) =>
     <String, dynamic>{'shell': instance.shell};
+
+_PermissionSettingsDto _$PermissionSettingsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PermissionSettingsDto(
+  defaultMode:
+      $enumDecodeNullable(_$PermissionModeEnumMap, json['defaultMode']) ??
+      PermissionMode.ask,
+);
+
+Map<String, dynamic> _$PermissionSettingsDtoToJson(
+  _PermissionSettingsDto instance,
+) => <String, dynamic>{
+  'defaultMode': _$PermissionModeEnumMap[instance.defaultMode]!,
+};
 
 _DefaultModelDto _$DefaultModelDtoFromJson(Map<String, dynamic> json) =>
     _DefaultModelDto(

@@ -16,6 +16,7 @@ import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/model_picker.dart';
 import 'package:coder_app/src/model_picker_options.dart';
+import 'package:coder_app/src/permission_picker.dart';
 import 'package:coder_app/src/session_model_options.dart';
 import 'package:coder_app/src/session_title.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -117,7 +118,7 @@ class SessionComposerBar extends ConsumerStatefulWidget {
   final PermissionMode? permissionMode;
 
   /// Called with the chosen mode, or null to inherit the agent definition.
-  final ValueChanged<PermissionMode?>? onPermissionModeChanged;
+  final FutureOr<void> Function(PermissionMode?)? onPermissionModeChanged;
 
   /// Provider service tier in effect, or null for the provider default.
   final String? serviceTier;
@@ -137,6 +138,7 @@ class SessionComposerBar extends ConsumerStatefulWidget {
 
 class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
   final Set<String> _loading = <String>{};
+  String? _permissionError;
 
   /// Loads the catalog naming the chosen model, after this frame.
   ///
@@ -176,6 +178,12 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final agent = definitions
         .where((definition) => definition.id == widget.agentDefinitionId)
         .firstOrNull;
+    final daemonDefault = ref
+        .watch(permissionSettingsControllerProvider(hostId))
+        .value
+        ?.defaultMode;
+    final inheritedPermission =
+        agent?.permissionMode ?? daemonDefault ?? PermissionMode.ask;
     final connection = connections
         .where((item) => item.id == selection?.providerConnectionId)
         .firstOrNull;
@@ -195,7 +203,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         ? capabilities.supportedReasoningEfforts
         : const <String>[];
     final fastEnabled = widget.serviceTier == _priorityServiceTier;
-    return ComposerChipBar(
+    final bar = ComposerChipBar(
       overflowLabel: l10n.composerMoreSettings,
       leading: widget.leading,
       // These are settings under the prompt, not the prompt itself, so the row
@@ -255,26 +263,15 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-permission'),
           icon: CoderIcons.permission,
-          label: widget.permissionMode == null
-              ? l10n.composerPermissionMode
-              : _permissionLabel(l10n, widget.permissionMode!),
+          label: permissionModeLabel(
+            l10n,
+            widget.permissionMode ?? inheritedPermission,
+          ),
           tooltip: l10n.composerSelectPermissionMode,
-          menuChildren: enabled && widget.onPermissionModeChanged != null
-              ? <Widget>[
-                  TRMenuItem(
-                    key: const ValueKey('session-composer-permission-inherit'),
-                    onPressed: () => widget.onPermissionModeChanged!(null),
-                    child: TRText.inherit(l10n.composerInheritPermissionMode),
-                  ),
-                  for (final value in PermissionMode.values)
-                    TRMenuItem(
-                      key: ValueKey(
-                        'session-composer-permission-${value.name}',
-                      ),
-                      onPressed: () => widget.onPermissionModeChanged!(value),
-                      child: TRText.inherit(_permissionLabel(l10n, value)),
-                    ),
-                ]
+          onPressed: enabled && widget.onPermissionModeChanged != null
+              ? (_) => unawaited(
+                  _choosePermission(context, inheritedPermission),
+                )
               : null,
         ),
         if (capabilities.serviceTier == CapabilitySupport.supported)
@@ -308,14 +305,42 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         ),
       ],
     );
+    final permissionError = _permissionError;
+    if (permissionError == null) return bar;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        TRAlert(
+          key: const ValueKey<String>('session-composer-permission-error'),
+          title: TRText.inherit(l10n.permissionChangeFailed),
+          description: TRText.inherit(permissionError),
+          icon: const Icon(CoderIcons.error),
+          variant: TRStatusVariant.danger,
+        ),
+        bar,
+      ],
+    );
   }
 
-  static String _permissionLabel(AppLocalizations l10n, PermissionMode mode) =>
-      switch (mode) {
-        PermissionMode.readOnly => l10n.composerPermissionReadOnly,
-        PermissionMode.ask => l10n.composerPermissionAsk,
-        PermissionMode.workspaceWrite => l10n.composerPermissionWorkspaceWrite,
-      };
+  Future<void> _choosePermission(
+    BuildContext context,
+    PermissionMode inheritedMode,
+  ) async {
+    final choice = await showPermissionPicker(
+      context,
+      currentMode: widget.permissionMode,
+      inheritLabel: AppLocalizations.of(context).composerInheritPermissionMode,
+      inheritedMode: inheritedMode,
+    );
+    if (choice == null) return;
+    if (mounted) setState(() => _permissionError = null);
+    try {
+      await widget.onPermissionModeChanged?.call(choice.mode);
+    } on Object catch (error) {
+      if (mounted) setState(() => _permissionError = '$error');
+    }
+  }
 
   List<ProviderModelDto>? _loadedModels(String connectionId) => ref
       .read(providerSettingsControllerProvider(widget.hostId))

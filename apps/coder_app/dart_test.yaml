@@ -111,6 +111,7 @@ tags:
   feature_test__session_lifecycle__unit:
   feature_test__session_lifecycle__widget:
   feature_test__session_lifecycle__e2e:
+  feature_test__permission_settings__widget:
   feature_test__session_home__unit:
   feature_test__session_home__widget:
   feature_test__session_home__e2e:
@@ -159,6 +160,7 @@ tags:
   route_test__terminal_route__widget:
   route_test__general_settings_route__widget:
   route_test__provider_settings_route__widget:
+  route_test__permission_settings_route__widget:
   route_test__project_settings_route__widget:
   route_test__agent_settings_route__widget:
   route_test__skill_settings_route__widget:

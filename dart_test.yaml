@@ -1,4 +1,8 @@
 tags:
+  feature_test__permission_settings__contract:
+  feature_test__permission_settings__verticalSlice:
+  feature_test__permission_settings__widget:
+  route_test__permission_settings_route__widget:
   feature_test__conversation_turn_queue__unit:
   feature_test__conversation_turn_queue__verticalSlice:
   feature_test__conversation_turn_queue__widget:

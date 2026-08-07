@@ -32,6 +32,12 @@ abstract interface class TurnInputSource {
   Future<List<ConversationItem>> drainPending();
 }
 
+/// Supplies the permission mode in effect at the next tool boundary.
+abstract interface class PermissionModeSource {
+  /// Returns the current effective permission mode.
+  Future<PermissionMode> currentMode();
+}
+
 /// AgentRunRequest defines a public contract.
 class AgentRunRequest {
   /// Creates a [AgentRunRequest].
@@ -41,7 +47,6 @@ class AgentRunRequest {
     required this.workspaceRoot,
     required this.prompt,
     required this.model,
-    required this.permissionMode,
     required this.history,
     required this.safetyIdentifier,
     this.attachments = const <ConversationAttachment>[],
@@ -88,9 +93,6 @@ class AgentRunRequest {
 
   /// Provider service tier for this turn; null uses the provider default.
   final String? serviceTier;
-
-  /// The permissionMode public API member.
-  final PermissionMode permissionMode;
 
   /// The history public API member.
   final List<ConversationItem> history;
@@ -142,6 +144,7 @@ class AgentRunner {
     required this._onEvent,
     required this._onStatus,
     required this._onProviderItems,
+    required this._permissions,
     this._contextResets,
     this._pendingTurnInput,
     this._compactor,
@@ -168,6 +171,7 @@ class AgentRunner {
   final AgentEventCallback _onEvent;
   final SessionStatusCallback _onStatus;
   final ProviderItemsCallback _onProviderItems;
+  final PermissionModeSource _permissions;
 
   /// Discards persisted history when a tool asks for a fresh window.
   final ContextResetCoordinator? _contextResets;
@@ -400,7 +404,7 @@ class AgentRunner {
               preview: preview,
             );
             final policy = _policyFactory(
-              request.permissionMode,
+              await _permissions.currentMode(),
             ).evaluate(invocation);
             var approved = policy == ApprovalEvaluation.allow;
             if (policy == ApprovalEvaluation.ask) {
