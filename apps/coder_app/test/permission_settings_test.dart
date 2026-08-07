@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/fake_coder_api.dart';
 import 'support/localization.dart';
@@ -112,6 +113,53 @@ void main() {
         find.byKey(const ValueKey<String>('permission-settings-error')),
         findsOneWidget,
       );
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__permission_settings__widget'],
+  );
+
+  testWidgets(
+    'permission picker stays content-sized as the window grows',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1000, 800);
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        initialLocation: const PermissionSettingsRoute(
+          hostId: 'server',
+        ).location,
+        routes: $appRoutes,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(
+              fakeAppServices(FakeCoderApi()),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('permission-settings-change')),
+      );
+      await tester.pumpAndSettle();
+
+      final mediumHeight = tester.getSize(find.byType(TRDrawer)).height;
+      tester.view.physicalSize = const Size(1000, 1100);
+      await tester.pumpAndSettle();
+      final tallHeight = tester.getSize(find.byType(TRDrawer)).height;
+
+      expect(tallHeight, mediumHeight);
+      expect(tallHeight, lessThan(550));
       expect(tester.takeException(), isNull);
     },
     tags: const <String>['feature_test__permission_settings__widget'],

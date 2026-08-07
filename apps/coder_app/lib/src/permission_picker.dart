@@ -22,8 +22,37 @@ Future<PermissionPickerChoice?> showPermissionPicker(
   PermissionMode? inheritedMode,
 }) => showTRDrawer<PermissionPickerChoice>(
   context: context,
-  builder: (context) {
+  builder: (context) => PermissionPickerDrawer(
+    currentMode: currentMode,
+    inheritLabel: inheritLabel,
+    inheritedMode: inheritedMode,
+  ),
+);
+
+/// Descriptive permission choices presented in the shared drawer surface.
+class PermissionPickerDrawer extends StatelessWidget {
+  /// Creates a permission picker drawer.
+  const PermissionPickerDrawer({
+    required this.currentMode,
+    this.inheritLabel,
+    this.inheritedMode,
+    super.key,
+  });
+
+  /// The selected explicit mode, or null when inheritance is selected.
+  final PermissionMode? currentMode;
+
+  /// Optional label for an inherited-mode choice.
+  final String? inheritLabel;
+
+  /// Effective inherited mode shown under [inheritLabel].
+  final PermissionMode? inheritedMode;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final inheritLabel = this.inheritLabel;
+    final inheritedMode = this.inheritedMode;
     return TRDrawer(
       title: TRText.inherit(l10n.composerSelectPermissionMode),
       description: TRText.inherit(l10n.permissionPickerDescription),
@@ -64,8 +93,8 @@ Future<PermissionPickerChoice?> showPermissionPicker(
         ],
       ),
     );
-  },
-);
+  }
+}
 
 /// Localized short label for one permission mode.
 String permissionModeLabel(AppLocalizations l10n, PermissionMode mode) =>

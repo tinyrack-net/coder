@@ -9,6 +9,7 @@ import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/host_models.dart';
 import 'package:coder_app/src/host_ports.dart';
 import 'package:coder_app/src/model_picker.dart';
+import 'package:coder_app/src/permission_picker.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/gestures.dart';
@@ -67,6 +68,15 @@ void main() {
         return null;
       },
       builder: _composerChipApp,
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'permission picker fits its content in a tall window',
+      fileName: 'permission_picker_content_sized',
+      constraints: const BoxConstraints.tightFor(width: 1000, height: 800),
+      builder: _PermissionPickerGoldenHost.new,
     ),
   );
 
@@ -279,6 +289,27 @@ Widget _composerChipApp() => MaterialApp(
     ),
   ),
 );
+
+class _PermissionPickerGoldenHost extends StatelessWidget {
+  const _PermissionPickerGoldenHost();
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    locale: testLocale,
+    localizationsDelegates: testLocalizationsDelegates,
+    supportedLocales: testSupportedLocales,
+    theme: testLightTheme,
+    home: const Scaffold(
+      body: Align(
+        alignment: Alignment.bottomCenter,
+        child: PermissionPickerDrawer(
+          currentMode: PermissionMode.workspaceWrite,
+        ),
+      ),
+    ),
+  );
+}
 
 class _ModelPickerGoldenHost extends StatelessWidget {
   const _ModelPickerGoldenHost({required this.mode, required this.size});
