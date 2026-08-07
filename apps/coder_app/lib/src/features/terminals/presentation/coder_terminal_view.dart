@@ -104,6 +104,7 @@ final class _CoderTerminalViewState extends State<CoderTerminalView> {
           : TRContextMenu.itemsBuilder(
               menuController: _menuController,
               itemsBuilder: items,
+              onClose: widget.controller.requestKeyboard,
               child: terminal,
             ),
     );

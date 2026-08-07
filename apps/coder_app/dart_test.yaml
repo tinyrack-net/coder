@@ -43,6 +43,7 @@ tags:
   feature_scenario__session_home__create_without_project__e2e:
   feature_scenario__session_tabs__open_switch_close_restore__e2e:
   feature_scenario__terminal_lifecycle__create_write_terminate__e2e:
+  feature_scenario__terminal_lifecycle__keyboard_context_menu_input__e2e:
   feature_scenario__turn_execution__stream_and_restore__e2e:
   feature_scenario__turn_execution__cancel_stream__e2e:
   feature_scenario__turn_execution__approve_and_reject__e2e:

@@ -442,6 +442,110 @@ void main() {
         moreOrLessEquals(tester.getRect(find.text('Hooks')).left, epsilon: 0.5),
       );
     });
+
+    testWidgets('spaces actions and wraps them below long titles', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: TinyrackTheme.light(),
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
+              body: SizedBox(
+                width: 390,
+                child: SettingsPaneHeader.detail(
+                  title: 'A deliberately long settings detail heading',
+                  subtitle: '/a/long/path/that/must/not/crowd/the/actions',
+                  actions: <Widget>[
+                    TRIconButton(
+                      label: 'Copy',
+                      onPressed: () {},
+                      icon: const Icon(Icons.copy),
+                    ),
+                    TRButton(
+                      key: const ValueKey<String>('save-action'),
+                      onPressed: () {},
+                      child: const TRText.inherit('Save'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final copy = tester.getRect(find.byType(TRIconButton));
+      final save = tester.getRect(
+        find.byKey(const ValueKey<String>('save-action')),
+      );
+      expect(save.left - copy.right, greaterThanOrEqualTo(TRSpacing.small));
+    });
+  });
+
+  group('SettingsEmptyState', () {
+    testWidgets('centres a readable title, description, and action', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          SettingsEmptyState(
+            title: 'Nothing selected',
+            description: 'Choose an item from the list to edit it.',
+            icon: const Icon(Icons.tune),
+            action: TRButton(
+              onPressed: () {},
+              child: const TRText.inherit('Create'),
+            ),
+          ),
+          width: 900,
+        ),
+      );
+
+      final title = tester.getRect(find.text('Nothing selected'));
+      final description = tester.getRect(
+        find.text('Choose an item from the list to edit it.'),
+      );
+      final action = tester.getRect(find.byType(TRButton));
+      expect(
+        title.center.dx,
+        moreOrLessEquals(
+          tester.getRect(find.byType(Scaffold)).center.dx,
+          epsilon: 1,
+        ),
+      );
+      expect(description.top - title.bottom, TRSpacing.extraSmall);
+      expect(action.top - description.bottom, TRSpacing.large);
+    });
+  });
+
+  group('SettingsDialogForm', () {
+    testWidgets('uses the overlay token and one gap between fields', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const Center(
+            child: SettingsDialogForm(
+              children: <Widget>[
+                TRTextField(label: 'Name'),
+                TRTextField(label: 'Description'),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final form = tester.getRect(find.byType(SettingsDialogForm));
+      final fields = find.byType(TRTextField);
+      expect(form.width, TRMeasurements.overlayWidthMd);
+      expect(
+        tester.getRect(fields.at(1)).top - tester.getRect(fields.at(0)).bottom,
+        TRSpacing.large,
+      );
+    });
   });
 
   group('SettingsCompactToolbar', () {
