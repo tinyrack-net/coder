@@ -169,6 +169,8 @@ void main() {
         '--sync',
         windowId,
       ]);
+      await _activateHangulEngineForFocusedWindow();
+      await tester.pumpAndSettle();
       await _ensureHangulMode(modeProbe);
       await _waitUntil(
         ready.existsSync,
@@ -363,6 +365,25 @@ Future<void> _ensureHangulMode(File probe) async {
   );
   expect(probe.readAsBytesSync(), utf8.encode('x'));
   await _toggleLanguage();
+}
+
+Future<void> _activateHangulEngineForFocusedWindow() async {
+  final engines = await _run('ibus', <String>['list-engine']);
+  const latinEngine = 'xkb:us::eng';
+  expect(
+    engines.stdout.toString(),
+    contains(latinEngine),
+    reason: 'The deterministic IBus Latin engine is unavailable',
+  );
+  await _run('ibus', <String>['engine', latinEngine]);
+
+  await _waitUntil(() async {
+    final selected = await Process.run('ibus', <String>['engine', 'hangul']);
+    final current = await Process.run('ibus', <String>['engine']);
+    return selected.exitCode == 0 &&
+        current.exitCode == 0 &&
+        current.stdout.toString().trim() == 'hangul';
+  }, 'the focused GTK input context to activate IBus Hangul');
 }
 
 Future<Process> _setClipboard(String text) async {
