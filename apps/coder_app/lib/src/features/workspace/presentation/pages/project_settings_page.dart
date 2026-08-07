@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
-import 'package:coder_app/src/features/hosts/application/host_controller.dart';
+import 'package:coder_app/src/features/terminals/application/terminals_controller.dart';
 import 'package:coder_app/src/features/workspace/application/workspace_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
 import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
@@ -47,8 +47,11 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workspaceCatalogControllerProvider);
-    return state.when(
-      loading: () => const Center(child: TRSpinner()),
+    return SettingsAsyncContent<UnifiedWorkspaceCatalogState>(
+      state: state,
+      loading: SettingsSkeletonLayout.listDetail(
+        semanticLabel: AppLocalizations.of(context).settingsLoading,
+      ),
       error: (error, _) => _ProjectSettingsError(
         error: error,
         onRetry: () => ref.invalidate(workspaceCatalogControllerProvider),
@@ -194,6 +197,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
   final TextEditingController _hostShellExecutable = TextEditingController();
   final TextEditingController _hostShellArguments = TextEditingController();
   bool _loaded = false;
+  bool _hostShellLoaded = false;
   bool _saving = false;
   String? _error;
   bool _saved = false;
@@ -217,8 +221,15 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
       widget.workspace.id,
     );
     final state = ref.watch(provider);
-    return state.when(
-      loading: () => const Center(child: TRSpinner()),
+    final hostShellProvider = hostShellSettingsControllerProvider(
+      widget.hostId,
+    );
+    final hostShellState = ref.watch(hostShellProvider);
+    return SettingsAsyncContent<ProjectSettingsResultDto>(
+      state: state,
+      loading: SettingsSkeletonLayout.form(
+        semanticLabel: l10n.settingsLoading,
+      ),
       error: (error, _) => _ProjectSettingsError(
         error: error,
         onRetry: () => ref.invalidate(provider),
@@ -232,7 +243,14 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
           _shellArguments.text = formatHookCommands(
             value.settings.shell?.arguments ?? const <String>[],
           );
-          unawaited(_loadHostShell());
+        }
+        if (!_hostShellLoaded && hostShellState.hasValue) {
+          _hostShellLoaded = true;
+          final shell = hostShellState.requireValue;
+          _hostShellExecutable.text = shell?.executable ?? '';
+          _hostShellArguments.text = formatHookCommands(
+            shell?.arguments ?? const <String>[],
+          );
         }
         return Column(
           children: <Widget>[
@@ -257,7 +275,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                 ),
                 TRButton(
                   intent: TRIntent.primary,
-                  onPressed: _saving ? null : _save,
+                  onPressed: _saving || !hostShellState.hasValue ? null : _save,
                   child: TRText.inherit(
                     _saving ? l10n.commonSaving : l10n.commonSave,
                   ),
@@ -327,24 +345,44 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   SettingsSection.form(
                     title: l10n.projectSettingsHostShellHeading,
                     description: l10n.projectSettingsHostShellHelp,
-                    children: <Widget>[
-                      TRTextField(
-                        key: const ValueKey<String>('host-shell-executable'),
-                        controller: _hostShellExecutable,
-                        enabled: !_saving,
-                        label: l10n.projectSettingsShellExecutable,
-                        placeholder: '/bin/zsh',
-                      ),
-                      TRTextField(
-                        key: const ValueKey<String>('host-shell-arguments'),
-                        controller: _hostShellArguments,
-                        enabled: !_saving,
-                        minLines: 2,
-                        maxLines: 4,
-                        label: l10n.projectSettingsShellArguments,
-                        placeholder: '-l',
-                      ),
-                    ],
+                    banner: hostShellState.hasError
+                        ? TRAlert(
+                            title: TRText.inherit(
+                              l10n.settingsRefreshFailed(
+                                '${hostShellState.error}',
+                              ),
+                            ),
+                            variant: TRStatusVariant.danger,
+                          )
+                        : null,
+                    children: hostShellState.hasValue
+                        ? <Widget>[
+                            TRTextField(
+                              key: const ValueKey<String>(
+                                'host-shell-executable',
+                              ),
+                              controller: _hostShellExecutable,
+                              enabled: !_saving,
+                              label: l10n.projectSettingsShellExecutable,
+                              placeholder: '/bin/zsh',
+                            ),
+                            TRTextField(
+                              key: const ValueKey<String>(
+                                'host-shell-arguments',
+                              ),
+                              controller: _hostShellArguments,
+                              enabled: !_saving,
+                              minLines: 2,
+                              maxLines: 4,
+                              label: l10n.projectSettingsShellArguments,
+                              placeholder: '-l',
+                            ),
+                          ]
+                        : <Widget>[
+                            SettingsSkeletonLayout.overlay(
+                              semanticLabel: l10n.settingsLoading,
+                            ),
+                          ],
                   ),
                 ],
               ),
@@ -362,16 +400,17 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
       _saved = false;
     });
     try {
-      final registry = await ref.read(hostRegistryControllerProvider.future);
       final hostShell = _hostShellExecutable.text.trim().isEmpty
           ? null
           : ShellSpecDto(
               executable: _hostShellExecutable.text.trim(),
               arguments: parseHookCommands(_hostShellArguments.text),
             );
-      await registry.runtimes[widget.hostId]!.api!.terminals.setTerminalShell(
-        hostShell,
-      );
+      await ref
+          .read(
+            hostShellSettingsControllerProvider(widget.hostId).notifier,
+          )
+          .save(hostShell);
       await ref
           .read(
             projectSettingsControllerProvider(
@@ -402,21 +441,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
         _error = error.message;
         _saving = false;
       });
-    }
-  }
-
-  Future<void> _loadHostShell() async {
-    try {
-      final registry = await ref.read(hostRegistryControllerProvider.future);
-      final shell = await registry.runtimes[widget.hostId]!.api!.terminals
-          .getTerminalShell();
-      if (!mounted) return;
-      _hostShellExecutable.text = shell?.executable ?? '';
-      _hostShellArguments.text = formatHookCommands(
-        shell?.arguments ?? const <String>[],
-      );
-    } on Object catch (error) {
-      if (mounted) setState(() => _error = '$error');
     }
   }
 }

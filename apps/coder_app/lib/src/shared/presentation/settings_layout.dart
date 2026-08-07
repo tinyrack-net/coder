@@ -1,7 +1,269 @@
+import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
+
+/// Applies one loading, stale-data, and error policy to settings reads.
+class SettingsAsyncContent<T> extends StatelessWidget {
+  /// Creates a settings data boundary.
+  const SettingsAsyncContent({
+    required this.state,
+    required this.loading,
+    required this.data,
+    required this.error,
+    super.key,
+  });
+
+  /// Current asynchronous state.
+  final AsyncValue<T> state;
+
+  /// Shape-preserving placeholder used before the first value.
+  final Widget loading;
+
+  /// Builds the usable surface from the newest available value.
+  final Widget Function(T value) data;
+
+  /// Builds a blocking error only when no value has ever loaded.
+  final Widget Function(Object error, StackTrace stackTrace) error;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.hasValue) {
+      final child = data(state.requireValue);
+      if (!state.hasError) return child;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              TRSpacing.extraLarge,
+              TRSpacing.medium,
+              TRSpacing.extraLarge,
+              0,
+            ),
+            child: TRAlert(
+              key: const ValueKey<String>('settings-refresh-error'),
+              variant: TRStatusVariant.danger,
+              title: TRText.inherit(
+                AppLocalizations.of(
+                  context,
+                ).settingsRefreshFailed('${state.error}'),
+              ),
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      );
+    }
+    if (state.isLoading) return loading;
+    return error(state.error!, state.stackTrace!);
+  }
+}
+
+enum _SettingsSkeletonKind { form, listDetail, overlay }
+
+/// Loading placeholders that preserve the final shape of a settings surface.
+///
+/// The shell owns navigation and these placeholders own only the data region,
+/// so an unavailable daemon or catalog never blocks category navigation.
+class SettingsSkeletonLayout extends StatelessWidget {
+  /// Creates a settings form placeholder.
+  const SettingsSkeletonLayout.form({required this.semanticLabel, super.key})
+    : _kind = _SettingsSkeletonKind.form;
+
+  /// Creates a responsive collection-and-detail placeholder.
+  const SettingsSkeletonLayout.listDetail({
+    required this.semanticLabel,
+    super.key,
+  }) : _kind = _SettingsSkeletonKind.listDetail;
+
+  /// Creates a compact overlay placeholder.
+  const SettingsSkeletonLayout.overlay({
+    required this.semanticLabel,
+    super.key,
+  }) : _kind = _SettingsSkeletonKind.overlay;
+
+  /// Accessible description announced once for the complete placeholder.
+  final String semanticLabel;
+
+  final _SettingsSkeletonKind _kind;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: semanticLabel,
+    container: true,
+    liveRegion: true,
+    child: ExcludeSemantics(
+      child: switch (_kind) {
+        _SettingsSkeletonKind.form => const _SettingsFormSkeleton(),
+        _SettingsSkeletonKind.listDetail => const _SettingsListDetailSkeleton(),
+        _SettingsSkeletonKind.overlay => const _SettingsOverlaySkeleton(),
+      },
+    ),
+  );
+}
+
+class _SettingsFormSkeleton extends StatelessWidget {
+  const _SettingsFormSkeleton();
+
+  @override
+  Widget build(BuildContext context) => const SettingsScaffold(
+    key: ValueKey<String>('settings-skeleton-form'),
+    children: <Widget>[
+      _SettingsSkeletonSection(rowCount: 2),
+      _SettingsSkeletonSection(rowCount: 3),
+    ],
+  );
+}
+
+class _SettingsListDetailSkeleton extends StatelessWidget {
+  const _SettingsListDetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
+        return const _SettingsSkeletonListPane(
+          key: ValueKey<String>('settings-skeleton-list-pane'),
+        );
+      }
+      return const Row(
+        children: <Widget>[
+          SizedBox(
+            width: CoderLayoutMetrics.settingsCollectionWidth,
+            child: _SettingsSkeletonListPane(
+              key: ValueKey<String>('settings-skeleton-list-pane'),
+            ),
+          ),
+          TRSeparator(
+            orientation: TRSeparatorOrientation.vertical,
+            variant: TRSeparatorVariant.muted,
+          ),
+          Expanded(
+            key: ValueKey<String>('settings-skeleton-detail-pane'),
+            child: _SettingsSkeletonDetailPane(),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+class _SettingsSkeletonListPane extends StatelessWidget {
+  const _SettingsSkeletonListPane({super.key});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      const Padding(
+        padding: SettingsRow.contentPadding,
+        child: TRSkeleton(width: TRMeasurements.measureSm),
+      ),
+      const TRSeparator(variant: TRSeparatorVariant.muted),
+      Expanded(
+        child: ListView(
+          children: const <Widget>[
+            _SettingsSkeletonListRow(),
+            _SettingsSkeletonListRow(),
+            _SettingsSkeletonListRow(),
+            _SettingsSkeletonListRow(),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _SettingsSkeletonListRow extends StatelessWidget {
+  const _SettingsSkeletonListRow();
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: SettingsRow.contentPadding,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        TRSkeleton(width: TRMeasurements.measureSm),
+        SizedBox(height: TRSpacing.extraSmall),
+        TRSkeleton(width: TRMeasurements.measureMd),
+      ],
+    ),
+  );
+}
+
+class _SettingsSkeletonDetailPane extends StatelessWidget {
+  const _SettingsSkeletonDetailPane();
+
+  @override
+  Widget build(BuildContext context) => const Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: TRSpacing.extraLarge,
+          vertical: TRSpacing.medium,
+        ),
+        child: TRSkeleton(width: TRMeasurements.measureSm),
+      ),
+      TRSeparator(variant: TRSeparatorVariant.muted),
+      Expanded(child: _SettingsFormSkeleton()),
+    ],
+  );
+}
+
+class _SettingsSkeletonSection extends StatelessWidget {
+  const _SettingsSkeletonSection({required this.rowCount});
+
+  final int rowCount;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      const TRSkeleton(width: TRMeasurements.measureSm),
+      const SizedBox(height: TRSpacing.small),
+      TRCard(
+        padding: TRCardPadding.none,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (var index = 0; index < rowCount; index++) ...<Widget>[
+              if (index > 0)
+                const TRSeparator(variant: TRSeparatorVariant.muted),
+              const _SettingsSkeletonListRow(),
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _SettingsOverlaySkeleton extends StatelessWidget {
+  const _SettingsOverlaySkeleton();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+    key: ValueKey<String>('settings-skeleton-overlay'),
+    width: TRMeasurements.overlayWidthMd,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        TRSkeleton(width: TRMeasurements.measureSm),
+        SizedBox(height: TRSpacing.large),
+        TRSkeleton(shape: TRSkeletonShape.rectangle),
+        SizedBox(height: TRSpacing.small),
+        TRSkeleton(shape: TRSkeletonShape.rectangle),
+        SizedBox(height: TRSpacing.small),
+        TRSkeleton(shape: TRSkeletonShape.rectangle),
+      ],
+    ),
+  );
+}
 
 /// The scroll container every settings pane uses.
 ///

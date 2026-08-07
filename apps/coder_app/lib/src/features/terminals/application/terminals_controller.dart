@@ -8,6 +8,23 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'terminals_controller.g.dart';
 
 @riverpod
+/// Loads and edits the daemon-wide shell inherited by project terminals.
+class HostShellSettingsController extends _$HostShellSettingsController {
+  @override
+  Future<ShellSpecDto?> build(String hostId) async {
+    final api = await watchHostApi(ref, hostId);
+    return api.terminals.getTerminalShell();
+  }
+
+  /// Replaces or clears the daemon-wide terminal shell.
+  Future<void> save(ShellSpecDto? shell) async {
+    final api = await requireHostApi(ref, hostId);
+    await api.terminals.setTerminalShell(shell);
+    state = AsyncData<ShellSpecDto?>(shell);
+  }
+}
+
+@riverpod
 /// Owns the live terminal catalog for one connected worktree.
 class TerminalsController extends _$TerminalsController {
   StreamSubscription<TerminalDto>? _events;

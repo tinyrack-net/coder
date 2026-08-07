@@ -19,6 +19,8 @@
   "commonDetails": "자세히",
   "commonSaved": "저장했습니다.",
   "settingsTitle": "설정",
+  "settingsLoading": "설정 불러오는 중",
+  "settingsRefreshFailed": "설정을 새로 불러오지 못했습니다: {error}",
   "settingsSectionApp": "App",
   "settingsSectionDaemon": "Daemon",
   "settingsDaemonSelectLabel": "Daemon",
