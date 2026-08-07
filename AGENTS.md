@@ -59,7 +59,9 @@ design value, pub-cache edit, path dependency, moving Git ref, or
    desktop and mobile sizes.
 6. Before reporting completion, run `dart run melos verify` and
    `dart run melos verify:debug`. The latter must exercise the real Debug Flutter
-   runner and embedded daemon, not only a mocked widget tree.
+   runner and embedded daemon, not only a mocked widget tree. Its Melos entrypoint
+   runs under Xvfb by default; do not bypass it with a direct `flutter test` that
+   opens application windows on the developer's display.
 7. Run a platform Debug build for every platform-specific change. If the current
    machine cannot run that platform, explicitly report it as unverified and name
    the CI job responsible for it.
