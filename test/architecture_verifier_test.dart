@@ -71,11 +71,13 @@ void main() {
       'coder_agent',
       'coder_protocol',
       'coder_app',
+      'coder_cli',
+      'coder_mcp',
     ]) {
       final violations = verifier.verifySource(
         package: package,
         path: 'packages/$package/lib/src/bad.dart',
-        source: "import 'package:tinyrack_pty/tinyrack_pty.dart';",
+        source: "import 'package:ptyworld/ptyworld.dart';",
       );
       expect(violations.single.rule, 'source_dependency_direction');
     }
@@ -83,24 +85,25 @@ void main() {
       verifier.verifySource(
         package: 'coder_daemon',
         path: 'packages/coder_daemon/lib/src/portable_terminal.dart',
-        source: "import 'package:tinyrack_pty/tinyrack_pty.dart';",
+        source: "import 'package:ptyworld/ptyworld.dart';",
       ),
       isEmpty,
     );
   });
 
-  test('the PTY package stays independent of every Coder package', () {
-    for (final forbidden in const <String>[
-      'coder_agent',
-      'coder_daemon',
-      'coder_protocol',
-    ]) {
-      final violations = verifier.verifySource(
-        package: 'tinyrack_pty',
-        path: 'packages/tinyrack_pty/lib/src/pty_process.dart',
-        source: "import 'package:$forbidden/$forbidden.dart';",
+  test('an unrestricted external package stays reachable everywhere', () {
+    // The PTY restriction must not accidentally generalise: only packages
+    // named in the external map are confined, so ordinary third-party
+    // dependencies stay unrestricted.
+    for (final package in const <String>['coder_agent', 'coder_protocol']) {
+      expect(
+        verifier.verifySource(
+          package: package,
+          path: 'packages/$package/lib/src/fine.dart',
+          source: "import 'package:path/path.dart';",
+        ),
+        isEmpty,
       );
-      expect(violations.single.rule, 'source_dependency_direction');
     }
   });
 

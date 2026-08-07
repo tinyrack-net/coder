@@ -65,20 +65,35 @@ The same pin is why `hooks` is held at 2.0.2 and `native_toolchain_c` at 0.19.2:
 
 ## Tinyrack Git sources
 
-`tinyrack_ui`, `cliweave`, `dartage`, and `shipworld` come from `tinyrack-net`
-Git repositories at exact 40-character commit SHAs, never from pub.dev and never
-from a moving ref. `dart run melos tinyrack-sources:check` enforces this against
-both the manifests and the lockfile.
+`tinyrack_ui`, `cliweave`, `dartage`, `ptyworld`, and `shipworld` come from
+`tinyrack-net` Git repositories at exact 40-character commit SHAs, never from
+pub.dev and never from a moving ref. `dart run melos tinyrack-sources:check`
+enforces this against both the manifests and the lockfile.
 
-When bumping `cliweave`, update **both** the `ref` in
-`packages/coder_cli/pubspec.yaml` and `TINYRACK_DART_PACKAGES_REF` in
-`.github/workflows/pipeline.yml`. CI checks that repository out separately to
-resolve `shipworld`, so the two values must stay in sync.
+`cliweave` and `ptyworld` both live in `tinyrack-net/dart-packages`, and CI
+checks that repository out **once** for the whole pipeline. So three values
+must move together, always to the same SHA:
+
+1. `ref` for `cliweave` in `packages/coder_cli/pubspec.yaml`
+2. `ref` for `ptyworld` in `packages/coder_daemon/pubspec.yaml`
+3. `TINYRACK_DART_PACKAGES_REF` in `.github/workflows/pipeline.yml`
+
+Updating only some of them fails in a checkout step far from the cause —
+typically as a missing package during resolution rather than as a version
+mismatch.
+
+Pin to a **merge commit on `main`**, not a pull-request branch head. If the
+upstream repository squash-merges, a branch SHA becomes unreachable and the
+next `pub get` fails on a commit that no longer exists.
 
 ## After any upgrade
 
 Beyond `dart run melos verify` and `dart run melos verify:debug`, run
 `dart run melos build:cli` whenever `hooks`, `code_assets`, or
-`native_toolchain_c` change — that is the only local step that actually executes
-`packages/tinyrack_pty/hook/build.dart`. Windows and macOS build hook behaviour
-is covered only by the platform jobs in `.github/workflows/pipeline.yml`.
+`native_toolchain_c` change. `ptyworld`'s build hook also runs under plain
+`dart test`, but `build:cli` is the only local step that produces the
+release-shaped bundle, where the CLI resolves `libptyworld` from a sibling
+`lib/` directory rather than from the build's own asset layout. Windows and
+macOS build hook behaviour is covered only by the platform jobs in
+`.github/workflows/pipeline.yml`, and by the `ptyworld` matrix in
+`tinyrack-net/dart-packages`.

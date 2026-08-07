@@ -45,6 +45,10 @@ final class TinyrackDependencyVerifier {
           repository: 'https://github.com/tinyrack-net/dart-packages.git',
           packagePath: 'packages/cliweave',
         ),
+        'ptyworld': _TinyrackSource(
+          repository: 'https://github.com/tinyrack-net/dart-packages.git',
+          packagePath: 'packages/ptyworld',
+        ),
         'dartage': _TinyrackSource(
           repository: 'https://github.com/tinyrack-net/dart-packages.git',
           packagePath: 'packages/dartage',

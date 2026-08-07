@@ -2,12 +2,12 @@ import 'dart:convert';
 
 import 'package:coder_daemon/src/terminal_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
-import 'package:tinyrack_pty/tinyrack_pty.dart';
+import 'package:ptyworld/ptyworld.dart';
 
 /// Production cross-platform PTY adapter.
-final class TinyrackTerminalGateway implements TerminalGateway {
+final class PtyworldTerminalGateway implements TerminalGateway {
   /// Creates the production PTY adapter.
-  const TinyrackTerminalGateway();
+  const PtyworldTerminalGateway();
 
   @override
   Future<TerminalProcess> start({

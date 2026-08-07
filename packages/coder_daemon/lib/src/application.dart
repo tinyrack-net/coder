@@ -366,7 +366,7 @@ abstract final class DaemonApplication {
       );
       await commands.initialize();
       final execSessions = ExecSessionService(
-        gateway: const TinyrackTerminalGateway(),
+        gateway: const PtyworldTerminalGateway(),
         pipes: const IoPipeGateway(),
         ids: ids,
         clock: clock,
@@ -486,7 +486,7 @@ abstract final class DaemonApplication {
       // to exist before the first client connects.
       await workspaceService.provisionHome(config.userHomeDirectory);
       final terminals = TerminalService(
-        gateway: const TinyrackTerminalGateway(),
+        gateway: const PtyworldTerminalGateway(),
         worktreePath: (worktreeId) async {
           final worktree = await database.worktreeDao.getById(worktreeId);
           if (worktree == null || worktree.archivedAt != null) {
