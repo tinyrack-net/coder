@@ -21,6 +21,7 @@ void main() {
       'coverage-flutter-linux',
       'golden-linux',
       'debug-e2e-linux',
+      'linux-ibus-terminal-e2e',
       'mobile-debug-build',
       'desktop-debug-build',
       'web-build',
@@ -104,6 +105,7 @@ void main() {
       'coverage-flutter-linux',
       'golden-linux',
       'debug-e2e-linux',
+      'linux-ibus-terminal-e2e',
       'mobile-debug-build',
       'desktop-debug-build',
       'web-build',
@@ -132,6 +134,30 @@ void main() {
     }
     expect(linux, contains('fail-fast: false'));
     expect(nightly, contains(r'-d ${{ matrix.platform.device }}'));
+  });
+
+  test('Linux IBus terminal E2E is a required real desktop job', () {
+    final job = _job(workflow, 'linux-ibus-terminal-e2e');
+    expect(workflow, contains('pull_request:'));
+    expect(workflow, contains('merge_group:'));
+    expect(workflow, contains('- main'));
+    expect(job, contains("if: github.event_name != 'schedule'"));
+    expect(job, contains('runs-on: ubuntu-24.04'));
+    for (final package in <String>[
+      'ibus-gtk3',
+      'ibus-hangul',
+      'xdotool',
+      'xclip',
+      'dbus-x11',
+      'xvfb',
+    ]) {
+      expect(job, contains(package));
+    }
+    expect(job, contains('xvfb-run -a dbus-run-session'));
+    expect(job, contains('tool/run_linux_ibus_terminal_e2e.sh'));
+    expect(job, contains('terminal_ibus_e2e_test.dart'));
+    expect(job, isNot(contains('continue-on-error')));
+    expect(job, isNot(contains('retry')));
   });
 
   test('mobile nightly jobs run remote bootstrap and provider E2E', () {
