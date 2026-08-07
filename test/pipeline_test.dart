@@ -146,6 +146,7 @@ void main() {
     expect(workflow, contains('- main'));
     expect(job, contains("if: github.event_name != 'schedule'"));
     expect(job, contains('runs-on: ubuntu-24.04'));
+    expect(job, contains('./.github/actions/setup-flutter'));
     for (final package in <String>[
       'ibus-gtk3',
       'ibus-hangul',
@@ -163,9 +164,10 @@ void main() {
     expect(job, isNot(contains('retry')));
     expect(
       ibusTerminalRunner,
-      contains('mise exec -- flutter pub get --enforce-lockfile'),
+      contains('flutter pub get --enforce-lockfile'),
     );
-    expect(ibusTerminalRunner, isNot(contains('mise exec -- dart pub get')));
+    expect(job, isNot(contains('mise')));
+    expect(ibusTerminalRunner, isNot(contains('mise')));
   });
 
   test('mobile nightly jobs run remote bootstrap and provider E2E', () {

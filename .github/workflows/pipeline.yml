@@ -188,9 +188,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
-      - uses: jdx/mise-action@v3
-        with:
-          tool_versions: flutter 3.44.8
+      - uses: ./.github/actions/setup-flutter
       - uses: ./.github/actions/install-linux-desktop-deps
         with:
           extra-packages: >-
