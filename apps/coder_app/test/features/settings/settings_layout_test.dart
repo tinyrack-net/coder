@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
+
+import '../../support/localization.dart';
 
 /// Hosts one composite at a fixed width, so a geometry expectation reads the
 /// composite rather than whatever the surrounding page happened to impose.
@@ -15,6 +20,137 @@ Widget _host(Widget child, {double width = 1200}) => MaterialApp(
 );
 
 void main() {
+  testWidgets(
+    'SettingsAsyncContent preserves stale data across refresh',
+    (
+      tester,
+    ) async {
+      final loads = <Completer<String>>[];
+      final provider = FutureProvider<String>((ref) {
+        final load = Completer<String>();
+        loads.add(load);
+        return load.future;
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            theme: testLightTheme,
+            home: Consumer(
+              builder: (context, ref, _) => SettingsAsyncContent<String>(
+                state: ref.watch(provider),
+                loading: const SettingsSkeletonLayout.form(
+                  semanticLabel: '설정 불러오는 중',
+                ),
+                error: (error, _) => TRText.inherit('$error'),
+                data: (value) => Center(
+                  child: TRButton(
+                    onPressed: () => ref.invalidate(provider),
+                    child: TRText.inherit(value),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(TRSkeleton), findsWidgets);
+
+      loads.single.complete('Ready');
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Ready'), findsOneWidget);
+
+      await tester.tap(find.text('Ready'));
+      await tester.pump();
+      expect(find.text('Ready'), findsOneWidget);
+      expect(find.byType(SettingsSkeletonLayout), findsNothing);
+
+      loads.last.completeError(Exception('refresh failed'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Ready'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('settings-refresh-error')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__settings_async_loading__widget'],
+  );
+
+  group('SettingsSkeletonLayout', () {
+    testWidgets(
+      'renders an inert labelled form skeleton',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            const SettingsSkeletonLayout.form(
+              semanticLabel: 'Loading settings',
+            ),
+          ),
+        );
+
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-form')),
+          findsOneWidget,
+        );
+        expect(find.byType(TRSkeleton), findsWidgets);
+        expect(find.bySemanticsLabel('Loading settings'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(SettingsSkeletonLayout),
+            matching: find.byType(Focus),
+          ),
+          findsNothing,
+        );
+      },
+      tags: const <String>['feature_test__settings_async_loading__widget'],
+    );
+
+    testWidgets(
+      'adapts list-detail loading to the available width',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _host(
+            const SettingsSkeletonLayout.listDetail(
+              semanticLabel: 'Loading settings',
+            ),
+          ),
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-list-pane')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-detail-pane')),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(
+          _host(
+            const SettingsSkeletonLayout.listDetail(
+              semanticLabel: 'Loading settings',
+            ),
+            width: 390,
+          ),
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-list-pane')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-detail-pane')),
+          findsNothing,
+        );
+      },
+      tags: const <String>['feature_test__settings_async_loading__widget'],
+    );
+  });
+
   group('SettingsScaffold', () {
     testWidgets('caps its content and centres it in a wide pane', (
       tester,

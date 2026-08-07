@@ -48,17 +48,17 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       widget.hostId,
       widget.worktreeId,
     );
-    return ref
-        .watch(provider)
-        .when(
-          loading: () =>
-              const Center(child: TRSpinner(label: 'Loading MCP servers')),
-          error: (error, _) => Center(
-            key: const ValueKey<String>('mcp-settings-error'),
-            child: TRText.inherit('$error'),
-          ),
-          data: (state) => _build(context, l10n, state),
-        );
+    return SettingsAsyncContent<McpServersState>(
+      state: ref.watch(provider),
+      loading: SettingsSkeletonLayout.listDetail(
+        semanticLabel: l10n.settingsLoading,
+      ),
+      error: (error, _) => Center(
+        key: const ValueKey<String>('mcp-settings-error'),
+        child: TRText.inherit('$error'),
+      ),
+      data: (state) => _build(context, l10n, state),
+    );
   }
 
   Widget _build(

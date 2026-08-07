@@ -1,4 +1,5 @@
 tags:
+  feature_test__settings_async_loading__widget:
   feature_test__permission_settings__contract:
   feature_test__permission_settings__verticalSlice:
   feature_test__permission_settings__widget:

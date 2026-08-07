@@ -32,8 +32,11 @@ class _PermissionSettingsPageState
     final state = ref.watch(
       permissionSettingsControllerProvider(widget.hostId),
     );
-    return state.when(
-      loading: () => const Center(child: TRSpinner()),
+    return SettingsAsyncContent<PermissionSettingsDto>(
+      state: state,
+      loading: SettingsSkeletonLayout.form(
+        semanticLabel: AppLocalizations.of(context).settingsLoading,
+      ),
       error: (error, stackTrace) => Center(child: TRText.inherit('$error')),
       data: (settings) {
         final l10n = AppLocalizations.of(context);

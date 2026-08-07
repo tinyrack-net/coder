@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/app/router/app_router.dart';
 import 'package:coder_app/src/features/workspace/presentation/pages/project_settings_page.dart';
@@ -68,6 +70,54 @@ void main() {
       'npm run build',
     );
   });
+
+  testWidgets(
+    'project settings leaves the editor usable while host shell loads',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final gate = Completer<void>();
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace('workspace', 'coder')],
+        terminalShellGate: gate.future,
+      )..projectSettings['workspace'] = const ProjectSettingsDto();
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const ProjectSettingsRoute(hostId: 'server').location,
+        settle: false,
+      );
+      addTearDown(router.dispose);
+      for (var frame = 0; frame < 5; frame++) {
+        await tester.pump();
+      }
+
+      expect(_textInput('Setup (worktree 생성 후)'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('settings-skeleton-overlay')),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<TRButton>(find.widgetWithText(TRButton, '저장')).onPressed,
+        isNull,
+      );
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('host-shell-executable')),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<TRButton>(find.widgetWithText(TRButton, '저장')).onPressed,
+        isNotNull,
+      );
+    },
+    tags: const <String>[
+      'feature_test__settings_async_loading__widget',
+      'feature_test__terminal_settings__widget',
+    ],
+  );
 
   testWidgets(
     'project settings lists projects and saves worktree lifecycle hooks',
@@ -267,8 +317,9 @@ Finder _keyedTextInput(String key) => find.descendant(
 Future<GoRouter> _pumpRoute(
   WidgetTester tester,
   FakeCoderApi api,
-  String location,
-) async {
+  String location, {
+  bool settle = true,
+}) async {
   final router = GoRouter(initialLocation: location, routes: $appRoutes);
   await tester.pumpWidget(
     ProviderScope(
@@ -285,6 +336,10 @@ Future<GoRouter> _pumpRoute(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
   return router;
 }

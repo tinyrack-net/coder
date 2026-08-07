@@ -104,6 +104,11 @@ final class FakeCoderApi
     this.suggestDirectoriesGate,
     this.workspaceCatalogGate,
     this.agentDefinitionsGate,
+    this.terminalShellGate,
+    this.skillListGate,
+    this.permissionSettingsGate,
+    this.providerConnectionsGate,
+    this.mcpListGate,
     this.createWorktreeError,
     this.suggestDirectoriesError,
     this.projectSettingsError,
@@ -340,6 +345,21 @@ final class FakeCoderApi
   /// Optional gate used to keep agent definition discovery in its loading
   /// state.
   final Future<void>? agentDefinitionsGate;
+
+  /// Optional gate used to keep daemon shell settings in their loading state.
+  final Future<void>? terminalShellGate;
+
+  /// Optional gate used to keep skill discovery in its loading state.
+  final Future<void>? skillListGate;
+
+  /// Optional gate used to keep permission settings in their loading state.
+  final Future<void>? permissionSettingsGate;
+
+  /// Optional gate used to keep provider settings in their loading state.
+  final Future<void>? providerConnectionsGate;
+
+  /// Optional gate used to keep MCP discovery in its loading state.
+  final Future<void>? mcpListGate;
 
   /// Daemon-side directory tree keyed by parent path.
   final Map<String, List<String>> directories;
@@ -932,8 +952,10 @@ final class FakeCoderApi
   }
 
   @override
-  Future<PermissionSettingsDto> getDefaultPermissionMode() async =>
-      PermissionSettingsDto(defaultMode: _defaultPermissionMode);
+  Future<PermissionSettingsDto> getDefaultPermissionMode() async {
+    await permissionSettingsGate;
+    return PermissionSettingsDto(defaultMode: _defaultPermissionMode);
+  }
 
   @override
   Future<PermissionSettingsDto> setDefaultPermissionMode(
@@ -1021,7 +1043,10 @@ final class FakeCoderApi
   }
 
   @override
-  Future<ShellSpecDto?> getTerminalShell() async => _terminalShell;
+  Future<ShellSpecDto?> getTerminalShell() async {
+    await terminalShellGate;
+    return _terminalShell;
+  }
 
   @override
   Future<void> setTerminalShell(ShellSpecDto? shell) async {
@@ -1136,6 +1161,7 @@ final class FakeCoderApi
 
   @override
   Future<List<McpServerStateDto>> listMcpServers({String? worktreeId}) async {
+    await mcpListGate;
     if (mcpListResponses.isNotEmpty) {
       return mcpListResponses.removeAt(0);
     }
@@ -1230,6 +1256,7 @@ final class FakeCoderApi
 
   @override
   Future<List<SkillDto>> listSkills({String? workspaceId}) async {
+    await skillListGate;
     final error = skillListError;
     if (error != null) throw error;
     return List<SkillDto>.unmodifiable(_skillsFor(workspaceId));
@@ -1316,8 +1343,10 @@ final class FakeCoderApi
   Future<ProviderCatalogDto> listProviderCatalog() async => _catalog;
 
   @override
-  Future<List<ProviderConnectionDto>> listProviderConnections() async =>
-      List<ProviderConnectionDto>.unmodifiable(_connections);
+  Future<List<ProviderConnectionDto>> listProviderConnections() async {
+    await providerConnectionsGate;
+    return List<ProviderConnectionDto>.unmodifiable(_connections);
+  }
 
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(

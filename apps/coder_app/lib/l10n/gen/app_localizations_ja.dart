@@ -66,6 +66,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsTitle => 'Settings';
 
   @override
+  String get settingsLoading => '設定を読み込み中';
+
+  @override
+  String settingsRefreshFailed(String error) {
+    return '設定を再読み込みできませんでした: $error';
+  }
+
+  @override
   String get settingsSectionApp => 'App';
 
   @override

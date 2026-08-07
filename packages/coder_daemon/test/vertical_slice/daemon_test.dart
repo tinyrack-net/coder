@@ -2553,6 +2553,11 @@ void main() {
         name: 'Attachments',
       );
       final models = await client.listProviderModels('openai');
+      final runnableModel = models.firstWhere(
+        (model) =>
+            model.capabilities.streaming == CapabilitySupport.supported &&
+            model.capabilities.toolCalling == CapabilitySupport.supported,
+      );
       final session = await client.createSession(
         id: 'attachment-session',
         worktreeId: catalog.worktrees.single.id,
@@ -2560,7 +2565,7 @@ void main() {
         agentDefinitionId: 'coder',
         model: SessionModelSelectionDto(
           providerConnectionId: 'openai',
-          modelId: models.first.id,
+          modelId: runnableModel.id,
         ),
       );
       await client.subscribeTimeline(session.id);

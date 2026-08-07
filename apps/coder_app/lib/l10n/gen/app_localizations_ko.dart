@@ -66,6 +66,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsTitle => '설정';
 
   @override
+  String get settingsLoading => '설정 불러오는 중';
+
+  @override
+  String settingsRefreshFailed(String error) {
+    return '설정을 새로 불러오지 못했습니다: $error';
+  }
+
+  @override
   String get settingsSectionApp => 'App';
 
   @override
