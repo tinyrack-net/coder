@@ -672,12 +672,16 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
       title: TRText.inherit(
         l10n.providerSettingsConnectTitle(widget.providerName),
       ),
-      content: TRTextField(
-        key: const ValueKey('provider-api-key'),
-        controller: _controller,
-        obscureText: true,
-        autofocus: true,
-        label: 'API key',
+      content: SettingsDialogForm(
+        children: <Widget>[
+          TRTextField(
+            key: const ValueKey('provider-api-key'),
+            controller: _controller,
+            obscureText: true,
+            autofocus: true,
+            label: 'API key',
+          ),
+        ],
       ),
       actions: <TRButton>[
         TRButton(
@@ -756,59 +760,53 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
       title: TRText.inherit(l10n.providerSettingsCustomTitle),
-      content: SizedBox(
-        width: TRMeasurements.overlayWidthMd,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
+      content: SingleChildScrollView(
+        child: SettingsDialogForm(
+          children: <Widget>[
+            TRTextField(
+              controller: _name,
+              label: l10n.commonName,
+            ),
+            TRTextField(
+              controller: _baseUrl,
+              label: 'Base URL',
+            ),
+            TRSelectFormField<String>(
+              initialValue: _wireFormatId,
+              label: l10n.providerSettingsApiFormat,
+              width: TRMeasurements.overlayWidthMd,
+              items: widget.wireFormats
+                  .map(
+                    (format) => TRSelectItem<String>(
+                      value: format.id,
+                      label: format.label,
+                    ),
+                  )
+                  .toList(growable: false),
+              onValueChange: (value) {
+                if (value != null) setState(() => _wireFormatId = value);
+              },
+            ),
+            CoderSwitchRow(
+              flush: true,
+              title: TRText.inherit(l10n.providerSettingsRequiresApiKey),
+              value: _authenticationRequired,
+              onChanged: (value) =>
+                  setState(() => _authenticationRequired = value),
+            ),
+            if (_authenticationRequired)
               TRTextField(
-                controller: _name,
-                label: l10n.commonName,
+                controller: _apiKey,
+                obscureText: true,
+                label: 'API key',
               ),
-              const SizedBox(height: TRSpacing.medium),
+            if (widget.initial?.manualModelIds.isNotEmpty ?? false)
               TRTextField(
-                controller: _baseUrl,
-                label: 'Base URL',
+                controller: _models,
+                label: l10n.providerSettingsManualModels,
+                placeholder: 'model-a, model-b',
               ),
-              const SizedBox(height: TRSpacing.medium),
-              TRSelectFormField<String>(
-                initialValue: _wireFormatId,
-                label: l10n.providerSettingsApiFormat,
-                items: widget.wireFormats
-                    .map(
-                      (format) => TRSelectItem<String>(
-                        value: format.id,
-                        label: format.label,
-                      ),
-                    )
-                    .toList(growable: false),
-                onValueChange: (value) {
-                  if (value != null) setState(() => _wireFormatId = value);
-                },
-              ),
-              CoderSwitchRow(
-                flush: true,
-                title: TRText.inherit(l10n.providerSettingsRequiresApiKey),
-                value: _authenticationRequired,
-                onChanged: (value) =>
-                    setState(() => _authenticationRequired = value),
-              ),
-              if (_authenticationRequired)
-                TRTextField(
-                  controller: _apiKey,
-                  obscureText: true,
-                  label: 'API key',
-                ),
-              const SizedBox(height: TRSpacing.medium),
-              if (widget.initial?.manualModelIds.isNotEmpty ?? false)
-                TRTextField(
-                  controller: _models,
-                  label: l10n.providerSettingsManualModels,
-                  placeholder: 'model-a, model-b',
-                ),
-            ],
-          ),
+          ],
         ),
       ),
       actions: <TRButton>[
@@ -876,21 +874,15 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
       title: TRText.inherit(l10n.providerSettingsModelLookupFailedTitle),
-      content: SizedBox(
-        width: TRMeasurements.overlayWidthMd,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            TRText(l10n.providerSettingsModelLookupFailedBody),
-            const SizedBox(height: TRSpacing.medium),
-            TRTextField(
-              controller: _models,
-              label: l10n.providerSettingsManualModels,
-              placeholder: 'model-a, model-b',
-            ),
-          ],
-        ),
+      content: SettingsDialogForm(
+        children: <Widget>[
+          TRText(l10n.providerSettingsModelLookupFailedBody),
+          TRTextField(
+            controller: _models,
+            label: l10n.providerSettingsManualModels,
+            placeholder: 'model-a, model-b',
+          ),
+        ],
       ),
       actions: <TRButton>[
         TRButton(

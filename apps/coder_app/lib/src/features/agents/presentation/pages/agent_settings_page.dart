@@ -83,12 +83,11 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
                 ),
                 Expanded(
                   child: selected == null
-                      ? Center(
-                          child: TRText.inherit(
-                            AppLocalizations.of(
-                              context,
-                            ).agentSettingsSelectAgent,
-                          ),
+                      ? SettingsEmptyState(
+                          title: AppLocalizations.of(
+                            context,
+                          ).agentSettingsSelectAgent,
+                          icon: const Icon(CoderIcons.agent),
                         )
                       : _AgentEditor(
                           key: ValueKey<String>(selected.contentHash),
@@ -703,53 +702,48 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
       title: TRText.inherit(l10n.agentSettingsAddTitle),
-      content: SizedBox(
-        width: TRMeasurements.overlayWidthMd,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            TRTextField(
-              controller: _id,
-              autofocus: true,
-              enabled: !_saving,
-              onChanged: (_) => setState(() => _error = null),
-              label: l10n.agentSettingsIdLabel,
-              placeholder: 'reviewer',
-              errorText: _idError(l10n),
+      content: SettingsDialogForm(
+        children: <Widget>[
+          TRTextField(
+            controller: _id,
+            autofocus: true,
+            enabled: !_saving,
+            onChanged: (_) => setState(() => _error = null),
+            label: l10n.agentSettingsIdLabel,
+            placeholder: 'reviewer',
+            errorText: _idError(l10n),
+          ),
+          TRTextField(
+            controller: _name,
+            enabled: !_saving,
+            onChanged: (_) => setState(() => _error = null),
+            label: l10n.commonName,
+            errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
+                ? null
+                : l10n.agentSettingsNameRequired,
+          ),
+          TRSelectFormField<AgentMode>(
+            initialValue: _mode,
+            label: l10n.commonKind,
+            width: TRMeasurements.overlayWidthMd,
+            items: AgentMode.values
+                .map(
+                  (value) => TRSelectItem<AgentMode>(
+                    value: value,
+                    label: value.name,
+                  ),
+                )
+                .toList(growable: false),
+            onValueChange: _saving
+                ? null
+                : (value) => setState(() => _mode = value!),
+          ),
+          if (_error case final error?)
+            TRText(
+              '$error',
+              color: TRTextColor.danger,
             ),
-            TRTextField(
-              controller: _name,
-              enabled: !_saving,
-              onChanged: (_) => setState(() => _error = null),
-              label: l10n.commonName,
-              errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
-                  ? null
-                  : l10n.agentSettingsNameRequired,
-            ),
-            TRSelectFormField<AgentMode>(
-              initialValue: _mode,
-              label: l10n.commonKind,
-              items: AgentMode.values
-                  .map(
-                    (value) => TRSelectItem<AgentMode>(
-                      value: value,
-                      label: value.name,
-                    ),
-                  )
-                  .toList(growable: false),
-              onValueChange: _saving
-                  ? null
-                  : (value) => setState(() => _mode = value!),
-            ),
-            if (_error case final error?) ...<Widget>[
-              const SizedBox(height: TRSpacing.medium),
-              TRText(
-                '$error',
-                color: TRTextColor.danger,
-              ),
-            ],
-          ],
-        ),
+        ],
       ),
       actions: <TRButton>[
         TRButton(
