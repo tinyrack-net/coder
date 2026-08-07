@@ -59,6 +59,32 @@ void main() {
       );
     });
 
+    // `p.relative` yields `packages\coder_cli` on Windows, which never matched
+    // the POSIX key a Git diff produces. Every path then looked unrecognised
+    // and forced a full run, so the whole feature was a no-op there. The bug
+    // is invisible on a POSIX host, hence the hand-built graph.
+    test('a Windows-style package directory still matches a Git path', () {
+      final windows = WorkspaceGraph(<String, WorkspacePackage>{
+        'coder_cli': const WorkspacePackage(
+          name: 'coder_cli',
+          directory: r'packages\coder_cli',
+          isFlutter: false,
+          usesBuildRunner: false,
+          dependencies: <String>{},
+        ),
+      });
+
+      expect(windows.packageForDirectory('packages/coder_cli'), 'coder_cli');
+      expect(
+        CiImpactPlanner(windows)
+            .plan(
+              changedFiles: <String>[r'packages\coder_cli\lib\src\runner.dart'],
+            )
+            .affectedPackages,
+        <String>{'coder_cli'},
+      );
+    });
+
     test('rejects a package it does not know', () {
       expect(
         () => graph.package('nope'),
