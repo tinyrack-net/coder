@@ -694,6 +694,36 @@ abstract class AppLocalizations {
   /// **'All sessions'**
   String get workspaceAllSessions;
 
+  /// Splits a workspace pane with a new pane on the right.
+  ///
+  /// In en, this message translates to:
+  /// **'Split right'**
+  String get workspaceSplitRight;
+
+  /// Splits a workspace pane with a new pane below.
+  ///
+  /// In en, this message translates to:
+  /// **'Split down'**
+  String get workspaceSplitDown;
+
+  /// Accessible label for a draggable pane separator.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize panes'**
+  String get workspaceResizePanes;
+
+  /// Title of the mobile sheet listing every open tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch tab'**
+  String get workspaceSwitchTab;
+
+  /// Moves the active tab to another pane without dragging.
+  ///
+  /// In en, this message translates to:
+  /// **'Move active tab to pane'**
+  String get workspaceMoveTabToPane;
+
   /// Tooltip that closes one session tab.
   ///
   /// In en, this message translates to:

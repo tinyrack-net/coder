@@ -402,6 +402,50 @@ void main() {
             ),
           ),
           GoldenTestScenario(
+            name: 'resolved approval light',
+            child: SizedBox(
+              width: 460,
+              height: 300,
+              child: _material(
+                ThemeMode.light,
+                ProviderScope(
+                  child: ApprovalCard(
+                    interaction: ChatApprovalInteraction(
+                      key: 'approval-${approval.id}',
+                      turnId: approval.turnId,
+                      createdAt: approval.createdAt,
+                      approval: approval,
+                      status: ChatInteractionStatus.resolved,
+                      approved: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'resolved approval dark',
+            child: SizedBox(
+              width: 460,
+              height: 300,
+              child: _material(
+                ThemeMode.dark,
+                ProviderScope(
+                  child: ApprovalCard(
+                    interaction: ChatApprovalInteraction(
+                      key: 'approval-${approval.id}',
+                      turnId: approval.turnId,
+                      createdAt: approval.createdAt,
+                      approval: approval,
+                      status: ChatInteractionStatus.resolved,
+                      approved: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
             name: 'plan light',
             child: SizedBox(
               width: 460,
@@ -770,6 +814,39 @@ void main() {
 
   unawaited(
     goldenTest(
+      'desktop workspace renders a nested pane tree',
+      fileName: 'workspace_multi_pane',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      builder: () => SizedBox(
+        width: 1100,
+        height: 760,
+        child: _sessionComposer(ThemeMode.dark, split: true),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'mobile workspace presents all pane tabs in a sheet',
+      fileName: 'workspace_mobile_tab_sheet',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      builder: () => SizedBox(
+        width: 390,
+        height: 760,
+        child: _sessionComposer(ThemeMode.dark, split: true),
+      ),
+      whilePerforming: (tester) async {
+        await tester.tap(
+          find.byKey(const ValueKey<String>('workspace-mobile-tab-trigger')),
+        );
+        await tester.pumpAndSettle();
+        return null;
+      },
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'directory new workspace hides Git targets',
       fileName: 'new_workspace_directory',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
@@ -954,7 +1031,7 @@ Widget _composerState(
   ),
 );
 
-Widget _sessionComposer(ThemeMode mode) {
+Widget _sessionComposer(ThemeMode mode, {bool split = false}) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
@@ -978,20 +1055,55 @@ Widget _sessionComposer(ThemeMode mode) {
     workspaces: <WorkspaceDto>[workspace],
     worktrees: <WorktreeDto>[checkout],
   );
+  const selection = WorkspaceSelection(
+    hostId: 'server',
+    workspaceId: 'workspace',
+    worktreeId: 'checkout',
+  );
+  final store = MemoryAppStore(
+    settings: AppSettings(
+      sessionTabs: split
+          ? <String, SessionTabPreference>{
+              selection.storageKey: const SessionTabPreference(
+                tabs: <WorkspaceTabPreference>[
+                  WorkspaceTabPreference(
+                    id: 'draft:left',
+                    kind: WorkspaceTabTargetKind.draft,
+                  ),
+                  WorkspaceTabPreference(
+                    id: 'draft:right',
+                    kind: WorkspaceTabTargetKind.draft,
+                  ),
+                ],
+                root: WorkspaceSplitPreference(
+                  id: 'split:root',
+                  axis: WorkspaceSplitAxis.horizontal,
+                  ratio: 0.5,
+                  first: WorkspacePanePreference(
+                    id: 'pane:left',
+                    tabIds: <String>['draft:left'],
+                    activeTabId: 'draft:left',
+                  ),
+                  second: WorkspacePanePreference(
+                    id: 'pane:right',
+                    tabIds: <String>['draft:right'],
+                    activeTabId: 'draft:right',
+                  ),
+                ),
+                focusedPaneId: 'pane:right',
+              ),
+            }
+          : const <String, SessionTabPreference>{},
+    ),
+  );
   return ProviderScope(
     overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
+      appServicesProvider.overrideWithValue(fakeAppServices(api, store: store)),
       attachmentInputProvider.overrideWithValue(null),
     ],
     child: _material(
       mode,
-      const WorkspacePage(
-        selection: WorkspaceSelection(
-          hostId: 'server',
-          workspaceId: 'workspace',
-          worktreeId: 'checkout',
-        ),
-      ),
+      const WorkspacePage(selection: selection),
     ),
   );
 }

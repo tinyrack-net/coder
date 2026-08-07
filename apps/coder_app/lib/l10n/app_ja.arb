@@ -17,5 +17,10 @@
   "providerSettingsManualModels": "手動モデル ID",
   "providerSettingsApiFormat": "API 形式",
   "providerSettingsRequiresApiKey": "API キーが必要",
-  "providerSettingsDefaultModelAutomatic": "プロバイダーの既定値"
+  "providerSettingsDefaultModelAutomatic": "プロバイダーの既定値",
+  "workspaceSplitRight": "右に分割",
+  "workspaceSplitDown": "下に分割",
+  "workspaceResizePanes": "ペインのサイズを変更",
+  "workspaceSwitchTab": "タブを切り替え",
+  "workspaceMoveTabToPane": "アクティブなタブを別のペインに移動"
 }

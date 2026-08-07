@@ -322,6 +322,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceAllSessions => '모든 session';
 
   @override
+  String get workspaceSplitRight => '오른쪽으로 분할';
+
+  @override
+  String get workspaceSplitDown => '아래로 분할';
+
+  @override
+  String get workspaceResizePanes => 'Pane 크기 조절';
+
+  @override
+  String get workspaceSwitchTab => '탭 전환';
+
+  @override
+  String get workspaceMoveTabToPane => '활성 탭을 다른 pane으로 이동';
+
+  @override
   String get workspaceCloseTab => '탭 닫기';
 
   @override

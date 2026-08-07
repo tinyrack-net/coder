@@ -468,7 +468,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'session.tabs',
-    description: 'Opens, closes, restores, and switches session tabs.',
+    description:
+        'Opens, closes, restores, and moves tabs through resizable desktop '
+        'pane trees and a mobile all-tabs sheet.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.widget,
@@ -477,7 +479,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     e2eScenarios: <FeatureScenario>[
       FeatureScenario(
         id: 'open_switch_close_restore',
-        description: 'Opens, switches, closes, and restores session tabs.',
+        description:
+            'Splits, resizes, moves, closes, restores, and switches tabs '
+            'through desktop panes and the mobile sheet.',
         surfaces: _allSurfaces,
       ),
     ],
