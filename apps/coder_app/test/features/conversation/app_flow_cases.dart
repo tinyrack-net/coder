@@ -153,11 +153,14 @@ void _registerConversationAppFlows() {
       );
       expect(find.text('이 계획대로 진행할까요?'), findsOneWidget);
 
+      final timelineBefore = tester.getRect(find.byType(ChatTimelineView));
+
       await tester.tap(find.widgetWithText(TRButton, '계획대로 실행'));
       await tester.pumpAndSettle();
       expect(api.updatedSessionModes.single.mode, SessionMode.normal);
       expect(api.startedPrompts.last, '계획을 실행해줘.');
       expect(find.text('이 계획대로 진행할까요?'), findsNothing);
+      expect(tester.getRect(find.byType(ChatTimelineView)), timelineBefore);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
   );

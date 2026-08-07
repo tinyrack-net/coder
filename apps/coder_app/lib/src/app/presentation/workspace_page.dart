@@ -7,11 +7,10 @@ import 'package:coder_app/src/features/agents/application/agent_definitions_cont
 import 'package:coder_app/src/features/conversation/application/attachment_ports.dart';
 import 'package:coder_app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:coder_app/src/features/conversation/application/conversation_controller.dart';
+import 'package:coder_app/src/features/conversation/application/conversation_timeline_controller.dart';
 import 'package:coder_app/src/features/conversation/application/subagent_track_model.dart';
 import 'package:coder_app/src/features/conversation/domain/composer_commands.dart';
-import 'package:coder_app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_plan_actions.dart';
-import 'package:coder_app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:coder_app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:coder_app/src/features/conversation/presentation/subagents/subagent_status_icon.dart';
 import 'package:coder_app/src/features/conversation/presentation/subagents/subagent_track.dart';
@@ -776,9 +775,18 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
       conversationControllerProvider(widget.selection.hostId, current.id),
     );
     final value = conversation.asData?.value;
-    final items = projectChatTimeline(
-      value?.timeline ?? const <TimelineEventDto>[],
+    final items = ref.watch(
+      conversationTimelineProvider(widget.selection.hostId, current.id),
     );
+    final visibleItems = readOnly
+        ? items
+              .where(
+                (item) =>
+                    item is! ChatApprovalInteraction &&
+                    item is! ChatQuestionInteraction,
+              )
+              .toList(growable: false)
+        : items;
     final agentsAsync = ref.watch(
       agentDefinitionsControllerProvider(widget.selection.hostId),
     );
@@ -809,7 +817,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         );
     // Only the newest plan can still be acted on, and only in plan mode: the
     // card asks whether to leave planning and carry the plan out.
-    final lastPlan = items.whereType<ChatPlanProposal>().lastOrNull;
+    final lastPlan = visibleItems.whereType<ChatPlanProposal>().lastOrNull;
     final pendingPlan =
         !busy &&
             current.mode == SessionMode.plan &&
@@ -851,60 +859,39 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           ),
           Expanded(
             child: ChatTimelineView(
-              items: items,
+              items: visibleItems,
               busy: busy,
+              hostId: widget.selection.hostId,
+              planActionBuilder: pendingPlan == null
+                  ? null
+                  : (proposal) => proposal.key != pendingPlan.key
+                        ? null
+                        : ChatPlanActions(
+                            selection: widget.selection,
+                            session: current,
+                            proposal: proposal,
+                            embedded: true,
+                            onDismiss: () => setState(
+                              () => _dismissedPlans.add(proposal.key),
+                            ),
+                            onSessionCreated: (session) => _goSession(
+                              context,
+                              widget.selection,
+                              session.id,
+                            ),
+                          ),
               loadAttachment: _loadAttachment,
               exportAttachment: _exportAttachment,
             ),
           ),
-          // A plan and any number of approvals sit between the timeline and
-          // the composer, and each grows with the content it previews. The
-          // bottom group is capped so the composer always keeps its natural
-          // size and only the cards scroll; whatever the group leaves over
-          // goes back to the timeline above.
+          // Keep the auxiliary subagent track bounded so the composer retains
+          // its natural height and the timeline receives the remaining space.
           if (!readOnly)
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: constraints.maxHeight / 2),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          if (pendingPlan != null)
-                            ChatPlanActions(
-                              selection: widget.selection,
-                              session: current,
-                              proposal: pendingPlan,
-                              onDismiss: () => setState(
-                                () => _dismissedPlans.add(pendingPlan.key),
-                              ),
-                              onSessionCreated: (session) => _goSession(
-                                context,
-                                widget.selection,
-                                session.id,
-                              ),
-                            ),
-                          for (final approval
-                              in value?.approvals.values ??
-                                  const <ApprovalRequestDto>[])
-                            ApprovalCard(
-                              hostId: widget.selection.hostId,
-                              approval: approval,
-                            ),
-                          for (final question
-                              in value?.questions.values ??
-                                  const <UserQuestionRequestDto>[])
-                            ChatQuestionCard(
-                              hostId: widget.selection.hostId,
-                              request: question,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
                   if (subagentRows.isNotEmpty)
                     SubagentTrack(
                       rows: subagentRows,

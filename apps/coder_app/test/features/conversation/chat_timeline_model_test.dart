@@ -262,7 +262,17 @@ void main() {
     () {
       final items = projectChatTimeline(<TimelineEventDto>[
         event('approval.requested', <String, dynamic>{
-          'approval': <String, dynamic>{'id': 'approval-1'},
+          'approval': ApprovalRequestDto(
+            id: 'approval-1',
+            sessionId: 'session',
+            turnId: 'turn-1',
+            toolCallId: 'call-approval',
+            toolName: 'write_file',
+            risk: ToolRisk.write,
+            arguments: const <String, dynamic>{'path': 'a.dart'},
+            status: ApprovalStatus.pending,
+            createdAt: now,
+          ).toJson(),
         }),
         event('approval.resolved', <String, dynamic>{
           'approvalId': 'approval-1',
@@ -287,6 +297,10 @@ void main() {
         'reasoningTokens': 1,
         'totalTokens': 15,
       });
+      final approval = items.whereType<ChatApprovalInteraction>().single;
+      expect(approval.key, 'approval-approval-1');
+      expect(approval.status, ChatInteractionStatus.resolved);
+      expect(approval.approved, isTrue);
       final notices = items.whereType<ChatNotice>().toList(growable: false);
       expect(notices.map((notice) => notice.kind), <ChatNoticeKind>[
         ChatNoticeKind.turnFailed,
@@ -294,7 +308,7 @@ void main() {
       ]);
       expect(notices.first.message, 'provider down');
       expect(items.whereType<ChatUnknownEvent>().single.type, 'surprise.event');
-      expect(items, hasLength(4));
+      expect(items, hasLength(5));
     },
     tags: const <String>['feature_test__turn_execution__unit'],
   );
@@ -340,6 +354,72 @@ void main() {
       );
     },
     tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  testWidgets(
+    'a pending question keeps its timeline key when its answer arrives',
+    (tester) async {
+      final tool = event('tool.requested', <String, dynamic>{
+        'callId': 'call-ask',
+        'name': 'ask_user',
+        'arguments': <String, dynamic>{
+          'questions': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'storage',
+              'header': 'Storage',
+              'question': 'Which store?',
+              'options': <Map<String, dynamic>>[
+                <String, dynamic>{'label': 'SQLite', 'description': 'Local'},
+              ],
+            },
+          ],
+        },
+      });
+      final request = UserQuestionRequestDto(
+        id: 'request-1',
+        sessionId: 'session',
+        turnId: 'turn-1',
+        toolCallId: 'call-ask',
+        questions: const <UserQuestionItemDto>[
+          UserQuestionItemDto(
+            id: 'storage',
+            header: 'Storage',
+            question: 'Which store?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(label: 'SQLite', description: 'Local'),
+            ],
+          ),
+        ],
+        status: UserQuestionStatus.pending,
+        createdAt: now,
+      );
+
+      final pending =
+          projectChatTimeline(
+                <TimelineEventDto>[tool],
+                questions: <String, UserQuestionRequestDto>{
+                  request.id: request,
+                },
+              ).single
+              as ChatQuestionInteraction;
+      final answered =
+          projectChatTimeline(<TimelineEventDto>[
+                tool,
+                event('tool.completed', <String, dynamic>{
+                  'callId': 'call-ask',
+                  'name': 'ask_user',
+                  'output':
+                      '[{"questionId":"storage","answer":"SQLite",'
+                      '"isFreeForm":false}]',
+                  'isError': false,
+                }),
+              ]).single
+              as ChatUserAnswer;
+
+      expect(answered.key, pending.key);
+      expect(answered.entries.single.answer, 'SQLite');
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
   );
 
   test(
