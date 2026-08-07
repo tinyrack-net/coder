@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/agents/application/agent_definitions_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/permission_picker.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
@@ -40,14 +41,14 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       loading: () => const Center(child: TRSpinner()),
       error: (error, _) => _AgentSettingsError(
         error: error,
-        onRetry: () => ref.invalidate(
-          agentDefinitionsControllerProvider(widget.hostId),
-        ),
+        onRetry: () =>
+            ref.invalidate(agentDefinitionsControllerProvider(widget.hostId)),
       ),
       data: (value) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < TRBreakpoints.medium;
+            final compact =
+                constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
             if (!compact &&
                 !value.definitions.any(
                   (definition) => definition.id == _selectedId,
@@ -76,7 +77,10 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             if (compact) return list;
             return Row(
               children: <Widget>[
-                SizedBox(width: TRMeasurements.paneMd, child: list),
+                SizedBox(
+                  width: CoderLayoutMetrics.settingsCollectionWidth,
+                  child: list,
+                ),
                 const TRSeparator(
                   orientation: TRSeparatorOrientation.vertical,
                   variant: TRSeparatorVariant.muted,
@@ -130,9 +134,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             diagnostics: const <AgentDefinitionDiagnosticDto>[],
           );
           return ref
-              .read(
-                agentDefinitionsControllerProvider(widget.hostId).notifier,
-              )
+              .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
               .create(input.id, definition);
         },
       ),
@@ -299,9 +301,8 @@ class _AgentEditorState extends State<_AgentEditor> {
               key: const ValueKey('agent-copy-path-button'),
               appearance: TRAppearance.ghost,
               label: l10n.agentSettingsCopyPath,
-              onPressed: () => Clipboard.setData(
-                ClipboardData(text: definition.sourcePath),
-              ),
+              onPressed: () =>
+                  Clipboard.setData(ClipboardData(text: definition.sourcePath)),
               icon: const Icon(CoderIcons.copy),
             ),
             if (definition.isBuiltIn)
@@ -433,10 +434,7 @@ class _AgentEditorState extends State<_AgentEditor> {
                     description: TRText.inherit(
                       _permissionMode == null
                           ? l10n.permissionSettingsDaemonDefault
-                          : permissionModeDescription(
-                              l10n,
-                              _permissionMode!,
-                            ),
+                          : permissionModeDescription(l10n, _permissionMode!),
                     ),
                     unboundedDescription: true,
                     control: TRButton(
@@ -629,10 +627,7 @@ class _CreateAgentInput {
 }
 
 class _CreateAgentDialog extends StatefulWidget {
-  const _CreateAgentDialog({
-    required this.existingIds,
-    required this.onCreate,
-  });
+  const _CreateAgentDialog({required this.existingIds, required this.onCreate});
 
   final Set<String> existingIds;
   final Future<AgentDefinitionDto> Function(_CreateAgentInput input) onCreate;
@@ -705,10 +700,8 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
             width: TRMeasurements.overlayWidthMd,
             items: AgentMode.values
                 .map(
-                  (value) => TRSelectItem<AgentMode>(
-                    value: value,
-                    label: value.name,
-                  ),
+                  (value) =>
+                      TRSelectItem<AgentMode>(value: value, label: value.name),
                 )
                 .toList(growable: false),
             onValueChange: _saving
@@ -716,10 +709,7 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
                 : (value) => setState(() => _mode = value!),
           ),
           if (_error case final error?)
-            TRText(
-              '$error',
-              color: TRTextColor.danger,
-            ),
+            TRText('$error', color: TRTextColor.danger),
         ],
       ),
       actions: <TRButton>[

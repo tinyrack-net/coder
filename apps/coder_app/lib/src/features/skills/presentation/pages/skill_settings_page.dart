@@ -2,6 +2,7 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/skills/application/skills_controller.dart';
 import 'package:coder_app/src/features/workspace/application/workspace_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -54,7 +55,8 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     final state = ref.watch(provider);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < TRBreakpoints.medium;
+        final compact =
+            constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
         if (compact) {
           return Column(
             children: <Widget>[
@@ -127,9 +129,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
               icon: const Icon(CoderIcons.sparkle),
             )
           : _SkillEditor(
-              key: ValueKey<String>(
-                '${selected.id}:${selected.contentHash}',
-              ),
+              key: ValueKey<String>('${selected.id}:${selected.contentHash}'),
               hostId: widget.hostId,
               workspaceId: widget.workspaceId,
               skill: selected,
@@ -142,7 +142,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
       Row(
         children: <Widget>[
           SizedBox(
-            width: TRMeasurements.paneMd,
+            width: CoderLayoutMetrics.settingsCollectionWidth,
             child: Column(
               children: <Widget>[
                 _ProjectSelector(
@@ -163,9 +163,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
             child:
                 detail ??
                 SettingsEmptyState(
-                  title: AppLocalizations.of(
-                    context,
-                  ).skillSettingsSelectSkill,
+                  title: AppLocalizations.of(context).skillSettingsSelectSkill,
                   icon: const Icon(CoderIcons.sparkle),
                 ),
           ),
@@ -235,10 +233,7 @@ class _ProjectSelector extends ConsumerWidget {
               label: l10n.skillSettingsProjectNone,
             ),
             for (final workspace in workspaces)
-              TRSelectItem<String?>(
-                value: workspace.id,
-                label: workspace.name,
-              ),
+              TRSelectItem<String?>(value: workspace.id, label: workspace.name),
           ],
           onValueChange: onChanged,
         ),
@@ -400,9 +395,8 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
               TRIconButton(
                 appearance: TRAppearance.ghost,
                 label: l10n.skillSettingsCopyPath,
-                onPressed: () => Clipboard.setData(
-                  ClipboardData(text: skill.sourcePath),
-                ),
+                onPressed: () =>
+                    Clipboard.setData(ClipboardData(text: skill.sourcePath)),
                 icon: const Icon(CoderIcons.copy),
               ),
             if (skill.isEditable)
@@ -722,10 +716,7 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
                 : (value) => setState(() => _source = value!),
           ),
           if (_error case final error?)
-            TRText(
-              '$error',
-              color: TRTextColor.danger,
-            ),
+            TRText('$error', color: TRTextColor.danger),
         ],
       ),
       actions: <TRButton>[
