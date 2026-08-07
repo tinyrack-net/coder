@@ -3,11 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  dropwell
   file_selector_linux
   flutter_secure_storage_linux
-  irondash_engine_context
   screen_retriever_linux
-  super_native_extensions
   tinyrack_ui
   tray_manager
   url_launcher_linux

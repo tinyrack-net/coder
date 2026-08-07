@@ -1,23 +1,21 @@
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coder_app/src/attachment_ports.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:super_clipboard/super_clipboard.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 export 'package:coder_app/src/attachment_ports.dart';
 
 /// Composer input adapter for a browser.
 ///
-/// The file picker, clipboard, and drop plugins all ship web implementations,
-/// so this differs from the native adapter only in lacking `dart:io`.
+/// A browser never reports a path, so every file arrives as bytes; that is the
+/// only way this differs from the native adapter.
 final class WebAttachmentInput implements AttachmentInputPort {
   /// Creates the web adapter.
   const WebAttachmentInput();
 
   @override
-  bool get supportsDrop => true;
+  bool get supportsDrop => DropwellPlatform.instance.supportsDrop;
 
   @override
   Future<List<PendingAttachment>> pickFiles() async {
@@ -26,62 +24,28 @@ final class WebAttachmentInput implements AttachmentInputPort {
   }
 
   @override
-  Future<List<PendingAttachment>> pasteFiles() async {
-    final clipboard = SystemClipboard.instance;
-    if (clipboard == null) return const <PendingAttachment>[];
-    final reader = await clipboard.read();
-    return _readItems(reader.items);
-  }
+  Future<List<PendingAttachment>> pasteFiles() async =>
+      _fromDropwell(await DropwellPlatform.instance.readClipboardFiles());
 
   @override
-  Future<List<PendingAttachment>> droppedFiles(PerformDropEvent event) =>
-      _readItems(
-        event.session.items
-            .map((item) => item.dataReader)
-            .whereType<DataReader>(),
-      );
+  Future<List<PendingAttachment>> droppedFiles(
+    List<DropwellFile> files,
+  ) async => _fromDropwell(files);
 
-  Future<List<PendingAttachment>> _readItems(
-    Iterable<DataReader> readers,
-  ) async {
-    final result = <PendingAttachment>[];
-    for (final reader in readers) {
-      final formats = reader
-          .getFormats(Formats.standardFormats)
-          .whereType<FileFormat>();
-      final format = formats.firstOrNull;
-      if (format == null) continue;
-      final completer = Completer<PendingAttachment?>();
-      final progress = reader.getFile(
-        format,
-        (file) async {
-          try {
-            final bytes = await file.readAll();
-            final name =
-                file.fileName ??
-                await reader.getSuggestedName() ??
-                defaultAttachmentName(format);
-            completer.complete(
-              _validated(
-                PendingAttachment.fromBytes(
-                  fileName: name,
-                  mimeType: mimeFromAttachmentName(name, format: format),
-                  bytes: bytes,
-                ),
-              ),
-            );
-          } on Object catch (error, stackTrace) {
-            completer.completeError(error, stackTrace);
-          }
-        },
-        onError: completer.completeError,
-      );
-      if (progress == null) continue;
-      final attachment = await completer.future;
-      if (attachment != null) result.add(attachment);
-    }
-    return result;
-  }
+  List<PendingAttachment> _fromDropwell(List<DropwellFile> files) => files
+      .map(
+        (file) => _validated(
+          PendingAttachment.fromBytes(
+            fileName: file.fileName,
+            mimeType: mimeFromAttachmentName(
+              file.fileName,
+              mimeHint: file.mimeType,
+            ),
+            bytes: file.bytes!,
+          ),
+        ),
+      )
+      .toList(growable: false);
 
   Future<PendingAttachment> _fromXFile(XFile file) async {
     // A browser has already buffered the selection, so the length is known

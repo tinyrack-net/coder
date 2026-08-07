@@ -3,11 +3,11 @@ import 'package:coder_app/src/attachment_io.dart';
 import 'package:coder_app/src/controller.dart';
 import 'package:coder_app/src/session_composer.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import 'support/fake_coder_api.dart';
 import 'support/localization.dart';
@@ -80,14 +80,12 @@ void main() {
         );
         expect(find.textContaining('fixture.png'), findsNothing);
 
-        final drop = tester.widget<DropRegion>(find.byType(DropRegion));
-        await drop.onPerformDrop(
-          PerformDropEvent(
-            session: _FakeDropSession(),
-            position: DropPosition(local: Offset.zero, global: Offset.zero),
-            acceptedOperation: DropOperation.copy,
-          ),
+        final region = tester.widget<DropwellRegion>(
+          find.byType(DropwellRegion),
         );
+        await region.onDrop(const <DropwellFile>[
+          DropwellFile.path(fileName: 'dropped.txt', path: '/tmp/dropped.txt'),
+        ]);
         await tester.pumpAndSettle();
         expect(find.textContaining('dropped.txt'), findsOneWidget);
       }
@@ -122,7 +120,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(DropRegion), findsNothing);
+      expect(find.byType(DropwellRegion), findsNothing);
       expect(
         find.byKey(const ValueKey('session-composer-attach')),
         findsOneWidget,
@@ -167,33 +165,13 @@ final class _FakeAttachmentInput implements AttachmentInputPort {
       const <PendingAttachment>[];
 
   @override
-  Future<List<PendingAttachment>> droppedFiles(PerformDropEvent event) async =>
-      <PendingAttachment>[
-        PendingAttachment.fromBytes(
-          fileName: 'dropped.txt',
-          mimeType: 'text/plain',
-          bytes: Uint8List.fromList(<int>[6]),
-        ),
-      ];
-}
-
-final class _FakeDropSession with Diagnosticable implements DropSession {
-  @override
-  Set<DropOperation> get allowedOperations => <DropOperation>{
-    DropOperation.copy,
-  };
-
-  @override
-  List<DropItem> get items => const <DropItem>[];
-
-  @override
-  Listenable get onDisposed => _EmptyListenable();
-}
-
-final class _EmptyListenable implements Listenable {
-  @override
-  void addListener(VoidCallback listener) {}
-
-  @override
-  void removeListener(VoidCallback listener) {}
+  Future<List<PendingAttachment>> droppedFiles(
+    List<DropwellFile> files,
+  ) async => <PendingAttachment>[
+    PendingAttachment.fromBytes(
+      fileName: 'dropped.txt',
+      mimeType: 'text/plain',
+      bytes: Uint8List.fromList(<int>[6]),
+    ),
+  ];
 }

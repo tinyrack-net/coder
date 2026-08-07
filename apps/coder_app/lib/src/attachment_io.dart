@@ -1,12 +1,10 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:coder_app/src/attachment_ports.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:super_clipboard/super_clipboard.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 export 'package:coder_app/src/attachment_ports.dart';
 
@@ -16,8 +14,7 @@ final class NativeAttachmentInput implements AttachmentInputPort {
   const NativeAttachmentInput();
 
   @override
-  bool get supportsDrop =>
-      Platform.isLinux || Platform.isMacOS || Platform.isWindows;
+  bool get supportsDrop => DropwellPlatform.instance.supportsDrop;
 
   @override
   Future<List<PendingAttachment>> pickFiles() async {
@@ -26,61 +23,44 @@ final class NativeAttachmentInput implements AttachmentInputPort {
   }
 
   @override
-  Future<List<PendingAttachment>> pasteFiles() async {
-    final clipboard = SystemClipboard.instance;
-    if (clipboard == null) return const <PendingAttachment>[];
-    final reader = await clipboard.read();
-    return _readItems(reader.items);
-  }
+  Future<List<PendingAttachment>> pasteFiles() async =>
+      _fromDropwell(await DropwellPlatform.instance.readClipboardFiles());
 
   @override
-  Future<List<PendingAttachment>> droppedFiles(PerformDropEvent event) =>
-      _readItems(
-        event.session.items
-            .map((item) => item.dataReader)
-            .whereType<DataReader>(),
-      );
+  Future<List<PendingAttachment>> droppedFiles(
+    List<DropwellFile> files,
+  ) async => _fromDropwell(files);
 
-  Future<List<PendingAttachment>> _readItems(
-    Iterable<DataReader> readers,
-  ) async {
-    final result = <PendingAttachment>[];
-    for (final reader in readers) {
-      final formats = reader
-          .getFormats(Formats.standardFormats)
-          .whereType<FileFormat>();
-      final format = formats.firstOrNull;
-      if (format == null) continue;
-      final completer = Completer<PendingAttachment?>();
-      final progress = reader.getFile(
-        format,
-        (file) async {
-          try {
-            final bytes = await file.readAll();
-            final name =
-                file.fileName ??
-                await reader.getSuggestedName() ??
-                defaultAttachmentName(format);
-            completer.complete(
-              _validated(
-                PendingAttachment.fromBytes(
-                  fileName: name,
-                  mimeType: mimeFromAttachmentName(name, format: format),
-                  bytes: bytes,
-                ),
-              ),
-            );
-          } on Object catch (error, stackTrace) {
-            completer.completeError(error, stackTrace);
-          }
-        },
-        onError: completer.completeError,
+  List<PendingAttachment> _fromDropwell(List<DropwellFile> files) =>
+      files.map(_fromDropwellFile).toList(growable: false);
+
+  PendingAttachment _fromDropwellFile(DropwellFile file) {
+    final mimeType = mimeFromAttachmentName(
+      file.fileName,
+      mimeHint: file.mimeType,
+    );
+    final path = file.path;
+    if (path == null) {
+      return _validated(
+        PendingAttachment.fromBytes(
+          fileName: file.fileName,
+          mimeType: mimeType,
+          bytes: file.bytes!,
+        ),
       );
-      if (progress == null) continue;
-      final attachment = await completer.future;
-      if (attachment != null) result.add(attachment);
     }
-    return result;
+    // A path is streamed rather than buffered: an attachment can be 50 MB, and
+    // reading it whole only to hand it to an upload that reads it again costs
+    // that much resident memory for no benefit.
+    final handle = File(path);
+    return _validated(
+      PendingAttachment(
+        fileName: file.fileName,
+        mimeType: mimeType,
+        byteSize: handle.lengthSync(),
+        openRead: handle.openRead,
+      ),
+    );
   }
 
   Future<PendingAttachment> _fromXFile(XFile file) async {
