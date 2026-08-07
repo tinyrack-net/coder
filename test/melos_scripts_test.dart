@@ -23,6 +23,16 @@ void main() {
     );
   });
 
+  test('Linux E2E always runs on an isolated virtual display', () {
+    final command = _script(pubspec, 'test:e2e:linux');
+    expect(command, contains('xvfb-run -a'));
+    expect(command, contains('tool/run_linux_e2e.dart'));
+    expect(
+      _script(pubspec, 'verify:debug'),
+      contains('dart run melos test:e2e:linux'),
+    );
+  });
+
   test('formatting runs over a Git-derived file list, never the tree', () {
     // `dart format .` walks generated Flutter build output, which has no
     // exclude flag, so verify fails right after verify:debug populates build/.

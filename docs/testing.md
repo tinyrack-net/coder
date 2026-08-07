@@ -76,7 +76,7 @@ dart run melos test:golden
 dart run melos test:coverage
 dart run melos verify:fast
 dart run melos verify
-xvfb-run -a dart run melos verify:debug
+dart run melos verify:debug
 ```
 
 `verify:fast` checks formatting, strict analysis, dependency declarations,
@@ -87,9 +87,11 @@ clean, independent checks run concurrently with a maximum of four tasks.
 running the same tests once normally and again with instrumentation. Dart and
 Flutter coverage plus goldens run concurrently, followed by the per-package
 coverage threshold check. `verify:debug` is deliberately separate because it
-compiles and launches the Linux desktop runner. Each E2E shard runs in a fresh
-Flutter process because a stopped desktop runner cannot safely hand its debug
-log connection to the next integration file.
+compiles and launches the Linux desktop runner. The `test:e2e:linux` entrypoint
+automatically runs under `xvfb-run -a`, so these application windows stay on an
+isolated virtual display. Each E2E shard runs in a fresh Flutter process because
+a stopped desktop runner cannot safely hand its debug log connection to the next
+integration file.
 
 Focused layer commands remain available for development. `test:dart` is the
 single-pass aggregate for the root and every non-Flutter package, including the
@@ -121,7 +123,9 @@ It is safe precisely because the run already owns an isolated daemon home.
 `test:e2e:linux` additionally points `TINYRACK_CODER_HOME` at a per-run
 temporary directory. Together these let two checkouts verify at the same time
 and let `verify:debug` pass while a developer's own `melos run:daemon` holds the
-product port. Give each concurrent run its own display with `xvfb-run -a`.
+product port. The Melos entrypoint gives each concurrent run its own display via
+`xvfb-run -a`; invoke that entrypoint instead of running the Flutter integration
+tests directly.
 
 Golden tests run in their own canonical Linux process. Coverage excludes the
 `golden` tag so font/rendering configuration from unrelated test isolates cannot

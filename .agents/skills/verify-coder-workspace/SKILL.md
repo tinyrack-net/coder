@@ -51,16 +51,18 @@ Run both required gates before reporting completion:
 
 ```sh
 dart run melos verify
-xvfb-run -a dart run melos verify:debug
+dart run melos verify:debug
 ```
 
 `verify` runs generated-source drift first, then static checks, coverage, and
 goldens concurrently. Coverage is the canonical execution of package and app
 tests, so do not run an additional aggregate suite merely to duplicate it.
 
-If `xvfb-run` is unavailable but a Linux display exists, run
-`dart run melos verify:debug` directly. Otherwise report Linux Debug E2E as
-unverified and name the `Linux Debug E2E` CI job.
+`verify:debug` delegates to `test:e2e:linux`, whose Melos entrypoint always uses
+`xvfb-run -a` to keep desktop windows off the developer's display and isolate
+concurrent runs. Do not bypass the entrypoint with direct `flutter test`
+commands. If `xvfb-run` is unavailable, report Linux Debug E2E as unverified and
+name the `Linux Debug E2E` CI job.
 
 Run `actionlint` after changing `.github/workflows/`. Confirm PR/main, tag,
 manual, and schedule conditions with `test/pipeline_test.dart`.
