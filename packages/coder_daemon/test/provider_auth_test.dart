@@ -4,10 +4,22 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_auth.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:test/test.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 2);
+
+  /// The production plugin list with only the OAuth transport faked, so the
+  /// coordinator resolves methods exactly as the daemon would.
+  ProviderRegistry registryWith(ProviderOAuthGateway gateway) =>
+      ProviderRegistry(
+        plugins: openAIFamilyPlugins(
+          clock: _FixedClock(now),
+          openAIOAuth: gateway,
+        ),
+        wireProtocols: openAIWireProtocols(),
+      );
 
   test(
     'coordinator publishes attempt state and stores completed OAuth',
@@ -15,7 +27,7 @@ void main() {
       final gateway = _Gateway(now);
       final connector = _OAuthConnector();
       final coordinator = ProviderAuthCoordinator(
-        gateway: gateway,
+        registry: registryWith(gateway),
         connector: connector,
         ids: const _Ids(),
       );
@@ -57,7 +69,7 @@ void main() {
     final gateway = _Gateway(now);
     final connector = _OAuthConnector();
     final coordinator = ProviderAuthCoordinator(
-      gateway: gateway,
+      registry: registryWith(gateway),
       connector: connector,
       ids: const _Ids(),
     );
@@ -82,7 +94,7 @@ void main() {
     () async {
       final gateway = _Gateway(now);
       final coordinator = ProviderAuthCoordinator(
-        gateway: gateway,
+        registry: registryWith(gateway),
         connector: _OAuthConnector(),
         ids: const _Ids(),
       );
@@ -112,7 +124,9 @@ void main() {
     'credential refresher is single-flight and rotates refresh token',
     () async {
       final gateway = _Gateway(now);
-      final refresher = OAuthCredentialRefresher(gateway: gateway);
+      final refresher = OAuthCredentialRefresher(
+        registry: registryWith(gateway),
+      );
       final expired = OAuthCredential(
         accessToken: 'old-access',
         refreshToken: 'old-refresh',
@@ -149,7 +163,7 @@ void main() {
       );
       final gateway = _Gateway(now);
       final coordinator = ProviderAuthCoordinator(
-        gateway: gateway,
+        registry: registryWith(gateway),
         connector: _OAuthConnector(),
         ids: const _Ids(),
       );
@@ -187,7 +201,7 @@ void main() {
 
   test('failed refresh is removed from the single-flight cache', () async {
     final gateway = _RetryGateway(now);
-    final refresher = OAuthCredentialRefresher(gateway: gateway);
+    final refresher = OAuthCredentialRefresher(registry: registryWith(gateway));
     final credential = OAuthCredential(
       accessToken: 'old',
       refreshToken: 'refresh',
@@ -299,4 +313,13 @@ final class _OAuthConnector implements ProviderOAuthConnector {
     connectionId = definitionId;
     this.credential = credential;
   }
+}
+
+final class _FixedClock implements Clock {
+  const _FixedClock(this.value);
+
+  final DateTime value;
+
+  @override
+  DateTime nowUtc() => value;
 }

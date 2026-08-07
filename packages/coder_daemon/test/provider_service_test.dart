@@ -207,13 +207,18 @@ void main() {
       );
 
       expect(provider.id, 'created');
-      expect(fixture.factory.lastConfig!.definitionId, 'deepseek');
-      expect(fixture.factory.lastCredential, isA<ApiKeyCredential>());
+      final request = fixture.factory.lastRequest!;
+      expect(request.connectionId, 'deepseek');
+      expect(request.endpoint.baseUrl, 'https://api.deepseek.com');
+      expect(request.credential, isA<ApiKeyCredential>());
       expect(
-        (fixture.factory.lastCredential! as ApiKeyCredential).key,
+        (request.credential! as ApiKeyCredential).key,
         'runtime-secret',
       );
-      expect(fixture.factory.lastSupportsReasoning, isTrue);
+      expect(
+        request.capabilities.reasoningEffort,
+        CapabilitySupport.supported,
+      );
       await fixture.service.validateAgentModel('deepseek', 'deepseek-v4-pro');
       await expectLater(
         fixture.service.validateAgentModel('deepseek', 'missing'),
@@ -302,14 +307,17 @@ void main() {
       expect(fixture.refresher.calls, 1);
       expect(fixture.factory.lastCredential, same(rotated));
       expect(fixture.credentials.values['openai'], same(rotated));
-      // The subscription backend answers 400 for `service_tier` and
-      // `safety_identifier`, so the narrower surface has to be resolved here
-      // rather than inferred from the bundled model capabilities.
-      final config = fixture.factory.lastConfig!;
-      expect(config.baseUrl, 'https://chatgpt.com/backend-api/codex');
-      expect(config.supportsPlatformRequestFields, isFalse);
+      // The subscription backend answers 400 for the platform-only request
+      // fields, so the narrower surface is resolved from the endpoint the
+      // OAuth credential selects — not from the bundled model capabilities,
+      // which still advertise the tier for the platform API.
+      final request = fixture.factory.lastRequest!;
+      expect(request.endpoint.baseUrl, 'https://chatgpt.com/backend-api/codex');
       expect(
-        catalogCapabilities('openai', 'gpt-5.6-sol').serviceTier,
+        openAIBundledModels
+            .singleWhere((model) => model.id == 'gpt-5.6-sol')
+            .capabilities
+            .serviceTier,
         CapabilitySupport.supported,
       );
     },
@@ -714,16 +722,20 @@ final class _ServiceFixture {
     Map<String, String> environment = const <String, String>{},
     ModelProvider? fixedProvider,
   }) : clock = _Clock(now),
-       catalog = BuiltInProviderCatalog(clock: _Clock(now)) {
+       registry = ProviderRegistry(
+         plugins: openAIFamilyPlugins(clock: _Clock(now)),
+         wireProtocols: openAIWireProtocols(),
+       ) {
     service = ProviderService(
       repository: repository,
       credentials: credentials,
       settings: settings,
       environment: environment,
       clock: clock,
+      registry: registry,
+      catalog: BuiltInProviderCatalog(clock: clock, registry: registry),
       modelDiscovery: discovery,
       providerFactory: factory,
-      catalog: catalog,
       fixedProvider: fixedProvider,
       oauthRefresher: refresher,
     );
@@ -736,7 +748,7 @@ final class _ServiceFixture {
   final _Factory factory = _Factory();
   final _Refresher refresher = _Refresher();
   final _Clock clock;
-  final BuiltInProviderCatalog catalog;
+  final ProviderRegistry registry;
   late final ProviderService service;
 }
 
@@ -895,7 +907,7 @@ final class _Discovery implements ProviderModelDiscovery {
 
   @override
   Future<List<String>> fetchModelIds(
-    ProviderRuntimeConfig config,
+    ProviderEndpoint endpoint,
     ProviderCredential? credential,
   ) async {
     calls += 1;
@@ -911,24 +923,13 @@ final class _Discovery implements ProviderModelDiscovery {
 }
 
 final class _Factory implements ModelProviderFactory {
-  ProviderRuntimeConfig? lastConfig;
-  ProviderCredential? lastCredential;
-  bool? lastSupportsReasoning;
-  bool? lastSupportsServiceTier;
+  ModelProviderRequest? lastRequest;
+
+  ProviderCredential? get lastCredential => lastRequest?.credential;
 
   @override
-  ModelProvider create({
-    required ProviderRuntimeConfig config,
-    required ProviderCredential? credential,
-    required bool supportsReasoningEffort,
-    required bool supportsImageInput,
-    required bool supportsFileInput,
-    required bool supportsServiceTier,
-  }) {
-    lastConfig = config;
-    lastCredential = credential;
-    lastSupportsReasoning = supportsReasoningEffort;
-    lastSupportsServiceTier = supportsServiceTier;
+  ModelProvider create(ModelProviderRequest request) {
+    lastRequest = request;
     return _EventProvider();
   }
 }

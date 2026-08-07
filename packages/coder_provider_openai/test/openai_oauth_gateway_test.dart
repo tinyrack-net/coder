@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
-import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 

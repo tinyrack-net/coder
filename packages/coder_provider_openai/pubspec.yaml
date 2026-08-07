@@ -10,6 +10,7 @@ environment:
 dependencies:
   coder_agent: ^0.1.0
   coder_protocol: ^0.1.0
+  crypto: ^3.0.6
   dio: ^5.11.0
 
 dev_dependencies:

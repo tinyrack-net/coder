@@ -19,7 +19,6 @@ import 'package:coder_daemon/src/mcp_resource_tools.dart';
 import 'package:coder_daemon/src/mcp_service.dart';
 import 'package:coder_daemon/src/mcp_transports.dart';
 import 'package:coder_daemon/src/multi_agent.dart';
-import 'package:coder_daemon/src/openai_oauth_gateway.dart';
 import 'package:coder_daemon/src/portable_terminal.dart';
 import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/project_settings.dart';
@@ -32,6 +31,7 @@ import 'package:coder_daemon/src/skills.dart';
 import 'package:coder_daemon/src/terminal_service.dart';
 import 'package:coder_daemon/src/workspace_service.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_provider_openai/coder_provider_openai.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -86,9 +86,7 @@ abstract final class DaemonApplication {
     ModelProvider? provider,
     Clock clock = const SystemClock(),
     IdGenerator ids = const UuidIdGenerator(),
-    ProviderModelDiscovery modelDiscovery = const DioProviderModelDiscovery(),
-    ModelProviderFactory providerFactory =
-        const OpenAICompatibleProviderFactory(),
+    ProviderModelDiscovery? modelDiscovery,
     ProviderOAuthGateway? oauthGateway,
     ProviderCatalogMetadataSource? providerCatalogMetadataSource,
     WorkspacePathGateway workspacePaths = const IoWorkspacePathGateway(),
@@ -147,8 +145,12 @@ abstract final class DaemonApplication {
         await credentials.setDaemonToken(token);
       }
       final events = StreamController<WireEnvelope>.broadcast(sync: true);
-      final effectiveOAuthGateway =
-          oauthGateway ?? OpenAIOAuthGateway(clock: clock);
+      // The whole vendor surface of this daemon: adding a vendor package
+      // means adding its plugins and wire protocols to these two lists.
+      final providerRegistry = ProviderRegistry(
+        plugins: openAIFamilyPlugins(clock: clock, openAIOAuth: oauthGateway),
+        wireProtocols: openAIWireProtocols(),
+      );
       final providers = ProviderService(
         repository: database.providerDao,
         credentials: credentials,
@@ -157,24 +159,26 @@ abstract final class DaemonApplication {
             ? Platform.environment
             : const <String, String>{},
         clock: clock,
-        modelDiscovery: modelDiscovery,
-        providerFactory: providerFactory,
+        registry: providerRegistry,
         catalog: BuiltInProviderCatalog(
           clock: clock,
+          registry: providerRegistry,
           metadataSource: providerCatalogMetadataSource,
         ),
-        oauthRefresher: OAuthCredentialRefresher(
-          gateway: effectiveOAuthGateway,
-        ),
+        modelDiscovery: modelDiscovery,
+        oauthRefresher: OAuthCredentialRefresher(registry: providerRegistry),
         fixedProvider: provider,
       );
       await providers.initialize();
+      // A bare API key in daemon config has always meant the first vendor's
+      // platform key; the composition root is where that convention lives.
+      final apiKeyDefinition = providerRegistry.plugins.first.id;
       if (config.apiKey?.isNotEmpty == true &&
-          await database.providerDao.getConnection('openai') == null) {
-        await providers.connectApiKey('openai', config.apiKey!);
+          await database.providerDao.getConnection(apiKeyDefinition) == null) {
+        await providers.connectApiKey(apiKeyDefinition, config.apiKey!);
       }
       final providerAuth = ProviderAuthCoordinator(
-        gateway: effectiveOAuthGateway,
+        registry: providerRegistry,
         connector: providers,
         ids: ids,
       );

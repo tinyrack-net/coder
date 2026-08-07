@@ -224,7 +224,7 @@ final class _StaticModelDiscovery implements ProviderModelDiscovery {
 
   @override
   Future<List<String>> fetchModelIds(
-    ProviderRuntimeConfig config,
+    ProviderEndpoint endpoint,
     ProviderCredential? credential,
   ) async => const <String>['oauth-e2e-model'];
 }

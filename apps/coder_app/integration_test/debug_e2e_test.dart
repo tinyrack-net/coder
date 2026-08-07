@@ -2376,10 +2376,10 @@ final class _E2eModelDiscovery implements ProviderModelDiscovery {
 
   @override
   Future<List<String>> fetchModelIds(
-    ProviderRuntimeConfig config,
+    ProviderEndpoint endpoint,
     ProviderCredential? credential,
   ) async {
-    if (config.baseUrl.contains('/unavailable/')) {
+    if (endpoint.baseUrl.contains('/unavailable/')) {
       throw const ProviderDiscoveryFailure(
         ProviderDiscoveryFailureKind.unavailable,
         'planned model discovery outage',

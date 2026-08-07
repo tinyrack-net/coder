@@ -3097,7 +3097,7 @@ final class _StaticDiscovery implements ProviderModelDiscovery {
 
   @override
   Future<List<String>> fetchModelIds(
-    ProviderRuntimeConfig config,
+    ProviderEndpoint endpoint,
     ProviderCredential? credential,
   ) async => modelIds;
 }

@@ -23,7 +23,7 @@ final class RealDaemonFixture {
     bool configureRemoteProfile = true,
     AppSettings settings = const AppSettings(embeddedDaemonEnabled: false),
     ModelProvider? provider,
-    ProviderModelDiscovery modelDiscovery = const DioProviderModelDiscovery(),
+    ProviderModelDiscovery? modelDiscovery,
     ProviderOAuthGateway? oauthGateway,
     ProviderCatalogMetadataSource? providerCatalogMetadataSource,
   }) async {
