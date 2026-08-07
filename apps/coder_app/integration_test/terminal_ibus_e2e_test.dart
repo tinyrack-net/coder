@@ -158,12 +158,14 @@ void main() {
       );
       // Route replacement briefly leaves both pane surfaces mounted, so scope
       // the finder to the terminal created for this test.
-      final terminalSurface = find.descendant(
-        of: find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
-        matching: find.byKey(
-          const ValueKey<String>('tr-terminal-surface'),
-        ),
-      );
+      final terminalSurface = find
+          .descendant(
+            of: find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
+            matching: find.byKey(
+              const ValueKey<String>('tr-terminal-surface'),
+            ),
+          )
+          .last;
       await tester.tap(terminalSurface);
       await tester.pumpAndSettle();
       await _waitForTerminalFocus(tester);
