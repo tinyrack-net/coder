@@ -1849,9 +1849,11 @@ void main() {
       );
       await pumpUntil(
         tester,
-        find.byKey(const ValueKey('workspace-new-button')),
+        find.byKey(const ValueKey('workspace-new-button')).hitTestable(),
       );
-      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-new-button')).hitTestable().first,
+      );
       await pumpUntil(
         tester,
         find.byKey(const ValueKey('new-workspace-project')),
