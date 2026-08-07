@@ -86,11 +86,21 @@ void main() {
       fileName: 'terminal_context_menu_open',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
       whilePerforming: (tester) async {
+        final surface = find.byKey(
+          const ValueKey<String>('tr-terminal-surface'),
+        );
+        final selection = await tester.startGesture(
+          tester.getTopLeft(surface) + const Offset(12, 12),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump();
+        await selection.moveBy(const Offset(120, 0));
+        await tester.pump();
+        await selection.up();
+        await tester.pump();
+
         final gesture = await tester.startGesture(
-          tester.getTopLeft(
-                find.byKey(const ValueKey<String>('tr-terminal-surface')),
-              ) +
-              const Offset(24, 24),
+          tester.getTopLeft(surface) + const Offset(24, 24),
           kind: PointerDeviceKind.mouse,
           buttons: kSecondaryButton,
         );
