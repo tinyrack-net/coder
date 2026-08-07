@@ -1904,6 +1904,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 file} other{{count} files}}'**
   String composerQueuedAttachments(num count);
 
+  /// Why a queued message stopped trying to send.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent · {reason}'**
+  String composerQueuedFailed(String reason);
+
   /// Accessible label for the composer attachment button.
   ///
   /// In en, this message translates to:

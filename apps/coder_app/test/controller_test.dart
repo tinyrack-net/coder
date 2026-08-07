@@ -555,7 +555,9 @@ void main() {
       );
 
       // A send that fails puts its prompt back at the head rather than
-      // dropping it.
+      // dropping it. The failure also arms a retry, so this observes the state
+      // one event-loop turn later, well inside conversationDrainRetryDelay:
+      // the point here is the restore, and the retry has its own test.
       api
         ..startTurnError = Exception('offline')
         ..emit(
@@ -578,6 +580,195 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(api.startedPrompts, <String>['first', 'second']);
       expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a queued prompt whose send fails is retried without a new session event',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent])
+        ..startTurnFailures = 1;
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+
+      api.emit(
+        SessionUpdatedClientEvent(
+          agent.copyWith(status: SessionStatus.running),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      container.read(provider.notifier).enqueueTurn('stranded');
+      await Future<void>.delayed(Duration.zero);
+
+      // The one event that releases the queue is also the last one coming: the
+      // session is idle afterwards and stays there. A send that fails here has
+      // no second chance unless the controller makes one.
+      api.emit(
+        SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+      );
+      await _settleDrainRetries();
+
+      expect(api.startedPrompts, <String>['stranded']);
+      expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a queued prompt still starts when the pending-input notice fails',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent])
+        ..notePendingInputError = Exception('offline');
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+
+      // The session is already idle, so the enqueue's own settled check is the
+      // only release this prompt will ever get. A failed notice must not take
+      // that check down with it.
+      container.read(provider.notifier).enqueueTurn('late');
+      await _settleDrainRetries();
+
+      expect(api.startedPrompts, <String>['late']);
+      expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a queued prompt still starts when the settled check fails',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent])
+        ..listSessionsFailures = 1;
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+
+      container.read(provider.notifier).enqueueTurn('late');
+      await _settleDrainRetries();
+
+      expect(api.startedPrompts, <String>['late']);
+      expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a queued prompt that never sends stops retrying and reports the failure',
+    () async {
+      final api = FakeCoderApi(agents: <SessionDto>[agent])
+        ..startTurnError = Exception('offline');
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+
+      api.emit(
+        SessionUpdatedClientEvent(
+          agent.copyWith(status: SessionStatus.running),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      container.read(provider.notifier).enqueueTurn('doomed');
+      await Future<void>.delayed(Duration.zero);
+      api.emit(
+        SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+      );
+      await _settleDrainRetries(
+        rounds: conversationDrainMaxAttempts + 3,
+      );
+
+      // An equality, not a bound: a greater count is the runaway retry this
+      // budget exists to rule out, and `lessThan` would not catch it.
+      expect(
+        api.attemptedPrompts,
+        List<String>.filled(conversationDrainMaxAttempts + 1, 'doomed'),
+      );
+      // The prompt is never dropped, but it stops passing for one that is
+      // simply waiting its turn.
+      final stuck = container.read(provider).value!.queued.single;
+      expect(stuck.text, 'doomed');
+      expect(stuck.error, isNotNull);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a drain requested while one is in flight is not dropped',
+    () async {
+      final gate = Completer<void>();
+      final api = FakeCoderApi(agents: <SessionDto>[agent])
+        ..startTurnGate = gate;
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+
+      api.emit(
+        SessionUpdatedClientEvent(
+          agent.copyWith(status: SessionStatus.running),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      container.read(provider.notifier).enqueueTurn('first');
+      await Future<void>.delayed(Duration.zero);
+      api.emit(
+        SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      // The drain is now parked inside startTurn. A prompt queued against the
+      // idle session drains immediately, hits the in-flight guard, and that
+      // rejected request is the only signal it had.
+      container.read(provider.notifier).enqueueTurn('second');
+      await Future<void>.delayed(Duration.zero);
+      api.startTurnGate = null;
+      gate.complete();
+      await _settleDrainRetries();
+
+      expect(api.startedPrompts, <String>['first', 'second']);
+      expect(container.read(provider).value!.queued, isEmpty);
+    },
+    tags: const <String>['feature_test__conversation_turn_queue__unit'],
+  );
+
+  test(
+    'a queue release that fails after disposal is dropped, not retried',
+    () async {
+      final gate = Completer<void>();
+      final api = FakeCoderApi(agents: <SessionDto>[agent])
+        ..startTurnGate = gate
+        ..startTurnError = Exception('offline');
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      await container.read(provider.future);
+
+      api.emit(
+        SessionUpdatedClientEvent(
+          agent.copyWith(status: SessionStatus.running),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      container.read(provider.notifier).enqueueTurn('abandoned');
+      await Future<void>.delayed(Duration.zero);
+      api.emit(
+        SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      // The drain is parked inside startTurn when the screen goes away. The
+      // failure it is about to see must not write state or arm a timer on a
+      // controller nobody is listening to any more.
+      listener.close();
+      await Future<void>.delayed(Duration.zero);
+      gate.complete();
+
+      await expectLater(_settleDrainRetries(), completes);
+      expect(api.attemptedPrompts, <String>['abandoned']);
     },
     tags: const <String>['feature_test__conversation_turn_queue__unit'],
   );
@@ -1142,6 +1333,38 @@ ProviderContainer _container(FakeCoderApi api) => ProviderContainer(
     appIdGeneratorProvider.overrideWithValue(const _FixedIdGenerator()),
   ],
 );
+
+ProviderContainer _queueContainer(FakeCoderApi api) => ProviderContainer(
+  overrides: [
+    appServicesProvider.overrideWithValue(fakeAppServices(api)),
+    appIdGeneratorProvider.overrideWithValue(_SequentialIdGenerator()),
+  ],
+);
+
+/// Brings one conversation controller up and returns its provider.
+Future<ConversationControllerProvider> _readyQueueProvider(
+  ProviderContainer container,
+  SessionDto agent,
+) async {
+  await container.read(hostRegistryControllerProvider.future);
+  await Future<void>.delayed(Duration.zero);
+  final provider = conversationControllerProvider('server', agent.id);
+  final listener = container.listen(provider, (_, _) {});
+  addTearDown(listener.close);
+  await container.read(provider.future);
+  return provider;
+}
+
+/// Lets every armed queue-release retry fire.
+///
+/// The retries are real timers rather than microtasks, so a plain
+/// `Duration.zero` hop would observe the state between attempts instead of
+/// the settled one.
+Future<void> _settleDrainRetries({int rounds = 2}) async {
+  for (var round = 0; round < rounds; round += 1) {
+    await Future<void>.delayed(conversationDrainRetryDelay * 2);
+  }
+}
 
 RemoteDaemonProfile _profile(String id, DateTime now) => RemoteDaemonProfile(
   id: id,

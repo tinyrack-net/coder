@@ -737,7 +737,7 @@ void main() {
     goldenTest(
       'session composer exposes ready invalid and loading states',
       fileName: 'composer_states',
-      constraints: const BoxConstraints.tightFor(width: 960, height: 1380),
+      constraints: const BoxConstraints.tightFor(width: 960, height: 1670),
       builder: () => GoldenTestGroup(
         columns: 1,
         children: <Widget>[
@@ -794,6 +794,28 @@ void main() {
                     id: 'queued',
                     text: '테스트도 함께 고쳐줘',
                     attachments: <PendingAttachment>[],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            // A prompt that stopped retrying has to read differently from one
+            // that is merely waiting its turn, which is a pixel contract.
+            name: 'queued send failed light',
+            child: SizedBox(
+              width: 900,
+              height: 260,
+              child: _composerState(
+                ThemeMode.light,
+                busy: true,
+                queued: const <QueuedTurn>[
+                  QueuedTurn(
+                    id: 'queued',
+                    text: '테스트도 함께 고쳐줘',
+                    attachments: <PendingAttachment>[],
+                    attempts: conversationDrainMaxAttempts,
+                    error: 'Exception: offline',
                   ),
                 ],
               ),

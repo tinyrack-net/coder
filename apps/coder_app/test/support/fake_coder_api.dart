@@ -372,6 +372,27 @@ final class FakeCoderApi implements CoderApi {
   /// Thrown instead of starting a turn, so a caller's rollback can be checked.
   Exception? startTurnError;
 
+  /// Prompts [startTurn] was called with, recorded before it can throw.
+  ///
+  /// [startedPrompts] only records what succeeded, so a retry bound has to be
+  /// counted here or a failing send looks like no send at all.
+  final List<String> attemptedPrompts = <String>[];
+
+  /// Number of leading [startTurn] calls that fail before one is allowed.
+  ///
+  /// Separate from [startTurnError], which fails every call, so a test can
+  /// distinguish "recovers on retry" from "never recovers".
+  int startTurnFailures = 0;
+
+  /// Awaited before a turn starts, to hold one send in flight.
+  Completer<void>? startTurnGate;
+
+  /// Thrown instead of noting pending input.
+  Exception? notePendingInputError;
+
+  /// Number of leading [listSessions] calls that fail before one succeeds.
+  int listSessionsFailures = 0;
+
   /// Thrown instead of writing a session turn setting.
   Exception? sessionUpdateError;
 
@@ -642,9 +663,15 @@ final class FakeCoderApi implements CoderApi {
   }
 
   @override
-  Future<List<SessionDto>> listSessions({String? worktreeId}) async => _agents
-      .where((agent) => worktreeId == null || agent.worktreeId == worktreeId)
-      .toList(growable: false);
+  Future<List<SessionDto>> listSessions({String? worktreeId}) async {
+    if (listSessionsFailures > 0) {
+      listSessionsFailures -= 1;
+      throw Exception('transient listSessions failure');
+    }
+    return _agents
+        .where((agent) => worktreeId == null || agent.worktreeId == worktreeId)
+        .toList(growable: false);
+  }
 
   @override
   Future<List<SessionDto>> listSubagents(String sessionId) async {
@@ -1383,6 +1410,13 @@ final class FakeCoderApi implements CoderApi {
     required String prompt,
     List<String> attachmentIds = const <String>[],
   }) async {
+    attemptedPrompts.add(prompt);
+    final gate = startTurnGate;
+    if (gate != null) await gate.future;
+    if (startTurnFailures > 0) {
+      startTurnFailures -= 1;
+      throw Exception('transient send failure');
+    }
     final error = startTurnError;
     if (error != null) throw error;
     startedPrompts.add(prompt);
@@ -1455,6 +1489,8 @@ final class FakeCoderApi implements CoderApi {
   @override
   Future<void> notePendingInput(String sessionId) async {
     notedPendingInput.add(sessionId);
+    final error = notePendingInputError;
+    if (error != null) throw error;
   }
 
   @override

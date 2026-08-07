@@ -308,6 +308,7 @@
   "composerQueuedEdit": "대기 중인 메시지 편집",
   "composerQueuedSendNow": "대기 중인 메시지 지금 보내기",
   "composerQueuedAttachments": "{count, plural, other{파일 {count}개}}",
+  "composerQueuedFailed": "전송되지 않음 · {reason}",
   "composerAttachLabel": "파일 첨부",
   "composerMoreSettings": "설정 더 보기",
   "chatEmptyTitle": "코딩 요청을 입력하세요.",
