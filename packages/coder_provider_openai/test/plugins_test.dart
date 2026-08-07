@@ -44,9 +44,12 @@ void main() {
       'lmstudio',
       'vllm',
     ]);
+    // Chat Completions first: the first registered format is what a new
+    // custom connection defaults to, and most custom endpoints are local
+    // OpenAI-compatible servers.
     expect(registry.wireProtocols.map((wire) => wire.id), <String>[
-      openAIResponsesWireId,
       openAIChatCompletionsWireId,
+      openAIResponsesWireId,
     ]);
     // Local servers advertise unauthenticated connect; hosted ones never do.
     for (final plugin in registry.plugins) {

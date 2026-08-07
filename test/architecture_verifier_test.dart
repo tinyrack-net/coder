@@ -213,6 +213,42 @@ void main() {
     expect(result, contains('branch=70.0%'));
   });
 
+  test('an interface-only file is not untested production code', () {
+    final root = Directory.systemTemp.createTempSync('coverage-estimate-');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final package = Directory(p.join(root.path, 'fixture'))
+      ..createSync(recursive: true);
+    Directory(p.join(package.path, 'lib')).createSync();
+    Directory(p.join(package.path, 'coverage')).createSync();
+    // A port file whose doc prose contains "for": the word must read as
+    // documentation, not as a loop that went untested.
+    File(p.join(package.path, 'lib', 'ports.dart')).writeAsStringSync('''
+/// Overrides discovery for all of the plugins at once.
+abstract interface class Discovery {
+  /// Fetches identifiers for one connection.
+  Future<List<String>> fetch();
+}
+''');
+    File(p.join(package.path, 'lib', 'logic.dart')).writeAsStringSync('''
+int double_(int value) {
+  return value * 2;
+}
+''');
+    File(p.join(package.path, 'coverage', 'lcov.info')).writeAsStringSync('''
+SF:${p.join(package.path, 'lib', 'logic.dart')}
+LF:2
+LH:2
+BRF:1
+BRH:1
+end_of_record
+''');
+
+    final totals = const CoverageVerifier('/unused').calculate(package.path);
+
+    expect(totals.missingFiles, isEmpty);
+    expect(totals.lineRate, 1.0);
+  });
+
   test(
     'coverage workspace selects explicit scopes and rejects unknown ones',
     () {
