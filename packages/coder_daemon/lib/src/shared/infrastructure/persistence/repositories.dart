@@ -74,20 +74,19 @@ abstract interface class SessionRepository {
   /// Switches one session between planning and normal collaboration.
   Future<SessionDto> updateMode(String id, SessionMode mode);
 
-  /// Sets or clears the provider and model override of one session.
-  Future<SessionDto> updateModel(String id, SessionModelSelectionDto? model);
-
-  /// Sets or clears the reasoning effort override of one session.
-  Future<SessionDto> updateReasoningEffort(String id, String? reasoningEffort);
+  /// Atomically updates model selection and model-specific controls.
+  Future<SessionDto> updateModelSettings(
+    String id, {
+    required bool hasModel,
+    required Map<String, ModelControlValueDto> modelControls,
+    SessionModelSelectionDto? model,
+  });
 
   /// Sets or clears the permission mode override of one session.
   Future<SessionDto> updatePermissionMode(
     String id,
     PermissionMode? permissionMode,
   );
-
-  /// Sets or clears the provider service tier of one session.
-  Future<SessionDto> updateServiceTier(String id, String? serviceTier);
 
   /// Records what the last response reported for the live context window.
   Future<SessionDto> recordContextTokens(String id, int tokens);

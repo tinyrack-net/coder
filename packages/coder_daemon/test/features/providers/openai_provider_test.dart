@@ -25,7 +25,10 @@ data: [DONE]
           .stream(
             ModelRequest(
               model: 'gpt-5.6-sol',
-              reasoningEffort: 'medium',
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.reasoningEffort:
+                    const AgentModelControlStringValue(value: 'medium'),
+              },
               instructions: 'test',
               history: <ConversationItem>[
                 UserConversationItem(
@@ -137,7 +140,10 @@ data: [DONE]
           .stream(
             ModelRequest(
               model: 'gpt-5.6-sol',
-              reasoningEffort: 'medium',
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.reasoningEffort:
+                    const AgentModelControlStringValue(value: 'medium'),
+              },
               instructions: 'test',
               history: history,
               tools: const <ModelToolDefinition>[],
@@ -175,7 +181,10 @@ data: [DONE]
           .stream(
             ModelRequest(
               model: 'gpt-5.6-sol',
-              reasoningEffort: 'medium',
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.reasoningEffort:
+                    const AgentModelControlStringValue(value: 'medium'),
+              },
               instructions: 'test',
               history: <ConversationItem>[
                 ...history,
@@ -231,7 +240,10 @@ data: [DONE]
           .stream(
             const ModelRequest(
               model: 'gpt-5.6-sol',
-              reasoningEffort: 'medium',
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.reasoningEffort:
+                    AgentModelControlStringValue(value: 'medium'),
+              },
               instructions: 'test',
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[
@@ -361,8 +373,13 @@ data: [DONE]
           .stream(
             ModelRequest(
               model: 'gpt-5.6-sol',
-              reasoningEffort: 'medium',
-              serviceTier: serviceTier,
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.reasoningEffort:
+                    const AgentModelControlStringValue(value: 'medium'),
+                if (serviceTier == 'priority')
+                  AgentModelControlIds.fastMode:
+                      const AgentModelControlBoolValue(value: true),
+              },
               instructions: 'test',
               history: const <ConversationItem>[],
               tools: const <ModelToolDefinition>[],
@@ -399,7 +416,10 @@ data: [DONE]
           .stream(
             const ModelRequest(
               model: 'gpt-5.6-sol',
-              reasoningEffort: 'medium',
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.reasoningEffort:
+                    AgentModelControlStringValue(value: 'medium'),
+              },
               instructions: 'test',
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
@@ -439,7 +459,10 @@ data: [DONE]
         .stream(
           const ModelRequest(
             model: 'local-model',
-            reasoningEffort: 'medium',
+            modelControls: <String, AgentModelControlValue>{
+              AgentModelControlIds.reasoningEffort:
+                  AgentModelControlStringValue(value: 'medium'),
+            },
             instructions: 'test',
             history: <ConversationItem>[
               UserConversationItem('inspect'),
@@ -561,7 +584,10 @@ data: {"choices":[{"index":0,"delta":{"content":"partial"}}]}
           .stream(
             const ModelRequest(
               model: 'local-model',
-              reasoningEffort: 'medium',
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.reasoningEffort:
+                    AgentModelControlStringValue(value: 'medium'),
+              },
               instructions: 'test',
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
@@ -975,7 +1001,11 @@ ModelRequest _request({
   ],
 }) => ModelRequest(
   model: 'model',
-  reasoningEffort: 'medium',
+  modelControls: <String, AgentModelControlValue>{
+    AgentModelControlIds.reasoningEffort: const AgentModelControlStringValue(
+      value: 'medium',
+    ),
+  },
   instructions: 'instructions',
   history: history,
   tools: tools,

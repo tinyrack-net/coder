@@ -181,7 +181,9 @@ void _registerAgentsAppFlows() {
         model: AgentModelSelectionDto(
           source: AgentModelSource.session,
         ),
-        reasoningEffort: 'medium',
+        modelControls: <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+        },
         permissionMode: PermissionMode.ask,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],
@@ -205,7 +207,9 @@ void _registerAgentsAppFlows() {
         model: AgentModelSelectionDto(
           source: AgentModelSource.session,
         ),
-        reasoningEffort: 'medium',
+        modelControls: <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+        },
         permissionMode: PermissionMode.readOnly,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],

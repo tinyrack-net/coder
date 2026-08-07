@@ -101,7 +101,11 @@ void _registerWorkspaceControllerTests() {
       expect(
         (await container
                 .read(agentsProvider.notifier)
-                .setModel(created.id, null))
+                .setModel(
+                  created.id,
+                  null,
+                  const <String, ModelControlValueDto>{},
+                ))
             .model,
         isNull,
       );

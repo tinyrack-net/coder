@@ -49,6 +49,8 @@ class ChatTimelineView extends StatefulWidget {
 }
 
 class _ChatTimelineViewState extends State<ChatTimelineView> {
+  static const double _cacheExtentViewportMultiplier = 4;
+
   // Expansion lives here so a card keeps its state when it scrolls out of the
   // cache extent or when new events shift every reversed index.
   final Set<String> _expanded = <String>{};
@@ -85,6 +87,13 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
             controller: _scrollController,
             primary: false,
             reverse: true,
+            // Flutter estimates an unbuilt SliverList's full height from the
+            // rows currently laid out. Chat rows vary sharply in height, so a
+            // wider viewport-relative sample keeps the scrollbar thumb stable
+            // while retaining lazy construction for distant history.
+            scrollCacheExtent: const .viewport(
+              _cacheExtentViewportMultiplier,
+            ),
             padding: const EdgeInsets.fromLTRB(
               TRSpacing.extraLarge,
               TRSpacing.large,
@@ -94,9 +103,8 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(height: TRSpacing.small),
             // Every new event shifts the reversed indices, so keys are mapped
-            // back
-            // to their slot; without this an expanded card would leak its state
-            // into whichever item lands on its old index.
+            // back to their slot; without this an expanded card would leak its
+            // state into whichever item lands on its old index.
             findItemIndexCallback: (key) {
               if (key is! ValueKey<String>) return null;
               final position = items.indexWhere(

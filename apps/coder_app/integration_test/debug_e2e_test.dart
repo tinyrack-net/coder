@@ -775,6 +775,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(worktreeModelSelector);
       await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('model-search-field')),
+        'gpt-5.6-sol',
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
@@ -832,6 +837,11 @@ void main() {
       await tester.ensureVisible(sessionModelSelector);
       await tester.pumpAndSettle();
       await tester.tap(sessionModelSelector);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('model-search-field')),
+        'gpt-5.6-sol',
+      );
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
@@ -1556,6 +1566,8 @@ void main() {
       final providerMenu = find.byKey(
         const ValueKey<String>('provider-actions-custom'),
       );
+      await tester.ensureVisible(providerMenu);
+      await tester.pumpAndSettle();
       await tester.tap(providerMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('고급 설정 편집'));
@@ -1778,11 +1790,11 @@ void main() {
       final homeCheckout = homeCatalog.worktrees.singleWhere(
         (item) => item.workspaceId == homeWorkspace.id,
       );
-      await pumpUntil(
-        tester,
-        find.byKey(const ValueKey('workspace-new-button')),
-      );
-      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      final newWorkspaceButton = find
+          .byKey(const ValueKey('workspace-new-button'))
+          .hitTestable();
+      await pumpUntil(tester, newWorkspaceButton);
+      await tester.tap(newWorkspaceButton);
       await pumpUntil(
         tester,
         find.byKey(const ValueKey('new-workspace-project')),

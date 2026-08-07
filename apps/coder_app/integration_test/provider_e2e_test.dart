@@ -32,10 +32,9 @@ void main() {
         const ValueKey<String>('provider-catalog-refresh'),
       );
 
-      await tester.tap(refresh);
-      await tester.pumpAndSettle();
-      expect(find.textContaining('internal_error'), findsOneWidget);
+      expect(find.textContaining('Catalog refresh failed'), findsOneWidget);
       expect(find.textContaining('planned catalog outage'), findsNothing);
+      expect(metadata.calls, 1);
       expect(
         (await assertions.providers.listProviderCatalog()).source,
         ProviderCatalogSource.bundled,
@@ -43,7 +42,7 @@ void main() {
 
       await tester.tap(refresh);
       await tester.pumpAndSettle();
-      expect(find.textContaining('internal_error'), findsNothing);
+      expect(find.textContaining('Catalog refresh failed'), findsNothing);
       expect(metadata.calls, 2);
       expect(
         (await assertions.providers.listProviderCatalog()).source,
@@ -188,6 +187,9 @@ final class _RetryingMetadataSource implements ProviderCatalogMetadataSource {
   int calls = 0;
 
   @override
+  Future<void> close() async {}
+
+  @override
   Future<Map<String, List<ProviderCatalogMetadata>>> fetch(
     Set<String> providerIds,
   ) async {
@@ -198,6 +200,9 @@ final class _RetryingMetadataSource implements ProviderCatalogMetadataSource {
 }
 
 final class _SuccessfulMetadataSource implements ProviderCatalogMetadataSource {
+  @override
+  Future<void> close() async {}
+
   @override
   Future<Map<String, List<ProviderCatalogMetadata>>> fetch(
     Set<String> providerIds,
@@ -215,7 +220,14 @@ Map<String, List<ProviderCatalogMetadata>> _metadata(
         capabilities: ModelCapabilitiesDto(
           streaming: CapabilitySupport.supported,
           toolCalling: CapabilitySupport.supported,
-          reasoningEffort: CapabilitySupport.supported,
+          controls: <ModelControlDescriptorDto>[
+            ModelControlDescriptorDto(
+              id: 'reasoning_effort',
+              label: 'Reasoning effort',
+              kind: ModelControlKind.choice,
+              presentation: ModelControlPresentation.menuChip,
+            ),
+          ],
           source: CapabilitySource.refreshed,
         ),
       ),

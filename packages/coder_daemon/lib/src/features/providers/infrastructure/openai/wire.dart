@@ -21,6 +21,49 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
   final Dio Function(ProviderEndpoint endpoint)? dioFactory;
 
   @override
+  Set<String> get supportedControlIds => const <String>{
+    AgentModelControlIds.reasoningEffort,
+    AgentModelControlIds.reasoningMode,
+    AgentModelControlIds.fastMode,
+  };
+
+  @override
+  List<AgentModelControlDescriptor> get controlDescriptors => const [
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningEffort,
+      label: 'Reasoning effort',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      choices: <AgentModelControlChoice>[
+        AgentModelControlChoice(id: 'none', label: 'None'),
+        AgentModelControlChoice(id: 'low', label: 'Low'),
+        AgentModelControlChoice(id: 'medium', label: 'Medium'),
+        AgentModelControlChoice(id: 'high', label: 'High'),
+        AgentModelControlChoice(id: 'xhigh', label: 'Extra high'),
+        AgentModelControlChoice(id: 'max', label: 'Maximum'),
+      ],
+      conflictsWith: <String>[AgentModelControlIds.reasoningMode],
+    ),
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningMode,
+      label: 'Reasoning mode',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      choices: <AgentModelControlChoice>[
+        AgentModelControlChoice(id: 'none', label: 'None'),
+        AgentModelControlChoice(id: 'enabled', label: 'Enabled'),
+      ],
+      conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
+    ),
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.fastMode,
+      label: 'Fast mode',
+      kind: AgentModelControlKind.toggle,
+      presentation: AgentModelControlPresentation.selectableChip,
+    ),
+  ];
+
+  @override
   ModelProvider createProvider(ModelProviderRequest request) =>
       adapterFor(request);
 
@@ -46,14 +89,17 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
       },
       baseUrl: request.endpoint.baseUrl,
       requiresApiKey: credential != null,
-      supportsReasoningEffort:
-          capabilities.reasoningEffort == AgentCapabilitySupport.supported,
+      supportsReasoningEffort: capabilities.controls.any(
+        (control) => control.id == AgentModelControlIds.reasoningEffort,
+      ),
       supportsImageInput:
           capabilities.imageInput == AgentCapabilitySupport.supported,
       supportsFileInput:
           capabilities.fileInput == AgentCapabilitySupport.supported,
       supportsServiceTier:
-          capabilities.serviceTier == AgentCapabilitySupport.supported &&
+          capabilities.controls.any(
+            (control) => control.id == AgentModelControlIds.fastMode,
+          ) &&
           supportsPlatformRequestFields,
       supportsSafetyIdentifier: supportsPlatformRequestFields,
       strictToolSchema: request.endpoint.strictToolSchema,
