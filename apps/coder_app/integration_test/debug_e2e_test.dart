@@ -920,7 +920,6 @@ void main() {
       final trackHeader = find.text('서브 에이전트 1개');
       await pumpUntil(tester, trackHeader);
       await tester.tap(trackHeader);
-      await tester.pumpAndSettle();
       final childRow = find.byKey(
         ValueKey<String>('subagent-row-${spawnedChild.id}'),
       );
