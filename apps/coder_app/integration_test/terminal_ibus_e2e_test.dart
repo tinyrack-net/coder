@@ -156,9 +156,13 @@ void main() {
         modeReady.existsSync,
         'the PTY mode probe to enter raw mode',
       );
-      final terminalSurface = find.byKey(
-        const ValueKey<String>('tr-terminal-surface'),
-      );
+      // Replacing the worktree route with the terminal route briefly leaves
+      // both pane surfaces mounted; the last one is the active route.
+      final terminalSurface = find
+          .byKey(
+            const ValueKey<String>('tr-terminal-surface'),
+          )
+          .last;
       await tester.tap(terminalSurface);
       await tester.pumpAndSettle();
       await _waitForTerminalFocus(tester);
