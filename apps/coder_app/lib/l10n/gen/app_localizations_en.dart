@@ -66,6 +66,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTitle => 'Settings';
 
   @override
+  String get settingsLoading => 'Loading settings';
+
+  @override
+  String settingsRefreshFailed(String error) {
+    return 'Could not refresh settings: $error';
+  }
+
+  @override
   String get settingsSectionApp => 'App';
 
   @override

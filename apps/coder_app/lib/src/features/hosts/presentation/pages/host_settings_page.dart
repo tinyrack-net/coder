@@ -30,8 +30,11 @@ class AppSettingsPage extends ConsumerWidget {
     final supportsEmbedded = ref
         .read(appServicesProvider)
         .supportsEmbeddedDaemon;
-    final body = state.when(
-      loading: () => const Center(child: TRSpinner()),
+    final body = SettingsAsyncContent<HostRegistryState>(
+      state: state,
+      loading: SettingsSkeletonLayout.form(
+        semanticLabel: l10n.settingsLoading,
+      ),
       error: (error, stackTrace) => Center(child: TRText.inherit('$error')),
       data: (registry) => _settingsBody(
         context,
@@ -471,7 +474,8 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
+    final registryState = ref.watch(hostRegistryControllerProvider);
+    final registry = registryState.value;
     final existing = registry?.profiles
         .where((profile) => profile.id == widget.hostId)
         .firstOrNull;
@@ -483,6 +487,85 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
         _autoConnect = existing.autoConnect;
       }
     }
+    final waitingForExisting = widget.hostId != null && !registryState.hasValue;
+    final body = waitingForExisting
+        ? registryState.hasError
+              ? Center(child: TRText.inherit('${registryState.error}'))
+              : SettingsSkeletonLayout.form(
+                  semanticLabel: l10n.settingsLoading,
+                )
+        : SettingsScaffold(
+            children: <Widget>[
+              SettingsSection.form(
+                // Not the page title again: the header above already names the
+                // form, and a section heading is drawn larger than it.
+                title: l10n.appSettingsRemoteDetails,
+                banner: _error == null
+                    ? null
+                    : TRAlert(
+                        title: TRText.inherit(
+                          l10n.appSettingsConnectionFailed,
+                        ),
+                        description: TRText.inherit(_error!),
+                        icon: const Icon(CoderIcons.error),
+                        variant: TRStatusVariant.danger,
+                      ),
+                children: <Widget>[
+                  TRTextField(
+                    key: const ValueKey<String>('remote-host-label'),
+                    controller: _label,
+                    label: l10n.commonName,
+                    placeholder: 'Production daemon',
+                  ),
+                  TRTextField(
+                    key: const ValueKey<String>('remote-host-address'),
+                    controller: _address,
+                    keyboardType: TextInputType.url,
+                    label: l10n.appSettingsAddress,
+                    placeholder: 'wss://coder.example.com/ws',
+                  ),
+                  TRTextField(
+                    key: const ValueKey<String>('remote-host-token'),
+                    controller: _token,
+                    obscureText: true,
+                    label: existing == null
+                        ? l10n.appSettingsBearerToken
+                        : l10n.appSettingsNewToken,
+                  ),
+                ],
+              ),
+              SettingsSection(
+                title: l10n.appSettingsConnectionBehaviour,
+                children: <Widget>[
+                  CoderSwitchRow(
+                    title: TRText.inherit(l10n.appSettingsAutoConnect),
+                    value: _autoConnect,
+                    onChanged: (value) => setState(() => _autoConnect = value),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  if (existing != null) ...<Widget>[
+                    TRButton(
+                      appearance: TRAppearance.ghost,
+                      onPressed: _saving ? null : () => _delete(existing),
+                      child: TRText.inherit(l10n.commonDelete),
+                    ),
+                    const SizedBox(width: TRSpacing.small),
+                  ],
+                  TRButton(
+                    intent: TRIntent.primary,
+                    onPressed: _saving ? null : () => _save(existing),
+                    child: TRText.inherit(
+                      _saving ? l10n.commonSaving : l10n.commonSave,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
     return CoderPageShell(
       appBar: CoderPageHeader(
         leading: TRIconButton(
@@ -496,81 +579,12 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
           icon: const Icon(CoderIcons.back),
         ),
         title: TRText.inherit(
-          existing == null
+          widget.hostId == null
               ? l10n.appSettingsAddRemoteTitle
               : l10n.appSettingsEditRemoteTitle,
         ),
       ),
-      body: SettingsScaffold(
-        children: <Widget>[
-          SettingsSection.form(
-            // Not the page title again: the header above already names the
-            // form, and a section heading is drawn larger than it.
-            title: l10n.appSettingsRemoteDetails,
-            banner: _error == null
-                ? null
-                : TRAlert(
-                    title: TRText.inherit(l10n.appSettingsConnectionFailed),
-                    description: TRText.inherit(_error!),
-                    icon: const Icon(CoderIcons.error),
-                    variant: TRStatusVariant.danger,
-                  ),
-            children: <Widget>[
-              TRTextField(
-                key: const ValueKey<String>('remote-host-label'),
-                controller: _label,
-                label: l10n.commonName,
-                placeholder: 'Production daemon',
-              ),
-              TRTextField(
-                key: const ValueKey<String>('remote-host-address'),
-                controller: _address,
-                keyboardType: TextInputType.url,
-                label: l10n.appSettingsAddress,
-                placeholder: 'wss://coder.example.com/ws',
-              ),
-              TRTextField(
-                key: const ValueKey<String>('remote-host-token'),
-                controller: _token,
-                obscureText: true,
-                label: existing == null
-                    ? l10n.appSettingsBearerToken
-                    : l10n.appSettingsNewToken,
-              ),
-            ],
-          ),
-          SettingsSection(
-            title: l10n.appSettingsConnectionBehaviour,
-            children: <Widget>[
-              CoderSwitchRow(
-                title: TRText.inherit(l10n.appSettingsAutoConnect),
-                value: _autoConnect,
-                onChanged: (value) => setState(() => _autoConnect = value),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[
-              if (existing != null) ...<Widget>[
-                TRButton(
-                  appearance: TRAppearance.ghost,
-                  onPressed: _saving ? null : () => _delete(existing),
-                  child: TRText.inherit(l10n.commonDelete),
-                ),
-                const SizedBox(width: TRSpacing.small),
-              ],
-              TRButton(
-                intent: TRIntent.primary,
-                onPressed: _saving ? null : () => _save(existing),
-                child: TRText.inherit(
-                  _saving ? l10n.commonSaving : l10n.commonSave,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      body: body,
     );
   }
 

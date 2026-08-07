@@ -30,12 +30,19 @@ class GeneralSettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    const body = SettingsScaffold(
-      children: <Widget>[
-        _AppearanceSection(),
-        _LanguageSection(),
-        _StartupSection(),
-      ],
+    final body = SettingsAsyncContent<HostRegistryState>(
+      state: ref.watch(hostRegistryControllerProvider),
+      loading: SettingsSkeletonLayout.form(
+        semanticLabel: l10n.settingsLoading,
+      ),
+      error: (error, _) => Center(child: TRText.inherit('$error')),
+      data: (_) => const SettingsScaffold(
+        children: <Widget>[
+          _AppearanceSection(),
+          _LanguageSection(),
+          _StartupSection(),
+        ],
+      ),
     );
     if (embedded) return body;
     return CoderPageShell(
@@ -58,11 +65,7 @@ class _StartupSection extends ConsumerWidget {
     // Mobile and plain widget tests have no login items, so offering a switch
     // that silently does nothing would be worse than offering none.
     if (autostart == null) return const SizedBox.shrink();
-    final settings = ref
-        .watch(hostRegistryControllerProvider)
-        .asData
-        ?.value
-        .settings;
+    final settings = ref.watch(hostRegistryControllerProvider).value?.settings;
     final controller = ref.read(hostRegistryControllerProvider.notifier);
     return SettingsSection(
       title: l10n.generalStartupSection,
@@ -111,11 +114,7 @@ class _AppearanceSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final settings = ref
-        .watch(hostRegistryControllerProvider)
-        .asData
-        ?.value
-        .settings;
+    final settings = ref.watch(hostRegistryControllerProvider).value?.settings;
     return SettingsSection(
       title: l10n.generalAppearanceSection,
       children: <Widget>[
@@ -167,11 +166,7 @@ class _LanguageSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final settings = ref
-        .watch(hostRegistryControllerProvider)
-        .asData
-        ?.value
-        .settings;
+    final settings = ref.watch(hostRegistryControllerProvider).value?.settings;
     return SettingsSection(
       title: l10n.generalLanguageSection,
       children: <Widget>[

@@ -5,6 +5,8 @@
   "commonSaving": "保存中",
   "commonName": "名前",
   "commonDescription": "説明",
+  "settingsLoading": "設定を読み込み中",
+  "settingsRefreshFailed": "設定を再読み込みできませんでした: {error}",
   "providerSettingsTitle": "プロバイダー",
   "providerSettingsCatalogStatus": "カタログメタデータ",
   "providerSettingsCatalogBundled": "同梱スナップショット",

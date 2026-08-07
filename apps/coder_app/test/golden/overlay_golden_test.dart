@@ -28,6 +28,45 @@ import '../support/localization.dart';
 void main() {
   unawaited(
     goldenTest(
+      'settings loading skeletons preserve responsive surface shapes',
+      fileName: 'settings_loading_skeletons',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'desktop list detail light',
+            child: SizedBox(
+              width: 1000,
+              height: 760,
+              child: _settingsSkeleton(
+                ThemeMode.light,
+                const SettingsSkeletonLayout.listDetail(
+                  semanticLabel: '설정 불러오는 중',
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'mobile form dark',
+            child: SizedBox(
+              width: 390,
+              height: 760,
+              child: _settingsSkeleton(
+                ThemeMode.dark,
+                const SettingsSkeletonLayout.form(
+                  semanticLabel: '설정 불러오는 중',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'desktop title bar file menu is open',
       fileName: 'desktop_file_menu_open',
       constraints: const BoxConstraints.tightFor(width: 1000, height: 620),
@@ -186,6 +225,17 @@ void main() {
     );
   }
 }
+
+Widget _settingsSkeleton(ThemeMode mode, Widget child) => MaterialApp(
+  theme: testLightTheme,
+  darkTheme: testDarkTheme,
+  themeMode: mode,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(disableAnimations: true),
+    child: child!,
+  ),
+  home: Scaffold(body: child),
+);
 
 Widget _desktopApp() => CoderApp(
   services: fakeAppServices(
