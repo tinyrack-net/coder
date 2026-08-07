@@ -66,6 +66,8 @@ void main() {
         await tester.pumpAndSettle();
         FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
         expect(find.text('프로젝트 선택'), findsNothing);
         expect(find.text('추가'), findsOneWidget);
         return null;
