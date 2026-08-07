@@ -4,6 +4,9 @@ import 'package:test/test.dart';
 
 void main() {
   final workflow = File('.github/workflows/pipeline.yml').readAsStringSync();
+  final ibusTerminalRunner = File(
+    'tool/run_linux_ibus_terminal_e2e.sh',
+  ).readAsStringSync();
   final androidBuild = File(
     'apps/coder_app/android/build.gradle.kts',
   ).readAsStringSync();
@@ -158,6 +161,11 @@ void main() {
     expect(job, contains('terminal_ibus_e2e_test.dart'));
     expect(job, isNot(contains('continue-on-error')));
     expect(job, isNot(contains('retry')));
+    expect(
+      ibusTerminalRunner,
+      contains('mise exec -- flutter pub get --enforce-lockfile'),
+    );
+    expect(ibusTerminalRunner, isNot(contains('mise exec -- dart pub get')));
   });
 
   test('mobile nightly jobs run remote bootstrap and provider E2E', () {

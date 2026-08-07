@@ -43,6 +43,6 @@ done
 [[ $engine_ready == true ]]
 
 export TINYRACK_IBUS_ARTIFACT_DIR="$artifact_dir"
-mise exec -- dart pub get --enforce-lockfile
+mise exec -- flutter pub get --enforce-lockfile
 cd apps/coder_app
 mise exec -- flutter test integration_test/terminal_ibus_e2e_test.dart -d linux
