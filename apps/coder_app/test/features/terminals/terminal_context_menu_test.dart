@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:termworld/termworld.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_coder_api.dart';
@@ -245,6 +246,23 @@ void main() {
       tags: const <String>['feature_test__terminal_lifecycle__widget'],
     );
   }
+
+  testWidgets('the terminal receives Tinyrack presentation tokens', (
+    tester,
+  ) async {
+    await _pumpTerminal(tester, presenter: _RecordingPresenter());
+
+    final finder = find.byType(TerminalView);
+    final terminal = tester.widget<TerminalView>(finder);
+    final colors = tester.element(finder).tinyrackTheme;
+
+    expect(terminal.theme.background, colors.surface);
+    expect(terminal.theme.foreground, colors.text);
+    expect(terminal.theme.cursor, colors.focus);
+    expect(terminal.theme.selection, colors.surfaceSelected);
+    expect(terminal.style.textStyle, TRTypography.code);
+    expect(terminal.style.padding, const EdgeInsets.all(TRSpacing.small));
+  });
 
   testWidgets(
     'copy and clear-selection follow the selection the terminal reports',

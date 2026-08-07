@@ -180,9 +180,9 @@ Widget _desktopApp() => CoderApp(
 
 /// Pins the terminal's own context menu, which no other golden reaches.
 ///
-/// The menu is built by `TRTerminalView` rather than by the app, because the
-/// terminal swallows secondary taps, so only a real right-click on the
-/// terminal surface opens it.
+/// The menu is built by Coder's token-backed termworld composite, because the
+/// terminal owns secondary taps, so only a real right-click on the terminal
+/// surface opens it.
 Widget _terminalApp() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(

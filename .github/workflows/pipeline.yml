@@ -181,6 +181,41 @@ jobs:
         env:
           TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
 
+  linux-ibus-terminal-e2e:
+    name: Linux IBus Terminal E2E
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/install-linux-desktop-deps
+        with:
+          extra-packages: >-
+            ibus ibus-gtk3 ibus-hangul xdotool xclip dbus-x11 xvfb scrot
+            x11-utils
+      - name: Run terminal_ibus_e2e_test.dart through the embedded PTY
+        env:
+          GDK_BACKEND: x11
+          GTK_IM_MODULE: ibus
+          IBUS_USE_PORTAL: '0'
+          XMODIFIERS: '@im=ibus'
+          TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
+        run: |
+          export XDG_CONFIG_HOME="$RUNNER_TEMP/coder-ibus-config"
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/coder-ibus-runtime"
+          mkdir -p "$XDG_CONFIG_HOME" "$XDG_RUNTIME_DIR" \
+            "$GITHUB_WORKSPACE/ibus-terminal-artifacts"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          xvfb-run -a dbus-run-session -- \
+            bash tool/run_linux_ibus_terminal_e2e.sh
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: linux-ibus-terminal-e2e
+          path: ibus-terminal-artifacts
+          if-no-files-found: warn
+
   mobile-debug-build:
     name: Mobile Debug Build (${{ matrix.os }})
     if: github.event_name != 'schedule'
@@ -303,6 +338,7 @@ jobs:
       - coverage-flutter-linux
       - golden-linux
       - debug-e2e-linux
+      - linux-ibus-terminal-e2e
       - mobile-debug-build
       - desktop-debug-build
       - web-build

@@ -90,6 +90,29 @@ dependencies:
     );
   });
 
+  test('pins termworld to its exact flutter-packages source', () {
+    final root = Directory.systemTemp.createTempSync('tinyrack-sources-');
+    addTearDown(() => root.deleteSync(recursive: true));
+    File(p.join(root.path, 'pubspec.yaml')).writeAsStringSync('''
+name: fixture
+dependencies:
+  termworld:
+    git:
+      url: https://github.com/tinyrack-net/dart-packages.git
+      ref: main
+      path: packages/not_termworld
+''');
+
+    expect(
+      verifier.verify(root.path).map((violation) => violation.rule),
+      containsAll(<String>[
+        'tinyrack_git_repository',
+        'tinyrack_git_ref',
+        'tinyrack_git_path',
+      ]),
+    );
+  });
+
   test('accepts exact Tinyrack Git sources and ignores build output', () {
     final root = Directory.systemTemp.createTempSync('tinyrack-sources-');
     addTearDown(() => root.deleteSync(recursive: true));
