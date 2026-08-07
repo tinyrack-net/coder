@@ -1,5 +1,5 @@
-import 'package:coder_agent/src/exec_tools.dart';
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/exec_tools.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// One drain of a live [ExecSession]'s output.

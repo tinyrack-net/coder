@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:coder_agent/src/exec_tools.dart';
 import 'package:coder_agent/src/model.dart';
+import 'package:coder_agent/src/tools/exec_tools.dart';
 import 'package:coder_agent/src/usage.dart';
 
 /// Every value that decides when and how a conversation is compacted.

@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:coder_agent/src/compaction.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/plan_mode_prompt.dart';
-import 'package:coder_agent/src/skills.dart';
-import 'package:coder_agent/src/tool_search.dart';
+import 'package:coder_agent/src/tools/skills.dart';
+import 'package:coder_agent/src/tools/tool_search.dart';
 import 'package:coder_agent/src/usage.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 

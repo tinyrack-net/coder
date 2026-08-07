@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io' show FileSystemException;
 
-import 'package:coder_agent/src/exec_sessions.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools.dart';
+import 'package:coder_agent/src/tools/exec_sessions.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:file/file.dart' as file_api;
 import 'package:file/local.dart';
