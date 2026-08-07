@@ -176,6 +176,9 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                         selection: widget.selection!,
                         requestedAgentId: widget.requestedAgentId,
                         requestedTerminalId: widget.requestedTerminalId,
+                        mobile:
+                            constraints.maxWidth <
+                            CoderLayoutMetrics.compactBreakpoint,
                       );
                 if (constraints.maxWidth <
                     CoderLayoutMetrics.compactBreakpoint) {
@@ -268,12 +271,14 @@ class _SessionArea extends ConsumerStatefulWidget {
     required this.selection,
     this.requestedAgentId,
     this.requestedTerminalId,
+    this.mobile = false,
     super.key,
   });
 
   final WorkspaceSelection selection;
   final String? requestedAgentId;
   final String? requestedTerminalId;
+  final bool mobile;
 
   @override
   ConsumerState<_SessionArea> createState() => _SessionAreaState();
@@ -450,23 +455,19 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     final entry = workspace.focusedTab!;
     return Column(
       children: <Widget>[
-        TRTabs.bar(
-          key: const ValueKey<String>('session-tab-strip'),
-          semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
-          value: state?.selectedTerminalId ?? state?.selectedAgentId,
-          onValueChange: _selectTab,
-          tabs: <TRTabsTab>[
-            if (state != null) ...<TRTabsTab>[
-              for (final id in state.openAgentIds)
-                _sessionTab(
-                  context,
-                  state.sessions.where((item) => item.id == id).first,
-                ),
-              for (final id in state.openTerminalIds)
-                _terminalTab(
-                  context,
-                  state.terminals.where((item) => item.id == id).first,
-                ),
+        GestureDetector(
+          key: const ValueKey<String>('workspace-mobile-tab-trigger'),
+          behavior: HitTestBehavior.opaque,
+          onTap: () => unawaited(_showTabSheet()),
+          child: TRTabs.bar(
+            semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
+            value: _controlValue(entry),
+            onValueChange: (_) => unawaited(_showTabSheet()),
+            tabs: <TRTabsTab>[
+              _tab(context, workspace, entry, closable: false),
+            ],
+            actions: <Widget>[
+              _newTabMenu(context, workspace.focusedPaneId, true),
             ],
           ),
         ),
