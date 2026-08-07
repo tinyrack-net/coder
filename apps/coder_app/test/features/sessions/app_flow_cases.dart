@@ -198,7 +198,7 @@ void _registerSessionsAppFlows() {
       await tester.tap(find.byKey(const ValueKey('workspace-new-terminal')));
       await tester.pumpAndSettle();
 
-      expect(find.byType(TRTerminalView), findsOneWidget);
+      expect(find.byType(TerminalView), findsOneWidget);
       expect(find.text('Terminal 1'), findsOneWidget);
       final terminal = (await api.terminals.listTerminals(checkout.id)).single;
       await tester.tap(
@@ -208,7 +208,7 @@ void _registerSessionsAppFlows() {
       expect(find.text('터미널을 종료할까요?'), findsOneWidget);
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
-      expect(find.byType(TRTerminalView), findsOneWidget);
+      expect(find.byType(TerminalView), findsOneWidget);
       await tester.tap(
         find.byKey(ValueKey<String>('tr-tabs-close-${terminal.id}')),
       );
@@ -219,7 +219,7 @@ void _registerSessionsAppFlows() {
         (await api.terminals.listTerminals(checkout.id)).single.status,
         TerminalStatus.exited,
       );
-      expect(find.byType(TRTerminalView), findsNothing);
+      expect(find.byType(TerminalView), findsNothing);
     },
     tags: const <String>['feature_test__terminal_lifecycle__widget'],
   );
@@ -309,7 +309,7 @@ void _registerSessionsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      expect(find.byType(TRTerminalView), findsOneWidget);
+      expect(find.byType(TerminalView), findsOneWidget);
       expect(find.text('Remote terminal'), findsOneWidget);
     },
     tags: const <String>[
@@ -615,7 +615,7 @@ void _registerSessionsAppFlows() {
         find.byKey(const ValueKey<String>('terminal-menu-clear-screen')),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(TRTerminalView), findsOneWidget);
+      expect(find.byType(TerminalView), findsOneWidget);
     },
     tags: const <String>['feature_test__terminal_lifecycle__widget'],
   );

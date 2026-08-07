@@ -24,6 +24,7 @@ import 'package:coder_app/src/features/providers/application/session_model_optio
 import 'package:coder_app/src/features/sessions/application/session_tabs_controller.dart';
 import 'package:coder_app/src/features/sessions/application/sessions_controller.dart';
 import 'package:coder_app/src/features/terminals/application/terminals_controller.dart';
+import 'package:coder_app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:coder_app/src/features/workspace/application/workspace_controller.dart';
 import 'package:coder_app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
@@ -34,6 +35,7 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:termworld/termworld.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Unified host/repository/worktree tree and session-tab workspace.
@@ -559,7 +561,8 @@ class _TerminalPane extends ConsumerStatefulWidget {
 }
 
 class _TerminalPaneState extends ConsumerState<_TerminalPane> {
-  final TRTerminalController _controller = TRTerminalController();
+  late final TerminalEmulator _emulator;
+  final TerminalViewController _controller = TerminalViewController();
   StreamSubscription<TerminalOutputDto>? _events;
   CoderApi? _api;
   int _sequence = 0;
@@ -568,7 +571,31 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
   @override
   void initState() {
     super.initState();
+    _emulator = TerminalEmulator(
+      columns: widget.terminal.columns,
+      rows: widget.terminal.rows,
+      onOutput: _sendInput,
+      onResize: _resize,
+    );
     unawaited(_attach());
+  }
+
+  void _sendInput(String data) {
+    unawaited(
+      _api?.terminals.writeTerminal(widget.terminal.id, data) ??
+          Future<void>.value(),
+    );
+  }
+
+  void _resize(TerminalSize size) {
+    unawaited(
+      _api?.terminals.resizeTerminal(
+            widget.terminal.id,
+            columns: size.columns,
+            rows: size.rows,
+          ) ??
+          Future<TerminalDto>.value(widget.terminal),
+    );
   }
 
   Future<void> _attach() async {
@@ -592,13 +619,14 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
   void _accept(TerminalOutputDto output) {
     if (output.sequence <= _sequence) return;
     _sequence = output.sequence;
-    _controller.write(output.data);
+    _emulator.write(output.data);
   }
 
   @override
   void dispose() {
     unawaited(_events?.cancel());
     _controller.dispose();
+    _emulator.dispose();
     super.dispose();
   }
 
@@ -616,24 +644,13 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       );
     }
     return ListenableBuilder(
-      listenable: _controller.selectionChanges,
-      builder: (context, _) => TRTerminalView(
+      listenable: _controller,
+      builder: (context, _) => CoderTerminalView(
         key: ValueKey<String>('terminal-view-${widget.terminal.id}'),
+        emulator: _emulator,
         controller: _controller,
         autofocus: true,
         contextMenuItems: _buildContextMenu,
-        onInput: (data) => unawaited(
-          _api?.terminals.writeTerminal(widget.terminal.id, data) ??
-              Future<void>.value(),
-        ),
-        onResize: (size) => unawaited(
-          _api?.terminals.resizeTerminal(
-                widget.terminal.id,
-                columns: size.columns,
-                rows: size.rows,
-              ) ??
-              Future<TerminalDto>.value(widget.terminal),
-        ),
       ),
     );
   }
@@ -694,17 +711,15 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text;
       if (text == null || text.isEmpty) return;
-      _controller
-        ..paste(text)
-        ..clearSelection();
+      _emulator.paste(text);
+      _controller.clearSelection();
     }());
   }
 
   /// Erases the screen and the scrollback, then homes the cursor.
   void _clearScreen() {
-    _controller
-      ..write('\x1b[H\x1b[2J\x1b[3J')
-      ..clearSelection();
+    _emulator.write('\x1b[H\x1b[2J\x1b[3J');
+    _controller.clearSelection();
   }
 }
 

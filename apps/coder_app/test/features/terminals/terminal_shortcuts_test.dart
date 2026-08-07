@@ -4,6 +4,7 @@ library;
 import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/app/router/app_router.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -143,4 +144,80 @@ void main() {
       );
     },
   );
+
+  testWidgets('a Hangul composition followed by Space is written once', (
+    tester,
+  ) async {
+    final api = FakeCoderApi(
+      workspaces: <WorkspaceDto>[_workspace],
+      worktrees: <WorktreeDto>[_worktree],
+      terminals: const <TerminalDto>[_terminal],
+    );
+    final router = GoRouter(
+      initialLocation: TerminalRoute(
+        hostId: 'server',
+        workspaceId: _workspace.id,
+        worktreeId: _worktree.id,
+        terminalId: _terminal.id,
+      ).location,
+      routes: $appRoutes,
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appServicesProvider.overrideWithValue(fakeAppServices(api)),
+        ],
+        child: MaterialApp.router(
+          theme: testLightTheme,
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey<String>('tr-terminal-surface')),
+    );
+    await tester.pump(kDoubleTapTimeout);
+
+    for (final value in <TextEditingValue>[
+      const TextEditingValue(
+        text: 'ㅎ',
+        selection: TextSelection.collapsed(offset: 1),
+        composing: TextRange(start: 0, end: 1),
+      ),
+      const TextEditingValue(
+        text: '한',
+        selection: TextSelection.collapsed(offset: 1),
+        composing: TextRange(start: 0, end: 1),
+      ),
+      const TextEditingValue(
+        text: '한ㄱ',
+        selection: TextSelection.collapsed(offset: 2),
+        composing: TextRange(start: 1, end: 2),
+      ),
+      const TextEditingValue(
+        text: '한글',
+        selection: TextSelection.collapsed(offset: 2),
+        composing: TextRange(start: 1, end: 2),
+      ),
+      const TextEditingValue(
+        text: '한글 ',
+        selection: TextSelection.collapsed(offset: 3),
+      ),
+      const TextEditingValue(
+        text: '한글 ',
+        selection: TextSelection.collapsed(offset: 3),
+      ),
+    ]) {
+      tester.testTextInput.updateEditingValue(value);
+      await tester.pump();
+    }
+
+    expect(api.terminalWrites.map((write) => write.data).join(), '한글 ');
+  });
 }

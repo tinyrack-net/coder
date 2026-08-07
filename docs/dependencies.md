@@ -65,10 +65,12 @@ The same pin is why `hooks` is held at 2.0.2 and `native_toolchain_c` at 0.19.2:
 
 ## Tinyrack Git sources
 
-`tinyrack_ui`, `cliweave`, `dartage`, `ptyworld`, and `shipworld` come from
-`tinyrack-net` Git repositories at exact 40-character commit SHAs, never from
-pub.dev and never from a moving ref. `dart run melos tinyrack-sources:check`
-enforces this against both the manifests and the lockfile.
+`tinyrack_ui`, `cliweave`, `dartage`, `ptyworld`, `shipworld`, `dropwell`, and
+`termworld` come from `tinyrack-net` Git repositories at exact 40-character
+commit SHAs, never from pub.dev and never from a moving ref. `dart run melos
+tinyrack-sources:check` enforces this against both the manifests and the
+lockfile. `dropwell` and `termworld` both live in
+`tinyrack-net/flutter-packages` and Coder pins them to the same merge SHA.
 
 `cliweave` and `ptyworld` both live in `tinyrack-net/dart-packages`, and CI
 checks that repository out **once** for the whole pipeline. So three values
