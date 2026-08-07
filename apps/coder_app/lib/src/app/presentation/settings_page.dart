@@ -16,6 +16,7 @@ import 'package:coder_app/src/features/settings/presentation/pages/general_setti
 import 'package:coder_app/src/features/skills/presentation/pages/skill_settings_page.dart';
 import 'package:coder_app/src/features/workspace/presentation/pages/project_settings_page.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_page_shell.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter/material.dart';
@@ -140,7 +141,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth < TRBreakpoints.medium) {
+          if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
             final l10n = AppLocalizations.of(context);
             return Column(
               children: <Widget>[
@@ -182,7 +183,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                 scroll: false,
                 // The sidebar lays its content out at the width it is given,
                 // so the width belongs to it rather than to an outer box.
-                width: TRMeasurements.paneSm,
+                width: CoderLayoutMetrics.settingsSidebarWidth,
                 child: _SettingsSidebar(
                   selected: widget.category,
                   hosts: hosts,
@@ -281,11 +282,7 @@ class _SettingsSectionLabel extends StatelessWidget {
       TRSpacing.small,
       TRSpacing.medium,
     ),
-    child: TRText(
-      text,
-      variant: TRTextVariant.label,
-      color: TRTextColor.muted,
-    ),
+    child: TRText(text, variant: TRTextVariant.label, color: TRTextColor.muted),
   );
 }
 

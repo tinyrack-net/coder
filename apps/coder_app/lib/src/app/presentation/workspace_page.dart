@@ -28,6 +28,7 @@ import 'package:coder_app/src/features/terminals/presentation/coder_terminal_vie
 import 'package:coder_app/src/features/workspace/application/workspace_controller.dart';
 import 'package:coder_app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/coder_page_shell.dart';
 import 'package:coder_client/coder_client.dart';
@@ -78,7 +79,9 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     return CoderPageShell(
       appBar: CoderPageHeader(
         // The toggle keeps one position in both states: the very top left.
-        leading: MediaQuery.sizeOf(context).width < TRBreakpoints.medium
+        leading:
+            MediaQuery.sizeOf(context).width <
+                CoderLayoutMetrics.compactBreakpoint
             ? null
             : TRIconButton(
                 appearance: TRAppearance.ghost,
@@ -126,7 +129,9 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
           );
           final detail = widget.selection == null
               ? NewWorkspacePane(
-                  showBack: constraints.maxWidth < TRBreakpoints.medium,
+                  showBack:
+                      constraints.maxWidth <
+                      CoderLayoutMetrics.compactBreakpoint,
                   onBack: () => const WorkspaceHomeRoute().replace(context),
                   onStarted: (selection, session) =>
                       _goSession(context, selection, session.id),
@@ -140,9 +145,11 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                   selection: widget.selection!,
                   requestedAgentId: widget.requestedAgentId,
                   requestedTerminalId: widget.requestedTerminalId,
-                  showBack: constraints.maxWidth < TRBreakpoints.medium,
+                  showBack:
+                      constraints.maxWidth <
+                      CoderLayoutMetrics.compactBreakpoint,
                 );
-          if (constraints.maxWidth < TRBreakpoints.medium) {
+          if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
             return widget.selection == null && !widget.compose
                 ? sidebar
                 : detail;
@@ -262,27 +269,21 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       _openedAgentId = widget.requestedAgentId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          unawaited(
-            ref.read(provider.notifier).open(widget.requestedAgentId!),
-          );
+          unawaited(ref.read(provider.notifier).open(widget.requestedAgentId!));
         }
       });
     }
     if (widget.requestedTerminalId != null &&
         widget.requestedTerminalId != _openedTerminalId &&
         state != null &&
-        state.terminals.any(
-          (item) => item.id == widget.requestedTerminalId,
-        )) {
+        state.terminals.any((item) => item.id == widget.requestedTerminalId)) {
       _openedTerminalId = widget.requestedTerminalId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           unawaited(
             ref
                 .read(provider.notifier)
-                .openTerminal(
-                  widget.requestedTerminalId!,
-                ),
+                .openTerminal(widget.requestedTerminalId!),
           );
         }
       });
@@ -372,10 +373,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           ],
         ),
         Expanded(
-          child: switch ((
-            state?.selectedTerminalId,
-            state?.selectedAgentId,
-          )) {
+          child: switch ((state?.selectedTerminalId, state?.selectedAgentId)) {
             // Keyed per terminal because the pane's state owns that terminal's
             // emulator, event subscription, and last-seen sequence. Reusing it
             // across a tab switch would keep the previous terminal's sequence
@@ -536,9 +534,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       if (confirmed != true || !mounted) return;
       final registry = await ref.read(hostRegistryControllerProvider.future);
       await registry.runtimes[widget.selection.hostId]!.api!.terminals
-          .terminateTerminal(
-            id,
-          );
+          .terminateTerminal(id);
     }
     await ref
         .read(sessionTabsControllerProvider(widget.selection).notifier)
@@ -1063,10 +1059,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     return true;
   }
 
-  Future<void> _send(
-    String sessionId,
-    ComposerSubmission submission,
-  ) async {
+  Future<void> _send(String sessionId, ComposerSubmission submission) async {
     await ref
         .read(
           conversationControllerProvider(
@@ -1074,10 +1067,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             sessionId,
           ).notifier,
         )
-        .startTurn(
-          submission.text,
-          attachments: submission.attachments,
-        );
+        .startTurn(submission.text, attachments: submission.attachments);
   }
 
   Future<Uint8List> _loadAttachment(ChatAttachment attachment) async {
