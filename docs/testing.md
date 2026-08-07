@@ -134,7 +134,42 @@ Pull requests and main pushes run independent static, generated-source,
 platform-test, coverage, golden, Debug E2E, and mobile-build jobs. Linux coverage
 is the Linux execution of the full suite; macOS and Windows run the non-coverage
 Dart and Flutter suites independently. The `Quality Gate` job requires every
-job to succeed and is the sole required branch-protection check.
+job to succeed or to have been planned away, and is the sole required
+branch-protection check.
+
+### Impact-based job selection
+
+A pull request runs only the jobs its change can break. The `plan` job diffs
+against the merge base and runs `tool/plan_ci.dart`, which maps each changed
+file to its owning workspace package, closes over that package's transitive
+*dependents*, and publishes one `GITHUB_OUTPUT` flag per job. Every other
+quality job is gated on one of those flags. The plan is printed to the run
+summary, so a skipped job always has a visible reason.
+
+Three rules keep the selection honest.
+
+- Only `pull_request` is narrowed. `merge_group`, the push to `main`, tags and
+  manual dispatch all pass `--full`, so the projected merge commit that
+  actually lands is verified by the complete job set. A narrowed run is never
+  the last word before `main`.
+- Anything the planner does not model forces a full run: the root `lib/`,
+  `test/` and `tool/` trees (the verification tooling itself), `pubspec.yaml`,
+  `pubspec.lock`, `analysis_options.yaml`, `dart_test.yaml`, `.github/`, and
+  any path that maps to no known package. Guessing wrong in that direction
+  costs runner minutes; guessing wrong in the other direction skips a gate.
+- `static-linux` is never selected away. The workspace-wide static gates are
+  cheap and analysing the whole workspace is the point of them.
+
+The Dart test and Dart coverage jobs are narrowed rather than skipped: the
+planner emits a `MELOS_PACKAGES` filter that constrains every `melos exec` in
+the existing scripts, so the script text stays identical to what runs locally.
+The coverage job receives the same `--scope=` flags it used to hard-code,
+intersected with the affected packages, so the gate never widens or weakens —
+an unaffected package is measured on the merge-queue run instead.
+
+The five Linux Debug E2E shards share one `build/linux` directory produced by
+the `e2e-linux-warm` job, so the desktop runner is compiled once instead of
+five times. A cache miss only costs a rebuild.
 
 Merging goes through a merge queue. A pull request is not merged on the commit
 it was tested at: the queue rebuilds it on top of whatever `main` has become,

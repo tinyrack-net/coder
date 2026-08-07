@@ -42,6 +42,43 @@ concurrency:
     github.event_name != 'merge_group' }}
 
 jobs:
+  # Every quality job below is gated on this plan. A pull request runs only the
+  # jobs its changed packages can break; `merge_group` and the push to `main`
+  # always run everything, so nothing reaches `main` on a narrowed run.
+  plan:
+    name: Plan
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      full: ${{ steps.plan.outputs.full }}
+      melos_packages: ${{ steps.plan.outputs.melos_packages }}
+      coverage_scope_flags: ${{ steps.plan.outputs.coverage_scope_flags }}
+      run_dart_tests: ${{ steps.plan.outputs.run_dart_tests }}
+      run_dart_coverage: ${{ steps.plan.outputs.run_dart_coverage }}
+      run_generated: ${{ steps.plan.outputs.run_generated }}
+      run_flutter: ${{ steps.plan.outputs.run_flutter }}
+      run_golden: ${{ steps.plan.outputs.run_golden }}
+      run_e2e: ${{ steps.plan.outputs.run_e2e }}
+      run_web: ${{ steps.plan.outputs.run_web }}
+      run_mobile_build: ${{ steps.plan.outputs.run_mobile_build }}
+      run_desktop_build: ${{ steps.plan.outputs.run_desktop_build }}
+      run_cli: ${{ steps.plan.outputs.run_cli }}
+    steps:
+      # The planner diffs against the merge base, which a shallow clone lacks.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - id: plan
+        run: >-
+          dart run tool/plan_ci.dart
+          ${{ github.event_name == 'pull_request' &&
+          format('--base=origin/{0}', github.base_ref) || '--full' }}
+          --github-output="$GITHUB_OUTPUT"
+          --summary="$GITHUB_STEP_SUMMARY"
+
   static-linux:
     name: Static checks
     if: github.event_name != 'schedule'
@@ -63,18 +100,32 @@ jobs:
 
   generated-linux:
     name: Generated sources
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_generated == 'true'
+    needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      # build_runner hashes its own inputs, so a stale cache costs a rebuild
+      # rather than a wrong answer. Without it every run is a cold build.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .dart_tool/build
+            apps/*/.dart_tool/build
+            packages/*/.dart_tool/build
+          key: build-runner-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}-${{ github.sha }}
+          restore-keys: |
+            build-runner-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}-
+            build-runner-${{ runner.os }}-
       - run: dart pub get --enforce-lockfile
       - run: dart run melos generate:check
 
   dart-tests:
     name: Dart tests (${{ matrix.os }})
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_dart_tests == 'true'
+    needs: plan
     strategy:
       fail-fast: true
       matrix:
@@ -87,11 +138,16 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
+      # `MELOS_PACKAGES` narrows every `melos exec` in the script to the
+      # affected packages without forking the script itself.
       - run: dart run melos test:dart
+        env:
+          MELOS_PACKAGES: ${{ needs.plan.outputs.melos_packages }}
 
   flutter-tests:
     name: Flutter tests (${{ matrix.os }})
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_flutter == 'true'
+    needs: plan
     strategy:
       fail-fast: true
       matrix:
@@ -108,7 +164,8 @@ jobs:
 
   coverage-dart-linux:
     name: Dart coverage
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_dart_coverage == 'true'
+    needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -116,18 +173,19 @@ jobs:
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos test:coverage:dart
+        env:
+          MELOS_PACKAGES: ${{ needs.plan.outputs.melos_packages }}
+      # The planner emits the same scope list this job used to hard-code,
+      # intersected with the affected packages.
       - name: Enforce Dart package coverage
         run: >-
           dart run tool/verify_coverage.dart
-          --scope=coder_agent
-          --scope=coder_client
-          --scope=coder_daemon
-          --scope=coder_protocol
-          --scope=coder_provider_openai
+          ${{ needs.plan.outputs.coverage_scope_flags }}
 
   coverage-flutter-linux:
     name: Flutter coverage
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_flutter == 'true'
+    needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -139,7 +197,8 @@ jobs:
 
   golden-linux:
     name: Linux goldens
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_golden == 'true'
+    needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -148,9 +207,35 @@ jobs:
       - run: dart pub get --enforce-lockfile
       - run: dart run melos test:golden
 
+  # Every E2E shard used to compile the Linux desktop runner from scratch, so
+  # the same C++ and plugin build ran five times over. Building it once and
+  # sharing `build/linux` leaves each shard with only its own Dart entrypoint
+  # to compile. A cache miss is not a correctness problem: CMake rebuilds
+  # whatever it does not find.
+  e2e-linux-warm:
+    name: Linux E2E build cache
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_e2e == 'true'
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/install-linux-desktop-deps
+      - run: dart pub get --enforce-lockfile
+      - run: flutter build linux --debug -t lib/main_desktop.dart
+        working-directory: apps/coder_app
+      - uses: actions/cache/save@v4
+        with:
+          path: apps/coder_app/build/linux
+          key: e2e-linux-${{ github.sha }}
+
   debug-e2e-linux:
     name: Linux Debug E2E (${{ matrix.shard }})
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_e2e == 'true'
+    needs:
+      - plan
+      - e2e-linux-warm
     strategy:
       fail-fast: false
       matrix:
@@ -173,6 +258,10 @@ jobs:
       - uses: ./.github/actions/install-linux-desktop-deps
         with:
           extra-packages: xvfb
+      - uses: actions/cache/restore@v4
+        with:
+          path: apps/coder_app/build/linux
+          key: e2e-linux-${{ github.sha }}
       - run: dart pub get --enforce-lockfile
       - run: >-
           xvfb-run -a flutter test
@@ -183,7 +272,8 @@ jobs:
 
   mobile-debug-build:
     name: Mobile Debug Build (${{ matrix.os }})
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_mobile_build == 'true'
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
@@ -212,7 +302,8 @@ jobs:
 
   desktop-debug-build:
     name: Desktop Debug Build (${{ matrix.os }})
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_desktop_build == 'true'
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
@@ -232,7 +323,8 @@ jobs:
 
   web-build:
     name: Web Build
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_web == 'true'
+    needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -251,7 +343,8 @@ jobs:
 
   cli-verify:
     name: CLI Verify (${{ matrix.target }})
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && needs.plan.outputs.run_cli == 'true'
+    needs: plan
     # `build-cli` only runs on a tag or a manual dispatch, so nothing used to
     # build the CLI on a pull request. Two release-path breakages reached main
     # that way: a workspace resolution failure that made the job fail on every
@@ -295,6 +388,7 @@ jobs:
     name: Quality Gate
     if: always() && github.event_name != 'schedule'
     needs:
+      - plan
       - static-linux
       - generated-linux
       - dart-tests
@@ -302,6 +396,7 @@ jobs:
       - coverage-dart-linux
       - coverage-flutter-linux
       - golden-linux
+      - e2e-linux-warm
       - debug-e2e-linux
       - mobile-debug-build
       - desktop-debug-build
@@ -310,10 +405,15 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Require every quality job to succeed
+      # `skipped` is a pass because the plan job decided the change cannot
+      # reach that job. `plan` itself is never skipped on a non-schedule run,
+      # so a planner failure still fails this gate.
+      - name: Require every quality job to succeed or be planned away
         env:
           QUALITY_RESULTS: ${{ toJSON(needs) }}
-        run: jq -e 'all(.[]; .result == "success")' <<< "$QUALITY_RESULTS"
+        run: >-
+          jq -e 'all(.[]; .result == "success" or .result == "skipped")'
+          <<< "$QUALITY_RESULTS"
 
   build-and-package:
     name: Build & Package (${{ matrix.target }})
