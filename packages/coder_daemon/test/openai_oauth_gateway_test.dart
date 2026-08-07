@@ -114,6 +114,21 @@ void main() {
     final authorization = Uri.parse(session.authorizationUrl);
     final redirect = Uri.parse(authorization.queryParameters['redirect_uri']!);
 
+    // The gateway fails the session while it is still answering the callback
+    // request, so the expectation has to be watching before the round trip
+    // starts. Attaching it afterwards leaves the error unhandled for the length
+    // of a real socket read, which the test runner reports as a failure.
+    final failure = expectLater(
+      session.completion,
+      throwsA(
+        isA<OAuthAuthorizationFailure>().having(
+          (error) => error.message,
+          'message',
+          contains('The user denied the request.'),
+        ),
+      ),
+    );
+
     expect(
       await _callback(
         redirect,
@@ -124,16 +139,7 @@ void main() {
       HttpStatus.badRequest,
     );
 
-    await expectLater(
-      session.completion,
-      throwsA(
-        isA<OAuthAuthorizationFailure>().having(
-          (error) => error.message,
-          'message',
-          contains('The user denied the request.'),
-        ),
-      ),
-    );
+    await failure;
   });
 
   test('the callback page escapes provider-supplied text', () async {
@@ -145,6 +151,10 @@ void main() {
 
     final session = await gateway.start(ProviderAuthFlow.oauthBrowser);
     final authorization = Uri.parse(session.authorizationUrl);
+    final failure = expectLater(
+      session.completion,
+      throwsA(isA<OAuthAuthorizationFailure>()),
+    );
     final body = await _callbackBody(
       Uri.parse(authorization.queryParameters['redirect_uri']!),
       state: authorization.queryParameters['state']!,
@@ -154,10 +164,7 @@ void main() {
 
     expect(body, isNot(contains('<script>')));
     expect(body, contains('&lt;script&gt;'));
-    await expectLater(
-      session.completion,
-      throwsA(isA<OAuthAuthorizationFailure>()),
-    );
+    await failure;
   });
 
   test('a rejected token exchange reports the OAuth error, not Dio', () async {
@@ -174,17 +181,7 @@ void main() {
 
     final session = await gateway.start(ProviderAuthFlow.oauthBrowser);
     final authorization = Uri.parse(session.authorizationUrl);
-    // The browser must be told why sign in failed, not left on a reset socket.
-    expect(
-      await _callback(
-        Uri.parse(authorization.queryParameters['redirect_uri']!),
-        state: authorization.queryParameters['state']!,
-        code: 'authorization-code',
-      ),
-      HttpStatus.badRequest,
-    );
-
-    await expectLater(
+    final failure = expectLater(
       session.completion,
       throwsA(
         isA<OAuthAuthorizationFailure>().having(
@@ -198,6 +195,18 @@ void main() {
         ),
       ),
     );
+
+    // The browser must be told why sign in failed, not left on a reset socket.
+    expect(
+      await _callback(
+        Uri.parse(authorization.queryParameters['redirect_uri']!),
+        state: authorization.queryParameters['state']!,
+        code: 'authorization-code',
+      ),
+      HttpStatus.badRequest,
+    );
+
+    await failure;
   });
 
   test('a rejected device exchange stops the polling loop', () async {
