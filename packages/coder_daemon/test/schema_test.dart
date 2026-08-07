@@ -63,6 +63,20 @@ void main() {
       () => turns.primaryKey,
     ]);
 
+    final goals = Goals();
+    _expectGeneratedDsl(<Object? Function()>[
+      () => goals.sessionId,
+      () => goals.goalId,
+      () => goals.objective,
+      () => goals.status,
+      () => goals.tokenBudget,
+      () => goals.tokensUsed,
+      () => goals.timeUsedSeconds,
+      () => goals.createdAt,
+      () => goals.updatedAt,
+      () => goals.primaryKey,
+    ]);
+
     final attachments = Attachments();
     _expectGeneratedDsl(<Object? Function()>[
       () => attachments.id,
@@ -174,7 +188,7 @@ void main() {
       final database = CoderDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 14);
+      expect(database.schemaVersion, 15);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

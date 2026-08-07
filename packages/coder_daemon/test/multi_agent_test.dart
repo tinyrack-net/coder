@@ -43,6 +43,7 @@ final class _FakeRuntime implements SessionTurnPort {
     required String sessionId,
     required String turnId,
     required String prompt,
+    bool internal = false,
   }) async {
     if (throwOnStart) throw StateError('Agent already has a running turn.');
     started.add((sessionId: sessionId, turnId: turnId, prompt: prompt));

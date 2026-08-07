@@ -63,6 +63,9 @@ final class SessionInteractionCoordinator implements SessionInteractionPort {
   /// Clears a stale input notice when a new turn starts.
   void beginTurn(String sessionId) => _notedInput.remove(sessionId);
 
+  /// Whether user input is queued and should win over an internal turn.
+  bool hasPendingInput(String sessionId) => _notedInput.contains(sessionId);
+
   @override
   void notePendingInput(String sessionId) {
     _notedInput.add(sessionId);

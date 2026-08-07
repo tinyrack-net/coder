@@ -26,6 +26,16 @@ final class SessionUpdatedClientEvent extends ClientEvent {
   final SessionDto session;
 }
 
+final class GoalUpdatedClientEvent extends ClientEvent {
+  const GoalUpdatedClientEvent(this.goal);
+  final GoalDto goal;
+}
+
+final class GoalClearedClientEvent extends ClientEvent {
+  const GoalClearedClientEvent(this.cleared);
+  final GoalClearedDto cleared;
+}
+
 final class TerminalOutputClientEvent extends ClientEvent {
   const TerminalOutputClientEvent(this.output);
   final TerminalOutputDto output;
@@ -92,6 +102,7 @@ final class FakeCoderApi
     List<SkillDto>? skills,
     List<SkillDto>? projectSkills,
     Map<String, List<TimelineEventDto>>? timelines,
+    Map<String, GoalDto>? goals,
     Map<String, List<ProviderModelDto>>? models,
     this.eventStream,
     this.agentListError,
@@ -144,6 +155,7 @@ final class FakeCoderApi
              in (timelines ?? <String, List<TimelineEventDto>>{}).entries)
            entry.key: List<TimelineEventDto>.of(entry.value),
        },
+       _goals = Map<String, GoalDto>.of(goals ?? const <String, GoalDto>{}),
        _models = <String, List<ProviderModelDto>>{
          'openai': <ProviderModelDto>[_openAIModel],
          for (final entry
@@ -296,6 +308,7 @@ final class FakeCoderApi
   final List<SkillDto> _skills;
   final List<SkillDto> _projectSkills;
   final Map<String, List<TimelineEventDto>> _timelines;
+  final Map<String, GoalDto> _goals;
   final Map<String, List<ProviderModelDto>> _models;
 
   /// Optional event stream that can model transport lifecycle races.
@@ -549,6 +562,14 @@ final class FakeCoderApi
   Stream<SessionDto> get sessionUpdates => events
       .whereType<SessionUpdatedClientEvent>()
       .map((event) => event.session);
+
+  @override
+  Stream<GoalDto> get goalUpdates =>
+      events.whereType<GoalUpdatedClientEvent>().map((event) => event.goal);
+
+  @override
+  Stream<GoalClearedDto> get goalClears =>
+      events.whereType<GoalClearedClientEvent>().map((event) => event.cleared);
 
   @override
   Stream<TimelineEventDto> get timelineEvents =>
@@ -908,6 +929,62 @@ final class FakeCoderApi
     _agents[index] = updated;
     emit(SessionUpdatedClientEvent(updated));
     return updated;
+  }
+
+  @override
+  Future<GoalDto?> getGoal(String sessionId) async => _goals[sessionId];
+
+  @override
+  Future<GoalDto> replaceGoal({
+    required String sessionId,
+    required String objective,
+    int? tokenBudget,
+  }) async {
+    final goal = GoalDto(
+      sessionId: sessionId,
+      goalId: 'goal-${_goals.length + 1}',
+      objective: objective.trim(),
+      status: GoalStatus.active,
+      tokenBudget: tokenBudget,
+      tokensUsed: 0,
+      timeUsedSeconds: 0,
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    _goals[sessionId] = goal;
+    emit(GoalUpdatedClientEvent(goal));
+    return goal;
+  }
+
+  @override
+  Future<GoalDto> updateGoal(String sessionId, GoalUpdateDto update) async {
+    final current = _goals[sessionId];
+    if (current == null || current.goalId != update.expectedGoalId) {
+      throw StateError('Goal not found: $sessionId');
+    }
+    final goal = current.copyWith(
+      objective: update.objective ?? current.objective,
+      status: update.status ?? current.status,
+      tokenBudget: update.hasTokenBudget
+          ? update.tokenBudget
+          : current.tokenBudget,
+      updatedAt: _now,
+    );
+    _goals[sessionId] = goal;
+    emit(GoalUpdatedClientEvent(goal));
+    return goal;
+  }
+
+  @override
+  Future<bool> clearGoal(String sessionId) async {
+    final goal = _goals.remove(sessionId);
+    if (goal == null) return false;
+    emit(
+      GoalClearedClientEvent(
+        GoalClearedDto(sessionId: sessionId, goalId: goal.goalId),
+      ),
+    );
+    return true;
   }
 
   @override

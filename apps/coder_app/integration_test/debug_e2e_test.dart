@@ -937,6 +937,66 @@ void main() {
       await pumpUntil(tester, find.text('coder · manual'));
       await pumpUntil(tester, find.byKey(composer));
 
+      final goalSessionId = (await setupClient.sessions.listSessions(
+        worktreeId: 'checkout-e2e',
+      )).singleWhere((session) => session.origin == SessionOrigin.manual).id;
+      await _waitForComposerReady(tester, send);
+      await _typeComposerPrompt(tester, composer, '/goal');
+      await tester.pumpAndSettle();
+      // First Enter accepts the highlighted command completion; the second
+      // dispatches `/goal` and opens the editor.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await pumpUntil(tester, find.text('세션 Goal'));
+      final goalDialog = find.byType(TRAlertDialog);
+      final goalObjective = find
+          .descendant(of: goalDialog, matching: find.byType(EditableText))
+          .first;
+      await tester.enterText(goalObjective, 'Complete persistent goal e2e');
+      await tester.tap(find.text('Goal 시작'));
+      await tester.pump();
+      late GoalDto completedGoal;
+      var observedGoalState = 'no goal state observed';
+      try {
+        await pumpUntilCondition(
+          tester,
+          () async {
+            final session = (await setupClient.sessions.listSessions())
+                .singleWhere((session) => session.id == goalSessionId);
+            final goal = await setupClient.sessions.getGoal(goalSessionId);
+            observedGoalState =
+                '${session.status.name}:${session.mode.name}:'
+                '${goal?.status.name}:${goal?.objective}';
+            if (goal?.objective == 'Complete persistent goal e2e' &&
+                goal?.status == GoalStatus.complete) {
+              completedGoal = goal!;
+              return true;
+            }
+            return false;
+          },
+          'the persistent goal to complete after continuation turns',
+          budget: e2eTurnBudget,
+        );
+      } on TestFailure catch (error) {
+        throw TestFailure(
+          '$error Provider goal rounds: ${agentProvider._goalRounds}. '
+          'Observed: $observedGoalState',
+        );
+      }
+      await pumpUntil(tester, find.text('완료'));
+      final reconnectClient = await CoderClient.connect(
+        endpoint: endpoint,
+        credentials: DaemonCredentials(bearerToken: handle.bearerToken),
+        clientId: 'goal-reconnect',
+        clientKind: 'integration-test',
+      );
+      expect(
+        await reconnectClient.sessions.getGoal(completedGoal.sessionId),
+        completedGoal,
+      );
+      await reconnectClient.close();
+
       // An app-owned command runs in the app: the draft clears and no turn
       // starts for it. This needs the live session, which is where the app
       // wires a handler; a draft composer has none and submits the text.
@@ -1825,6 +1885,8 @@ void main() {
       'feature_test__worktree_lifecycle__e2e',
       'feature_test__session_lifecycle__e2e',
       'feature_test__session_tabs__e2e',
+      'feature_test__session_goal__e2e',
+      'feature_scenario__session_goal__multi_turn_completion_reconnect__e2e',
       'feature_test__terminal_lifecycle__e2e',
       'feature_test__terminal_lifecycle__platformSmoke',
       'feature_scenario__terminal_lifecycle__create_write_terminate__e2e',
@@ -2473,6 +2535,7 @@ final class _AgentE2eProvider implements ModelProvider {
 
   final String attachmentCapturePath;
   int _providerFailures = 0;
+  int _goalRounds = 0;
 
   @override
   String get id => 'agent-e2e-fake';
@@ -2483,6 +2546,50 @@ final class _AgentE2eProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
+    final latestHistoryItem = request.history.lastOrNull;
+    if (latestHistoryItem is ToolResultConversationItem &&
+        latestHistoryItem.callId == 'goal-complete-call') {
+      yield const ModelTextDelta('Persistent goal complete.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: 'Persistent goal complete.',
+        ),
+      );
+      return;
+    }
+    if (request.instructions.contains(
+      '<objective>Complete persistent goal e2e</objective>',
+    )) {
+      _goalRounds += 1;
+      if (_goalRounds < 3) {
+        yield ModelTextDelta('Goal progress $_goalRounds.');
+        yield ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: 'Goal progress $_goalRounds.',
+          ),
+        );
+        return;
+      }
+      const arguments = <String, dynamic>{'status': 'complete'};
+      yield const ModelFunctionCall(
+        callId: 'goal-complete-call',
+        name: 'update_goal',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'goal-complete-call',
+              name: 'update_goal',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     final latestUser = request.history.whereType<UserConversationItem>().last;
     final latestPrompt = latestUser.text;
     if (request.instructions.contains('You are in Plan Mode')) {

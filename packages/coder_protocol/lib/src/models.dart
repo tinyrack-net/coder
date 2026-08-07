@@ -27,6 +27,27 @@ enum SessionStatus {
   closed,
 }
 
+/// Persistent lifecycle of a session goal.
+enum GoalStatus {
+  /// The daemon continues the goal whenever the session is eligible.
+  active,
+
+  /// The user explicitly suspended the goal.
+  paused,
+
+  /// The agent or daemon reached a non-usage blocker.
+  blocked,
+
+  /// The model provider reported an exhausted usage allowance.
+  usageLimited,
+
+  /// The configured token budget has been consumed.
+  budgetLimited,
+
+  /// The agent verified that the objective is complete.
+  complete,
+}
+
 /// Runtime lifecycle of a daemon-owned interactive terminal.
 enum TerminalStatus {
   /// The shell process is accepting input.
@@ -1000,6 +1021,27 @@ abstract class SessionDto with _$SessionDto {
   /// Decodes a session descriptor.
   factory SessionDto.fromJson(Map<String, dynamic> json) =>
       _$SessionDtoFromJson(json);
+}
+
+@freezed
+/// One persistent objective owned by a manually-created root session.
+abstract class GoalDto with _$GoalDto {
+  /// Creates a goal snapshot.
+  const factory GoalDto({
+    required String sessionId,
+    required String goalId,
+    required String objective,
+    required GoalStatus status,
+    required int tokensUsed,
+    required int timeUsedSeconds,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    int? tokenBudget,
+  }) = _GoalDto;
+
+  /// Decodes a goal snapshot.
+  factory GoalDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalDtoFromJson(json);
 }
 
 @freezed

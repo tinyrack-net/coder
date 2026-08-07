@@ -2,6 +2,7 @@ import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/features/agents/infrastructure/agent_definitions.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/agent_service.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/goal_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_settings.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
@@ -18,6 +19,7 @@ List<RpcBindingDescriptor> sessionRpcBindings({
   required AgentDefinitionService agentDefinitions,
   required ProviderModelResolver models,
   required Clock clock,
+  required SessionGoalService goals,
 }) => <RpcBindingDescriptor>[
   RpcBinding(sessionsListProcedure, (request, _) async {
     return SessionListResultDto(
@@ -74,9 +76,32 @@ List<RpcBindingDescriptor> sessionRpcBindings({
     }
   }),
   RpcBinding(sessionsUpdateSettingsProcedure, (request, _) async {
-    return SessionResultDto(
-      session: await settings.updateSettings(request.sessionId, request.patch),
+    final session = await settings.updateSettings(
+      request.sessionId,
+      request.patch,
     );
+    await goals.reconsider(request.sessionId);
+    return SessionResultDto(session: session);
+  }),
+  RpcBinding(sessionsGetGoalProcedure, (request, _) async {
+    return GoalGetResultDto(goal: await goals.get(request.sessionId));
+  }),
+  RpcBinding(sessionsReplaceGoalProcedure, (request, _) async {
+    return GoalResultDto(
+      goal: await goals.replace(
+        sessionId: request.sessionId,
+        objective: request.objective,
+        tokenBudget: request.tokenBudget,
+      ),
+    );
+  }),
+  RpcBinding(sessionsUpdateGoalProcedure, (request, _) async {
+    return GoalResultDto(
+      goal: await goals.update(request.sessionId, request.update),
+    );
+  }),
+  RpcBinding(sessionsClearGoalProcedure, (request, _) async {
+    return GoalClearResultDto(cleared: await goals.clear(request.sessionId));
   }),
   RpcBinding(sessionsStartTurnProcedure, (request, _) async {
     try {

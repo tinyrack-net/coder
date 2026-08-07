@@ -8066,6 +8066,293 @@ $SessionModelSelectionDtoCopyWith<$Res>? get model {
 
 
 /// @nodoc
+mixin _$GoalDto {
+
+ String get sessionId; String get goalId; String get objective; GoalStatus get status; int get tokensUsed; int get timeUsedSeconds; DateTime get createdAt; DateTime get updatedAt; int? get tokenBudget;
+/// Create a copy of GoalDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalDtoCopyWith<GoalDto> get copyWith => _$GoalDtoCopyWithImpl<GoalDto>(this as GoalDto, _$identity);
+
+  /// Serializes this GoalDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.goalId, goalId) || other.goalId == goalId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.status, status) || other.status == status)&&(identical(other.tokensUsed, tokensUsed) || other.tokensUsed == tokensUsed)&&(identical(other.timeUsedSeconds, timeUsedSeconds) || other.timeUsedSeconds == timeUsedSeconds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,goalId,objective,status,tokensUsed,timeUsedSeconds,createdAt,updatedAt,tokenBudget);
+
+@override
+String toString() {
+  return 'GoalDto(sessionId: $sessionId, goalId: $goalId, objective: $objective, status: $status, tokensUsed: $tokensUsed, timeUsedSeconds: $timeUsedSeconds, createdAt: $createdAt, updatedAt: $updatedAt, tokenBudget: $tokenBudget)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalDtoCopyWith<$Res>  {
+  factory $GoalDtoCopyWith(GoalDto value, $Res Function(GoalDto) _then) = _$GoalDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String goalId, String objective, GoalStatus status, int tokensUsed, int timeUsedSeconds, DateTime createdAt, DateTime updatedAt, int? tokenBudget
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalDtoCopyWithImpl<$Res>
+    implements $GoalDtoCopyWith<$Res> {
+  _$GoalDtoCopyWithImpl(this._self, this._then);
+
+  final GoalDto _self;
+  final $Res Function(GoalDto) _then;
+
+/// Create a copy of GoalDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? goalId = null,Object? objective = null,Object? status = null,Object? tokensUsed = null,Object? timeUsedSeconds = null,Object? createdAt = null,Object? updatedAt = null,Object? tokenBudget = freezed,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,goalId: null == goalId ? _self.goalId : goalId // ignore: cast_nullable_to_non_nullable
+as String,objective: null == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as GoalStatus,tokensUsed: null == tokensUsed ? _self.tokensUsed : tokensUsed // ignore: cast_nullable_to_non_nullable
+as int,timeUsedSeconds: null == timeUsedSeconds ? _self.timeUsedSeconds : timeUsedSeconds // ignore: cast_nullable_to_non_nullable
+as int,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalDto].
+extension GoalDtoPatterns on GoalDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String goalId,  String objective,  GoalStatus status,  int tokensUsed,  int timeUsedSeconds,  DateTime createdAt,  DateTime updatedAt,  int? tokenBudget)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalDto() when $default != null:
+return $default(_that.sessionId,_that.goalId,_that.objective,_that.status,_that.tokensUsed,_that.timeUsedSeconds,_that.createdAt,_that.updatedAt,_that.tokenBudget);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String goalId,  String objective,  GoalStatus status,  int tokensUsed,  int timeUsedSeconds,  DateTime createdAt,  DateTime updatedAt,  int? tokenBudget)  $default,) {final _that = this;
+switch (_that) {
+case _GoalDto():
+return $default(_that.sessionId,_that.goalId,_that.objective,_that.status,_that.tokensUsed,_that.timeUsedSeconds,_that.createdAt,_that.updatedAt,_that.tokenBudget);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String goalId,  String objective,  GoalStatus status,  int tokensUsed,  int timeUsedSeconds,  DateTime createdAt,  DateTime updatedAt,  int? tokenBudget)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalDto() when $default != null:
+return $default(_that.sessionId,_that.goalId,_that.objective,_that.status,_that.tokensUsed,_that.timeUsedSeconds,_that.createdAt,_that.updatedAt,_that.tokenBudget);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalDto implements GoalDto {
+  const _GoalDto({required this.sessionId, required this.goalId, required this.objective, required this.status, required this.tokensUsed, required this.timeUsedSeconds, required this.createdAt, required this.updatedAt, this.tokenBudget});
+  factory _GoalDto.fromJson(Map<String, dynamic> json) => _$GoalDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  String goalId;
+@override final  String objective;
+@override final  GoalStatus status;
+@override final  int tokensUsed;
+@override final  int timeUsedSeconds;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+@override final  int? tokenBudget;
+
+/// Create a copy of GoalDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalDtoCopyWith<_GoalDto> get copyWith => __$GoalDtoCopyWithImpl<_GoalDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.goalId, goalId) || other.goalId == goalId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.status, status) || other.status == status)&&(identical(other.tokensUsed, tokensUsed) || other.tokensUsed == tokensUsed)&&(identical(other.timeUsedSeconds, timeUsedSeconds) || other.timeUsedSeconds == timeUsedSeconds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,goalId,objective,status,tokensUsed,timeUsedSeconds,createdAt,updatedAt,tokenBudget);
+
+@override
+String toString() {
+  return 'GoalDto(sessionId: $sessionId, goalId: $goalId, objective: $objective, status: $status, tokensUsed: $tokensUsed, timeUsedSeconds: $timeUsedSeconds, createdAt: $createdAt, updatedAt: $updatedAt, tokenBudget: $tokenBudget)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalDtoCopyWith<$Res> implements $GoalDtoCopyWith<$Res> {
+  factory _$GoalDtoCopyWith(_GoalDto value, $Res Function(_GoalDto) _then) = __$GoalDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String goalId, String objective, GoalStatus status, int tokensUsed, int timeUsedSeconds, DateTime createdAt, DateTime updatedAt, int? tokenBudget
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalDtoCopyWithImpl<$Res>
+    implements _$GoalDtoCopyWith<$Res> {
+  __$GoalDtoCopyWithImpl(this._self, this._then);
+
+  final _GoalDto _self;
+  final $Res Function(_GoalDto) _then;
+
+/// Create a copy of GoalDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? goalId = null,Object? objective = null,Object? status = null,Object? tokensUsed = null,Object? timeUsedSeconds = null,Object? createdAt = null,Object? updatedAt = null,Object? tokenBudget = freezed,}) {
+  return _then(_GoalDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,goalId: null == goalId ? _self.goalId : goalId // ignore: cast_nullable_to_non_nullable
+as String,objective: null == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as GoalStatus,tokensUsed: null == tokensUsed ? _self.tokensUsed : tokensUsed // ignore: cast_nullable_to_non_nullable
+as int,timeUsedSeconds: null == timeUsedSeconds ? _self.timeUsedSeconds : timeUsedSeconds // ignore: cast_nullable_to_non_nullable
+as int,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$AgentMailboxMessageDto {
 
  String get id;/// Recipient session.

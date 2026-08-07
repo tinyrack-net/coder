@@ -281,6 +281,25 @@ void main() {
     );
 
     test(
+      'goal command preserves its objective or management verb',
+      () {
+        final objective = parseComposerCommand(
+          '/goal finish the full feature',
+          clientComposerCommands,
+        )!;
+        final pause = parseComposerCommand(
+          '/goal pause',
+          clientComposerCommands,
+        )!;
+
+        expect(objective.command.action, ClientCommandAction.goal);
+        expect(objective.arguments, 'finish the full feature');
+        expect(pause.arguments, 'pause');
+      },
+      tags: const <String>['feature_test__session_goal__unit'],
+    );
+
+    test(
       'rejects an unknown name rather than guessing',
       () {
         expect(parseComposerCommand('/clea', clientComposerCommands), isNull);

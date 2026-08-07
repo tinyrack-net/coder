@@ -94,6 +94,9 @@ abstract final class CoderIcons {
   static const IconData paused = LucideIcons.pauseCircle;
 
   /// Semantic Lucide glyph.
+  static const IconData resume = LucideIcons.playCircle;
+
+  /// Semantic Lucide glyph.
   static const IconData refresh = LucideIcons.refreshCw;
 
   /// Semantic Lucide glyph.

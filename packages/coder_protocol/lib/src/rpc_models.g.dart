@@ -257,6 +257,98 @@ Map<String, dynamic> _$SessionSettingsUpdateParamsDtoToJson(
   'patch': instance.patch,
 };
 
+_GoalReplaceParamsDto _$GoalReplaceParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _GoalReplaceParamsDto(
+  sessionId: json['sessionId'] as String,
+  objective: json['objective'] as String,
+  tokenBudget: (json['tokenBudget'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$GoalReplaceParamsDtoToJson(
+  _GoalReplaceParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'objective': instance.objective,
+  'tokenBudget': instance.tokenBudget,
+};
+
+_GoalUpdateDto _$GoalUpdateDtoFromJson(Map<String, dynamic> json) =>
+    _GoalUpdateDto(
+      expectedGoalId: json['expectedGoalId'] as String,
+      objective: json['objective'] as String?,
+      status: $enumDecodeNullable(_$GoalStatusEnumMap, json['status']),
+      hasTokenBudget: json['hasTokenBudget'] as bool? ?? false,
+      tokenBudget: (json['tokenBudget'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$GoalUpdateDtoToJson(_GoalUpdateDto instance) =>
+    <String, dynamic>{
+      'expectedGoalId': instance.expectedGoalId,
+      'objective': instance.objective,
+      'status': _$GoalStatusEnumMap[instance.status],
+      'hasTokenBudget': instance.hasTokenBudget,
+      'tokenBudget': instance.tokenBudget,
+    };
+
+const _$GoalStatusEnumMap = {
+  GoalStatus.active: 'active',
+  GoalStatus.paused: 'paused',
+  GoalStatus.blocked: 'blocked',
+  GoalStatus.usageLimited: 'usageLimited',
+  GoalStatus.budgetLimited: 'budgetLimited',
+  GoalStatus.complete: 'complete',
+};
+
+_GoalUpdateParamsDto _$GoalUpdateParamsDtoFromJson(Map<String, dynamic> json) =>
+    _GoalUpdateParamsDto(
+      sessionId: json['sessionId'] as String,
+      update: GoalUpdateDto.fromJson(json['update'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$GoalUpdateParamsDtoToJson(
+  _GoalUpdateParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'update': instance.update,
+};
+
+_GoalGetResultDto _$GoalGetResultDtoFromJson(Map<String, dynamic> json) =>
+    _GoalGetResultDto(
+      goal: json['goal'] == null
+          ? null
+          : GoalDto.fromJson(json['goal'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$GoalGetResultDtoToJson(_GoalGetResultDto instance) =>
+    <String, dynamic>{'goal': instance.goal};
+
+_GoalResultDto _$GoalResultDtoFromJson(Map<String, dynamic> json) =>
+    _GoalResultDto(
+      goal: GoalDto.fromJson(json['goal'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$GoalResultDtoToJson(_GoalResultDto instance) =>
+    <String, dynamic>{'goal': instance.goal};
+
+_GoalClearResultDto _$GoalClearResultDtoFromJson(Map<String, dynamic> json) =>
+    _GoalClearResultDto(cleared: json['cleared'] as bool);
+
+Map<String, dynamic> _$GoalClearResultDtoToJson(_GoalClearResultDto instance) =>
+    <String, dynamic>{'cleared': instance.cleared};
+
+_GoalClearedDto _$GoalClearedDtoFromJson(Map<String, dynamic> json) =>
+    _GoalClearedDto(
+      sessionId: json['sessionId'] as String,
+      goalId: json['goalId'] as String,
+    );
+
+Map<String, dynamic> _$GoalClearedDtoToJson(_GoalClearedDto instance) =>
+    <String, dynamic>{
+      'sessionId': instance.sessionId,
+      'goalId': instance.goalId,
+    };
+
 _AgentDefinitionIdParamsDto _$AgentDefinitionIdParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentDefinitionIdParamsDto(id: json['id'] as String);

@@ -1635,5 +1635,81 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerCommandHelpDescription => '사용할 수 있는 명령을 보여줍니다.';
 
   @override
+  String get composerCommandGoalLabel => 'goal';
+
+  @override
+  String get composerCommandGoalDescription => '세션의 영속 작업 목표를 만들거나 관리합니다.';
+
+  @override
+  String get goalStatusActive => '실행 중';
+
+  @override
+  String get goalStatusPaused => '일시 정지';
+
+  @override
+  String get goalStatusBlocked => '막힘';
+
+  @override
+  String get goalStatusUsageLimited => '사용량 제한';
+
+  @override
+  String get goalStatusBudgetLimited => '예산 도달';
+
+  @override
+  String get goalStatusComplete => '완료';
+
+  @override
+  String get goalPlanHold => 'Run 모드에서 재개';
+
+  @override
+  String goalElapsed(int seconds) {
+    return '$seconds초 경과';
+  }
+
+  @override
+  String goalTokenUsage(int used, int budget) {
+    return '$used / $budget 토큰';
+  }
+
+  @override
+  String get goalPause => 'Goal 일시 정지';
+
+  @override
+  String get goalResume => 'Goal 재개';
+
+  @override
+  String get goalEdit => 'Goal 편집';
+
+  @override
+  String get goalClear => 'Goal 지우기';
+
+  @override
+  String get goalDialogTitle => '세션 Goal';
+
+  @override
+  String get goalObjectiveLabel => '목표';
+
+  @override
+  String get goalObjectiveRequired => '1–4,000자로 입력하세요.';
+
+  @override
+  String get goalBudgetLabel => '토큰 예산(선택)';
+
+  @override
+  String get goalBudgetInvalid => '양수 토큰 예산을 입력하세요.';
+
+  @override
+  String get goalStart => 'Goal 시작';
+
+  @override
+  String get goalReplaceTitle => '현재 Goal을 교체할까요?';
+
+  @override
+  String get goalReplaceDescription => '새 Goal을 시작하고 기록된 사용량을 초기화합니다.';
+
+  @override
+  String get goalReplaceAction => 'Goal 교체';
+
+  @override
   String get composerSuggestionsLabel => '제안';
 }

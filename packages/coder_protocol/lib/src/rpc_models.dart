@@ -235,6 +235,103 @@ abstract class SessionSettingsUpdateParamsDto
 }
 
 @freezed
+/// Replaces any session goal with a fresh active objective.
+abstract class GoalReplaceParamsDto with _$GoalReplaceParamsDto {
+  /// Creates goal replacement parameters.
+  const factory GoalReplaceParamsDto({
+    required String sessionId,
+    required String objective,
+    int? tokenBudget,
+  }) = _GoalReplaceParamsDto;
+
+  /// Decodes goal replacement parameters.
+  factory GoalReplaceParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalReplaceParamsDtoFromJson(json);
+}
+
+@freezed
+/// Atomic changes to an existing goal.
+///
+/// [hasTokenBudget] distinguishes preserving the current budget from clearing
+/// it with an explicit null.
+abstract class GoalUpdateDto with _$GoalUpdateDto {
+  /// Creates a goal update.
+  const factory GoalUpdateDto({
+    required String expectedGoalId,
+    String? objective,
+    GoalStatus? status,
+    @Default(false) bool hasTokenBudget,
+    int? tokenBudget,
+  }) = _GoalUpdateDto;
+
+  /// Decodes a goal update.
+  factory GoalUpdateDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalUpdateDtoFromJson(json);
+}
+
+@freezed
+/// Applies one optimistic goal update to a session.
+abstract class GoalUpdateParamsDto with _$GoalUpdateParamsDto {
+  /// Creates goal update parameters.
+  const factory GoalUpdateParamsDto({
+    required String sessionId,
+    required GoalUpdateDto update,
+  }) = _GoalUpdateParamsDto;
+
+  /// Decodes goal update parameters.
+  factory GoalUpdateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalUpdateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Nullable result of reading one session goal.
+abstract class GoalGetResultDto with _$GoalGetResultDto {
+  /// Creates a goal read result.
+  const factory GoalGetResultDto({GoalDto? goal}) = _GoalGetResultDto;
+
+  /// Decodes a goal read result.
+  factory GoalGetResultDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalGetResultDtoFromJson(json);
+}
+
+@freezed
+/// Result of a goal mutation.
+abstract class GoalResultDto with _$GoalResultDto {
+  /// Creates a goal mutation result.
+  const factory GoalResultDto({required GoalDto goal}) = _GoalResultDto;
+
+  /// Decodes a goal mutation result.
+  factory GoalResultDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalResultDtoFromJson(json);
+}
+
+@freezed
+/// Result of clearing a session goal.
+abstract class GoalClearResultDto with _$GoalClearResultDto {
+  /// Creates a goal-clear result.
+  const factory GoalClearResultDto({required bool cleared}) =
+      _GoalClearResultDto;
+
+  /// Decodes a goal-clear result.
+  factory GoalClearResultDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalClearResultDtoFromJson(json);
+}
+
+@freezed
+/// Identifies the goal removed from a session.
+abstract class GoalClearedDto with _$GoalClearedDto {
+  /// Creates a goal-cleared notification payload.
+  const factory GoalClearedDto({
+    required String sessionId,
+    required String goalId,
+  }) = _GoalClearedDto;
+
+  /// Decodes a goal-cleared notification payload.
+  factory GoalClearedDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalClearedDtoFromJson(json);
+}
+
+@freezed
 /// Identifies one Markdown-backed agent definition.
 abstract class AgentDefinitionIdParamsDto with _$AgentDefinitionIdParamsDto {
   /// Creates agent definition identifier parameters.
