@@ -1028,7 +1028,11 @@ void main() {
     );
     const request = ModelRequest(
       model: 'model',
-      reasoningEffort: 'high',
+      modelControls: <String, AgentModelControlValue>{
+        AgentModelControlIds.reasoningEffort: AgentModelControlStringValue(
+          value: 'high',
+        ),
+      },
       instructions: 'instructions',
       history: <ConversationItem>[],
       tools: <ModelToolDefinition>[definition],
@@ -1047,7 +1051,10 @@ void main() {
     final tool = _EchoTool();
 
     expect(request.model, 'model');
-    expect(request.reasoningEffort, 'high');
+    expect(
+      request.modelControls[AgentModelControlIds.reasoningEffort],
+      const AgentModelControlStringValue(value: 'high'),
+    );
     expect(request.instructions, 'instructions');
     expect(request.history, isEmpty);
     expect(request.tools.single.description, 'Echo');

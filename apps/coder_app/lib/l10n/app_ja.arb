@@ -1,0 +1,52 @@
+{
+  "@@locale": "ja",
+  "commonCancel": "キャンセル",
+  "commonSave": "保存",
+  "commonSaving": "保存中",
+  "commonName": "名前",
+  "commonDescription": "説明",
+  "providerSettingsTitle": "プロバイダー",
+  "providerSettingsCatalogStatus": "カタログメタデータ",
+  "providerSettingsCatalogBundled": "同梱スナップショット",
+  "providerSettingsCatalogCached": "最終正常キャッシュ",
+  "providerSettingsCatalogFresh": "更新済み",
+  "providerSettingsCatalogStale": "更新期限切れ。ローカルデータを使用できます",
+  "providerSettingsCustomTitle": "カスタムプロバイダー詳細設定",
+  "providerSettingsManualModels": "手動モデル ID",
+  "providerSettingsApiFormat": "API 形式",
+  "providerSettingsRequiresApiKey": "API キーが必要",
+  "providerSettingsDefaultModelAutomatic": "プロバイダーの既定値",
+  "composerCommandGoalLabel": "goal",
+  "composerCommandGoalDescription": "セッションの永続的な作業目標を作成または管理します。",
+  "goalStatusActive": "実行中",
+  "goalStatusPaused": "一時停止",
+  "goalStatusBlocked": "ブロック中",
+  "goalStatusUsageLimited": "使用量制限",
+  "goalStatusBudgetLimited": "予算上限に到達",
+  "goalStatusComplete": "完了",
+  "goalPlanHold": "実行モードで再開します",
+  "goalElapsed": "{seconds}秒経過",
+  "@goalElapsed": {
+    "placeholders": {"seconds": {"type": "int"}}
+  },
+  "goalTokenUsage": "{used} / {budget} トークン",
+  "@goalTokenUsage": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "budget": {"type": "int"}
+    }
+  },
+  "goalPause": "Goalを一時停止",
+  "goalResume": "Goalを再開",
+  "goalEdit": "Goalを編集",
+  "goalClear": "Goalをクリア",
+  "goalDialogTitle": "セッションGoal",
+  "goalObjectiveLabel": "目標",
+  "goalObjectiveRequired": "1〜4,000文字で入力してください。",
+  "goalBudgetLabel": "トークン予算（任意）",
+  "goalBudgetInvalid": "正のトークン予算を入力してください。",
+  "goalStart": "Goalを開始",
+  "goalReplaceTitle": "現在のGoalを置き換えますか？",
+  "goalReplaceDescription": "新しいGoalを開始し、記録された使用量をリセットします。",
+  "goalReplaceAction": "Goalを置き換える"
+}

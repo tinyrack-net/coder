@@ -100,6 +100,143 @@ enum AgentCapabilitySource {
   manual,
 }
 
+/// Value shape accepted by a provider-owned model control.
+enum AgentModelControlKind {
+  /// A closed set of strings.
+  choice,
+
+  /// An on/off value.
+  toggle,
+
+  /// A bounded whole number.
+  integer,
+}
+
+/// Presentation hint for a provider-owned model control.
+enum AgentModelControlPresentation {
+  /// A compact menu chip.
+  menuChip,
+
+  /// A selectable chip.
+  selectableChip,
+
+  /// A validated numeric dialog.
+  numberDialog,
+}
+
+/// Stable control IDs understood by built-in provider plugins.
+abstract final class AgentModelControlIds {
+  /// Provider-specific reasoning effort or level.
+  static const String reasoningEffort = 'reasoning_effort';
+
+  /// Provider-specific reasoning strategy.
+  static const String reasoningMode = 'reasoning_mode';
+
+  /// Explicit reasoning-token budget.
+  static const String thinkingBudget = 'thinking_budget';
+
+  /// Provider fast or priority processing mode.
+  static const String fastMode = 'fast_mode';
+}
+
+/// One permitted value for a choice control.
+final class AgentModelControlChoice {
+  /// Creates a choice.
+  const AgentModelControlChoice({
+    required this.id,
+    required this.label,
+    this.description,
+  });
+
+  /// Stable provider value.
+  final String id;
+
+  /// User-facing label.
+  final String label;
+
+  /// Optional user-facing explanation.
+  final String? description;
+}
+
+/// Describes a model-specific request control.
+final class AgentModelControlDescriptor {
+  /// Creates a descriptor.
+  const AgentModelControlDescriptor({
+    required this.id,
+    required this.label,
+    required this.kind,
+    required this.presentation,
+    this.description,
+    this.choices = const <AgentModelControlChoice>[],
+    this.minimum,
+    this.maximum,
+    this.step,
+    this.conflictsWith = const <String>[],
+  });
+
+  /// Stable ID.
+  final String id;
+
+  /// User-facing label.
+  final String label;
+
+  /// Accepted value shape.
+  final AgentModelControlKind kind;
+
+  /// Suggested client presentation.
+  final AgentModelControlPresentation presentation;
+
+  /// Optional explanation.
+  final String? description;
+
+  /// Permitted values for [AgentModelControlKind.choice].
+  final List<AgentModelControlChoice> choices;
+
+  /// Inclusive lower bound for integer values.
+  final int? minimum;
+
+  /// Inclusive upper bound for integer values.
+  final int? maximum;
+
+  /// Permitted integer increment.
+  final int? step;
+
+  /// IDs that cannot be submitted with this control.
+  final List<String> conflictsWith;
+}
+
+/// A typed provider-control value.
+sealed class AgentModelControlValue {
+  const AgentModelControlValue();
+}
+
+/// A closed-set string value.
+final class AgentModelControlStringValue extends AgentModelControlValue {
+  /// Creates a string value.
+  const AgentModelControlStringValue({required this.value});
+
+  /// Provider value.
+  final String value;
+}
+
+/// A boolean value.
+final class AgentModelControlBoolValue extends AgentModelControlValue {
+  /// Creates a boolean value.
+  const AgentModelControlBoolValue({required this.value});
+
+  /// Provider value.
+  final bool value;
+}
+
+/// An integer value.
+final class AgentModelControlIntValue extends AgentModelControlValue {
+  /// Creates an integer value.
+  const AgentModelControlIntValue({required this.value});
+
+  /// Provider value.
+  final int value;
+}
+
 /// Provider authentication mechanism.
 enum AgentProviderAuthKind {
   /// Provider API key.
@@ -133,12 +270,9 @@ final class AgentModelCapabilities {
   const AgentModelCapabilities({
     this.streaming = AgentCapabilitySupport.unknown,
     this.toolCalling = AgentCapabilitySupport.unknown,
-    this.reasoningEffort = AgentCapabilitySupport.unknown,
     this.imageInput = AgentCapabilitySupport.unknown,
     this.fileInput = AgentCapabilitySupport.unknown,
-    this.serviceTier = AgentCapabilitySupport.unknown,
-    this.supportedReasoningEfforts = const <String>[],
-    this.supportedServiceTiers = const <String>[],
+    this.controls = const <AgentModelControlDescriptor>[],
     this.source = AgentCapabilitySource.unknown,
   });
 
@@ -148,23 +282,14 @@ final class AgentModelCapabilities {
   /// Tool-calling support.
   final AgentCapabilitySupport toolCalling;
 
-  /// Reasoning-effort support.
-  final AgentCapabilitySupport reasoningEffort;
-
   /// Image-input support.
   final AgentCapabilitySupport imageInput;
 
   /// File-input support.
   final AgentCapabilitySupport fileInput;
 
-  /// Service-tier support.
-  final AgentCapabilitySupport serviceTier;
-
-  /// Accepted reasoning efforts.
-  final List<String> supportedReasoningEfforts;
-
-  /// Accepted service tiers.
-  final List<String> supportedServiceTiers;
+  /// Provider-owned controls accepted by this model and endpoint.
+  final List<AgentModelControlDescriptor> controls;
 
   /// Metadata provenance.
   final AgentCapabilitySource source;
@@ -173,23 +298,16 @@ final class AgentModelCapabilities {
   AgentModelCapabilities copyWith({
     AgentCapabilitySupport? streaming,
     AgentCapabilitySupport? toolCalling,
-    AgentCapabilitySupport? reasoningEffort,
     AgentCapabilitySupport? imageInput,
     AgentCapabilitySupport? fileInput,
-    AgentCapabilitySupport? serviceTier,
-    List<String>? supportedReasoningEfforts,
-    List<String>? supportedServiceTiers,
+    List<AgentModelControlDescriptor>? controls,
     AgentCapabilitySource? source,
   }) => AgentModelCapabilities(
     streaming: streaming ?? this.streaming,
     toolCalling: toolCalling ?? this.toolCalling,
-    reasoningEffort: reasoningEffort ?? this.reasoningEffort,
     imageInput: imageInput ?? this.imageInput,
     fileInput: fileInput ?? this.fileInput,
-    serviceTier: serviceTier ?? this.serviceTier,
-    supportedReasoningEfforts:
-        supportedReasoningEfforts ?? this.supportedReasoningEfforts,
-    supportedServiceTiers: supportedServiceTiers ?? this.supportedServiceTiers,
+    controls: controls ?? this.controls,
     source: source ?? this.source,
   );
 }

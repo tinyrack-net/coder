@@ -267,13 +267,10 @@ void main() {
       expect(find.text('Custom Provider 고급 설정'), findsOneWidget);
       expect(_field('Base URL'), findsOneWidget);
       expect(find.text('API 형식'), findsOneWidget);
-      expect(_field('수동 model ID'), findsNothing);
+      expect(_field('수동 model ID'), findsOneWidget);
       await tester.enterText(_field('이름'), 'Lab');
       await tester.enterText(_field('Base URL'), 'http://127.0.0.1:9000/v1');
       await tester.enterText(_field('API key'), 'secret');
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await tester.pumpAndSettle();
-      expect(find.text('Model 자동 조회 실패'), findsOneWidget);
       await tester.enterText(_field('수동 model ID'), 'lab-model');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
@@ -284,7 +281,10 @@ void main() {
           );
       expect(custom.displayName, 'Lab');
       expect(custom.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
-      expect(custom.customConfig!.manualModelIds, <String>['lab-model']);
+      expect(
+        custom.customConfig!.models.map((model) => model.id).toList(),
+        <String>['lab-model'],
+      );
     },
     tags: const <String>['feature_test__provider_custom__widget'],
   );
@@ -308,7 +308,9 @@ void main() {
         baseUrl: 'http://127.0.0.1:9000/v1',
         wireFormatId: 'openai-chat-completions',
         authenticationRequired: true,
-        manualModelIds: <String>['model-a'],
+        models: <ManualProviderModelDto>[
+          ManualProviderModelDto(id: 'model-a', label: 'model-a'),
+        ],
       ),
       createdAt: now,
       updatedAt: now,

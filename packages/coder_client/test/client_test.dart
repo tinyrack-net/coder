@@ -58,7 +58,9 @@ void main() {
     model: AgentModelSelectionDto(
       source: AgentModelSource.session,
     ),
-    reasoningEffort: 'medium',
+    modelControls: <String, ModelControlValueDto>{
+      'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+    },
     permissionMode: PermissionMode.ask,
     toolIds: <String>['read_file'],
     callableAgentIds: <String>[],
@@ -545,8 +547,12 @@ void main() {
         await client.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasReasoningEffort: true,
-            reasoningEffort: 'high',
+            hasModelControls: true,
+            modelControls: <String, ModelControlValueDto>{
+              'reasoning_effort': ModelControlValueDto.stringValue(
+                value: 'high',
+              ),
+            },
           ),
         ),
         agent,
@@ -554,7 +560,7 @@ void main() {
       expect(
         await client.updateSettings(
           agent.id,
-          const SessionSettingsPatchDto(hasReasoningEffort: true),
+          const SessionSettingsPatchDto(hasModelControls: true),
         ),
         agent,
       );
@@ -579,8 +585,10 @@ void main() {
         await client.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasServiceTier: true,
-            serviceTier: 'priority',
+            hasModelControls: true,
+            modelControls: <String, ModelControlValueDto>{
+              'fast_mode': ModelControlValueDto.boolValue(value: true),
+            },
           ),
         ),
         agent,
@@ -588,7 +596,7 @@ void main() {
       expect(
         await client.updateSettings(
           agent.id,
-          const SessionSettingsPatchDto(hasServiceTier: true),
+          const SessionSettingsPatchDto(hasModelControls: true),
         ),
         agent,
       );

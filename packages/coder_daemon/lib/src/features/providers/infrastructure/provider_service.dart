@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_agent/coder_agent.dart';
@@ -73,6 +74,20 @@ final class ProviderModelResolver {
     String connectionId,
     String modelId,
   ) => _connections.validateAgentModel(connectionId, modelId);
+
+  /// Validates submitted controls against one resolved connection and model.
+  Future<void> validateModelControls(
+    String connectionId,
+    String modelId,
+    Map<String, ModelControlValueDto> controls,
+  ) => _connections.validateModelControls(connectionId, modelId, controls);
+
+  /// Retains only values accepted by one resolved connection and model.
+  Future<Map<String, ModelControlValueDto>> retainValidModelControls(
+    String connectionId,
+    String modelId,
+    Map<String, ModelControlValueDto> controls,
+  ) => _connections.retainValidModelControls(connectionId, modelId, controls);
 }
 
 /// Definition id recorded for connections built from custom configuration.
@@ -143,6 +158,12 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   final ModelProviderFactory? _factoryOverride;
   final ProviderCredentialRefresher? _oauthRefresher;
   final ModelProvider? _fixedProvider;
+  final StreamController<ProviderCatalogDto> _catalogUpdates =
+      StreamController<ProviderCatalogDto>.broadcast(sync: true);
+  Future<void>? _backgroundRefresh;
+
+  /// Background catalog refresh results.
+  Stream<ProviderCatalogDto> get catalogUpdates => _catalogUpdates.stream;
 
   /// The definition a fixed test provider connects under.
   ///
@@ -171,6 +192,24 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
         environmentCredential,
       );
     }
+    _backgroundRefresh = _runBackgroundRefresh();
+    unawaited(_backgroundRefresh);
+  }
+
+  Future<void> _runBackgroundRefresh() async {
+    try {
+      await refreshCatalog(force: false);
+    } on Object {
+      // Startup remains usable with the bundled catalog. The explicit refresh
+      // path still reports its safe error state to clients.
+    }
+  }
+
+  /// Waits for owned background work and releases the catalog event stream.
+  Future<void> close() async {
+    await _catalog.close();
+    await _backgroundRefresh;
+    await _catalogUpdates.close();
   }
 
   Future<void> _initializeFixedProvider() async {
@@ -197,8 +236,19 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   Future<ProviderCatalogDto> catalog() async => _catalog.catalog();
 
   /// Marks an explicit catalog refresh while retaining trusted runtime data.
-  Future<ProviderCatalogDto> refreshCatalog() async {
-    final refreshed = await _catalog.refresh();
+  Future<ProviderCatalogDto> refreshCatalog({bool force = true}) async {
+    if (_fixedProvider == null) {
+      for (final connection in await _repository.listConnections()) {
+        if (!_canRun(connection.status) ||
+            (!force &&
+                _clock.nowUtc().difference(connection.updatedAt) <
+                    const Duration(minutes: 15))) {
+          continue;
+        }
+        await _discoverAndSave(connection, _credentialFor(connection));
+      }
+    }
+    final refreshed = await _catalog.refresh(force: force);
     for (final connection in await _repository.listConnections()) {
       if (connection.customConfig != null) continue;
       final models = <String, ProviderModelDto>{
@@ -224,6 +274,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       }
       await _repository.replaceModels(connection.id, models.values);
     }
+    _catalogUpdates.add(refreshed);
     return refreshed;
   }
 
@@ -270,7 +321,19 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   Future<SessionModelSelectionDto?> firstUsableModel() async {
     for (final connection in await connections()) {
       if (!_canRun(connection.status)) continue;
-      for (final model in await _repository.listModels(connection.id)) {
+      final models = await _repository.listModels(connection.id);
+      final runtimeModelIds = _registry
+          .find(connection.definitionId)
+          ?.models
+          .map((model) => model.id)
+          .toSet();
+      models.sort((left, right) {
+        final leftRuntime = runtimeModelIds?.contains(left.id) ?? false;
+        final rightRuntime = runtimeModelIds?.contains(right.id) ?? false;
+        if (leftRuntime != rightRuntime) return leftRuntime ? -1 : 1;
+        return left.label.compareTo(right.label);
+      });
+      for (final model in models) {
         if (!_isRunnableModel(model)) continue;
         return SessionModelSelectionDto(
           providerConnectionId: connection.id,
@@ -614,6 +677,26 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     return model;
   }
 
+  /// Rejects unknown IDs, wrong value types, invalid choices and conflicts.
+  Future<void> validateModelControls(
+    String connectionId,
+    String modelId,
+    Map<String, ModelControlValueDto> controls,
+  ) async {
+    final model = await validateAgentModel(connectionId, modelId);
+    _validatedControls(model.capabilities.controls, controls, reject: true);
+  }
+
+  /// Drops values that are not accepted by the target model.
+  Future<Map<String, ModelControlValueDto>> retainValidModelControls(
+    String connectionId,
+    String modelId,
+    Map<String, ModelControlValueDto> controls,
+  ) async {
+    final model = await validateAgentModel(connectionId, modelId);
+    return _validatedControls(model.capabilities.controls, controls);
+  }
+
   Future<ProviderConnectionDto> _connectBuiltIn(
     ProviderPlugin plugin,
     ProviderAuthKind authKind,
@@ -641,7 +724,11 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   ) async {
     await _repository.upsertConnection(connection);
     final endpoint = _endpointFor(connection);
-    final models = _seedModels(connection);
+    final models = <String, ProviderModelDto>{
+      for (final model in await _repository.listModels(connection.id))
+        model.id: model,
+      ..._seedModels(connection),
+    };
     ProviderConnectionStatus status;
     String? error;
     if (!endpoint.supportsModelDiscovery) {
@@ -696,6 +783,15 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   ) {
     final result = <String, ProviderModelDto>{};
     for (final model in _catalog.modelsFor(connection.definitionId)) {
+      final plugin = _registry.find(connection.definitionId);
+      final capabilities = plugin == null
+          ? model.capabilities
+          : protocolCapabilities(
+              plugin.capabilitiesForAuth(
+                agentCapabilities(model.capabilities),
+                AgentProviderAuthKind.values.byName(connection.authKind.name),
+              ),
+            );
       result[model.id] = ProviderModelDto(
         connectionId: connection.id,
         id: model.id,
@@ -703,21 +799,23 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
         source: _catalog.isRefreshedModel(connection.definitionId, model.id)
             ? ProviderModelSource.refreshed
             : ProviderModelSource.bundled,
-        capabilities: model.capabilities,
+        capabilities: capabilities,
         pricing: model.pricing,
         limits: model.limits,
       );
     }
-    for (final modelId
-        in connection.customConfig?.manualModelIds ?? const <String>[]) {
-      result[modelId] = ProviderModelDto(
+    for (final model
+        in connection.customConfig?.models ??
+            const <ManualProviderModelDto>[]) {
+      result[model.id] = ProviderModelDto(
         connectionId: connection.id,
-        id: modelId,
-        label: modelId,
+        id: model.id,
+        label: model.label,
         source: ProviderModelSource.manual,
-        capabilities: const ModelCapabilitiesDto(
+        capabilities: ModelCapabilitiesDto(
           streaming: CapabilitySupport.supported,
           toolCalling: CapabilitySupport.supported,
+          controls: model.controls,
           source: CapabilitySource.manual,
         ),
       );
@@ -851,14 +949,91 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
         'Unknown provider wire format: ${config.wireFormatId}',
       );
     }
+    final wire = _registry.requireWire(config.wireFormatId);
+    final seenModelIds = <String>{};
+    final models = <ManualProviderModelDto>[];
+    for (final model in config.models) {
+      final id = model.id.trim();
+      if (id.isEmpty || !seenModelIds.add(id)) continue;
+      for (final control in model.controls) {
+        final template = wire.controlDescriptors
+            .where((candidate) => candidate.id == control.id)
+            .firstOrNull;
+        if (template == null ||
+            protocolControlDescriptor(template) != control) {
+          throw FormatException(
+            'Control ${control.id} is not supported by ${wire.label} with '
+            'that descriptor.',
+          );
+        }
+      }
+      models.add(
+        model.copyWith(
+          id: id,
+          label: model.label.trim().isEmpty ? id : model.label.trim(),
+        ),
+      );
+    }
     return config.copyWith(
       name: config.name.trim(),
       baseUrl: config.baseUrl.replaceAll(RegExp(r'/+$'), ''),
-      manualModelIds: config.manualModelIds
-          .map((id) => id.trim())
-          .where((id) => id.isNotEmpty)
-          .toSet()
-          .toList(growable: false),
+      models: models,
     );
   }
 }
+
+Map<String, ModelControlValueDto> _validatedControls(
+  List<ModelControlDescriptorDto> descriptors,
+  Map<String, ModelControlValueDto> values, {
+  bool reject = false,
+}) {
+  final byId = <String, ModelControlDescriptorDto>{
+    for (final descriptor in descriptors) descriptor.id: descriptor,
+  };
+  final accepted = <String, ModelControlValueDto>{};
+  for (final entry in values.entries) {
+    final descriptor = byId[entry.key];
+    final valid =
+        descriptor != null && _controlValueIsValid(descriptor, entry.value);
+    if (!valid) {
+      if (reject) {
+        throw FormatException(
+          'Invalid value for model control ${entry.key}.',
+        );
+      }
+      continue;
+    }
+    final conflict = accepted.keys.firstWhere(
+      (acceptedId) =>
+          descriptor.conflictsWith.contains(acceptedId) ||
+          byId[acceptedId]!.conflictsWith.contains(entry.key),
+      orElse: () => '',
+    );
+    if (conflict.isNotEmpty) {
+      if (reject) {
+        throw FormatException(
+          'Model controls ${entry.key} and $conflict conflict.',
+        );
+      }
+      continue;
+    }
+    accepted[entry.key] = entry.value;
+  }
+  return Map<String, ModelControlValueDto>.unmodifiable(accepted);
+}
+
+bool _controlValueIsValid(
+  ModelControlDescriptorDto descriptor,
+  ModelControlValueDto value,
+) => switch ((descriptor.kind, value)) {
+  (ModelControlKind.choice, ModelControlStringValueDto(:final value)) =>
+    descriptor.choices.any((choice) => choice.id == value),
+  (ModelControlKind.toggle, ModelControlBoolValueDto()) => true,
+  (ModelControlKind.integer, ModelControlIntValueDto(:final value)) =>
+    (descriptor.minimum == null || value >= descriptor.minimum!) &&
+        (descriptor.maximum == null || value <= descriptor.maximum!) &&
+        (descriptor.step == null ||
+            descriptor.minimum == null ||
+            (value - descriptor.minimum!) % descriptor.step! == 0),
+  _ => false,
+};

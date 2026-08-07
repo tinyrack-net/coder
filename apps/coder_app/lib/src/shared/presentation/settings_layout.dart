@@ -296,40 +296,150 @@ class SettingsPaneHeader extends StatelessWidget {
     children: <Widget>[
       Padding(
         padding: _padding,
-        child: Row(
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: TRSpacing.large,
+          runSpacing: TRSpacing.small,
           children: <Widget>[
-            if (leading case final leading?) ...<Widget>[
-              leading,
-              const SizedBox(width: TRSpacing.small),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  TRText(title, maxLines: 1, truncate: true),
-                  if (subtitle case final subtitle?) ...<Widget>[
-                    const SizedBox(height: TRSpacing.extraSmall),
-                    TRText(
-                      subtitle,
-                      variant: TRTextVariant.bodySm,
-                      color: TRTextColor.muted,
-                      maxLines: 1,
-                      truncate: true,
-                    ),
-                  ],
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (leading case final leading?) ...<Widget>[
+                  leading,
+                  const SizedBox(width: TRSpacing.small),
                 ],
-              ),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      TRText(title, maxLines: 1, truncate: true),
+                      if (subtitle case final subtitle?) ...<Widget>[
+                        const SizedBox(height: TRSpacing.extraSmall),
+                        TRText(
+                          subtitle,
+                          variant: TRTextVariant.bodySm,
+                          color: TRTextColor.muted,
+                          maxLines: 1,
+                          truncate: true,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-            if (actions.isNotEmpty) ...<Widget>[
-              const SizedBox(width: TRSpacing.small),
-              ...actions,
-            ],
+            if (actions.isNotEmpty)
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: TRSpacing.small,
+                runSpacing: TRSpacing.small,
+                children: actions,
+              ),
           ],
         ),
       ),
       const TRSeparator(variant: TRSeparatorVariant.muted),
     ],
+  );
+}
+
+/// A consistent empty or unselected state for settings panes.
+///
+/// The content is intentionally centred as one compact reading group. Plain
+/// `Center(child: Text(...))` states had no shared hierarchy and drifted from
+/// each other as pages added icons or actions independently.
+class SettingsEmptyState extends StatelessWidget {
+  /// Creates a settings empty state.
+  const SettingsEmptyState({
+    required this.title,
+    this.description,
+    this.icon,
+    this.action,
+    super.key,
+  });
+
+  /// Primary empty-state message.
+  final String title;
+
+  /// Optional explanation or next step.
+  final String? description;
+
+  /// Optional semantic visual.
+  final Widget? icon;
+
+  /// Optional action resolving the empty state.
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(TRSpacing.extraLarge),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: TRMeasurements.readingWidthSm,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (icon case final icon?) ...<Widget>[
+              icon,
+              const SizedBox(height: TRSpacing.medium),
+            ],
+            TRText(
+              title,
+              variant: TRTextVariant.headingSm,
+              align: TRTextAlign.center,
+            ),
+            if (description case final description?) ...<Widget>[
+              const SizedBox(height: TRSpacing.extraSmall),
+              TRText(
+                description,
+                variant: TRTextVariant.bodySm,
+                color: TRTextColor.muted,
+                align: TRTextAlign.center,
+              ),
+            ],
+            if (action case final action?) ...<Widget>[
+              const SizedBox(height: TRSpacing.large),
+              action,
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// The shared field rhythm and width for settings dialogs.
+class SettingsDialogForm extends StatelessWidget {
+  /// Creates a settings dialog form.
+  const SettingsDialogForm({
+    required this.children,
+    this.width = TRMeasurements.overlayWidthMd,
+    super.key,
+  });
+
+  /// Fields, notices, and other form content in reading order.
+  final List<Widget> children;
+
+  /// Public Tinyrack overlay measurement used by this dialog.
+  final double width;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: width,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (final (index, child) in children.indexed) ...<Widget>[
+          if (index > 0) const SizedBox(height: TRSpacing.large),
+          child,
+        ],
+      ],
+    ),
   );
 }
 

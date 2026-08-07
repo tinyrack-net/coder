@@ -172,12 +172,18 @@ _SessionCreateParamsDto _$SessionCreateParamsDtoFromJson(
       : SessionModelSelectionDto.fromJson(
           json['model'] as Map<String, dynamic>,
         ),
-  reasoningEffort: json['reasoningEffort'] as String?,
+  modelControls:
+      (json['modelControls'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(
+          k,
+          ModelControlValueDto.fromJson(e as Map<String, dynamic>),
+        ),
+      ) ??
+      const <String, ModelControlValueDto>{},
   permissionMode: $enumDecodeNullable(
     _$PermissionModeEnumMap,
     json['permissionMode'],
   ),
-  serviceTier: json['serviceTier'] as String?,
 );
 
 Map<String, dynamic> _$SessionCreateParamsDtoToJson(
@@ -189,9 +195,8 @@ Map<String, dynamic> _$SessionCreateParamsDtoToJson(
   'agentDefinitionId': instance.agentDefinitionId,
   'mode': _$SessionModeEnumMap[instance.mode]!,
   'model': instance.model,
-  'reasoningEffort': instance.reasoningEffort,
+  'modelControls': instance.modelControls,
   'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
-  'serviceTier': instance.serviceTier,
 };
 
 const _$SessionModeEnumMap = {
@@ -216,15 +221,20 @@ _SessionSettingsPatchDto _$SessionSettingsPatchDtoFromJson(
       : SessionModelSelectionDto.fromJson(
           json['model'] as Map<String, dynamic>,
         ),
-  hasReasoningEffort: json['hasReasoningEffort'] as bool? ?? false,
-  reasoningEffort: json['reasoningEffort'] as String?,
+  hasModelControls: json['hasModelControls'] as bool? ?? false,
+  modelControls:
+      (json['modelControls'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(
+          k,
+          ModelControlValueDto.fromJson(e as Map<String, dynamic>),
+        ),
+      ) ??
+      const <String, ModelControlValueDto>{},
   hasPermissionMode: json['hasPermissionMode'] as bool? ?? false,
   permissionMode: $enumDecodeNullable(
     _$PermissionModeEnumMap,
     json['permissionMode'],
   ),
-  hasServiceTier: json['hasServiceTier'] as bool? ?? false,
-  serviceTier: json['serviceTier'] as String?,
 );
 
 Map<String, dynamic> _$SessionSettingsPatchDtoToJson(
@@ -233,12 +243,10 @@ Map<String, dynamic> _$SessionSettingsPatchDtoToJson(
   'mode': _$SessionModeEnumMap[instance.mode],
   'hasModel': instance.hasModel,
   'model': instance.model,
-  'hasReasoningEffort': instance.hasReasoningEffort,
-  'reasoningEffort': instance.reasoningEffort,
+  'hasModelControls': instance.hasModelControls,
+  'modelControls': instance.modelControls,
   'hasPermissionMode': instance.hasPermissionMode,
   'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
-  'hasServiceTier': instance.hasServiceTier,
-  'serviceTier': instance.serviceTier,
 };
 
 _SessionSettingsUpdateParamsDto _$SessionSettingsUpdateParamsDtoFromJson(

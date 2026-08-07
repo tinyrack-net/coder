@@ -1,0 +1,139 @@
+import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/anthropic/anthropic_provider.dart';
+import 'package:dio/dio.dart';
+
+/// Custom-provider wire ID for Anthropic Messages.
+const String anthropicMessagesWireId = 'anthropic-messages';
+
+/// Anthropic Messages transport shared by the built-in and custom providers.
+final class AnthropicMessagesWire implements ProviderWireProtocol {
+  /// Creates the wire with an optional deterministic HTTP client factory.
+  const AnthropicMessagesWire({this.dioFactory});
+
+  /// Injectable client factory used by contract tests.
+  final Dio Function(ProviderEndpoint endpoint)? dioFactory;
+
+  @override
+  String get id => anthropicMessagesWireId;
+
+  @override
+  String get label => 'Anthropic Messages';
+
+  @override
+  Set<String> get supportedControlIds => const <String>{
+    AgentModelControlIds.reasoningEffort,
+    AgentModelControlIds.reasoningMode,
+    AgentModelControlIds.thinkingBudget,
+    AgentModelControlIds.fastMode,
+  };
+
+  @override
+  List<AgentModelControlDescriptor> get controlDescriptors => const [
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningEffort,
+      label: 'Reasoning effort',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      choices: <AgentModelControlChoice>[
+        AgentModelControlChoice(id: 'low', label: 'Low'),
+        AgentModelControlChoice(id: 'medium', label: 'Medium'),
+        AgentModelControlChoice(id: 'high', label: 'High'),
+        AgentModelControlChoice(id: 'max', label: 'Maximum'),
+      ],
+      conflictsWith: <String>[AgentModelControlIds.reasoningMode],
+    ),
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningMode,
+      label: 'Thinking mode',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      choices: <AgentModelControlChoice>[
+        AgentModelControlChoice(id: 'adaptive', label: 'Adaptive'),
+        AgentModelControlChoice(id: 'enabled', label: 'Enabled'),
+        AgentModelControlChoice(id: 'disabled', label: 'Disabled'),
+      ],
+      conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
+    ),
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.thinkingBudget,
+      label: 'Thinking budget',
+      kind: AgentModelControlKind.integer,
+      presentation: AgentModelControlPresentation.numberDialog,
+      minimum: 1024,
+      maximum: 32768,
+      step: 1024,
+    ),
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.fastMode,
+      label: 'Fast mode',
+      kind: AgentModelControlKind.toggle,
+      presentation: AgentModelControlPresentation.selectableChip,
+    ),
+  ];
+
+  @override
+  ModelProvider createProvider(ModelProviderRequest request) {
+    final credential = request.credential;
+    return AnthropicMessagesProvider(
+      AnthropicProviderConfig(
+        id: request.connectionId,
+        apiKey: credential is ApiKeyCredential ? credential.key : '',
+        baseUrl: request.endpoint.baseUrl,
+      ),
+      dio: dioFactory?.call(request.endpoint),
+    );
+  }
+
+  @override
+  Future<List<String>> discoverModels(
+    ProviderEndpoint endpoint,
+    ProviderCredential? credential,
+  ) async {
+    final dio =
+        dioFactory?.call(endpoint) ??
+        Dio(BaseOptions(baseUrl: endpoint.baseUrl));
+    if (dio.options.baseUrl.isEmpty) dio.options.baseUrl = endpoint.baseUrl;
+    final result = <String>[];
+    String? afterId;
+    try {
+      do {
+        final response = await dio.get<Map<String, dynamic>>(
+          '/models',
+          queryParameters: <String, dynamic>{
+            'limit': 100,
+            'after_id': ?afterId,
+          },
+          options: Options(
+            headers: <String, String>{
+              if (credential case ApiKeyCredential(:final key))
+                'x-api-key': key,
+              'anthropic-version': '2023-06-01',
+            },
+          ),
+        );
+        final body = response.data;
+        final data = body?['data'];
+        if (data is! List) {
+          throw const FormatException('Anthropic models response is invalid.');
+        }
+        for (final item in data.whereType<Map<String, dynamic>>()) {
+          final id = item['id'];
+          if (id is String && id.isNotEmpty) result.add(id);
+        }
+        final hasMore = body?['has_more'] == true;
+        afterId = hasMore && body?['last_id'] is String
+            ? body!['last_id']! as String
+            : null;
+      } while (afterId != null);
+      return result;
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      throw ProviderDiscoveryFailure(
+        status == 401 || status == 403
+            ? ProviderDiscoveryFailureKind.invalidCredential
+            : ProviderDiscoveryFailureKind.unavailable,
+        error.message ?? 'Anthropic model discovery failed.',
+      );
+    }
+  }
+}

@@ -75,9 +75,13 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
       ..._messages(request.history),
     ],
     if (_config.supportsReasoningEffort)
-      'reasoning_effort': request.reasoningEffort,
-    if (_config.supportsServiceTier && request.serviceTier != null)
-      'service_tier': request.serviceTier,
+      'reasoning_effort': ?modelControlString(
+        request,
+        AgentModelControlIds.reasoningEffort,
+      ),
+    if (_config.supportsServiceTier &&
+        modelControlBool(request, AgentModelControlIds.fastMode) == true)
+      'service_tier': 'priority',
     'tools': request.tools
         .map(
           (tool) => <String, dynamic>{

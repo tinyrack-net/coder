@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -96,10 +97,13 @@ void main() {
     expect(result, isNot(contains('attacker')));
     expect(model.id, 'deepseek-next');
     expect(model.capabilities.toolCalling, CapabilitySupport.supported);
-    expect(model.capabilities.supportedReasoningEfforts, <String>[
-      'high',
-      'max',
-    ]);
+    expect(
+      model.capabilities.controls.single.choices.map((item) => item.id),
+      <String>[
+        'high',
+        'max',
+      ],
+    );
     expect(model.pricing!.cacheRead, 0.1);
     expect(model.limits!.output, 32000);
     expect(adapter.path, '/api.json');
@@ -112,10 +116,50 @@ void main() {
       metadataSource: const _FailingMetadataSource(),
     );
 
-    await expectLater(catalog.refresh(), throwsA(isA<StateError>()));
+    final refreshed = await catalog.refresh();
 
-    expect(catalog.catalog().source, ProviderCatalogSource.bundled);
+    expect(refreshed.refreshError, isNotNull);
+    expect(refreshed.freshness, ProviderCatalogFreshness.bundled);
     expect(catalog.modelsFor('openai'), isNotEmpty);
+  });
+
+  test('closing a catalog cancels an in-flight metadata refresh', () async {
+    final source = _BlockingMetadataSource();
+    final catalog = BuiltInProviderCatalog(
+      clock: _Clock(now),
+      registry: registry,
+      metadataSource: source,
+    );
+
+    final refresh = catalog.refresh();
+    await source.started.future;
+    await catalog.close();
+    await refresh;
+
+    expect(source.closed, isTrue);
+  });
+
+  test('pinned snapshot enriches models without runtime controls', () {
+    final catalog = BuiltInProviderCatalog(
+      clock: _Clock(now),
+      registry: registry,
+      metadataSource: const _FailingMetadataSource(),
+    );
+
+    final advisoryModel = catalog
+        .modelsFor('openai')
+        .firstWhere(
+          (item) => item.id == 'gpt-4',
+        );
+    final runtimeModel = catalog
+        .modelsFor('openai')
+        .firstWhere(
+          (item) => item.id == 'gpt-5.6-sol',
+        );
+
+    expect(advisoryModel.capabilities.controls, isEmpty);
+    expect(advisoryModel.limits, isNotNull);
+    expect(runtimeModel.capabilities.controls, isNotEmpty);
   });
 }
 
@@ -159,6 +203,30 @@ final class _MetadataSource implements ProviderCatalogMetadataSource {
       ],
     };
   }
+
+  @override
+  Future<void> close() async {}
+}
+
+final class _BlockingMetadataSource implements ProviderCatalogMetadataSource {
+  final Completer<void> started = Completer<void>();
+  final Completer<Map<String, List<ProviderCatalogMetadata>>> _result =
+      Completer<Map<String, List<ProviderCatalogMetadata>>>();
+  bool closed = false;
+
+  @override
+  Future<Map<String, List<ProviderCatalogMetadata>>> fetch(
+    Set<String> providerIds,
+  ) {
+    started.complete();
+    return _result.future;
+  }
+
+  @override
+  Future<void> close() async {
+    closed = true;
+    _result.completeError(StateError('catalog closed'));
+  }
 }
 
 final class _FailingMetadataSource implements ProviderCatalogMetadataSource {
@@ -170,6 +238,9 @@ final class _FailingMetadataSource implements ProviderCatalogMetadataSource {
   ) => Future<Map<String, List<ProviderCatalogMetadata>>>.error(
     StateError('offline'),
   );
+
+  @override
+  Future<void> close() async {}
 }
 
 final class _JsonAdapter implements HttpClientAdapter {

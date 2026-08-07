@@ -388,7 +388,6 @@ per tree.''';
     String? agentType,
     String forkTurns = 'none',
     String? model,
-    String? reasoningEffort,
   }) async {
     if (!AgentPaths.isValidTaskName(taskName)) {
       throw const CollaborationException(
@@ -413,12 +412,11 @@ per tree.''';
         }
         forkLastN = parsed;
     }
-    if (fullFork &&
-        (agentType != null || model != null || reasoningEffort != null)) {
+    if (fullFork && (agentType != null || model != null)) {
       // A full-history fork continues the caller's own conversation, so it
       // cannot run as a different agent type or model.
       throw const CollaborationException(
-        'agent_type, model, and reasoning_effort cannot be overridden for a '
+        'agent_type and model cannot be overridden for a '
         'full-history fork.',
       );
     }
@@ -489,7 +487,6 @@ per tree.''';
         mode: caller.mode,
         status: SessionStatus.idle,
         model: childModel,
-        reasoningEffort: reasoningEffort,
         createdAt: now,
         updatedAt: now,
       ),

@@ -3225,7 +3225,7 @@ as String,
 /// @nodoc
 mixin _$SessionCreateParamsDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; SessionModelSelectionDto? get model; String? get reasoningEffort; PermissionMode? get permissionMode; String? get serviceTier;
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; SessionModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode;
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3238,16 +3238,16 @@ $SessionCreateParamsDtoCopyWith<SessionCreateParamsDto> get copyWith => _$Sessio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,reasoningEffort,permissionMode,serviceTier);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,const DeepCollectionEquality().hash(modelControls),permissionMode);
 
 @override
 String toString() {
-  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode)';
 }
 
 
@@ -3258,7 +3258,7 @@ abstract mixin class $SessionCreateParamsDtoCopyWith<$Res>  {
   factory $SessionCreateParamsDtoCopyWith(SessionCreateParamsDto value, $Res Function(SessionCreateParamsDto) _then) = _$SessionCreateParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier
+ String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
@@ -3275,7 +3275,7 @@ class _$SessionCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -3283,10 +3283,9 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String?,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
-as String?,
+as SessionModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,
   ));
 }
 /// Create a copy of SessionCreateParamsDto
@@ -3383,10 +3382,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
   return orElse();
 
 }
@@ -3404,10 +3403,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3424,10 +3423,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
   return null;
 
 }
@@ -3439,7 +3438,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionCreateParamsDto implements SessionCreateParamsDto {
-  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier});
+  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, this.mode = SessionMode.normal, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode}): _modelControls = modelControls;
   factory _SessionCreateParamsDto.fromJson(Map<String, dynamic> json) => _$SessionCreateParamsDtoFromJson(json);
 
 @override final  String id;
@@ -3448,9 +3447,14 @@ class _SessionCreateParamsDto implements SessionCreateParamsDto {
 @override final  String agentDefinitionId;
 @override@JsonKey() final  SessionMode mode;
 @override final  SessionModelSelectionDto? model;
-@override final  String? reasoningEffort;
+ final  Map<String, ModelControlValueDto> _modelControls;
+@override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
+  if (_modelControls is EqualUnmodifiableMapView) return _modelControls;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_modelControls);
+}
+
 @override final  PermissionMode? permissionMode;
-@override final  String? serviceTier;
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -3465,16 +3469,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,reasoningEffort,permissionMode,serviceTier);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,const DeepCollectionEquality().hash(_modelControls),permissionMode);
 
 @override
 String toString() {
-  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode)';
 }
 
 
@@ -3485,7 +3489,7 @@ abstract mixin class _$SessionCreateParamsDtoCopyWith<$Res> implements $SessionC
   factory _$SessionCreateParamsDtoCopyWith(_SessionCreateParamsDto value, $Res Function(_SessionCreateParamsDto) _then) = __$SessionCreateParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier
+ String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
@@ -3502,7 +3506,7 @@ class __$SessionCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,}) {
   return _then(_SessionCreateParamsDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -3510,10 +3514,9 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String?,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
-as String?,
+as SessionModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,
   ));
 }
 
@@ -3536,7 +3539,7 @@ $SessionModelSelectionDtoCopyWith<$Res>? get model {
 /// @nodoc
 mixin _$SessionSettingsPatchDto {
 
- SessionMode? get mode; bool get hasModel; SessionModelSelectionDto? get model; bool get hasReasoningEffort; String? get reasoningEffort; bool get hasPermissionMode; PermissionMode? get permissionMode; bool get hasServiceTier; String? get serviceTier;
+ SessionMode? get mode; bool get hasModel; SessionModelSelectionDto? get model; bool get hasModelControls; Map<String, ModelControlValueDto> get modelControls; bool get hasPermissionMode; PermissionMode? get permissionMode;
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3549,16 +3552,16 @@ $SessionSettingsPatchDtoCopyWith<SessionSettingsPatchDto> get copyWith => _$Sess
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasReasoningEffort, hasReasoningEffort) || other.hasReasoningEffort == hasReasoningEffort)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.hasServiceTier, hasServiceTier) || other.hasServiceTier == hasServiceTier)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasReasoningEffort,reasoningEffort,hasPermissionMode,permissionMode,hasServiceTier,serviceTier);
+int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(modelControls),hasPermissionMode,permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasReasoningEffort: $hasReasoningEffort, reasoningEffort: $reasoningEffort, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode, hasServiceTier: $hasServiceTier, serviceTier: $serviceTier)';
+  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
 }
 
 
@@ -3569,7 +3572,7 @@ abstract mixin class $SessionSettingsPatchDtoCopyWith<$Res>  {
   factory $SessionSettingsPatchDtoCopyWith(SessionSettingsPatchDto value, $Res Function(SessionSettingsPatchDto) _then) = _$SessionSettingsPatchDtoCopyWithImpl;
 @useResult
 $Res call({
- SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasReasoningEffort, String? reasoningEffort, bool hasPermissionMode, PermissionMode? permissionMode, bool hasServiceTier, String? serviceTier
+ SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
 });
 
 
@@ -3586,18 +3589,16 @@ class _$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasReasoningEffort = null,Object? reasoningEffort = freezed,Object? hasPermissionMode = null,Object? permissionMode = freezed,Object? hasServiceTier = null,Object? serviceTier = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
   return _then(_self.copyWith(
 mode: freezed == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode?,hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
 as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,hasReasoningEffort: null == hasReasoningEffort ? _self.hasReasoningEffort : hasReasoningEffort // ignore: cast_nullable_to_non_nullable
-as bool,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String?,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
+as SessionModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
+as bool,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
 as bool,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,hasServiceTier: null == hasServiceTier ? _self.hasServiceTier : hasServiceTier // ignore: cast_nullable_to_non_nullable
-as bool,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
-as String?,
+as PermissionMode?,
   ));
 }
 /// Create a copy of SessionSettingsPatchDto
@@ -3694,10 +3695,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasReasoningEffort,  String? reasoningEffort,  bool hasPermissionMode,  PermissionMode? permissionMode,  bool hasServiceTier,  String? serviceTier)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_that.reasoningEffort,_that.hasPermissionMode,_that.permissionMode,_that.hasServiceTier,_that.serviceTier);case _:
+return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   return orElse();
 
 }
@@ -3715,10 +3716,10 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasReasoningEffort,  String? reasoningEffort,  bool hasPermissionMode,  PermissionMode? permissionMode,  bool hasServiceTier,  String? serviceTier)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto():
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_that.reasoningEffort,_that.hasPermissionMode,_that.permissionMode,_that.hasServiceTier,_that.serviceTier);case _:
+return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3735,10 +3736,10 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasReasoningEffort,  String? reasoningEffort,  bool hasPermissionMode,  PermissionMode? permissionMode,  bool hasServiceTier,  String? serviceTier)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_that.reasoningEffort,_that.hasPermissionMode,_that.permissionMode,_that.hasServiceTier,_that.serviceTier);case _:
+return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   return null;
 
 }
@@ -3750,18 +3751,22 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_
 @JsonSerializable()
 
 class _SessionSettingsPatchDto implements SessionSettingsPatchDto {
-  const _SessionSettingsPatchDto({this.mode, this.hasModel = false, this.model, this.hasReasoningEffort = false, this.reasoningEffort, this.hasPermissionMode = false, this.permissionMode, this.hasServiceTier = false, this.serviceTier});
+  const _SessionSettingsPatchDto({this.mode, this.hasModel = false, this.model, this.hasModelControls = false, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.hasPermissionMode = false, this.permissionMode}): _modelControls = modelControls;
   factory _SessionSettingsPatchDto.fromJson(Map<String, dynamic> json) => _$SessionSettingsPatchDtoFromJson(json);
 
 @override final  SessionMode? mode;
 @override@JsonKey() final  bool hasModel;
 @override final  SessionModelSelectionDto? model;
-@override@JsonKey() final  bool hasReasoningEffort;
-@override final  String? reasoningEffort;
+@override@JsonKey() final  bool hasModelControls;
+ final  Map<String, ModelControlValueDto> _modelControls;
+@override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
+  if (_modelControls is EqualUnmodifiableMapView) return _modelControls;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_modelControls);
+}
+
 @override@JsonKey() final  bool hasPermissionMode;
 @override final  PermissionMode? permissionMode;
-@override@JsonKey() final  bool hasServiceTier;
-@override final  String? serviceTier;
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
@@ -3776,16 +3781,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasReasoningEffort, hasReasoningEffort) || other.hasReasoningEffort == hasReasoningEffort)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.hasServiceTier, hasServiceTier) || other.hasServiceTier == hasServiceTier)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasReasoningEffort,reasoningEffort,hasPermissionMode,permissionMode,hasServiceTier,serviceTier);
+int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(_modelControls),hasPermissionMode,permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasReasoningEffort: $hasReasoningEffort, reasoningEffort: $reasoningEffort, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode, hasServiceTier: $hasServiceTier, serviceTier: $serviceTier)';
+  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
 }
 
 
@@ -3796,7 +3801,7 @@ abstract mixin class _$SessionSettingsPatchDtoCopyWith<$Res> implements $Session
   factory _$SessionSettingsPatchDtoCopyWith(_SessionSettingsPatchDto value, $Res Function(_SessionSettingsPatchDto) _then) = __$SessionSettingsPatchDtoCopyWithImpl;
 @override @useResult
 $Res call({
- SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasReasoningEffort, String? reasoningEffort, bool hasPermissionMode, PermissionMode? permissionMode, bool hasServiceTier, String? serviceTier
+ SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
 });
 
 
@@ -3813,18 +3818,16 @@ class __$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasReasoningEffort = null,Object? reasoningEffort = freezed,Object? hasPermissionMode = null,Object? permissionMode = freezed,Object? hasServiceTier = null,Object? serviceTier = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
   return _then(_SessionSettingsPatchDto(
 mode: freezed == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode?,hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
 as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,hasReasoningEffort: null == hasReasoningEffort ? _self.hasReasoningEffort : hasReasoningEffort // ignore: cast_nullable_to_non_nullable
-as bool,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String?,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
+as SessionModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
+as bool,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
 as bool,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,hasServiceTier: null == hasServiceTier ? _self.hasServiceTier : hasServiceTier // ignore: cast_nullable_to_non_nullable
-as bool,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
-as String?,
+as PermissionMode?,
   ));
 }
 

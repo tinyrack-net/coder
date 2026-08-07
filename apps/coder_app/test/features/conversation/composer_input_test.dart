@@ -857,6 +857,80 @@ void main() {
       expect(submitted, isEmpty);
     },
   );
+
+  testWidgets(
+    'file mention keyboard selection stays inside the scroll viewport',
+    tags: const <String>['feature_test__composer_file_mention__widget'],
+    (tester) async {
+      await tester.pumpWidget(
+        _completionHarness(
+          onSubmit: (_) {},
+          files: const <String>[
+            'lib/01.dart',
+            'lib/02.dart',
+            'lib/03.dart',
+            'lib/04.dart',
+            'lib/05.dart',
+            'lib/06.dart',
+            'lib/07.dart',
+            'lib/08.dart',
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(inputKey), '@');
+      await tester.pumpAndSettle();
+
+      final scrollArea = find.descendant(
+        of: find.byType(TRInlineSuggestions<String>),
+        matching: find.byType(TRScrollArea),
+      );
+      bool isVisible(String label) {
+        final viewport = tester.getRect(scrollArea);
+        final row = tester.getRect(find.text(label));
+        return row.top >= viewport.top && row.bottom <= viewport.bottom;
+      }
+
+      expect(isVisible('lib/08.dart'), isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.pumpAndSettle();
+      expect(isVisible('lib/08.dart'), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.home);
+      await tester.pumpAndSettle();
+      expect(isVisible('lib/01.dart'), isTrue);
+    },
+  );
+
+  testWidgets(
+    'slash command keyboard selection stays inside the scroll viewport',
+    tags: const <String>['feature_test__composer_slash_command__widget'],
+    (tester) async {
+      await tester.pumpWidget(_completionHarness(onSubmit: (_) {}));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(inputKey), '/');
+      await tester.pumpAndSettle();
+
+      final scrollArea = find.descendant(
+        of: find.byType(TRInlineSuggestions<String>),
+        matching: find.byType(TRScrollArea),
+      );
+      bool isVisible(String label) {
+        final viewport = tester.getRect(scrollArea);
+        final row = tester.getRect(find.text(label));
+        return row.top >= viewport.top && row.bottom <= viewport.bottom;
+      }
+
+      expect(isVisible('skills'), isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.pumpAndSettle();
+      expect(isVisible('skills'), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.home);
+      await tester.pumpAndSettle();
+      expect(isVisible('new'), isTrue);
+    },
+  );
 }
 
 Widget _harness({
@@ -883,7 +957,7 @@ SessionComposerBar _bar() => SessionComposerBar(
   agentDefinitionId: null,
   selection: null,
   onAgentChanged: (_) {},
-  onModelChanged: (_) {},
+  onModelChanged: (_, _) {},
   mode: SessionMode.normal,
   onModeChanged: (_) {},
 );
@@ -896,6 +970,7 @@ Widget _completionHarness({
   VoidCallback? onModeToggled,
   AttachmentInputPort? attachmentInput,
   bool suppressList = false,
+  List<String> files = _files,
 }) => _harness(
   composer: _CompletionHost(
     onSubmit: onSubmit,
@@ -903,6 +978,7 @@ Widget _completionHarness({
     onModeToggled: onModeToggled,
     attachmentInput: attachmentInput,
     suppressList: suppressList,
+    files: files,
   ),
 );
 
@@ -920,6 +996,7 @@ class _CompletionHost extends StatefulWidget {
     this.onModeToggled,
     this.attachmentInput,
     this.suppressList = false,
+    this.files = _files,
   });
 
   final void Function(ComposerSubmission submission) onSubmit;
@@ -928,6 +1005,7 @@ class _CompletionHost extends StatefulWidget {
   final VoidCallback? onModeToggled;
   final AttachmentInputPort? attachmentInput;
   final bool suppressList;
+  final List<String> files;
 
   @override
   State<_CompletionHost> createState() => _CompletionHostState();
@@ -966,7 +1044,7 @@ class _CompletionHostState extends State<_CompletionHost> {
       );
     }
     final matches = <FileMatchDto>[
-      for (final path in _files)
+      for (final path in widget.files)
         if (fuzzyMatch(path, trigger.query) != null)
           FileMatchDto(
             relativePath: path,

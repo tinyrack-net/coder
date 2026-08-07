@@ -1,6 +1,7 @@
 import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/app/router/app_router.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
+import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,6 +67,33 @@ void main() {
       'feature_test__skill_management__widget',
       'feature_test__skill_invocation__widget',
     ],
+  );
+
+  testWidgets(
+    'the desktop project selector stays inset inside the collection pane',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(workspaces: <WorkspaceDto>[workspace]);
+      final router = await _pumpSkills(tester, api);
+      addTearDown(router.dispose);
+
+      final selector = find.descendant(
+        of: find.byType(TRSelectFormField<String?>),
+        matching: find.byType(TextButton),
+      );
+      expect(selector, findsOneWidget);
+      expect(
+        tester.getSize(selector).width,
+        TRMeasurements.paneMd - 2 * TRSpacing.large,
+      );
+      expect(
+        tester.getTopLeft(selector).dx,
+        tester.getTopLeft(find.byType(SettingsPaneHeader).first).dx +
+            TRSpacing.large,
+      );
+    },
+    tags: const <String>['feature_test__skill_management__widget'],
   );
 
   testWidgets(
