@@ -10,10 +10,10 @@ import 'package:test/test.dart';
 import 'support/fake_file_index_gateway.dart';
 
 /// Builds a service over an in-memory database with the standard fakes.
-WorkspaceService _service(
+WorkspaceOperations _service(
   CoderDatabase database, {
   required GitWorkspaceGateway git,
-}) => WorkspaceService(
+}) => WorkspaceOperations(
   database.workspaceDao,
   database.worktreeDao,
   database.sessionDao,
@@ -52,7 +52,7 @@ branch refs/heads/feature/settings
       );
       addTearDown(database.close);
       final git = _FakeGitGateway();
-      final service = WorkspaceService(
+      final service = WorkspaceOperations(
         database.workspaceDao,
         database.worktreeDao,
         database.sessionDao,
@@ -112,7 +112,7 @@ branch refs/heads/feature/settings
       addTearDown(database.close);
       final git = _FakeGitGateway()
         ..state = const GitWorktreeState(dirty: true);
-      final service = WorkspaceService(
+      final service = WorkspaceOperations(
         database.workspaceDao,
         database.worktreeDao,
         database.sessionDao,
@@ -162,7 +162,7 @@ branch refs/heads/feature/settings
       addTearDown(database.close);
       final git = _FakeGitGateway()..root = null;
       final paths = _FakeWorkspacePaths();
-      final service = WorkspaceService(
+      final service = WorkspaceOperations(
         database.workspaceDao,
         database.worktreeDao,
         database.sessionDao,
@@ -330,7 +330,7 @@ branch refs/heads/feature/settings
       );
       addTearDown(database.close);
       final git = _FakeGitGateway();
-      final service = WorkspaceService(
+      final service = WorkspaceOperations(
         database.workspaceDao,
         database.worktreeDao,
         database.sessionDao,
@@ -451,7 +451,7 @@ branch refs/heads/feature/settings
     () {
       late CoderDatabase database;
       late FakeFileIndexGateway fileIndex;
-      late WorkspaceService service;
+      late WorkspaceOperations service;
 
       setUp(() async {
         database = CoderDatabase.forTesting(
@@ -460,7 +460,7 @@ branch refs/heads/feature/settings
         );
         addTearDown(database.close);
         fileIndex = FakeFileIndexGateway();
-        service = WorkspaceService(
+        service = WorkspaceOperations(
           database.workspaceDao,
           database.worktreeDao,
           database.sessionDao,
@@ -539,7 +539,7 @@ branch refs/heads/feature/settings
       clock: _FixedClock(),
     );
     addTearDown(database.close);
-    final service = WorkspaceService(
+    final service = WorkspaceOperations(
       database.workspaceDao,
       database.worktreeDao,
       database.sessionDao,
@@ -583,7 +583,7 @@ branch refs/heads/feature/settings
     late _FakeHookRunner hooks;
     late _FakeGitGateway git;
     late List<String> log;
-    late WorkspaceService service;
+    late WorkspaceOperations service;
 
     setUp(() async {
       database = CoderDatabase.forTesting(
@@ -595,7 +595,7 @@ branch refs/heads/feature/settings
       projectSettings = _FakeProjectSettings();
       hooks = _FakeHookRunner(log);
       git = _FakeGitGateway(log);
-      service = WorkspaceService(
+      service = WorkspaceOperations(
         database.workspaceDao,
         database.worktreeDao,
         database.sessionDao,

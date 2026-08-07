@@ -34,7 +34,7 @@ void main() {
     );
   }
 
-  SkillService buildService() => SkillService(
+  SkillCatalogService buildService() => SkillCatalogService(
     store: FileSkillStore(
       roots: <SkillFiles>[
         NativeSkillFiles(
@@ -484,7 +484,7 @@ void main() {
   test(
     'the project root cache evicts the oldest watcher past its limit',
     () async {
-      final service = SkillService(
+      final service = SkillCatalogService(
         store: FileSkillStore(
           roots: <SkillFiles>[
             NativeSkillFiles(

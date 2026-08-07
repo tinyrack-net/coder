@@ -23,7 +23,7 @@ void main() {
   late _FakeTransports transports;
   late _MutableClock clock;
 
-  McpService build() => McpService(
+  McpRuntime build() => McpRuntime(
     store: store,
     credentials: _FakeCredentials(),
     transports: transports,

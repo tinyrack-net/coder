@@ -29,7 +29,7 @@ final class _SequentialIds implements IdGenerator {
   String generate() => 'id-${_next++}';
 }
 
-final class _FakeRuntime implements SessionRuntimePort {
+final class _FakeRuntime implements SessionTurnPort {
   final Set<String> active = <String>{};
   final List<({String sessionId, String turnId, String prompt})> started =
       <({String sessionId, String turnId, String prompt})>[];
@@ -582,10 +582,7 @@ void main() {
         AgentLifecycle.errored,
       );
       final mail = await database.agentMailboxDao.undeliveredFor(root.id);
-      expect(
-        mail.single.message.payload,
-        'Status: errored\nprovider exploded',
-      );
+      expect(mail.single.message.payload, 'Status: errored\nprovider exploded');
     });
 
     test(
@@ -955,16 +952,13 @@ void main() {
     });
 
     test('lifecycle wire names are stable', () {
-      expect(
-        AgentLifecycle.values.map(agentLifecycleWireName),
-        <String>[
-          'pending_init',
-          'running',
-          'interrupted',
-          'completed',
-          'errored',
-        ],
-      );
+      expect(AgentLifecycle.values.map(agentLifecycleWireName), <String>[
+        'pending_init',
+        'running',
+        'interrupted',
+        'completed',
+        'errored',
+      ]);
       expect(emitted, isNotNull);
     });
   });

@@ -5,9 +5,9 @@ import 'package:coder_daemon/src/agent_clock.dart';
 import 'package:coder_daemon/src/agent_definitions.dart';
 import 'package:coder_daemon/src/attachment_service.dart';
 import 'package:coder_daemon/src/multi_agent.dart';
-import 'package:coder_daemon/src/ports.dart';
 import 'package:coder_daemon/src/provider_service.dart';
 import 'package:coder_daemon/src/repositories.dart';
+import 'package:coder_daemon/src/session_interactions.dart';
 import 'package:coder_daemon/src/skills.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
@@ -27,25 +27,25 @@ abstract interface class ExternalToolSource {
 /// Resolves the pseudo-terminals one coder session owns.
 typedef ExecHostFactory = ExecSessionHost Function(String sessionId);
 
-/// SessionService defines a public contract.
-class SessionService implements SessionRuntimePort {
-  /// Creates a [SessionService].
-  SessionService({
+/// Coordinates model-turn execution and lifecycle for coder sessions.
+class SessionTurnCoordinator implements SessionTurnPort {
+  /// Creates a session turn coordinator.
+  SessionTurnCoordinator({
     required this._sessions,
     required this._definitions,
     required this._worktrees,
     required this._timeline,
-    required this._providers,
+    required this._models,
     required this._events,
     required this._safetyIdentifier,
     required this._clock,
-    required this._ids,
     required this._toolRegistry,
     required this._externalTools,
     required this._skills,
     required this._attachments,
     required this._execHostFor,
     required this._settings,
+    required this._interactions,
   });
 
   final ExecHostFactory _execHostFor;
@@ -53,25 +53,18 @@ class SessionService implements SessionRuntimePort {
   final AgentDefinitionService _definitions;
   final WorktreeRepository _worktrees;
   final TimelineRepository _timeline;
-  final ProviderService _providers;
+  final ProviderModelResolver _models;
   final DaemonEventSink _events;
   final String _safetyIdentifier;
   final Clock _clock;
-  final IdGenerator _ids;
   final AgentToolRegistry _toolRegistry;
   final ExternalToolSource _externalTools;
-  final SkillService _skills;
+  final SkillCatalogService _skills;
   final AttachmentService _attachments;
   final SettingsRepository _settings;
+  final SessionInteractionCoordinator _interactions;
   final Map<String, CancellationToken> _activeTurns =
       <String, CancellationToken>{};
-  final Map<String, Completer<ApprovalDecision>> _pendingApprovals =
-      <String, Completer<ApprovalDecision>>{};
-  final Map<String, Completer<List<UserAnswer>>> _pendingQuestions =
-      <String, Completer<List<UserAnswer>>>{};
-  final Map<String, Completer<void>> _pendingInput =
-      <String, Completer<void>>{};
-  final Set<String> _notedInput = <String>{};
   final Map<String, Completer<AgentRunResult>> _turnCompletions =
       <String, Completer<AgentRunResult>>{};
 
@@ -96,8 +89,8 @@ class SessionService implements SessionRuntimePort {
     final sessionModel = session.model;
     // A session override wins over the model of its agent definition.
     final resolvedModel = sessionModel == null
-        ? await _providers.resolveAgentModel(definition.model)
-        : await _providers.resolveExplicitModel(
+        ? await _models.resolveAgentModel(definition.model)
+        : await _models.resolveExplicitModel(
             sessionModel.providerConnectionId,
             sessionModel.modelId,
           );
@@ -154,7 +147,7 @@ class SessionService implements SessionRuntimePort {
     final cancellation = CancellationToken();
     // Starting a turn consumes whatever the client had queued, so a stale
     // notice cannot shorten a later wait.
-    _notedInput.remove(sessionId);
+    _interactions.beginTurn(sessionId);
     _activeTurns[sessionId] = cancellation;
     if (trackCompletion) {
       _turnCompletions[turnId] = Completer<AgentRunResult>();
@@ -204,7 +197,7 @@ class SessionService implements SessionRuntimePort {
     final agentClock = SessionAgentClock(
       clock: _clock,
       sessionId: sessionId,
-      pendingInput: pendingInput,
+      pendingInput: _interactions.pendingInput,
     );
     // Skills resolve against the worktree, so a branch carries the project
     // skills that were committed to it.
@@ -218,12 +211,7 @@ class SessionService implements SessionRuntimePort {
       attachmentPublisher: TurnAttachmentPublisher(_attachments, turnId),
       attachmentReader: SessionAttachmentReader(_attachments, sessionId),
       clock: agentClock,
-      questions: _DatabaseUserQuestionCoordinator(
-        timeline: _timeline,
-        events: _events,
-        pending: _pendingQuestions,
-        ids: _ids,
-        clock: _clock,
+      questions: _interactions.questionsFor(
         sessionId: sessionId,
         turnId: turnId,
         reportStatus: reportStatus,
@@ -242,12 +230,7 @@ class SessionService implements SessionRuntimePort {
       // The summary is written by the model that produced the work, so the
       // compactor rides the same provider the turn already resolved.
       compactor: ConversationCompactor(resolvedModel.provider),
-      approvals: _DatabaseApprovalCoordinator(
-        timeline: _timeline,
-        events: _events,
-        pending: _pendingApprovals,
-        ids: _ids,
-        clock: _clock,
+      approvals: _interactions.approvalsFor(
         sessionId: sessionId,
         turnId: turnId,
       ),
@@ -441,8 +424,8 @@ class SessionService implements SessionRuntimePort {
     final definition = await _definitions.resolve(session.agentDefinitionId);
     final sessionModel = session.model;
     final resolvedModel = sessionModel == null
-        ? await _providers.resolveAgentModel(definition.model)
-        : await _providers.resolveExplicitModel(
+        ? await _models.resolveAgentModel(definition.model)
+        : await _models.resolveExplicitModel(
             sessionModel.providerConnectionId,
             sessionModel.modelId,
           );
@@ -472,131 +455,6 @@ class SessionService implements SessionRuntimePort {
     _emitSession(await _sessions.getById(sessionId));
   }
 
-  /// Switches one session between planning and normal collaboration.
-  ///
-  /// Plan mode only changes the instructions handed to the model, so it can
-  /// only be switched between turns.
-  Future<SessionDto> setMode(String sessionId, SessionMode mode) async {
-    final session = await _sessions.getById(sessionId);
-    if (session == null) throw StateError('Session not found: $sessionId');
-    if (_activeTurns.containsKey(sessionId)) {
-      throw StateError('Cannot change the mode while a turn is running.');
-    }
-    final updated = await _sessions.updateMode(sessionId, mode);
-    _emitSession(updated);
-    return updated;
-  }
-
-  /// Sets or clears the reasoning effort override of one session.
-  ///
-  /// A null [reasoningEffort] restores inheritance from the agent definition.
-  /// The effort is read when a turn starts, so it can only change between
-  /// turns.
-  Future<SessionDto> setReasoningEffort(
-    String sessionId,
-    String? reasoningEffort,
-  ) async {
-    final session = await _sessions.getById(sessionId);
-    if (session == null) throw StateError('Session not found: $sessionId');
-    if (_activeTurns.containsKey(sessionId)) {
-      throw StateError(
-        'Cannot change the reasoning effort while a turn is running.',
-      );
-    }
-    final updated = await _sessions.updateReasoningEffort(
-      sessionId,
-      reasoningEffort,
-    );
-    _emitSession(updated);
-    return updated;
-  }
-
-  /// Sets or clears the permission mode override of one session.
-  ///
-  /// A null [permissionMode] restores inheritance from the agent definition.
-  /// Active turns observe the update at their next tool boundary; tools and
-  /// approval requests already in progress retain the policy they started with.
-  Future<SessionDto> setPermissionMode(
-    String sessionId,
-    PermissionMode? permissionMode,
-  ) async {
-    final session = await _sessions.getById(sessionId);
-    if (session == null) throw StateError('Session not found: $sessionId');
-    final updated = await _sessions.updatePermissionMode(
-      sessionId,
-      permissionMode,
-    );
-    _emitSession(updated);
-    return updated;
-  }
-
-  /// Sets or clears the provider service tier of one session.
-  ///
-  /// A null [serviceTier] restores the provider default tier. The tier is read
-  /// when a turn starts, so it can only change between turns.
-  Future<SessionDto> setServiceTier(
-    String sessionId,
-    String? serviceTier,
-  ) async {
-    final session = await _sessions.getById(sessionId);
-    if (session == null) throw StateError('Session not found: $sessionId');
-    if (_activeTurns.containsKey(sessionId)) {
-      throw StateError(
-        'Cannot change the service tier while a turn is running.',
-      );
-    }
-    final updated = await _sessions.updateServiceTier(sessionId, serviceTier);
-    _emitSession(updated);
-    return updated;
-  }
-
-  /// Sets or clears the provider and model override of one session.
-  ///
-  /// A null [model] restores the fallback chain, which resolves at turn start.
-  Future<SessionDto> setModel(
-    String sessionId,
-    SessionModelSelectionDto? model,
-  ) async {
-    final session = await _sessions.getById(sessionId);
-    if (session == null) throw StateError('Session not found: $sessionId');
-    if (_activeTurns.containsKey(sessionId)) {
-      throw StateError('Cannot change the model while a turn is running.');
-    }
-    if (model != null) {
-      await _providers.validateAgentModel(
-        model.providerConnectionId,
-        model.modelId,
-      );
-    }
-    final updated = await _sessions.updateModel(sessionId, model);
-    _emitSession(updated);
-    return updated;
-  }
-
-  /// The resolveApproval public API member.
-  Future<ApprovalRequestDto> resolveApproval(
-    String approvalId, {
-    required bool approved,
-  }) async {
-    final status = approved ? ApprovalStatus.approved : ApprovalStatus.denied;
-    final approval = await _timeline.resolveApproval(approvalId, status);
-    if (approval == null) {
-      throw StateError('Approval is not pending: $approvalId');
-    }
-    _pendingApprovals
-        .remove(approvalId)
-        ?.complete(
-          approved ? ApprovalDecision.approved : ApprovalDecision.denied,
-        );
-    await _appendEvent(
-      sessionId: approval.sessionId,
-      turnId: approval.turnId,
-      type: 'approval.resolved',
-      data: <String, dynamic>{'approvalId': approval.id, 'status': status.name},
-    );
-    return approval;
-  }
-
   /// Completes once the client queues input for [sessionId].
   ///
   /// Waiters share one completer, so a single notice wakes every sleeping
@@ -606,8 +464,7 @@ class SessionService implements SessionRuntimePort {
   /// sleep would run its full duration.
   @override
   Future<void> pendingInput(String sessionId) {
-    if (_notedInput.remove(sessionId)) return Future<void>.value();
-    return _pendingInput.putIfAbsent(sessionId, Completer<void>.new).future;
+    return _interactions.pendingInput(sessionId);
   }
 
   /// Reports that the client has something queued for [sessionId].
@@ -615,57 +472,7 @@ class SessionService implements SessionRuntimePort {
   /// Best-effort: it only shortens a wait, so a lost notice costs a longer
   /// sleep and nothing else.
   void notePendingInput(String sessionId) {
-    _notedInput.add(sessionId);
-    final waiting = _pendingInput.remove(sessionId);
-    if (waiting != null && !waiting.isCompleted) waiting.complete();
-  }
-
-  /// Answers a pending agent question and lets its turn continue.
-  Future<UserQuestionRequestDto> answerUserQuestion(
-    String requestId,
-    List<UserQuestionAnswerDto> answers,
-  ) async {
-    // Validate before writing: a rejected answer must leave the question
-    // pending, or the blocked turn would never be answerable again.
-    final pending = await _timeline.getUserQuestion(requestId);
-    if (pending == null || pending.status != UserQuestionStatus.pending) {
-      throw StateError('Question is not pending: $requestId');
-    }
-    final missing = pending.questions
-        .map((question) => question.id)
-        .toSet()
-        .difference(answers.map((answer) => answer.questionId).toSet());
-    if (missing.isNotEmpty) {
-      throw StateError('Unanswered questions: ${missing.join(', ')}');
-    }
-    final request = await _timeline.answerUserQuestion(
-      requestId,
-      UserQuestionStatus.answered,
-      answers,
-    );
-    if (request == null) {
-      throw StateError('Question is not pending: $requestId');
-    }
-    _pendingQuestions.remove(requestId)?.complete(<UserAnswer>[
-      for (final answer in answers)
-        UserAnswer(
-          questionId: answer.questionId,
-          answer: answer.answer,
-          isFreeForm: answer.isFreeForm,
-        ),
-    ]);
-    await _appendEvent(
-      sessionId: request.sessionId,
-      turnId: request.turnId,
-      type: 'userQuestion.answered',
-      data: <String, dynamic>{
-        'requestId': request.id,
-        'answers': answers
-            .map((answer) => answer.toJson())
-            .toList(growable: false),
-      },
-    );
-    return request;
+    _interactions.notePendingInput(sessionId);
   }
 
   Future<void> _appendEvent({
@@ -786,172 +593,5 @@ class _DatabaseContextResetCoordinator implements ContextResetCoordinator {
   Future<void> reset(List<ConversationItem> retain) async {
     await timeline.resetContextWindow(sessionId, retain);
     emitSession(await sessions.getById(sessionId));
-  }
-}
-
-class _DatabaseUserQuestionCoordinator implements UserQuestionCoordinator {
-  _DatabaseUserQuestionCoordinator({
-    required this.timeline,
-    required this.events,
-    required this.pending,
-    required this.ids,
-    required this.clock,
-    required this.sessionId,
-    required this.turnId,
-    required this.reportStatus,
-  });
-
-  final TimelineRepository timeline;
-  final DaemonEventSink events;
-  final Map<String, Completer<List<UserAnswer>>> pending;
-  final IdGenerator ids;
-  final Clock clock;
-  final String sessionId;
-  final String turnId;
-  final Future<void> Function(SessionStatus status) reportStatus;
-
-  @override
-  Future<List<UserAnswer>> ask(
-    String callId,
-    List<UserQuestion> questions,
-    CancellationToken cancellation,
-  ) async {
-    final request = UserQuestionRequestDto(
-      id: ids.generate(),
-      sessionId: sessionId,
-      turnId: turnId,
-      toolCallId: callId,
-      questions: <UserQuestionItemDto>[
-        for (final question in questions)
-          UserQuestionItemDto(
-            id: question.id,
-            header: question.header,
-            question: question.question,
-            options: <UserQuestionOptionDto>[
-              for (final option in question.options)
-                UserQuestionOptionDto(
-                  label: option.label,
-                  description: option.description,
-                ),
-            ],
-          ),
-      ],
-      status: UserQuestionStatus.pending,
-      createdAt: clock.nowUtc(),
-    );
-    final completer = Completer<List<UserAnswer>>();
-    pending[request.id] = completer;
-    await timeline.createUserQuestion(request);
-    final timelineEvent = await timeline.append(
-      sessionId: sessionId,
-      turnId: turnId,
-      type: 'userQuestion.requested',
-      data: <String, dynamic>{'request': request.toJson()},
-    );
-    events(
-      WireEnvelope(
-        type: RpcNotification.timelineEvent,
-        payload: timelineEvent.toJson(),
-      ),
-    );
-    events(
-      WireEnvelope(
-        type: RpcNotification.userQuestionRequested,
-        payload: request.toJson(),
-      ),
-    );
-    // The runner does not know a tool is blocking, so the waiting state is set
-    // here and cleared once an answer arrives.
-    await reportStatus(SessionStatus.waitingForInput);
-    cancellation.onCancel(() {
-      final active = pending.remove(request.id);
-      if (active != null && !active.isCompleted) {
-        active.completeError(const AgentCancelledException());
-      }
-      unawaited(
-        timeline.answerUserQuestion(
-          request.id,
-          UserQuestionStatus.cancelled,
-          const <UserQuestionAnswerDto>[],
-        ),
-      );
-    });
-    try {
-      return await completer.future;
-    } finally {
-      if (!cancellation.isCancelled) {
-        await reportStatus(SessionStatus.running);
-      }
-    }
-  }
-}
-
-class _DatabaseApprovalCoordinator implements ApprovalCoordinator {
-  _DatabaseApprovalCoordinator({
-    required this.timeline,
-    required this.events,
-    required this.pending,
-    required this.ids,
-    required this.clock,
-    required this.sessionId,
-    required this.turnId,
-  });
-
-  final TimelineRepository timeline;
-  final DaemonEventSink events;
-  final Map<String, Completer<ApprovalDecision>> pending;
-  final IdGenerator ids;
-  final Clock clock;
-  final String sessionId;
-  final String turnId;
-
-  @override
-  Future<ApprovalDecision> request(
-    ToolInvocation invocation,
-    CancellationToken cancellation,
-  ) async {
-    final approval = ApprovalRequestDto(
-      id: ids.generate(),
-      sessionId: sessionId,
-      turnId: turnId,
-      toolCallId: invocation.callId,
-      toolName: invocation.name,
-      risk: invocation.risk,
-      arguments: invocation.arguments,
-      status: ApprovalStatus.pending,
-      createdAt: clock.nowUtc(),
-      preview: invocation.preview,
-    );
-    final completer = Completer<ApprovalDecision>();
-    pending[approval.id] = completer;
-    await timeline.createApproval(approval);
-    final timelineEvent = await timeline.append(
-      sessionId: sessionId,
-      turnId: turnId,
-      type: 'approval.requested',
-      data: <String, dynamic>{'approval': approval.toJson()},
-    );
-    events(
-      WireEnvelope(
-        type: RpcNotification.timelineEvent,
-        payload: timelineEvent.toJson(),
-      ),
-    );
-    events(
-      WireEnvelope(
-        type: RpcNotification.approvalRequested,
-        payload: approval.toJson(),
-      ),
-    );
-    cancellation.onCancel(() {
-      final active = pending.remove(approval.id);
-      if (active != null && !active.isCompleted) {
-        active.complete(ApprovalDecision.denied);
-      }
-      unawaited(
-        timeline.resolveApproval(approval.id, ApprovalStatus.cancelled),
-      );
-    });
-    return completer.future;
   }
 }

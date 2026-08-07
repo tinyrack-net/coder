@@ -23,12 +23,12 @@ abstract interface class McpResourceHost {
   });
 }
 
-/// A worktree-scoped view of [McpService] for the resource tools.
+/// A worktree-scoped view of [McpRuntime] for the resource tools.
 final class SessionMcpResourceHost implements McpResourceHost {
   /// Creates a [SessionMcpResourceHost].
   const SessionMcpResourceHost(this._service, this._workspaceRoot);
 
-  final McpService _service;
+  final McpRuntime _service;
   final String _workspaceRoot;
 
   @override

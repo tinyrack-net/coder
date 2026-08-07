@@ -98,7 +98,7 @@ typedef AgentModelValidator =
 typedef AgentModelFallback = Future<SessionModelSelectionDto?> Function();
 
 /// Turn control the collaboration layer needs from the session service.
-abstract interface class SessionRuntimePort {
+abstract interface class SessionTurnPort {
   /// Starts one turn; false when the turn ID already exists.
   Future<bool> startTurn({
     required String sessionId,
@@ -122,7 +122,7 @@ abstract interface class SessionRuntimePort {
 /// mailbox, the per-tree execution limiter, wait watches, fork seeding, and
 /// the subagent lifecycle. The session service calls back into this class at
 /// turn boundaries; this class starts and cancels turns only through the
-/// [SessionRuntimePort] bound at composition time.
+/// [SessionTurnPort] bound at composition time.
 class MultiAgentService {
   /// Creates a [MultiAgentService].
   MultiAgentService({
@@ -158,7 +158,7 @@ class MultiAgentService {
       <String, List<Completer<void>>>{};
 
   /// The turn runtime, bound once from the composition root.
-  late SessionRuntimePort runtime;
+  late SessionTurnPort runtime;
 
   /// Tree root session ID of [session].
   String rootIdOf(SessionDto session) => session.rootSessionId ?? session.id;
