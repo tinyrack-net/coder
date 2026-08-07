@@ -216,28 +216,75 @@ void _registerSettingsAppFlows() {
     expect(find.text('원격 daemons'), findsOneWidget);
   });
 
-  testWidgets('mobile settings can switch between every typed category', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final router = await _pumpRoute(
+  testWidgets(
+    'mobile settings drills from home into daemon MCP settings',
+    (
       tester,
-      FakeCoderApi(),
-      const GeneralSettingsRoute().location,
-    );
-    addTearDown(router.dispose);
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pumpRoute(
+        tester,
+        FakeCoderApi(),
+        const SettingsHomeRoute().location,
+      );
+      addTearDown(router.dispose);
 
-    final selector = find.byKey(
-      const ValueKey<String>('settings-category-select'),
-    );
-    expect(selector, findsOneWidget);
-    await tester.tap(selector);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Daemons').last);
-    await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('settings-category-select')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-daemon-select')),
+        findsNothing,
+      );
+      expect(find.text('General'), findsOneWidget);
+      expect(find.text('Test daemon'), findsOneWidget);
 
-    expect(find.text('원격 daemons'), findsOneWidget);
-    expect(router.routeInformationProvider.value.uri.path, '/settings/daemons');
-  });
+      await tester.tap(find.text('Test daemon'));
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/settings/daemons/server/categories',
+      );
+      expect(find.text('MCP'), findsOneWidget);
+
+      await tester.tap(find.text('MCP'));
+      await tester.pumpAndSettle();
+      expect(router.routeInformationProvider.value.uri.path, '/settings/mcp');
+      expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('mcp-server-add')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('mcp-server-editor-new')),
+        findsOne,
+      );
+      expect(find.text('MCP 서버'), findsNothing);
+
+      final back = find.byKey(
+        const ValueKey<String>('settings-back-button'),
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
+      expect(find.byKey(const ValueKey<String>('mcp-field-id')), findsNothing);
+
+      await tester.tap(back);
+      await tester.pumpAndSettle();
+      expect(find.text('MCP'), findsOneWidget);
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/settings/daemons/server/categories',
+      );
+
+      await tester.tap(back);
+      await tester.pumpAndSettle();
+      expect(find.text('General'), findsOneWidget);
+      expect(router.routeInformationProvider.value.uri.path, '/settings');
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
 }

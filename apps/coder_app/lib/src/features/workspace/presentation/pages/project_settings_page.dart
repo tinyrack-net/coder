@@ -37,6 +37,13 @@ class ProjectSettingsPage extends ConsumerStatefulWidget {
 
 class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   String? _selectedId;
+  SettingsPaneNavigationController? _paneNavigation;
+
+  @override
+  void dispose() {
+    _paneNavigation?.clearBackHandler(this);
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(ProjectSettingsPage oldWidget) {
@@ -75,12 +82,18 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
             final selected = projects
                 .where((project) => project.id == _selectedId)
                 .firstOrNull;
+            _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
+            syncSettingsPaneBackHandler(
+              context,
+              owner: this,
+              active: compact && selected != null,
+              onBack: _showProjectList,
+            );
             if (compact && selected != null) {
               return _ProjectEditor(
                 key: ValueKey<String>('${widget.hostId} ${selected.id}'),
                 hostId: widget.hostId,
                 workspace: selected,
-                onBack: () => setState(() => _selectedId = null),
               );
             }
             final list = _ProjectList(
@@ -124,8 +137,13 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   }
 
   List<WorkspaceDto> _projects(UnifiedWorkspaceCatalogState state) =>
-      <WorkspaceDto>[...?state.catalogs[widget.hostId]?.workspaces]
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      <WorkspaceDto>[
+        ...?state.catalogs[widget.hostId]?.workspaces,
+      ]..sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+
+  void _showProjectList() => setState(() => _selectedId = null);
 }
 
 class _ProjectList extends StatelessWidget {
@@ -177,13 +195,11 @@ class _ProjectEditor extends ConsumerStatefulWidget {
   const _ProjectEditor({
     required this.hostId,
     required this.workspace,
-    this.onBack,
     super.key,
   });
 
   final String hostId;
   final WorkspaceDto workspace;
-  final VoidCallback? onBack;
 
   @override
   ConsumerState<_ProjectEditor> createState() => _ProjectEditorState();
@@ -255,14 +271,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
         return Column(
           children: <Widget>[
             SettingsPaneHeader.detail(
-              leading: widget.onBack == null
-                  ? null
-                  : TRIconButton(
-                      appearance: TRAppearance.ghost,
-                      label: l10n.projectSettingsProjectList,
-                      onPressed: widget.onBack,
-                      icon: const Icon(CoderIcons.back),
-                    ),
               title: widget.workspace.name,
               subtitle: value.sourcePath,
               actions: <Widget>[

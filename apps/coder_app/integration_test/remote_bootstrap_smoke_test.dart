@@ -36,11 +36,15 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(
+      expect(
         find.byKey(const ValueKey<String>('settings-category-select')),
+        findsNothing,
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemons').last);
+      expect(
+        find.byKey(const ValueKey<String>('settings-daemon-select')),
+        findsNothing,
+      );
+      await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();
       expect(find.text('내장 daemon'), findsNothing);
       expect(find.text('원격 daemon 추가'), findsOneWidget);

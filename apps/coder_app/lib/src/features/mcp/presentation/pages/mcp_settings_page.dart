@@ -33,6 +33,13 @@ class McpSettingsPage extends ConsumerStatefulWidget {
 class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
   String? _selectedId;
   bool _creating = false;
+  SettingsPaneNavigationController? _paneNavigation;
+
+  @override
+  void dispose() {
+    _paneNavigation?.clearBackHandler(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,32 +115,21 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       key: const ValueKey<String>('mcp-settings-page'),
       builder: (context, constraints) {
         if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
-          return selected == null && !_creating
-              ? list
-              : Column(
-                  children: <Widget>[
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TRButton(
-                        appearance: TRAppearance.ghost,
-                        onPressed: () => setState(() {
-                          _creating = false;
-                          _selectedId = null;
-                        }),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            const Icon(CoderIcons.back),
-                            const SizedBox(width: TRSpacing.extraSmall),
-                            TRText(l10n.mcpSettingsHeading),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(child: detail),
-                  ],
-                );
+          _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
+          syncSettingsPaneBackHandler(
+            context,
+            owner: this,
+            active: selected != null || _creating,
+            onBack: _showServerList,
+          );
+          return selected == null && !_creating ? list : detail;
         }
+        syncSettingsPaneBackHandler(
+          context,
+          owner: this,
+          active: false,
+          onBack: _showServerList,
+        );
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -151,6 +147,11 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       },
     );
   }
+
+  void _showServerList() => setState(() {
+    _creating = false;
+    _selectedId = null;
+  });
 }
 
 class _ServerList extends StatelessWidget {

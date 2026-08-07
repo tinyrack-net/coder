@@ -87,6 +87,28 @@ void main() {
   );
 
   testWidgets(
+    'SettingsHomeRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const SettingsHomeRoute().location,
+      find.text('설정'),
+    ),
+    tags: const <String>['route_test__settings_home_route__widget'],
+  );
+
+  testWidgets(
+    'DaemonCategoriesRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const DaemonCategoriesRoute(hostId: 'server').location,
+      find.text('Provider'),
+    ),
+    tags: const <String>['route_test__daemon_categories_route__widget'],
+  );
+
+  testWidgets(
     'GeneralSettingsRoute renders at desktop and mobile sizes',
     (tester) => _verifyRoute(
       tester,

@@ -156,6 +156,8 @@ void main() {
         modeReady.existsSync,
         'the PTY mode probe to enter raw mode',
       );
+      // Route replacement briefly leaves both pane surfaces mounted, so scope
+      // the finder to the terminal created for this test.
       final terminalSurface = find.descendant(
         of: find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
         matching: find.byKey(

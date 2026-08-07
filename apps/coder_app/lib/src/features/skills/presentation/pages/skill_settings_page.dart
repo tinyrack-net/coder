@@ -36,6 +36,13 @@ class SkillSettingsPage extends ConsumerStatefulWidget {
 
 class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
   String? _selectedId;
+  SettingsPaneNavigationController? _paneNavigation;
+
+  @override
+  void dispose() {
+    _paneNavigation?.clearBackHandler(this);
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(SkillSettingsPage oldWidget) {
@@ -110,13 +117,19 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     final selected = skills
         .where((skill) => skill.id == _selectedId)
         .firstOrNull;
+    _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
+    syncSettingsPaneBackHandler(
+      context,
+      owner: this,
+      active: compact && selected != null,
+      onBack: _showSkillList,
+    );
     if (compact && selected != null) {
       return _SkillEditor(
         key: ValueKey<String>('${selected.id}:${selected.contentHash}'),
         hostId: widget.hostId,
         workspaceId: widget.workspaceId,
         skill: selected,
-        onBack: () => setState(() => _selectedId = null),
         onDeleted: () => setState(() => _selectedId = null),
       );
     }
@@ -202,6 +215,8 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     );
     if (created != null && mounted) setState(() => _selectedId = created.id);
   }
+
+  void _showSkillList() => setState(() => _selectedId = null);
 }
 
 /// Chooses which project's skills layer on top of the global sources.
@@ -342,7 +357,6 @@ class _SkillEditor extends ConsumerStatefulWidget {
     required this.workspaceId,
     required this.skill,
     required this.onDeleted,
-    this.onBack,
     super.key,
   });
 
@@ -350,7 +364,6 @@ class _SkillEditor extends ConsumerStatefulWidget {
   final String? workspaceId;
   final SkillDto skill;
   final VoidCallback onDeleted;
-  final VoidCallback? onBack;
 
   @override
   ConsumerState<_SkillEditor> createState() => _SkillEditorState();
@@ -386,14 +399,6 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
     return Column(
       children: <Widget>[
         SettingsPaneHeader.detail(
-          leading: widget.onBack == null
-              ? null
-              : TRIconButton(
-                  appearance: TRAppearance.ghost,
-                  label: l10n.skillSettingsList,
-                  onPressed: widget.onBack,
-                  icon: const Icon(CoderIcons.back),
-                ),
           title: skill.name,
           subtitle: skill.sourcePath.isEmpty
               ? skillSourceLabel(l10n, skill.source)

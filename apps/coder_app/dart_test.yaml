@@ -163,6 +163,8 @@ tags:
   route_test__worktree_route__widget:
   route_test__session_route__widget:
   route_test__terminal_route__widget:
+  route_test__settings_home_route__widget:
+  route_test__daemon_categories_route__widget:
   route_test__general_settings_route__widget:
   route_test__provider_settings_route__widget:
   route_test__permission_settings_route__widget:
