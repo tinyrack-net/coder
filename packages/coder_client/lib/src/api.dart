@@ -306,6 +306,9 @@ abstract interface class ProvidersApi {
   /// Lists configured provider connections.
   Future<List<ProviderConnectionDto>> listProviderConnections();
 
+  /// Lazily reads quota usage for configured provider connections.
+  Future<List<ProviderUsageDto>> listProviderUsage();
+
   /// Connects a provider with an API key.
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,

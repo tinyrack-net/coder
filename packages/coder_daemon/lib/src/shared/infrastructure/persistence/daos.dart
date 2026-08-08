@@ -340,11 +340,26 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
   }
 
   @override
-  Future<SessionDto> recordContextTokens(String id, int tokens) async {
+  Future<SessionDto> recordContextTokens(
+    String id,
+    int tokens, {
+    required double? usageCostUsd,
+  }) async {
     // Usage is not a user edit, so `updatedAt` deliberately stays put: a token
     // counter must not reorder a list sorted by recency.
+    final current = await (select(
+      sessions,
+    )..where((row) => row.id.equals(id))).getSingle();
     await (update(sessions)..where((row) => row.id.equals(id))).write(
-      SessionsCompanion(contextTokensUsed: Value<int>(tokens)),
+      SessionsCompanion(
+        contextTokensUsed: Value<int>(tokens),
+        totalCostUsd: Value<double>(
+          current.totalCostUsd + (usageCostUsd ?? 0),
+        ),
+        hasCompleteCost: Value<bool>(
+          current.hasCompleteCost && usageCostUsd != null,
+        ),
+      ),
     );
     return (await getById(id))!;
   }
@@ -520,6 +535,7 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
       },
       contextTokens: row.contextTokensUsed,
       contextWindow: row.contextWindowTokens,
+      totalCostUsd: row.hasCompleteCost ? row.totalCostUsd : null,
       // A row written by a newer build must still render as a session.
       permissionMode: PermissionMode.values
           .where((value) => value.name == row.permissionMode)

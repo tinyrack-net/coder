@@ -992,6 +992,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  qr:
+    dependency: transitive
+    description:
+      name: qr
+      sha256: "5a1d2586170e172b8a8c8470bbbffd5eb0cd38a66c0d77155ea138d3af3a4445"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
   quiver:
     dependency: transitive
     description:
@@ -1354,11 +1362,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/ui_flutter"
-      ref: f2fd438cdbbce6aa7ba1c4035dee3dca5fdee2b4
-      resolved-ref: f2fd438cdbbce6aa7ba1c4035dee3dca5fdee2b4
+      ref: "2ef116ae1b3577805a9c72583d188803ea51d176"
+      resolved-ref: "2ef116ae1b3577805a9c72583d188803ea51d176"
       url: "https://github.com/tinyrack-net/design.git"
     source: git
-    version: "0.39.0"
+    version: "0.40.0"
   tray_manager:
     dependency: transitive
     description:

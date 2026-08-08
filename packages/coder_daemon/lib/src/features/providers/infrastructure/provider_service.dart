@@ -18,6 +18,7 @@ final class ResolvedAgentModel {
     required this.modelId,
     required this.provider,
     this.limits,
+    this.pricing,
   });
 
   /// Selected provider connection.
@@ -31,6 +32,9 @@ final class ResolvedAgentModel {
 
   /// Advertised limits of the model, when the catalog knows them.
   final ModelLimitsDto? limits;
+
+  /// Advertised USD-per-million pricing used for session accounting.
+  final ModelPricingDto? pricing;
 }
 
 /// Stable provider connection failure translated to a protocol error code.
@@ -474,6 +478,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       modelId: model.providerModelId,
       provider: await resolve(connectionId, modelId: modelId),
       limits: model.limits,
+      pricing: model.pricing,
     );
   }
 

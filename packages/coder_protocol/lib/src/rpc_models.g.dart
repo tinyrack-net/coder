@@ -1167,6 +1167,18 @@ Map<String, dynamic> _$ProviderConnectionsResultDtoToJson(
   _ProviderConnectionsResultDto instance,
 ) => <String, dynamic>{'connections': instance.connections};
 
+_ProviderUsageResultDto _$ProviderUsageResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderUsageResultDto(
+  usage: (json['usage'] as List<dynamic>)
+      .map((e) => ProviderUsageDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$ProviderUsageResultDtoToJson(
+  _ProviderUsageResultDto instance,
+) => <String, dynamic>{'usage': instance.usage};
+
 _ProviderConnectionResultDto _$ProviderConnectionResultDtoFromJson(
   Map<String, dynamic> json,
 ) => _ProviderConnectionResultDto(

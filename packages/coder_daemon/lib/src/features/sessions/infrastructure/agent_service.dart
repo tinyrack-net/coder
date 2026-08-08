@@ -7,6 +7,7 @@ import 'package:coder_daemon/src/features/prompts/infrastructure/skills.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/agent_clock.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/goal_service.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/model_usage_cost.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
@@ -290,6 +291,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
             await _sessions.recordContextTokens(
               sessionId,
               usage.contextTokens,
+              usageCostUsd: modelUsageCostUsd(usage, resolvedModel.pricing),
             ),
           );
           await goals?.accountUsage(sessionId, usage);

@@ -1259,6 +1259,25 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                         busy: busy,
                         contextTokens: current.contextTokens,
                         contextWindow: current.contextWindow,
+                        totalCostUsd: current.totalCostUsd,
+                        providerConnectionId: effective == null
+                            ? null
+                            : connections
+                                  .where(
+                                    (connection) =>
+                                        effective.qualifiedModelId.startsWith(
+                                          '${connection.modelPrefix}/',
+                                        ),
+                                  )
+                                  .firstOrNull
+                                  ?.id,
+                        onLoadProviderUsage: () => ref
+                            .read(
+                              providerSettingsControllerProvider(
+                                widget.selection.hostId,
+                              ).notifier,
+                            )
+                            .loadUsage(),
                         queued: value?.queued ?? const <QueuedTurn>[],
                         onQueue: (submission) =>
                             _conversation(ref, current.id).enqueueTurn(

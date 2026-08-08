@@ -2194,6 +2194,46 @@
       }
     }
   },
+  "sessionContextDetailsTitle": "Context usage",
+  "sessionContextPercent": "{percent}% used",
+  "@sessionContextPercent": {
+    "placeholders": {"percent": {"type": "int"}}
+  },
+  "sessionContextTokens": "{used} / {max} tokens",
+  "@sessionContextTokens": {
+    "placeholders": {
+      "used": {"type": "String"},
+      "max": {"type": "String"}
+    }
+  },
+  "sessionContextCost": "Session cost {cost}",
+  "@sessionContextCost": {
+    "placeholders": {"cost": {"type": "String"}}
+  },
+  "sessionQuotaLoading": "Loading provider usage",
+  "sessionQuotaError": "Provider usage is temporarily unavailable.",
+  "sessionQuotaProviderPlan": "{provider} · {plan}",
+  "@sessionQuotaProviderPlan": {
+    "placeholders": {
+      "provider": {"type": "String"},
+      "plan": {"type": "String"}
+    }
+  },
+  "sessionQuotaPercent": "{percent}% used",
+  "@sessionQuotaPercent": {
+    "placeholders": {"percent": {"type": "int"}}
+  },
+  "sessionQuotaResets": "Resets {time}",
+  "@sessionQuotaResets": {
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "sessionQuotaCredits": "Credits {amount}",
+  "@sessionQuotaCredits": {
+    "placeholders": {"amount": {"type": "String"}}
+  },
+  "sessionQuotaWindowSession": "Session limit",
+  "sessionQuotaWindowWeekly": "Weekly limit",
+  "sessionQuotaWindowCodeReview": "Code review limit",
   "composerCommandNoAttachments": "Remove attachments to run a command.",
   "@composerCommandNoAttachments": {
     "description": "Error shown when a slash command is submitted with attachments."

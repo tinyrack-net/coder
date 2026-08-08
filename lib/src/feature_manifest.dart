@@ -1051,6 +1051,27 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'provider.usage',
+    description:
+        'Lazily reads safe subscription quota for Coder-managed provider '
+        'connections and presents it with context and session cost.',
+    apiMethods: <String>['providers.listProviderUsage'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'context_usage_hover',
+        description: 'Opens the compact context ring and shows provider quota.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
     id: 'provider.default.model',
     description:
         'Resolves the chat model from the session override, the agent '

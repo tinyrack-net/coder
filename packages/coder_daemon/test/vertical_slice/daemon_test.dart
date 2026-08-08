@@ -169,6 +169,12 @@ void main() {
         custom.id,
       );
       expect(
+        (await client.listProviderUsage())
+            .singleWhere((usage) => usage.connectionId == custom.id)
+            .status,
+        ProviderUsageStatus.unsupported,
+      );
+      expect(
         (await client.listProviderModels(custom.id)).map((item) => item.id),
         containsAll(<String>[
           'local-test/test-model',
@@ -503,6 +509,7 @@ void main() {
       'feature_test__terminal_settings__verticalSlice',
       'feature_test__turn_execution__verticalSlice',
       'feature_test__provider_catalog__verticalSlice',
+      'feature_test__provider_usage__verticalSlice',
       'feature_test__provider_connection_management__verticalSlice',
       'feature_test__provider_custom__verticalSlice',
       'feature_test__provider_default_model__verticalSlice',
@@ -1291,7 +1298,7 @@ void main() {
         title: 'Reset',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1348,9 +1355,14 @@ void main() {
       final refreshed = await client.sessions.listSessions(
         worktreeId: worktreeId,
       );
+      final refreshedSession = refreshed.firstWhere(
+        (item) => item.id == session.id,
+      );
+      expect(refreshedSession.contextTokens, 0);
       expect(
-        refreshed.firstWhere((item) => item.id == session.id).contextTokens,
-        0,
+        refreshedSession.totalCostUsd,
+        greaterThan(0),
+        reason: 'resetting context does not erase priced session usage',
       );
     },
     tags: const <String>['feature_test__tool_context_budget__verticalSlice'],

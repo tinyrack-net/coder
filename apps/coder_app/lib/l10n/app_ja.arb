@@ -65,5 +65,18 @@
   "workspaceResizePanes": "ペインのサイズを変更",
   "workspaceSwitchTab": "タブを切り替え",
   "workspaceMoveTabToPane": "アクティブなタブを別のペインに移動",
-  "composerDropFilesHere": "ここにファイルをドロップ"
+  "composerDropFilesHere": "ここにファイルをドロップ",
+  "sessionContextDetailsTitle": "コンテキスト使用量",
+  "sessionContextPercent": "{percent}% 使用",
+  "sessionContextTokens": "{used} / {max} トークン",
+  "sessionContextCost": "セッション料金 {cost}",
+  "sessionQuotaLoading": "プロバイダー使用量を読み込み中",
+  "sessionQuotaError": "プロバイダー使用量を一時的に取得できません。",
+  "sessionQuotaProviderPlan": "{provider} · {plan}",
+  "sessionQuotaPercent": "{percent}% 使用",
+  "sessionQuotaResets": "{time} にリセット",
+  "sessionQuotaCredits": "クレジット {amount}",
+  "sessionQuotaWindowSession": "セッション上限",
+  "sessionQuotaWindowWeekly": "週間上限",
+  "sessionQuotaWindowCodeReview": "コードレビュー上限"
 }

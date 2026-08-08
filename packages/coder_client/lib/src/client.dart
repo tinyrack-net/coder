@@ -1040,6 +1040,15 @@ class CoderClient
   }
 
   @override
+  Future<List<ProviderUsageDto>> listProviderUsage() async {
+    final response = await _call(
+      providersListUsageProcedure,
+      const EmptyParamsDto(),
+    );
+    return response.usage;
+  }
+
+  @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey, {
