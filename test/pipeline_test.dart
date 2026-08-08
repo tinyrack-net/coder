@@ -10,6 +10,7 @@ void main() {
   final androidBuild = File(
     'apps/coder_app/android/build.gradle.kts',
   ).readAsStringSync();
+  final appPubspec = File('apps/coder_app/pubspec.yaml').readAsStringSync();
   final cargoKitCompat = File(
     'apps/coder_app/android/cargokit-gradle9-compat.gradle',
   );
@@ -190,6 +191,14 @@ void main() {
     expect(mobileBuild, contains('if: matrix.gradle_cache'));
     expect(mobileBuild, contains('uses: gradle/actions/setup-gradle@v6'));
     expect(mobileBuild, contains('cache-provider: enhanced'));
+  });
+
+  test('iOS uses CocoaPods while the pinned scanner lacks SwiftPM support', () {
+    expect(appPubspec, contains('mobile_scanner: 5.2.3'));
+    expect(
+      appPubspec,
+      contains('config:\n    enable-swift-package-manager: false'),
+    );
   });
 
   test('native attachment plugins receive macOS and Windows debug builds', () {

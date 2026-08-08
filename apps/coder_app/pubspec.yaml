@@ -64,6 +64,10 @@ dev_dependencies:
   riverpod_generator: 4.0.4
 
 flutter:
+  # mobile_scanner 5.2.3 preserves iOS 13 support but has no iOS SwiftPM
+  # package, so Darwin plugin integration must consistently use CocoaPods.
+  config:
+    enable-swift-package-manager: false
   generate: true
   uses-material-design: true
   assets:
