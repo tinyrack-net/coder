@@ -3525,6 +3525,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop files here'**
   String get composerDropFilesHere;
+
+  /// No description provided for @chatToolActionRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read file'**
+  String get chatToolActionRead;
+
+  /// No description provided for @chatToolActionList.
+  ///
+  /// In en, this message translates to:
+  /// **'List files'**
+  String get chatToolActionList;
+
+  /// No description provided for @chatToolActionSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get chatToolActionSearch;
+
+  /// No description provided for @chatToolActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit files'**
+  String get chatToolActionEdit;
+
+  /// No description provided for @chatToolActionRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run command'**
+  String get chatToolActionRun;
+
+  /// No description provided for @chatToolActionDelegate.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinate agents'**
+  String get chatToolActionDelegate;
+
+  /// No description provided for @chatToolActionPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Update plan'**
+  String get chatToolActionPlan;
+
+  /// No description provided for @chatToolActionAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a question'**
+  String get chatToolActionAsk;
+
+  /// No description provided for @chatToolActionResource.
+  ///
+  /// In en, this message translates to:
+  /// **'Use resource'**
+  String get chatToolActionResource;
+
+  /// No description provided for @chatToolActionTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Find tools'**
+  String get chatToolActionTools;
+
+  /// No description provided for @chatToolActionClock.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait'**
+  String get chatToolActionClock;
+
+  /// No description provided for @chatToolActionContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage context'**
+  String get chatToolActionContext;
+
+  /// No description provided for @chatToolActionImage.
+  ///
+  /// In en, this message translates to:
+  /// **'View image'**
+  String get chatToolActionImage;
+
+  /// No description provided for @chatToolActionGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Use tool'**
+  String get chatToolActionGeneric;
+
+  /// No description provided for @chatToolStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get chatToolStatusFailed;
+
+  /// No description provided for @chatToolStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get chatToolStatusDenied;
+
+  /// No description provided for @chatToolDetailsTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool'**
+  String get chatToolDetailsTool;
+
+  /// No description provided for @chatToolDetailsRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get chatToolDetailsRequest;
+
+  /// No description provided for @chatToolDetailsResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get chatToolDetailsResult;
 }
 
 class _AppLocalizationsDelegate

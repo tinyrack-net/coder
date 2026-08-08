@@ -2382,5 +2382,24 @@
   "composerDropFilesHere": "Drop files here",
   "@composerDropFilesHere": {
     "description": "Instruction shown over a composer pane while files are dragged over it."
-  }
+  },
+  "chatToolActionRead": "Read file",
+  "chatToolActionList": "List files",
+  "chatToolActionSearch": "Search",
+  "chatToolActionEdit": "Edit files",
+  "chatToolActionRun": "Run command",
+  "chatToolActionDelegate": "Coordinate agents",
+  "chatToolActionPlan": "Update plan",
+  "chatToolActionAsk": "Ask a question",
+  "chatToolActionResource": "Use resource",
+  "chatToolActionTools": "Find tools",
+  "chatToolActionClock": "Wait",
+  "chatToolActionContext": "Manage context",
+  "chatToolActionImage": "View image",
+  "chatToolActionGeneric": "Use tool",
+  "chatToolStatusFailed": "Failed",
+  "chatToolStatusDenied": "Denied",
+  "chatToolDetailsTool": "Tool",
+  "chatToolDetailsRequest": "Request",
+  "chatToolDetailsResult": "Result"
 }

@@ -1108,11 +1108,25 @@ void main() {
       await tester.pump();
       await _pumpUntilWithSessionDiagnostics(
         tester,
+        find.text(
+          '실패',
+          findRichText: true,
+        ),
+        setupClient,
+      );
+      final failedToolDisclosure = find.ancestor(
+        of: find.text('실패', findRichText: true).last,
+        matching: find.byType(TRChatToolDisclosure),
+      );
+      expect(failedToolDisclosure, findsOneWidget);
+      await tester.tap(failedToolDisclosure);
+      await tester.pumpAndSettle();
+      expect(
         find.textContaining(
           'Agent type is not allowed: not-allowed',
           findRichText: true,
         ),
-        setupClient,
+        findsWidgets,
       );
       await pumpUntilCondition(
         tester,
@@ -1148,8 +1162,10 @@ void main() {
         await File('${workspace.path}/result.txt').readAsString(),
         'done\n',
       );
-      // Tool activity renders as a CLI summary; no raw payload reaches the UI.
-      expect(find.textContaining('Edit('), findsWidgets);
+      // Collapsed tool activity renders only its localized action and status;
+      // no request or result payload reaches the UI until it is expanded.
+      expect(find.text('파일 편집', findRichText: true), findsWidgets);
+      expect(find.textContaining('Edit('), findsNothing);
       expect(find.textContaining('changedFiles'), findsNothing);
       expect(find.textContaining('"isError"'), findsNothing);
       expect(tester.takeException(), isNull);

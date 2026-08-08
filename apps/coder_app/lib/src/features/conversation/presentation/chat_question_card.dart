@@ -150,11 +150,8 @@ class _ChatQuestionCardState extends ConsumerState<ChatQuestionCard> {
     final lastQuestion = _activeQuestionIndex == questions.length - 1;
     final answers = _answers;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        TRSpacing.large,
-        TRSpacing.small,
-        TRSpacing.large,
-        0,
+      padding: const EdgeInsets.symmetric(
+        vertical: TRSpacing.extraSmall,
       ),
       child: TRCard(
         key: ValueKey<String>('chat-question-${widget.request.id}'),
