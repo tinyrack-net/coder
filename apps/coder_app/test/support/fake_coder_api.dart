@@ -519,6 +519,12 @@ final class FakeCoderApi
   /// Thrown instead of starting a turn, so a caller's rollback can be checked.
   Exception? startTurnError;
 
+  /// Awaited before a session is created, so pending catalog state is visible.
+  Completer<void>? sessionCreateGate;
+
+  /// Thrown instead of creating a session.
+  Exception? sessionCreateError;
+
   /// Prompts [startTurn] was called with, recorded before it can throw.
   ///
   /// [startedPrompts] only records what succeeded, so a retry bound has to be
@@ -533,6 +539,9 @@ final class FakeCoderApi
 
   /// Awaited before a turn starts, to hold one send in flight.
   Completer<void>? startTurnGate;
+
+  /// Emits the daemon notifications that make a newly-started turn visible.
+  bool emitTurnStartEvents = false;
 
   /// Thrown instead of noting pending input.
   Exception? notePendingInputError;
@@ -931,6 +940,10 @@ final class FakeCoderApi
         const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
   }) async {
+    final gate = sessionCreateGate;
+    if (gate != null) await gate.future;
+    final error = sessionCreateError;
+    if (error != null) throw error;
     final agent = SessionDto(
       id: id,
       worktreeId: worktreeId,
@@ -1740,6 +1753,20 @@ final class FakeCoderApi
     startedPrompts.add(prompt);
     startedTurnIds.add(turnId);
     startedAttachmentIds.add(List<String>.of(attachmentIds));
+    if (emitTurnStartEvents) {
+      final index = _agents.indexWhere((agent) => agent.id == sessionId);
+      if (index >= 0) {
+        emit(
+          SessionUpdatedClientEvent(
+            _agents[index].copyWith(status: SessionStatus.running),
+          ),
+        );
+      }
+      emitTimeline(sessionId, 'user.message', <String, dynamic>{
+        'text': prompt,
+        'attachments': const <Map<String, dynamic>>[],
+      });
+    }
   }
 
   @override

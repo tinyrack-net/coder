@@ -26,6 +26,7 @@ final class SessionStarter {
     required String agentDefinitionId,
     required String title,
     required String prompt,
+    String? draftTabId,
     List<PendingAttachment> attachments = const <PendingAttachment>[],
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
@@ -55,7 +56,6 @@ final class SessionStarter {
             modelControls: modelControls,
             permissionMode: permissionMode,
           );
-      await _ref.read(tabs.notifier).add(session);
       final conversation = conversationControllerProvider(
         selection.hostId,
         session.id,
@@ -65,9 +65,14 @@ final class SessionStarter {
         (previous, next) {},
       );
       try {
+        // Install the timeline subscription before starting the turn. The
+        // draft remains on screen until the first turn is accepted, and the
+        // exact draft is then promoted in one tab-state update.
+        await _ref.read(conversation.future);
         await _ref
             .read(conversation.notifier)
             .startTurn(prompt, attachments: attachments);
+        await _ref.read(tabs.notifier).add(session, draftTabId: draftTabId);
       } finally {
         conversationHandle.close();
       }

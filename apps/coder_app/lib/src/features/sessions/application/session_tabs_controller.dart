@@ -180,23 +180,27 @@ class SessionTabsController extends _$SessionTabsController {
   @override
   Future<SessionTabsState> build(WorkspaceSelection selection) async {
     _selection = selection;
+    final sessionsProvider = sessionsControllerProvider(
+      selection.hostId,
+      selection.worktreeId,
+    );
+    final terminalsProvider = terminalsControllerProvider(
+      selection.hostId,
+      selection.worktreeId,
+    );
+    // The pane tree is restored once. Live daemon catalogs are folded into
+    // that ready tree below instead of invalidating this async build and
+    // replacing the whole workspace with a transient loading frame.
+    ref
+      ..listen(sessionsProvider, (_, next) => _syncSessions(next))
+      ..listen(terminalsProvider, (_, next) => _syncTerminals(next));
     final values = await Future.wait<Object>(<Future<Object>>[
-      ref.watch(
-        sessionsControllerProvider(
-          selection.hostId,
-          selection.worktreeId,
-        ).future,
-      ),
-      ref.watch(
-        terminalsControllerProvider(
-          selection.hostId,
-          selection.worktreeId,
-        ).future,
-      ),
+      ref.read(sessionsProvider.future),
+      ref.read(terminalsProvider.future),
     ]);
     final sessions = values[0] as List<SessionDto>;
     final terminals = values[1] as List<TerminalDto>;
-    final settings = (await ref.watch(
+    final settings = (await ref.read(
       hostRegistryControllerProvider.future,
     )).settings;
     final saved = settings.sessionTabs[selection.storageKey];
@@ -242,13 +246,17 @@ class SessionTabsController extends _$SessionTabsController {
   /// Retargets the focused draft after the daemon creates its session.
   Future<void> add(SessionDto agent, {String? draftTabId}) async {
     final current = state.requireValue;
+    final sessions = <SessionDto>[
+      agent,
+      ...current.sessions.where((item) => item.id != agent.id),
+    ];
     final active = draftTabId == null
         ? current.focusedTab
         : current.tabs[draftTabId];
     if (active?.target is DraftTabTarget) {
       await _apply(
         current.copyWith(
-          sessions: <SessionDto>[agent, ...current.sessions],
+          sessions: sessions,
           tabs: <String, WorkspaceTabEntry>{
             ...current.tabs,
             active!.id: WorkspaceTabEntry(
@@ -263,8 +271,22 @@ class SessionTabsController extends _$SessionTabsController {
     await _openTarget(
       SessionTabTarget(agent.id),
       preferredId: 'session:${agent.id}',
-      sessions: <SessionDto>[agent, ...current.sessions],
+      sessions: sessions,
     );
+  }
+
+  void _syncSessions(AsyncValue<List<SessionDto>> next) {
+    final current = state.asData?.value;
+    final sessions = next.asData?.value;
+    if (current == null || sessions == null) return;
+    state = AsyncData<SessionTabsState>(current.copyWith(sessions: sessions));
+  }
+
+  void _syncTerminals(AsyncValue<List<TerminalDto>> next) {
+    final current = state.asData?.value;
+    final terminals = next.asData?.value;
+    if (current == null || terminals == null) return;
+    state = AsyncData<SessionTabsState>(current.copyWith(terminals: terminals));
   }
 
   /// Adds and selects a newly-created terminal tab.
