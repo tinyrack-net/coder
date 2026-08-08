@@ -165,7 +165,7 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
-    'session tab strip is a TRTabs bar whose commands stay square',
+    'session tab strip uses the unified full-bleed TRTabs contract',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -187,13 +187,20 @@ void _registerSessionsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      // The strip is the design system's tab bar, so its inset, its height,
-      // and the tone of the rule below it are upstream contracts covered by
-      // upstream tests. What Coder owns is that the open session reaches it as
-      // a closable tab.
+      // The design system owns the full-bleed strip geometry and selection
+      // indicator. Coder only supplies the selected, closable session tab.
       final strip = find.byKey(const ValueKey('session-tab-strip'));
       expect(strip, findsOneWidget);
       expect(tester.widget<TRTabs>(strip).value, first.id);
+      expect(
+        find.descendant(
+          of: strip,
+          matching: find.byKey(
+            const ValueKey<String>('tr-tabs-indicator-one'),
+          ),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: strip,
