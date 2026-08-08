@@ -719,6 +719,10 @@ void main() {
       await client.cancelProviderAuth(attempt.id);
       await client.disconnectProvider(connection.id);
       expect(
+        await client.updateProviderModelPrefix(connection.id, 'work'),
+        connection,
+      );
+      expect(
         (await client.refreshProviderCatalog()).definitions,
         <ProviderDefinitionDto>[definition],
       );
@@ -1436,6 +1440,9 @@ void _registerFixtureMethods(
     ).toJson(),
     providersCancelAuthProcedure.name: const <String, dynamic>{},
     providersDisconnectProcedure.name: const <String, dynamic>{},
+    providersUpdateModelPrefixProcedure.name: ProviderConnectionResultDto(
+      connection: connection,
+    ).toJson(),
     providersRefreshCatalogProcedure.name: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
         definitions: <ProviderDefinitionDto>[definition],
