@@ -109,6 +109,60 @@ void main() {
   );
 
   test(
+    'reconnecting replaces credentials without duplicating the connection',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>['deepseek-v4-pro'];
+      final original = await fixture.service.connectApiKey(
+        'deepseek',
+        'old-secret',
+        modelPrefix: 'primary',
+      );
+      await fixture.service.disconnect(original.id);
+
+      final reconnected = await fixture.service.connectApiKey(
+        'deepseek',
+        'new-secret',
+        connectionId: original.id,
+        modelPrefix: 'primary',
+      );
+
+      expect(reconnected.id, original.id);
+      expect(reconnected.createdAt, original.createdAt);
+      expect(reconnected.modelPrefix, 'primary');
+      expect(await fixture.service.connections(), hasLength(1));
+      expect(
+        (fixture.credentials.values[original.id]! as ApiKeyCredential).key,
+        'new-secret',
+      );
+      await expectLater(
+        fixture.service.connectNone(
+          'ollama',
+          connectionId: original.id,
+        ),
+        throwsA(isA<ProviderConnectionFailure>()),
+      );
+      await expectLater(
+        fixture.service.connectApiKey(
+          'deepseek',
+          'secret',
+          connectionId: 'missing-connection',
+        ),
+        throwsA(
+          isA<ProviderConnectionFailure>().having(
+            (error) => error.code,
+            'code',
+            'provider_not_connected',
+          ),
+        ),
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_connection_management__unit',
+    ],
+  );
+
+  test(
     'an explicitly requested prefix conflicts instead of being renamed',
     () async {
       final fixture = _ServiceFixture(now);

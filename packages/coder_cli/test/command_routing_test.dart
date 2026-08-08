@@ -494,6 +494,7 @@ final class _FakeClient implements CoderClient, ProvidersApi, AgentsApi {
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     apiKeys[definitionId] = apiKey;
@@ -503,6 +504,7 @@ final class _FakeClient implements CoderClient, ProvidersApi, AgentsApi {
   @override
   Future<ProviderConnectionDto> connectProviderNone(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     noneConnections.add(definitionId);

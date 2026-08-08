@@ -54,6 +54,7 @@ void _registerAgentsAppFlows() {
 
       await tester.tap(find.byKey(const ValueKey('agent-add-button')));
       await tester.pumpAndSettle();
+      expect(find.byType(TRAlertDialog), findsNothing);
       await tester.enterText(
         _textInput('ID (파일명)'),
         'reviewer',
@@ -85,7 +86,7 @@ void _registerAgentsAppFlows() {
   );
 
   testWidgets(
-    'agent create validates input and keeps daemon failures in the dialog',
+    'agent create validates input and keeps daemon failures in the pane',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -134,7 +135,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '생성'));
       await tester.pumpAndSettle();
       expect(find.textContaining('agent_create_failed'), findsOneWidget);
-      expect(find.text('Agent 추가'), findsOneWidget);
+      expect(find.text('Agent 추가'), findsWidgets);
 
       await tester.tap(find.widgetWithText(TRButton, '생성'));
       await tester.pumpAndSettle();

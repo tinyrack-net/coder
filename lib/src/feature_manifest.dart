@@ -1072,8 +1072,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'provider.connection.management',
     description:
-        'Connects and disconnects OpenAI, Anthropic, Gemini, and compatible '
-        'provider presets through their public API contracts.',
+        'Connects, reconnects in place, and disconnects OpenAI, Anthropic, '
+        'Gemini, and compatible provider presets through their public API '
+        'contracts.',
     apiMethods: <String>[
       'providers.connectProviderApiKey',
       'providers.connectProviderNone',
@@ -1103,8 +1104,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'provider.oauth',
     description:
-        'Starts, observes, cancels, and refreshes supported public provider '
-        'OAuth flows without subscription-only private endpoints.',
+        'Starts, observes, cancels, retries, and uses supported public '
+        'provider OAuth flows to create or reauthenticate a connection '
+        'without subscription-only private endpoints.',
     apiMethods: <String>[
       'providers.startProviderAuth',
       'providers.providerAuthStatus',
