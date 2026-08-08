@@ -152,14 +152,14 @@ class _ServerList extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: ListView(
+          child: SettingsCollectionList(
             children: <Widget>[
               _SectionHeader(
                 key: const ValueKey<String>('mcp-scope-section-user'),
                 label: l10n.mcpSettingsScopeUser,
               ),
               if (state.userServers.isEmpty)
-                SettingsRow(
+                SettingsRow.collection(
                   key: const ValueKey<String>('mcp-server-list-empty'),
                   title: TRText.inherit(l10n.mcpSettingsEmpty),
                 ),
@@ -196,11 +196,9 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(
-      TRSpacing.large,
-      TRSpacing.medium,
-      TRSpacing.large,
-      TRSpacing.extraSmall,
+    padding: const EdgeInsets.symmetric(
+      horizontal: TRSpacing.extraSmall,
+      vertical: TRSpacing.small,
     ),
     child: TRText(
       label,
@@ -224,7 +222,7 @@ class _ServerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return SettingsRow(
+    return SettingsRow.collection(
       key: ValueKey<String>('mcp-server-tile-${server.config.id}'),
       selected: selected,
       onTap: onTap,

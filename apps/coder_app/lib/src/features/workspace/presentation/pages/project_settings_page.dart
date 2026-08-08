@@ -137,10 +137,10 @@ class _ProjectList extends StatelessWidget {
           subtitle: l10n.projectSettingsCount(projects.length),
         ),
         Expanded(
-          child: ListView(
+          child: SettingsCollectionList(
             children: <Widget>[
               for (final project in projects)
-                SettingsRow(
+                SettingsRow.collection(
                   selected: project.id == selectedId,
                   leading: Icon(
                     project.kind == WorkspaceKind.git
