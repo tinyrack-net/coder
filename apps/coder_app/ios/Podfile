@@ -42,3 +42,21 @@ post_install do |installer|
     end
   end
 end
+
+# Xcode 26.6 does not schedule CocoaPods' empty aggregate target when every
+# actual Pod is already linked directly. Remove only that redundant linker
+# flag; the generated xcconfig keeps every plugin and MLKit library intact.
+post_integrate do |_installer|
+  aggregate_flag = /(?:^|\s)-l\"?Pods-Runner\"?(?=\s|$)/
+  pattern = File.join(
+    __dir__,
+    'Pods',
+    'Target Support Files',
+    'Pods-Runner',
+    'Pods-Runner.*.xcconfig',
+  )
+  Dir.glob(pattern).each do |path|
+    contents = File.read(path)
+    File.write(path, contents.gsub(aggregate_flag, ''))
+  end
+end

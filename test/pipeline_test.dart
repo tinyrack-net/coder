@@ -221,6 +221,8 @@ void main() {
       iosPodfile,
       contains("config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'"),
     );
+    expect(iosPodfile, contains('post_integrate do'));
+    expect(iosPodfile, contains("-l\\\"?Pods-Runner\\\"?"));
     expect(iosProject, isNot(contains('FlutterGeneratedPluginSwiftPackage')));
   });
 
