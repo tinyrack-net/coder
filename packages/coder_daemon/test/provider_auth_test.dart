@@ -39,6 +39,7 @@ void main() {
       final attempt = await coordinator.start(
         definitionId: 'openai',
         methodId: 'chatgpt-device',
+        connectionId: 'existing-openai',
       );
 
       expect(attempt.id, 'auth-attempt');
@@ -58,7 +59,7 @@ void main() {
         (await coordinator.status(attempt.id)).status,
         ProviderAuthAttemptStatus.succeeded,
       );
-      expect(connector.connectionId, 'openai');
+      expect(connector.connectionId, 'existing-openai');
       expect(connector.credential, isA<OAuthCredential>());
       expect(events.last.status, ProviderAuthAttemptStatus.succeeded);
     },
@@ -314,6 +315,7 @@ final class _OAuthConnector implements ProviderOAuthConnector {
   @override
   Future<ProviderOAuthReservation> reserveOAuthConnection(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final base = modelPrefix ?? definitionId;
@@ -325,9 +327,11 @@ final class _OAuthConnector implements ProviderOAuthConnector {
     _prefixes.add(prefix);
     _connectionSequence += 1;
     return (
-      connectionId: _connectionSequence == 1
-          ? definitionId
-          : '$definitionId-$_connectionSequence',
+      connectionId:
+          connectionId ??
+          (_connectionSequence == 1
+              ? definitionId
+              : '$definitionId-$_connectionSequence'),
       modelPrefix: prefix,
     );
   }

@@ -1122,12 +1122,16 @@ void main() {
       const ProviderConnectApiKeyParamsDto(
         definitionId: 'provider',
         apiKey: 'secret',
+        connectionId: 'existing-provider',
       ),
       (value) => value.toJson(),
       ProviderConnectApiKeyParamsDto.fromJson,
     );
     _roundTrip(
-      const ProviderConnectNoneParamsDto(definitionId: 'ollama'),
+      const ProviderConnectNoneParamsDto(
+        definitionId: 'ollama',
+        connectionId: 'existing-ollama',
+      ),
       (value) => value.toJson(),
       ProviderConnectNoneParamsDto.fromJson,
     );
@@ -1148,6 +1152,7 @@ void main() {
       const ProviderAuthStartParamsDto(
         definitionId: 'openai',
         methodId: 'chatgpt-device',
+        connectionId: 'existing-openai',
       ),
       (value) => value.toJson(),
       ProviderAuthStartParamsDto.fromJson,

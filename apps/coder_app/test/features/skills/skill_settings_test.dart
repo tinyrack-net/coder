@@ -184,6 +184,7 @@ void main() {
 
       await tester.tap(findAccessibleAction('스킬 추가'));
       await tester.pumpAndSettle();
+      expect(find.byType(TRAlertDialog), findsNothing);
       await tester.enterText(_textInput('ID (디렉터리 이름)'), 'release-notes');
       await tester.enterText(_textInput('이름').last, 'release-notes');
       await tester.enterText(_textInput('설명').last, 'Writes release notes.');

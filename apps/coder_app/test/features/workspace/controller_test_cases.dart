@@ -399,6 +399,115 @@ void _registerWorkspaceControllerTests() {
   );
 
   test(
+    'session catalog updates preserve the ready tab tree without loading',
+    () async {
+      final createGate = Completer<void>();
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+        agents: <SessionDto>[agent],
+      )..sessionCreateGate = createGate;
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      const selection = WorkspaceSelection(
+        hostId: 'server',
+        workspaceId: 'workspace',
+        worktreeId: 'worktree',
+      );
+      final tabsProvider = sessionTabsControllerProvider(selection);
+      final initial = await container.read(tabsProvider.future);
+      final transitions = <AsyncValue<SessionTabsState>>[];
+      final subscription = container.listen(
+        tabsProvider,
+        (_, next) => transitions.add(next),
+      );
+      addTearDown(subscription.close);
+
+      final sessionsProvider = sessionsControllerProvider(
+        selection.hostId,
+        selection.worktreeId,
+      );
+      final creating = container
+          .read(sessionsProvider.notifier)
+          .create(
+            title: 'Created',
+            agentDefinitionId: 'coder',
+          );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(sessionsProvider).hasValue, isTrue);
+      expect(container.read(tabsProvider).hasValue, isTrue);
+      expect(
+        container.read(tabsProvider).requireValue.root,
+        same(initial.root),
+      );
+
+      createGate.complete();
+      final created = await creating;
+      await Future<void>.delayed(Duration.zero);
+      expect(transitions.where((value) => value.isLoading), isEmpty);
+      expect(
+        container.read(tabsProvider).requireValue.root,
+        same(initial.root),
+      );
+
+      await container
+          .read(tabsProvider.notifier)
+          .add(created, draftTabId: initial.focusedTabId);
+      final promoted = container.read(tabsProvider).requireValue;
+      final promotedRoot = promoted.root;
+      final promotedTab = promoted.focusedTabId;
+      api.emit(
+        SessionUpdatedClientEvent(
+          created.copyWith(status: SessionStatus.running),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final running = container.read(tabsProvider).requireValue;
+      expect(transitions.where((value) => value.isLoading), isEmpty);
+      expect(running.root, same(promotedRoot));
+      expect(running.focusedTabId, promotedTab);
+      expect(
+        running.sessions.where((item) => item.id == created.id),
+        hasLength(1),
+      );
+      expect(
+        running.sessions.firstWhere((item) => item.id == created.id).status,
+        SessionStatus.running,
+      );
+
+      api.sessionCreateError = Exception('offline');
+      final beforeFailure = container.read(sessionsProvider).requireValue;
+      await expectLater(
+        container
+            .read(sessionsProvider.notifier)
+            .create(
+              title: 'Failed',
+              agentDefinitionId: 'coder',
+            ),
+        throwsException,
+      );
+      expect(
+        container.read(sessionsProvider).requireValue,
+        same(beforeFailure),
+      );
+      expect(container.read(tabsProvider).hasValue, isTrue);
+      expect(
+        container.read(tabsProvider).requireValue.root,
+        same(promotedRoot),
+      );
+    },
+    tags: const <String>[
+      'feature_test__session_lifecycle__unit',
+      'feature_test__session_tabs__unit',
+    ],
+  );
+
+  test(
     'workspace tabs split, move, collapse empty panes, and persist ratios',
     () async {
       final second = agent.copyWith(id: 'agent-2', title: 'Second');

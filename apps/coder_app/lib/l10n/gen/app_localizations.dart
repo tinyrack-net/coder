@@ -1528,6 +1528,24 @@ abstract class AppLocalizations {
   /// **'No providers are connected.'**
   String get providerSettingsNoConnections;
 
+  /// Empty detail pane shown before a provider is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a provider to manage.'**
+  String get providerSettingsSelectConnection;
+
+  /// No description provided for @providerSettingsRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and Base URL are required.'**
+  String get providerSettingsRequiredFields;
+
+  /// No description provided for @providerSettingsApiKeyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'API key is required.'**
+  String get providerSettingsApiKeyRequired;
+
   /// Menu entry that opens the custom provider form.
   ///
   /// In en, this message translates to:
@@ -1575,6 +1593,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for sign-in'**
   String get providerSettingsOAuthPending;
+
+  /// Action that reopens a provider OAuth URL in the system browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open browser'**
+  String get providerSettingsOpenBrowser;
+
+  /// Action that replaces credentials for an existing provider connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get providerSettingsReconnect;
 
   /// Label for the globally unique provider model prefix.
   ///

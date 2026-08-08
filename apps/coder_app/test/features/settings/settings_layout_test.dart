@@ -151,6 +151,49 @@ void main() {
     );
   });
 
+  testWidgets('SettingsListDetailLayout shares desktop and compact Back', (
+    tester,
+  ) async {
+    final navigation = SettingsPaneNavigationController();
+    addTearDown(navigation.dispose);
+    var detailVisible = true;
+    late StateSetter update;
+    Widget surface(double width) => _host(
+      StatefulBuilder(
+        builder: (context, setState) {
+          update = setState;
+          return SettingsPaneNavigationScope(
+            controller: navigation,
+            child: SettingsListDetailLayout(
+              collection: const Text('Collection'),
+              detail: const Text('Detail'),
+              detailVisible: detailVisible,
+              onBack: () => update(() => detailVisible = false),
+            ),
+          );
+        },
+      ),
+      width: width,
+    );
+
+    await tester.pumpWidget(surface(1200));
+    await tester.pump();
+    expect(find.text('Collection'), findsOneWidget);
+    expect(find.text('Detail'), findsOneWidget);
+    expect(navigation.canGoBack, isFalse);
+
+    await tester.pumpWidget(surface(390));
+    await tester.pump();
+    expect(find.text('Collection'), findsNothing);
+    expect(find.text('Detail'), findsOneWidget);
+    expect(navigation.canGoBack, isTrue);
+
+    navigation.goBack();
+    await tester.pump();
+    expect(find.text('Collection'), findsOneWidget);
+    expect(find.text('Detail'), findsNothing);
+  });
+
   group('SettingsScaffold', () {
     testWidgets('caps its content and centres it in a wide pane', (
       tester,

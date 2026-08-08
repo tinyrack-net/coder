@@ -784,6 +784,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsNoConnections => 'No providers are connected.';
 
   @override
+  String get providerSettingsSelectConnection => 'Select a provider to manage.';
+
+  @override
+  String get providerSettingsRequiredFields =>
+      'Name and Base URL are required.';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API key is required.';
+
+  @override
   String get providerSettingsEditAdvanced => 'Edit advanced settings';
 
   @override
@@ -807,6 +817,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => 'Waiting for sign-in';
+
+  @override
+  String get providerSettingsOpenBrowser => 'Open browser';
+
+  @override
+  String get providerSettingsReconnect => 'Reconnect';
 
   @override
   String get providerSettingsModelPrefix => 'Model prefix';

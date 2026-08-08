@@ -59,7 +59,7 @@ final class ProviderSettingsControllerProvider
 }
 
 String _$providerSettingsControllerHash() =>
-    r'c218475846bed0f2091fa88061c4d61b769337ec';
+    r'bac6af172d6ad5630a0e916e3c11a090a2377957';
 
 /// ProviderSettingsController defines a public contract.
 

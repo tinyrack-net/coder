@@ -14,9 +14,9 @@
 `tinyrack_ui` API에서 가져온다.
 
 기존 화면은 색상, 타이포그래피, 카드, 사이드바 탐색 면에서 이미 안정적이었다.
-남아 있던 시각적 불일치는 목록–상세 빈 상태, 상세 헤더 action, dialog form에
-집중되어 있었다. 이 영역은 이제 공개 TR 컴포넌트와 토큰만 조합한 Coder
-composite를 공유한다.
+목록형 설정은 공통 collection-detail composite를 사용한다. 항목 생성과
+Provider 인증·구성도 상세 pane 안에서 이어지므로 사용자가 설정 문맥을 잃지
+않고 목록, 선택 항목, 작업 중인 form을 함께 확인할 수 있다.
 
 ## 주요 전후 비교
 
@@ -39,9 +39,9 @@ composite를 공유한다.
 
 ![프로젝트 설정](settings-audit/after/project_settings.png)
 
-### Dialog form 리듬
+### Pane form 리듬
 
-모든 설정 form dialog는 하나의 공개 overlay 너비, 필드 사이의 동일한
+스킬·Agent 생성과 Provider 연결 form은 상세 pane의 공통 header, 읽기 너비,
 `TRSpacing`, 전체 너비 select, 일관된 trailing action 순서를 사용한다.
 
 ![Dialog 데스크톱 light](settings-audit/after/settings_dialog_form_desktop_light.png)
@@ -64,20 +64,20 @@ composite를 공유한다.
 | 1 | [일반](settings-audit/after/general_settings_desktop_light.png) | 양호 | 섹션 제목, 설명, 카드, trailing select가 하나의 읽기 열을 공유한다. |
 | 2 | [프로젝트 route](settings-audit/after/project_settings_desktop_light.png) | 양호 | 세 pane 너비와 separator가 토큰 기반이며 빈 상태와 선택 상태의 계층이 일치한다. |
 | 3 | [프로젝트 상세](settings-audit/after/project_settings.png) | 양호 | 상세 헤더와 본문 시작선이 일치하며 중복 action spacer를 제거했다. |
-| 4 | [에이전트 route](settings-audit/after/agent_settings_desktop_light.png) | 개선 | 선택 전 상태가 떠 있는 문장 대신 의도적인 제목·아이콘 그룹을 사용한다. |
+| 4 | [에이전트 route](settings-audit/after/agent_settings_desktop_light.png) | 개선 | 목록·상세·생성이 같은 pane 구조를 사용하며 생성 dialog를 제거했다. |
 | 5 | [에이전트 상세](settings-audit/after/agent_settings.png) | 양호 | 헤더 action은 공통 wrap과 간격을 사용하고 form은 하나의 섹션 리듬을 유지한다. |
 | 6 | [MCP route](settings-audit/after/mcp_settings_desktop_light.png) | 개선 | 목록 콘텐츠와 중앙 선택 안내가 명확히 구분된다. |
 | 7 | [MCP 데이터 상태](settings-audit/after/mcp_settings.png) | 개선 | 상태 행 밀도는 유지하면서 상세 선택 안내에 계층을 부여했다. |
-| 8 | [스킬 route](settings-audit/after/skill_settings_desktop_light.png) | 개선 | 프로젝트 필터를 전체 콘텐츠 위의 가로 띠에서 `paneMd` 목록 pane 내부로 이동해 sidebar와 같은 inset 및 명확한 상세 경계를 유지한다. |
+| 8 | [스킬 route](settings-audit/after/skill_settings_desktop_light.png) | 개선 | 프로젝트 필터를 목록 pane에 유지하고 생성 form을 상세 pane에서 연다. |
 | 9 | [스킬 상세](settings-audit/after/skill_settings.png) | 양호 | 읽기 전용 상태, 정의 form, 리소스 행이 일관된 섹션 형태를 사용한다. |
-| 10 | [Provider](settings-audit/after/provider_settings_desktop_light.png) | 양호 | 기본·연결됨·추가 가능 Provider가 명확한 위→아래 작업 순서를 이룬다. |
+| 10 | [Provider](settings-audit/after/provider_settings_desktop_light.png) | 개선 | 설정된 connection은 목록 pane, catalog·credential·OAuth·모델 관리는 상세 pane을 사용한다. |
 | 11 | [권한](settings-audit/after/permission_settings_desktop_light.png) | 양호 | 공통 행에서 설명은 왼쪽, 변경 action은 오른쪽을 유지한다. |
 | 12 | [Daemon](settings-audit/after/daemon_settings_desktop_light.png) | 양호 | 로컬·원격 daemon control이 같은 설정 섹션과 행 계약을 사용한다. |
 | 13 | [고급](settings-audit/after/advanced_settings_desktop_light.png) | 양호 | 파괴적 작업을 명확한 단일 섹션과 확인 흐름으로 격리한다. |
 | 14 | [원격 daemon 추가](settings-audit/after/new_host_desktop_light.png) | 양호 | form 필드가 공통 읽기 너비와 토큰 간격을 사용한다. |
 | 15 | [원격 daemon 편집](settings-audit/after/edit_host_desktop_light.png) | 양호 | 편집·삭제 action이 같은 profile form에 연결되어 있다. |
-| 16 | 설정 form dialog | 개선 | 에이전트·스킬 생성, MCP secret, Provider API key·custom·manual model dialog가 `SettingsDialogForm`을 공유하며 select가 form 너비를 채운다. |
-| 17 | 확인 dialog와 drawer | 양호 | Provider 연결 해제·삭제, 스킬/MCP/daemon 삭제, 충돌, 초기화, 인증, 권한 흐름이 공개 `TRAlertDialog`/`TRDrawer` primitive를 유지한다. |
+| 16 | 설정 form pane | 개선 | 에이전트·스킬 생성과 Provider prefix·API key·custom·manual model 설정이 상세 pane을 공유한다. |
+| 17 | 확인 dialog와 drawer | 양호 | 연결 해제·삭제·덮어쓰기 등 확인과 권한 picker만 공개 `TRAlertDialog`/`TRDrawer` primitive를 유지한다. |
 
 전체 변경 전·최종 캡처는 [`settings-audit/before`](settings-audit/before/)와
 [`settings-audit/after`](settings-audit/after/)에 보존했다. light/dark,

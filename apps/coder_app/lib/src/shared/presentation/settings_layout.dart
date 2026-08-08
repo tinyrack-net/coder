@@ -341,6 +341,80 @@ void syncSettingsPaneBackHandler(
   });
 }
 
+/// The responsive collection-and-detail structure used by list settings.
+///
+/// On a wide surface both panes remain visible. On a compact surface the
+/// detail replaces the collection and registers itself with the settings
+/// shell's shared Back action.
+class SettingsListDetailLayout extends StatefulWidget {
+  /// Creates a settings collection-and-detail layout.
+  const SettingsListDetailLayout({
+    required this.collection,
+    required this.detail,
+    required this.detailVisible,
+    required this.onBack,
+    super.key,
+  });
+
+  /// The middle settings pane containing the item collection.
+  final Widget collection;
+
+  /// The trailing pane containing an editor, creator, or empty state.
+  final Widget detail;
+
+  /// Whether compact layouts should show [detail] instead of [collection].
+  final bool detailVisible;
+
+  /// Returns a compact layout to its collection.
+  final VoidCallback onBack;
+
+  @override
+  State<SettingsListDetailLayout> createState() =>
+      _SettingsListDetailLayoutState();
+}
+
+class _SettingsListDetailLayoutState extends State<SettingsListDetailLayout> {
+  SettingsPaneNavigationController? _navigation;
+
+  @override
+  void dispose() {
+    _navigation?.clearBackHandler(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final compact =
+          constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+      _navigation = SettingsPaneNavigationScope.maybeOf(context);
+      syncSettingsPaneBackHandler(
+        context,
+        owner: this,
+        active: compact && widget.detailVisible,
+        onBack: widget.onBack,
+      );
+      if (compact) {
+        return widget.detailVisible ? widget.detail : widget.collection;
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          SizedBox(
+            width: CoderLayoutMetrics.settingsCollectionWidth,
+            child: widget.collection,
+          ),
+          const TRSeparator(
+            orientation: TRSeparatorOrientation.vertical,
+            variant: TRSeparatorVariant.muted,
+          ),
+          Expanded(child: widget.detail),
+        ],
+      );
+    },
+  );
+}
+
 /// The scroll container every settings pane uses.
 ///
 /// Page padding, content width, and the gap between sections live here rather

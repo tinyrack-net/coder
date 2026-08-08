@@ -313,12 +313,14 @@ abstract interface class ProvidersApi {
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey, {
+    String? connectionId,
     String? modelPrefix,
   });
 
   /// Connects a provider without credentials.
   Future<ProviderConnectionDto> connectProviderNone(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   });
 
@@ -326,6 +328,7 @@ abstract interface class ProvidersApi {
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
     String methodId, {
+    String? connectionId,
     String? modelPrefix,
   });
 

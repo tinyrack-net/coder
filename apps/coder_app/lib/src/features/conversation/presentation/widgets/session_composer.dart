@@ -925,6 +925,9 @@ class DraftSessionPane extends ConsumerStatefulWidget {
   final String draftId;
 
   /// Called after the session exists and its first turn has started.
+  ///
+  /// The starter has already promoted this draft tab; the callback only
+  /// updates navigation to the resulting session.
   final ValueChanged<SessionDto> onCreated;
 
   @override
@@ -1071,6 +1074,7 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
               : submission.text,
         ),
         prompt: submission.text,
+        draftTabId: widget.draftId,
         attachments: submission.attachments,
         mode: draft.mode,
         model: draft.model,

@@ -470,6 +470,7 @@ abstract class ProviderConnectApiKeyParamsDto
   const factory ProviderConnectApiKeyParamsDto({
     required String definitionId,
     required String apiKey,
+    String? connectionId,
     String? modelPrefix,
   }) = _ProviderConnectApiKeyParamsDto;
 
@@ -485,6 +486,7 @@ abstract class ProviderConnectNoneParamsDto
   /// Creates no-auth connection parameters.
   const factory ProviderConnectNoneParamsDto({
     required String definitionId,
+    String? connectionId,
     String? modelPrefix,
   }) = _ProviderConnectNoneParamsDto;
 
@@ -527,6 +529,7 @@ abstract class ProviderAuthStartParamsDto with _$ProviderAuthStartParamsDto {
   const factory ProviderAuthStartParamsDto({
     required String definitionId,
     required String methodId,
+    String? connectionId,
     String? modelPrefix,
   }) = _ProviderAuthStartParamsDto;
 

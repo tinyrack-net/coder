@@ -37,13 +37,6 @@ class ProjectSettingsPage extends ConsumerStatefulWidget {
 
 class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   String? _selectedId;
-  SettingsPaneNavigationController? _paneNavigation;
-
-  @override
-  void dispose() {
-    _paneNavigation?.clearBackHandler(this);
-    super.dispose();
-  }
 
   @override
   void didUpdateWidget(ProjectSettingsPage oldWidget) {
@@ -82,53 +75,30 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
             final selected = projects
                 .where((project) => project.id == _selectedId)
                 .firstOrNull;
-            _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
-            syncSettingsPaneBackHandler(
-              context,
-              owner: this,
-              active: compact && selected != null,
-              onBack: _showProjectList,
-            );
-            if (compact && selected != null) {
-              return _ProjectEditor(
-                key: ValueKey<String>('${widget.hostId} ${selected.id}'),
-                hostId: widget.hostId,
-                workspace: selected,
-              );
-            }
             final list = _ProjectList(
               projects: projects,
               selectedId: _selectedId,
               onSelected: (id) => setState(() => _selectedId = id),
             );
-            if (compact) return list;
-            return Row(
-              children: <Widget>[
-                SizedBox(
-                  width: CoderLayoutMetrics.settingsCollectionWidth,
-                  child: list,
-                ),
-                const TRSeparator(
-                  orientation: TRSeparatorOrientation.vertical,
-                  variant: TRSeparatorVariant.muted,
-                ),
-                Expanded(
-                  child: selected == null
-                      ? SettingsEmptyState(
-                          title: AppLocalizations.of(
-                            context,
-                          ).projectSettingsSelectProject,
-                          icon: const Icon(CoderIcons.folder),
-                        )
-                      : _ProjectEditor(
-                          key: ValueKey<String>(
-                            '${widget.hostId} ${selected.id}',
-                          ),
-                          hostId: widget.hostId,
-                          workspace: selected,
-                        ),
-                ),
-              ],
+            final detail = selected == null
+                ? SettingsEmptyState(
+                    title: AppLocalizations.of(
+                      context,
+                    ).projectSettingsSelectProject,
+                    icon: const Icon(CoderIcons.folder),
+                  )
+                : _ProjectEditor(
+                    key: ValueKey<String>(
+                      '${widget.hostId} ${selected.id}',
+                    ),
+                    hostId: widget.hostId,
+                    workspace: selected,
+                  );
+            return SettingsListDetailLayout(
+              collection: list,
+              detail: detail,
+              detailVisible: selected != null,
+              onBack: _showProjectList,
             );
           },
         );

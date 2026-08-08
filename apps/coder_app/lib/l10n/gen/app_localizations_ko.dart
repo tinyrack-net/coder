@@ -773,6 +773,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsNoConnections => '연결된 Provider가 없습니다.';
 
   @override
+  String get providerSettingsSelectConnection => '관리할 Provider를 선택하세요.';
+
+  @override
+  String get providerSettingsRequiredFields => '이름과 Base URL을 입력하세요.';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API key를 입력하세요.';
+
+  @override
   String get providerSettingsEditAdvanced => '고급 설정 편집';
 
   @override
@@ -795,6 +804,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => '로그인 대기 중';
+
+  @override
+  String get providerSettingsOpenBrowser => '브라우저 열기';
+
+  @override
+  String get providerSettingsReconnect => '다시 연결';
 
   @override
   String get providerSettingsModelPrefix => '모델 Prefix';

@@ -783,6 +783,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsNoConnections => 'No providers are connected.';
 
   @override
+  String get providerSettingsSelectConnection => '管理するProviderを選択してください。';
+
+  @override
+  String get providerSettingsRequiredFields => '名前とBase URLを入力してください。';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API keyを入力してください。';
+
+  @override
   String get providerSettingsEditAdvanced => 'Edit advanced settings';
 
   @override
@@ -806,6 +815,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => 'Waiting for sign-in';
+
+  @override
+  String get providerSettingsOpenBrowser => 'ブラウザーを開く';
+
+  @override
+  String get providerSettingsReconnect => '再接続';
 
   @override
   String get providerSettingsModelPrefix => 'モデルプレフィックス';
