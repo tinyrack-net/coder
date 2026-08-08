@@ -23528,6 +23528,275 @@ as List<ProviderConnectionDto>,
 
 
 /// @nodoc
+mixin _$ProviderUsageResultDto {
+
+ List<ProviderUsageDto> get usage;
+/// Create a copy of ProviderUsageResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProviderUsageResultDtoCopyWith<ProviderUsageResultDto> get copyWith => _$ProviderUsageResultDtoCopyWithImpl<ProviderUsageResultDto>(this as ProviderUsageResultDto, _$identity);
+
+  /// Serializes this ProviderUsageResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderUsageResultDto&&const DeepCollectionEquality().equals(other.usage, usage));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(usage));
+
+@override
+String toString() {
+  return 'ProviderUsageResultDto(usage: $usage)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProviderUsageResultDtoCopyWith<$Res>  {
+  factory $ProviderUsageResultDtoCopyWith(ProviderUsageResultDto value, $Res Function(ProviderUsageResultDto) _then) = _$ProviderUsageResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<ProviderUsageDto> usage
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProviderUsageResultDtoCopyWithImpl<$Res>
+    implements $ProviderUsageResultDtoCopyWith<$Res> {
+  _$ProviderUsageResultDtoCopyWithImpl(this._self, this._then);
+
+  final ProviderUsageResultDto _self;
+  final $Res Function(ProviderUsageResultDto) _then;
+
+/// Create a copy of ProviderUsageResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? usage = null,}) {
+  return _then(_self.copyWith(
+usage: null == usage ? _self.usage : usage // ignore: cast_nullable_to_non_nullable
+as List<ProviderUsageDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ProviderUsageResultDto].
+extension ProviderUsageResultDtoPatterns on ProviderUsageResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProviderUsageResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ProviderUsageResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProviderUsageResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _ProviderUsageResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProviderUsageResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ProviderUsageResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ProviderUsageDto> usage)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ProviderUsageResultDto() when $default != null:
+return $default(_that.usage);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ProviderUsageDto> usage)  $default,) {final _that = this;
+switch (_that) {
+case _ProviderUsageResultDto():
+return $default(_that.usage);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ProviderUsageDto> usage)?  $default,) {final _that = this;
+switch (_that) {
+case _ProviderUsageResultDto() when $default != null:
+return $default(_that.usage);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ProviderUsageResultDto implements ProviderUsageResultDto {
+  const _ProviderUsageResultDto({required final  List<ProviderUsageDto> usage}): _usage = usage;
+  factory _ProviderUsageResultDto.fromJson(Map<String, dynamic> json) => _$ProviderUsageResultDtoFromJson(json);
+
+ final  List<ProviderUsageDto> _usage;
+@override List<ProviderUsageDto> get usage {
+  if (_usage is EqualUnmodifiableListView) return _usage;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_usage);
+}
+
+
+/// Create a copy of ProviderUsageResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ProviderUsageResultDtoCopyWith<_ProviderUsageResultDto> get copyWith => __$ProviderUsageResultDtoCopyWithImpl<_ProviderUsageResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ProviderUsageResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderUsageResultDto&&const DeepCollectionEquality().equals(other._usage, _usage));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_usage));
+
+@override
+String toString() {
+  return 'ProviderUsageResultDto(usage: $usage)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ProviderUsageResultDtoCopyWith<$Res> implements $ProviderUsageResultDtoCopyWith<$Res> {
+  factory _$ProviderUsageResultDtoCopyWith(_ProviderUsageResultDto value, $Res Function(_ProviderUsageResultDto) _then) = __$ProviderUsageResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<ProviderUsageDto> usage
+});
+
+
+
+
+}
+/// @nodoc
+class __$ProviderUsageResultDtoCopyWithImpl<$Res>
+    implements _$ProviderUsageResultDtoCopyWith<$Res> {
+  __$ProviderUsageResultDtoCopyWithImpl(this._self, this._then);
+
+  final _ProviderUsageResultDto _self;
+  final $Res Function(_ProviderUsageResultDto) _then;
+
+/// Create a copy of ProviderUsageResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? usage = null,}) {
+  return _then(_ProviderUsageResultDto(
+usage: null == usage ? _self._usage : usage // ignore: cast_nullable_to_non_nullable
+as List<ProviderUsageDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$ProviderConnectionResultDto {
 
  ProviderConnectionDto get connection;

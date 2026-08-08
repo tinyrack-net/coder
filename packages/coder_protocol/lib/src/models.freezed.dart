@@ -7707,7 +7707,8 @@ mixin _$SessionDto {
  String? get rootSessionId;/// Collaboration lifecycle; null for sessions outside a tree.
  AgentLifecycle? get lifecycle; String? get activeTurnId; String? get lastError;/// Tokens the last response reported for the live context window.
  int get contextTokens;/// Context window of the resolved model; null when it is not advertised.
- int? get contextWindow;
+ int? get contextWindow;/// Exact accumulated session cost, or null after any unpriced usage.
+ double? get totalCostUsd;
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -7720,16 +7721,16 @@ $SessionDtoCopyWith<SessionDto> get copyWith => _$SessionDtoCopyWithImpl<Session
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,const DeepCollectionEquality().hash(modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow]);
+int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,const DeepCollectionEquality().hash(modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
 }
 
 
@@ -7740,7 +7741,7 @@ abstract mixin class $SessionDtoCopyWith<$Res>  {
   factory $SessionDtoCopyWith(SessionDto value, $Res Function(SessionDto) _then) = _$SessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
 });
 
 
@@ -7757,7 +7758,7 @@ class _$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -7780,7 +7781,8 @@ as AgentLifecycle?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : 
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,contextTokens: null == contextTokens ? _self.contextTokens : contextTokens // ignore: cast_nullable_to_non_nullable
 as int,contextWindow: freezed == contextWindow ? _self.contextWindow : contextWindow // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,totalCostUsd: freezed == totalCostUsd ? _self.totalCostUsd : totalCostUsd // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 /// Create a copy of SessionDto
@@ -7877,10 +7879,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   return orElse();
 
 }
@@ -7898,10 +7900,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7918,10 +7920,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   return null;
 
 }
@@ -7933,7 +7935,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionDto implements SessionDto {
-  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow}): _modelControls = modelControls;
+  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow, this.totalCostUsd}): _modelControls = modelControls;
   factory _SessionDto.fromJson(Map<String, dynamic> json) => _$SessionDtoFromJson(json);
 
 @override final  String id;
@@ -7973,6 +7975,8 @@ class _SessionDto implements SessionDto {
 @override@JsonKey() final  int contextTokens;
 /// Context window of the resolved model; null when it is not advertised.
 @override final  int? contextWindow;
+/// Exact accumulated session cost, or null after any unpriced usage.
+@override final  double? totalCostUsd;
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
@@ -7987,16 +7991,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,const DeepCollectionEquality().hash(_modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow]);
+int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,const DeepCollectionEquality().hash(_modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
 }
 
 
@@ -8007,7 +8011,7 @@ abstract mixin class _$SessionDtoCopyWith<$Res> implements $SessionDtoCopyWith<$
   factory _$SessionDtoCopyWith(_SessionDto value, $Res Function(_SessionDto) _then) = __$SessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
 });
 
 
@@ -8024,7 +8028,7 @@ class __$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
   return _then(_SessionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -8047,7 +8051,8 @@ as AgentLifecycle?,activeTurnId: freezed == activeTurnId ? _self.activeTurnId : 
 as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,contextTokens: null == contextTokens ? _self.contextTokens : contextTokens // ignore: cast_nullable_to_non_nullable
 as int,contextWindow: freezed == contextWindow ? _self.contextWindow : contextWindow // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,totalCostUsd: freezed == totalCostUsd ? _self.totalCostUsd : totalCostUsd // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
@@ -12177,6 +12182,568 @@ $CustomProviderConfigDtoCopyWith<$Res>? get customConfig {
     return _then(_self.copyWith(customConfig: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$ProviderUsageWindowDto {
+
+ ProviderUsageWindowKind get kind; double get usedPercent; DateTime? get resetsAt;
+/// Create a copy of ProviderUsageWindowDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProviderUsageWindowDtoCopyWith<ProviderUsageWindowDto> get copyWith => _$ProviderUsageWindowDtoCopyWithImpl<ProviderUsageWindowDto>(this as ProviderUsageWindowDto, _$identity);
+
+  /// Serializes this ProviderUsageWindowDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderUsageWindowDto&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.usedPercent, usedPercent) || other.usedPercent == usedPercent)&&(identical(other.resetsAt, resetsAt) || other.resetsAt == resetsAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,kind,usedPercent,resetsAt);
+
+@override
+String toString() {
+  return 'ProviderUsageWindowDto(kind: $kind, usedPercent: $usedPercent, resetsAt: $resetsAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProviderUsageWindowDtoCopyWith<$Res>  {
+  factory $ProviderUsageWindowDtoCopyWith(ProviderUsageWindowDto value, $Res Function(ProviderUsageWindowDto) _then) = _$ProviderUsageWindowDtoCopyWithImpl;
+@useResult
+$Res call({
+ ProviderUsageWindowKind kind, double usedPercent, DateTime? resetsAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProviderUsageWindowDtoCopyWithImpl<$Res>
+    implements $ProviderUsageWindowDtoCopyWith<$Res> {
+  _$ProviderUsageWindowDtoCopyWithImpl(this._self, this._then);
+
+  final ProviderUsageWindowDto _self;
+  final $Res Function(ProviderUsageWindowDto) _then;
+
+/// Create a copy of ProviderUsageWindowDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? usedPercent = null,Object? resetsAt = freezed,}) {
+  return _then(_self.copyWith(
+kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as ProviderUsageWindowKind,usedPercent: null == usedPercent ? _self.usedPercent : usedPercent // ignore: cast_nullable_to_non_nullable
+as double,resetsAt: freezed == resetsAt ? _self.resetsAt : resetsAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ProviderUsageWindowDto].
+extension ProviderUsageWindowDtoPatterns on ProviderUsageWindowDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProviderUsageWindowDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ProviderUsageWindowDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProviderUsageWindowDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _ProviderUsageWindowDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProviderUsageWindowDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ProviderUsageWindowDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ProviderUsageWindowKind kind,  double usedPercent,  DateTime? resetsAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ProviderUsageWindowDto() when $default != null:
+return $default(_that.kind,_that.usedPercent,_that.resetsAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ProviderUsageWindowKind kind,  double usedPercent,  DateTime? resetsAt)  $default,) {final _that = this;
+switch (_that) {
+case _ProviderUsageWindowDto():
+return $default(_that.kind,_that.usedPercent,_that.resetsAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ProviderUsageWindowKind kind,  double usedPercent,  DateTime? resetsAt)?  $default,) {final _that = this;
+switch (_that) {
+case _ProviderUsageWindowDto() when $default != null:
+return $default(_that.kind,_that.usedPercent,_that.resetsAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ProviderUsageWindowDto implements ProviderUsageWindowDto {
+  const _ProviderUsageWindowDto({required this.kind, required this.usedPercent, this.resetsAt});
+  factory _ProviderUsageWindowDto.fromJson(Map<String, dynamic> json) => _$ProviderUsageWindowDtoFromJson(json);
+
+@override final  ProviderUsageWindowKind kind;
+@override final  double usedPercent;
+@override final  DateTime? resetsAt;
+
+/// Create a copy of ProviderUsageWindowDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ProviderUsageWindowDtoCopyWith<_ProviderUsageWindowDto> get copyWith => __$ProviderUsageWindowDtoCopyWithImpl<_ProviderUsageWindowDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ProviderUsageWindowDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderUsageWindowDto&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.usedPercent, usedPercent) || other.usedPercent == usedPercent)&&(identical(other.resetsAt, resetsAt) || other.resetsAt == resetsAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,kind,usedPercent,resetsAt);
+
+@override
+String toString() {
+  return 'ProviderUsageWindowDto(kind: $kind, usedPercent: $usedPercent, resetsAt: $resetsAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ProviderUsageWindowDtoCopyWith<$Res> implements $ProviderUsageWindowDtoCopyWith<$Res> {
+  factory _$ProviderUsageWindowDtoCopyWith(_ProviderUsageWindowDto value, $Res Function(_ProviderUsageWindowDto) _then) = __$ProviderUsageWindowDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ ProviderUsageWindowKind kind, double usedPercent, DateTime? resetsAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$ProviderUsageWindowDtoCopyWithImpl<$Res>
+    implements _$ProviderUsageWindowDtoCopyWith<$Res> {
+  __$ProviderUsageWindowDtoCopyWithImpl(this._self, this._then);
+
+  final _ProviderUsageWindowDto _self;
+  final $Res Function(_ProviderUsageWindowDto) _then;
+
+/// Create a copy of ProviderUsageWindowDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? kind = null,Object? usedPercent = null,Object? resetsAt = freezed,}) {
+  return _then(_ProviderUsageWindowDto(
+kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as ProviderUsageWindowKind,usedPercent: null == usedPercent ? _self.usedPercent : usedPercent // ignore: cast_nullable_to_non_nullable
+as double,resetsAt: freezed == resetsAt ? _self.resetsAt : resetsAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$ProviderUsageDto {
+
+ String get connectionId; ProviderUsageStatus get status; DateTime get fetchedAt; String get provider; String? get plan; List<ProviderUsageWindowDto> get windows; double? get creditBalance; String? get detail; String? get errorCode;
+/// Create a copy of ProviderUsageDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProviderUsageDtoCopyWith<ProviderUsageDto> get copyWith => _$ProviderUsageDtoCopyWithImpl<ProviderUsageDto>(this as ProviderUsageDto, _$identity);
+
+  /// Serializes this ProviderUsageDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderUsageDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.status, status) || other.status == status)&&(identical(other.fetchedAt, fetchedAt) || other.fetchedAt == fetchedAt)&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.plan, plan) || other.plan == plan)&&const DeepCollectionEquality().equals(other.windows, windows)&&(identical(other.creditBalance, creditBalance) || other.creditBalance == creditBalance)&&(identical(other.detail, detail) || other.detail == detail)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,connectionId,status,fetchedAt,provider,plan,const DeepCollectionEquality().hash(windows),creditBalance,detail,errorCode);
+
+@override
+String toString() {
+  return 'ProviderUsageDto(connectionId: $connectionId, status: $status, fetchedAt: $fetchedAt, provider: $provider, plan: $plan, windows: $windows, creditBalance: $creditBalance, detail: $detail, errorCode: $errorCode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProviderUsageDtoCopyWith<$Res>  {
+  factory $ProviderUsageDtoCopyWith(ProviderUsageDto value, $Res Function(ProviderUsageDto) _then) = _$ProviderUsageDtoCopyWithImpl;
+@useResult
+$Res call({
+ String connectionId, ProviderUsageStatus status, DateTime fetchedAt, String provider, String? plan, List<ProviderUsageWindowDto> windows, double? creditBalance, String? detail, String? errorCode
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProviderUsageDtoCopyWithImpl<$Res>
+    implements $ProviderUsageDtoCopyWith<$Res> {
+  _$ProviderUsageDtoCopyWithImpl(this._self, this._then);
+
+  final ProviderUsageDto _self;
+  final $Res Function(ProviderUsageDto) _then;
+
+/// Create a copy of ProviderUsageDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? connectionId = null,Object? status = null,Object? fetchedAt = null,Object? provider = null,Object? plan = freezed,Object? windows = null,Object? creditBalance = freezed,Object? detail = freezed,Object? errorCode = freezed,}) {
+  return _then(_self.copyWith(
+connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as ProviderUsageStatus,fetchedAt: null == fetchedAt ? _self.fetchedAt : fetchedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,plan: freezed == plan ? _self.plan : plan // ignore: cast_nullable_to_non_nullable
+as String?,windows: null == windows ? _self.windows : windows // ignore: cast_nullable_to_non_nullable
+as List<ProviderUsageWindowDto>,creditBalance: freezed == creditBalance ? _self.creditBalance : creditBalance // ignore: cast_nullable_to_non_nullable
+as double?,detail: freezed == detail ? _self.detail : detail // ignore: cast_nullable_to_non_nullable
+as String?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ProviderUsageDto].
+extension ProviderUsageDtoPatterns on ProviderUsageDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProviderUsageDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ProviderUsageDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProviderUsageDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _ProviderUsageDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProviderUsageDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ProviderUsageDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String connectionId,  ProviderUsageStatus status,  DateTime fetchedAt,  String provider,  String? plan,  List<ProviderUsageWindowDto> windows,  double? creditBalance,  String? detail,  String? errorCode)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ProviderUsageDto() when $default != null:
+return $default(_that.connectionId,_that.status,_that.fetchedAt,_that.provider,_that.plan,_that.windows,_that.creditBalance,_that.detail,_that.errorCode);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String connectionId,  ProviderUsageStatus status,  DateTime fetchedAt,  String provider,  String? plan,  List<ProviderUsageWindowDto> windows,  double? creditBalance,  String? detail,  String? errorCode)  $default,) {final _that = this;
+switch (_that) {
+case _ProviderUsageDto():
+return $default(_that.connectionId,_that.status,_that.fetchedAt,_that.provider,_that.plan,_that.windows,_that.creditBalance,_that.detail,_that.errorCode);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String connectionId,  ProviderUsageStatus status,  DateTime fetchedAt,  String provider,  String? plan,  List<ProviderUsageWindowDto> windows,  double? creditBalance,  String? detail,  String? errorCode)?  $default,) {final _that = this;
+switch (_that) {
+case _ProviderUsageDto() when $default != null:
+return $default(_that.connectionId,_that.status,_that.fetchedAt,_that.provider,_that.plan,_that.windows,_that.creditBalance,_that.detail,_that.errorCode);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ProviderUsageDto implements ProviderUsageDto {
+  const _ProviderUsageDto({required this.connectionId, required this.status, required this.fetchedAt, this.provider = '', this.plan, final  List<ProviderUsageWindowDto> windows = const <ProviderUsageWindowDto>[], this.creditBalance, this.detail, this.errorCode}): _windows = windows;
+  factory _ProviderUsageDto.fromJson(Map<String, dynamic> json) => _$ProviderUsageDtoFromJson(json);
+
+@override final  String connectionId;
+@override final  ProviderUsageStatus status;
+@override final  DateTime fetchedAt;
+@override@JsonKey() final  String provider;
+@override final  String? plan;
+ final  List<ProviderUsageWindowDto> _windows;
+@override@JsonKey() List<ProviderUsageWindowDto> get windows {
+  if (_windows is EqualUnmodifiableListView) return _windows;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_windows);
+}
+
+@override final  double? creditBalance;
+@override final  String? detail;
+@override final  String? errorCode;
+
+/// Create a copy of ProviderUsageDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ProviderUsageDtoCopyWith<_ProviderUsageDto> get copyWith => __$ProviderUsageDtoCopyWithImpl<_ProviderUsageDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ProviderUsageDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderUsageDto&&(identical(other.connectionId, connectionId) || other.connectionId == connectionId)&&(identical(other.status, status) || other.status == status)&&(identical(other.fetchedAt, fetchedAt) || other.fetchedAt == fetchedAt)&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.plan, plan) || other.plan == plan)&&const DeepCollectionEquality().equals(other._windows, _windows)&&(identical(other.creditBalance, creditBalance) || other.creditBalance == creditBalance)&&(identical(other.detail, detail) || other.detail == detail)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,connectionId,status,fetchedAt,provider,plan,const DeepCollectionEquality().hash(_windows),creditBalance,detail,errorCode);
+
+@override
+String toString() {
+  return 'ProviderUsageDto(connectionId: $connectionId, status: $status, fetchedAt: $fetchedAt, provider: $provider, plan: $plan, windows: $windows, creditBalance: $creditBalance, detail: $detail, errorCode: $errorCode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ProviderUsageDtoCopyWith<$Res> implements $ProviderUsageDtoCopyWith<$Res> {
+  factory _$ProviderUsageDtoCopyWith(_ProviderUsageDto value, $Res Function(_ProviderUsageDto) _then) = __$ProviderUsageDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String connectionId, ProviderUsageStatus status, DateTime fetchedAt, String provider, String? plan, List<ProviderUsageWindowDto> windows, double? creditBalance, String? detail, String? errorCode
+});
+
+
+
+
+}
+/// @nodoc
+class __$ProviderUsageDtoCopyWithImpl<$Res>
+    implements _$ProviderUsageDtoCopyWith<$Res> {
+  __$ProviderUsageDtoCopyWithImpl(this._self, this._then);
+
+  final _ProviderUsageDto _self;
+  final $Res Function(_ProviderUsageDto) _then;
+
+/// Create a copy of ProviderUsageDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? connectionId = null,Object? status = null,Object? fetchedAt = null,Object? provider = null,Object? plan = freezed,Object? windows = null,Object? creditBalance = freezed,Object? detail = freezed,Object? errorCode = freezed,}) {
+  return _then(_ProviderUsageDto(
+connectionId: null == connectionId ? _self.connectionId : connectionId // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as ProviderUsageStatus,fetchedAt: null == fetchedAt ? _self.fetchedAt : fetchedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,plan: freezed == plan ? _self.plan : plan // ignore: cast_nullable_to_non_nullable
+as String?,windows: null == windows ? _self._windows : windows // ignore: cast_nullable_to_non_nullable
+as List<ProviderUsageWindowDto>,creditBalance: freezed == creditBalance ? _self.creditBalance : creditBalance // ignore: cast_nullable_to_non_nullable
+as double?,detail: freezed == detail ? _self.detail : detail // ignore: cast_nullable_to_non_nullable
+as String?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
 }
 
 

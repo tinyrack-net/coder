@@ -707,6 +707,14 @@ void main() {
         connection,
       ]);
       expect(
+        await client.listProviderUsage(),
+        isA<List<ProviderUsageDto>>().having(
+          (usage) => usage.single.connectionId,
+          'connection id',
+          connection.id,
+        ),
+      );
+      expect(
         await client.connectProviderApiKey(definition.id, 'api-key'),
         connection,
       );
@@ -938,6 +946,7 @@ void main() {
           promptsSetSkillEnabledProcedure.name,
           providersCatalogProcedure.name,
           providersListConnectionsProcedure.name,
+          providersListUsageProcedure.name,
           providersConnectApiKeyProcedure.name,
           providersConnectNoneProcedure.name,
           providersStartAuthProcedure.name,
@@ -979,6 +988,7 @@ void main() {
       'feature_test__composer_file_mention__contract',
       'feature_test__composer_slash_command__contract',
       'feature_test__provider_catalog__contract',
+      'feature_test__provider_usage__contract',
       'feature_test__provider_connection_management__contract',
       'feature_test__provider_oauth__contract',
       'feature_test__provider_custom__contract',
@@ -1425,6 +1435,15 @@ void _registerFixtureMethods(
     ).toJson(),
     providersListConnectionsProcedure.name: ProviderConnectionsResultDto(
       connections: <ProviderConnectionDto>[connection],
+    ).toJson(),
+    providersListUsageProcedure.name: ProviderUsageResultDto(
+      usage: <ProviderUsageDto>[
+        ProviderUsageDto(
+          connectionId: connection.id,
+          status: ProviderUsageStatus.unsupported,
+          fetchedAt: workspace.createdAt,
+        ),
+      ],
     ).toJson(),
     providersConnectApiKeyProcedure.name: ProviderConnectionResultDto(
       connection: connection,

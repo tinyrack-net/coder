@@ -92,7 +92,11 @@ abstract interface class SessionRepository {
   );
 
   /// Records what the last response reported for the live context window.
-  Future<SessionDto> recordContextTokens(String id, int tokens);
+  Future<SessionDto> recordContextTokens(
+    String id,
+    int tokens, {
+    required double? usageCostUsd,
+  });
 
   /// Caches the context window of the model last resolved for this session.
   Future<SessionDto> recordContextWindow(String id, int? window);

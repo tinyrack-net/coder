@@ -3166,6 +3166,84 @@ abstract class AppLocalizations {
   /// **'{percent}% of the context window used'**
   String sessionContextMeterValue(int percent);
 
+  /// No description provided for @sessionContextDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Context usage'**
+  String get sessionContextDetailsTitle;
+
+  /// No description provided for @sessionContextPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% used'**
+  String sessionContextPercent(int percent);
+
+  /// No description provided for @sessionContextTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} / {max} tokens'**
+  String sessionContextTokens(String used, String max);
+
+  /// No description provided for @sessionContextCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Session cost {cost}'**
+  String sessionContextCost(String cost);
+
+  /// No description provided for @sessionQuotaLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading provider usage'**
+  String get sessionQuotaLoading;
+
+  /// No description provided for @sessionQuotaError.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider usage is temporarily unavailable.'**
+  String get sessionQuotaError;
+
+  /// No description provided for @sessionQuotaProviderPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} · {plan}'**
+  String sessionQuotaProviderPlan(String provider, String plan);
+
+  /// No description provided for @sessionQuotaPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% used'**
+  String sessionQuotaPercent(int percent);
+
+  /// No description provided for @sessionQuotaResets.
+  ///
+  /// In en, this message translates to:
+  /// **'Resets {time}'**
+  String sessionQuotaResets(String time);
+
+  /// No description provided for @sessionQuotaCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits {amount}'**
+  String sessionQuotaCredits(String amount);
+
+  /// No description provided for @sessionQuotaWindowSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Session limit'**
+  String get sessionQuotaWindowSession;
+
+  /// No description provided for @sessionQuotaWindowWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly limit'**
+  String get sessionQuotaWindowWeekly;
+
+  /// No description provided for @sessionQuotaWindowCodeReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Code review limit'**
+  String get sessionQuotaWindowCodeReview;
+
   /// Error shown when a slash command is submitted with attachments.
   ///
   /// In en, this message translates to:

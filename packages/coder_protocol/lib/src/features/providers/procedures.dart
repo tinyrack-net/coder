@@ -23,6 +23,16 @@ final providersListConnectionsProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
+/// Reads subscription quota for all configured provider connections.
+final providersListUsageProcedure =
+    RpcProcedure<EmptyParamsDto, ProviderUsageResultDto>(
+      name: 'providers.listUsage',
+      decodeParams: EmptyParamsDto.fromJson,
+      encodeParams: (value) => value.toJson(),
+      decodeResult: ProviderUsageResultDto.fromJson,
+      encodeResult: (value) => value.toJson(),
+    );
+
 /// Typed v4 transport descriptor.
 final providersConnectApiKeyProcedure =
     RpcProcedure<ProviderConnectApiKeyParamsDto, ProviderConnectionResultDto>(
@@ -182,6 +192,7 @@ final providersCatalogUpdatedNotification = RpcNotification<ProviderCatalogDto>(
 final providersProcedures = <RpcProcedureDescriptor>[
   providersCatalogProcedure,
   providersListConnectionsProcedure,
+  providersListUsageProcedure,
   providersConnectApiKeyProcedure,
   providersConnectNoneProcedure,
   providersStartAuthProcedure,

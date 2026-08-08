@@ -29,6 +29,7 @@ import 'package:coder_daemon/src/features/providers/infrastructure/provider_adap
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_catalog.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_usage_service.dart';
 import 'package:coder_daemon/src/features/providers/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/relay/application/relay_control_service.dart';
 import 'package:coder_daemon/src/features/relay/application/relay_pairing_service.dart';
@@ -64,6 +65,7 @@ import 'package:coder_daemon/src/transport/rpc/server.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:coder_relay_protocol/coder_relay_protocol.dart';
 import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
 import 'package:lua_tool_runtime/lua_tool_runtime.dart' as lua;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -120,6 +122,7 @@ final class DaemonHostOptions {
     this.ids,
     this.modelDiscovery,
     this.oauthGateway,
+    this.providerUsageGateway,
     this.providerCatalogMetadataSource,
     this.workspacePaths,
     this.git,
@@ -142,6 +145,9 @@ final class DaemonHostOptions {
 
   /// Provider authorization port.
   final ProviderOAuthGateway? oauthGateway;
+
+  /// Provider subscription usage transport.
+  final ProviderUsageGateway? providerUsageGateway;
 
   /// Provider catalog metadata port.
   final ProviderCatalogMetadataSource? providerCatalogMetadataSource;
@@ -185,6 +191,8 @@ abstract final class DaemonApplication {
     final effectiveIds = options.ids ?? ids;
     final effectiveModelDiscovery = options.modelDiscovery ?? modelDiscovery;
     final effectiveOAuthGateway = options.oauthGateway ?? oauthGateway;
+    final effectiveUsageGateway =
+        options.providerUsageGateway ?? OpenAIProviderUsageGateway(Dio());
     final effectiveCatalogMetadataSource =
         options.providerCatalogMetadataSource ?? providerCatalogMetadataSource;
     final effectiveWorkspacePaths = options.workspacePaths ?? workspacePaths;
@@ -307,6 +315,9 @@ abstract final class DaemonApplication {
           const GeminiInteractionsWire(),
         ],
       );
+      final oauthRefresher = OAuthCredentialRefresher(
+        registry: providerRegistry,
+      );
       final providers = ProviderConnectionService(
         repository: database.providerDao,
         credentials: credentials,
@@ -320,10 +331,17 @@ abstract final class DaemonApplication {
           metadataSource: effectiveCatalogMetadataSource,
         ),
         modelDiscovery: effectiveModelDiscovery,
-        oauthRefresher: OAuthCredentialRefresher(registry: providerRegistry),
+        oauthRefresher: oauthRefresher,
         fixedProvider: effectiveProvider,
       );
       await providers.initialize();
+      final providerUsage = ProviderUsageService(
+        repository: database.providerDao,
+        credentials: credentials,
+        gateway: effectiveUsageGateway,
+        oauthRefresher: oauthRefresher,
+        clock: effectiveClock,
+      );
       final models = ProviderModelResolver(providers);
       final providerAuth = ProviderAuthCoordinator(
         registry: providerRegistry,
@@ -679,6 +697,7 @@ abstract final class DaemonApplication {
           ),
           ...providerRpcBindings(
             providers: providers,
+            usage: providerUsage,
             auth: providerAuth,
             agentDefinitions: agentDefinitions,
           ),

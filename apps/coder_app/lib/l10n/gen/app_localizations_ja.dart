@@ -1749,6 +1749,59 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get sessionContextDetailsTitle => 'コンテキスト使用量';
+
+  @override
+  String sessionContextPercent(int percent) {
+    return '$percent% 使用';
+  }
+
+  @override
+  String sessionContextTokens(String used, String max) {
+    return '$used / $max トークン';
+  }
+
+  @override
+  String sessionContextCost(String cost) {
+    return 'セッション料金 $cost';
+  }
+
+  @override
+  String get sessionQuotaLoading => 'プロバイダー使用量を読み込み中';
+
+  @override
+  String get sessionQuotaError => 'プロバイダー使用量を一時的に取得できません。';
+
+  @override
+  String sessionQuotaProviderPlan(String provider, String plan) {
+    return '$provider · $plan';
+  }
+
+  @override
+  String sessionQuotaPercent(int percent) {
+    return '$percent% 使用';
+  }
+
+  @override
+  String sessionQuotaResets(String time) {
+    return '$time にリセット';
+  }
+
+  @override
+  String sessionQuotaCredits(String amount) {
+    return 'クレジット $amount';
+  }
+
+  @override
+  String get sessionQuotaWindowSession => 'セッション上限';
+
+  @override
+  String get sessionQuotaWindowWeekly => '週間上限';
+
+  @override
+  String get sessionQuotaWindowCodeReview => 'コードレビュー上限';
+
+  @override
   String get composerCommandNoAttachments =>
       'Remove attachments to run a command.';
 

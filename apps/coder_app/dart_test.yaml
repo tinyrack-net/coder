@@ -197,6 +197,9 @@ tags:
   feature_test__tool_image_context__widget:
   feature_test__tool_exec_session__widget:
   feature_test__tool_context_budget__widget:
+  feature_test__provider_usage__widget:
+  feature_test__provider_usage__e2e:
+  feature_scenario__provider_usage__context_usage_hover__e2e:
   feature_test__mcp_resource_access__widget:
   feature_test__tool_search_deferred__widget:
   feature_test__tool_clock__widget:

@@ -1723,6 +1723,59 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get sessionContextDetailsTitle => '컨텍스트 사용량';
+
+  @override
+  String sessionContextPercent(int percent) {
+    return '$percent% 사용';
+  }
+
+  @override
+  String sessionContextTokens(String used, String max) {
+    return '$used / $max 토큰';
+  }
+
+  @override
+  String sessionContextCost(String cost) {
+    return '세션 비용 $cost';
+  }
+
+  @override
+  String get sessionQuotaLoading => 'Provider 사용량 불러오는 중';
+
+  @override
+  String get sessionQuotaError => 'Provider 사용량을 일시적으로 불러올 수 없습니다.';
+
+  @override
+  String sessionQuotaProviderPlan(String provider, String plan) {
+    return '$provider · $plan';
+  }
+
+  @override
+  String sessionQuotaPercent(int percent) {
+    return '$percent% 사용';
+  }
+
+  @override
+  String sessionQuotaResets(String time) {
+    return '$time 재설정';
+  }
+
+  @override
+  String sessionQuotaCredits(String amount) {
+    return '크레딧 $amount';
+  }
+
+  @override
+  String get sessionQuotaWindowSession => '세션 한도';
+
+  @override
+  String get sessionQuotaWindowWeekly => '주간 한도';
+
+  @override
+  String get sessionQuotaWindowCodeReview => '코드 리뷰 한도';
+
+  @override
   String get composerCommandNoAttachments => '명령을 실행하려면 첨부를 제거하세요.';
 
   @override

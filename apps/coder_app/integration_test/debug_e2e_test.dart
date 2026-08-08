@@ -776,11 +776,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('model-search-field')),
-        'gpt-5.6-sol',
+        'gpt-5.2',
       );
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+        find.byKey(const ValueKey('model-option-openai-gpt-5.2')),
       );
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -839,11 +839,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('model-search-field')),
-        'gpt-5.6-sol',
+        'gpt-5.2',
       );
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+        find.byKey(const ValueKey('model-option-openai-gpt-5.2')),
       );
       await tester.pumpAndSettle();
 
@@ -883,6 +883,19 @@ void main() {
         find.text('Parent completed.', findRichText: true),
         setupClient,
       );
+      final contextMeter = find.byKey(
+        const ValueKey<String>('session-composer-context-meter'),
+      );
+      await pumpUntil(tester, contextMeter);
+      final contextMouse = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      await contextMouse.addPointer(location: Offset.zero);
+      addTearDown(contextMouse.removePointer);
+      await contextMouse.moveTo(tester.getCenter(contextMeter));
+      await pumpUntil(tester, find.text('컨텍스트 사용량'));
+      await contextMouse.moveTo(Offset.zero);
+      await pumpUntilGone(tester, find.text('컨텍스트 사용량'));
       // The child works asynchronously; wait for its FINAL_ANSWER so the
       // track rows below render settled icons instead of live spinners.
       late SessionDto spawnedChild;
@@ -2031,6 +2044,8 @@ void main() {
       'feature_test__skill_management__e2e',
       'feature_test__agent_collaboration__e2e',
       'feature_test__provider_catalog__e2e',
+      'feature_test__provider_usage__e2e',
+      'feature_scenario__provider_usage__context_usage_hover__e2e',
       'feature_test__provider_connection_management__e2e',
       'feature_test__provider_custom__e2e',
       'feature_test__desktop_window_chrome__e2e',

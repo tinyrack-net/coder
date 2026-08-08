@@ -19,6 +19,7 @@ tags:
   feature_test__composer_slash_command__contract:
   feature_test__skill_management__contract:
   feature_test__provider_catalog__contract:
+  feature_test__provider_usage__contract:
   feature_test__provider_connection_management__contract:
   feature_test__provider_oauth__contract:
   feature_test__provider_custom__contract:

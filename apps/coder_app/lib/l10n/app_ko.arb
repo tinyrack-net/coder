@@ -642,5 +642,18 @@
   "composerDropFilesHere": "여기에 파일을 놓으세요",
   "@composerDropFilesHere": {
     "description": "Instruction shown over a composer pane while files are dragged over it."
-  }
+  },
+  "sessionContextDetailsTitle": "컨텍스트 사용량",
+  "sessionContextPercent": "{percent}% 사용",
+  "sessionContextTokens": "{used} / {max} 토큰",
+  "sessionContextCost": "세션 비용 {cost}",
+  "sessionQuotaLoading": "Provider 사용량 불러오는 중",
+  "sessionQuotaError": "Provider 사용량을 일시적으로 불러올 수 없습니다.",
+  "sessionQuotaProviderPlan": "{provider} · {plan}",
+  "sessionQuotaPercent": "{percent}% 사용",
+  "sessionQuotaResets": "{time} 재설정",
+  "sessionQuotaCredits": "크레딧 {amount}",
+  "sessionQuotaWindowSession": "세션 한도",
+  "sessionQuotaWindowWeekly": "주간 한도",
+  "sessionQuotaWindowCodeReview": "코드 리뷰 한도"
 }
