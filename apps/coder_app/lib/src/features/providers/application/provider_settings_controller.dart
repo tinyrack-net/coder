@@ -142,6 +142,12 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     );
   }
 
+  /// Lazily reads subscription quota when the context preview opens.
+  Future<List<ProviderUsageDto>> loadUsage() async {
+    final api = await _requireConnection();
+    return api.providers.listProviderUsage();
+  }
+
   /// Connects a hosted built-in provider with an API key.
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,

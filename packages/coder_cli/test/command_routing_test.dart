@@ -491,6 +491,10 @@ final class _FakeClient implements CoderClient, ProvidersApi, AgentsApi {
       <ProviderConnectionDto>[_connection('openai', 'OpenAI')];
 
   @override
+  Future<List<ProviderUsageDto>> listProviderUsage() async =>
+      const <ProviderUsageDto>[];
+
+  @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey, {

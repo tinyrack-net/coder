@@ -745,6 +745,7 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   lastError: json['lastError'] as String?,
   contextTokens: (json['contextTokens'] as num?)?.toInt() ?? 0,
   contextWindow: (json['contextWindow'] as num?)?.toInt(),
+  totalCostUsd: (json['totalCostUsd'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
@@ -770,6 +771,7 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'lastError': instance.lastError,
       'contextTokens': instance.contextTokens,
       'contextWindow': instance.contextWindow,
+      'totalCostUsd': instance.totalCostUsd,
     };
 
 const _$SessionOriginEnumMap = {
@@ -1248,6 +1250,69 @@ const _$ProviderCredentialOriginEnumMap = {
   ProviderCredentialOrigin.stored: 'stored',
   ProviderCredentialOrigin.oauth: 'oauth',
   ProviderCredentialOrigin.none: 'none',
+};
+
+_ProviderUsageWindowDto _$ProviderUsageWindowDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderUsageWindowDto(
+  kind: $enumDecode(_$ProviderUsageWindowKindEnumMap, json['kind']),
+  usedPercent: (json['usedPercent'] as num).toDouble(),
+  resetsAt: json['resetsAt'] == null
+      ? null
+      : DateTime.parse(json['resetsAt'] as String),
+);
+
+Map<String, dynamic> _$ProviderUsageWindowDtoToJson(
+  _ProviderUsageWindowDto instance,
+) => <String, dynamic>{
+  'kind': _$ProviderUsageWindowKindEnumMap[instance.kind]!,
+  'usedPercent': instance.usedPercent,
+  'resetsAt': instance.resetsAt?.toIso8601String(),
+};
+
+const _$ProviderUsageWindowKindEnumMap = {
+  ProviderUsageWindowKind.session: 'session',
+  ProviderUsageWindowKind.weekly: 'weekly',
+  ProviderUsageWindowKind.codeReview: 'codeReview',
+};
+
+_ProviderUsageDto _$ProviderUsageDtoFromJson(Map<String, dynamic> json) =>
+    _ProviderUsageDto(
+      connectionId: json['connectionId'] as String,
+      status: $enumDecode(_$ProviderUsageStatusEnumMap, json['status']),
+      fetchedAt: DateTime.parse(json['fetchedAt'] as String),
+      provider: json['provider'] as String? ?? '',
+      plan: json['plan'] as String?,
+      windows:
+          (json['windows'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    ProviderUsageWindowDto.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <ProviderUsageWindowDto>[],
+      creditBalance: (json['creditBalance'] as num?)?.toDouble(),
+      detail: json['detail'] as String?,
+      errorCode: json['errorCode'] as String?,
+    );
+
+Map<String, dynamic> _$ProviderUsageDtoToJson(_ProviderUsageDto instance) =>
+    <String, dynamic>{
+      'connectionId': instance.connectionId,
+      'status': _$ProviderUsageStatusEnumMap[instance.status]!,
+      'fetchedAt': instance.fetchedAt.toIso8601String(),
+      'provider': instance.provider,
+      'plan': instance.plan,
+      'windows': instance.windows,
+      'creditBalance': instance.creditBalance,
+      'detail': instance.detail,
+      'errorCode': instance.errorCode,
+    };
+
+const _$ProviderUsageStatusEnumMap = {
+  ProviderUsageStatus.available: 'available',
+  ProviderUsageStatus.unsupported: 'unsupported',
+  ProviderUsageStatus.error: 'error',
 };
 
 _ProviderAuthAttemptDto _$ProviderAuthAttemptDtoFromJson(

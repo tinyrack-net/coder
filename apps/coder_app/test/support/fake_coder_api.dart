@@ -104,6 +104,7 @@ final class FakeCoderApi
     Map<String, List<TimelineEventDto>>? timelines,
     Map<String, GoalDto>? goals,
     Map<String, List<ProviderModelDto>>? models,
+    List<ProviderUsageDto>? providerUsage,
     this.eventStream,
     this.agentListError,
     this.skillListError,
@@ -169,6 +170,9 @@ final class FakeCoderApi
            entry.key: List<TimelineEventDto>.of(entry.value),
        },
        _goals = Map<String, GoalDto>.of(goals ?? const <String, GoalDto>{}),
+       _providerUsage = List<ProviderUsageDto>.of(
+         providerUsage ?? const <ProviderUsageDto>[],
+       ),
        _models = <String, List<ProviderModelDto>>{
          'openai': <ProviderModelDto>[_openAIModel],
          for (final entry
@@ -347,6 +351,7 @@ final class FakeCoderApi
   final List<SkillDto> _projectSkills;
   final Map<String, List<TimelineEventDto>> _timelines;
   final Map<String, GoalDto> _goals;
+  final List<ProviderUsageDto> _providerUsage;
   final Map<String, List<ProviderModelDto>> _models;
 
   /// Optional event stream that can model transport lifecycle races.
@@ -1598,6 +1603,10 @@ final class FakeCoderApi
       _models[connectionId] ?? const <ProviderModelDto>[],
     );
   }
+
+  @override
+  Future<List<ProviderUsageDto>> listProviderUsage() async =>
+      List<ProviderUsageDto>.unmodifiable(_providerUsage);
 
   @override
   Future<SessionModelSelectionDto?> getDefaultModel() async => _defaultModel;

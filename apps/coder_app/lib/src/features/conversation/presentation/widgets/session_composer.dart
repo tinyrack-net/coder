@@ -1217,6 +1217,9 @@ class SessionComposer extends StatefulWidget {
     this.attachmentInput,
     this.contextTokens = 0,
     this.contextWindow,
+    this.totalCostUsd,
+    this.providerConnectionId,
+    this.onLoadProviderUsage,
     this.commands = const <ComposerCommand>[],
     this.suggestions = ComposerSuggestionsState.closed,
     this.onCompletionQueryChanged,
@@ -1234,6 +1237,15 @@ class SessionComposer extends StatefulWidget {
   /// Context window of the session's model; null hides the meter entirely
   /// rather than showing a percentage of a denominator nobody advertised.
   final int? contextWindow;
+
+  /// Exact accumulated cost, or null when any usage could not be priced.
+  final double? totalCostUsd;
+
+  /// Connection currently supplying the effective model.
+  final String? providerConnectionId;
+
+  /// Lazy quota loader invoked only after the preview opens.
+  final Future<List<ProviderUsageDto>> Function()? onLoadProviderUsage;
 
   /// Receives the trimmed prompt text.
   final FutureOr<void> Function(ComposerSubmission submission) onSubmit;
@@ -1524,8 +1536,6 @@ class _SessionComposerState extends State<SessionComposer> {
                             ),
                         ],
                       ),
-                    if (widget.contextWindow case final window? when window > 0)
-                      _ContextMeter(used: widget.contextTokens, window: window),
                     Row(
                       spacing: TRSpacing.small,
                       children: <Widget>[
@@ -1549,6 +1559,15 @@ class _SessionComposerState extends State<SessionComposer> {
                             ),
                           ),
                         ),
+                        if (widget.contextWindow case final window?
+                            when window > 0)
+                          _ContextMeter(
+                            used: widget.contextTokens,
+                            window: window,
+                            totalCostUsd: widget.totalCostUsd,
+                            providerConnectionId: widget.providerConnectionId,
+                            onLoadProviderUsage: widget.onLoadProviderUsage,
+                          ),
                         TRTooltip(
                           message: queueing
                               ? l10n.composerQueueTooltip
@@ -1790,8 +1809,14 @@ class _SessionComposerState extends State<SessionComposer> {
 ///
 /// The number is the last response's own total, not a running sum, so it drops
 /// back to zero whenever the agent starts a new window.
-class _ContextMeter extends StatelessWidget {
-  const _ContextMeter({required this.used, required this.window});
+class _ContextMeter extends StatefulWidget {
+  const _ContextMeter({
+    required this.used,
+    required this.window,
+    this.totalCostUsd,
+    this.providerConnectionId,
+    this.onLoadProviderUsage,
+  });
 
   /// Tokens reported for the live window.
   final int used;
@@ -1799,25 +1824,277 @@ class _ContextMeter extends StatelessWidget {
   /// Size of the window; always greater than zero at this point.
   final int window;
 
+  final double? totalCostUsd;
+  final String? providerConnectionId;
+  final Future<List<ProviderUsageDto>> Function()? onLoadProviderUsage;
+
+  @override
+  State<_ContextMeter> createState() => _ContextMeterState();
+}
+
+class _ContextMeterState extends State<_ContextMeter> {
+  final FocusNode _triggerFocusNode = FocusNode(
+    debugLabel: 'session-composer-context-trigger',
+  );
+  final TRPreviewCardController _previewController = TRPreviewCardController();
+  Future<List<ProviderUsageDto>>? _usage;
+
+  @override
+  void initState() {
+    super.initState();
+    _triggerFocusNode.addListener(_handleTriggerFocus);
+  }
+
+  @override
+  void dispose() {
+    _triggerFocusNode
+      ..removeListener(_handleTriggerFocus)
+      ..dispose();
+    _previewController.dispose();
+    super.dispose();
+  }
+
+  void _handleOpen(bool open) {
+    if (!open || _usage != null || widget.onLoadProviderUsage == null) return;
+    final request = widget.onLoadProviderUsage!();
+    setState(() {
+      _usage = request;
+    });
+  }
+
+  void _handleTriggerFocus() {
+    if (_triggerFocusNode.hasFocus) _openPreview();
+  }
+
+  void _openPreview() {
+    _handleOpen(true);
+    _previewController.open();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final percent = ((used / window) * 100).round().clamp(0, 100);
-    return TRMeter(
-      key: const ValueKey<String>('session-composer-context-meter'),
-      value: used.toDouble().clamp(0, window.toDouble()),
-      max: window.toDouble(),
-      label: l10n.sessionContextMeter,
-      valueText: l10n.sessionContextMeterValue(percent),
-      // Warn while there is still room to react, and only call it dangerous
-      // once a long tool result could no longer fit.
-      variant: switch (percent) {
-        >= 95 => TRStatusVariant.danger,
-        >= 80 => TRStatusVariant.warning,
-        _ => TRStatusVariant.neutral,
-      },
+    final rawPercent = (widget.used / widget.window) * 100;
+    final percent = rawPercent.round().clamp(0, 100);
+    final variant = switch (rawPercent) {
+      > 90 => TRStatusVariant.danger,
+      >= 70 => TRStatusVariant.warning,
+      _ => TRStatusVariant.neutral,
+    };
+    return TRPreviewCard(
+      controller: _previewController,
+      placement: TRLayerPlacement.topEnd,
+      onOpenChange: _handleOpen,
+      trigger: TRIconButton(
+        key: const ValueKey<String>('session-composer-context-trigger'),
+        appearance: TRAppearance.ghost,
+        focusNode: _triggerFocusNode,
+        uiSize: TRUiSize.sm,
+        label: l10n.sessionContextMeter,
+        onPressed: _openPreview,
+        icon: ExcludeSemantics(
+          child: TRRadialMeter(
+            key: const ValueKey<String>('session-composer-context-meter'),
+            value: percent.toDouble(),
+            semanticLabel: l10n.sessionContextMeter,
+            uiSize: TRUiSize.sm,
+            variant: variant,
+          ),
+        ),
+      ),
+      content: _ContextUsageDetails(
+        used: widget.used,
+        window: widget.window,
+        percent: percent,
+        totalCostUsd: widget.totalCostUsd,
+        providerConnectionId: widget.providerConnectionId,
+        usage: _usage,
+      ),
     );
   }
+}
+
+class _ContextUsageDetails extends StatelessWidget {
+  const _ContextUsageDetails({
+    required this.used,
+    required this.window,
+    required this.percent,
+    required this.totalCostUsd,
+    required this.providerConnectionId,
+    required this.usage,
+  });
+
+  final int used;
+  final int window;
+  final int percent;
+  final double? totalCostUsd;
+  final String? providerConnectionId;
+  final Future<List<ProviderUsageDto>>? usage;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: TRSpacing.small,
+      children: <Widget>[
+        TRText(
+          l10n.sessionContextDetailsTitle,
+          variant: TRTextVariant.headingSm,
+        ),
+        TRText(l10n.sessionContextPercent(percent)),
+        TRText(
+          l10n.sessionContextTokens(
+            _compactNumber(used),
+            _compactNumber(window),
+          ),
+          variant: TRTextVariant.bodySm,
+          color: TRTextColor.muted,
+        ),
+        if (totalCostUsd case final cost?)
+          TRText(
+            l10n.sessionContextCost(_formatUsd(cost)),
+            variant: TRTextVariant.bodySm,
+            color: TRTextColor.muted,
+          ),
+        if (usage case final request?)
+          FutureBuilder<List<ProviderUsageDto>>(
+            future: request,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return _ProviderUsageLoading(label: l10n.sessionQuotaLoading);
+              }
+              if (snapshot.hasError) {
+                return _ProviderUsageMessage(label: l10n.sessionQuotaError);
+              }
+              final connectionId = providerConnectionId;
+              final value = snapshot.data
+                  ?.where((item) => item.connectionId == connectionId)
+                  .firstOrNull;
+              if (value == null ||
+                  value.status == ProviderUsageStatus.unsupported) {
+                return const SizedBox.shrink();
+              }
+              if (value.status == ProviderUsageStatus.error) {
+                return _ProviderUsageMessage(label: l10n.sessionQuotaError);
+              }
+              return _ProviderUsageDetails(value: value);
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _ProviderUsageLoading extends StatelessWidget {
+  const _ProviderUsageLoading({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    spacing: TRSpacing.small,
+    children: <Widget>[
+      const TRSeparator(variant: TRSeparatorVariant.muted),
+      TRProgress(label: label, uiSize: TRUiSize.sm),
+    ],
+  );
+}
+
+class _ProviderUsageMessage extends StatelessWidget {
+  const _ProviderUsageMessage({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    spacing: TRSpacing.small,
+    children: <Widget>[
+      const TRSeparator(variant: TRSeparatorVariant.muted),
+      TRText(label, variant: TRTextVariant.bodySm, color: TRTextColor.muted),
+    ],
+  );
+}
+
+class _ProviderUsageDetails extends StatelessWidget {
+  const _ProviderUsageDetails({required this.value});
+  final ProviderUsageDto value;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: TRSpacing.small,
+      children: <Widget>[
+        const TRSeparator(variant: TRSeparatorVariant.muted),
+        TRText(
+          value.plan == null
+              ? value.provider
+              : l10n.sessionQuotaProviderPlan(value.provider, value.plan!),
+          variant: TRTextVariant.label,
+          weight: TRTextWeight.strong,
+        ),
+        for (final quota in value.windows) ...<Widget>[
+          TRText(
+            _quotaLabel(l10n, quota.kind),
+            variant: TRTextVariant.bodySm,
+          ),
+          TRProgress(
+            value: quota.usedPercent,
+            uiSize: TRUiSize.sm,
+            variant: quota.usedPercent > 90
+                ? TRStatusVariant.danger
+                : quota.usedPercent >= 70
+                ? TRStatusVariant.warning
+                : TRStatusVariant.neutral,
+            label: l10n.sessionQuotaPercent(quota.usedPercent.round()),
+          ),
+          if (quota.resetsAt case final reset?)
+            TRText(
+              l10n.sessionQuotaResets(_formatReset(context, reset)),
+              variant: TRTextVariant.caption,
+              color: TRTextColor.muted,
+            ),
+        ],
+        if (value.creditBalance case final balance?)
+          TRText(
+            l10n.sessionQuotaCredits(_formatUsd(balance)),
+            variant: TRTextVariant.bodySm,
+          ),
+      ],
+    );
+  }
+}
+
+String _quotaLabel(
+  AppLocalizations l10n,
+  ProviderUsageWindowKind kind,
+) => switch (kind) {
+  ProviderUsageWindowKind.session => l10n.sessionQuotaWindowSession,
+  ProviderUsageWindowKind.weekly => l10n.sessionQuotaWindowWeekly,
+  ProviderUsageWindowKind.codeReview => l10n.sessionQuotaWindowCodeReview,
+};
+
+String _compactNumber(int value) {
+  if (value >= 1000000) return '${_compactDecimal(value / 1000000)}M';
+  if (value >= 1000) return '${_compactDecimal(value / 1000)}K';
+  return '$value';
+}
+
+String _compactDecimal(double value) => value >= 10 || value == value.round()
+    ? value.toStringAsFixed(0)
+    : value.toStringAsFixed(1);
+
+String _formatUsd(double value) =>
+    '\$${value < 0.01 ? value.toStringAsFixed(4) : value.toStringAsFixed(2)}';
+
+String _formatReset(BuildContext context, DateTime value) {
+  final local = value.toLocal();
+  final material = MaterialLocalizations.of(context);
+  return '${material.formatShortDate(local)} '
+      '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
 }
 
 class _QueuedTurnRow extends StatelessWidget {

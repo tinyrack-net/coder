@@ -1540,6 +1540,48 @@ void main() {
     },
   );
 
+  test(
+    'provider usage and exact session cost round-trip',
+    tags: const <String>['feature_test__provider_usage__contract'],
+    () {
+      final usage = ProviderUsageDto(
+        connectionId: 'openai',
+        status: ProviderUsageStatus.available,
+        fetchedAt: now,
+        provider: 'OpenAI',
+        plan: 'plus',
+        windows: <ProviderUsageWindowDto>[
+          ProviderUsageWindowDto(
+            kind: ProviderUsageWindowKind.session,
+            usedPercent: 42,
+            resetsAt: now.add(const Duration(hours: 1)),
+          ),
+        ],
+        creditBalance: 2.5,
+      );
+      _roundTrip(usage, (value) => value.toJson(), ProviderUsageDto.fromJson);
+      _roundTrip(
+        ProviderUsageResultDto(usage: <ProviderUsageDto>[usage]),
+        (value) => value.toJson(),
+        ProviderUsageResultDto.fromJson,
+      );
+      expect(providersListUsageProcedure.name, 'providers.listUsage');
+
+      final session = SessionDto(
+        id: 'session',
+        worktreeId: 'worktree',
+        title: 'Priced',
+        agentDefinitionId: 'coder',
+        origin: SessionOrigin.manual,
+        status: SessionStatus.idle,
+        createdAt: now,
+        updatedAt: now,
+        totalCostUsd: 1.25,
+      );
+      expect(SessionDto.fromJson(session.toJson()).totalCostUsd, 1.25);
+    },
+  );
+
   test('malformed required values and typed RPC values are rejected', () {
     expect(
       () => WorkspaceDto.fromJson(const <String, dynamic>{'id': 'missing'}),

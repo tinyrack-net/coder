@@ -1208,6 +1208,19 @@ abstract class ProviderConnectionsResultDto
 }
 
 @freezed
+/// Result containing quota usage for configured provider connections.
+abstract class ProviderUsageResultDto with _$ProviderUsageResultDto {
+  /// Creates a provider usage result.
+  const factory ProviderUsageResultDto({
+    required List<ProviderUsageDto> usage,
+  }) = _ProviderUsageResultDto;
+
+  /// Decodes a provider usage result.
+  factory ProviderUsageResultDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderUsageResultDtoFromJson(json);
+}
+
+@freezed
 /// Result containing one configured provider connection.
 abstract class ProviderConnectionResultDto with _$ProviderConnectionResultDto {
   /// Creates a provider connection result.

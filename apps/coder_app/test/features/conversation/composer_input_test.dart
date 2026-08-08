@@ -11,6 +11,7 @@ import 'package:coder_app/src/features/conversation/presentation/widgets/session
 import 'package:coder_app/src/shared/domain/fuzzy_match.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:dropwell/dropwell.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -386,6 +387,8 @@ void main() {
             composer: SessionComposer(
               key: ValueKey<double>(width),
               enabled: true,
+              contextTokens: 100000,
+              contextWindow: 200000,
               onSubmit: (_) {},
               bar: _bar(),
             ),
@@ -422,6 +425,12 @@ void main() {
       await pumpAt(200);
       expect(tester.takeException(), isNull);
       expect(find.byKey(overflowKey), findsOneWidget);
+      expect(
+        find.byKey(
+          const ValueKey<String>('session-composer-context-meter'),
+        ),
+        findsOneWidget,
+      );
       // The overflow stands in the dense chip row beside the attach and send
       // icon buttons, so it takes their square geometry at the same size.
       expect(
@@ -484,9 +493,10 @@ void main() {
       expect(find.byKey(meterKey), findsNothing);
 
       for (final expected in <(int, TRStatusVariant)>[
-        (32000, TRStatusVariant.neutral),
-        (170000, TRStatusVariant.warning),
-        (196000, TRStatusVariant.danger),
+        (0, TRStatusVariant.neutral),
+        (140000, TRStatusVariant.warning),
+        (180000, TRStatusVariant.warning),
+        (200000, TRStatusVariant.danger),
       ]) {
         await tester.pumpWidget(
           _harness(
@@ -500,11 +510,124 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final meter = tester.widget<TRMeter>(find.byKey(meterKey));
+        final meter = tester.widget<TRRadialMeter>(find.byKey(meterKey));
         expect(meter.variant, expected.$2, reason: '${expected.$1} tokens');
-        expect(meter.max, 200000);
-        expect(meter.value, expected.$1);
+        expect(meter.max, 100);
+        expect(meter.value, expected.$1 / 2000);
+        expect(meter.uiSize, TRUiSize.sm);
       }
+    },
+  );
+
+  testWidgets(
+    'hover opens context details and lazily loads current provider quota',
+    tags: const <String>[
+      'feature_test__tool_context_budget__widget',
+      'feature_test__provider_usage__widget',
+    ],
+    (tester) async {
+      var loads = 0;
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            contextTokens: 150000,
+            contextWindow: 200000,
+            totalCostUsd: 1.25,
+            providerConnectionId: 'openai',
+            onLoadProviderUsage: () async {
+              loads += 1;
+              return <ProviderUsageDto>[
+                ProviderUsageDto(
+                  connectionId: 'openai',
+                  status: ProviderUsageStatus.available,
+                  fetchedAt: DateTime.utc(2026),
+                  provider: 'OpenAI',
+                  plan: 'plus',
+                  windows: const <ProviderUsageWindowDto>[
+                    ProviderUsageWindowDto(
+                      kind: ProviderUsageWindowKind.session,
+                      usedPercent: 40,
+                    ),
+                  ],
+                ),
+              ];
+            },
+            onSubmit: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+
+      final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(pointer.removePointer);
+      await pointer.addPointer(location: Offset.zero);
+      await pointer.moveTo(
+        tester.getCenter(
+          find.byKey(
+            const ValueKey<String>('session-composer-context-meter'),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(loads, 1);
+      expect(find.text('75% 사용'), findsOneWidget);
+      expect(find.text('150K / 200K 토큰'), findsOneWidget);
+      expect(find.text(r'세션 비용 $1.25'), findsOneWidget);
+      expect(find.text('OpenAI · plus'), findsOneWidget);
+      expect(find.text('세션 한도'), findsOneWidget);
+      expect(loads, 1);
+    },
+  );
+
+  testWidgets(
+    'keyboard focus opens context details and loads quota once',
+    tags: const <String>[
+      'feature_test__tool_context_budget__widget',
+      'feature_test__provider_usage__widget',
+    ],
+    (tester) async {
+      var loads = 0;
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            contextTokens: 150000,
+            contextWindow: 200000,
+            providerConnectionId: 'openai',
+            onLoadProviderUsage: () async {
+              loads += 1;
+              return const <ProviderUsageDto>[];
+            },
+            onSubmit: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+
+      expect(find.text('컨텍스트 사용량'), findsNothing);
+      final trigger = find.byKey(
+        const ValueKey<String>('session-composer-context-trigger'),
+      );
+      final triggerFocus =
+          tester
+                .widgetList<Focus>(
+                  find.descendant(of: trigger, matching: find.byType(Focus)),
+                )
+                .singleWhere(
+                  (focus) =>
+                      focus.focusNode?.debugLabel ==
+                      'session-composer-context-trigger',
+                )
+                .focusNode!
+            ..requestFocus();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(triggerFocus.hasFocus, isTrue);
+      expect(loads, 1);
+      expect(find.text('컨텍스트 사용량'), findsOneWidget);
     },
   );
 
