@@ -21,6 +21,9 @@ void main() {
   final iosPodfile = iosPodfileFile.existsSync()
       ? iosPodfileFile.readAsStringSync()
       : '';
+  final iosProject = File(
+    'apps/coder_app/ios/Runner.xcodeproj/project.pbxproj',
+  ).readAsStringSync();
   final cargoKitCompat = File(
     'apps/coder_app/android/cargokit-gradle9-compat.gradle',
   );
@@ -218,6 +221,7 @@ void main() {
       iosPodfile,
       contains("config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'"),
     );
+    expect(iosProject, isNot(contains('FlutterGeneratedPluginSwiftPackage')));
   });
 
   test('native attachment plugins receive macOS and Windows debug builds', () {
