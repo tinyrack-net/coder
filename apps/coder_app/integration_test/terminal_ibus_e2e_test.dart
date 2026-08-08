@@ -140,12 +140,12 @@ void main() {
       final terminal = (await setupClient.terminals.listTerminals(
         checkout.id,
       )).single;
-      await pumpUntil(
-        tester,
-        find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
-      );
+      final terminalViewFinder = find
+          .byKey(ValueKey<String>('terminal-view-${terminal.id}'))
+          .hitTestable();
+      await pumpUntil(tester, terminalViewFinder);
       final terminalView = tester.widget<CoderTerminalView>(
-        find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
+        terminalViewFinder,
       );
       const wrapReadyMarker = '__CODER_WRAP_PROBE_READY__';
       await setupClient.terminals.writeTerminal(
