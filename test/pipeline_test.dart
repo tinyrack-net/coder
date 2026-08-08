@@ -230,6 +230,12 @@ void main() {
       iosPodfile,
       contains("raise 'Missing redundant Pods-Runner library reference'"),
     );
+    final iosBuild = _matrixEntry(
+      _job(workflow, 'mobile-debug-build'),
+      'macos-26',
+    );
+    expect(iosBuild, contains('flutter build ios --debug --no-codesign'));
+    expect(iosBuild, isNot(contains('--simulator')));
     expect(iosProject, isNot(contains('FlutterGeneratedPluginSwiftPackage')));
   });
 

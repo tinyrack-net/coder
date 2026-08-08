@@ -229,7 +229,7 @@ jobs:
           - os: macos-26
             gradle_cache: false
             command: >-
-              flutter build ios --debug --simulator --no-codesign
+              flutter build ios --debug --no-codesign
               -t lib/main_mobile.dart -v
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
