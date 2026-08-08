@@ -115,7 +115,7 @@ void main() {
       );
       final mark = tester.widget<Image>(find.byType(Image));
       expect((mark.image as AssetImage).assetName, contains('brand/coder'));
-      expect(mark.width, TRMeasurements.brandMarkSm);
+      expect(mark.width, TRMeasurements.measureXs);
     });
   });
 }

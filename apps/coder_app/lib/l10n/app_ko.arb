@@ -559,5 +559,9 @@
   "composerSuggestionsLabel": "제안",
   "@composerSuggestionsLabel": {
     "description": "Accessible name of the composer suggestion list."
+  },
+  "composerDropFilesHere": "여기에 파일을 놓으세요",
+  "@composerDropFilesHere": {
+    "description": "Instruction shown over a composer pane while files are dragged over it."
   }
 }

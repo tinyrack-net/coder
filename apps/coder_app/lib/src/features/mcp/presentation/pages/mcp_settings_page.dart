@@ -1,6 +1,7 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/mcp/application/mcp_servers_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
@@ -107,7 +108,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     return LayoutBuilder(
       key: const ValueKey<String>('mcp-settings-page'),
       builder: (context, constraints) {
-        if (constraints.maxWidth < TRBreakpoints.medium) {
+        if (constraints.maxWidth < CoderLayout.compactBreakpoint) {
           return selected == null && !_creating
               ? list
               : Column(
@@ -137,7 +138,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SizedBox(width: TRMeasurements.paneMd, child: list),
+            SizedBox(width: CoderLayout.settingsListWidth, child: list),
             const TRSeparator(
               orientation: TRSeparatorOrientation.vertical,
               variant: TRSeparatorVariant.muted,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/agents/application/agent_definitions_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/permission_picker.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
@@ -47,7 +48,8 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       data: (value) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < TRBreakpoints.medium;
+            final compact =
+                constraints.maxWidth < CoderLayout.compactBreakpoint;
             if (!compact &&
                 !value.definitions.any(
                   (definition) => definition.id == _selectedId,
@@ -76,7 +78,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             if (compact) return list;
             return Row(
               children: <Widget>[
-                SizedBox(width: TRMeasurements.paneMd, child: list),
+                SizedBox(width: CoderLayout.settingsListWidth, child: list),
                 const TRSeparator(
                   orientation: TRSeparatorOrientation.vertical,
                   variant: TRSeparatorVariant.muted,

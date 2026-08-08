@@ -1,3 +1,4 @@
+import 'package:coder_app/src/shared/presentation/coder_layout.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter/material.dart';
@@ -48,11 +49,11 @@ void main() {
       // An unbounded column strands a label and its control at opposite edges
       // of a wide window, which is the defect this cap exists to prevent.
       final card = tester.getRect(find.byType(TRCard));
-      expect(card.width, lessThanOrEqualTo(TRMeasurements.readingWidthMd));
+      expect(card.width, lessThanOrEqualTo(CoderLayout.settingsReadingWidth));
 
       // Centred, so a wide window does not strand the column against one
       // edge with a growing void beside it.
-      expect(card.width, TRMeasurements.readingWidthMd);
+      expect(card.width, CoderLayout.settingsReadingWidth);
       expect(
         card.left,
         moreOrLessEquals(1400 - card.right, epsilon: 0.5),
@@ -402,7 +403,7 @@ void main() {
               SettingsRow(title: TRText.inherit('Coder')),
             ],
           ),
-          width: TRMeasurements.paneMd,
+          width: CoderLayout.settingsListWidth,
         ),
       );
 

@@ -1,3 +1,4 @@
+import 'package:coder_app/src/shared/presentation/coder_layout.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -34,7 +35,7 @@ class SettingsScaffold extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                maxWidth: TRMeasurements.readingWidthMd,
+                maxWidth: CoderLayout.settingsReadingWidth,
               ),
               child: child,
             ),
@@ -378,7 +379,7 @@ class SettingsEmptyState extends StatelessWidget {
       padding: const EdgeInsets.all(TRSpacing.extraLarge),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-          maxWidth: TRMeasurements.readingWidthSm,
+          maxWidth: CoderLayout.settingsProseWidth,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

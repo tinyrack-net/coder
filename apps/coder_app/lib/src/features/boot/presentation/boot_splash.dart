@@ -20,8 +20,8 @@ class BootSplash extends StatelessWidget {
         child: Center(
           child: Image.asset(
             'assets/brand/coder-256.png',
-            width: TRMeasurements.brandMarkSm,
-            height: TRMeasurements.brandMarkSm,
+            width: TRMeasurements.measureXs,
+            height: TRMeasurements.measureXs,
           ),
         ),
       ),

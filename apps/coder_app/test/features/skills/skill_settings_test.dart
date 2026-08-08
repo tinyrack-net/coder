@@ -1,5 +1,6 @@
 import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/app/router/app_router.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -85,7 +86,7 @@ void main() {
       expect(selector, findsOneWidget);
       expect(
         tester.getSize(selector).width,
-        TRMeasurements.paneMd - 2 * TRSpacing.large,
+        CoderLayout.settingsListWidth - 2 * TRSpacing.large,
       );
       expect(
         tester.getTopLeft(selector).dx,

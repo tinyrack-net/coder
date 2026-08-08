@@ -2,6 +2,7 @@ import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/skills/application/skills_controller.dart';
 import 'package:coder_app/src/features/workspace/application/workspace_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -54,7 +55,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     final state = ref.watch(provider);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < TRBreakpoints.medium;
+        final compact = constraints.maxWidth < CoderLayout.compactBreakpoint;
         if (compact) {
           return Column(
             children: <Widget>[
@@ -142,7 +143,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
       Row(
         children: <Widget>[
           SizedBox(
-            width: TRMeasurements.paneMd,
+            width: CoderLayout.settingsListWidth,
             child: Column(
               children: <Widget>[
                 _ProjectSelector(

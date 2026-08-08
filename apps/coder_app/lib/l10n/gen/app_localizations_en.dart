@@ -1667,4 +1667,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerSuggestionsLabel => 'Suggestions';
+
+  @override
+  String get composerDropFilesHere => 'Drop files here';
 }
