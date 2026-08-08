@@ -1790,4 +1790,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerSuggestionsLabel => 'Suggestions';
+
+  @override
+  String get composerDropFilesHere => 'ここにファイルをドロップ';
 }

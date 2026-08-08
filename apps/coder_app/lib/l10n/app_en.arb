@@ -2284,5 +2284,9 @@
   "composerSuggestionsLabel": "Suggestions",
   "@composerSuggestionsLabel": {
     "description": "Accessible name of the composer suggestion list."
+  },
+  "composerDropFilesHere": "Drop files here",
+  "@composerDropFilesHere": {
+    "description": "Instruction shown over a composer pane while files are dragged over it."
   }
 }

@@ -1759,4 +1759,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerSuggestionsLabel => '제안';
+
+  @override
+  String get composerDropFilesHere => '여기에 파일을 놓으세요';
 }

@@ -204,31 +204,23 @@ class _CoderListRowState extends State<CoderListRow> {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: _interactive ? widget.onTap : null,
-              child: AnimatedContainer(
-                duration: TRMotion.fast,
-                curve: TRMotion.standard,
-                decoration: BoxDecoration(
-                  color: background,
-                  borderRadius: const BorderRadius.all(TRRadii.medium),
-                ),
-                // The ring is always present and only changes colour. Adding
-                // and removing a border inset the content box instead, which
-                // re-laid-out the trailing control and destroyed its focus
-                // node as traversal stepped onto it.
-                foregroundDecoration: BoxDecoration(
-                  border: Border.all(
-                    color: _focused ? colors.focus : Colors.transparent,
-                    width: TRControlMetrics.focusWidth,
+              child: TRFocusRing(
+                focused: _focused,
+                child: AnimatedContainer(
+                  duration: TRMotion.fast,
+                  curve: TRMotion.standard,
+                  decoration: BoxDecoration(
+                    color: background,
+                    borderRadius: const BorderRadius.all(TRRadii.medium),
                   ),
-                  borderRadius: const BorderRadius.all(TRRadii.medium),
+                  padding:
+                      widget.contentPadding ??
+                      EdgeInsets.symmetric(
+                        horizontal: TRSpacing.small,
+                        vertical: verticalPadding,
+                      ),
+                  child: content,
                 ),
-                padding:
-                    widget.contentPadding ??
-                    EdgeInsets.symmetric(
-                      horizontal: TRSpacing.small,
-                      vertical: verticalPadding,
-                    ),
-                child: content,
               ),
             ),
           ),

@@ -6,6 +6,7 @@ import 'package:coder_app/src/app/composition/app_services.dart';
 import 'package:coder_app/src/app/platform/external_url_opener.dart';
 import 'package:coder_app/src/app/presentation/settings_page.dart';
 import 'package:coder_app/src/app/presentation/workspace_page.dart';
+import 'package:coder_app/src/features/conversation/application/attachment_ports.dart';
 import 'package:coder_app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:coder_app/src/features/conversation/application/composer_controller.dart';
 import 'package:coder_app/src/features/conversation/application/conversation_controller.dart';
@@ -20,6 +21,7 @@ import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
 import 'package:coder_app/src/features/settings/domain/settings_category.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -989,6 +991,121 @@ void main() {
       ),
     ),
   );
+
+  unawaited(
+    goldenTest(
+      'pane file drop overlay covers the complete composer surface',
+      fileName: 'composer_drop_overlay',
+      constraints: const BoxConstraints.tightFor(width: 1880, height: 600),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+        for (final region in tester.widgetList<DropwellRegion>(
+          find.byType(DropwellRegion),
+        )) {
+          region.onHoverChanged?.call(true);
+        }
+        await tester.pumpAndSettle();
+      },
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'light',
+            child: const SizedBox(
+              width: 900,
+              height: 500,
+              child: _ComposerDropOverlayGolden(mode: ThemeMode.light),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'dark',
+            child: const SizedBox(
+              width: 900,
+              height: 500,
+              child: _ComposerDropOverlayGolden(mode: ThemeMode.dark),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _ComposerDropOverlayGolden extends StatefulWidget {
+  const _ComposerDropOverlayGolden({required this.mode});
+
+  final ThemeMode mode;
+
+  @override
+  State<_ComposerDropOverlayGolden> createState() =>
+      _ComposerDropOverlayGoldenState();
+}
+
+class _ComposerDropOverlayGoldenState
+    extends State<_ComposerDropOverlayGolden> {
+  final SessionComposerController _controller = SessionComposerController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+    ],
+    child: _material(
+      widget.mode,
+      ComposerDropPane(
+        controller: _controller,
+        child: Column(
+          children: <Widget>[
+            const Expanded(child: Center(child: Text('Conversation'))),
+            SessionComposer(
+              controller: _controller,
+              enabled: true,
+              attachmentInput: const _GoldenDropInput(),
+              onSubmit: (_) {},
+              bar: _goldenComposerBar(),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+SessionComposerBar _goldenComposerBar() => SessionComposerBar(
+  hostId: 'server',
+  definitions: const <AgentDefinitionDto>[],
+  agentDefinitionId: null,
+  selection: null,
+  onAgentChanged: (_) {},
+  onModelChanged: (_, _) {},
+  mode: SessionMode.normal,
+  onModeChanged: (_) {},
+);
+
+final class _GoldenDropInput implements AttachmentInputPort {
+  const _GoldenDropInput();
+
+  @override
+  bool get supportsDrop => true;
+
+  @override
+  Future<List<PendingAttachment>> droppedFiles(
+    List<DropwellFile> files,
+  ) async => const <PendingAttachment>[];
+
+  @override
+  Future<List<PendingAttachment>> pasteFiles() async =>
+      const <PendingAttachment>[];
+
+  @override
+  Future<List<PendingAttachment>> pickFiles() async =>
+      const <PendingAttachment>[];
 }
 
 Widget _composerState(

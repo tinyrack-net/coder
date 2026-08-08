@@ -55,5 +55,6 @@
   "workspaceSplitDown": "下に分割",
   "workspaceResizePanes": "ペインのサイズを変更",
   "workspaceSwitchTab": "タブを切り替え",
-  "workspaceMoveTabToPane": "アクティブなタブを別のペインに移動"
+  "workspaceMoveTabToPane": "アクティブなタブを別のペインに移動",
+  "composerDropFilesHere": "ここにファイルをドロップ"
 }

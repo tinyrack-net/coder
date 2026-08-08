@@ -3255,6 +3255,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggestions'**
   String get composerSuggestionsLabel;
+
+  /// Instruction shown over a composer pane while files are dragged over it.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop files here'**
+  String get composerDropFilesHere;
 }
 
 class _AppLocalizationsDelegate

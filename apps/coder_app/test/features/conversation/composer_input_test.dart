@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/src/internal/focus_source.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_coder_api.dart';
@@ -508,9 +509,11 @@ void main() {
   );
 
   testWidgets(
-    'a focused composer shows exactly one focus ring',
+    'a composer shows one keyboard ring and no pointer ring',
     tags: const <String>['feature_test__turn_execution__widget'],
     (tester) async {
+      TRFocusSource.instance.debugReset();
+      addTearDown(TRFocusSource.instance.debugReset);
       await tester.pumpWidget(
         _harness(
           composer: SessionComposer(
@@ -524,13 +527,10 @@ void main() {
       await tester.tap(find.byKey(inputKey));
       await tester.pumpAndSettle();
 
-      // The ghost input paints its own focus emphasis, so the card that frames
-      // it must not ring as well; the two together read as two focused
-      // controls for a single caret.
       final focus = Theme.of(
         tester.element(find.byKey(inputKey)),
       ).extension<TinyrackThemeData>()!.focus;
-      final rings = tester
+      List<BorderSide> rings() => tester
           .widgetList<DecoratedBox>(find.byType(DecoratedBox))
           .map((box) => box.decoration)
           .whereType<BoxDecoration>()
@@ -538,7 +538,14 @@ void main() {
           .nonNulls
           .where((side) => side.color == focus)
           .toList();
-      expect(rings, hasLength(1));
+
+      expect(rings(), isEmpty);
+
+      tester.binding.focusManager.primaryFocus?.unfocus();
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      TRFocusSource.instance.debugSetKeyboardModality(true);
+      await tester.pumpAndSettle();
+      expect(rings(), hasLength(1));
     },
   );
 

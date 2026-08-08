@@ -86,10 +86,7 @@ class _ChatToolCardState extends State<ChatToolCard> {
         mouseCursor: hasBody && onToggle != null
             ? SystemMouseCursors.click
             : MouseCursor.defer,
-        // The card is a tab stop, so it has to say where the keyboard is. It
-        // drew nothing at all, which left the focus invisible on the one
-        // control in the transcript that takes it.
-        onShowFocusHighlight: (focused) => setState(() => _focused = focused),
+        onFocusChange: (focused) => setState(() => _focused = focused),
         shortcuts: const <ShortcutActivator, Intent>{
           SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
           SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
@@ -105,74 +102,71 @@ class _ChatToolCardState extends State<ChatToolCard> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: hasBody ? onToggle : null,
-          child: Container(
-            // The ring is always present and only changes colour, so taking
-            // the focus never reflows the transcript line beneath it.
-            foregroundDecoration: BoxDecoration(
-              border: Border.all(
-                color: _focused
-                    ? context.tinyrackTheme.focus
-                    : Colors.transparent,
-                width: TRControlMetrics.focusWidth,
-              ),
-              borderRadius: const BorderRadius.all(TRRadii.medium),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Icon(chatToolIcon(presentation.glyph), color: statusColor),
-                    const SizedBox(width: TRSpacing.small),
-                    Flexible(
-                      child: TRText(
-                        presentation.title,
-                        variant: TRTextVariant.code,
-                        truncate: true,
+          child: TRFocusRing(
+            focused: _focused,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(
+                        chatToolIcon(presentation.glyph),
+                        color: statusColor,
                       ),
-                    ),
-                    if (presentation.resultLine != null) ...<Widget>[
                       const SizedBox(width: TRSpacing.small),
-                      if (activity.status == ChatToolStatus.running)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: SizedBox.square(
-                            dimension: 12,
-                            child: TRSpinner(
-                              label: AppLocalizations.of(context).commonRunning,
-                            ),
-                          ),
-                        ),
                       Flexible(
                         child: TRText(
-                          presentation.resultLine!,
-                          variant: TRTextVariant.bodySm,
-                          color: presentation.isFailure
-                              ? TRTextColor.danger
-                              : TRTextColor.muted,
+                          presentation.title,
+                          variant: TRTextVariant.code,
                           truncate: true,
                         ),
                       ),
+                      if (presentation.resultLine != null) ...<Widget>[
+                        const SizedBox(width: TRSpacing.small),
+                        if (activity.status == ChatToolStatus.running)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: SizedBox.square(
+                              dimension: 12,
+                              child: TRSpinner(
+                                label: AppLocalizations.of(
+                                  context,
+                                ).commonRunning,
+                              ),
+                            ),
+                          ),
+                        Flexible(
+                          child: TRText(
+                            presentation.resultLine!,
+                            variant: TRTextVariant.bodySm,
+                            color: presentation.isFailure
+                                ? TRTextColor.danger
+                                : TRTextColor.muted,
+                            truncate: true,
+                          ),
+                        ),
+                      ],
+                      if (hasBody)
+                        Icon(
+                          expanded ? CoderIcons.collapse : CoderIcons.expand,
+                          color: context.tinyrackTheme.textMuted,
+                        ),
                     ],
-                    if (hasBody)
-                      Icon(
-                        expanded ? CoderIcons.collapse : CoderIcons.expand,
-                        color: context.tinyrackTheme.textMuted,
-                      ),
-                  ],
-                ),
-                if (expanded) ...<Widget>[
-                  const SizedBox(height: TRSpacing.small),
-                  _ChatToolBodyView(body: presentation.argumentBody),
-                  if (presentation.argumentBody is! ChatToolEmptyBody &&
-                      presentation.body is! ChatToolEmptyBody)
+                  ),
+                  if (expanded) ...<Widget>[
                     const SizedBox(height: TRSpacing.small),
-                  _ChatToolBodyView(body: presentation.body),
+                    _ChatToolBodyView(body: presentation.argumentBody),
+                    if (presentation.argumentBody is! ChatToolEmptyBody &&
+                        presentation.body is! ChatToolEmptyBody)
+                      const SizedBox(height: TRSpacing.small),
+                    _ChatToolBodyView(body: presentation.body),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
