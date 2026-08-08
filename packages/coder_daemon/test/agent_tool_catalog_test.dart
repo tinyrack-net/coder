@@ -130,6 +130,7 @@ void main() {
         'attach_file read always-on',
         'current_time read always-on',
         'sleep read always-on',
+        'lua_code_mode read opt-in',
         'list_mcp_resources read opt-in',
         'list_mcp_resource_templates read opt-in',
         'read_mcp_resource read opt-in',

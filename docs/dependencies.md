@@ -65,20 +65,23 @@ The same pin is why `hooks` is held at 2.0.2 and `native_toolchain_c` at 0.19.2:
 
 ## Tinyrack Git sources
 
-`tinyrack_ui`, `cliweave`, `dartage`, `ptyworld`, `shipworld`, `dropwell`, and
-`termworld` come from `tinyrack-net` Git repositories at exact 40-character
-commit SHAs, never from pub.dev and never from a moving ref. `dart run melos
+`tinyrack_ui`, `cliweave`, `dartage`, `lua_tool_runtime`, `ptyworld`,
+`shipworld`, `dropwell`, and `termworld` come from `tinyrack-net` Git
+repositories at exact 40-character commit SHAs, never from pub.dev and never
+from a moving ref. `dart run melos
 tinyrack-sources:check` enforces this against both the manifests and the
 lockfile. `dropwell` and `termworld` both live in
 `tinyrack-net/flutter-packages` and Coder pins them to the same merge SHA.
 
-`cliweave` and `ptyworld` both live in `tinyrack-net/dart-packages`, and CI
-checks that repository out **once** for the whole pipeline. So three values
+`cliweave`, `lua_tool_runtime`, and `ptyworld` all live in
+`tinyrack-net/dart-packages`, and CI checks that repository out **once** for
+the whole pipeline. So four values
 must move together, always to the same SHA:
 
 1. `ref` for `cliweave` in `packages/coder_cli/pubspec.yaml`
-2. `ref` for `ptyworld` in `packages/coder_daemon/pubspec.yaml`
-3. `TINYRACK_DART_PACKAGES_REF` in `.github/workflows/pipeline.yml`
+2. `ref` for `lua_tool_runtime` in `packages/coder_daemon/pubspec.yaml`
+3. `ref` for `ptyworld` in `packages/coder_daemon/pubspec.yaml`
+4. `TINYRACK_DART_PACKAGES_REF` in `.github/workflows/pipeline.yml`
 
 Updating only some of them fails in a checkout step far from the cause —
 typically as a missing package during resolution rather than as a version

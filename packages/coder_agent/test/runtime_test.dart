@@ -299,6 +299,49 @@ void main() {
     );
   });
 
+  test(
+    'an orchestrator invokes a nested tool through normal approvals',
+    () async {
+      final approvals = _RecordingApproval();
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _toolResponse('orchestrate'),
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_OrchestratingTool()],
+        nestedTools: <AgentTool>[_EchoTool()],
+        approvals: approvals,
+        permissionMode: AgentPermissionMode.ask,
+      );
+
+      final result = await harness.runner.startTurn(
+        _request(),
+        CancellationToken(),
+      );
+
+      final outer = result.conversationItems
+          .whereType<ToolResultConversationItem>()
+          .single;
+      expect(outer.output, 'hello');
+      expect(approvals.invocations.map((item) => item.name), <String>[
+        'orchestrate',
+        'echo',
+      ]);
+      expect(
+        harness.eventData
+            .where(
+              (item) =>
+                  item.$1 == 'tool.completed' &&
+                  item.$2.containsKey('parentCallId'),
+            )
+            .single
+            .$2['parentCallId'],
+        'call-orchestrate',
+      );
+    },
+  );
+
   test('plan mode adds planning instructions to the turn', () async {
     final planProvider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
     await _RunnerHarness(planProvider).runner.startTurn(
@@ -1157,6 +1200,7 @@ final class _RunnerHarness {
   _RunnerHarness(
     ModelProvider provider, {
     Iterable<AgentTool> tools = const <AgentTool>[],
+    Iterable<AgentTool> nestedTools = const <AgentTool>[],
     ApprovalCoordinator approvals = const _Approval(
       ApprovalDecision.approved,
     ),
@@ -1169,6 +1213,7 @@ final class _RunnerHarness {
     runner = AgentRunner(
       provider: provider,
       tools: tools,
+      nestedTools: nestedTools,
       approvals: approvals,
       // The compactor shares the turn's provider, as it does in the daemon:
       // the summary is written by the model that produced the work.
@@ -1178,7 +1223,10 @@ final class _RunnerHarness {
           : _RecordingContextReset(contextResets),
       pendingTurnInput: pendingTurnInput,
       permissions: permissions ?? _FixedPermissionModeSource(permissionMode),
-      onEvent: (type, _) => events.add(type),
+      onEvent: (type, data) {
+        events.add(type);
+        eventData.add((type, data));
+      },
       onStatus: (status, {error}) {
         statuses.add(status);
         if (error != null) statusErrors.add(error);
@@ -1189,6 +1237,8 @@ final class _RunnerHarness {
 
   late AgentRunner runner;
   final List<String> events = <String>[];
+  final List<(String, Map<String, dynamic>)> eventData =
+      <(String, Map<String, dynamic>)>[];
   final List<AgentSessionStatus> statuses = <AgentSessionStatus>[];
   final List<String> statusErrors = <String>[];
   final List<ConversationItem> items = <ConversationItem>[];
@@ -1372,6 +1422,33 @@ class _EchoTool extends AgentTool {
   ) async => ToolResult(output: arguments['value'] as String);
 }
 
+final class _OrchestratingTool extends AgentTool {
+  @override
+  String get name => 'orchestrate';
+
+  @override
+  String get description => 'Invokes a nested tool.';
+
+  @override
+  AgentToolRisk get risk => AgentToolRisk.write;
+
+  @override
+  Map<String, dynamic> get strictJsonSchema => const <String, dynamic>{
+    'type': 'object',
+    'properties': <String, dynamic>{},
+    'additionalProperties': false,
+  };
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) => context.invokeNestedTool(
+    'echo',
+    const <String, dynamic>{'value': 'hello'},
+  );
+}
+
 final class _LooseTool extends _EchoTool {
   @override
   String get name => 'loose';
@@ -1497,4 +1574,17 @@ final class _Approval implements ApprovalCoordinator {
     ToolInvocation invocation,
     CancellationToken cancellation,
   ) async => decision;
+}
+
+final class _RecordingApproval implements ApprovalCoordinator {
+  final List<ToolInvocation> invocations = <ToolInvocation>[];
+
+  @override
+  Future<ApprovalDecision> request(
+    ToolInvocation invocation,
+    CancellationToken cancellation,
+  ) async {
+    invocations.add(invocation);
+    return ApprovalDecision.approved;
+  }
 }

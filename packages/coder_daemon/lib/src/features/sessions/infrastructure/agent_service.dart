@@ -29,6 +29,13 @@ abstract interface class ExternalToolSource {
 /// Resolves the pseudo-terminals one coder session owns.
 typedef ExecHostFactory = ExecSessionHost Function(String sessionId);
 
+/// Resolves the Lua cells one coder session owns in its current worktree.
+typedef LuaHostFactory =
+    LuaCodeModeHost Function(
+      String sessionId,
+      String workingDirectory,
+    );
+
 /// Coordinates model-turn execution and lifecycle for coder sessions.
 class SessionTurnCoordinator implements SessionTurnPort {
   /// Creates a session turn coordinator.
@@ -46,11 +53,13 @@ class SessionTurnCoordinator implements SessionTurnPort {
     required this._skills,
     required this._attachments,
     required this._execHostFor,
+    required this._luaHostFor,
     required this._settings,
     required this._interactions,
   });
 
   final ExecHostFactory _execHostFor;
+  final LuaHostFactory _luaHostFor;
   final SessionRepository _sessions;
   final AgentDefinitionService _definitions;
   final WorktreeRepository _worktrees;
@@ -222,6 +231,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
         reportStatus: reportStatus,
       ),
       execHost: _execHostFor(sessionId),
+      luaCodeModeHost: _luaHostFor(sessionId, worktree.path),
       skills: skills,
     );
     final turnTools = _toolRegistry.build(
@@ -232,6 +242,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
     final runner = AgentRunner(
       provider: resolvedModel.provider,
       tools: turnTools.tools,
+      nestedTools: turnTools.nestedTools,
       // The summary is written by the model that produced the work, so the
       // compactor rides the same provider the turn already resolved.
       compactor: ConversationCompactor(resolvedModel.provider),

@@ -597,6 +597,15 @@ abstract interface class ContextResetCoordinator {
   Future<void> reset(List<ConversationItem> retain);
 }
 
+/// Invokes a tool intentionally hidden behind an orchestration surface.
+abstract interface class NestedToolInvoker {
+  /// Runs [name] through the turn's normal approval and cancellation path.
+  Future<ToolResult> invoke(
+    String name,
+    Map<String, dynamic> arguments,
+  );
+}
+
 /// ToolExecutionContext defines a public contract.
 class ToolExecutionContext {
   /// Creates a [ToolExecutionContext].
@@ -607,6 +616,7 @@ class ToolExecutionContext {
     this.contextWindowTokens,
     this.turnUsage = const ModelUsage(),
     this.requestContextReset = _ignoreContextReset,
+    this.nestedTools,
   });
 
   /// The workspaceRoot public API member.
@@ -633,6 +643,21 @@ class ToolExecutionContext {
   /// Deliberately deferred: resetting inside the tool would strand any call
   /// that follows it in the same round.
   final void Function() requestContextReset;
+
+  /// Dispatcher for tools hidden behind the current orchestration surface.
+  final NestedToolInvoker? nestedTools;
+
+  /// Invokes one nested tool.
+  Future<ToolResult> invokeNestedTool(
+    String name,
+    Map<String, dynamic> arguments,
+  ) {
+    final invoker = nestedTools;
+    if (invoker == null) {
+      throw StateError('Nested tool invocation is unavailable.');
+    }
+    return invoker.invoke(name, arguments);
+  }
 }
 
 void _ignoreContextReset() {}

@@ -39,6 +39,13 @@ runs:
         # A throwaway home keeps the smoke daemon off any real credentials.
         export TINYRACK_CODER_HOME="$RUNNER_TEMP/coder-smoke"
         "$cli" --version
+        helper="$bundle/lua-tool-runtime-host"
+        if [ "$PLATFORM" = "windows" ]; then
+          helper="$helper.exe"
+        fi
+        printf '%s\n' '{"version":1,"cell_id":"smoke","sequence_id":0,"type":"init","payload":{"source":"text(\"ok\")","tools":[],"store":{}}}' \
+          | "$helper" "$bundle/lua_tool_runtime/bootstrap.lua" \
+          | grep '"type":"completed"'
         # Daemon-addressing flags follow the subcommand, so `provider list`
         # comes before `--listen`.
         "$cli" daemon start --listen "127.0.0.1:$PORT" &

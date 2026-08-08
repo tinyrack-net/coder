@@ -148,11 +148,15 @@ class AgentRunner {
     required this._onStatus,
     required this._onProviderItems,
     required this._permissions,
+    Iterable<AgentTool> nestedTools = const <AgentTool>[],
     this._contextResets,
     this._pendingTurnInput,
     this._compactor,
     ApprovalPolicy Function(AgentPermissionMode mode)? policyFactory,
   }) : _tools = <String, AgentTool>{for (final tool in tools) tool.name: tool},
+       _nestedTools = <String, AgentTool>{
+         for (final tool in nestedTools) tool.name: tool,
+       },
        _policyFactory = policyFactory ?? DefaultApprovalPolicy.new {
     final deferred = _tools.values
         .where((tool) => tool.exposure == ToolExposure.deferred)
@@ -170,6 +174,7 @@ class AgentRunner {
 
   final ModelProvider _provider;
   final Map<String, AgentTool> _tools;
+  final Map<String, AgentTool> _nestedTools;
   final ApprovalCoordinator _approvals;
   final AgentEventCallback _onEvent;
   final SessionStatusCallback _onStatus;
@@ -193,6 +198,8 @@ class AgentRunner {
 
   /// How many tools were withheld from the initial advertisement.
   int _deferredCount = 0;
+  int _nextNestedCallId = 0;
+  Future<void> _approvalQueue = Future<void>.value();
 
   /// Tools the model is told about: everything advertised, plus what a search
   /// surfaced.
@@ -389,53 +396,16 @@ class AgentRunner {
           }
 
           try {
-            final context = ToolExecutionContext(
-              workspaceRoot: request.workspaceRoot,
-              cancellation: cancellation,
+            final result = await _executeTool(
+              tool: tool,
+              name: call.name,
+              arguments: call.arguments,
               callId: call.callId,
-              contextWindowTokens: request.contextWindowTokens,
+              request: request,
+              cancellation: cancellation,
               turnUsage: turnUsage,
               requestContextReset: () => resetRequested = true,
             );
-            final preview = await tool.preview(call.arguments, context);
-            final invocation = ToolInvocation(
-              callId: call.callId,
-              name: call.name,
-              arguments: call.arguments,
-              risk: tool.risk,
-              workspaceRoot: request.workspaceRoot,
-              preview: preview,
-            );
-            final policy = _policyFactory(
-              await _permissions.currentMode(),
-            ).evaluate(invocation);
-            var approved = policy == ApprovalEvaluation.allow;
-            if (policy == ApprovalEvaluation.ask) {
-              await _onStatus(AgentSessionStatus.waitingForApproval);
-              approved =
-                  await _approvals.request(invocation, cancellation) ==
-                  ApprovalDecision.approved;
-              await _onStatus(AgentSessionStatus.running);
-            }
-            if (policy == ApprovalEvaluation.deny || !approved) {
-              final item = ToolResultConversationItem(
-                callId: call.callId,
-                output: jsonEncode(<String, dynamic>{
-                  'error': 'Tool execution was denied.',
-                }),
-                isError: true,
-              );
-              input.add(item);
-              persisted.add(item);
-              await _onProviderItems(<ConversationItem>[item]);
-              await _onEvent('tool.denied', <String, dynamic>{
-                'callId': call.callId,
-                'name': call.name,
-              });
-              continue;
-            }
-
-            final result = await tool.execute(call.arguments, context);
             final item = ToolResultConversationItem(
               callId: call.callId,
               output: result.output,
@@ -444,12 +414,6 @@ class AgentRunner {
             input.add(item);
             persisted.add(item);
             await _onProviderItems(<ConversationItem>[item]);
-            await _onEvent('tool.completed', <String, dynamic>{
-              'callId': call.callId,
-              'name': call.name,
-              'output': result.output,
-              'isError': result.isError,
-            });
             if (result.contextImages.isNotEmpty) {
               // Images cannot ride inside a tool result on either provider
               // API, so they arrive as the next user item instead.
@@ -510,6 +474,135 @@ class AgentRunner {
       await _onStatus(AgentSessionStatus.failed, error: '$error');
       rethrow;
     }
+  }
+
+  Future<ToolResult> _executeTool({
+    required AgentTool tool,
+    required String name,
+    required Map<String, dynamic> arguments,
+    required String callId,
+    required AgentRunRequest request,
+    required CancellationToken cancellation,
+    required ModelUsage turnUsage,
+    required void Function() requestContextReset,
+    String? parentCallId,
+  }) async {
+    cancellation.throwIfCancelled();
+    if (parentCallId != null) {
+      await _onEvent('tool.requested', <String, dynamic>{
+        'callId': callId,
+        'parentCallId': parentCallId,
+        'name': name,
+        'arguments': arguments,
+      });
+    }
+    final context = ToolExecutionContext(
+      workspaceRoot: request.workspaceRoot,
+      cancellation: cancellation,
+      callId: callId,
+      contextWindowTokens: request.contextWindowTokens,
+      turnUsage: turnUsage,
+      requestContextReset: requestContextReset,
+      nestedTools: _nestedTools.isEmpty
+          ? null
+          : _CallbackNestedToolInvoker((nestedName, nestedArguments) async {
+              final nested = _nestedTools[nestedName];
+              if (nested == null) {
+                return ToolResult(
+                  output: jsonEncode(<String, dynamic>{
+                    'error': 'Unknown nested tool: $nestedName',
+                  }),
+                  isError: true,
+                );
+              }
+              final nestedCallId = '$callId:nested-${_nextNestedCallId += 1}';
+              try {
+                return await _executeTool(
+                  tool: nested,
+                  name: nestedName,
+                  arguments: nestedArguments,
+                  callId: nestedCallId,
+                  request: request,
+                  cancellation: cancellation,
+                  turnUsage: turnUsage,
+                  requestContextReset: requestContextReset,
+                  parentCallId: callId,
+                );
+              } on AgentCancelledException {
+                rethrow;
+              } on Exception catch (error) {
+                await _onEvent('tool.failed', <String, dynamic>{
+                  'callId': nestedCallId,
+                  'parentCallId': callId,
+                  'name': nestedName,
+                  'error': '$error',
+                });
+                return ToolResult(
+                  output: jsonEncode(<String, dynamic>{'error': '$error'}),
+                  isError: true,
+                );
+              }
+            }),
+    );
+    final preview = await tool.preview(arguments, context);
+    final invocation = ToolInvocation(
+      callId: callId,
+      name: name,
+      arguments: arguments,
+      risk: tool.risk,
+      workspaceRoot: request.workspaceRoot,
+      preview: preview,
+    );
+    final policy = _policyFactory(
+      await _permissions.currentMode(),
+    ).evaluate(invocation);
+    var approved = policy == ApprovalEvaluation.allow;
+    if (policy == ApprovalEvaluation.ask) {
+      approved =
+          await _requestApproval(invocation, cancellation) ==
+          ApprovalDecision.approved;
+    }
+    if (policy == ApprovalEvaluation.deny || !approved) {
+      await _onEvent('tool.denied', <String, dynamic>{
+        'callId': callId,
+        'parentCallId': ?parentCallId,
+        'name': name,
+      });
+      return ToolResult(
+        output: jsonEncode(<String, dynamic>{
+          'error': 'Tool execution was denied.',
+        }),
+        isError: true,
+      );
+    }
+    final result = await tool.execute(arguments, context);
+    await _onEvent('tool.completed', <String, dynamic>{
+      'callId': callId,
+      'parentCallId': ?parentCallId,
+      'name': name,
+      'output': result.output,
+      'isError': result.isError,
+    });
+    return result;
+  }
+
+  Future<ApprovalDecision> _requestApproval(
+    ToolInvocation invocation,
+    CancellationToken cancellation,
+  ) {
+    final result = Completer<ApprovalDecision>();
+    _approvalQueue = _approvalQueue.then((_) async {
+      try {
+        cancellation.throwIfCancelled();
+        await _onStatus(AgentSessionStatus.waitingForApproval);
+        result.complete(await _approvals.request(invocation, cancellation));
+      } on Object catch (error, stackTrace) {
+        result.completeError(error, stackTrace);
+      } finally {
+        await _onStatus(AgentSessionStatus.running);
+      }
+    });
+    return result.future;
   }
 
   /// Whether [usage] has spent enough of this turn's window to compact.
@@ -602,6 +695,22 @@ the workspace. Approval decisions are enforced by the host; do not work around t
 ${request.toolPrompts.map((prompt) => '\n$prompt\n').join()}$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
 ''';
   }
+}
+
+final class _CallbackNestedToolInvoker implements NestedToolInvoker {
+  const _CallbackNestedToolInvoker(this._invoke);
+
+  final Future<ToolResult> Function(
+    String name,
+    Map<String, dynamic> arguments,
+  )
+  _invoke;
+
+  @override
+  Future<ToolResult> invoke(
+    String name,
+    Map<String, dynamic> arguments,
+  ) => _invoke(name, arguments);
 }
 
 Map<String, dynamic> _attachmentSnapshot(ConversationAttachment attachment) =>

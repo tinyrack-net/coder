@@ -11,6 +11,7 @@ export 'src/tools/clock_tools.dart';
 export 'src/tools/context_tools.dart';
 export 'src/tools/exec_sessions.dart';
 export 'src/tools/exec_tools.dart';
+export 'src/tools/lua_code_mode.dart';
 export 'src/tools/skills.dart';
 export 'src/tools/tool_registry.dart';
 export 'src/tools/tool_search.dart';

@@ -63,3 +63,7 @@ tags:
   feature_test__tool_clock__verticalSlice:
   feature_test__tool_context_budget__verticalSlice:
   feature_test__tool_search__verticalSlice:
+  feature_test__lua_tool_orchestration__unit:
+  feature_test__lua_tool_orchestration__contract:
+  feature_test__lua_tool_orchestration__verticalSlice:
+  feature_test__lua_tool_orchestration__platformSmoke:
