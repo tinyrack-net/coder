@@ -67,6 +67,15 @@ final class _RecordingPresenter implements TRContextMenuPresenter {
     _onClose = null;
   }
 
+  void select(String id) {
+    final action = openings.last
+        .whereType<TRMenuActionElement>()
+        .singleWhere((element) => element.id == id)
+        .onPressed;
+    dismiss();
+    action();
+  }
+
   @override
   Widget buildHost({
     required Widget child,
@@ -319,7 +328,40 @@ void main() {
   );
 
   testWidgets(
-    'native menu dismissal restores input before paste continues',
+    'native menu dismissal restores text input and keyboard editing',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final presenter = _RecordingPresenter();
+      final api = await _pumpTerminal(tester, presenter: presenter);
+      await _openTerminalMenu(tester);
+
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      presenter.dismiss();
+      await tester.pumpAndSettle();
+      tester.testTextInput.updateEditingValue(
+        const TextEditingValue(
+          text: 'x',
+          selection: TextSelection.collapsed(offset: 1),
+        ),
+      );
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<TerminalView>(),
+        isNotNull,
+      );
+      expect(tester.testTextInput.hasAnyClients, isTrue);
+      expect(api.terminalWrites.map((write) => write.data).join(), 'x\u007f');
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'native menu selection restores input before its action continues',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -338,16 +380,11 @@ void main() {
       final presenter = _RecordingPresenter();
       final api = await _pumpTerminal(tester, presenter: presenter);
       await _openTerminalMenu(tester);
-      final paste = presenter.openings.last
-          .whereType<TRMenuActionElement>()
-          .singleWhere((element) => element.id == 'terminal-menu-paste');
 
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
-      presenter.dismiss();
-      paste.onPressed();
+      presenter.select('terminal-menu-paste');
       await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
 
       expect(
         FocusManager.instance.primaryFocus?.context
@@ -357,7 +394,7 @@ void main() {
       expect(tester.testTextInput.hasAnyClients, isTrue);
       expect(
         api.terminalWrites.map((write) => write.data).join(),
-        'pasted text\u007f',
+        'pasted text',
       );
     },
     tags: const <String>['feature_test__terminal_lifecycle__widget'],

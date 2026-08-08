@@ -118,6 +118,15 @@ void main() {
     );
     expect(_scripts(full), isNot(contains('test:dart')));
     expect(_scripts(full), isNot(contains('test:flutter')));
+    final flutterCoveragePhase = full.phases.indexWhere(
+      (phase) => phase.tasks.any(
+        (task) => task.script == 'test:coverage:flutter',
+      ),
+    );
+    final goldenPhase = full.phases.indexWhere(
+      (phase) => phase.tasks.any((task) => task.script == 'test:golden'),
+    );
+    expect(goldenPhase, greaterThan(flutterCoveragePhase));
     expect(_scripts(coverage), <String>[
       'test:coverage:dart',
       'test:coverage:flutter',

@@ -187,6 +187,12 @@ abstract final class WorkspaceVerificationPlans {
         tasks: <VerificationTask>[
           ..._staticTasks,
           ..._coverageTasks,
+        ],
+      ),
+      VerificationPhase(
+        tasks: <VerificationTask>[
+          // Flutter coverage and golden tests both own build/unit_test_assets.
+          // Run them in separate phases so their cleanup cannot race.
           VerificationTask(name: 'goldens', script: 'test:golden'),
         ],
       ),
