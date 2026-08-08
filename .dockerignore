@@ -1,0 +1,6 @@
+.dart_tool
+.git
+.paseo
+**/.dart_tool
+**/build
+**/coverage

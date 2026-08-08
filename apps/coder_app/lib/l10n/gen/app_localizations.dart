@@ -1054,6 +1054,138 @@ abstract class AppLocalizations {
   /// **'Add remote daemon'**
   String get appSettingsAddRemote;
 
+  /// No description provided for @relayPairTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a device'**
+  String get relayPairTitle;
+
+  /// No description provided for @relayPairDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.'**
+  String get relayPairDescription;
+
+  /// No description provided for @relayPairLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing link'**
+  String get relayPairLink;
+
+  /// No description provided for @relayPairDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'This device\'s name'**
+  String get relayPairDeviceName;
+
+  /// No description provided for @relayPairAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get relayPairAction;
+
+  /// No description provided for @relayPairScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get relayPairScan;
+
+  /// No description provided for @relayPairQrSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code for the one-time device connection link'**
+  String get relayPairQrSemantics;
+
+  /// No description provided for @relayPairInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Tinyrack Coder pairing link.'**
+  String get relayPairInvalid;
+
+  /// No description provided for @relayPairExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This pairing link expired or was already used. Create a new link on the daemon.'**
+  String get relayPairExpired;
+
+  /// No description provided for @relayAdvancedDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced direct connection'**
+  String get relayAdvancedDirect;
+
+  /// No description provided for @relayDevicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected devices'**
+  String get relayDevicesTitle;
+
+  /// No description provided for @relayDevicesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a ten-minute link for a new device or remove a device that should no longer connect.'**
+  String get relayDevicesDescription;
+
+  /// No description provided for @relayCreateLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Create connection link'**
+  String get relayCreateLink;
+
+  /// No description provided for @relayLinkExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires {expiresAt}'**
+  String relayLinkExpires(String expiresAt);
+
+  /// No description provided for @relayNoDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'No devices are approved.'**
+  String get relayNoDevices;
+
+  /// No description provided for @relayRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get relayRevoke;
+
+  /// No description provided for @relayRevokeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke {name}?'**
+  String relayRevokeTitle(String name);
+
+  /// No description provided for @relayRevokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The device\'s live relay connection ends immediately. A new pairing link is required to reconnect.'**
+  String get relayRevokeBody;
+
+  /// No description provided for @relayPathDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get relayPathDirect;
+
+  /// No description provided for @relayPathRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay'**
+  String get relayPathRelay;
+
+  /// No description provided for @relayConnectionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection details'**
+  String get relayConnectionDetails;
+
+  /// No description provided for @relayApprovedDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get relayApprovedDevices;
+
   /// Empty state of the remote daemon list.
   ///
   /// In en, this message translates to:

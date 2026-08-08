@@ -11,6 +11,7 @@ dependencies:
   async: ^2.13.0
   coder_agent: ^0.1.0
   coder_protocol: ^0.1.0
+  coder_relay_protocol: ^0.1.0
   crypto: ^3.0.6
   dio: ^5.11.0
   drift: 2.34.3
@@ -30,6 +31,7 @@ dependencies:
       path: packages/ptyworld
   shelf: ^1.4.2
   shelf_web_socket: ^3.0.0
+  stream_channel: ^2.1.4
   uuid: ^4.6.0
   web_socket_channel: ^3.0.3
   yaml: ^3.1.3

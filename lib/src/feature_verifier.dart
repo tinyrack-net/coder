@@ -438,6 +438,7 @@ final class FeatureVerifier {
       'McpApi': 'mcp',
       'TerminalsApi': 'terminals',
       'AttachmentsApi': 'attachments',
+      'RelayApi': 'relay',
     };
     for (final MapEntry(key: interfaceName, value: owner) in features.entries) {
       methods.addAll(

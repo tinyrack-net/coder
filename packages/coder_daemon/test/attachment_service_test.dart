@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coder_daemon/src/features/attachments/infrastructure/attachment_service.dart';
+import 'package:coder_daemon/src/features/relay/infrastructure/relay_attachment_adapter.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -9,6 +10,43 @@ import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test(
+    'relay adapter preserves streamed attachment metadata and bytes',
+    tags: const <String>['feature_test__daemon_relay__unit'],
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'coder-relay-attachment-',
+      );
+      addTearDown(() => root.delete(recursive: true));
+      final service = AttachmentService(
+        repository: _MemoryAttachmentRepository(),
+        blobs: NativeAttachmentBlobStore(root.path),
+        clock: const _Clock(),
+        ids: _Ids(),
+      );
+      final adapter = RelayAttachmentAdapter(service);
+      final bytes = utf8.encode('opaque relay payload');
+
+      final uploaded = await adapter.upload(
+        fileName: 'payload.txt',
+        mimeType: 'text/plain',
+        declaredByteSize: bytes.length,
+        bytes: Stream<List<int>>.value(bytes),
+      );
+      expect(uploaded.fileName, 'payload.txt');
+      expect(uploaded.mimeType, 'text/plain');
+      expect(uploaded.byteSize, bytes.length);
+      expect(uploaded.kind, AttachmentKind.file.name);
+      expect(uploaded.sha256, sha256.convert(bytes).toString());
+      expect(uploaded.createdAt, const _Clock().nowUtc());
+
+      final (metadata, download) = await adapter.download(uploaded.id);
+      expect(metadata.id, uploaded.id);
+      expect(metadata.sha256, uploaded.sha256);
+      expect(await download.expand((chunk) => chunk).toList(), bytes);
+    },
+  );
+
   test(
     'upload streams, validates image identity, hashes, downloads, and cleans',
     tags: const <String>['feature_test__conversation_attachments__unit'],

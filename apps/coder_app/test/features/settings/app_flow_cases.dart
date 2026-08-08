@@ -31,7 +31,7 @@ void _registerSettingsAppFlows() {
           RemoteDaemonProfile(
             id: 'first',
             label: 'First daemon',
-            websocketUri: Uri.parse('ws://first.test/ws'),
+            connections: directHostConnections(Uri.parse('ws://first.test/ws')),
             autoConnect: true,
             createdAt: now,
             updatedAt: now,
@@ -39,7 +39,9 @@ void _registerSettingsAppFlows() {
           RemoteDaemonProfile(
             id: 'second',
             label: 'Second daemon',
-            websocketUri: Uri.parse('ws://second.test/ws'),
+            connections: directHostConnections(
+              Uri.parse('ws://second.test/ws'),
+            ),
             autoConnect: true,
             createdAt: now,
             updatedAt: now,
@@ -95,26 +97,26 @@ void _registerSettingsAppFlows() {
       // replaces the settings page rather than pushing another one, so the
       // page outlives the change and has to adopt each daemon a later location
       // names, not only the first.
-      Future<void> openProviderShortcut(String address) async {
+      Future<void> openProviderShortcut(String hostLabel) async {
         await tester.tap(find.text('Daemons'));
         await tester.pumpAndSettle();
-        await tester.tap(
-          find.descendant(
-            of: find
-                .ancestor(
-                  of: find.textContaining(address),
-                  matching: find.byType(TRCard),
-                )
-                .first,
-            matching: find.widgetWithText(TRButton, 'Provider 설정'),
-          ),
+        final shortcut = find.descendant(
+          of: find
+              .ancestor(
+                of: find.text(hostLabel),
+                matching: find.byType(TRCard),
+              )
+              .first,
+          matching: find.widgetWithText(TRButton, 'Provider 설정'),
         );
+        await tester.ensureVisible(shortcut);
+        await tester.tap(shortcut);
         await tester.pumpAndSettle();
       }
 
-      await openProviderShortcut('ws://first.test/ws');
+      await openProviderShortcut('First daemon');
       expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'first');
-      await openProviderShortcut('ws://second.test/ws');
+      await openProviderShortcut('Second daemon');
       expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'second');
     },
     tags: const <String>['feature_test__daemon_management__widget'],
@@ -140,7 +142,7 @@ void _registerSettingsAppFlows() {
           RemoteDaemonProfile(
             id: 'only',
             label: 'Only daemon',
-            websocketUri: Uri.parse('ws://only.test/ws'),
+            connections: directHostConnections(Uri.parse('ws://only.test/ws')),
             autoConnect: true,
             createdAt: now,
             updatedAt: now,

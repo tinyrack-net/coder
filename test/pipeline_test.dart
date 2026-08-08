@@ -10,6 +10,20 @@ void main() {
   final androidBuild = File(
     'apps/coder_app/android/build.gradle.kts',
   ).readAsStringSync();
+  final appPubspec = File('apps/coder_app/pubspec.yaml').readAsStringSync();
+  final iosDebugConfig = File(
+    'apps/coder_app/ios/Flutter/Debug.xcconfig',
+  ).readAsStringSync();
+  final iosReleaseConfig = File(
+    'apps/coder_app/ios/Flutter/Release.xcconfig',
+  ).readAsStringSync();
+  final iosPodfileFile = File('apps/coder_app/ios/Podfile');
+  final iosPodfile = iosPodfileFile.existsSync()
+      ? iosPodfileFile.readAsStringSync()
+      : '';
+  final iosProject = File(
+    'apps/coder_app/ios/Runner.xcodeproj/project.pbxproj',
+  ).readAsStringSync();
   final cargoKitCompat = File(
     'apps/coder_app/android/cargokit-gradle9-compat.gradle',
   );
@@ -194,6 +208,39 @@ void main() {
     expect(mobileBuild, contains('if: matrix.gradle_cache'));
     expect(mobileBuild, contains('uses: gradle/actions/setup-gradle@v6'));
     expect(mobileBuild, contains('cache-provider: enhanced'));
+  });
+
+  test('iOS uses CocoaPods while the pinned scanner lacks SwiftPM support', () {
+    expect(appPubspec, contains('mobile_scanner: 5.2.3'));
+    expect(
+      appPubspec,
+      contains('config:\n    enable-swift-package-manager: false'),
+    );
+    expect(iosDebugConfig, contains('Pods-Runner.debug.xcconfig'));
+    expect(iosReleaseConfig, contains('Pods-Runner.release.xcconfig'));
+    expect(iosPodfile, contains("platform :ios, '13.0'"));
+    expect(iosPodfile, isNot(contains('use_frameworks!')));
+    expect(iosPodfile, contains('use_modular_headers!'));
+    expect(
+      iosPodfile,
+      contains("config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'"),
+    );
+    expect(iosPodfile, contains('post_integrate do |installer|'));
+    expect(iosPodfile, contains('frameworks_build_phase.files.find'));
+    expect(iosPodfile, contains("display_name == 'libPods-Runner.a'"));
+    expect(iosPodfile, contains('frameworks_group.remove_reference'));
+    expect(iosPodfile, contains('frameworks_build_phase.remove_build_file'));
+    expect(
+      iosPodfile,
+      contains("raise 'Missing redundant Pods-Runner library reference'"),
+    );
+    final iosBuild = _matrixEntry(
+      _job(workflow, 'mobile-debug-build'),
+      'macos-26',
+    );
+    expect(iosBuild, contains('flutter build ios --debug --no-codesign'));
+    expect(iosBuild, isNot(contains('--simulator')));
+    expect(iosProject, isNot(contains('FlutterGeneratedPluginSwiftPackage')));
   });
 
   test('native attachment plugins receive macOS and Windows debug builds', () {

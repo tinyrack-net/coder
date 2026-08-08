@@ -259,6 +259,9 @@ void main() {
           'https://coder.tinyrack.net',
           '--allowed-origin',
           'http://localhost:8080',
+          '--relay',
+          '--relay-endpoint',
+          'wss://relay.example/v1/ws',
         ],
         stdout: out,
         stderr: err,
@@ -279,6 +282,8 @@ void main() {
         'https://coder.tinyrack.net',
         'http://localhost:8080',
       });
+      expect(seen?.relay.enabled, isTrue);
+      expect(seen?.relay.endpoint.toString(), 'wss://relay.example/v1/ws');
     });
 
     test('a generated token is printed, a supplied one is not', () async {
@@ -319,6 +324,55 @@ void main() {
 
       expect(code, 64);
       expect(err.text, contains('host:port'));
+    });
+  });
+
+  group('daemon relay', () {
+    test('pair can enable relay and emit a machine-readable offer', () async {
+      expect(
+        await run(<String>['daemon', 'pair', '--relay', '--json']),
+        0,
+      );
+
+      expect(client.relayEnabled, isTrue);
+      expect(out.text, contains('https://coder.tinyrack.net/pair#offer='));
+      expect(out.text, contains('serverId'));
+    });
+
+    test('status, device list, and revoke use the relay API', () async {
+      client.relayEnabled = true;
+      expect(await run(<String>['daemon', 'relay', 'status']), 0);
+      expect(out.text, contains('Relay: enabled'));
+
+      expect(await run(<String>['daemon', 'devices', 'list']), 0);
+      expect(out.text, contains('Test phone'));
+
+      expect(
+        await run(<String>['daemon', 'devices', 'revoke', 'device-1']),
+        0,
+      );
+      expect(client.revokedDevices, <String>['device-1']);
+    });
+
+    test('human pairing, JSON status, and activation routes render', () async {
+      expect(await run(<String>['daemon', 'relay', 'status', '--json']), 0);
+      expect(out.text, contains('"serverId":"server-1"'));
+
+      expect(await run(<String>['daemon', 'relay', 'enable']), 0);
+      expect(out.text, contains('Relay enabled.'));
+      expect(await run(<String>['daemon', 'pair']), 0);
+      expect(out.text, contains('Pairing link'));
+      expect(out.text, contains('█'));
+
+      expect(await run(<String>['daemon', 'devices', 'list', '--json']), 0);
+      expect(out.text, contains('device-1'));
+      expect(await run(<String>['daemon', 'relay', 'disable']), 0);
+      expect(out.text, contains('Relay disabled.'));
+    });
+
+    test('pairing refuses to hide a disabled relay', () async {
+      expect(await run(<String>['daemon', 'pair']), 64);
+      expect(err.text, contains('Pass --relay'));
     });
   });
 
@@ -385,7 +439,8 @@ final class _FakeHandle implements DaemonHandle {
 }
 
 /// A [CoderClient] stand-in answering only the calls the CLI makes.
-final class _FakeClient implements CoderClient, ProvidersApi, AgentsApi {
+final class _FakeClient
+    implements CoderClient, ProvidersApi, AgentsApi, RelayApi {
   _FakeClient(this.now);
 
   final DateTime now;
@@ -398,12 +453,58 @@ final class _FakeClient implements CoderClient, ProvidersApi, AgentsApi {
   final List<String> validatedMarkdown = <String>[];
   int refreshes = 0;
   bool closed = false;
+  bool relayEnabled = false;
+  final List<String> revokedDevices = <String>[];
 
   @override
   ProvidersApi get providers => this;
 
   @override
   AgentsApi get agents => this;
+
+  @override
+  RelayApi get relay => this;
+
+  @override
+  Stream<RelayStatusDto> get statusUpdates => const Stream.empty();
+
+  RelayStatusDto get _relayStatus => RelayStatusDto(
+    enabled: relayEnabled,
+    connected: relayEnabled,
+    endpoint: 'wss://relay.tinyrack.net/v1/ws',
+    serverId: 'server-1',
+  );
+
+  @override
+  Future<RelayStatusDto> getRelayStatus() async => _relayStatus;
+
+  @override
+  Future<RelayStatusDto> setRelayEnabled({required bool enabled}) async {
+    relayEnabled = enabled;
+    return _relayStatus;
+  }
+
+  @override
+  Future<RelayPairingOfferDto> createRelayPairingOffer() async =>
+      RelayPairingOfferDto(
+        url: 'https://coder.tinyrack.net/pair#offer=test',
+        expiresAt: now.add(const Duration(minutes: 10)),
+      );
+
+  @override
+  Future<List<RelayDeviceDto>> listRelayDevices() async => <RelayDeviceDto>[
+    RelayDeviceDto(
+      id: 'device-1',
+      name: 'Test phone',
+      registeredAt: now,
+      lastConnectedAt: now,
+    ),
+  ];
+
+  @override
+  Future<void> revokeRelayDevice(String deviceId) async {
+    revokedDevices.add(deviceId);
+  }
 
   ProviderConnectionDto _connection(String id, String name) =>
       ProviderConnectionDto(

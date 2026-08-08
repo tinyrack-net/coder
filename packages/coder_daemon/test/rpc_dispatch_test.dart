@@ -11,6 +11,7 @@ void main() {
         'agents',
         'prompts',
         'providers',
+        'relay',
         'mcp',
         'sessions',
         'terminals',

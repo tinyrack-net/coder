@@ -205,7 +205,8 @@ final class _RecordingApi
         ProvidersApi,
         McpApi,
         TerminalsApi,
-        AttachmentsApi {
+        AttachmentsApi,
+        RelayApi {
   _RecordingApi(this._results);
 
   /// Pre-typed futures, because [noSuchMethod] cannot infer the return type
@@ -245,6 +246,9 @@ final class _RecordingApi
 
   @override
   AttachmentsApi get attachments => this;
+
+  @override
+  RelayApi get relay => this;
 
   @override
   dynamic noSuchMethod(Invocation invocation) {

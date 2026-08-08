@@ -203,7 +203,7 @@ void main() {
           RemoteDaemonProfile(
             id: 'remote',
             label: 'Remote daemon',
-            websocketUri: remoteHandle.boundEndpoint,
+            connections: directHostConnections(remoteHandle.boundEndpoint),
             autoConnect: true,
             createdAt: now,
             updatedAt: now,

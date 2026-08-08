@@ -545,8 +545,8 @@ final class _FailingStore
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => Future<CoderApi>.error(StateError('connection failed'));

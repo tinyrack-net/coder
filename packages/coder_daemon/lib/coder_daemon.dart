@@ -10,7 +10,12 @@ export 'src/bootstrap/application.dart'
         DaemonHandle,
         DaemonHostOptions;
 export 'src/bootstrap/config.dart'
-    show DaemonConfig, DaemonEnvironment, defaultAllowedOrigins;
+    show
+        DaemonConfig,
+        DaemonEnvironment,
+        RelayDaemonConfig,
+        RelayTlsPolicy,
+        defaultAllowedOrigins;
 export 'src/bootstrap/data_reset.dart'
     show
         DaemonDataFiles,

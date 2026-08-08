@@ -1699,7 +1699,9 @@ Widget _globalSettings(ThemeMode mode) {
       RemoteDaemonProfile(
         id: 'production',
         label: 'Production daemon',
-        websocketUri: Uri.parse('wss://coder.example.com/ws'),
+        connections: directHostConnections(
+          Uri.parse('wss://coder.example.com/ws'),
+        ),
         autoConnect: false,
         createdAt: now,
         updatedAt: now,
@@ -1731,8 +1733,8 @@ final class _UnusedClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => throw StateError('Golden profiles do not auto-connect.');

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coder_client/src/api.dart';
+import 'package:coder_client/src/attachment_transport.dart';
 import 'package:coder_client/src/endpoint.dart';
 import 'package:coder_client/src/web_socket_connector.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -52,7 +53,8 @@ class CoderClient
         ProvidersApi,
         McpApi,
         TerminalsApi,
-        AttachmentsApi {
+        AttachmentsApi,
+        RelayApi {
   CoderClient._({
     required this._endpoint,
     required this._credentials,
@@ -128,6 +130,8 @@ class CoderClient
       StreamController<TerminalDto>.broadcast();
   final StreamController<ClientConnectionState> _states =
       StreamController<ClientConnectionState>.broadcast();
+  final StreamController<RelayStatusDto> _relayStatusUpdates =
+      StreamController<RelayStatusDto>.broadcast();
   final Map<String, int> _timelineSubscriptions = <String, int>{};
   final Map<String, int> _terminalSubscriptions = <String, int>{};
   json_rpc.Peer? _peer;
@@ -162,6 +166,12 @@ class CoderClient
 
   @override
   AttachmentsApi get attachments => this;
+
+  @override
+  RelayApi get relay => this;
+
+  @override
+  Stream<RelayStatusDto> get statusUpdates => _relayStatusUpdates.stream;
 
   @override
   Stream<SessionDto> get sessionUpdates => _sessionUpdates.stream;
@@ -337,6 +347,10 @@ class CoderClient
           _terminalOutput.add(output);
         case final name when name == terminalsUpdatedNotification.name:
           _terminalUpdates.add(terminalsUpdatedNotification.decode(parameters));
+        case final name when name == relayStatusChangedNotification.name:
+          _relayStatusUpdates.add(
+            relayStatusChangedNotification.decode(parameters),
+          );
       }
     } on FormatException catch (error, stackTrace) {
       for (final controller in <StreamController<Object?>>[
@@ -351,6 +365,7 @@ class CoderClient
         _mcpChanges,
         _terminalOutput,
         _terminalUpdates,
+        _relayStatusUpdates,
       ]) {
         controller.addError(error, stackTrace);
       }
@@ -1247,6 +1262,14 @@ class CoderClient
     required int byteSize,
     required Stream<List<int>> bytes,
   }) async {
+    if (_connector case final AttachmentTransport transport) {
+      return transport.upload(
+        fileName: fileName,
+        mimeType: mimeType,
+        byteSize: byteSize,
+        bytes: bytes,
+      );
+    }
     final client = http.Client();
     try {
       final request =
@@ -1286,6 +1309,9 @@ class CoderClient
 
   @override
   Future<AttachmentDownload> downloadAttachment(String id) async {
+    if (_connector case final AttachmentTransport transport) {
+      return transport.download(id);
+    }
     final client = http.Client();
     final request = http.Request(
       'GET',
@@ -1404,6 +1430,32 @@ class CoderClient
   }
 
   @override
+  Future<RelayStatusDto> getRelayStatus() =>
+      _call(relayStatusProcedure, const RelayEmptyParamsDto());
+
+  @override
+  Future<RelayStatusDto> setRelayEnabled({required bool enabled}) => _call(
+    relaySetEnabledProcedure,
+    RelaySetEnabledParamsDto(enabled: enabled),
+  );
+
+  @override
+  Future<RelayPairingOfferDto> createRelayPairingOffer() =>
+      _call(relayCreateOfferProcedure, const RelayEmptyParamsDto());
+
+  @override
+  Future<List<RelayDeviceDto>> listRelayDevices() async => (await _call(
+    relayListDevicesProcedure,
+    const RelayEmptyParamsDto(),
+  )).devices;
+
+  @override
+  Future<void> revokeRelayDevice(String deviceId) => _call(
+    relayRevokeDeviceProcedure,
+    RelayRevokeDeviceParamsDto(deviceId: deviceId),
+  );
+
+  @override
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
@@ -1424,6 +1476,7 @@ class CoderClient
       _mcpChanges.close(),
       _terminalOutput.close(),
       _terminalUpdates.close(),
+      _relayStatusUpdates.close(),
     ]);
     await _states.close();
   }

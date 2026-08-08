@@ -14,6 +14,19 @@ const String embeddedDaemonFallbackLabel = 'Embedded daemon';
 /// Default TCP port used by the app-owned daemon.
 const int defaultEmbeddedDaemonPort = 7337;
 
+/// Creates the single direct path used by advanced manual host setup.
+List<HostConnection> directHostConnections(
+  Uri websocketUri, {
+  String id = 'direct',
+  String credentialKey = 'direct',
+}) => <HostConnection>[
+  DirectHostConnection(
+    id: id,
+    credentialKey: credentialKey,
+    endpoint: HostEndpoint(websocketUri: websocketUri),
+  ),
+];
+
 /// Failure causes the app itself raises, so the UI can localize them.
 ///
 /// Failures reported by a daemon keep their server-supplied text instead,
@@ -338,16 +351,24 @@ final class SessionTabPreference {
 /// Persisted, non-secret configuration for one remote daemon.
 final class RemoteDaemonProfile {
   /// Creates a remote daemon profile.
-  const RemoteDaemonProfile({
+  RemoteDaemonProfile({
     required this.id,
     required this.label,
-    required this.websocketUri,
+    required List<HostConnection> connections,
     required this.autoConnect,
     required this.createdAt,
     required this.updatedAt,
     this.serverId,
     this.lastConnectedAt,
-  });
+  }) : connections = List<HostConnection>.unmodifiable(
+         _normalizeHostConnections(id, connections),
+       ) {
+    if (connections.isEmpty) {
+      throw const FormatException(
+        'A remote daemon requires a connection path.',
+      );
+    }
+  }
 
   /// App-generated identity used by routes even while offline.
   final String id;
@@ -355,8 +376,8 @@ final class RemoteDaemonProfile {
   /// User-visible daemon label.
   final String label;
 
-  /// WebSocket endpoint without credentials.
-  final Uri websocketUri;
+  /// Independently probeable direct and relay paths to this daemon.
+  final List<HostConnection> connections;
 
   /// Whether this daemon connects when the app starts.
   final bool autoConnect;
@@ -376,7 +397,7 @@ final class RemoteDaemonProfile {
   /// Returns a profile with selected fields replaced.
   RemoteDaemonProfile copyWith({
     String? label,
-    Uri? websocketUri,
+    List<HostConnection>? connections,
     bool? autoConnect,
     String? serverId,
     DateTime? updatedAt,
@@ -384,14 +405,41 @@ final class RemoteDaemonProfile {
   }) => RemoteDaemonProfile(
     id: id,
     label: label ?? this.label,
-    websocketUri: websocketUri ?? this.websocketUri,
+    connections: connections ?? this.connections,
     autoConnect: autoConnect ?? this.autoConnect,
     serverId: serverId ?? this.serverId,
     createdAt: createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
   );
+
+  /// Direct paths retained for advanced local-network connection.
+  Iterable<DirectHostConnection> get directConnections =>
+      connections.whereType<DirectHostConnection>();
+
+  /// Relay paths that work without inbound network reachability.
+  Iterable<RelayHostConnection> get relayConnections =>
+      connections.whereType<RelayHostConnection>();
 }
+
+Iterable<HostConnection> _normalizeHostConnections(
+  String profileId,
+  List<HostConnection> connections,
+) => connections.map(
+  (connection) => switch (connection) {
+    DirectHostConnection(
+      :final id,
+      credentialKey: 'direct',
+      :final endpoint,
+    ) =>
+      DirectHostConnection(
+        id: id,
+        credentialKey: profileId,
+        endpoint: endpoint,
+      ),
+    _ => connection,
+  },
+);
 
 /// Origin of a daemon runtime displayed by the app.
 enum HostKind {
@@ -440,6 +488,7 @@ final class HostRuntimeSnapshot {
     this.error,
     this.errorReason,
     this.conflictingHostId,
+    this.activeConnectionId,
   });
 
   /// Stable app host ID.
@@ -472,6 +521,9 @@ final class HostRuntimeSnapshot {
   /// Existing profile that resolved to the same server ID.
   final String? conflictingHostId;
 
+  /// Connection path currently carrying the authenticated session.
+  final String? activeConnectionId;
+
   /// Whether RPC calls may currently be issued.
   bool get connected => status == HostRuntimeStatus.online && api != null;
 
@@ -485,6 +537,7 @@ final class HostRuntimeSnapshot {
     String? error,
     HostFailureReason? errorReason,
     String? conflictingHostId,
+    String? activeConnectionId,
     bool clearApi = false,
     bool clearError = false,
     bool clearConflict = false,
@@ -501,6 +554,7 @@ final class HostRuntimeSnapshot {
     conflictingHostId: clearConflict
         ? null
         : conflictingHostId ?? this.conflictingHostId,
+    activeConnectionId: activeConnectionId ?? this.activeConnectionId,
   );
 }
 
