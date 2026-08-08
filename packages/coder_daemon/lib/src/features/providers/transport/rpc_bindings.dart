@@ -33,6 +33,7 @@ List<RpcBindingDescriptor> providerRpcBindings({
           () => providers.connectApiKey(
             request.definitionId,
             request.apiKey,
+            connectionId: request.connectionId,
             modelPrefix: request.modelPrefix,
           ),
         ),
@@ -43,6 +44,7 @@ List<RpcBindingDescriptor> providerRpcBindings({
         connection: await exposeFailure(
           () => providers.connectNone(
             request.definitionId,
+            connectionId: request.connectionId,
             modelPrefix: request.modelPrefix,
           ),
         ),
@@ -54,6 +56,7 @@ List<RpcBindingDescriptor> providerRpcBindings({
           () => auth.start(
             definitionId: request.definitionId,
             methodId: request.methodId,
+            connectionId: request.connectionId,
             modelPrefix: request.modelPrefix,
           ),
         ),

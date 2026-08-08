@@ -36,13 +36,7 @@ class SkillSettingsPage extends ConsumerStatefulWidget {
 
 class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
   String? _selectedId;
-  SettingsPaneNavigationController? _paneNavigation;
-
-  @override
-  void dispose() {
-    _paneNavigation?.clearBackHandler(this);
-    super.dispose();
-  }
+  bool _creating = false;
 
   @override
   void didUpdateWidget(SkillSettingsPage oldWidget) {
@@ -50,6 +44,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     if (oldWidget.hostId != widget.hostId ||
         oldWidget.workspaceId != widget.workspaceId) {
       _selectedId = null;
+      _creating = false;
     }
   }
 
@@ -111,51 +106,78 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
   }
 
   Widget _buildCatalog(List<SkillDto> skills, {required bool compact}) {
-    if (!compact && !skills.any((skill) => skill.id == _selectedId)) {
+    if (!_creating &&
+        !compact &&
+        !skills.any((skill) => skill.id == _selectedId)) {
       _selectedId = skills.firstOrNull?.id;
     }
-    final selected = skills
-        .where((skill) => skill.id == _selectedId)
-        .firstOrNull;
-    _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
-    syncSettingsPaneBackHandler(
-      context,
-      owner: this,
-      active: compact && selected != null,
-      onBack: _showSkillList,
-    );
-    if (compact && selected != null) {
-      return _SkillEditor(
-        key: ValueKey<String>('${selected.id}:${selected.contentHash}'),
-        hostId: widget.hostId,
-        workspaceId: widget.workspaceId,
-        skill: selected,
-        onDeleted: () => setState(() => _selectedId = null),
-      );
-    }
+    final selected = _creating
+        ? null
+        : skills.where((skill) => skill.id == _selectedId).firstOrNull;
     final list = _SkillList(
       hostId: widget.hostId,
       workspaceId: widget.workspaceId,
       skills: skills,
       selectedId: _selectedId,
-      onSelected: (id) => setState(() => _selectedId = id),
+      onSelected: (id) => setState(() {
+        _creating = false;
+        _selectedId = id;
+      }),
       onCreate: () => _create(skills),
     );
-    if (compact) return list;
-    return _buildDesktopSurface(
-      collection: list,
-      detail: selected == null
-          ? SettingsEmptyState(
-              title: AppLocalizations.of(context).skillSettingsSelectSkill,
-              icon: const Icon(CoderIcons.sparkle),
-            )
-          : _SkillEditor(
-              key: ValueKey<String>('${selected.id}:${selected.contentHash}'),
-              hostId: widget.hostId,
-              workspaceId: widget.workspaceId,
-              skill: selected,
-              onDeleted: () => setState(() => _selectedId = null),
+    final detail = _creating
+        ? _CreateSkillPane(
+            existingIds: skills.map((skill) => skill.id).toSet(),
+            allowProject: widget.workspaceId != null,
+            onCancel: _showSkillList,
+            onCreate: (input) => ref
+                .read(
+                  skillsControllerProvider(
+                    widget.hostId,
+                    widget.workspaceId,
+                  ).notifier,
+                )
+                .create(
+                  id: input.id,
+                  source: input.source,
+                  name: input.name,
+                  description: input.description,
+                  body: '',
+                ),
+            onCreated: (created) => setState(() {
+              _creating = false;
+              _selectedId = created.id;
+            }),
+          )
+        : selected == null
+        ? SettingsEmptyState(
+            title: AppLocalizations.of(context).skillSettingsSelectSkill,
+            icon: const Icon(CoderIcons.sparkle),
+          )
+        : _SkillEditor(
+            key: ValueKey<String>('${selected.id}:${selected.contentHash}'),
+            hostId: widget.hostId,
+            workspaceId: widget.workspaceId,
+            skill: selected,
+            onDeleted: () => setState(() => _selectedId = null),
+          );
+    return SettingsListDetailLayout(
+      collection: compact
+          ? list
+          : Column(
+              children: <Widget>[
+                _ProjectSelector(
+                  hostId: widget.hostId,
+                  workspaceId: widget.workspaceId,
+                  onChanged: widget.onWorkspaceChanged,
+                ),
+                const TRSeparator(variant: TRSeparatorVariant.muted),
+                Expanded(child: list),
+              ],
             ),
+      detail: detail,
+      detailVisible: selected != null || _creating,
+      onBack: _showSkillList,
     );
   }
 
@@ -191,32 +213,15 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
         ],
       );
 
-  Future<void> _create(List<SkillDto> skills) async {
-    final created = await showTRDialog<SkillDto>(
-      context: context,
-      builder: (context) => _CreateSkillDialog(
-        existingIds: skills.map((skill) => skill.id).toSet(),
-        allowProject: widget.workspaceId != null,
-        onCreate: (input) => ref
-            .read(
-              skillsControllerProvider(
-                widget.hostId,
-                widget.workspaceId,
-              ).notifier,
-            )
-            .create(
-              id: input.id,
-              source: input.source,
-              name: input.name,
-              description: input.description,
-              body: '',
-            ),
-      ),
-    );
-    if (created != null && mounted) setState(() => _selectedId = created.id);
-  }
+  void _create(List<SkillDto> _) => setState(() {
+    _creating = true;
+    _selectedId = null;
+  });
 
-  void _showSkillList() => setState(() => _selectedId = null);
+  void _showSkillList() => setState(() {
+    _creating = false;
+    _selectedId = null;
+  });
 }
 
 /// Chooses which project's skills layer on top of the global sources.
@@ -628,22 +633,26 @@ class _CreateSkillInput {
   final SkillSource source;
 }
 
-class _CreateSkillDialog extends StatefulWidget {
-  const _CreateSkillDialog({
+class _CreateSkillPane extends StatefulWidget {
+  const _CreateSkillPane({
     required this.existingIds,
     required this.allowProject,
     required this.onCreate,
+    required this.onCreated,
+    required this.onCancel,
   });
 
   final Set<String> existingIds;
   final bool allowProject;
   final Future<SkillDto> Function(_CreateSkillInput input) onCreate;
+  final ValueChanged<SkillDto> onCreated;
+  final VoidCallback onCancel;
 
   @override
-  State<_CreateSkillDialog> createState() => _CreateSkillDialogState();
+  State<_CreateSkillPane> createState() => _CreateSkillPaneState();
 }
 
-class _CreateSkillDialogState extends State<_CreateSkillDialog> {
+class _CreateSkillPaneState extends State<_CreateSkillPane> {
   static final RegExp _idPattern = RegExp(r'^[a-z0-9][a-z0-9_-]{0,63}$');
 
   final TextEditingController _id = TextEditingController();
@@ -687,62 +696,73 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
       SkillSource.userHome,
       if (widget.allowProject) SkillSource.project,
     ];
-    return TRAlertDialog(
-      title: TRText.inherit(l10n.skillSettingsAddTitle),
-      content: SettingsDialogForm(
-        children: <Widget>[
-          TRTextField(
-            controller: _id,
-            autofocus: true,
-            enabled: !_saving,
-            onChanged: (_) => setState(() => _error = null),
-            label: l10n.skillSettingsIdLabel,
-            placeholder: 'release-notes',
-            errorText: _idError(l10n),
-          ),
-          TRTextField(
-            controller: _name,
-            enabled: !_saving,
-            onChanged: (_) => setState(() => _error = null),
-            label: l10n.commonName,
-          ),
-          TRTextField(
-            controller: _description,
-            enabled: !_saving,
-            onChanged: (_) => setState(() => _error = null),
-            label: l10n.commonDescription,
-          ),
-          TRSelectFormField<SkillSource>(
-            initialValue: _source,
-            label: l10n.skillSettingsSource,
-            width: TRMeasurements.overlayWidthMd,
-            items: sources
-                .map(
-                  (value) => TRSelectItem<SkillSource>(
-                    value: value,
-                    label: skillSourceLabel(l10n, value),
-                  ),
-                )
-                .toList(growable: false),
-            onValueChange: _saving
-                ? null
-                : (value) => setState(() => _source = value!),
-          ),
-          if (_error case final error?)
-            TRText('$error', color: TRTextColor.danger),
-        ],
-      ),
-      actions: <TRButton>[
-        TRButton(
-          appearance: TRAppearance.ghost,
-          onPressed: _saving ? null : () => Navigator.pop(context),
-          child: TRText.inherit(l10n.commonCancel),
+    return Column(
+      children: <Widget>[
+        SettingsPaneHeader.detail(
+          title: l10n.skillSettingsAddTitle,
+          actions: <Widget>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              onPressed: _saving ? null : widget.onCancel,
+              child: TRText.inherit(l10n.commonCancel),
+            ),
+            TRButton(
+              intent: TRIntent.primary,
+              onPressed: _valid && !_saving ? _submit : null,
+              child: TRText.inherit(
+                _saving ? l10n.commonCreating : l10n.commonCreate,
+              ),
+            ),
+          ],
         ),
-        TRButton(
-          intent: TRIntent.primary,
-          onPressed: _valid && !_saving ? _submit : null,
-          child: TRText.inherit(
-            _saving ? l10n.commonCreating : l10n.commonCreate,
+        Expanded(
+          child: SettingsScaffold(
+            children: <Widget>[
+              SettingsSection.form(
+                title: l10n.skillSettingsAddTitle,
+                children: <Widget>[
+                  TRTextField(
+                    controller: _id,
+                    autofocus: true,
+                    enabled: !_saving,
+                    onChanged: (_) => setState(() => _error = null),
+                    label: l10n.skillSettingsIdLabel,
+                    placeholder: 'release-notes',
+                    errorText: _idError(l10n),
+                  ),
+                  TRTextField(
+                    controller: _name,
+                    enabled: !_saving,
+                    onChanged: (_) => setState(() => _error = null),
+                    label: l10n.commonName,
+                  ),
+                  TRTextField(
+                    controller: _description,
+                    enabled: !_saving,
+                    onChanged: (_) => setState(() => _error = null),
+                    label: l10n.commonDescription,
+                  ),
+                  TRSelectFormField<SkillSource>(
+                    initialValue: _source,
+                    label: l10n.skillSettingsSource,
+                    width: CoderLayoutMetrics.settingsContentMaxWidth,
+                    items: sources
+                        .map(
+                          (value) => TRSelectItem<SkillSource>(
+                            value: value,
+                            label: skillSourceLabel(l10n, value),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onValueChange: _saving
+                        ? null
+                        : (value) => setState(() => _source = value!),
+                  ),
+                  if (_error case final error?)
+                    TRText('$error', color: TRTextColor.danger),
+                ],
+              ),
+            ],
           ),
         ),
       ],
@@ -763,7 +783,7 @@ class _CreateSkillDialogState extends State<_CreateSkillDialog> {
           source: _source,
         ),
       );
-      if (mounted) Navigator.pop(context, created);
+      if (mounted) widget.onCreated(created);
     } on Exception catch (error) {
       if (mounted) {
         setState(() {

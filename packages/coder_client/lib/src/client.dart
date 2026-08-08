@@ -1043,6 +1043,7 @@ class CoderClient
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final response = await _call(
@@ -1050,6 +1051,7 @@ class CoderClient
       ProviderConnectApiKeyParamsDto(
         definitionId: definitionId,
         apiKey: apiKey,
+        connectionId: connectionId,
         modelPrefix: modelPrefix,
       ),
     );
@@ -1059,12 +1061,14 @@ class CoderClient
   @override
   Future<ProviderConnectionDto> connectProviderNone(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final response = await _call(
       providersConnectNoneProcedure,
       ProviderConnectNoneParamsDto(
         definitionId: definitionId,
+        connectionId: connectionId,
         modelPrefix: modelPrefix,
       ),
     );
@@ -1075,6 +1079,7 @@ class CoderClient
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
     String methodId, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final response = await _call(
@@ -1082,6 +1087,7 @@ class CoderClient
       ProviderAuthStartParamsDto(
         definitionId: definitionId,
         methodId: methodId,
+        connectionId: connectionId,
         modelPrefix: modelPrefix,
       ),
     );

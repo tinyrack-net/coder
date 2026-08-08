@@ -142,7 +142,7 @@ void main() {
       tester,
       api,
       const ProviderSettingsRoute(hostId: 'server').location,
-      find.text('Provider 추가'),
+      find.text('연결됨'),
     ),
     tags: const <String>['route_test__provider_settings_route__widget'],
   );

@@ -29,6 +29,10 @@ void main() {
       addTearDown(assertions.close);
 
       await _pumpProviderSettings(tester, fixture);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.pumpAndSettle();
       final refresh = find.byKey(
         const ValueKey<String>('provider-catalog-refresh'),
       );
@@ -132,9 +136,19 @@ void main() {
       final oauthModels = (await assertions.providers.listProviderModels(
         connection.id,
       )).map((model) => model.id);
-      expect(oauthModels, contains('openai/gpt-5.6-sol'));
+      expect(
+        oauthModels,
+        contains('${connection.modelPrefix}/gpt-5.6-sol'),
+      );
       expect(oauthModels, isNot(contains('oauth-e2e-model')));
 
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('provider-catalog-refresh')),
+      );
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-catalog-refresh')),
       );
@@ -167,22 +181,34 @@ Future<void> _pumpProviderSettings(
 }
 
 Future<void> _startDeviceOAuth(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey<String>('provider-add-openai')));
-  await tester.pumpAndSettle();
+  final retry = find.widgetWithText(TRButton, 'Retry');
+  if (retry.evaluate().isNotEmpty) {
+    await tester.tap(retry);
+    await tester.pumpAndSettle();
+  } else {
+    final preset = find.byKey(const ValueKey<String>('provider-add-openai'));
+    if (preset.evaluate().isEmpty) {
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(preset);
+    await tester.pumpAndSettle();
+  }
   expect(
     find.byKey(const ValueKey<String>('provider-model-prefix')),
     findsOneWidget,
   );
   await tester.tap(
-    find
-        .descendant(
-          of: find.byType(TRAlertDialog),
-          matching: find.byType(TRButton),
-        )
-        .last,
+    find.byKey(const ValueKey<String>('provider-auth-method')),
   );
   await tester.pumpAndSettle();
   await tester.tap(find.text('Sign in with device code'));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(const ValueKey<String>('provider-connect-submit')),
+  );
   await tester.pump();
   await pumpUntilCondition(
     tester,

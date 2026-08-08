@@ -146,12 +146,14 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
     String apiKey, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final api = await _requireConnection();
     final result = await api.providers.connectProviderApiKey(
       definitionId,
       apiKey,
+      connectionId: connectionId,
       modelPrefix: modelPrefix,
     );
     await _reload(api);
@@ -161,11 +163,13 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Connects a local built-in provider without authentication.
   Future<ProviderConnectionDto> connectNone(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final api = await _requireConnection();
     final result = await api.providers.connectProviderNone(
       definitionId,
+      connectionId: connectionId,
       modelPrefix: modelPrefix,
     );
     await _reload(api);
@@ -176,12 +180,14 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
     String methodId, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final api = await _requireConnection();
     final attempt = await api.providers.startProviderAuth(
       definitionId,
       methodId,
+      connectionId: connectionId,
       modelPrefix: modelPrefix,
     );
     final current = state.asData?.value;

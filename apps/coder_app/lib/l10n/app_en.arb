@@ -956,6 +956,12 @@
   "@providerSettingsNoConnections": {
     "description": "Empty state of the connected provider list."
   },
+  "providerSettingsSelectConnection": "Select a provider to manage.",
+  "@providerSettingsSelectConnection": {
+    "description": "Empty detail pane shown before a provider is selected."
+  },
+  "providerSettingsRequiredFields": "Name and Base URL are required.",
+  "providerSettingsApiKeyRequired": "API key is required.",
   "providerSettingsEditAdvanced": "Edit advanced settings",
   "providerSettingsActions": "Connection actions",
   "@providerSettingsEditAdvanced": {
@@ -982,6 +988,14 @@
     "description": "Alert title shown when the provider catalog fails to load."
   },
   "providerSettingsOAuthPending": "Waiting for sign-in",
+  "providerSettingsOpenBrowser": "Open browser",
+  "@providerSettingsOpenBrowser": {
+    "description": "Action that reopens a provider OAuth URL in the system browser."
+  },
+  "providerSettingsReconnect": "Reconnect",
+  "@providerSettingsReconnect": {
+    "description": "Action that replaces credentials for an existing provider connection."
+  },
   "@providerSettingsOAuthPending": {
     "description": "Title of the pending OAuth attempt bar."
   },

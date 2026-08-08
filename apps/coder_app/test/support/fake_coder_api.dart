@@ -1468,6 +1468,7 @@ final class FakeCoderApi
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final error = providerConnectError;
@@ -1476,24 +1477,29 @@ final class FakeCoderApi
     final existing = _connections
         .where((connection) => connection.definitionId == definitionId)
         .length;
-    final connectionId = existing == 0
-        ? definitionId
-        : '$definitionId-${existing + 1}';
+    final resolvedConnectionId =
+        connectionId ??
+        (existing == 0 ? definitionId : '$definitionId-${existing + 1}');
     credentials[definitionId] = apiKey;
-    credentials[connectionId] = apiKey;
+    credentials[resolvedConnectionId] = apiKey;
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
     return _saveConnection(
       ProviderConnectionDto(
-        id: connectionId,
+        id: resolvedConnectionId,
         definitionId: definitionId,
         modelPrefix: modelPrefix ?? definitionId,
         displayName: definition.name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.apiKey,
         credentialOrigin: ProviderCredentialOrigin.stored,
-        createdAt: _now,
+        createdAt:
+            _connections
+                .where((item) => item.id == resolvedConnectionId)
+                .firstOrNull
+                ?.createdAt ??
+            _now,
         updatedAt: _now,
       ),
     );
@@ -1502,27 +1508,33 @@ final class FakeCoderApi
   @override
   Future<ProviderConnectionDto> connectProviderNone(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final existing = _connections
         .where((connection) => connection.definitionId == definitionId)
         .length;
-    final connectionId = existing == 0
-        ? definitionId
-        : '$definitionId-${existing + 1}';
+    final resolvedConnectionId =
+        connectionId ??
+        (existing == 0 ? definitionId : '$definitionId-${existing + 1}');
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
     return _saveConnection(
       ProviderConnectionDto(
-        id: connectionId,
+        id: resolvedConnectionId,
         definitionId: definitionId,
         modelPrefix: modelPrefix ?? definitionId,
         displayName: definition.name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.none,
         credentialOrigin: ProviderCredentialOrigin.none,
-        createdAt: _now,
+        createdAt:
+            _connections
+                .where((item) => item.id == resolvedConnectionId)
+                .firstOrNull
+                ?.createdAt ??
+            _now,
         updatedAt: _now,
       ),
     );
@@ -1532,11 +1544,13 @@ final class FakeCoderApi
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
     String methodId, {
+    String? connectionId,
     String? modelPrefix,
   }) async => ProviderAuthAttemptDto(
     id: 'attempt',
     definitionId: definitionId,
     methodId: methodId,
+    connectionId: connectionId ?? definitionId,
     modelPrefix: modelPrefix ?? definitionId,
     status: ProviderAuthAttemptStatus.awaitingUser,
     authorizationUrl: 'https://auth.example/authorize',

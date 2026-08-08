@@ -1,4 +1,9 @@
 {
+  "providerSettingsOpenBrowser": "ブラウザーを開く",
+  "providerSettingsReconnect": "再接続",
+  "providerSettingsSelectConnection": "管理するProviderを選択してください。",
+  "providerSettingsRequiredFields": "名前とBase URLを入力してください。",
+  "providerSettingsApiKeyRequired": "API keyを入力してください。",
   "@@locale": "ja",
   "commonCancel": "キャンセル",
   "commonSave": "保存",
