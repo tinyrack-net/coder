@@ -147,7 +147,7 @@ final class FakeCoderApi
        _workspaces = workspaces ?? <WorkspaceDto>[],
        _worktrees = worktrees ?? <WorktreeDto>[],
        _agents = agents ?? <SessionDto>[],
-       _terminals = terminals ?? <TerminalDto>[],
+       _terminals = List<TerminalDto>.of(terminals ?? const <TerminalDto>[]),
        _agentDefinitions = List<AgentDefinitionDto>.of(
          agentDefinitions ?? <AgentDefinitionDto>[_coder],
        ),
@@ -1091,6 +1091,10 @@ final class FakeCoderApi
   final List<({String terminalId, String data})> terminalWrites =
       <({String terminalId, String data})>[];
 
+  /// Terminal viewport sizes received by the fake.
+  final List<({String terminalId, int columns, int rows})> terminalResizes =
+      <({String terminalId, int columns, int rows})>[];
+
   @override
   Future<void> writeTerminal(String terminalId, String data) async {
     terminalWrites.add((terminalId: terminalId, data: data));
@@ -1102,6 +1106,11 @@ final class FakeCoderApi
     required int columns,
     required int rows,
   }) async {
+    terminalResizes.add((
+      terminalId: terminalId,
+      columns: columns,
+      rows: rows,
+    ));
     final index = _terminals.indexWhere((item) => item.id == terminalId);
     final terminal = _terminals[index].copyWith(columns: columns, rows: rows);
     _terminals[index] = terminal;

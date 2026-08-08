@@ -261,22 +261,91 @@ void main() {
     );
   }
 
-  testWidgets('the terminal receives Tinyrack presentation tokens', (
-    tester,
-  ) async {
-    await _pumpTerminal(tester, presenter: _RecordingPresenter());
+  testWidgets(
+    'the terminal receives Tinyrack presentation tokens',
+    (tester) async {
+      await _pumpTerminal(tester, presenter: _RecordingPresenter());
 
-    final finder = find.byType(TerminalView);
-    final terminal = tester.widget<TerminalView>(finder);
-    final colors = tester.element(finder).tinyrackTheme;
+      final finder = find.byType(TerminalView);
+      final terminal = tester.widget<TerminalView>(finder);
+      final colors = tester.element(finder).tinyrackTheme;
 
-    expect(terminal.theme.background, colors.surface);
-    expect(terminal.theme.foreground, colors.text);
-    expect(terminal.theme.cursor, colors.focus);
-    expect(terminal.theme.selection, colors.surfaceSelected);
-    expect(terminal.style.textStyle, TRTypography.code);
-    expect(terminal.style.padding, const EdgeInsets.all(TRSpacing.small));
-  });
+      expect(terminal.theme.background, colors.surface);
+      expect(terminal.theme.foreground, colors.text);
+      expect(terminal.theme.cursor, colors.focus);
+      expect(terminal.theme.selection, colors.surfaceSelected);
+      expect(terminal.theme.black, colors.surface);
+      expect(terminal.theme.red, colors.danger);
+      expect(terminal.theme.green, colors.success);
+      expect(terminal.theme.yellow, colors.warning);
+      expect(terminal.theme.blue, colors.info);
+      expect(terminal.theme.magenta, colors.primary);
+      expect(terminal.theme.cyan, colors.infoBorder);
+      expect(terminal.theme.white, colors.text);
+      expect(terminal.theme.brightBlack, colors.textMuted);
+      expect(terminal.theme.brightRed, colors.dangerBorder);
+      expect(terminal.theme.brightGreen, colors.successBorder);
+      expect(terminal.theme.brightYellow, colors.warningBorder);
+      expect(terminal.theme.brightBlue, colors.infoBorder);
+      expect(terminal.theme.brightMagenta, colors.primary);
+      expect(terminal.theme.brightCyan, colors.info);
+      expect(terminal.theme.brightWhite, colors.text);
+      expect(terminal.theme.searchHitBackground, colors.warningSurface);
+      expect(terminal.theme.searchHitBackgroundCurrent, colors.warning);
+      expect(terminal.theme.searchHitForeground, colors.surface);
+      expect(terminal.style.fontSize, TRTypography.code.fontSize);
+      expect(terminal.style.height, TRTypography.code.height);
+      expect(terminal.style.fontFamily, TRTypography.code.fontFamily);
+      expect(terminal.padding, const EdgeInsets.all(TRSpacing.small));
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'viewport changes resize the attached terminal',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = await _pumpTerminal(
+        tester,
+        presenter: _RecordingPresenter(),
+      );
+      api.terminalResizes.clear();
+
+      await tester.binding.setSurfaceSize(const Size(800, 600));
+      await tester.pumpAndSettle();
+
+      expect(api.terminalResizes, isNotEmpty);
+      final resize = api.terminalResizes.last;
+      expect(resize.terminalId, _terminal.id);
+      expect(resize.columns, greaterThan(0));
+      expect(resize.rows, greaterThan(0));
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'mouse reporting suppresses the terminal context menu',
+    (tester) async {
+      final presenter = _RecordingPresenter();
+      final api = await _pumpTerminal(tester, presenter: presenter);
+      api.emit(
+        const TerminalOutputClientEvent(
+          TerminalOutputDto(
+            terminalId: 'terminal-menu',
+            sequence: 2,
+            data: '\x1b[?1000h',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await _openTerminalMenu(tester);
+
+      expect(presenter.openings, isEmpty);
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
 
   testWidgets(
     'copy and clear-selection follow the selection the terminal reports',
