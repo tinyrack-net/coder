@@ -20,10 +20,15 @@ void main() {
       final staging = await Directory.systemTemp.createTemp(
         'coder-lua-tool-runtime-',
       );
+      final buildDirectory = await Directory.systemTemp.createTemp(
+        'coder-lua-tool-runtime-build-',
+      );
       addTearDown(() => staging.delete(recursive: true));
+      addTearDown(() => buildDirectory.delete(recursive: true));
       await lua.stageLuaToolRuntime(
         destination: staging.path,
         buildMode: lua.LuaBuildMode.debug,
+        buildDirectory: buildDirectory.path,
       );
       final service = LuaCodeModeService(
         lua.LuaToolRuntime<ConversationAttachment>(

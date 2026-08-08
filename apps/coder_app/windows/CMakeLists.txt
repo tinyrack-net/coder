@@ -54,12 +54,15 @@ add_subdirectory("runner")
 
 find_program(DART_EXECUTABLE NAMES dart dart.exe REQUIRED)
 set(LUA_RUNTIME_STAGE "${CMAKE_BINARY_DIR}/lua_tool_runtime_stage")
+set(LUA_RUNTIME_BUILD "${CMAKE_BINARY_DIR}/lua_tool_runtime_build")
 add_custom_command(
   OUTPUT
     "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host.exe"
     "${LUA_RUNTIME_STAGE}/lua_tool_runtime/bootstrap.lua"
   COMMAND "${DART_EXECUTABLE}" run tool/build_lua_host.dart
     --destination "${LUA_RUNTIME_STAGE}" --build-mode release
+    --cmake-executable "${CMAKE_COMMAND}"
+    --build-directory "${LUA_RUNTIME_BUILD}"
   DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../pubspec.lock"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../tool/build_lua_host.dart"

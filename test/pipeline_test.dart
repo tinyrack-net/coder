@@ -13,6 +13,10 @@ void main() {
   final cargoKitCompat = File(
     'apps/coder_app/android/cargokit-gradle9-compat.gradle',
   );
+  final windowsCmake = File(
+    'apps/coder_app/windows/CMakeLists.txt',
+  ).readAsStringSync();
+  final luaHostBuilder = File('tool/build_lua_host.dart').readAsStringSync();
 
   test('normal quality jobs do not run in the nightly workflow', () {
     for (final job in <String>[
@@ -203,6 +207,19 @@ void main() {
       contains('flutter build windows --debug -t lib/main_desktop.dart'),
     );
     expect(_job(workflow, 'quality-gate'), contains('- desktop-debug-build'));
+  });
+
+  test('Windows stages Lua with Flutter CMake in a short build tree', () {
+    expect(
+      windowsCmake,
+      contains(r'--cmake-executable "${CMAKE_COMMAND}"'),
+    );
+    expect(
+      windowsCmake,
+      contains(r'--build-directory "${LUA_RUNTIME_BUILD}"'),
+    );
+    expect(luaHostBuilder, contains("'--cmake-executable'"));
+    expect(luaHostBuilder, contains("'--build-directory'"));
   });
 
   test('Android supplies the CargoKit Gradle 9 exec compatibility service', () {
