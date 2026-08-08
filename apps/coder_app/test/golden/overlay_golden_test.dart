@@ -247,12 +247,26 @@ void main() {
         final terminal = tester.widget<TerminalView>(
           find.byType(TerminalView),
         );
-        final paint = find.descendant(
-          of: find.byType(TerminalView),
-          matching: find.byType(CustomPaint),
+        final preedit = find.byKey(
+          const ValueKey<String>('termworld-preedit'),
         );
-        expect(paint, paints..paragraph());
-        expect(paint, isNot(paints..rect(color: terminal.theme.cursor)));
+        expect(preedit, findsOneWidget);
+        expect(tester.widget<Text>(preedit).data, '한');
+        final decoration =
+            tester
+                    .widget<DecoratedBox>(
+                      find.ancestor(
+                        of: preedit,
+                        matching: find.byType(DecoratedBox),
+                      ),
+                    )
+                    .decoration
+                as BoxDecoration;
+        expect(decoration.color, terminal.theme.background);
+        expect(
+          (decoration.border! as Border).bottom.color,
+          terminal.theme.foreground,
+        );
         return null;
       },
       builder: _terminalImeApp,
@@ -433,15 +447,13 @@ class _TerminalImeGoldenApp extends StatefulWidget {
 }
 
 class _TerminalImeGoldenAppState extends State<_TerminalImeGoldenApp> {
-  late final TerminalEmulator _emulator = TerminalEmulator()..write('input: ');
-  late final TerminalViewController _controller = TerminalViewController(
-    emulator: _emulator,
-  );
+  late final Terminal _terminal = Terminal()..write('input: ');
+  late final TerminalViewController _controller = TerminalViewController();
 
   @override
   void dispose() {
     _controller.dispose();
-    _emulator.dispose();
+    _terminal.dispose();
     super.dispose();
   }
 
@@ -453,7 +465,7 @@ class _TerminalImeGoldenAppState extends State<_TerminalImeGoldenApp> {
     themeMode: ThemeMode.dark,
     home: Scaffold(
       body: CoderTerminalView(
-        emulator: _emulator,
+        terminal: _terminal,
         controller: _controller,
         autofocus: true,
       ),

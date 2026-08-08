@@ -872,7 +872,7 @@ class _TerminalPane extends ConsumerStatefulWidget {
 }
 
 class _TerminalPaneState extends ConsumerState<_TerminalPane> {
-  late final TerminalEmulator _emulator;
+  late final Terminal _terminal;
   final TerminalViewController _controller = TerminalViewController();
   StreamSubscription<TerminalOutputDto>? _events;
   CoderApi? _api;
@@ -882,12 +882,14 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
   @override
   void initState() {
     super.initState();
-    _emulator = TerminalEmulator(
-      columns: widget.terminal.columns,
-      rows: widget.terminal.rows,
-      onOutput: _sendInput,
-      onResize: _resize,
+    _terminal = Terminal(
+      options: TerminalOptions(
+        cols: widget.terminal.columns,
+        rows: widget.terminal.rows,
+      ),
     );
+    _terminal.onData.listen(_sendInput);
+    _terminal.onResize.listen(_resize);
     unawaited(_attach());
   }
 
@@ -898,11 +900,11 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
     );
   }
 
-  void _resize(TerminalSize size) {
+  void _resize(TerminalResizeEvent size) {
     unawaited(
       _api?.terminals.resizeTerminal(
             widget.terminal.id,
-            columns: size.columns,
+            columns: size.cols,
             rows: size.rows,
           ) ??
           Future<TerminalDto>.value(widget.terminal),
@@ -930,14 +932,14 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
   void _accept(TerminalOutputDto output) {
     if (output.sequence <= _sequence) return;
     _sequence = output.sequence;
-    _emulator.write(output.data);
+    _terminal.write(output.data);
   }
 
   @override
   void dispose() {
     unawaited(_events?.cancel());
     _controller.dispose();
-    _emulator.dispose();
+    _terminal.dispose();
     super.dispose();
   }
 
@@ -958,7 +960,7 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       listenable: _controller,
       builder: (context, _) => CoderTerminalView(
         key: ValueKey<String>('terminal-view-${widget.terminal.id}'),
-        emulator: _emulator,
+        terminal: _terminal,
         controller: _controller,
         autofocus: true,
         contextMenuItems: _buildContextMenu,
@@ -1022,14 +1024,14 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text;
       if (text == null || text.isEmpty) return;
-      _emulator.paste(text);
+      _terminal.paste(text);
       _controller.clearSelection();
     }());
   }
 
   /// Erases the screen and the scrollback, then homes the cursor.
   void _clearScreen() {
-    _emulator.write('\x1b[H\x1b[2J\x1b[3J');
+    _terminal.write('\x1b[H\x1b[2J\x1b[3J');
     _controller.clearSelection();
   }
 }

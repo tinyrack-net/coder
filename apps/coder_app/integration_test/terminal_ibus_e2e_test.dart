@@ -153,19 +153,17 @@ void main() {
         "stty -echo; printf '\\r\\n$wrapReadyMarker\\r\\n'\r",
       );
       await _waitUntil(
-        () => terminalView.emulator.lines.any(
-          (line) => line
-              .map((cell) => cell.text)
-              .join()
-              .contains(
-                wrapReadyMarker,
-              ),
-        ),
+        () => _terminalRows(
+          terminalView,
+        ).any((line) => line.contains(wrapReadyMarker)),
         'the shell to disable echo before the wrapped-row probe',
       );
       await tester.pumpAndSettle();
-      const wrappedProbe =
-          '\r\n\u001b[2K\u001b[999C\u001b[5DWRAPQWxy\b \b\b \b\b \b\r\n';
+      // xterm crosses a soft-wrap boundary on Backspace only when the
+      // terminal application enables DEC reverse-wrap mode.
+      const reverseWrapPrefix = '\r\n\u001b[2K\u001b[?45h\u001b[999C\u001b[5D';
+      const eraseAcrossWrap = 'WRAPQWxy\b \b\b \b\b \b\r\n';
+      const wrappedProbe = '$reverseWrapPrefix$eraseAcrossWrap';
       final encodedWrappedProbe = base64Encode(utf8.encode(wrappedProbe));
       await setupClient.terminals.writeTerminal(
         terminal.id,
@@ -208,23 +206,14 @@ void main() {
         ready.existsSync,
         'the PTY byte recorder to follow the mode probe',
       );
+      await _waitForTerminalParsed(terminalView.terminal);
       final wrappedEraseObserved = await _waitForOptional(
-        () => terminalView.emulator.lines.any(
-          (line) => line
-              .map((cell) => cell.text)
-              .join()
-              .trimRight()
-              .endsWith(
-                'WRAPQ',
-              ),
+        () => _terminalRows(terminalView).any(
+          (line) => line.endsWith('WRAPQ'),
         ),
         const Duration(seconds: 15),
       );
-      final terminalRows = terminalView.emulator.lines
-          .map(
-            (line) => line.map((cell) => cell.text).join().trimRight(),
-          )
-          .toList();
+      final terminalRows = _terminalRows(terminalView);
       expect(
         wrappedEraseObserved,
         isTrue,
@@ -555,6 +544,22 @@ Future<bool> _waitForOptional(
     await Future<void>.delayed(const Duration(milliseconds: 20));
   }
   return predicate();
+}
+
+Future<void> _waitForTerminalParsed(Terminal terminal) async {
+  final parsed = Completer<void>();
+  // Terminal.write queues parser work. An empty write acts as a FIFO barrier,
+  // so the buffer assertions below cannot race the preceding PTY output.
+  terminal.write('', onParsed: parsed.complete);
+  await parsed.future.timeout(const Duration(seconds: 15));
+}
+
+List<String> _terminalRows(CoderTerminalView view) {
+  final buffer = view.terminal.buffer.active;
+  return <String>[
+    for (var index = 0; index < buffer.length; index++)
+      buffer.getLine(index)!.translateToString(trimRight: true),
+  ];
 }
 
 String _hex(int value) => value.toRadixString(16).padLeft(2, '0');

@@ -7,7 +7,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 final class CoderTerminalView extends StatefulWidget {
   /// Creates a token-backed terminal viewport for Coder.
   const CoderTerminalView({
-    required this.emulator,
+    required this.terminal,
     required this.controller,
     this.contextMenuItems,
     this.autofocus = false,
@@ -16,7 +16,7 @@ final class CoderTerminalView extends StatefulWidget {
   });
 
   /// Terminal engine connected to the active PTY.
-  final TerminalEmulator emulator;
+  final Terminal terminal;
 
   /// Selection and scroll state rendered by the viewport.
   final TerminalViewController controller;
@@ -37,63 +37,80 @@ final class CoderTerminalView extends StatefulWidget {
 final class _CoderTerminalViewState extends State<CoderTerminalView> {
   final TRContextMenuController _menuController = TRContextMenuController();
 
-  void _openContextMenu(TapDownDetails details) {
-    if (widget.emulator.mouseTrackingMode != TerminalMouseTrackingMode.none) {
+  @override
+  void initState() {
+    super.initState();
+    widget.terminal.attachCustomKeyEventHandler(_handleTerminalKeyEvent);
+  }
+
+  @override
+  void didUpdateWidget(CoderTerminalView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.terminal == widget.terminal) return;
+    oldWidget.terminal.attachCustomKeyEventHandler((_) => true);
+    widget.terminal.attachCustomKeyEventHandler(_handleTerminalKeyEvent);
+  }
+
+  void _openContextMenu(TapDownDetails details, CellOffset _) {
+    if (widget.terminal.modes.mouseTrackingMode != 'none') {
       return;
     }
     _menuController.openAt(details.globalPosition);
   }
 
-  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+  bool _handleTerminalKeyEvent(TerminalKeyEvent event) {
     if (_menuController.isOpen &&
-        event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape) {
+        event.key == LogicalKeyboardKey.escape.keyLabel) {
       _menuController.close();
-      return KeyEventResult.handled;
+      return false;
     }
-    return KeyEventResult.ignored;
+    return true;
+  }
+
+  @override
+  void dispose() {
+    widget.terminal.attachCustomKeyEventHandler((_) => true);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.tinyrackTheme;
     final terminal = TerminalView(
-      emulator: widget.emulator,
+      terminal: widget.terminal,
       controller: widget.controller,
       autofocus: widget.autofocus,
       readOnly: widget.readOnly,
       onSecondaryTapDown: widget.contextMenuItems == null
           ? null
           : _openContextMenu,
-      onKeyEvent: widget.contextMenuItems == null ? null : _handleKeyEvent,
       theme: TerminalTheme(
         background: colors.surface,
         foreground: colors.text,
         cursor: colors.focus,
         selection: colors.surfaceSelected,
-        palette: <Color>[
-          colors.surface,
-          colors.danger,
-          colors.success,
-          colors.warning,
-          colors.info,
-          colors.primary,
-          colors.infoBorder,
-          colors.text,
-          colors.textMuted,
-          colors.dangerBorder,
-          colors.successBorder,
-          colors.warningBorder,
-          colors.infoBorder,
-          colors.primary,
-          colors.info,
-          colors.text,
-        ],
+        black: colors.surface,
+        red: colors.danger,
+        green: colors.success,
+        yellow: colors.warning,
+        blue: colors.info,
+        magenta: colors.primary,
+        cyan: colors.infoBorder,
+        white: colors.text,
+        brightBlack: colors.textMuted,
+        brightRed: colors.dangerBorder,
+        brightGreen: colors.successBorder,
+        brightYellow: colors.warningBorder,
+        brightBlue: colors.infoBorder,
+        brightMagenta: colors.primary,
+        brightCyan: colors.info,
+        brightWhite: colors.text,
+        searchHitBackground: colors.warningSurface,
+        searchHitBackgroundCurrent: colors.warning,
+        searchHitForeground: colors.surface,
       ),
-      style: const TerminalStyle(
-        textStyle: TRTypography.code,
-        padding: EdgeInsets.all(TRSpacing.small),
-      ),
+      style: TerminalStyle.fromTextStyle(TRTypography.code),
+      padding: const EdgeInsets.all(TRSpacing.small),
     );
     final items = widget.contextMenuItems;
     return ColoredBox(
