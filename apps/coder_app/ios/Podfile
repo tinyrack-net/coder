@@ -41,22 +41,17 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
     end
   end
-end
 
-# Xcode 26.6 does not schedule CocoaPods' empty aggregate target when every
-# actual Pod is already linked directly. Remove only that redundant linker
-# flag; the generated xcconfig keeps every plugin and MLKit library intact.
-post_integrate do |_installer|
-  aggregate_flag = /(?:^|\s)-l\"?Pods-Runner\"?(?=\s|$)/
-  pattern = File.join(
-    __dir__,
-    'Pods',
-    'Target Support Files',
-    'Pods-Runner',
-    'Pods-Runner.*.xcconfig',
-  )
-  Dir.glob(pattern).each do |path|
-    contents = File.read(path)
-    File.write(path, contents.gsub(aggregate_flag, ''))
+  # Xcode 26.6 does not schedule CocoaPods' empty aggregate target when every
+  # actual Pod is already linked directly. Remove only that redundant library;
+  # every plugin and MLKit library remains in the generated xcconfig.
+  aggregate_target = installer.aggregate_targets.find do |target|
+    target.name == 'Pods-Runner'
+  end
+  raise 'Missing Pods-Runner aggregate target' unless aggregate_target
+
+  aggregate_target.xcconfigs.each do |config_name, config_file|
+    config_file.libraries.delete('Pods-Runner')
+    config_file.save_as(aggregate_target.xcconfig_path(config_name))
   end
 end
