@@ -164,7 +164,7 @@ class _ChatQuestionCardState extends ConsumerState<ChatQuestionCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (multipleQuestions)
-              TRTabs.bar(
+              TRTabs(
                 key: const ValueKey<String>('chat-question-tabs'),
                 semanticLabel: l10n.chatQuestionNavigation,
                 value: activeQuestion.id,
