@@ -55,7 +55,12 @@ void main() {
       p.join(bundle.path, 'Coder.app', 'Contents', 'MacOS'),
     )..createSync(recursive: true);
     final helper = File(
-      p.join(executableDirectory.path, 'lua-tool-runtime-host'),
+      p.join(
+        executableDirectory.path,
+        Platform.isWindows
+            ? 'lua-tool-runtime-host.exe'
+            : 'lua-tool-runtime-host',
+      ),
     )..createSync();
     final bootstrap = File(
       p.join(
