@@ -215,7 +215,7 @@ void main() {
     expect(iosDebugConfig, contains('Pods-Runner.debug.xcconfig'));
     expect(iosReleaseConfig, contains('Pods-Runner.release.xcconfig'));
     expect(iosPodfile, contains("platform :ios, '13.0'"));
-    expect(iosPodfile, contains('use_frameworks!'));
+    expect(iosPodfile, isNot(contains('use_frameworks!')));
     expect(iosPodfile, contains('use_modular_headers!'));
     expect(
       iosPodfile,
