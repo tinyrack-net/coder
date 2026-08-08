@@ -293,6 +293,31 @@ void _registerSessionsAppFlows() {
       await tester.pumpAndSettle();
       expect(find.byType(TRSplitView), findsOneWidget);
 
+      final splitDown = find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'workspace-split-down',
+            ),
+      );
+      await tester.tap(splitDown.last);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-pane')), findsNWidgets(3));
+      expect(find.byType(TRSplitView), findsNWidgets(2));
+      final verticalSplit = find.byWidgetPredicate(
+        (widget) => widget is TRSplitView && widget.axis == Axis.vertical,
+      );
+      final verticalSeparator = find.descendant(
+        of: verticalSplit,
+        matching: find.byKey(const ValueKey<String>('tr-split-view-separator')),
+      );
+      await tester.drag(
+        verticalSeparator,
+        const Offset(0, TRSpacing.threeExtraLarge),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<TRSplitView>(verticalSplit).ratio, greaterThan(0.5));
+
       await tester.binding.setSurfaceSize(const Size(390, 760));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-split-right')), findsNothing);
