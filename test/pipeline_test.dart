@@ -17,6 +17,10 @@ void main() {
   final iosReleaseConfig = File(
     'apps/coder_app/ios/Flutter/Release.xcconfig',
   ).readAsStringSync();
+  final iosPodfileFile = File('apps/coder_app/ios/Podfile');
+  final iosPodfile = iosPodfileFile.existsSync()
+      ? iosPodfileFile.readAsStringSync()
+      : '';
   final cargoKitCompat = File(
     'apps/coder_app/android/cargokit-gradle9-compat.gradle',
   );
@@ -207,6 +211,13 @@ void main() {
     );
     expect(iosDebugConfig, contains('Pods-Runner.debug.xcconfig'));
     expect(iosReleaseConfig, contains('Pods-Runner.release.xcconfig'));
+    expect(iosPodfile, contains("platform :ios, '13.0'"));
+    expect(iosPodfile, contains('use_frameworks!'));
+    expect(iosPodfile, contains('use_modular_headers!'));
+    expect(
+      iosPodfile,
+      contains("config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'"),
+    );
   });
 
   test('native attachment plugins receive macOS and Windows debug builds', () {
