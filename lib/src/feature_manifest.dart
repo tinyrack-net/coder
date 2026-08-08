@@ -668,6 +668,18 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'lua.tool.orchestration',
+    description:
+        'Runs sandboxed Lua cells that orchestrate selected tools through the '
+        'ordinary approval, cancellation, media, and session lifecycle.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.platformSmoke,
+    },
+  ),
+  FeatureContract(
     id: 'tool.search.deferred',
     description:
         'Withholds bulk tools from the model tool list and makes them '

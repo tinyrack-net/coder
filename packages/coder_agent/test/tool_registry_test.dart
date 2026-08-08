@@ -105,6 +105,22 @@ void main() {
     expect(turn.promptFragments.single, contains('## Available skills'));
   });
 
+  test('a selected surface replaces direct tools and retains nested tools', () {
+    final surfaceRegistry = AgentToolRegistry(<AgentToolProvider>[
+      const ReadFileToolProvider(),
+      const _TestSurfaceProvider(),
+    ]);
+    final turn = surfaceRegistry.build(
+      _scope(
+        selected: surfaceRegistry.resolveIds(const <String>['surface']).toSet(),
+      ),
+    );
+
+    expect(turn.tools.map((tool) => tool.name), <String>['orchestrate']);
+    expect(turn.nestedTools.map((tool) => tool.name), <String>['read_file']);
+    expect(turn.promptFragments.single, contains('Nested tool surface'));
+  });
+
   test('an unselected capability builds nothing and shapes nothing', () {
     final scope = _scope(
       selected: registry.resolveIds(const <String>[]).toSet(),
@@ -204,6 +220,31 @@ final class _Mislabelled extends SelectableToolProvider {
 
   @override
   List<AgentTool> build(AgentToolScope scope) => const <AgentTool>[];
+}
+
+final class _TestSurfaceProvider extends AgentToolSurfaceProvider {
+  const _TestSurfaceProvider();
+
+  @override
+  String get id => 'surface';
+
+  @override
+  AgentToolDefinition get catalogEntry => const AgentToolDefinition(
+    id: 'surface',
+    name: 'Surface',
+    description: 'Replaces direct tools for a test.',
+    risk: AgentToolRisk.read,
+  );
+
+  @override
+  AgentToolSurface buildSurface(
+    AgentToolScope scope,
+    List<AgentTool> nestedTools,
+  ) => AgentToolSurface(
+    tools: <AgentTool>[_ExternalTool('orchestrate')],
+    nestedTools: nestedTools,
+    promptFragment: 'Nested tool surface.',
+  );
 }
 
 AgentToolScope _scope({

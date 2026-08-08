@@ -9,3 +9,4 @@ tags:
   feature_test__tool_search_deferred__unit:
   feature_test__tool_clock__unit:
   feature_test__tool_search__unit:
+  feature_test__lua_tool_orchestration__unit:
