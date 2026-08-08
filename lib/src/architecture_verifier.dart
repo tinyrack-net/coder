@@ -39,8 +39,10 @@ final class ArchitectureVerifier {
   static const Map<String, Set<String>> _allowedInternalDependencies =
       <String, Set<String>>{
         'coder_protocol': <String>{},
+        'coder_relay_protocol': <String>{},
+        'coder_relay': <String>{'coder_relay_protocol'},
         'coder_agent': <String>{},
-        'coder_client': <String>{'coder_protocol'},
+        'coder_client': <String>{'coder_protocol', 'coder_relay_protocol'},
         // The CLI hosts the daemon through `coder-cli daemon start`, so it
         // reaches the daemon's composition root and everything the daemon
         // itself is allowed to use.
@@ -49,10 +51,12 @@ final class ArchitectureVerifier {
           'coder_client',
           'coder_daemon',
           'coder_protocol',
+          'coder_relay_protocol',
         },
         'coder_daemon': <String>{
           'coder_agent',
           'coder_protocol',
+          'coder_relay_protocol',
         },
         'coder_app': <String>{
           'coder_client',
@@ -152,6 +156,8 @@ final class ArchitectureVerifier {
       'coder_client',
       'coder_daemon',
       'coder_protocol',
+      'coder_relay',
+      'coder_relay_protocol',
     };
     if (actual.length == expected.length && actual.containsAll(expected)) {
       return const <ArchitectureViolation>[];

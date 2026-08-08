@@ -250,6 +250,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
+  cryptography:
+    dependency: transitive
+    description:
+      name: cryptography
+      sha256: "3eda3029d34ec9095a27a198ac9785630fe525c0eb6a49f3d575272f8e792ef0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.9.0"
+  cryptography_flutter:
+    dependency: transitive
+    description:
+      name: cryptography_flutter
+      sha256: d1c7e7a31a072d63b27ce0537b89868f9bda9188f2b1651ae728a295762921d4
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.4"
   dart_style:
     dependency: transitive
     description:
@@ -782,6 +798,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mobile_scanner:
+    dependency: transitive
+    description:
+      name: mobile_scanner
+      sha256: d234581c090526676fd8fab4ada92f35c6746e3fb4f05a399665d75a399fb760
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.3"
   mockito:
     dependency: transitive
     description:
@@ -983,6 +1007,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  qr:
+    dependency: transitive
+    description:
+      name: qr
+      sha256: "5a1d2586170e172b8a8c8470bbbffd5eb0cd38a66c0d77155ea138d3af3a4445"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
   recase:
     dependency: transitive
     description:
@@ -1337,11 +1369,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/ui_flutter"
-      ref: ed3cb4ac9ff29dff1ac7819a3dc7e10021f60332
-      resolved-ref: ed3cb4ac9ff29dff1ac7819a3dc7e10021f60332
+      ref: "1a595c03e8c098a3d560f538b7775208eccc076b"
+      resolved-ref: "1a595c03e8c098a3d560f538b7775208eccc076b"
       url: "https://github.com/tinyrack-net/design.git"
     source: git
-    version: "0.37.1"
+    version: "0.39.0"
   tray_manager:
     dependency: transitive
     description:

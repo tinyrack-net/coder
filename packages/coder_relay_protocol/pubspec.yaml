@@ -1,0 +1,15 @@
+name: coder_relay_protocol
+description: End-to-end encrypted relay wire contracts for Tinyrack Coder.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  cryptography: ^2.9.0
+  meta: ^1.16.0
+
+dev_dependencies:
+  test: ^1.26.3

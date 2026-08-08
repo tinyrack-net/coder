@@ -88,7 +88,8 @@ final class FakeCoderApi
         ProvidersApi,
         McpApi,
         TerminalsApi,
-        AttachmentsApi {
+        AttachmentsApi,
+        RelayApi {
   /// Creates a configurable [FakeCoderApi].
   FakeCoderApi({
     ServerInfoDto? serverInfo,
@@ -133,6 +134,9 @@ final class FakeCoderApi
     this.searchFilesError,
     this.defaultPermissionSetError,
     this.sessionPermissionSetError,
+    this.relayPairingOffer,
+    List<RelayDeviceDto>? relayDevices,
+    this.relayEnabled = false,
     this._defaultPermissionMode = PermissionMode.ask,
   }) : mcpListResponses =
            mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
@@ -155,6 +159,9 @@ final class FakeCoderApi
          skills ?? <SkillDto>[_builtInSkill, _configSkill],
        ),
        _projectSkills = List<SkillDto>.of(projectSkills ?? <SkillDto>[]),
+       relayDevices = List<RelayDeviceDto>.of(
+         relayDevices ?? const <RelayDeviceDto>[],
+       ),
        _timelines = <String, List<TimelineEventDto>>{
          for (final entry
              in (timelines ?? <String, List<TimelineEventDto>>{}).entries)
@@ -169,6 +176,18 @@ final class FakeCoderApi
        };
 
   static final DateTime _now = DateTime.utc(2026);
+
+  /// Pairing offer returned by the relay fake.
+  final RelayPairingOfferDto? relayPairingOffer;
+
+  /// Mutable approved-device state used by relay widget tests.
+  final List<RelayDeviceDto> relayDevices;
+
+  /// Device identifiers revoked through this fake.
+  final List<String> revokedRelayDeviceIds = <String>[];
+
+  /// Current relay activation state.
+  bool relayEnabled;
 
   /// Error thrown once by the next explicit provider catalog refresh.
   CoderClientException? catalogRefreshError;
@@ -591,6 +610,47 @@ final class FakeCoderApi
 
   @override
   AttachmentsApi get attachments => this;
+
+  @override
+  RelayApi get relay => this;
+
+  @override
+  Stream<RelayStatusDto> get statusUpdates =>
+      const Stream<RelayStatusDto>.empty();
+
+  @override
+  Future<RelayStatusDto> getRelayStatus() async => RelayStatusDto(
+    enabled: relayEnabled,
+    connected: false,
+    endpoint: 'wss://relay.tinyrack.net/v1/ws',
+    serverId: serverInfo.serverId,
+  );
+
+  @override
+  Future<RelayStatusDto> setRelayEnabled({required bool enabled}) async {
+    relayEnabled = enabled;
+    return RelayStatusDto(
+      enabled: enabled,
+      connected: false,
+      endpoint: 'wss://relay.tinyrack.net/v1/ws',
+      serverId: serverInfo.serverId,
+    );
+  }
+
+  @override
+  Future<RelayPairingOfferDto> createRelayPairingOffer() async =>
+      relayPairingOffer ??
+      (throw StateError('No relay pairing offer configured for this fake.'));
+
+  @override
+  Future<List<RelayDeviceDto>> listRelayDevices() async =>
+      List<RelayDeviceDto>.unmodifiable(relayDevices);
+
+  @override
+  Future<void> revokeRelayDevice(String deviceId) async {
+    revokedRelayDeviceIds.add(deviceId);
+    relayDevices.removeWhere((device) => device.id == deviceId);
+  }
 
   @override
   Stream<SessionDto> get sessionUpdates => events
@@ -1768,7 +1828,7 @@ AppServices fakeAppServices(
     RemoteDaemonProfile(
       id: hostId,
       label: 'Test daemon',
-      websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+      connections: directHostConnections(Uri.parse('ws://127.0.0.1:7337/ws')),
       autoConnect: connected,
       createdAt: now,
       updatedAt: now,
@@ -1795,7 +1855,25 @@ AppServices fakeAppServices(
     credentials: effectiveStore,
     clients: _FakeHostClientFactory(api),
     clientKind: 'test',
+    pathProbeScheduler: const _NoopHostPathProbeScheduler(),
   );
+}
+
+final class _NoopHostPathProbeScheduler implements HostPathProbeScheduler {
+  const _NoopHostPathProbeScheduler();
+
+  @override
+  HostPathProbeTask periodic(
+    Duration interval,
+    Future<void> Function() callback,
+  ) => const _NoopHostPathProbeTask();
+}
+
+final class _NoopHostPathProbeTask implements HostPathProbeTask {
+  const _NoopHostPathProbeTask();
+
+  @override
+  void cancel() {}
 }
 
 final class _FakeHostClientFactory implements HostClientFactory {
@@ -1805,8 +1883,8 @@ final class _FakeHostClientFactory implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) async => api;

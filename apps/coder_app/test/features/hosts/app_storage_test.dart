@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/infrastructure/app_storage.dart';
+import 'package:coder_client/coder_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,7 +41,9 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'host-id',
         label: 'Production',
-        websocketUri: Uri.parse('wss://coder.example.com/ws'),
+        connections: directHostConnections(
+          Uri.parse('wss://coder.example.com/ws'),
+        ),
         autoConnect: true,
         serverId: 'server-id',
         createdAt: now,
@@ -109,8 +112,13 @@ void main() {
         <String>['session:agent-1', 'session:agent-2'],
       );
       expect(
-        (await store.listProfiles()).single.websocketUri,
-        profile.websocketUri,
+        (await store.listProfiles())
+            .single
+            .directConnections
+            .single
+            .endpoint
+            .websocketUri,
+        profile.directConnections.single.endpoint.websocketUri,
       );
       expect(await credentials.readBearerToken('host-id'), 'bearer-secret');
       final document = preferences.getString(
@@ -134,7 +142,9 @@ void main() {
         RemoteDaemonProfile(
           id: 'host-id',
           label: 'Production',
-          websocketUri: Uri.parse('wss://coder.example.com/ws'),
+          connections: directHostConnections(
+            Uri.parse('wss://coder.example.com/ws'),
+          ),
           autoConnect: true,
           createdAt: now,
           updatedAt: now,
@@ -210,7 +220,7 @@ void main() {
       await preferences.setString(
         SharedPreferencesAppStore.documentKey,
         jsonEncode(<String, dynamic>{
-          'version': 4,
+          'version': 5,
           'settings': <String, dynamic>{
             'embeddedDaemonEnabled': false,
             'lastActiveHostId': 'server',
@@ -246,7 +256,7 @@ void main() {
     final original = RemoteDaemonProfile(
       id: 'host-id',
       label: 'Original',
-      websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+      connections: directHostConnections(Uri.parse('ws://127.0.0.1:7337/ws')),
       autoConnect: true,
       createdAt: createdAt,
       updatedAt: createdAt,
@@ -254,7 +264,7 @@ void main() {
     final updated = RemoteDaemonProfile(
       id: original.id,
       label: 'Updated',
-      websocketUri: original.websocketUri,
+      connections: original.connections,
       autoConnect: false,
       createdAt: original.createdAt,
       updatedAt: createdAt.add(const Duration(minutes: 1)),
@@ -273,15 +283,126 @@ void main() {
     expect(await credentials.readBearerToken(original.id), isNull);
   });
 
+  test('persists relay paths, device keys, and split pane trees', () async {
+    final preferences = await SharedPreferences.getInstance();
+    final store = SharedPreferencesAppStore(preferences);
+    const credentials = SecureRemoteHostCredentialStore(
+      FlutterSecureStorage(),
+    );
+    final createdAt = DateTime.utc(2026, 8, 8);
+    final relay = RelayHostConnection(
+      id: 'relay-path',
+      credentialKey: 'relay-credential',
+      serverId: 'daemon-1',
+      relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+      daemonIdentityPublicKey: List<int>.generate(32, (index) => index),
+    );
+    await store.upsertProfile(
+      RemoteDaemonProfile(
+        id: 'host-1',
+        label: 'Relay daemon',
+        connections: <HostConnection>[relay],
+        autoConnect: true,
+        serverId: 'daemon-1',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      ),
+    );
+    await store.saveSettings(
+      const AppSettings(
+        sessionTabs: <String, SessionTabPreference>{
+          'selection': SessionTabPreference(
+            tabs: <WorkspaceTabPreference>[
+              WorkspaceTabPreference(
+                id: 'one',
+                kind: WorkspaceTabTargetKind.session,
+                targetId: 'session-1',
+              ),
+              WorkspaceTabPreference(
+                id: 'two',
+                kind: WorkspaceTabTargetKind.terminal,
+                targetId: 'terminal-1',
+              ),
+            ],
+            root: WorkspaceSplitPreference(
+              id: 'split',
+              axis: WorkspaceSplitAxis.horizontal,
+              ratio: 0.4,
+              first: WorkspacePanePreference(
+                id: 'left',
+                tabIds: <String>['one'],
+                activeTabId: 'one',
+              ),
+              second: WorkspacePanePreference(
+                id: 'right',
+                tabIds: <String>['two'],
+                activeTabId: 'two',
+              ),
+            ),
+            focusedPaneId: 'right',
+          ),
+        },
+      ),
+    );
+    final deviceCredential = RelayHostCredential(
+      deviceId: 'phone-1',
+      privateKey: List<int>.filled(32, 7),
+    );
+    await credentials.writeRelayCredential(
+      'relay-credential',
+      deviceCredential,
+    );
+
+    final restoredProfile = (await store.listProfiles()).single;
+    final restoredRelay = restoredProfile.relayConnections.single;
+    expect(restoredRelay.serverId, 'daemon-1');
+    expect(restoredRelay.relayUri, relay.relayUri);
+    expect(
+      restoredRelay.daemonIdentityPublicKey,
+      relay.daemonIdentityPublicKey,
+    );
+    final restoredRoot =
+        (await store.loadSettings()).sessionTabs['selection']!.root
+            as WorkspaceSplitPreference;
+    expect(restoredRoot.axis, WorkspaceSplitAxis.horizontal);
+    expect(restoredRoot.ratio, 0.4);
+    expect((restoredRoot.second as WorkspacePanePreference).activeTabId, 'two');
+    final restoredCredential = await credentials.readRelayCredential(
+      'relay-credential',
+    );
+    expect(restoredCredential?.deviceId, 'phone-1');
+    expect(restoredCredential?.privateKey, deviceCredential.privateKey);
+
+    await credentials.deleteRelayCredential('relay-credential');
+    expect(
+      await credentials.readRelayCredential('relay-credential'),
+      isNull,
+    );
+  });
+
+  test('rejects malformed relay device credentials', () async {
+    const storage = FlutterSecureStorage();
+    const credentials = SecureRemoteHostCredentialStore(storage);
+    await storage.write(
+      key: 'tinyrack_coder.v5.remote_host_credential.broken',
+      value: '{"type":"relay-device","deviceId":7}',
+    );
+
+    await expectLater(
+      credentials.readRelayCredential('broken'),
+      throwsFormatException,
+    );
+  });
+
   test(
     'documents written before the language and startup settings load '
     'with their defaults',
     () async {
-      // The key is simply absent in v4 documents written by earlier builds,
+      // The key is simply absent in v5 documents written by earlier builds,
       // which must keep loading rather than resetting every stored setting.
       SharedPreferences.setMockInitialValues(<String, Object>{
         SharedPreferencesAppStore.documentKey: jsonEncode(<String, Object?>{
-          'version': 4,
+          'version': 5,
           'settings': <String, Object?>{
             'embeddedDaemonEnabled': true,
             'embeddedDaemonExposure': 'allInterfaces',
@@ -340,7 +461,7 @@ void main() {
     final invalidDocuments = <Object>[
       <Object>[],
       <String, Object?>{
-        'version': 4,
+        'version': 5,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'invalid',
@@ -351,12 +472,12 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 4,
+        'version': 5,
         'settings': <String, Object?>{},
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 4,
+        'version': 5,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -369,7 +490,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 4,
+        'version': 5,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -382,7 +503,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 4,
+        'version': 5,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -395,7 +516,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 4,
+        'version': 5,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -408,7 +529,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 4,
+        'version': 5,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',
@@ -421,7 +542,7 @@ void main() {
         'profiles': <Object>[],
       },
       <String, Object?>{
-        'version': 4,
+        'version': 5,
         'settings': <String, Object?>{
           'embeddedDaemonEnabled': true,
           'embeddedDaemonExposure': 'loopback',

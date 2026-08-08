@@ -17,6 +17,7 @@ dependencies:
   coder_daemon: ^0.1.0
   coder_protocol: ^0.1.0
   path: ^1.9.1
+  qr: ^3.0.2
   web_socket_channel: ^3.0.3
 
 dev_dependencies:

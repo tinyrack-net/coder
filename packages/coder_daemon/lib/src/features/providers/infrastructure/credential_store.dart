@@ -15,6 +15,7 @@ class CredentialStore implements CredentialRepository {
       <String, ProviderCredential>{};
   final Map<String, String> _mcpSecrets = <String, String>{};
   String? _bearerToken;
+  List<int>? _relayIdentityPrivateKey;
   bool _loaded = false;
 
   File get _credentialsFile => File(p.join(configDirectory, 'secrets.json'));
@@ -26,7 +27,7 @@ class CredentialStore implements CredentialRepository {
     await _ensureDirectory();
     if (_credentialsFile.existsSync()) {
       final decoded = jsonDecode(await _credentialsFile.readAsString());
-      if (decoded is! Map<String, dynamic> || decoded['schemaVersion'] != 1) {
+      if (decoded is! Map<String, dynamic> || decoded['schemaVersion'] != 2) {
         throw FormatException(
           'incompatible_credentials: explicitly remove '
           '${_credentialsFile.path} to reset development credentials.',
@@ -51,16 +52,31 @@ class CredentialStore implements CredentialRepository {
       final daemon = decoded['daemon'];
       if (daemon != null) {
         if (daemon is! Map<String, dynamic> ||
-            daemon['bearerToken'] is! String) {
+            (daemon['bearerToken'] != null &&
+                daemon['bearerToken'] is! String) ||
+            (daemon['relayIdentityPrivateKey'] != null &&
+                daemon['relayIdentityPrivateKey'] is! String)) {
           throw const FormatException('Invalid daemon credential data.');
         }
-        _bearerToken = daemon['bearerToken'] as String;
+        _bearerToken = daemon['bearerToken'] as String?;
+        if (daemon['relayIdentityPrivateKey'] case final String encoded) {
+          final key = base64Url.decode(base64Url.normalize(encoded));
+          if (key.length != 32) {
+            throw const FormatException('Invalid relay identity private key.');
+          }
+          _relayIdentityPrivateKey = List<int>.unmodifiable(key);
+        }
       }
     }
   }
 
   @override
   String? get bearerToken => _bearerToken;
+
+  /// Raw Ed25519 private key seed for the persistent daemon relay identity.
+  List<int>? get relayIdentityPrivateKey => _relayIdentityPrivateKey == null
+      ? null
+      : List<int>.unmodifiable(_relayIdentityPrivateKey!);
 
   @override
   ProviderCredential? credential(String connectionId) =>
@@ -70,6 +86,16 @@ class CredentialStore implements CredentialRepository {
   Future<void> setDaemonToken(String bearerToken) async {
     await load();
     _bearerToken = bearerToken;
+    await _writeCredentials();
+  }
+
+  /// Stores the daemon's 32-byte Ed25519 private key seed.
+  Future<void> setRelayIdentityPrivateKey(List<int> privateKey) async {
+    if (privateKey.length != 32) {
+      throw RangeError.range(privateKey.length, 32, 32, 'privateKey.length');
+    }
+    await load();
+    _relayIdentityPrivateKey = List<int>.unmodifiable(privateKey);
     await _writeCredentials();
   }
 
@@ -108,20 +134,24 @@ class CredentialStore implements CredentialRepository {
     await _writeCredentials();
   }
 
-  Future<void> _writeCredentials() =>
-      _writeJson(_credentialsFile, <String, dynamic>{
-        'schemaVersion': 1,
-        if (_bearerToken case final bearerToken?)
-          'daemon': <String, dynamic>{
-            'bearerToken': bearerToken,
-          },
-        'providerCredentials': <String, dynamic>{
-          for (final entry in _providerCredentials.entries)
-            entry.key: _credentialToJson(entry.value),
+  Future<void> _writeCredentials() => _writeJson(
+    _credentialsFile,
+    <String, dynamic>{
+      'schemaVersion': 2,
+      if (_bearerToken != null || _relayIdentityPrivateKey != null)
+        'daemon': <String, dynamic>{
+          'bearerToken': ?_bearerToken,
+          if (_relayIdentityPrivateKey case final privateKey?)
+            'relayIdentityPrivateKey': base64UrlEncode(privateKey),
         },
-        if (_mcpSecrets.isNotEmpty)
-          'mcpSecrets': Map<String, String>.from(_mcpSecrets),
-      });
+      'providerCredentials': <String, dynamic>{
+        for (final entry in _providerCredentials.entries)
+          entry.key: _credentialToJson(entry.value),
+      },
+      if (_mcpSecrets.isNotEmpty)
+        'mcpSecrets': Map<String, String>.from(_mcpSecrets),
+    },
+  );
 
   Future<void> _ensureDirectory() async {
     final directory = Directory(configDirectory);

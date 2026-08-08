@@ -521,12 +521,12 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(inputKey));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
 
-      // The ghost input paints its own focus emphasis, so the card that frames
-      // it must not ring as well; the two together read as two focused
-      // controls for a single caret.
+      // Keyboard focus paints the input's own emphasis, while the card that
+      // frames it must not ring as well. Pointer focus intentionally paints
+      // no ring under Tinyrack's focus-visible contract.
       final focus = Theme.of(
         tester.element(find.byKey(inputKey)),
       ).extension<TinyrackThemeData>()!.focus;

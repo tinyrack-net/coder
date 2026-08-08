@@ -4,6 +4,7 @@ import 'package:coder_app/src/app/presentation/settings_page.dart';
 import 'package:coder_app/src/app/presentation/workspace_page.dart';
 import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/presentation/pages/host_settings_page.dart';
+import 'package:coder_app/src/features/hosts/presentation/pages/relay_pairing_pages.dart';
 import 'package:coder_app/src/features/settings/domain/settings_category.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -326,14 +327,39 @@ class AdvancedSettingsRoute extends GoRouteData with $AdvancedSettingsRoute {
 }
 
 @TypedGoRoute<NewHostRoute>(path: '/settings/daemons/new')
-/// Adds a remote daemon profile.
+/// Pairs a remote daemon through its one-time relay link.
 class NewHostRoute extends GoRouteData with $NewHostRoute {
   /// Creates the route.
   const NewHostRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
+      const RemoteHostPairPage();
+}
+
+@TypedGoRoute<AdvancedNewHostRoute>(path: '/settings/daemons/new/direct')
+/// Adds a direct WebSocket connection for advanced users.
+class AdvancedNewHostRoute extends GoRouteData with $AdvancedNewHostRoute {
+  /// Creates the route.
+  const AdvancedNewHostRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
       const RemoteHostEditPage();
+}
+
+@TypedGoRoute<DaemonDevicesRoute>(path: '/settings/daemons/:hostId/devices')
+/// Creates pairing links and manages devices approved by one daemon.
+class DaemonDevicesRoute extends GoRouteData with $DaemonDevicesRoute {
+  /// Creates the route.
+  const DaemonDevicesRoute({required this.hostId});
+
+  /// App-local daemon profile identifier.
+  final String hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      DaemonDevicesPage(hostId: hostId);
 }
 
 @TypedGoRoute<EditHostRoute>(path: '/settings/daemons/:hostId')

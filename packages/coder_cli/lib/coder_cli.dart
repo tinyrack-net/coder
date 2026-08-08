@@ -6,4 +6,5 @@ export 'src/cli/shared_flags.dart';
 export 'src/daemon_host.dart';
 export 'src/progress.dart';
 export 'src/provider_cli.dart';
+export 'src/relay_cli.dart';
 export 'src/version.g.dart';

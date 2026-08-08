@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('config isolate serialization and copy preserve explicit values', () {
-    const config = DaemonConfig(
+    final config = DaemonConfig(
       homeDirectory: '/state',
       configDirectory: '/config',
       userHomeDirectory: '/user',
@@ -17,6 +17,11 @@ void main() {
       bearerToken: 'token',
       version: '2.0.0',
       useEnvironmentCredentials: false,
+      relay: RelayDaemonConfig(
+        enabled: true,
+        endpoint: Uri.parse('wss://relay.example.test/v1/ws'),
+        tlsPolicy: RelayTlsPolicy.allowInvalidCertificate,
+      ),
     );
     final decoded = DaemonConfig.fromIsolateMessage(config.toIsolateMessage());
     expect(decoded.homeDirectory, '/state');
@@ -29,6 +34,9 @@ void main() {
     expect(decoded.bearerToken, 'token');
     expect(decoded.version, '2.0.0');
     expect(decoded.useEnvironmentCredentials, isFalse);
+    expect(decoded.relay.enabled, config.relay.enabled);
+    expect(decoded.relay.endpoint, config.relay.endpoint);
+    expect(decoded.relay.tlsPolicy, config.relay.tlsPolicy);
 
     final copy = config.copyWith(
       homeDirectory: '/other-state',
@@ -51,6 +59,7 @@ void main() {
     expect(copy.bearerToken, 'other-token');
     expect(copy.version, config.version);
     expect(copy.useEnvironmentCredentials, isTrue);
+    expect(copy.relay.enabled, isTrue);
   });
 
   test('environment config supports Linux defaults and explicit override', () {
@@ -83,6 +92,9 @@ void main() {
           'TINYRACK_CODER_HOME': '/override',
           'TINYRACK_CODER_LISTEN': '0.0.0.0:9001',
           'TINYRACK_CODER_TOKEN': 'token',
+          'TINYRACK_CODER_RELAY': 'true',
+          'TINYRACK_CODER_RELAY_ENDPOINT': 'wss://relay.example.test/v1/ws',
+          'TINYRACK_CODER_RELAY_TLS': 'allow-invalid-certificate',
           'HOME': '/unused',
         },
         linux: true,
@@ -97,6 +109,12 @@ void main() {
     expect(override.port, 9001);
     expect(override.apiKey, 'key');
     expect(override.bearerToken, 'token');
+    expect(override.relay.enabled, isTrue);
+    expect(override.relay.endpoint.host, 'relay.example.test');
+    expect(
+      override.relay.tlsPolicy,
+      RelayTlsPolicy.allowInvalidCertificate,
+    );
   });
 
   test('agents home override wins over the platform user home', () {

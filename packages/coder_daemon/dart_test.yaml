@@ -1,4 +1,10 @@
 tags:
+  feature_test__daemon_relay__unit:
+  feature_test__daemon_relay__verticalSlice:
+  feature_test__daemon_relay__e2e:
+  feature_scenario__daemon_relay__pairing__e2e:
+  feature_scenario__daemon_relay__revocation__e2e:
+  feature_scenario__daemon_relay__relay_attachment__e2e:
   feature_test__session_goal__unit:
   feature_test__session_goal__verticalSlice:
   feature_test__permission_settings__verticalSlice:

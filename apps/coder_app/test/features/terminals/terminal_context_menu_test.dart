@@ -369,8 +369,8 @@ final class _OfflineClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => Future<CoderApi>.error(const HostConnectionFailure.network('offline'));

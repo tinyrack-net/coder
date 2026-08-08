@@ -38,6 +38,11 @@ void _registerWorkspaceControllerTests() {
       );
       final container = _container(api);
       addTearDown(container.dispose);
+      final registrySubscription = container.listen(
+        hostRegistryControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(registrySubscription.close);
 
       await container.read(
         hostRegistryControllerProvider.future,
@@ -49,6 +54,15 @@ void _registerWorkspaceControllerTests() {
           .runtimes['server']!;
       expect(runtime.connected, isTrue);
       expect(runtime.serverInfo!.serverId, 'server');
+      expect(
+        container
+            .read(hostRegistryControllerProvider)
+            .value!
+            .profiles
+            .single
+            .connections,
+        hasLength(1),
+      );
 
       api.emitState(ClientConnectionState.reconnecting);
       await Future<void>.delayed(Duration.zero);

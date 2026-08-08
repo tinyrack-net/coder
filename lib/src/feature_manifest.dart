@@ -17,7 +17,11 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'daemon.management',
     description: 'Starts, connects, edits, and removes daemon hosts.',
     apiMethods: <String>['close'],
-    routes: <String>['DaemonSettingsRoute', 'NewHostRoute', 'EditHostRoute'],
+    routes: <String>[
+      'DaemonSettingsRoute',
+      'AdvancedNewHostRoute',
+      'EditHostRoute',
+    ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -95,6 +99,52 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         id: 'port_change_restart',
         description: 'Applies a new listener port and reconnects the daemon.',
         surfaces: _desktop,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'daemon.relay',
+    description:
+        'Pairs daemon-scoped devices over an end-to-end encrypted relay and '
+        'fails over between direct and relay paths.',
+    apiMethods: <String>[
+      'relay.getRelayStatus',
+      'relay.setRelayEnabled',
+      'relay.createRelayPairingOffer',
+      'relay.listRelayDevices',
+      'relay.revokeRelayDevice',
+    ],
+    routes: <String>['NewHostRoute', 'DaemonDevicesRoute'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+      FeatureVerificationLayer.platformSmoke,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'pairing',
+        description:
+            'Pairs with a ten-minute link and reconnects by device key.',
+        surfaces: _allSurfaces,
+      ),
+      FeatureScenario(
+        id: 'failover',
+        description:
+            'Keeps daemon identity and RPC state across path failover.',
+        surfaces: _allSurfaces,
+      ),
+      FeatureScenario(
+        id: 'revocation',
+        description: 'Revokes a device and ends its live encrypted session.',
+        surfaces: _allSurfaces,
+      ),
+      FeatureScenario(
+        id: 'relay_attachment',
+        description: 'Streams a large attachment through bounded relay credit.',
+        surfaces: _allSurfaces,
       ),
     ],
   ),

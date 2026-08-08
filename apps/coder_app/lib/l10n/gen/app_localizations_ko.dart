@@ -519,6 +519,80 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appSettingsAddRemote => '원격 daemon 추가';
 
   @override
+  String get relayPairTitle => '기기 연결';
+
+  @override
+  String get relayPairDescription =>
+      'daemon에 표시된 일회용 링크를 붙여 넣으세요. 코드와 파일은 relay를 통과할 때도 종단 간 암호화됩니다.';
+
+  @override
+  String get relayPairLink => '연결 링크';
+
+  @override
+  String get relayPairDeviceName => '이 기기 이름';
+
+  @override
+  String get relayPairAction => '연결';
+
+  @override
+  String get relayPairScan => 'QR 코드 스캔';
+
+  @override
+  String get relayPairQrSemantics => '일회용 기기 연결 링크 QR 코드';
+
+  @override
+  String get relayPairInvalid => '올바른 Tinyrack Coder 연결 링크를 입력하세요.';
+
+  @override
+  String get relayPairExpired =>
+      '이 연결 링크가 만료되었거나 이미 사용되었습니다. daemon에서 새 링크를 만드세요.';
+
+  @override
+  String get relayAdvancedDirect => '고급 직접 연결';
+
+  @override
+  String get relayDevicesTitle => '연결된 기기';
+
+  @override
+  String get relayDevicesDescription =>
+      '새 기기를 위한 10분짜리 링크를 만들거나 더 이상 연결하면 안 되는 기기를 해제하세요.';
+
+  @override
+  String get relayCreateLink => '연결 링크 만들기';
+
+  @override
+  String relayLinkExpires(String expiresAt) {
+    return '$expiresAt에 만료';
+  }
+
+  @override
+  String get relayNoDevices => '승인된 기기가 없습니다.';
+
+  @override
+  String get relayRevoke => '해제';
+
+  @override
+  String relayRevokeTitle(String name) {
+    return '$name 기기를 해제할까요?';
+  }
+
+  @override
+  String get relayRevokeBody =>
+      '기기의 현재 relay 연결이 즉시 종료됩니다. 다시 연결하려면 새 연결 링크가 필요합니다.';
+
+  @override
+  String get relayPathDirect => '직접 연결';
+
+  @override
+  String get relayPathRelay => 'Relay';
+
+  @override
+  String get relayConnectionDetails => '연결 세부 정보';
+
+  @override
+  String get relayApprovedDevices => '기기';
+
+  @override
   String get appSettingsNoRemotes => '저장된 원격 daemon이 없습니다.';
 
   @override

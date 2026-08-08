@@ -3,6 +3,7 @@ import 'dart:io';
 const _shards = <String>[
   'integration_test/daemon_workspace_e2e_test.dart',
   'integration_test/project_worktree_e2e_test.dart',
+  'integration_test/relay_e2e_test.dart',
   'integration_test/debug_e2e_test.dart',
   'integration_test/provider_e2e_test.dart',
   'integration_test/settings_desktop_e2e_test.dart',
