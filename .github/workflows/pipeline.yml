@@ -230,7 +230,7 @@ jobs:
             gradle_cache: false
             command: >-
               flutter build ios --debug --simulator --no-codesign
-              -t lib/main_mobile.dart
+              -t lib/main_mobile.dart -v
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     steps:
