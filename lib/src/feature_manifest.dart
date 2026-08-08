@@ -549,8 +549,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       FeatureScenario(
         id: 'keyboard_context_menu_input',
         description:
-            'Pastes through the native terminal menu, restores focus, and '
-            'continues standard keyboard input.',
+            'Restores input after native-menu selection and cancellation, '
+            'edits across an automatically wrapped row, and renders real IME '
+            'preedit before continuing committed keyboard input.',
         surfaces: _desktop,
       ),
     ],
@@ -664,6 +665,18 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'lua.tool.orchestration',
+    description:
+        'Runs sandboxed Lua cells that orchestrate selected tools through the '
+        'ordinary approval, cancellation, media, and session lifecycle.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.platformSmoke,
     },
   ),
   FeatureContract(
@@ -1065,6 +1078,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       'providers.connectProviderApiKey',
       'providers.connectProviderNone',
       'providers.disconnectProvider',
+      'providers.updateProviderModelPrefix',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,

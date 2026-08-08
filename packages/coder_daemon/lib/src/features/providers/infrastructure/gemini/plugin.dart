@@ -69,12 +69,6 @@ final class GoogleGeminiPlugin extends ProviderPlugin {
   AgentProviderDefinition get definition => googleDefinition;
 
   @override
-  List<String> get environmentVariables => const <String>[
-    'GEMINI_API_KEY',
-    'GOOGLE_API_KEY',
-  ];
-
-  @override
   List<ProviderCatalogModel> get models => googleBundledModels;
 
   @override

@@ -238,14 +238,15 @@ void _registerAgentsAppFlows() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('고정 provider/model'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        _textInput('Provider 연결 ID'),
-        'openai',
+      await tester.tap(find.widgetWithText(TRButton, '변경').last);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ModelPicker),
+          matching: find.text('openai/gpt-5.6-sol'),
+        ),
       );
-      await tester.enterText(
-        _textInput('Model ID'),
-        'gpt-test',
-      );
+      await tester.pumpAndSettle();
       await tester.drag(editorList, const Offset(0, -600));
       await tester.pumpAndSettle();
       await tester.tap(find.text('read_file').last);
@@ -258,8 +259,7 @@ void _registerAgentsAppFlows() {
 
       final updated = await api.agents.getAgentDefinition('coder');
       expect(updated.promptEnabled, isFalse);
-      expect(updated.model.providerConnectionId, 'openai');
-      expect(updated.model.modelId, 'gpt-test');
+      expect(updated.model.modelId, 'openai/gpt-5.6-sol');
       expect(updated.toolIds, isEmpty);
       expect(updated.callableAgentIds, <String>['reviewer']);
 

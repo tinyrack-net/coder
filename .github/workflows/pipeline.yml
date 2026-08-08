@@ -23,7 +23,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: 3.44.8
-  TINYRACK_DART_PACKAGES_REF: 1c59d79ef94d6890f0b04045a23445b207bd7150
+  TINYRACK_DART_PACKAGES_REF: 6f528d01b9ebfa0cc95e7c2dba96e398e3881f37
   # wrangler-action defaults to 3.90.0, which predates Workers static assets
   # and rejects an `assets` config for having no script entry-point.
   WRANGLER_VERSION: 4.118.0
@@ -613,9 +613,12 @@ jobs:
               --input "$library" --skip-notarize
           done
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder-cli \
+            --input "$bundle/bin/lua-tool-runtime-host" --skip-notarize
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder-cli \
             --input "$bundle/bin/coder-cli" \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
           codesign --verify --strict "$bundle/bin/coder-cli"
+          codesign --verify --strict "$bundle/bin/lua-tool-runtime-host"
 
       # After signing, so what runs here is the artifact that ships.
       - uses: ./.github/actions/smoke-cli-bundle

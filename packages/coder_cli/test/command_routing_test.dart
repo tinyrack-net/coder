@@ -493,16 +493,18 @@ final class _FakeClient implements CoderClient, ProvidersApi, AgentsApi {
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String? modelPrefix,
+  }) async {
     apiKeys[definitionId] = apiKey;
     return _connection(definitionId, definitionId);
   }
 
   @override
   Future<ProviderConnectionDto> connectProviderNone(
-    String definitionId,
-  ) async {
+    String definitionId, {
+    String? modelPrefix,
+  }) async {
     noneConnections.add(definitionId);
     return _connection(definitionId, definitionId);
   }

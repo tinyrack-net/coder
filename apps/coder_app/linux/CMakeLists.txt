@@ -57,8 +57,27 @@ pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+find_program(DART_EXECUTABLE NAMES dart REQUIRED)
+set(LUA_RUNTIME_STAGE "${CMAKE_BINARY_DIR}/lua_tool_runtime_stage")
+add_custom_command(
+  OUTPUT
+    "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host"
+    "${LUA_RUNTIME_STAGE}/lua_tool_runtime/bootstrap.lua"
+  COMMAND "${DART_EXECUTABLE}" run tool/build_lua_host.dart
+    --destination "${LUA_RUNTIME_STAGE}" --build-mode release
+  DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../pubspec.lock"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../tool/build_lua_host.dart"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../.."
+  COMMENT "Staging lua_tool_runtime"
+  VERBATIM)
+add_custom_target(lua_tool_runtime_stage ALL DEPENDS
+  "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host"
+  "${LUA_RUNTIME_STAGE}/lua_tool_runtime/bootstrap.lua")
+
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+add_dependencies(${BINARY_NAME} lua_tool_runtime_stage)
 
 # Only the install-generated bundle's copy of the executable will launch
 # correctly, since the resources must in the right relative locations. To avoid
@@ -102,6 +121,10 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
+install(PROGRAMS "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+install(DIRECTORY "${LUA_RUNTIME_STAGE}/lua_tool_runtime"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)

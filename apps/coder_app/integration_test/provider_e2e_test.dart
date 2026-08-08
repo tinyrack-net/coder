@@ -8,6 +8,7 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
@@ -131,7 +132,7 @@ void main() {
       final oauthModels = (await assertions.providers.listProviderModels(
         connection.id,
       )).map((model) => model.id);
-      expect(oauthModels, contains('gpt-5.6-sol'));
+      expect(oauthModels, contains('openai/gpt-5.6-sol'));
       expect(oauthModels, isNot(contains('oauth-e2e-model')));
 
       await tester.tap(
@@ -167,6 +168,19 @@ Future<void> _pumpProviderSettings(
 
 Future<void> _startDeviceOAuth(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey<String>('provider-add-openai')));
+  await tester.pumpAndSettle();
+  expect(
+    find.byKey(const ValueKey<String>('provider-model-prefix')),
+    findsOneWidget,
+  );
+  await tester.tap(
+    find
+        .descendant(
+          of: find.byType(TRAlertDialog),
+          matching: find.byType(TRButton),
+        )
+        .last,
+  );
   await tester.pumpAndSettle();
   await tester.tap(find.text('Sign in with device code'));
   await tester.pump();

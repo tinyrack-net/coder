@@ -1052,6 +1052,13 @@ class _ConversationPane extends ConsumerStatefulWidget {
 
 class _ConversationPaneState extends ConsumerState<_ConversationPane> {
   final Set<String> _dismissedPlans = <String>{};
+  final SessionComposerController _dropController = SessionComposerController();
+
+  @override
+  void dispose() {
+    _dropController.dispose();
+    super.dispose();
+  }
 
   SessionsController _sessions(WidgetRef ref) => ref.read(
     sessionsControllerProvider(
@@ -1070,6 +1077,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final sessions =
         ref
             .watch(
@@ -1147,197 +1155,205 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             !_dismissedPlans.contains(lastPlan.key)
         ? lastPlan
         : null;
-    return LayoutBuilder(
-      builder: (context, constraints) => Column(
-        children: <Widget>[
-          CoderListRow(
-            leading: readOnly
-                ? SubagentStatusIcon(lifecycle: current.lifecycle)
-                : null,
-            title: TRText.inherit(
-              readOnly ? current.taskName ?? current.title : current.title,
-            ),
-            subtitle: TRText.inherit(
-              readOnly
-                  ? '${current.agentPath ?? current.agentDefinitionId} · '
-                        '${AppLocalizations.of(context).subagentReadOnlyNotice}'
-                  : '${current.agentDefinitionId} · ${current.origin.name}',
-            ),
-            trailing: busy
-                ? TRIconButton(
-                    appearance: TRAppearance.ghost,
-                    label: AppLocalizations.of(context).commonStop,
-                    onPressed: () => ref
-                        .read(
-                          conversationControllerProvider(
-                            widget.selection.hostId,
-                            current.id,
-                          ).notifier,
-                        )
-                        .cancelTurn(),
-                    icon: const Icon(CoderIcons.stop),
-                  )
-                : null,
-          ),
-          Expanded(
-            child: ChatTimelineView(
-              items: visibleItems,
-              busy: busy,
-              hostId: widget.selection.hostId,
-              planActionBuilder: pendingPlan == null
-                  ? null
-                  : (proposal) => proposal.key != pendingPlan.key
-                        ? null
-                        : ChatPlanActions(
-                            selection: widget.selection,
-                            session: current,
-                            proposal: proposal,
-                            embedded: true,
-                            onDismiss: () => setState(
-                              () => _dismissedPlans.add(proposal.key),
-                            ),
-                            onSessionCreated: (session) => _goSession(
-                              context,
-                              widget.selection,
-                              session.id,
-                            ),
-                          ),
-              loadAttachment: _loadAttachment,
-              exportAttachment: _exportAttachment,
-            ),
-          ),
-          if (value?.goal case final GoalDto goal)
-            if (!readOnly)
-              GoalStatusBar(
-                goal: goal,
-                sessionMode: current.mode,
-                onEdit: () => unawaited(_editGoal(current.id, goal)),
-                onStatusChanged: (status) => unawaited(
-                  _conversation(ref, current.id).updateGoal(
-                    GoalUpdateDto(
-                      expectedGoalId: goal.goalId,
-                      status: status,
-                    ),
-                  ),
-                ),
-                onClear: () => unawaited(
-                  _conversation(ref, current.id).clearGoal(),
-                ),
+    return ComposerDropPane(
+      controller: _dropController,
+      child: LayoutBuilder(
+        builder: (context, constraints) => Column(
+          children: <Widget>[
+            CoderListRow(
+              leading: readOnly
+                  ? SubagentStatusIcon(lifecycle: current.lifecycle)
+                  : null,
+              title: TRText.inherit(
+                readOnly ? current.taskName ?? current.title : current.title,
               ),
-          // Keep the auxiliary subagent track bounded so the composer retains
-          // its natural height and the timeline receives the remaining space.
-          if (!readOnly)
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: constraints.maxHeight / 2),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (subagentRows.isNotEmpty)
-                    SubagentTrack(
-                      rows: subagentRows,
-                      // Viewport-derived cap: the expanded list never squeezes
-                      // the composer out of the bottom group.
-                      maxListHeight: constraints.maxHeight / 4,
-                      onOpenSubagent: (sessionId) =>
-                          _goSession(context, widget.selection, sessionId),
-                    ),
-                  ComposerCompletionScope(
-                    hostId: widget.selection.hostId,
-                    workspaceId: widget.selection.workspaceId,
-                    worktreeId: widget.selection.worktreeId,
-                    builder: (context, completion) => SessionComposer(
-                      // A running turn never takes the keyboard away; the
-                      // prompt queues instead.
-                      enabled: effective != null,
-                      busy: busy,
-                      contextTokens: current.contextTokens,
-                      contextWindow: current.contextWindow,
-                      queued: value?.queued ?? const <QueuedTurn>[],
-                      onQueue: (submission) =>
-                          _conversation(ref, current.id).enqueueTurn(
-                            submission.text,
-                            attachments: submission.attachments,
-                          ),
-                      onQueuedEdit: (id) =>
-                          _conversation(ref, current.id).takeQueuedTurn(id),
-                      onQueuedSendNow: (id) =>
-                          _conversation(ref, current.id).sendQueuedTurnNow(id),
-                      onSubmitAndInterrupt: (submission) async {
-                        await _conversation(ref, current.id).cancelTurn();
-                        await _send(current.id, submission);
-                      },
-                      hint:
-                          (agentsLoading ||
-                              providersLoading ||
-                              effective != null)
+              subtitle: TRText.inherit(
+                readOnly
+                    ? '${current.agentPath ?? current.agentDefinitionId} · '
+                          '${l10n.subagentReadOnlyNotice}'
+                    : '${current.agentDefinitionId} · ${current.origin.name}',
+              ),
+              trailing: busy
+                  ? TRIconButton(
+                      appearance: TRAppearance.ghost,
+                      label: AppLocalizations.of(context).commonStop,
+                      onPressed: () => ref
+                          .read(
+                            conversationControllerProvider(
+                              widget.selection.hostId,
+                              current.id,
+                            ).notifier,
+                          )
+                          .cancelTurn(),
+                      icon: const Icon(CoderIcons.stop),
+                    )
+                  : null,
+            ),
+            Expanded(
+              child: ChatTimelineView(
+                items: visibleItems,
+                busy: busy,
+                hostId: widget.selection.hostId,
+                planActionBuilder: pendingPlan == null
+                    ? null
+                    : (proposal) => proposal.key != pendingPlan.key
                           ? null
-                          : AppLocalizations.of(
-                              context,
-                            ).composerConnectProviderFirst,
-                      bar: SessionComposerBar(
-                        hostId: widget.selection.hostId,
-                        definitions: definitions,
-                        agentDefinitionId: current.agentDefinitionId,
-                        selection: effective,
-                        mode: current.mode,
-                        onModeChanged: (mode) => unawaited(
-                          ref
-                              .read(
-                                sessionsControllerProvider(
-                                  widget.selection.hostId,
-                                  widget.selection.worktreeId,
-                                ).notifier,
-                              )
-                              .setMode(current.id, mode),
-                        ),
-                        // Turn settings apply to the next turn, so they stay
-                        // reachable while one is running.
-                        agentEnabled: false,
-                        onAgentChanged: (_) {},
-                        onModelChanged: (model, controls) => unawaited(
-                          ref
-                              .read(
-                                sessionsControllerProvider(
-                                  widget.selection.hostId,
-                                  widget.selection.worktreeId,
-                                ).notifier,
-                              )
-                              .setModel(current.id, model, controls),
-                        ),
-                        modelControls: current.modelControls,
-                        onModelControlsChanged: (controls) => unawaited(
-                          _sessions(
-                            ref,
-                          ).setModelControls(current.id, controls),
-                        ),
-                        permissionMode: current.permissionMode,
-                        onPermissionModeChanged: (mode) async {
-                          await _sessions(
-                            ref,
-                          ).setPermissionMode(current.id, mode);
-                        },
-                      ),
-                      onModeToggled: () => unawaited(
-                        _sessions(ref).setMode(
-                          current.id,
-                          current.mode == SessionMode.plan
-                              ? SessionMode.normal
-                              : SessionMode.plan,
-                        ),
-                      ),
-                      attachmentInput: ref.read(attachmentInputProvider),
-                      commands: completion.commands,
-                      suggestions: completion.suggestions,
-                      onCompletionQueryChanged: completion.onQueryChanged,
-                      onClientCommand: (invocation) =>
-                          _runClientCommand(invocation, current),
-                      onSubmit: (submission) => _send(current.id, submission),
-                    ),
-                  ),
-                ],
+                          : ChatPlanActions(
+                              selection: widget.selection,
+                              session: current,
+                              proposal: proposal,
+                              embedded: true,
+                              onDismiss: () => setState(
+                                () => _dismissedPlans.add(proposal.key),
+                              ),
+                              onSessionCreated: (session) => _goSession(
+                                context,
+                                widget.selection,
+                                session.id,
+                              ),
+                            ),
+                loadAttachment: _loadAttachment,
+                exportAttachment: _exportAttachment,
               ),
             ),
-        ],
+            if (value?.goal case final GoalDto goal)
+              if (!readOnly)
+                GoalStatusBar(
+                  goal: goal,
+                  sessionMode: current.mode,
+                  onEdit: () => unawaited(_editGoal(current.id, goal)),
+                  onStatusChanged: (status) => unawaited(
+                    _conversation(ref, current.id).updateGoal(
+                      GoalUpdateDto(
+                        expectedGoalId: goal.goalId,
+                        status: status,
+                      ),
+                    ),
+                  ),
+                  onClear: () => unawaited(
+                    _conversation(ref, current.id).clearGoal(),
+                  ),
+                ),
+            // Keep the auxiliary subagent track bounded so the composer retains
+            // its natural height and the timeline receives the remaining space.
+            if (!readOnly)
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: constraints.maxHeight / 2,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (subagentRows.isNotEmpty)
+                      SubagentTrack(
+                        rows: subagentRows,
+                        // Viewport-derived cap: the expanded list never
+                        // squeezes the composer out of the bottom group.
+                        maxListHeight: constraints.maxHeight / 4,
+                        onOpenSubagent: (sessionId) =>
+                            _goSession(context, widget.selection, sessionId),
+                      ),
+                    ComposerCompletionScope(
+                      hostId: widget.selection.hostId,
+                      workspaceId: widget.selection.workspaceId,
+                      worktreeId: widget.selection.worktreeId,
+                      builder: (context, completion) => SessionComposer(
+                        controller: _dropController,
+                        // A running turn never takes the keyboard away; the
+                        // prompt queues instead.
+                        enabled: effective != null,
+                        busy: busy,
+                        contextTokens: current.contextTokens,
+                        contextWindow: current.contextWindow,
+                        queued: value?.queued ?? const <QueuedTurn>[],
+                        onQueue: (submission) =>
+                            _conversation(ref, current.id).enqueueTurn(
+                              submission.text,
+                              attachments: submission.attachments,
+                            ),
+                        onQueuedEdit: (id) =>
+                            _conversation(ref, current.id).takeQueuedTurn(id),
+                        onQueuedSendNow: (id) => _conversation(
+                          ref,
+                          current.id,
+                        ).sendQueuedTurnNow(id),
+                        onSubmitAndInterrupt: (submission) async {
+                          await _conversation(ref, current.id).cancelTurn();
+                          await _send(current.id, submission);
+                        },
+                        hint:
+                            (agentsLoading ||
+                                providersLoading ||
+                                effective != null)
+                            ? null
+                            : AppLocalizations.of(
+                                context,
+                              ).composerConnectProviderFirst,
+                        bar: SessionComposerBar(
+                          hostId: widget.selection.hostId,
+                          definitions: definitions,
+                          agentDefinitionId: current.agentDefinitionId,
+                          selection: effective,
+                          mode: current.mode,
+                          onModeChanged: (mode) => unawaited(
+                            ref
+                                .read(
+                                  sessionsControllerProvider(
+                                    widget.selection.hostId,
+                                    widget.selection.worktreeId,
+                                  ).notifier,
+                                )
+                                .setMode(current.id, mode),
+                          ),
+                          // Turn settings apply to the next turn, so they stay
+                          // reachable while one is running.
+                          agentEnabled: false,
+                          onAgentChanged: (_) {},
+                          onModelChanged: (model, controls) => unawaited(
+                            ref
+                                .read(
+                                  sessionsControllerProvider(
+                                    widget.selection.hostId,
+                                    widget.selection.worktreeId,
+                                  ).notifier,
+                                )
+                                .setModel(current.id, model, controls),
+                          ),
+                          modelControls: current.modelControls,
+                          onModelControlsChanged: (controls) => unawaited(
+                            _sessions(
+                              ref,
+                            ).setModelControls(current.id, controls),
+                          ),
+                          permissionMode: current.permissionMode,
+                          onPermissionModeChanged: (mode) async {
+                            await _sessions(
+                              ref,
+                            ).setPermissionMode(current.id, mode);
+                          },
+                        ),
+                        onModeToggled: () => unawaited(
+                          _sessions(ref).setMode(
+                            current.id,
+                            current.mode == SessionMode.plan
+                                ? SessionMode.normal
+                                : SessionMode.plan,
+                          ),
+                        ),
+                        attachmentInput: ref.read(attachmentInputProvider),
+                        commands: completion.commands,
+                        suggestions: completion.suggestions,
+                        onCompletionQueryChanged: completion.onQueryChanged,
+                        onClientCommand: (invocation) =>
+                            _runClientCommand(invocation, current),
+                        onSubmit: (submission) => _send(current.id, submission),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

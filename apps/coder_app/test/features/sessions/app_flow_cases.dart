@@ -824,15 +824,34 @@ void _registerSessionsAppFlows() {
       );
       await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
-      expect(find.textContaining('OpenAI · gpt-5.6-sol'), findsOneWidget);
-      expect(find.text('DeepSeek · gpt-5.6-sol'), findsOneWidget);
+      final picker = find.byType(ModelPicker);
+      expect(
+        find.descendant(
+          of: picker,
+          matching: find.text('openai/gpt-5.6-sol'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: picker,
+          matching: find.text('deepseek/gpt-5.6-sol'),
+        ),
+        findsOneWidget,
+      );
       await tester.enterText(
         find.byKey(const ValueKey('model-search-field')),
         'DeepSeek',
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('OpenAI · gpt-5.6-sol'), findsNothing);
-      expect(find.text('DeepSeek · gpt-5.6-sol'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: picker,
+          matching: find.text('openai/gpt-5.6-sol'),
+        ),
+        findsNothing,
+      );
+      expect(find.text('DeepSeek · Shared Model'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey('model-option-deepseek-gpt-5.6-sol')),
       );
@@ -851,8 +870,7 @@ void _registerSessionsAppFlows() {
       expect(
         created.model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'deepseek/gpt-5.6-sol',
         ),
       );
       expect(api.startedPrompts, <String>['Run the tests']);
@@ -910,8 +928,7 @@ void _registerSessionsAppFlows() {
             systemPrompt: 'Code carefully.',
             model: AgentModelSelectionDto(
               source: AgentModelSource.fixed,
-              providerConnectionId: 'openai',
-              modelId: 'gpt-5.6-sol',
+              modelId: 'openai/gpt-5.6-sol',
             ),
             modelControls: <String, ModelControlValueDto>{
               'reasoning_effort': ModelControlValueDto.stringValue(
@@ -972,7 +989,7 @@ void _registerSessionsAppFlows() {
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-fast')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('GPT-5.6 Fast'), findsOneWidget);
+      expect(find.text('openai/gpt-5.6-fast'), findsOneWidget);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -983,8 +1000,7 @@ void _registerSessionsAppFlows() {
       expect(
         api.createdSessions.single.model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-fast',
+          modelId: 'openai/gpt-5.6-fast',
         ),
       );
 
@@ -997,8 +1013,7 @@ void _registerSessionsAppFlows() {
       expect(
         api.updatedSessionModels.single.model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-v4',
+          modelId: 'deepseek/deepseek-v4',
         ),
       );
 

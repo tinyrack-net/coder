@@ -525,4 +525,298 @@ void _registerConversationAppFlows() {
     },
     tags: const <String>['feature_test__session_goal__widget'],
   );
+
+  testWidgets(
+    'a multi-question card pages through tabs and submits ordered answers',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final agent = session('asking-many');
+      final request = UserQuestionRequestDto(
+        id: 'questions',
+        sessionId: agent.id,
+        turnId: 'turn',
+        toolCallId: 'ask-call',
+        questions: const <UserQuestionItemDto>[
+          UserQuestionItemDto(
+            id: 'store',
+            header: 'Storage',
+            question: 'Which store should the cache use?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(
+                label: 'SQLite',
+                description: 'Durable and already a dependency.',
+              ),
+              UserQuestionOptionDto(
+                label: 'In memory',
+                description: 'Fastest, lost on restart.',
+              ),
+            ],
+          ),
+          UserQuestionItemDto(
+            id: 'theme',
+            header: 'Theme',
+            question: 'Which theme should the editor use?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(
+                label: 'System',
+                description: 'Follow the operating system.',
+              ),
+              UserQuestionOptionDto(
+                label: 'Dark',
+                description: 'Always use the dark theme.',
+              ),
+            ],
+          ),
+          UserQuestionItemDto(
+            id: 'review',
+            header: 'Review',
+            question: 'How should changes be reviewed?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(
+                label: 'Pull request',
+                description: 'Require a review before merging.',
+              ),
+              UserQuestionOptionDto(
+                label: 'Direct',
+                description: 'Merge directly after checks pass.',
+              ),
+            ],
+          ),
+        ],
+        status: UserQuestionStatus.pending,
+        createdAt: now,
+      );
+      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            home: Scaffold(
+              body: ListView(
+                children: <Widget>[
+                  Consumer(
+                    builder: (context, ref, child) => Text(
+                      ref
+                                  .watch(hostRegistryControllerProvider)
+                                  .asData
+                                  ?.value
+                                  .runtimes['server']
+                                  ?.connected ==
+                              true
+                          ? 'ready'
+                          : 'waiting',
+                    ),
+                  ),
+                  ChatQuestionCard(hostId: 'server', request: request),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('ready'), findsOneWidget);
+      expect(find.byType(TRTabs), findsOneWidget);
+      expect(find.text('Which store should the cache use?'), findsOneWidget);
+      expect(find.text('Which theme should the editor use?'), findsNothing);
+      expect(find.text('How should changes be reviewed?'), findsNothing);
+
+      await tester.tap(find.text('SQLite'));
+      await tester.pumpAndSettle();
+      expect(find.text('Which store should the cache use?'), findsNothing);
+      expect(find.text('Which theme should the editor use?'), findsOneWidget);
+      expect(find.byIcon(CoderIcons.check), findsOneWidget);
+
+      await tester.tap(find.text('직접 입력'));
+      await tester.pumpAndSettle();
+      final other = find.byKey(
+        const ValueKey<String>('chat-question-other-theme'),
+      );
+      expect(other, findsOneWidget);
+      final primary = find.byKey(
+        const ValueKey<String>('chat-question-submit'),
+      );
+      expect(find.widgetWithText(TRButton, '다음'), findsOneWidget);
+      expect(tester.widget<TRButton>(primary).onPressed, isNull);
+      await tester.enterText(other, '  High contrast  ');
+      await tester.pumpAndSettle();
+      expect(tester.widget<TRButton>(primary).onPressed, isNotNull);
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+
+      expect(find.text('How should changes be reviewed?'), findsOneWidget);
+      expect(find.byIcon(CoderIcons.check), findsNWidgets(2));
+      expect(find.widgetWithText(TRButton, '답변'), findsOneWidget);
+      expect(tester.widget<TRButton>(primary).onPressed, isNull);
+
+      await tester.tap(find.text('Storage'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TRRadioGroup>(find.byType(TRRadioGroup)).value, '0');
+      await tester.tap(find.text('Theme'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TRTextField>(
+              find.byKey(
+                const ValueKey<String>('chat-question-other-theme'),
+              ),
+            )
+            .controller
+            ?.text,
+        '  High contrast  ',
+      );
+      await tester.tap(find.text('Review'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pull request'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TRButton>(primary).onPressed, isNotNull);
+
+      api.questionAnswerError = Exception('daemon rejected answers');
+      await tester.tap(primary);
+      await tester.pumpAndSettle();
+      expect(find.text('Exception: daemon rejected answers'), findsOneWidget);
+      expect(tester.widget<TRButton>(primary).loading, isFalse);
+      expect(tester.widget<TRButton>(primary).onPressed, isNotNull);
+      expect(
+        tester.widget<TRTabs>(find.byType(TRTabs)).tabs,
+        everyElement(
+          isA<TRTabsTab>().having(
+            (tab) => tab.disabled,
+            'disabled',
+            isFalse,
+          ),
+        ),
+      );
+      api
+        ..questionAnswers.clear()
+        ..questionAnswerError = null
+        ..questionAnswerGate = Completer<void>();
+
+      await tester.tap(primary);
+      await tester.pump();
+
+      expect(tester.widget<TRButton>(primary).loading, isTrue);
+      expect(
+        tester.widget<TRRadioGroup>(find.byType(TRRadioGroup)).disabled,
+        isTrue,
+      );
+      expect(
+        tester.widget<TRTabs>(find.byType(TRTabs)).tabs,
+        everyElement(
+          isA<TRTabsTab>().having((tab) => tab.disabled, 'disabled', isTrue),
+        ),
+      );
+      api.questionAnswerGate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(api.questionAnswers.single.id, 'questions');
+      expect(api.questionAnswers.single.answers, const <UserQuestionAnswerDto>[
+        UserQuestionAnswerDto(
+          questionId: 'store',
+          answer: 'SQLite',
+          isFreeForm: false,
+        ),
+        UserQuestionAnswerDto(
+          questionId: 'theme',
+          answer: 'High contrast',
+          isFreeForm: true,
+        ),
+        UserQuestionAnswerDto(
+          questionId: 'review',
+          answer: 'Pull request',
+          isFreeForm: false,
+        ),
+      ]);
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
+  );
+
+  testWidgets(
+    'question tabs remain accessible on a narrow large-text surface',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final semantics = tester.ensureSemantics();
+      final request = UserQuestionRequestDto(
+        id: 'compact-questions',
+        sessionId: 'compact-session',
+        turnId: 'turn',
+        toolCallId: 'ask-call',
+        questions: const <UserQuestionItemDto>[
+          UserQuestionItemDto(
+            id: 'store',
+            header: 'Storage',
+            question: 'Which store should the cache use?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(label: 'SQLite', description: 'Durable.'),
+              UserQuestionOptionDto(label: 'Memory', description: 'Fast.'),
+            ],
+          ),
+          UserQuestionItemDto(
+            id: 'theme',
+            header: 'Theme',
+            question: 'Which theme should the editor use?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(label: 'System', description: 'Follow it.'),
+              UserQuestionOptionDto(label: 'Dark', description: 'Always dark.'),
+            ],
+          ),
+          UserQuestionItemDto(
+            id: 'review',
+            header: 'Review',
+            question: 'How should changes be reviewed?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(label: 'PR', description: 'Review first.'),
+              UserQuestionOptionDto(label: 'Direct', description: 'Merge now.'),
+            ],
+          ),
+        ],
+        status: UserQuestionStatus.pending,
+        createdAt: now,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ChatQuestionCard(hostId: 'server', request: request),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('질문'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('Which theme should the editor use?'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
+  );
 }

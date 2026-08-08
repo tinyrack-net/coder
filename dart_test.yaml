@@ -174,3 +174,7 @@ tags:
   feature_scenario__settings_reset__full_reset_restart__e2e:
   feature_scenario__settings_reset__preserves_checkouts__e2e:
   route_test__advanced_settings_route__widget:
+  feature_test__lua_tool_orchestration__unit:
+  feature_test__lua_tool_orchestration__contract:
+  feature_test__lua_tool_orchestration__verticalSlice:
+  feature_test__lua_tool_orchestration__platformSmoke:

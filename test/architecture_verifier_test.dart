@@ -127,6 +127,38 @@ void main() {
     }
   });
 
+  test('app presentation cannot draw a local focus ring', () {
+    for (final source in const <String>[
+      'final width = TRControlMetrics.focusWidth;',
+      'final color = context.tinyrackTheme.focus;',
+      'final color = colors.focus;',
+    ]) {
+      final violations = verifier.verifySource(
+        package: 'coder_app',
+        path: 'apps/coder_app/lib/src/shared/presentation/control.dart',
+        source: source,
+      );
+      expect(
+        violations.map((violation) => violation.rule),
+        contains('local_focus_style'),
+        reason: source,
+      );
+    }
+  });
+
+  test('terminal adapter may inject the design-system focus caret color', () {
+    expect(
+      verifier.verifySource(
+        package: 'coder_app',
+        path:
+            'apps/coder_app/lib/src/features/terminals/presentation/'
+            'coder_terminal_view.dart',
+        source: 'cursor: colors.focus,',
+      ),
+      isEmpty,
+    );
+  });
+
   test('provider infrastructure and the composition root may name vendors', () {
     expect(
       verifier.verifySource(

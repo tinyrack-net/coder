@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/agents/application/agent_definitions_controller.dart';
+import 'package:coder_app/src/features/providers/application/model_picker_options.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
 import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
+import 'package:coder_app/src/shared/presentation/model_picker.dart';
 import 'package:coder_app/src/shared/presentation/permission_picker.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -224,7 +226,7 @@ class _AgentDefinitionList extends StatelessWidget {
   }
 }
 
-class _AgentEditor extends StatefulWidget {
+class _AgentEditor extends ConsumerStatefulWidget {
   const _AgentEditor({
     required this.hostId,
     required this.state,
@@ -239,14 +241,13 @@ class _AgentEditor extends StatefulWidget {
   final VoidCallback onArchived;
 
   @override
-  State<_AgentEditor> createState() => _AgentEditorState();
+  ConsumerState<_AgentEditor> createState() => _AgentEditorState();
 }
 
-class _AgentEditorState extends State<_AgentEditor> {
+class _AgentEditorState extends ConsumerState<_AgentEditor> {
   late final TextEditingController _name;
   late final TextEditingController _description;
   late final TextEditingController _prompt;
-  late final TextEditingController _providerConnectionId;
   late final TextEditingController _modelId;
   late bool _promptEnabled;
   late AgentModelSource _modelSource;
@@ -262,9 +263,6 @@ class _AgentEditorState extends State<_AgentEditor> {
     _name = TextEditingController(text: definition.name);
     _description = TextEditingController(text: definition.description);
     _prompt = TextEditingController(text: definition.systemPrompt);
-    _providerConnectionId = TextEditingController(
-      text: definition.model.providerConnectionId,
-    );
     _modelId = TextEditingController(text: definition.model.modelId);
     _promptEnabled = definition.promptEnabled;
     _modelSource = definition.model.source;
@@ -282,7 +280,6 @@ class _AgentEditorState extends State<_AgentEditor> {
     _name.dispose();
     _description.dispose();
     _prompt.dispose();
-    _providerConnectionId.dispose();
     _modelId.dispose();
     super.dispose();
   }
@@ -420,15 +417,18 @@ class _AgentEditorState extends State<_AgentEditor> {
                     ],
                   ),
                   if (_modelSource == AgentModelSource.fixed) ...<Widget>[
-                    TRTextField(
-                      controller: _providerConnectionId,
-                      enabled: editable,
-                      label: l10n.agentSettingsProviderConnectionId,
-                    ),
-                    TRTextField(
-                      controller: _modelId,
-                      enabled: editable,
-                      label: l10n.agentSettingsModelId,
+                    SettingsRow(
+                      title: TRText.inherit(l10n.agentSettingsModelId),
+                      description: TRText.inherit(
+                        _modelId.text.isEmpty ? '—' : _modelId.text,
+                      ),
+                      control: TRButton(
+                        appearance: TRAppearance.outline,
+                        onPressed: editable ? _chooseModel : null,
+                        child: TRText.inherit(
+                          l10n.providerSettingsDefaultModelChoose,
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -539,9 +539,6 @@ class _AgentEditorState extends State<_AgentEditor> {
     systemPrompt: _prompt.text,
     model: AgentModelSelectionDto(
       source: _modelSource,
-      providerConnectionId: _modelSource == AgentModelSource.fixed
-          ? _providerConnectionId.text.trim()
-          : null,
       modelId: _modelSource == AgentModelSource.fixed
           ? _modelId.text.trim()
           : null,
@@ -555,6 +552,19 @@ class _AgentEditorState extends State<_AgentEditor> {
     toolIds: _tools.toList(growable: false)..sort(),
     callableAgentIds: _callableAgents.toList(growable: false)..sort(),
   );
+
+  Future<void> _chooseModel() async {
+    final choice = await showModelPicker(
+      context,
+      loadOptions: () => loadModelPickerOptions(ref, widget.hostId),
+      currentSelection: _modelId.text.isEmpty
+          ? null
+          : SessionModelSelectionDto(modelId: _modelId.text),
+    );
+    if (choice case SelectedModelPickerChoice(:final selection)) {
+      setState(() => _modelId.text = selection.modelId);
+    }
+  }
 
   Future<void> _choosePermission() async {
     final choice = await showPermissionPicker(

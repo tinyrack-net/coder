@@ -95,7 +95,7 @@ melos:
       # `dart build cli` rather than `dart compile exe`: the CLI now hosts the
       # daemon, so it links sqlite3 and the PTY code assets and ships as
       # `dist/bundle/bin` plus `dist/bundle/lib`.
-      run: dart build cli -t packages/coder_cli/bin/coder_cli.dart -o dist
+      run: dart build cli -t packages/coder_cli/bin/coder_cli.dart -o dist && dart run tool/build_lua_host.dart --destination dist/bundle/bin
     run:desktop:
       # `stdio: inherit` gives flutter run a real terminal so r/R/q work; it is
       # incompatible with melos exec, hence the explicit package directory.

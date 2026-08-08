@@ -12,6 +12,7 @@ import 'package:coder_app/src/shared/presentation/coder_page_shell.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/model_picker.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
+import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,19 +95,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               _ConnectedProviders(
                 connections: activeConnections,
                 onDisconnect: _disconnect,
+                onEditPrefix: _editPrefix,
                 onEditCustom: _editCustom,
                 onDeleteCustom: _deleteCustom,
               ),
               _ProviderCatalog(
                 catalog: state.catalog,
-                definitions: state.catalog.definitions
-                    .where(
-                      (definition) => !activeConnections.any(
-                        (connection) =>
-                            connection.definitionId == definition.id,
-                      ),
-                    )
-                    .toList(growable: false),
+                definitions: state.catalog.definitions,
                 onAdd: _addDefinition,
                 onAddCustom: _addCustom,
                 // Refreshing the catalog is what fills this section, so the
@@ -178,31 +173,58 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _addDefinition(ProviderDefinitionDto definition) async {
-    // A definition with one way in connects directly; several raise a choice.
-    // The methods themselves come from the catalog, so this page never has to
-    // know which vendor offers what.
-    if (definition.authMethods.length > 1) {
-      await _showAuthMethods(definition);
-      return;
+    final conflictMessage = AppLocalizations.of(
+      context,
+    ).providerSettingsModelPrefixConflict;
+    final rejectedPrefixes = <String>{};
+    String? prefixError;
+    while (mounted) {
+      final modelPrefix = await _showModelPrefix(
+        definition.id,
+        rejectedPrefixes: rejectedPrefixes,
+        errorText: prefixError,
+      );
+      if (!mounted || modelPrefix == null) return;
+      try {
+        // A definition with one way in connects directly; several raise a
+        // choice. The methods themselves come from the catalog, so this page
+        // never has to know which vendor offers what.
+        if (definition.authMethods.length > 1) {
+          await _showAuthMethods(definition, modelPrefix);
+          return;
+        }
+        final method = definition.authMethods.single;
+        await _connectWith(definition, method, modelPrefix);
+        return;
+      } on CoderClientException catch (error) {
+        if (error.code != 'model_prefix_conflict') rethrow;
+        rejectedPrefixes.add(modelPrefix.toLowerCase());
+        prefixError = conflictMessage;
+      }
     }
-    final method = definition.authMethods.single;
-    await _connectWith(definition, method);
   }
 
   Future<void> _connectWith(
     ProviderDefinitionDto definition,
     ProviderAuthMethodDto method,
+    String modelPrefix,
   ) async {
     switch (method.flow) {
       case ProviderAuthFlow.none:
-        await ref.read(_provider.notifier).connectNone(definition.id);
+        await ref
+            .read(_provider.notifier)
+            .connectNone(definition.id, modelPrefix: modelPrefix);
       case ProviderAuthFlow.apiKey:
-        await _showApiKey(definition);
+        await _showApiKey(definition, modelPrefix);
       case ProviderAuthFlow.oauthBrowser:
       case ProviderAuthFlow.oauthDevice:
         final attempt = await ref
             .read(_provider.notifier)
-            .startAuth(definition.id, method.id);
+            .startAuth(
+              definition.id,
+              method.id,
+              modelPrefix: modelPrefix,
+            );
         final authorizationUrl = attempt.authorizationUrl;
         if (method.flow == ProviderAuthFlow.oauthBrowser &&
             authorizationUrl != null) {
@@ -213,7 +235,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-  Future<void> _showAuthMethods(ProviderDefinitionDto definition) async {
+  Future<void> _showAuthMethods(
+    ProviderDefinitionDto definition,
+    String modelPrefix,
+  ) async {
     final method = await showTRDrawer<ProviderAuthMethodDto>(
       context: context,
       builder: (context) => TRDrawer(
@@ -250,16 +275,58 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
     );
     if (!mounted || method == null) return;
-    await _connectWith(definition, method);
+    await _connectWith(definition, method, modelPrefix);
   }
 
-  Future<void> _showApiKey(ProviderDefinitionDto definition) async {
+  Future<void> _showApiKey(
+    ProviderDefinitionDto definition,
+    String modelPrefix,
+  ) async {
     final apiKey = await showTRDialog<String>(
       context: context,
       builder: (context) => _ApiKeyDialog(providerName: definition.name),
     );
     if (apiKey == null || apiKey.isEmpty) return;
-    await ref.read(_provider.notifier).connectApiKey(definition.id, apiKey);
+    await ref
+        .read(_provider.notifier)
+        .connectApiKey(
+          definition.id,
+          apiKey,
+          modelPrefix: modelPrefix,
+        );
+  }
+
+  Future<String?> _showModelPrefix(
+    String definitionId, {
+    Set<String> rejectedPrefixes = const <String>{},
+    String? errorText,
+  }) {
+    final state = ref.read(_provider).value;
+    final used = <String>{
+      for (final connection
+          in state?.connections ?? const <ProviderConnectionDto>[])
+        connection.modelPrefix,
+      for (final attempt
+          in state?.authAttempts.values ?? const <ProviderAuthAttemptDto>[])
+        if (attempt.status != ProviderAuthAttemptStatus.failed &&
+            attempt.status != ProviderAuthAttemptStatus.cancelled &&
+            attempt.status != ProviderAuthAttemptStatus.expired)
+          attempt.modelPrefix,
+      ...rejectedPrefixes,
+    };
+    var suggestion = definitionId;
+    var suffix = 2;
+    while (used.contains(suggestion)) {
+      suggestion = '$definitionId-$suffix';
+      suffix += 1;
+    }
+    return showTRDialog<String>(
+      context: context,
+      builder: (context) => _ModelPrefixDialog(
+        initialValue: suggestion,
+        serverError: errorText,
+      ),
+    );
   }
 
   Future<void> _addCustom() async {
@@ -270,14 +337,41 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder: (context) => _CustomProviderDialog(wireFormats: wireFormats),
     );
-    if (draft == null) return;
-    final connection = await ref
-        .read(_provider.notifier)
-        .createCustom(
-          ref.read(appIdGeneratorProvider).generate(),
-          draft.config,
-          apiKey: draft.apiKey,
-        );
+    if (!mounted || draft == null) return;
+    final conflictMessage = AppLocalizations.of(
+      context,
+    ).providerSettingsModelPrefixConflict;
+    final prefixBase = draft.config.name
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z0-9_-]+'), '-')
+        .replaceAll(RegExp(r'^[-_]+|[-_]+$'), '');
+    final rejectedPrefixes = <String>{};
+    String? prefixError;
+    ProviderConnectionDto? connection;
+    while (mounted && connection == null) {
+      final modelPrefix = await _showModelPrefix(
+        prefixBase.isEmpty ? 'custom' : prefixBase,
+        rejectedPrefixes: rejectedPrefixes,
+        errorText: prefixError,
+      );
+      if (!mounted || modelPrefix == null) return;
+      try {
+        connection = await ref
+            .read(_provider.notifier)
+            .createCustom(
+              ref.read(appIdGeneratorProvider).generate(),
+              draft.config,
+              apiKey: draft.apiKey,
+              modelPrefix: modelPrefix,
+            );
+      } on CoderClientException catch (error) {
+        if (error.code != 'model_prefix_conflict') rethrow;
+        rejectedPrefixes.add(modelPrefix.toLowerCase());
+        prefixError = conflictMessage;
+      }
+    }
+    if (connection == null) return;
     await ref.read(_provider.notifier).loadModels(connection.id);
     final models = ref.read(_provider).value?.models[connection.id];
     if (!mounted || models == null || models.isNotEmpty) return;
@@ -369,6 +463,33 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (confirmed != true) return;
     await ref.read(_provider.notifier).disconnect(connection.id);
   }
+
+  Future<void> _editPrefix(ProviderConnectionDto connection) async {
+    final conflictMessage = AppLocalizations.of(
+      context,
+    ).providerSettingsModelPrefixConflict;
+    String? prefixError;
+    while (true) {
+      if (!mounted) return;
+      final prefix = await showTRDialog<String>(
+        context: context,
+        builder: (context) => _ModelPrefixDialog(
+          initialValue: connection.modelPrefix,
+          serverError: prefixError,
+        ),
+      );
+      if (prefix == null || prefix == connection.modelPrefix) return;
+      try {
+        await ref
+            .read(_provider.notifier)
+            .updateModelPrefix(connection.id, prefix);
+        return;
+      } on CoderClientException catch (error) {
+        if (error.code != 'model_prefix_conflict') rethrow;
+        prefixError = conflictMessage;
+      }
+    }
+  }
 }
 
 /// Daemon-wide default model used when nothing more specific applies.
@@ -438,15 +559,18 @@ class _DefaultModel extends StatelessWidget {
   /// Renders "Provider · Model", falling back to raw ids when unresolvable.
   String _label(SessionModelSelectionDto model) {
     final connection = connections
-        .where((item) => item.id == model.providerConnectionId)
+        .where(
+          (item) => model.qualifiedModelId.startsWith('${item.modelPrefix}/'),
+        )
         .firstOrNull;
-    final label =
-        (models[model.providerConnectionId] ?? const <ProviderModelDto>[])
-            .where((item) => item.id == model.modelId)
-            .firstOrNull
-            ?.label;
-    return '${connection?.displayName ?? model.providerConnectionId}'
-        ' · ${label ?? model.modelId}';
+    final label = (models[connection?.id] ?? const <ProviderModelDto>[])
+        .where((item) => item.id == model.qualifiedModelId)
+        .firstOrNull
+        ?.label;
+    final providerName =
+        connection?.displayName ?? model.qualifiedModelId.split('/').first;
+    return '$providerName'
+        ' · ${label ?? model.qualifiedModelId}';
   }
 }
 
@@ -454,12 +578,14 @@ class _ConnectedProviders extends StatelessWidget {
   const _ConnectedProviders({
     required this.connections,
     required this.onDisconnect,
+    required this.onEditPrefix,
     required this.onEditCustom,
     required this.onDeleteCustom,
   });
 
   final List<ProviderConnectionDto> connections;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
+  final ValueChanged<ProviderConnectionDto> onEditPrefix;
   final ValueChanged<ProviderConnectionDto> onEditCustom;
   final ValueChanged<ProviderConnectionDto> onDeleteCustom;
 
@@ -478,6 +604,7 @@ class _ConnectedProviders extends StatelessWidget {
           _ProviderConnectionRow(
             connection: connection,
             onDisconnect: onDisconnect,
+            onEditPrefix: onEditPrefix,
             onEditCustom: onEditCustom,
             onDeleteCustom: onDeleteCustom,
           ),
@@ -490,12 +617,14 @@ class _ProviderConnectionRow extends StatelessWidget {
   const _ProviderConnectionRow({
     required this.connection,
     required this.onDisconnect,
+    required this.onEditPrefix,
     required this.onEditCustom,
     required this.onDeleteCustom,
   });
 
   final ProviderConnectionDto connection;
   final ValueChanged<ProviderConnectionDto> onDisconnect;
+  final ValueChanged<ProviderConnectionDto> onEditPrefix;
   final ValueChanged<ProviderConnectionDto> onEditCustom;
   final ValueChanged<ProviderConnectionDto> onDeleteCustom;
 
@@ -513,6 +642,7 @@ class _ProviderConnectionRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           TRText.inherit(
+            '${connection.modelPrefix} · '
             '${_statusLabel(l10n, connection.status)} · '
             '${_authLabel(l10n, connection.credentialOrigin)}',
           ),
@@ -522,11 +652,15 @@ class _ProviderConnectionRow extends StatelessWidget {
       wrapsDescription: error != null,
       control: TRMenu.icon(
         key: ValueKey<String>(
-          'provider-actions-${connection.definitionId}',
+          'provider-actions-${connection.id}',
         ),
         icon: const Icon(CoderIcons.more),
         label: l10n.providerSettingsActions,
         menuChildren: <Widget>[
+          TRMenuItem(
+            onPressed: () => onEditPrefix(connection),
+            child: TRText.inherit(l10n.providerSettingsModelPrefix),
+          ),
           if (connection.customConfig != null)
             TRMenuItem(
               onPressed: () => onEditCustom(connection),
@@ -671,6 +805,66 @@ class _AuthAttemptBar extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _ModelPrefixDialog extends StatefulWidget {
+  const _ModelPrefixDialog({required this.initialValue, this.serverError});
+
+  final String initialValue;
+  final String? serverError;
+
+  @override
+  State<_ModelPrefixDialog> createState() => _ModelPrefixDialogState();
+}
+
+class _ModelPrefixDialogState extends State<_ModelPrefixDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+
+  bool get _valid => RegExp(
+    r'^[a-z0-9][a-z0-9_-]{0,63}$',
+  ).hasMatch(_controller.text.trim());
+  late String? _serverError = widget.serverError;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return TRAlertDialog(
+      title: TRText.inherit(l10n.providerSettingsModelPrefix),
+      content: TRTextField(
+        key: const ValueKey('provider-model-prefix'),
+        controller: _controller,
+        autofocus: true,
+        label: l10n.providerSettingsModelPrefix,
+        helperText: l10n.providerSettingsModelPrefixHelp,
+        errorText: _controller.text.isEmpty || _valid
+            ? _serverError
+            : l10n.providerSettingsModelPrefixInvalid,
+        onChanged: (_) => setState(() => _serverError = null),
+      ),
+      actions: <TRButton>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          onPressed: () => Navigator.pop(context),
+          child: TRText.inherit(l10n.commonCancel),
+        ),
+        TRButton(
+          intent: TRIntent.primary,
+          onPressed: _valid
+              ? () => Navigator.pop(context, _controller.text.trim())
+              : null,
+          child: TRText.inherit(l10n.providerSettingsConnect),
+        ),
+      ],
+    );
+  }
 }
 
 class _ApiKeyDialog extends StatefulWidget {
@@ -988,7 +1182,6 @@ String _statusLabel(AppLocalizations l10n, ProviderConnectionStatus status) =>
 String _authLabel(AppLocalizations l10n, ProviderCredentialOrigin origin) =>
     switch (origin) {
       ProviderCredentialOrigin.stored => l10n.providerAuthStored,
-      ProviderCredentialOrigin.environment => 'Environment credential',
       ProviderCredentialOrigin.oauth => l10n.providerAuthOAuth,
       ProviderCredentialOrigin.none => l10n.providerAuthNone,
     };

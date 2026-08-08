@@ -985,6 +985,22 @@
   "@providerSettingsOAuthPending": {
     "description": "Title of the pending OAuth attempt bar."
   },
+  "providerSettingsModelPrefix": "Model prefix",
+  "@providerSettingsModelPrefix": {
+    "description": "Label for the globally unique provider model prefix."
+  },
+  "providerSettingsModelPrefixHelp": "Used in model IDs such as openai/gpt-5.6-col.",
+  "@providerSettingsModelPrefixHelp": {
+    "description": "Help text explaining qualified model identifiers."
+  },
+  "providerSettingsModelPrefixInvalid": "Use 1–64 lowercase letters, numbers, hyphens, or underscores.",
+  "@providerSettingsModelPrefixInvalid": {
+    "description": "Validation message for an invalid model prefix."
+  },
+  "providerSettingsModelPrefixConflict": "That model prefix is already in use. Try the updated suggestion.",
+  "@providerSettingsModelPrefixConflict": {
+    "description": "Inline error shown when the daemon rejects a duplicate model prefix."
+  },
   "providerSettingsConnectTitle": "Connect {name}",
   "@providerSettingsConnectTitle": {
     "description": "Title of the API key dialog.",
@@ -1495,6 +1511,18 @@
   "chatQuestionSubmit": "Answer",
   "@chatQuestionSubmit": {
     "description": "Button that submits answers to the agent's questions."
+  },
+  "chatQuestionNext": "Next",
+  "@chatQuestionNext": {
+    "description": "Button that advances to the next agent question."
+  },
+  "chatQuestionNavigation": "Questions",
+  "@chatQuestionNavigation": {
+    "description": "Screen-reader name of the agent question tab strip."
+  },
+  "chatQuestionSubmitting": "Submitting answers",
+  "@chatQuestionSubmitting": {
+    "description": "Screen-reader status while agent question answers are submitted."
   },
   "chatQuestionOther": "Other",
   "@chatQuestionOther": {
@@ -2272,5 +2300,9 @@
   "composerSuggestionsLabel": "Suggestions",
   "@composerSuggestionsLabel": {
     "description": "Accessible name of the composer suggestion list."
+  },
+  "composerDropFilesHere": "Drop files here",
+  "@composerDropFilesHere": {
+    "description": "Instruction shown over a composer pane while files are dragged over it."
   }
 }

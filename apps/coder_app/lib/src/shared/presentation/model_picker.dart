@@ -25,7 +25,6 @@ final class ModelPickerOption {
 
   /// Selection persisted on the session.
   SessionModelSelectionDto get selection => SessionModelSelectionDto(
-    providerConnectionId: model.connectionId,
     modelId: model.id,
   );
 }
@@ -271,19 +270,24 @@ class _ModelPickerState extends State<ModelPicker> {
                   itemBuilder: (context, index) {
                     final option = filtered[index];
                     final model = option.model;
+                    final providerModelId = model.providerModelId.isEmpty
+                        ? model.id
+                        : model.providerModelId;
                     return CoderListRow(
                       key: ValueKey(
-                        'model-option-${model.connectionId}-${model.id}',
+                        'model-option-${model.connectionId}-'
+                        '$providerModelId',
                       ),
                       title: TRText.inherit(
-                        model.label,
+                        model.id,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: TRText.inherit(
-                        model.label == model.id
+                        model.label == model.providerModelId ||
+                                model.label == model.id
                             ? option.providerName
-                            : '${option.providerName} · ${model.id}',
+                            : '${option.providerName} · ${model.label}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -303,7 +307,5 @@ class _ModelPickerState extends State<ModelPicker> {
   }
 
   bool _isSelected(ModelPickerOption option) =>
-      option.model.connectionId ==
-          widget.currentSelection?.providerConnectionId &&
-      option.model.id == widget.currentSelection?.modelId;
+      option.model.id == widget.currentSelection?.qualifiedModelId;
 }

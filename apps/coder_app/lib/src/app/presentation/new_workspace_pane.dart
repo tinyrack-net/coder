@@ -110,11 +110,18 @@ class NewWorkspacePane extends ConsumerStatefulWidget {
 }
 
 class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
+  final SessionComposerController _dropController = SessionComposerController();
   String? _projectKey;
   String? _worktreeId;
   String? _baseBranch;
   bool _submitting = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _dropController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +213,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     // The completion is null only while no daemon is chosen, which is also the
     // state where the composer is disabled and has nothing to complete.
     Widget composer(ComposerCompletion? completion) => SessionComposer(
+      controller: _dropController,
       enabled: ready,
       hint: _hint(
         AppLocalizations.of(context),
@@ -264,44 +272,48 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       onSubmit: (submission) =>
           _submit(submission, project, home, worktree, agent!, draft!),
     );
-    return Column(
-      children: <Widget>[
-        Expanded(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.only(left: 20, bottom: 4),
-                    child: TRText(
-                      AppLocalizations.of(context).workspaceNewWorkspace,
-                      variant: TRTextVariant.headingLg,
+    return ComposerDropPane(
+      controller: _dropController,
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20, bottom: 4),
+                      child: TRText(
+                        AppLocalizations.of(context).workspaceNewWorkspace,
+                        variant: TRTextVariant.headingLg,
+                      ),
                     ),
-                  ),
-                  if (hostId == null)
-                    composer(null)
-                  else
-                    ComposerCompletionScope(
-                      hostId: hostId,
-                      workspaceId: project?.workspace.id ?? home?.workspaceId,
-                      // A Git project whose checkout is still to be created has
-                      // no worktree to search, so it offers commands only.
-                      worktreeId:
-                          worktree?.id ??
-                          (project == null ? home?.worktreeId : null),
-                      excludedClientActions: sessionlessClientActions,
-                      builder: (context, completion) => composer(completion),
-                    ),
-                ],
+                    if (hostId == null)
+                      composer(null)
+                    else
+                      ComposerCompletionScope(
+                        hostId: hostId,
+                        workspaceId: project?.workspace.id ?? home?.workspaceId,
+                        // A Git project whose checkout is still to be created
+                        // has no worktree to search, so it offers commands
+                        // only.
+                        worktreeId:
+                            worktree?.id ??
+                            (project == null ? home?.worktreeId : null),
+                        excludedClientActions: sessionlessClientActions,
+                        builder: (context, completion) => composer(completion),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

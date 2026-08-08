@@ -202,6 +202,7 @@ class ChatItemView extends StatelessWidget {
         interaction: value,
       ),
       ChatQuestionInteraction() => ChatQuestionCard(
+        key: ValueKey<String>(value.request.id),
         hostId: hostId,
         request: value.request,
       ),

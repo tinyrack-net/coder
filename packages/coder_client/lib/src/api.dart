@@ -309,17 +309,22 @@ abstract interface class ProvidersApi {
   /// Connects a provider with an API key.
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey,
-  );
+    String apiKey, {
+    String? modelPrefix,
+  });
 
   /// Connects a provider without credentials.
-  Future<ProviderConnectionDto> connectProviderNone(String definitionId);
+  Future<ProviderConnectionDto> connectProviderNone(
+    String definitionId, {
+    String? modelPrefix,
+  });
 
   /// Starts provider authorization.
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
-    String methodId,
-  );
+    String methodId, {
+    String? modelPrefix,
+  });
 
   /// Reads provider authorization state.
   Future<ProviderAuthAttemptDto> providerAuthStatus(String attemptId);
@@ -329,6 +334,12 @@ abstract interface class ProvidersApi {
 
   /// Disconnects a provider.
   Future<void> disconnectProvider(String connectionId);
+
+  /// Changes a connection's globally unique model prefix.
+  Future<ProviderConnectionDto> updateProviderModelPrefix(
+    String connectionId,
+    String modelPrefix,
+  );
 
   /// Refreshes provider metadata.
   Future<ProviderCatalogDto> refreshProviderCatalog();
@@ -347,6 +358,7 @@ abstract interface class ProvidersApi {
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
+    String? modelPrefix,
   });
 
   /// Updates a custom provider.

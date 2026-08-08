@@ -1576,6 +1576,30 @@ abstract class AppLocalizations {
   /// **'Waiting for sign-in'**
   String get providerSettingsOAuthPending;
 
+  /// Label for the globally unique provider model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Model prefix'**
+  String get providerSettingsModelPrefix;
+
+  /// Help text explaining qualified model identifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in model IDs such as openai/gpt-5.6-col.'**
+  String get providerSettingsModelPrefixHelp;
+
+  /// Validation message for an invalid model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 1–64 lowercase letters, numbers, hyphens, or underscores.'**
+  String get providerSettingsModelPrefixInvalid;
+
+  /// Inline error shown when the daemon rejects a duplicate model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'That model prefix is already in use. Try the updated suggestion.'**
+  String get providerSettingsModelPrefixConflict;
+
   /// Title of the API key dialog.
   ///
   /// In en, this message translates to:
@@ -2205,6 +2229,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer'**
   String get chatQuestionSubmit;
+
+  /// Button that advances to the next agent question.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get chatQuestionNext;
+
+  /// Screen-reader name of the agent question tab strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions'**
+  String get chatQuestionNavigation;
+
+  /// Screen-reader status while agent question answers are submitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting answers'**
+  String get chatQuestionSubmitting;
 
   /// Choice that lets the user type a free-form answer.
   ///
@@ -3237,6 +3279,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggestions'**
   String get composerSuggestionsLabel;
+
+  /// Instruction shown over a composer pane while files are dragged over it.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop files here'**
+  String get composerDropFilesHere;
 }
 
 class _AppLocalizationsDelegate

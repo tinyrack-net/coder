@@ -173,8 +173,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/cliweave"
-      ref: "1c59d79ef94d6890f0b04045a23445b207bd7150"
-      resolved-ref: "1c59d79ef94d6890f0b04045a23445b207bd7150"
+      ref: "6f528d01b9ebfa0cc95e7c2dba96e398e3881f37"
+      resolved-ref: "6f528d01b9ebfa0cc95e7c2dba96e398e3881f37"
       url: "https://github.com/tinyrack-net/dart-packages.git"
     source: git
     version: "0.2.3"
@@ -718,6 +718,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
+  lua_tool_runtime:
+    dependency: transitive
+    description:
+      path: "packages/lua_tool_runtime"
+      ref: "6f528d01b9ebfa0cc95e7c2dba96e398e3881f37"
+      resolved-ref: "6f528d01b9ebfa0cc95e7c2dba96e398e3881f37"
+      url: "https://github.com/tinyrack-net/dart-packages.git"
+    source: git
+    version: "0.1.0"
   lucide_flutter:
     dependency: transitive
     description:
@@ -954,8 +963,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/ptyworld"
-      ref: "1c59d79ef94d6890f0b04045a23445b207bd7150"
-      resolved-ref: "1c59d79ef94d6890f0b04045a23445b207bd7150"
+      ref: "6f528d01b9ebfa0cc95e7c2dba96e398e3881f37"
+      resolved-ref: "6f528d01b9ebfa0cc95e7c2dba96e398e3881f37"
       url: "https://github.com/tinyrack-net/dart-packages.git"
     source: git
     version: "0.1.0"
@@ -1345,11 +1354,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/ui_flutter"
-      ref: ed3cb4ac9ff29dff1ac7819a3dc7e10021f60332
-      resolved-ref: ed3cb4ac9ff29dff1ac7819a3dc7e10021f60332
+      ref: f2fd438cdbbce6aa7ba1c4035dee3dca5fdee2b4
+      resolved-ref: f2fd438cdbbce6aa7ba1c4035dee3dca5fdee2b4
       url: "https://github.com/tinyrack-net/design.git"
     source: git
-    version: "0.37.1"
+    version: "0.39.0"
   tray_manager:
     dependency: transitive
     description:

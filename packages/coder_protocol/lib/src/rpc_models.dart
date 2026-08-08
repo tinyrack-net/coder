@@ -470,6 +470,7 @@ abstract class ProviderConnectApiKeyParamsDto
   const factory ProviderConnectApiKeyParamsDto({
     required String definitionId,
     required String apiKey,
+    String? modelPrefix,
   }) = _ProviderConnectApiKeyParamsDto;
 
   /// Decodes API-key connection parameters.
@@ -484,6 +485,7 @@ abstract class ProviderConnectNoneParamsDto
   /// Creates no-auth connection parameters.
   const factory ProviderConnectNoneParamsDto({
     required String definitionId,
+    String? modelPrefix,
   }) = _ProviderConnectNoneParamsDto;
 
   /// Decodes no-auth connection parameters.
@@ -525,11 +527,27 @@ abstract class ProviderAuthStartParamsDto with _$ProviderAuthStartParamsDto {
   const factory ProviderAuthStartParamsDto({
     required String definitionId,
     required String methodId,
+    String? modelPrefix,
   }) = _ProviderAuthStartParamsDto;
 
   /// Decodes OAuth start parameters.
   factory ProviderAuthStartParamsDto.fromJson(Map<String, dynamic> json) =>
       _$ProviderAuthStartParamsDtoFromJson(json);
+}
+
+/// Parameters for changing a provider connection's model prefix.
+@freezed
+abstract class ProviderPrefixUpdateParamsDto
+    with _$ProviderPrefixUpdateParamsDto {
+  /// Creates model-prefix update parameters.
+  const factory ProviderPrefixUpdateParamsDto({
+    required String connectionId,
+    required String modelPrefix,
+  }) = _ProviderPrefixUpdateParamsDto;
+
+  /// Decodes model-prefix update parameters.
+  factory ProviderPrefixUpdateParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderPrefixUpdateParamsDtoFromJson(json);
 }
 
 @freezed
@@ -554,6 +572,7 @@ abstract class ProviderCustomCreateParamsDto
     required String id,
     required CustomProviderConfigDto config,
     String? apiKey,
+    String? modelPrefix,
   }) = _ProviderCustomCreateParamsDto;
 
   /// Decodes custom provider parameters.

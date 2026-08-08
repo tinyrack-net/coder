@@ -64,7 +64,6 @@ void main() {
 
   test('plugin defaults advertise nothing they do not implement', () {
     final plugin = _FakePlugin();
-    expect(plugin.environmentVariables, isEmpty);
     expect(plugin.oauth, isNull);
     const remote = AgentModelCapabilities(
       streaming: AgentCapabilitySupport.supported,

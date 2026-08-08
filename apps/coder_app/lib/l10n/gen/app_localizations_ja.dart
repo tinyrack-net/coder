@@ -808,6 +808,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsOAuthPending => 'Waiting for sign-in';
 
   @override
+  String get providerSettingsModelPrefix => 'モデルプレフィックス';
+
+  @override
+  String get providerSettingsModelPrefixHelp =>
+      'openai/gpt-5.6-col のようなモデル ID に使用されます。';
+
+  @override
+  String get providerSettingsModelPrefixInvalid =>
+      '小文字、数字、ハイフン、アンダースコアを1〜64文字で入力してください。';
+
+  @override
+  String get providerSettingsModelPrefixConflict =>
+      'そのモデルプレフィックスはすでに使用されています。更新された候補をお試しください。';
+
+  @override
   String providerSettingsConnectTitle(String name) {
     return 'Connect $name';
   }
@@ -1198,6 +1213,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get chatQuestionSubmit => 'Answer';
+
+  @override
+  String get chatQuestionNext => 'Next';
+
+  @override
+  String get chatQuestionNavigation => 'Questions';
+
+  @override
+  String get chatQuestionSubmitting => 'Submitting answers';
 
   @override
   String get chatQuestionOther => 'Other';
@@ -1781,4 +1805,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerSuggestionsLabel => 'Suggestions';
+
+  @override
+  String get composerDropFilesHere => 'ここにファイルをドロップ';
 }

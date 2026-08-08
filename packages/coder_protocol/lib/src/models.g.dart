@@ -289,7 +289,6 @@ _AgentModelSelectionDto _$AgentModelSelectionDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentModelSelectionDto(
   source: $enumDecode(_$AgentModelSourceEnumMap, json['source']),
-  providerConnectionId: json['providerConnectionId'] as String?,
   modelId: json['modelId'] as String?,
 );
 
@@ -297,7 +296,6 @@ Map<String, dynamic> _$AgentModelSelectionDtoToJson(
   _AgentModelSelectionDto instance,
 ) => <String, dynamic>{
   'source': _$AgentModelSourceEnumMap[instance.source]!,
-  'providerConnectionId': instance.providerConnectionId,
   'modelId': instance.modelId,
 };
 
@@ -703,17 +701,11 @@ const _$SkillSourceEnumMap = {
 
 _SessionModelSelectionDto _$SessionModelSelectionDtoFromJson(
   Map<String, dynamic> json,
-) => _SessionModelSelectionDto(
-  providerConnectionId: json['providerConnectionId'] as String,
-  modelId: json['modelId'] as String,
-);
+) => _SessionModelSelectionDto(modelId: json['modelId'] as String);
 
 Map<String, dynamic> _$SessionModelSelectionDtoToJson(
   _SessionModelSelectionDto instance,
-) => <String, dynamic>{
-  'providerConnectionId': instance.providerConnectionId,
-  'modelId': instance.modelId,
-};
+) => <String, dynamic>{'modelId': instance.modelId};
 
 _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   id: json['id'] as String,
@@ -1217,6 +1209,7 @@ _ProviderConnectionDto _$ProviderConnectionDtoFromJson(
   ),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
+  modelPrefix: json['modelPrefix'] as String? ?? '',
   error: json['error'] as String?,
   customConfig: json['customConfig'] == null
       ? null
@@ -1237,6 +1230,7 @@ Map<String, dynamic> _$ProviderConnectionDtoToJson(
       _$ProviderCredentialOriginEnumMap[instance.credentialOrigin]!,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
+  'modelPrefix': instance.modelPrefix,
   'error': instance.error,
   'customConfig': instance.customConfig,
 };
@@ -1252,7 +1246,6 @@ const _$ProviderConnectionStatusEnumMap = {
 
 const _$ProviderCredentialOriginEnumMap = {
   ProviderCredentialOrigin.stored: 'stored',
-  ProviderCredentialOrigin.environment: 'environment',
   ProviderCredentialOrigin.oauth: 'oauth',
   ProviderCredentialOrigin.none: 'none',
 };
@@ -1264,6 +1257,8 @@ _ProviderAuthAttemptDto _$ProviderAuthAttemptDtoFromJson(
   definitionId: json['definitionId'] as String,
   methodId: json['methodId'] as String,
   status: $enumDecode(_$ProviderAuthAttemptStatusEnumMap, json['status']),
+  connectionId: json['connectionId'] as String? ?? '',
+  modelPrefix: json['modelPrefix'] as String? ?? '',
   authorizationUrl: json['authorizationUrl'] as String?,
   userCode: json['userCode'] as String?,
   instructions: json['instructions'] as String?,
@@ -1280,6 +1275,8 @@ Map<String, dynamic> _$ProviderAuthAttemptDtoToJson(
   'definitionId': instance.definitionId,
   'methodId': instance.methodId,
   'status': _$ProviderAuthAttemptStatusEnumMap[instance.status]!,
+  'connectionId': instance.connectionId,
+  'modelPrefix': instance.modelPrefix,
   'authorizationUrl': instance.authorizationUrl,
   'userCode': instance.userCode,
   'instructions': instance.instructions,
@@ -1306,6 +1303,7 @@ _ProviderModelDto _$ProviderModelDtoFromJson(Map<String, dynamic> json) =>
       capabilities: ModelCapabilitiesDto.fromJson(
         json['capabilities'] as Map<String, dynamic>,
       ),
+      providerModelId: json['providerModelId'] as String? ?? '',
       pricing: json['pricing'] == null
           ? null
           : ModelPricingDto.fromJson(json['pricing'] as Map<String, dynamic>),
@@ -1331,6 +1329,7 @@ Map<String, dynamic> _$ProviderModelDtoToJson(_ProviderModelDto instance) =>
       'label': instance.label,
       'source': _$ProviderModelSourceEnumMap[instance.source]!,
       'capabilities': instance.capabilities,
+      'providerModelId': instance.providerModelId,
       'pricing': instance.pricing,
       'limits': instance.limits,
       'diagnosticStatus': _$DiagnosticStatusEnumMap[instance.diagnosticStatus]!,
