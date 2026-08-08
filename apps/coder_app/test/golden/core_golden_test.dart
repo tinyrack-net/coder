@@ -1062,7 +1062,11 @@ void main() {
       builder: () => SizedBox(
         width: 1100,
         height: 760,
-        child: _sessionComposer(ThemeMode.dark, split: true),
+        child: _sessionComposer(
+          ThemeMode.dark,
+          split: true,
+          nestedSplit: true,
+        ),
       ),
     ),
   );
@@ -1459,7 +1463,11 @@ Widget _composerState(
   ),
 );
 
-Widget _sessionComposer(ThemeMode mode, {bool split = false}) {
+Widget _sessionComposer(
+  ThemeMode mode, {
+  bool split = false,
+  bool nestedSplit = false,
+}) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
@@ -1492,33 +1500,54 @@ Widget _sessionComposer(ThemeMode mode, {bool split = false}) {
     settings: AppSettings(
       sessionTabs: split
           ? <String, SessionTabPreference>{
-              selection.storageKey: const SessionTabPreference(
+              selection.storageKey: SessionTabPreference(
                 tabs: <WorkspaceTabPreference>[
-                  WorkspaceTabPreference(
+                  const WorkspaceTabPreference(
                     id: 'draft:left',
                     kind: WorkspaceTabTargetKind.draft,
                   ),
-                  WorkspaceTabPreference(
+                  const WorkspaceTabPreference(
                     id: 'draft:right',
                     kind: WorkspaceTabTargetKind.draft,
                   ),
+                  if (nestedSplit)
+                    const WorkspaceTabPreference(
+                      id: 'draft:bottom',
+                      kind: WorkspaceTabTargetKind.draft,
+                    ),
                 ],
                 root: WorkspaceSplitPreference(
                   id: 'split:root',
                   axis: WorkspaceSplitAxis.horizontal,
                   ratio: 0.5,
-                  first: WorkspacePanePreference(
+                  first: const WorkspacePanePreference(
                     id: 'pane:left',
                     tabIds: <String>['draft:left'],
                     activeTabId: 'draft:left',
                   ),
-                  second: WorkspacePanePreference(
-                    id: 'pane:right',
-                    tabIds: <String>['draft:right'],
-                    activeTabId: 'draft:right',
-                  ),
+                  second: nestedSplit
+                      ? const WorkspaceSplitPreference(
+                          id: 'split:right',
+                          axis: WorkspaceSplitAxis.vertical,
+                          ratio: 0.5,
+                          first: WorkspacePanePreference(
+                            id: 'pane:right',
+                            tabIds: <String>['draft:right'],
+                            activeTabId: 'draft:right',
+                          ),
+                          second: WorkspacePanePreference(
+                            id: 'pane:bottom',
+                            tabIds: <String>['draft:bottom'],
+                            activeTabId: 'draft:bottom',
+                          ),
+                        )
+                      : const WorkspacePanePreference(
+                          id: 'pane:right',
+                          tabIds: <String>['draft:right'],
+                          activeTabId: 'draft:right',
+                        ),
                 ),
-                focusedPaneId: 'pane:right',
+                focusedPaneId: nestedSplit ? 'pane:bottom' : 'pane:right',
               ),
             }
           : const <String, SessionTabPreference>{},
