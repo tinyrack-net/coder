@@ -11,6 +11,12 @@ void main() {
     'apps/coder_app/android/build.gradle.kts',
   ).readAsStringSync();
   final appPubspec = File('apps/coder_app/pubspec.yaml').readAsStringSync();
+  final iosDebugConfig = File(
+    'apps/coder_app/ios/Flutter/Debug.xcconfig',
+  ).readAsStringSync();
+  final iosReleaseConfig = File(
+    'apps/coder_app/ios/Flutter/Release.xcconfig',
+  ).readAsStringSync();
   final cargoKitCompat = File(
     'apps/coder_app/android/cargokit-gradle9-compat.gradle',
   );
@@ -199,6 +205,8 @@ void main() {
       appPubspec,
       contains('config:\n    enable-swift-package-manager: false'),
     );
+    expect(iosDebugConfig, contains('Pods-Runner.debug.xcconfig'));
+    expect(iosReleaseConfig, contains('Pods-Runner.release.xcconfig'));
   });
 
   test('native attachment plugins receive macOS and Windows debug builds', () {
