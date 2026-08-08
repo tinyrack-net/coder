@@ -1808,4 +1808,61 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerDropFilesHere => 'ここにファイルをドロップ';
+
+  @override
+  String get chatToolActionRead => 'ファイルを読む';
+
+  @override
+  String get chatToolActionList => 'ファイル一覧を見る';
+
+  @override
+  String get chatToolActionSearch => '検索';
+
+  @override
+  String get chatToolActionEdit => 'ファイルを編集';
+
+  @override
+  String get chatToolActionRun => 'コマンドを実行';
+
+  @override
+  String get chatToolActionDelegate => 'エージェントを調整';
+
+  @override
+  String get chatToolActionPlan => '計画を更新';
+
+  @override
+  String get chatToolActionAsk => '質問する';
+
+  @override
+  String get chatToolActionResource => 'リソースを使用';
+
+  @override
+  String get chatToolActionTools => 'ツールを探す';
+
+  @override
+  String get chatToolActionClock => '待機';
+
+  @override
+  String get chatToolActionContext => 'コンテキストを管理';
+
+  @override
+  String get chatToolActionImage => '画像を見る';
+
+  @override
+  String get chatToolActionGeneric => 'ツールを使用';
+
+  @override
+  String get chatToolStatusFailed => '失敗';
+
+  @override
+  String get chatToolStatusDenied => '拒否';
+
+  @override
+  String get chatToolDetailsTool => 'ツール';
+
+  @override
+  String get chatToolDetailsRequest => 'リクエスト';
+
+  @override
+  String get chatToolDetailsResult => '結果';
 }

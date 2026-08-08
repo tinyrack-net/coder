@@ -74,71 +74,68 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   Widget build(BuildContext context) {
     final items = widget.items;
     final busy = widget.busy;
-    if (items.isEmpty) return const ChatEmptyState();
+    if (items.isEmpty && !busy) return const ChatEmptyState();
     // The list is reversed so new items pin to the bottom; every row carries a
     // stable key so expanding a tool card cannot leak into its neighbour when
     // indices shift.
     // The list owns its own viewport, so the scroll area may only theme it.
-    return Stack(
-      children: <Widget>[
-        TRScrollArea.forScrollable(
-          controller: _scrollController,
-          child: ListView.separated(
-            controller: _scrollController,
-            primary: false,
-            reverse: true,
-            // Flutter estimates an unbuilt SliverList's full height from the
-            // rows currently laid out. Chat rows vary sharply in height, so a
-            // wider viewport-relative sample keeps the scrollbar thumb stable
-            // while retaining lazy construction for distant history.
-            scrollCacheExtent: const .viewport(
-              _cacheExtentViewportMultiplier,
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              TRSpacing.extraLarge,
-              TRSpacing.large,
-              TRSpacing.extraLarge,
-              TRSpacing.large,
-            ),
-            itemCount: items.length,
-            separatorBuilder: (_, _) => const SizedBox(height: TRSpacing.small),
-            // Every new event shifts the reversed indices, so keys are mapped
-            // back to their slot; without this an expanded card would leak its
-            // state into whichever item lands on its old index.
-            findItemIndexCallback: (key) {
-              if (key is! ValueKey<String>) return null;
-              final position = items.indexWhere(
-                (item) => item.key == key.value,
-              );
-              if (position < 0) return null;
-              return items.length - position - 1;
-            },
-            itemBuilder: (context, index) {
-              final item = items[items.length - index - 1];
-              return KeyedSubtree(
-                key: ValueKey<String>(item.key),
-                child: ChatItemView(
-                  item: item,
-                  expanded: _expanded.contains(item.key),
-                  onToggle: () => setState(() {
-                    if (!_expanded.remove(item.key)) _expanded.add(item.key);
-                  }),
-                  loadAttachment: widget.loadAttachment == null ? null : _load,
-                  exportAttachment: widget.exportAttachment,
-                  hostId: widget.hostId,
-                  planActionBuilder: widget.planActionBuilder,
-                ),
-              );
-            },
-          ),
+    return TRScrollArea.forScrollable(
+      controller: _scrollController,
+      child: ListView.separated(
+        controller: _scrollController,
+        primary: false,
+        reverse: true,
+        // Flutter estimates an unbuilt SliverList's full height from the
+        // rows currently laid out. Chat rows vary sharply in height, so a
+        // wider viewport-relative sample keeps the scrollbar thumb stable
+        // while retaining lazy construction for distant history.
+        scrollCacheExtent: const .viewport(
+          _cacheExtentViewportMultiplier,
         ),
-        if (busy)
-          const Positioned(
-            left: TRSpacing.extraLarge,
-            bottom: TRSpacing.large,
-            child: ChatRunningIndicator(),
-          ),
-      ],
+        padding: const EdgeInsets.fromLTRB(
+          TRSpacing.extraLarge,
+          TRSpacing.large,
+          TRSpacing.extraLarge,
+          TRSpacing.large,
+        ),
+        itemCount: items.length + (busy ? 1 : 0),
+        separatorBuilder: (_, _) => const SizedBox(height: TRSpacing.small),
+        // Every new event shifts the reversed indices, so keys are mapped
+        // back to their slot; without this an expanded card would leak its
+        // state into whichever item lands on its old index.
+        findItemIndexCallback: (key) {
+          if (key is! ValueKey<String>) return null;
+          final position = items.indexWhere(
+            (item) => item.key == key.value,
+          );
+          if (position < 0) return null;
+          return items.length - position - 1 + (busy ? 1 : 0);
+        },
+        itemBuilder: (context, index) {
+          if (busy && index == 0) {
+            return const KeyedSubtree(
+              key: ValueKey<String>('chat-running'),
+              child: ChatRunningIndicator(),
+            );
+          }
+          final itemIndex = index - (busy ? 1 : 0);
+          final item = items[items.length - itemIndex - 1];
+          return KeyedSubtree(
+            key: ValueKey<String>(item.key),
+            child: ChatItemView(
+              item: item,
+              expanded: _expanded.contains(item.key),
+              onToggle: () => setState(() {
+                if (!_expanded.remove(item.key)) _expanded.add(item.key);
+              }),
+              loadAttachment: widget.loadAttachment == null ? null : _load,
+              exportAttachment: widget.exportAttachment,
+              hostId: widget.hostId,
+              planActionBuilder: widget.planActionBuilder,
+            ),
+          );
+        },
+      ),
     );
   }
 }

@@ -52,6 +52,7 @@ void _registerConversationAppFlows() {
           worktreeId: checkout.id,
           sessionId: running.id,
         ).location,
+        disableAnimations: true,
       );
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
@@ -305,7 +306,7 @@ void _registerConversationAppFlows() {
       );
       await tester.pumpAndSettle();
       expect(find.text('ready'), findsOneWidget);
-      expect(find.text('>'), findsOneWidget);
+      expect(find.byType(TRChatUserBubble), findsOneWidget);
       expect(find.text('Inspect this', findRichText: true), findsOneWidget);
       expect(find.text('승인 필요 · apply_patch'), findsOneWidget);
       await tester.tap(find.widgetWithText(TRButton, '거부'));

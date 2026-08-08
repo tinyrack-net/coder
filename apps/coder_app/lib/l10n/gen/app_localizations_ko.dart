@@ -1777,4 +1777,61 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerDropFilesHere => '여기에 파일을 놓으세요';
+
+  @override
+  String get chatToolActionRead => '파일 읽기';
+
+  @override
+  String get chatToolActionList => '파일 목록 보기';
+
+  @override
+  String get chatToolActionSearch => '검색';
+
+  @override
+  String get chatToolActionEdit => '파일 편집';
+
+  @override
+  String get chatToolActionRun => '명령 실행';
+
+  @override
+  String get chatToolActionDelegate => '에이전트 조율';
+
+  @override
+  String get chatToolActionPlan => '계획 업데이트';
+
+  @override
+  String get chatToolActionAsk => '질문하기';
+
+  @override
+  String get chatToolActionResource => '리소스 사용';
+
+  @override
+  String get chatToolActionTools => '도구 찾기';
+
+  @override
+  String get chatToolActionClock => '대기';
+
+  @override
+  String get chatToolActionContext => '컨텍스트 관리';
+
+  @override
+  String get chatToolActionImage => '이미지 보기';
+
+  @override
+  String get chatToolActionGeneric => '도구 사용';
+
+  @override
+  String get chatToolStatusFailed => '실패';
+
+  @override
+  String get chatToolStatusDenied => '거부됨';
+
+  @override
+  String get chatToolDetailsTool => '도구';
+
+  @override
+  String get chatToolDetailsRequest => '요청';
+
+  @override
+  String get chatToolDetailsResult => '결과';
 }

@@ -381,7 +381,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         key: const ValueKey<String>('workspace-pane'),
         child: Column(
           children: <Widget>[
-            TRTabs.bar(
+            TRTabs(
               key: ValueKey<String>(
                 firstPane
                     ? 'session-tab-strip'
@@ -460,7 +460,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           key: const ValueKey<String>('workspace-mobile-tab-trigger'),
           behavior: HitTestBehavior.opaque,
           onTap: () => unawaited(_showTabSheet()),
-          child: TRTabs.bar(
+          child: TRTabs(
             semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
             value: _controlValue(entry),
             onValueChange: (_) => unawaited(_showTabSheet()),

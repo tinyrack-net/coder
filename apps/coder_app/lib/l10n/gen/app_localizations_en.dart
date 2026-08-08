@@ -1811,4 +1811,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerDropFilesHere => 'Drop files here';
+
+  @override
+  String get chatToolActionRead => 'Read file';
+
+  @override
+  String get chatToolActionList => 'List files';
+
+  @override
+  String get chatToolActionSearch => 'Search';
+
+  @override
+  String get chatToolActionEdit => 'Edit files';
+
+  @override
+  String get chatToolActionRun => 'Run command';
+
+  @override
+  String get chatToolActionDelegate => 'Coordinate agents';
+
+  @override
+  String get chatToolActionPlan => 'Update plan';
+
+  @override
+  String get chatToolActionAsk => 'Ask a question';
+
+  @override
+  String get chatToolActionResource => 'Use resource';
+
+  @override
+  String get chatToolActionTools => 'Find tools';
+
+  @override
+  String get chatToolActionClock => 'Wait';
+
+  @override
+  String get chatToolActionContext => 'Manage context';
+
+  @override
+  String get chatToolActionImage => 'View image';
+
+  @override
+  String get chatToolActionGeneric => 'Use tool';
+
+  @override
+  String get chatToolStatusFailed => 'Failed';
+
+  @override
+  String get chatToolStatusDenied => 'Denied';
+
+  @override
+  String get chatToolDetailsTool => 'Tool';
+
+  @override
+  String get chatToolDetailsRequest => 'Request';
+
+  @override
+  String get chatToolDetailsResult => 'Result';
 }
