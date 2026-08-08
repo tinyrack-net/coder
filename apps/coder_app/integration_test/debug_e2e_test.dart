@@ -1023,7 +1023,6 @@ void main() {
         worktreeId: 'checkout-e2e',
       )).length;
       tester.testTextInput.enterText('/clear');
-      await tester.pumpAndSettle();
       await pumpUntil(tester, find.text('clear'));
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
