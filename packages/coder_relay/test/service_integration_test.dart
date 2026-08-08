@@ -123,17 +123,23 @@ Future<String> _get(Uri uri) async {
   final client = HttpClient();
   try {
     final response = await (await client.getUrl(uri)).close();
-    return response.transform(const SystemEncoding().decoder).join();
+    final body = await response
+        .transform(const SystemEncoding().decoder)
+        .join();
+    return body;
   } finally {
-    client.close(force: true);
+    client.close();
   }
 }
 
 Future<int> _status(Uri uri) async {
   final client = HttpClient();
   try {
-    return (await (await client.getUrl(uri)).close()).statusCode;
+    final response = await (await client.getUrl(uri)).close();
+    final statusCode = response.statusCode;
+    await response.drain<void>();
+    return statusCode;
   } finally {
-    client.close(force: true);
+    client.close();
   }
 }
