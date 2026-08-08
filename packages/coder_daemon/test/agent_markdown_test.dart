@@ -8,7 +8,7 @@ void main() {
   const source = '''
 ---
 # User comment must survive GUI edits.
-version: 3
+version: 4
 name: Reviewer
 description: Reviews code
 mode: subagent
@@ -141,7 +141,7 @@ Review the requested code without modifying it.
       'name: no-frontmatter',
       '---\nname: unclosed',
       '---\n- not\n- a-map\n---\n',
-      source.replaceFirst('version: 3', 'version: 1'),
+      source.replaceFirst('version: 4', 'version: 1'),
       source.replaceFirst('mode: subagent', 'mode: unknown'),
       source
           .replaceFirst('mode: subagent', 'mode: subagent')
@@ -154,7 +154,7 @@ Review the requested code without modifying it.
       source.replaceFirst('name: Reviewer\n', ''),
       source.replaceFirst('promptEnabled: true', 'promptEnabled: yes'),
       source.replaceFirst('tools:\n  - read_file\n  - future_tool', 'tools: 4'),
-      source.replaceFirst('version: 3', 'version: one'),
+      source.replaceFirst('version: 4', 'version: one'),
       source.replaceFirst(
         'permissionMode: readOnly',
         'modelControls: []\npermissionMode: readOnly',
@@ -475,8 +475,7 @@ Review the requested code without modifying it.
           mode: AgentMode.subagent,
           model: const AgentModelSelectionDto(
             source: AgentModelSource.fixed,
-            providerConnectionId: 'connection',
-            modelId: 'model',
+            modelId: 'connection/model',
           ),
           toolIds: const <String>['a_tool'],
           contentHash: '',

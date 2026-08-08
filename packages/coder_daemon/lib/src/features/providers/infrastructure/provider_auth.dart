@@ -18,17 +18,35 @@ abstract interface class ProviderCredentialRefresher {
   /// Returns a fresh credential for one connection.
   Future<OAuthCredential> refresh(
     String connectionId,
+    String definitionId,
     OAuthCredential credential,
   );
 }
 
+/// Identity reserved before an OAuth browser or device flow starts.
+typedef ProviderOAuthReservation = ({
+  String connectionId,
+  String modelPrefix,
+});
+
 /// Connects a successfully authorized OAuth credential to a provider.
 abstract interface class ProviderOAuthConnector {
+  /// Atomically reserves a unique connection ID and model prefix.
+  Future<ProviderOAuthReservation> reserveOAuthConnection(
+    String definitionId, {
+    String? modelPrefix,
+  });
+
+  /// Releases a reservation that did not become a connection.
+  Future<void> releaseOAuthConnection(String connectionId);
+
   /// Stores and activates one OAuth-backed provider connection.
   Future<void> connectOAuth(
     String definitionId,
-    OAuthCredential credential,
-  );
+    OAuthCredential credential, {
+    String? connectionId,
+    String? modelPrefix,
+  });
 }
 
 /// Coordinates transient OAuth state without persisting authorization attempts.
@@ -64,6 +82,7 @@ final class ProviderAuthCoordinator {
   Future<ProviderAuthAttemptDto> start({
     required String definitionId,
     required String methodId,
+    String? modelPrefix,
   }) async {
     final plugin = _registry.require(definitionId);
     final gateway = plugin.oauth;
@@ -80,11 +99,23 @@ final class ProviderAuthCoordinator {
         flow != AgentProviderAuthFlow.oauthDevice) {
       throw StateError('Unknown $definitionId OAuth method: $methodId');
     }
-    final session = await gateway.start(flow!);
+    final reservation = await _connector.reserveOAuthConnection(
+      definitionId,
+      modelPrefix: modelPrefix,
+    );
+    late final ProviderOAuthSession session;
+    try {
+      session = await gateway.start(flow!);
+    } catch (_) {
+      await _connector.releaseOAuthConnection(reservation.connectionId);
+      rethrow;
+    }
     final attempt = ProviderAuthAttemptDto(
       id: _ids.generate(),
       definitionId: definitionId,
       methodId: methodId,
+      connectionId: reservation.connectionId,
+      modelPrefix: reservation.modelPrefix,
       status: ProviderAuthAttemptStatus.awaitingUser,
       authorizationUrl: session.authorizationUrl,
       userCode: session.userCode,
@@ -121,6 +152,7 @@ final class ProviderAuthCoordinator {
       status: ProviderAuthAttemptStatus.cancelled,
     );
     await pending.session.cancel();
+    await _connector.releaseOAuthConnection(pending.attempt.connectionId);
     _events.add(pending.attempt);
   }
 
@@ -135,6 +167,8 @@ final class ProviderAuthCoordinator {
       await _connector.connectOAuth(
         pending.attempt.definitionId,
         credential,
+        connectionId: pending.attempt.connectionId,
+        modelPrefix: pending.attempt.modelPrefix,
       );
       pending.attempt = pending.attempt.copyWith(
         status: ProviderAuthAttemptStatus.succeeded,
@@ -145,12 +179,14 @@ final class ProviderAuthCoordinator {
         status: ProviderAuthAttemptStatus.expired,
         error: '$error',
       );
+      await _connector.releaseOAuthConnection(pending.attempt.connectionId);
     } on Exception catch (error) {
       if (pending.attempt.status == ProviderAuthAttemptStatus.cancelled) return;
       pending.attempt = pending.attempt.copyWith(
         status: ProviderAuthAttemptStatus.failed,
         error: '$error',
       );
+      await _connector.releaseOAuthConnection(pending.attempt.connectionId);
     }
     _events.add(pending.attempt);
   }
@@ -159,6 +195,9 @@ final class ProviderAuthCoordinator {
   Future<void> close() async {
     for (final pending in _attempts.values) {
       if (!_isTerminal(pending.attempt.status)) await pending.session.cancel();
+      if (!_isTerminal(pending.attempt.status)) {
+        await _connector.releaseOAuthConnection(pending.attempt.connectionId);
+      }
     }
     await _events.close();
   }
@@ -186,15 +225,16 @@ final class OAuthCredentialRefresher implements ProviderCredentialRefresher {
   @override
   Future<OAuthCredential> refresh(
     String connectionId,
+    String definitionId,
     OAuthCredential credential,
   ) {
     final existing = _inFlight[connectionId];
     if (existing != null) return existing;
     // Only built-in vendors authenticate over OAuth, and a built-in
     // connection's id is its definition id, so the lookup needs no join.
-    final gateway = _registry.find(connectionId)?.oauth;
+    final gateway = _registry.find(definitionId)?.oauth;
     if (gateway == null) {
-      throw StateError('$connectionId does not support OAuth refresh.');
+      throw StateError('$definitionId does not support OAuth refresh.');
     }
     final operation = gateway.refresh(credential);
     _inFlight[connectionId] = operation;

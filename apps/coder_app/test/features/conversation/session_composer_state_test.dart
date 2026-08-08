@@ -44,6 +44,7 @@ void main() {
   }) => ProviderConnectionDto(
     id: id,
     definitionId: id,
+    modelPrefix: id,
     displayName: id,
     status: status,
     authKind: ProviderAuthKind.apiKey,
@@ -80,8 +81,7 @@ void main() {
           id: 'broken',
           model: const AgentModelSelectionDto(
             source: AgentModelSource.fixed,
-            providerConnectionId: 'missing',
-            modelId: 'model',
+            modelId: 'missing/model',
           ),
         ),
       ];
@@ -119,15 +119,13 @@ void main() {
           definition(
             model: const AgentModelSelectionDto(
               source: AgentModelSource.fixed,
-              providerConnectionId: 'deepseek',
-              modelId: 'deepseek-v4',
+              modelId: 'deepseek/deepseek-v4',
             ),
           ),
           connections,
         ),
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-v4',
+          modelId: 'deepseek/deepseek-v4',
         ),
       );
       expect(
@@ -135,8 +133,7 @@ void main() {
           definition(
             model: const AgentModelSelectionDto(
               source: AgentModelSource.fixed,
-              providerConnectionId: 'missing',
-              modelId: 'model',
+              modelId: 'missing/model',
             ),
           ),
           connections,
@@ -148,7 +145,6 @@ void main() {
           definition(
             model: const AgentModelSelectionDto(
               source: AgentModelSource.fixed,
-              providerConnectionId: 'deepseek',
             ),
           ),
           connections,
@@ -169,7 +165,8 @@ void main() {
     CapabilitySupport streaming = CapabilitySupport.supported,
   }) => ProviderModelDto(
     connectionId: connectionId,
-    id: id,
+    id: '$connectionId/$id',
+    providerModelId: id,
     label: id,
     source: ProviderModelSource.bundled,
     capabilities: ModelCapabilitiesDto(
@@ -214,18 +211,15 @@ void main() {
           agent: definition(
             model: const AgentModelSelectionDto(
               source: AgentModelSource.fixed,
-              providerConnectionId: 'openai',
-              modelId: 'gpt-5-mini',
+              modelId: 'openai/gpt-5-mini',
             ),
           ),
           defaultModel: const SessionModelSelectionDto(
-            providerConnectionId: 'deepseek',
-            modelId: 'deepseek-chat',
+            modelId: 'deepseek/deepseek-chat',
           ),
         ),
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5-mini',
+          modelId: 'openai/gpt-5-mini',
         ),
       );
 
@@ -233,13 +227,11 @@ void main() {
       expect(
         resolve(
           defaultModel: const SessionModelSelectionDto(
-            providerConnectionId: 'openai',
-            modelId: 'gpt-5-mini',
+            modelId: 'openai/gpt-5-mini',
           ),
         ),
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5-mini',
+          modelId: 'openai/gpt-5-mini',
         ),
       );
 
@@ -247,20 +239,17 @@ void main() {
       expect(
         resolve(
           defaultModel: const SessionModelSelectionDto(
-            providerConnectionId: 'retired',
-            modelId: 'gpt-5-mini',
+            modelId: 'retired/gpt-5-mini',
           ),
         ),
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-chat',
+          modelId: 'deepseek/deepseek-chat',
         ),
       );
       expect(
         resolve(),
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-chat',
+          modelId: 'deepseek/deepseek-chat',
         ),
       );
 
@@ -292,8 +281,7 @@ void main() {
         'draft:test',
       );
       const model = SessionModelSelectionDto(
-        providerConnectionId: 'openai',
-        modelId: 'gpt-5.6-sol',
+        modelId: 'openai/gpt-5.6-sol',
       );
 
       expect(container.read(provider).agentDefinitionId, isNull);

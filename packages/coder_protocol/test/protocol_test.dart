@@ -127,8 +127,7 @@ void main() {
 
   test('session model overrides round-trip', () {
     const selection = SessionModelSelectionDto(
-      providerConnectionId: 'provider',
-      modelId: 'model',
+      modelId: 'provider/model',
     );
     final overridden = SessionDto(
       id: 'session',
@@ -1768,8 +1767,7 @@ void main() {
       _roundTrip(
         const DefaultModelDto(
           model: SessionModelSelectionDto(
-            providerConnectionId: 'connection-1',
-            modelId: 'model-1',
+            modelId: 'connection-1/model-1',
           ),
         ),
         (value) => value.toJson(),

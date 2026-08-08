@@ -82,6 +82,9 @@ abstract interface class SessionRepository {
     SessionModelSelectionDto? model,
   });
 
+  /// Rewrites qualified model selections after a provider prefix rename.
+  Future<void> rewriteModelPrefix(String oldPrefix, String newPrefix);
+
   /// Sets or clears the permission mode override of one session.
   Future<SessionDto> updatePermissionMode(
     String id,

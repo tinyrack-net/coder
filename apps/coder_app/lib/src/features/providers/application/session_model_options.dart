@@ -41,16 +41,14 @@ SessionModelSelectionDto? agentSelectionFor(
     case AgentModelSource.session:
       return null;
     case AgentModelSource.fixed:
-      final connectionId = definition.model.providerConnectionId;
-      final modelId = definition.model.modelId;
-      if (connectionId == null || modelId == null) return null;
-      if (!usable.any((connection) => connection.id == connectionId)) {
+      final modelId = definition.model.qualifiedModelId;
+      if (modelId == null) return null;
+      if (!usable.any(
+        (connection) => modelId.startsWith('${connection.modelPrefix}/'),
+      )) {
         return null;
       }
-      return SessionModelSelectionDto(
-        providerConnectionId: connectionId,
-        modelId: modelId,
-      );
+      return SessionModelSelectionDto(modelId: modelId);
   }
 }
 
@@ -64,15 +62,12 @@ bool isRunnableSelection(
   Map<String, List<ProviderModelDto>> models,
 ) {
   final usable = usableConnections(connections);
-  if (!usable.any(
-    (connection) => connection.id == selection.providerConnectionId,
-  )) {
-    return false;
-  }
-  final candidates = models[selection.providerConnectionId];
-  if (candidates == null) return false;
-  for (final model in candidates) {
-    if (model.id == selection.modelId) return _isRunnableModel(model);
+  for (final connection in usable) {
+    for (final model in models[connection.id] ?? const <ProviderModelDto>[]) {
+      if (model.id == selection.qualifiedModelId) {
+        return _isRunnableModel(model);
+      }
+    }
   }
   return false;
 }
@@ -89,10 +84,7 @@ SessionModelSelectionDto? firstUsableModel(
   for (final connection in usableConnections(connections)) {
     for (final model in models[connection.id] ?? const <ProviderModelDto>[]) {
       if (!_isRunnableModel(model)) continue;
-      return SessionModelSelectionDto(
-        providerConnectionId: connection.id,
-        modelId: model.id,
-      );
+      return SessionModelSelectionDto(modelId: model.id);
     }
   }
   return null;

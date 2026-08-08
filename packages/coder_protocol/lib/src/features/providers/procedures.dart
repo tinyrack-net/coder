@@ -83,6 +83,16 @@ final providersDisconnectProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
+/// Changes the globally unique model prefix of one connection.
+final providersUpdateModelPrefixProcedure =
+    RpcProcedure<ProviderPrefixUpdateParamsDto, ProviderConnectionResultDto>(
+      name: 'providers.updateModelPrefix',
+      decodeParams: ProviderPrefixUpdateParamsDto.fromJson,
+      encodeParams: (value) => value.toJson(),
+      decodeResult: ProviderConnectionResultDto.fromJson,
+      encodeResult: (value) => value.toJson(),
+    );
+
 /// Typed v4 transport descriptor.
 final providersRefreshCatalogProcedure =
     RpcProcedure<EmptyParamsDto, ProviderCatalogResultDto>(
@@ -178,6 +188,7 @@ final providersProcedures = <RpcProcedureDescriptor>[
   providersGetAuthProcedure,
   providersCancelAuthProcedure,
   providersDisconnectProcedure,
+  providersUpdateModelPrefixProcedure,
   providersRefreshCatalogProcedure,
   providersListModelsProcedure,
   providersGetDefaultModelProcedure,

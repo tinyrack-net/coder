@@ -247,9 +247,6 @@ abstract base class ProviderPlugin {
   /// Public metadata safe to send to clients.
   AgentProviderDefinition get definition;
 
-  /// Credential environment variables recognized by the daemon.
-  List<String> get environmentVariables => const <String>[];
-
   /// Bundled, validated coding model metadata.
   List<ProviderCatalogModel> get models => const <ProviderCatalogModel>[];
 

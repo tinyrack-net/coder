@@ -48,6 +48,7 @@ import 'package:coder_daemon/src/features/workspaces/infrastructure/project_sett
 import 'package:coder_daemon/src/features/workspaces/infrastructure/workspace_service.dart';
 import 'package:coder_daemon/src/features/workspaces/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/database.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_daemon/src/shared/ports/agent_protocol_mapping.dart';
 import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_daemon/src/transport/rpc/binding.dart';
@@ -258,9 +259,7 @@ abstract final class DaemonApplication {
         repository: database.providerDao,
         credentials: credentials,
         settings: database.settingsDao,
-        environment: config.useEnvironmentCredentials
-            ? Platform.environment
-            : const <String, String>{},
+        ids: effectiveIds,
         clock: effectiveClock,
         registry: providerRegistry,
         catalog: BuiltInProviderCatalog(
@@ -274,13 +273,6 @@ abstract final class DaemonApplication {
       );
       await providers.initialize();
       final models = ProviderModelResolver(providers);
-      // A bare API key in daemon config has always meant the first vendor's
-      // platform key; the composition root is where that convention lives.
-      final apiKeyDefinition = providerRegistry.plugins.first.id;
-      if (config.apiKey?.isNotEmpty == true &&
-          await database.providerDao.getConnection(apiKeyDefinition) == null) {
-        await providers.connectApiKey(apiKeyDefinition, config.apiKey!);
-      }
       final providerAuth = ProviderAuthCoordinator(
         registry: providerRegistry,
         connector: providers,
@@ -337,6 +329,10 @@ abstract final class DaemonApplication {
         alwaysOnToolIds: toolRegistry.alwaysOnIds,
       );
       await agentDefinitions.initialize();
+      providers.referenceUpdater = _StoredProviderModelReferenceUpdater(
+        database.sessionDao,
+        agentDefinitions,
+      );
       final userHome = config.userHomeDirectory;
       final skills = SkillCatalogService(
         store: FileSkillStore(
@@ -438,7 +434,7 @@ abstract final class DaemonApplication {
         mailbox: database.agentMailboxDao,
         timeline: database.timelineDao,
         getDefinition: agentDefinitions.get,
-        validateModel: models.validateAgentModel,
+        validateModel: models.validateQualifiedModel,
         fallbackModel: models.fallbackModel,
         events: events.add,
         clock: effectiveClock,
@@ -779,6 +775,25 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _database.close();
     await _lock.unlock();
     await _lock.close();
+  }
+}
+
+final class _StoredProviderModelReferenceUpdater
+    implements ProviderModelReferenceUpdater {
+  const _StoredProviderModelReferenceUpdater(this._sessions, this._agents);
+
+  final SessionRepository _sessions;
+  final AgentDefinitionService _agents;
+
+  @override
+  Future<void> rewrite(String oldPrefix, String newPrefix) async {
+    await _agents.rewriteModelPrefix(oldPrefix, newPrefix);
+    try {
+      await _sessions.rewriteModelPrefix(oldPrefix, newPrefix);
+    } catch (_) {
+      await _agents.rewriteModelPrefix(newPrefix, oldPrefix);
+      rethrow;
+    }
   }
 }
 

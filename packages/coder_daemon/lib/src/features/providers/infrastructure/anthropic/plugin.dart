@@ -110,9 +110,6 @@ final class AnthropicPlugin extends ProviderPlugin {
   AgentProviderDefinition get definition => anthropicDefinition;
 
   @override
-  List<String> get environmentVariables => const <String>['ANTHROPIC_API_KEY'];
-
-  @override
   List<ProviderCatalogModel> get models => anthropicBundledModels;
 
   @override

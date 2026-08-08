@@ -64,7 +64,76 @@ void main() {
     expect(files.activeScanCount, initialScans + 1);
     expect(files.closed, isTrue);
   });
+
+  test('model prefix rewrites active and archived definitions', () async {
+    final files = _ControllableAgentDefinitionFiles();
+    final store = FileAgentDefinitionStore.withFiles(files);
+    addTearDown(store.close);
+    await store.initialize();
+    final coder = (await store.get('coder'))!;
+    await store.create('active', _fixedAgent(coder, 'active'));
+    await store.create('archived', _fixedAgent(coder, 'archived'));
+    await store.archive('archived');
+
+    await store.rewriteModelPrefix('openai', 'openai-new');
+
+    expect(
+      (await store.get('active'))!.model.modelId,
+      'openai-new/model/active',
+    );
+    expect(
+      (await store.resolve('archived'))!.model.modelId,
+      'openai-new/model/archived',
+    );
+  });
+
+  test(
+    'model prefix rewrite restores completed files after a failure',
+    () async {
+      final files = _ControllableAgentDefinitionFiles();
+      final store = FileAgentDefinitionStore.withFiles(files);
+      addTearDown(store.close);
+      await store.initialize();
+      final coder = (await store.get('coder'))!;
+      await store.create('active', _fixedAgent(coder, 'active'));
+      await store.create('archived', _fixedAgent(coder, 'archived'));
+      await store.archive('archived');
+      final activeBefore = files.activeSource('active');
+      final archivedBefore = files.archivedSource('archived');
+      files.failNextArchivedWrite = true;
+
+      await expectLater(
+        store.rewriteModelPrefix('openai', 'openai-new'),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(files.activeSource('active'), activeBefore);
+      expect(files.archivedSource('archived'), archivedBefore);
+      await store.reload();
+      expect((await store.get('active'))!.model.modelId, 'openai/model/active');
+      expect(
+        (await store.resolve('archived'))!.model.modelId,
+        'openai/model/archived',
+      );
+    },
+  );
 }
+
+AgentDefinitionDto _fixedAgent(AgentDefinitionDto coder, String id) =>
+    coder.copyWith(
+      id: id,
+      name: id,
+      description: '',
+      mode: AgentMode.subagent,
+      model: AgentModelSelectionDto(
+        source: AgentModelSource.fixed,
+        modelId: 'openai/model/$id',
+      ),
+      callableAgentIds: const <String>[],
+      sourcePath: '',
+      contentHash: '',
+      isBuiltIn: false,
+    );
 
 final class _ControllableAgentDefinitionFiles implements AgentDefinitionFiles {
   final StreamController<void> _changes = StreamController<void>.broadcast();
@@ -75,8 +144,13 @@ final class _ControllableAgentDefinitionFiles implements AgentDefinitionFiles {
 
   int activeScanCount = 0;
   bool closed = false;
+  bool failNextArchivedWrite = false;
 
   Iterable<String> get activeDocuments => _active.keys;
+
+  String? activeSource(String id) => _active[id];
+
+  String? archivedSource(String id) => _archived[id];
 
   Future<void> get scanStarted => _scanStarted!.future;
 
@@ -151,6 +225,16 @@ final class _ControllableAgentDefinitionFiles implements AgentDefinitionFiles {
   @override
   Future<void> writeActive(String id, String source) async {
     _active[id] = source;
+    emitChange();
+  }
+
+  @override
+  Future<void> writeArchived(String id, String source) async {
+    if (failNextArchivedWrite) {
+      failNextArchivedWrite = false;
+      throw StateError('planned archived write failure');
+    }
+    _archived[id] = source;
     emitChange();
   }
 }

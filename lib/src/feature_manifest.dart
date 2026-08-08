@@ -1078,6 +1078,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       'providers.connectProviderApiKey',
       'providers.connectProviderNone',
       'providers.disconnectProvider',
+      'providers.updateProviderModelPrefix',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,

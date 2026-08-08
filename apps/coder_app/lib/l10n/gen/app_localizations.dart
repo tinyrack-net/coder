@@ -1576,6 +1576,30 @@ abstract class AppLocalizations {
   /// **'Waiting for sign-in'**
   String get providerSettingsOAuthPending;
 
+  /// Label for the globally unique provider model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Model prefix'**
+  String get providerSettingsModelPrefix;
+
+  /// Help text explaining qualified model identifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in model IDs such as openai/gpt-5.6-col.'**
+  String get providerSettingsModelPrefixHelp;
+
+  /// Validation message for an invalid model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 1–64 lowercase letters, numbers, hyphens, or underscores.'**
+  String get providerSettingsModelPrefixInvalid;
+
+  /// Inline error shown when the daemon rejects a duplicate model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'That model prefix is already in use. Try the updated suggestion.'**
+  String get providerSettingsModelPrefixConflict;
+
   /// Title of the API key dialog.
   ///
   /// In en, this message translates to:

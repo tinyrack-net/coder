@@ -37,7 +37,7 @@ void main() {
         find.byKey(const ValueKey<String>('settings-skeleton-overlay')),
         findsNothing,
       );
-      expect(find.text('GPT Test'), findsOneWidget);
+      expect(find.text('provider/gpt-test'), findsOneWidget);
     },
     tags: const <String>['feature_test__settings_async_loading__widget'],
   );
@@ -82,7 +82,7 @@ void main() {
       second.complete(const <ModelPickerOption>[_option]);
       await tester.pump();
       await tester.pump();
-      expect(find.text('GPT Test'), findsOneWidget);
+      expect(find.text('provider/gpt-test'), findsOneWidget);
     },
     tags: const <String>['feature_test__settings_async_loading__widget'],
   );
@@ -92,7 +92,8 @@ const _option = ModelPickerOption(
   providerName: 'Test provider',
   model: ProviderModelDto(
     connectionId: 'provider',
-    id: 'gpt-test',
+    id: 'provider/gpt-test',
+    providerModelId: 'gpt-test',
     label: 'GPT Test',
     source: ProviderModelSource.bundled,
     capabilities: ModelCapabilitiesDto(),

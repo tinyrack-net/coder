@@ -351,9 +351,6 @@ enum ProviderCredentialOrigin {
   /// Encrypted or permission-restricted local credential storage.
   stored,
 
-  /// The daemon process environment.
-  environment,
-
   /// Locally stored OAuth access and refresh tokens.
   oauth,
 
@@ -670,13 +667,17 @@ abstract class AgentModelSelectionDto with _$AgentModelSelectionDto {
   /// Creates an agent model selection.
   const factory AgentModelSelectionDto({
     required AgentModelSource source,
-    String? providerConnectionId,
     String? modelId,
   }) = _AgentModelSelectionDto;
+
+  const AgentModelSelectionDto._();
 
   /// Decodes an agent model selection.
   factory AgentModelSelectionDto.fromJson(Map<String, dynamic> json) =>
       _$AgentModelSelectionDtoFromJson(json);
+
+  /// Canonical model identifier used by current protocol consumers.
+  String? get qualifiedModelId => modelId;
 }
 
 @freezed
@@ -1001,13 +1002,17 @@ enum SessionMode {
 abstract class SessionModelSelectionDto with _$SessionModelSelectionDto {
   /// Creates a session model selection.
   const factory SessionModelSelectionDto({
-    required String providerConnectionId,
     required String modelId,
   }) = _SessionModelSelectionDto;
+
+  const SessionModelSelectionDto._();
 
   /// Decodes a session model selection.
   factory SessionModelSelectionDto.fromJson(Map<String, dynamic> json) =>
       _$SessionModelSelectionDtoFromJson(json);
+
+  /// Canonical model identifier used by current protocol consumers.
+  String get qualifiedModelId => modelId;
 }
 
 @freezed
@@ -1317,6 +1322,7 @@ abstract class ProviderConnectionDto with _$ProviderConnectionDto {
     required ProviderCredentialOrigin credentialOrigin,
     required DateTime createdAt,
     required DateTime updatedAt,
+    @Default('') String modelPrefix,
     String? error,
     CustomProviderConfigDto? customConfig,
   }) = _ProviderConnectionDto;
@@ -1335,6 +1341,8 @@ abstract class ProviderAuthAttemptDto with _$ProviderAuthAttemptDto {
     required String definitionId,
     required String methodId,
     required ProviderAuthAttemptStatus status,
+    @Default('') String connectionId,
+    @Default('') String modelPrefix,
     String? authorizationUrl,
     String? userCode,
     String? instructions,
@@ -1357,6 +1365,7 @@ abstract class ProviderModelDto with _$ProviderModelDto {
     required String label,
     required ProviderModelSource source,
     required ModelCapabilitiesDto capabilities,
+    @Default('') String providerModelId,
     ModelPricingDto? pricing,
     ModelLimitsDto? limits,
     @Default(DiagnosticStatus.unknown) DiagnosticStatus diagnosticStatus,

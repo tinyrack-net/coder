@@ -92,12 +92,17 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     SessionModelSelectionDto? defaultModel,
   ) async {
     final usable = usableConnections(connections);
+    final defaultConnection = defaultModel == null
+        ? null
+        : usable
+              .where(
+                (connection) => defaultModel.qualifiedModelId.startsWith(
+                  '${connection.modelPrefix}/',
+                ),
+              )
+              .firstOrNull;
     final wanted = <String>{
-      if (defaultModel != null &&
-          usable.any(
-            (connection) => connection.id == defaultModel.providerConnectionId,
-          ))
-        defaultModel.providerConnectionId,
+      if (defaultConnection != null) defaultConnection.id,
       if (usable.isNotEmpty) usable.first.id,
     };
     final loaded = <String, List<ProviderModelDto>>{};
@@ -140,21 +145,29 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Connects a hosted built-in provider with an API key.
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String? modelPrefix,
+  }) async {
     final api = await _requireConnection();
     final result = await api.providers.connectProviderApiKey(
       definitionId,
       apiKey,
+      modelPrefix: modelPrefix,
     );
     await _reload(api);
     return result;
   }
 
   /// Connects a local built-in provider without authentication.
-  Future<ProviderConnectionDto> connectNone(String definitionId) async {
+  Future<ProviderConnectionDto> connectNone(
+    String definitionId, {
+    String? modelPrefix,
+  }) async {
     final api = await _requireConnection();
-    final result = await api.providers.connectProviderNone(definitionId);
+    final result = await api.providers.connectProviderNone(
+      definitionId,
+      modelPrefix: modelPrefix,
+    );
     await _reload(api);
     return result;
   }
@@ -162,12 +175,14 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// Starts one provider's browser or device-code authorization.
   Future<ProviderAuthAttemptDto> startAuth(
     String definitionId,
-    String methodId,
-  ) async {
+    String methodId, {
+    String? modelPrefix,
+  }) async {
     final api = await _requireConnection();
     final attempt = await api.providers.startProviderAuth(
       definitionId,
       methodId,
+      modelPrefix: modelPrefix,
     );
     final current = state.asData?.value;
     if (current != null) {
@@ -196,6 +211,16 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     await _reload(api);
   }
 
+  /// Changes a provider connection's globally unique model prefix.
+  Future<void> updateModelPrefix(
+    String connectionId,
+    String modelPrefix,
+  ) async {
+    final api = await _requireConnection();
+    await api.providers.updateProviderModelPrefix(connectionId, modelPrefix);
+    await _reload(api);
+  }
+
   /// Explicitly refreshes catalog metadata.
   Future<void> refreshCatalog() async {
     final api = await _requireConnection();
@@ -213,12 +238,14 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
+    String? modelPrefix,
   }) async {
     final api = await _requireConnection();
     final result = await api.providers.createCustomProvider(
       id,
       config,
       apiKey: apiKey,
+      modelPrefix: modelPrefix,
     );
     await _reload(api);
     return result;

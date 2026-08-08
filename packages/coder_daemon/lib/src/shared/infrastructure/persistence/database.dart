@@ -109,10 +109,7 @@ class Sessions extends Table {
   /// Collaboration mode: `plan` proposes work, `normal` performs it.
   TextColumn get mode => text().withDefault(const Constant('normal'))();
 
-  /// Provider connection pinned for this session; null inherits the agent.
-  TextColumn get modelConnectionId => text().nullable()();
-
-  /// Model pinned for this session; null inherits the agent definition.
+  /// Qualified model pinned for this session; null inherits the agent.
   TextColumn get modelId => text().nullable()();
 
   /// JSON-encoded typed model-control values for this session.
@@ -426,6 +423,9 @@ class ProviderConnections extends Table {
   /// Built-in definition identifier, or `custom`.
   TextColumn get definitionId => text()();
 
+  /// Globally unique prefix used by qualified model identifiers.
+  TextColumn get modelPrefix => text().unique()();
+
   /// Human-readable connection name.
   TextColumn get displayName => text()();
 
@@ -461,6 +461,9 @@ class ProviderModels extends Table {
 
   /// The modelId public API member.
   TextColumn get modelId => text()();
+
+  /// Model identifier sent to the upstream provider.
+  TextColumn get providerModelId => text()();
 
   /// The label public API member.
   TextColumn get label => text()();

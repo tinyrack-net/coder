@@ -111,10 +111,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
       // A session override wins over the model of its agent definition.
       final resolvedModel = sessionModel == null
           ? await _models.resolveAgentModel(definition.model)
-          : await _models.resolveExplicitModel(
-              sessionModel.providerConnectionId,
-              sessionModel.modelId,
-            );
+          : await _models.resolveQualifiedModel(sessionModel.qualifiedModelId);
       final controls = sessionModel != null
           ? session.modelControls
           : definition.model.source == AgentModelSource.fixed
@@ -490,10 +487,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
     final sessionModel = session.model;
     final resolvedModel = sessionModel == null
         ? await _models.resolveAgentModel(definition.model)
-        : await _models.resolveExplicitModel(
-            sessionModel.providerConnectionId,
-            sessionModel.modelId,
-          );
+        : await _models.resolveQualifiedModel(sessionModel.qualifiedModelId);
     final modelControls = sessionModel != null
         ? session.modelControls
         : definition.model.source == AgentModelSource.fixed

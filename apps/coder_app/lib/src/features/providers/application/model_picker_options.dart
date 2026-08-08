@@ -14,6 +14,7 @@ Future<List<ModelPickerOption>> loadModelPickerOptions(
   String hostId,
 ) async {
   final controller = providerSettingsControllerProvider(hostId);
+  await ref.read(controller.future);
   final connections = usableConnections(
     ref.read(controller).value?.connections ?? const <ProviderConnectionDto>[],
   );

@@ -797,6 +797,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsOAuthPending => '로그인 대기 중';
 
   @override
+  String get providerSettingsModelPrefix => '모델 Prefix';
+
+  @override
+  String get providerSettingsModelPrefixHelp =>
+      'openai/gpt-5.6-col 같은 모델 ID에 사용됩니다.';
+
+  @override
+  String get providerSettingsModelPrefixInvalid =>
+      '소문자, 숫자, 하이픈, 밑줄을 사용해 1~64자로 입력하세요.';
+
+  @override
+  String get providerSettingsModelPrefixConflict =>
+      '이미 사용 중인 모델 Prefix입니다. 갱신된 제안을 사용해 보세요.';
+
+  @override
   String providerSettingsConnectTitle(String name) {
     return '$name 연결';
   }
