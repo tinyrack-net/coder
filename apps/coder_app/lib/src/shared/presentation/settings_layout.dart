@@ -155,17 +155,17 @@ class _SettingsSkeletonListPane extends StatelessWidget {
   const _SettingsSkeletonListPane({super.key});
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) => const Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: <Widget>[
-      const Padding(
+      Padding(
         padding: SettingsRow.contentPadding,
         child: TRSkeleton(width: TRMeasurements.measureSm),
       ),
-      const TRSeparator(variant: TRSeparatorVariant.muted),
+      TRSeparator(variant: TRSeparatorVariant.muted),
       Expanded(
-        child: ListView(
-          children: const <Widget>[
+        child: SettingsCollectionList(
+          children: <Widget>[
             _SettingsSkeletonListRow(),
             _SettingsSkeletonListRow(),
             _SettingsSkeletonListRow(),
@@ -182,7 +182,7 @@ class _SettingsSkeletonListRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-    padding: SettingsRow.contentPadding,
+    padding: SettingsRow.collectionContentPadding,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -191,6 +191,32 @@ class _SettingsSkeletonListRow extends StatelessWidget {
         TRSkeleton(width: TRMeasurements.measureMd),
       ],
     ),
+  );
+}
+
+/// A scrollable collection pane whose rows share the settings sidebar rhythm.
+///
+/// The pane boundary supplies the outer inset while collection rows reduce
+/// their own inline padding by the same amount. This keeps selected, hovered,
+/// and focused surfaces away from the pane edge without moving the content
+/// away from the header's leading alignment line.
+class SettingsCollectionList extends StatelessWidget {
+  /// Creates an inset collection with token-based spacing between [children].
+  const SettingsCollectionList({required this.children, super.key});
+
+  /// Rows and collection-local headings shown in display order.
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => ListView.separated(
+    padding: const EdgeInsets.symmetric(
+      horizontal: TRSpacing.medium,
+      vertical: TRSpacing.extraSmall,
+    ),
+    itemCount: children.length,
+    itemBuilder: (context, index) => children[index],
+    separatorBuilder: (context, index) =>
+        const SizedBox(height: TRSpacing.extraSmall),
   );
 }
 
@@ -339,6 +365,80 @@ void syncSettingsPaneBackHandler(
       controller.clearBackHandler(owner);
     }
   });
+}
+
+/// The responsive collection-and-detail structure used by list settings.
+///
+/// On a wide surface both panes remain visible. On a compact surface the
+/// detail replaces the collection and registers itself with the settings
+/// shell's shared Back action.
+class SettingsListDetailLayout extends StatefulWidget {
+  /// Creates a settings collection-and-detail layout.
+  const SettingsListDetailLayout({
+    required this.collection,
+    required this.detail,
+    required this.detailVisible,
+    required this.onBack,
+    super.key,
+  });
+
+  /// The middle settings pane containing the item collection.
+  final Widget collection;
+
+  /// The trailing pane containing an editor, creator, or empty state.
+  final Widget detail;
+
+  /// Whether compact layouts should show [detail] instead of [collection].
+  final bool detailVisible;
+
+  /// Returns a compact layout to its collection.
+  final VoidCallback onBack;
+
+  @override
+  State<SettingsListDetailLayout> createState() =>
+      _SettingsListDetailLayoutState();
+}
+
+class _SettingsListDetailLayoutState extends State<SettingsListDetailLayout> {
+  SettingsPaneNavigationController? _navigation;
+
+  @override
+  void dispose() {
+    _navigation?.clearBackHandler(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final compact =
+          constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+      _navigation = SettingsPaneNavigationScope.maybeOf(context);
+      syncSettingsPaneBackHandler(
+        context,
+        owner: this,
+        active: compact && widget.detailVisible,
+        onBack: widget.onBack,
+      );
+      if (compact) {
+        return widget.detailVisible ? widget.detail : widget.collection;
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          SizedBox(
+            width: CoderLayoutMetrics.settingsCollectionWidth,
+            child: widget.collection,
+          ),
+          const TRSeparator(
+            orientation: TRSeparatorOrientation.vertical,
+            variant: TRSeparatorVariant.muted,
+          ),
+          Expanded(child: widget.detail),
+        ],
+      );
+    },
+  );
 }
 
 /// The scroll container every settings pane uses.
@@ -515,7 +615,26 @@ class SettingsRow extends StatelessWidget {
     this.unboundedDescription = false,
     this.flush = false,
     super.key,
-  });
+  }) : _collection = false;
+
+  /// Creates a row inside a [SettingsCollectionList].
+  ///
+  /// Its selected, hover, and focus surface is inset by the surrounding list,
+  /// while its content remains aligned with [SettingsPaneHeader.list].
+  const SettingsRow.collection({
+    required this.title,
+    this.control,
+    this.controlOwnsFocus = false,
+    this.description,
+    this.leading,
+    this.onTap,
+    this.enabled = true,
+    this.selected = false,
+    this.wrapsDescription = false,
+    this.unboundedDescription = false,
+    super.key,
+  }) : flush = false,
+       _collection = true;
 
   /// Primary label.
   final Widget title;
@@ -556,9 +675,12 @@ class SettingsRow extends StatelessWidget {
   /// Whether the surrounding container already supplies the inline inset.
   ///
   /// A dialog pads its own content, so a row inside one would otherwise sit a
-  /// step further in than the fields above it. This is the only alternative to
-  /// [contentPadding]: naming the two cases keeps a third from appearing.
+  /// step further in than the fields above it. Collection panes use the
+  /// explicit [SettingsRow.collection] constructor instead, because their
+  /// outer inset also defines the selected and focus surface boundary.
   final bool flush;
+
+  final bool _collection;
 
   /// The inset every settings row draws its content at.
   static const contentPadding = EdgeInsets.symmetric(
@@ -569,9 +691,19 @@ class SettingsRow extends StatelessWidget {
   /// The inset a row draws at inside a container that supplies its own.
   static const flushPadding = EdgeInsets.symmetric(vertical: TRSpacing.medium);
 
+  /// Content inset used after the collection supplies its outer pane inset.
+  static const collectionContentPadding = EdgeInsets.symmetric(
+    horizontal: TRSpacing.extraSmall,
+    vertical: TRSpacing.medium,
+  );
+
   @override
   Widget build(BuildContext context) => CoderListRow(
-    contentPadding: flush ? flushPadding : contentPadding,
+    contentPadding: _collection
+        ? collectionContentPadding
+        : flush
+        ? flushPadding
+        : contentPadding,
     controlOwnsFocus: controlOwnsFocus,
     enabled: enabled,
     isThreeLine: wrapsDescription || unboundedDescription,

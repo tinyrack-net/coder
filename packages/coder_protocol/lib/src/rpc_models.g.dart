@@ -491,6 +491,7 @@ _ProviderConnectApiKeyParamsDto _$ProviderConnectApiKeyParamsDtoFromJson(
 ) => _ProviderConnectApiKeyParamsDto(
   definitionId: json['definitionId'] as String,
   apiKey: json['apiKey'] as String,
+  connectionId: json['connectionId'] as String?,
   modelPrefix: json['modelPrefix'] as String?,
 );
 
@@ -499,6 +500,7 @@ Map<String, dynamic> _$ProviderConnectApiKeyParamsDtoToJson(
 ) => <String, dynamic>{
   'definitionId': instance.definitionId,
   'apiKey': instance.apiKey,
+  'connectionId': instance.connectionId,
   'modelPrefix': instance.modelPrefix,
 };
 
@@ -506,6 +508,7 @@ _ProviderConnectNoneParamsDto _$ProviderConnectNoneParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _ProviderConnectNoneParamsDto(
   definitionId: json['definitionId'] as String,
+  connectionId: json['connectionId'] as String?,
   modelPrefix: json['modelPrefix'] as String?,
 );
 
@@ -513,6 +516,7 @@ Map<String, dynamic> _$ProviderConnectNoneParamsDtoToJson(
   _ProviderConnectNoneParamsDto instance,
 ) => <String, dynamic>{
   'definitionId': instance.definitionId,
+  'connectionId': instance.connectionId,
   'modelPrefix': instance.modelPrefix,
 };
 
@@ -545,6 +549,7 @@ _ProviderAuthStartParamsDto _$ProviderAuthStartParamsDtoFromJson(
 ) => _ProviderAuthStartParamsDto(
   definitionId: json['definitionId'] as String,
   methodId: json['methodId'] as String,
+  connectionId: json['connectionId'] as String?,
   modelPrefix: json['modelPrefix'] as String?,
 );
 
@@ -553,6 +558,7 @@ Map<String, dynamic> _$ProviderAuthStartParamsDtoToJson(
 ) => <String, dynamic>{
   'definitionId': instance.definitionId,
   'methodId': instance.methodId,
+  'connectionId': instance.connectionId,
   'modelPrefix': instance.modelPrefix,
 };
 
@@ -1160,6 +1166,18 @@ _ProviderConnectionsResultDto _$ProviderConnectionsResultDtoFromJson(
 Map<String, dynamic> _$ProviderConnectionsResultDtoToJson(
   _ProviderConnectionsResultDto instance,
 ) => <String, dynamic>{'connections': instance.connections};
+
+_ProviderUsageResultDto _$ProviderUsageResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderUsageResultDto(
+  usage: (json['usage'] as List<dynamic>)
+      .map((e) => ProviderUsageDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$ProviderUsageResultDtoToJson(
+  _ProviderUsageResultDto instance,
+) => <String, dynamic>{'usage': instance.usage};
 
 _ProviderConnectionResultDto _$ProviderConnectionResultDtoFromJson(
   Map<String, dynamic> json,

@@ -11,6 +11,8 @@ dependencies:
   coder_client: ^0.1.0
   coder_daemon: ^0.1.0
   coder_protocol: ^0.1.0
+  cryptography: ^2.9.0
+  cryptography_flutter: ^2.3.4
   dropwell:
     git:
       url: https://github.com/tinyrack-net/flutter-packages.git
@@ -29,6 +31,7 @@ dependencies:
   launch_at_startup: ^0.5.1
   lucide_flutter: ^1.25.0
   meta: ^1.17.0
+  mobile_scanner: 5.2.3
   riverpod_annotation: 4.0.3
   share_plus: ^12.0.2
   shared_preferences: ^2.5.4
@@ -51,6 +54,7 @@ dev_dependencies:
   alchemist: ^0.14.0
   build_runner: 2.15.1
   coder_agent: ^0.1.0
+  coder_relay_protocol: ^0.1.0
   flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
@@ -60,6 +64,10 @@ dev_dependencies:
   riverpod_generator: 4.0.4
 
 flutter:
+  # mobile_scanner 5.2.3 preserves iOS 13 support but has no iOS SwiftPM
+  # package, so Darwin plugin integration must consistently use CocoaPods.
+  config:
+    enable-swift-package-manager: false
   generate: true
   uses-material-design: true
   assets:

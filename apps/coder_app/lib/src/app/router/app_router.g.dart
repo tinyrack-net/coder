@@ -23,6 +23,8 @@ List<RouteBase> get $appRoutes => [
   $daemonSettingsRoute,
   $advancedSettingsRoute,
   $newHostRoute,
+  $advancedNewHostRoute,
+  $daemonDevicesRoute,
   $editHostRoute,
 ];
 
@@ -540,6 +542,64 @@ mixin $NewHostRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/settings/daemons/new');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $advancedNewHostRoute => GoRouteData.$route(
+  path: '/settings/daemons/new/direct',
+  hasOverriddenOnExit: false,
+  factory: $AdvancedNewHostRoute._fromState,
+);
+
+mixin $AdvancedNewHostRoute on GoRouteData {
+  static AdvancedNewHostRoute _fromState(GoRouterState state) =>
+      const AdvancedNewHostRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings/daemons/new/direct');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $daemonDevicesRoute => GoRouteData.$route(
+  path: '/settings/daemons/:hostId/devices',
+  hasOverriddenOnExit: false,
+  factory: $DaemonDevicesRoute._fromState,
+);
+
+mixin $DaemonDevicesRoute on GoRouteData {
+  static DaemonDevicesRoute _fromState(GoRouterState state) =>
+      DaemonDevicesRoute(hostId: state.pathParameters['hostId']!);
+
+  DaemonDevicesRoute get _self => this as DaemonDevicesRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/daemons/${Uri.encodeComponent(_self.hostId)}/devices',
+  );
 
   @override
   void go(BuildContext context) => context.go(location);

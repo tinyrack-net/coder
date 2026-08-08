@@ -142,7 +142,7 @@ void main() {
       tester,
       api,
       const ProviderSettingsRoute(hostId: 'server').location,
-      find.text('Provider 추가'),
+      find.text('연결됨'),
     ),
     tags: const <String>['route_test__provider_settings_route__widget'],
   );
@@ -225,9 +225,38 @@ void main() {
       tester,
       api,
       const NewHostRoute().location,
+      find.text('기기 연결'),
+    ),
+    tags: const <String>[
+      'route_test__new_host_route__widget',
+      'feature_test__daemon_relay__widget',
+    ],
+  );
+
+  testWidgets(
+    'AdvancedNewHostRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const AdvancedNewHostRoute().location,
       find.text('원격 daemon 추가'),
     ),
-    tags: const <String>['route_test__new_host_route__widget'],
+    tags: const <String>['route_test__advanced_new_host_route__widget'],
+  );
+
+  testWidgets(
+    'DaemonDevicesRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const DaemonDevicesRoute(hostId: 'server').location,
+      find.text('연결된 기기'),
+    ),
+    tags: const <String>[
+      'route_test__daemon_devices_route__widget',
+      'feature_test__daemon_relay__widget',
+      'feature_test__daemon_relay__platformSmoke',
+    ],
   );
 
   testWidgets(

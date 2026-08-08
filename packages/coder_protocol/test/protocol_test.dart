@@ -57,6 +57,67 @@ void main() {
   });
 
   test(
+    'relay contracts round-trip status, offers, devices, and parameters',
+    () {
+      const status = RelayStatusDto(
+        enabled: true,
+        connected: false,
+        endpoint: 'wss://relay.example/v1/ws',
+        serverId: 'daemon-1',
+      );
+      final decodedStatus = RelayStatusDto.fromJson(status.toJson());
+      expect(decodedStatus.enabled, isTrue);
+      expect(decodedStatus.connected, isFalse);
+      expect(decodedStatus.endpoint, status.endpoint);
+      expect(decodedStatus.serverId, status.serverId);
+
+      final offer = RelayPairingOfferDto(
+        url: 'https://coder.example/pair#offer=test',
+        expiresAt: now,
+      );
+      final decodedOffer = RelayPairingOfferDto.fromJson(offer.toJson());
+      expect(decodedOffer.url, offer.url);
+      expect(decodedOffer.expiresAt, now);
+
+      final device = RelayDeviceDto(
+        id: 'device-1',
+        name: 'Phone',
+        registeredAt: now,
+        lastConnectedAt: null,
+      );
+      final decodedDevice = RelayDeviceDto.fromJson(device.toJson());
+      expect(decodedDevice.id, device.id);
+      expect(decodedDevice.name, device.name);
+      expect(decodedDevice.registeredAt, now);
+      expect(decodedDevice.lastConnectedAt, isNull);
+      final list = RelayDeviceListDto.fromJson(
+        RelayDeviceListDto(devices: <RelayDeviceDto>[device]).toJson(),
+      );
+      expect(list.devices.single.id, 'device-1');
+
+      expect(
+        RelaySetEnabledParamsDto.fromJson(
+          const RelaySetEnabledParamsDto(enabled: true).toJson(),
+        ).enabled,
+        isTrue,
+      );
+      expect(
+        RelayRevokeDeviceParamsDto.fromJson(
+          const RelayRevokeDeviceParamsDto(
+            deviceId: 'device-1',
+          ).toJson(),
+        ).deviceId,
+        'device-1',
+      );
+      expect(const RelayEmptyParamsDto().toJson(), isEmpty);
+      expect(
+        () => RelayEmptyParamsDto.fromJson(const <String, dynamic>{'x': true}),
+        throwsFormatException,
+      );
+    },
+  );
+
+  test(
     'daemon permission defaults round-trip with full access',
     () {
       const settings = PermissionSettingsDto(
@@ -1122,12 +1183,16 @@ void main() {
       const ProviderConnectApiKeyParamsDto(
         definitionId: 'provider',
         apiKey: 'secret',
+        connectionId: 'existing-provider',
       ),
       (value) => value.toJson(),
       ProviderConnectApiKeyParamsDto.fromJson,
     );
     _roundTrip(
-      const ProviderConnectNoneParamsDto(definitionId: 'ollama'),
+      const ProviderConnectNoneParamsDto(
+        definitionId: 'ollama',
+        connectionId: 'existing-ollama',
+      ),
       (value) => value.toJson(),
       ProviderConnectNoneParamsDto.fromJson,
     );
@@ -1148,6 +1213,7 @@ void main() {
       const ProviderAuthStartParamsDto(
         definitionId: 'openai',
         methodId: 'chatgpt-device',
+        connectionId: 'existing-openai',
       ),
       (value) => value.toJson(),
       ProviderAuthStartParamsDto.fromJson,
@@ -1537,6 +1603,48 @@ void main() {
         (value) => value.toJson(),
         McpServerStateDto.fromJson,
       );
+    },
+  );
+
+  test(
+    'provider usage and exact session cost round-trip',
+    tags: const <String>['feature_test__provider_usage__contract'],
+    () {
+      final usage = ProviderUsageDto(
+        connectionId: 'openai',
+        status: ProviderUsageStatus.available,
+        fetchedAt: now,
+        provider: 'OpenAI',
+        plan: 'plus',
+        windows: <ProviderUsageWindowDto>[
+          ProviderUsageWindowDto(
+            kind: ProviderUsageWindowKind.session,
+            usedPercent: 42,
+            resetsAt: now.add(const Duration(hours: 1)),
+          ),
+        ],
+        creditBalance: 2.5,
+      );
+      _roundTrip(usage, (value) => value.toJson(), ProviderUsageDto.fromJson);
+      _roundTrip(
+        ProviderUsageResultDto(usage: <ProviderUsageDto>[usage]),
+        (value) => value.toJson(),
+        ProviderUsageResultDto.fromJson,
+      );
+      expect(providersListUsageProcedure.name, 'providers.listUsage');
+
+      final session = SessionDto(
+        id: 'session',
+        worktreeId: 'worktree',
+        title: 'Priced',
+        agentDefinitionId: 'coder',
+        origin: SessionOrigin.manual,
+        status: SessionStatus.idle,
+        createdAt: now,
+        updatedAt: now,
+        totalCostUsd: 1.25,
+      );
+      expect(SessionDto.fromJson(session.toJson()).totalCostUsd, 1.25);
     },
   );
 

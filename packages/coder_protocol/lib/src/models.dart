@@ -1060,6 +1060,9 @@ abstract class SessionDto with _$SessionDto {
 
     /// Context window of the resolved model; null when it is not advertised.
     int? contextWindow,
+
+    /// Exact accumulated session cost, or null after any unpriced usage.
+    double? totalCostUsd,
   }) = _SessionDto;
 
   /// Decodes a session descriptor.
@@ -1330,6 +1333,66 @@ abstract class ProviderConnectionDto with _$ProviderConnectionDto {
   /// Decodes provider connection state.
   factory ProviderConnectionDto.fromJson(Map<String, dynamic> json) =>
       _$ProviderConnectionDtoFromJson(json);
+}
+
+/// Availability of subscription quota for one configured connection.
+enum ProviderUsageStatus {
+  /// Quota was fetched successfully.
+  available,
+
+  /// The connection has no supported quota endpoint.
+  unsupported,
+
+  /// A safe, retryable lookup failure occurred.
+  error,
+}
+
+/// Kind of provider quota window shown in context usage details.
+enum ProviderUsageWindowKind {
+  /// Short rolling session window.
+  session,
+
+  /// Long rolling weekly window.
+  weekly,
+
+  /// Dedicated code-review window.
+  codeReview,
+}
+
+@freezed
+/// One provider quota window and its next reset.
+abstract class ProviderUsageWindowDto with _$ProviderUsageWindowDto {
+  /// Creates a provider quota window.
+  const factory ProviderUsageWindowDto({
+    required ProviderUsageWindowKind kind,
+    required double usedPercent,
+    DateTime? resetsAt,
+  }) = _ProviderUsageWindowDto;
+
+  /// Decodes a provider quota window.
+  factory ProviderUsageWindowDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderUsageWindowDtoFromJson(json);
+}
+
+@freezed
+/// Subscription usage available for one Coder-managed provider connection.
+abstract class ProviderUsageDto with _$ProviderUsageDto {
+  /// Creates a provider usage snapshot.
+  const factory ProviderUsageDto({
+    required String connectionId,
+    required ProviderUsageStatus status,
+    required DateTime fetchedAt,
+    @Default('') String provider,
+    String? plan,
+    @Default(<ProviderUsageWindowDto>[]) List<ProviderUsageWindowDto> windows,
+    double? creditBalance,
+    String? detail,
+    String? errorCode,
+  }) = _ProviderUsageDto;
+
+  /// Decodes a provider usage snapshot.
+  factory ProviderUsageDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderUsageDtoFromJson(json);
 }
 
 @freezed

@@ -4,14 +4,16 @@ import 'dart:convert';
 import 'package:coder_daemon/src/bootstrap/config.dart';
 import 'package:coder_daemon/src/transport/http/attachment_binding.dart';
 import 'package:coder_daemon/src/transport/rpc/binding.dart';
+import 'package:coder_daemon/src/transport/rpc/session_host.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
+import 'package:stream_channel/stream_channel.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Hosts authenticated HTTP/WebSocket lifecycle over feature RPC bindings.
-final class DaemonRpcServer {
+final class DaemonRpcServer implements RpcSessionHost {
   /// Creates the transport-only daemon server.
   DaemonRpcServer({
     required this.bindings,
@@ -107,15 +109,34 @@ final class DaemonRpcServer {
         };
 
   void _openSession(WebSocketChannel channel, String? protocol) {
+    openSessionChannel(channel.cast<String>());
+  }
+
+  /// Opens the same typed RPC binding over an authenticated external channel.
+  @override
+  void openSessionChannel(
+    StreamChannel<String> channel, {
+    String? relayDeviceId,
+  }) {
     final session = _ClientSession(
       channel: channel,
       bindings: bindings,
       serverInfo: serverInfo,
+      relayDeviceId: relayDeviceId,
       onClosed: () {},
     );
     session.onClosed = () => _sessions.remove(session);
     _sessions.add(session);
     session.start();
+  }
+
+  /// Immediately closes live relay sessions owned by [deviceId].
+  @override
+  Future<void> terminateRelayDeviceSessions(String deviceId) async {
+    await Future.wait<void>(<Future<void>>[
+      for (final session in List<_ClientSession>.of(_sessions))
+        if (session.relayDeviceId == deviceId) session.close(),
+    ]);
   }
 
   void _broadcast(OutboundNotification event) {
@@ -163,19 +184,21 @@ final class _ClientSession {
     required this.channel,
     required this.bindings,
     required this.serverInfo,
+    required this.relayDeviceId,
     required this.onClosed,
   });
 
-  final WebSocketChannel channel;
+  final StreamChannel<String> channel;
   final RpcBindingRegistry bindings;
   final ServerInfoDto serverInfo;
+  final String? relayDeviceId;
   final RpcConnectionContext context = RpcConnectionContext();
   void Function() onClosed;
   late final json_rpc.Peer _peer;
   bool _handshakeComplete = false;
 
   void start() {
-    _peer = json_rpc.Peer(channel.cast<String>());
+    _peer = json_rpc.Peer(channel);
     _peer.registerMethod(systemHelloProcedure.name, _hello);
     for (final procedure in bindings.procedures) {
       _peer.registerMethod(

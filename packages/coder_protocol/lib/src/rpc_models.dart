@@ -470,6 +470,7 @@ abstract class ProviderConnectApiKeyParamsDto
   const factory ProviderConnectApiKeyParamsDto({
     required String definitionId,
     required String apiKey,
+    String? connectionId,
     String? modelPrefix,
   }) = _ProviderConnectApiKeyParamsDto;
 
@@ -485,6 +486,7 @@ abstract class ProviderConnectNoneParamsDto
   /// Creates no-auth connection parameters.
   const factory ProviderConnectNoneParamsDto({
     required String definitionId,
+    String? connectionId,
     String? modelPrefix,
   }) = _ProviderConnectNoneParamsDto;
 
@@ -527,6 +529,7 @@ abstract class ProviderAuthStartParamsDto with _$ProviderAuthStartParamsDto {
   const factory ProviderAuthStartParamsDto({
     required String definitionId,
     required String methodId,
+    String? connectionId,
     String? modelPrefix,
   }) = _ProviderAuthStartParamsDto;
 
@@ -1205,6 +1208,19 @@ abstract class ProviderConnectionsResultDto
   /// Decodes a provider connections result.
   factory ProviderConnectionsResultDto.fromJson(Map<String, dynamic> json) =>
       _$ProviderConnectionsResultDtoFromJson(json);
+}
+
+@freezed
+/// Result containing quota usage for configured provider connections.
+abstract class ProviderUsageResultDto with _$ProviderUsageResultDto {
+  /// Creates a provider usage result.
+  const factory ProviderUsageResultDto({
+    required List<ProviderUsageDto> usage,
+  }) = _ProviderUsageResultDto;
+
+  /// Decodes a provider usage result.
+  factory ProviderUsageResultDto.fromJson(Map<String, dynamic> json) =>
+      _$ProviderUsageResultDtoFromJson(json);
 }
 
 @freezed

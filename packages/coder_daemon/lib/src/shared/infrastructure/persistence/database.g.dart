@@ -1228,6 +1228,33 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _totalCostUsdMeta = const VerificationMeta(
+    'totalCostUsd',
+  );
+  @override
+  late final GeneratedColumn<double> totalCostUsd = GeneratedColumn<double>(
+    'total_cost_usd',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _hasCompleteCostMeta = const VerificationMeta(
+    'hasCompleteCost',
+  );
+  @override
+  late final GeneratedColumn<bool> hasCompleteCost = GeneratedColumn<bool>(
+    'has_complete_cost',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("has_complete_cost" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1272,6 +1299,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     currentContextEpoch,
     contextTokensUsed,
     contextWindowTokens,
+    totalCostUsd,
+    hasCompleteCost,
     createdAt,
     updatedAt,
   ];
@@ -1443,6 +1472,24 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         ),
       );
     }
+    if (data.containsKey('total_cost_usd')) {
+      context.handle(
+        _totalCostUsdMeta,
+        totalCostUsd.isAcceptableOrUnknown(
+          data['total_cost_usd']!,
+          _totalCostUsdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('has_complete_cost')) {
+      context.handle(
+        _hasCompleteCostMeta,
+        hasCompleteCost.isAcceptableOrUnknown(
+          data['has_complete_cost']!,
+          _hasCompleteCostMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1548,6 +1595,14 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.int,
         data['${effectivePrefix}context_window_tokens'],
       ),
+      totalCostUsd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_cost_usd'],
+      )!,
+      hasCompleteCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}has_complete_cost'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1629,6 +1684,12 @@ class Session extends DataClass implements Insertable<Session> {
   /// path reports the same number as the turn that produced the usage.
   final int? contextWindowTokens;
 
+  /// Exact accumulated USD cost while every usage event is priced.
+  final double totalCostUsd;
+
+  /// False permanently after a usage event cannot be priced exactly.
+  final bool hasCompleteCost;
+
   /// The createdAt public API member.
   final DateTime createdAt;
 
@@ -1655,6 +1716,8 @@ class Session extends DataClass implements Insertable<Session> {
     required this.currentContextEpoch,
     required this.contextTokensUsed,
     this.contextWindowTokens,
+    required this.totalCostUsd,
+    required this.hasCompleteCost,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1701,6 +1764,8 @@ class Session extends DataClass implements Insertable<Session> {
     if (!nullToAbsent || contextWindowTokens != null) {
       map['context_window_tokens'] = Variable<int>(contextWindowTokens);
     }
+    map['total_cost_usd'] = Variable<double>(totalCostUsd);
+    map['has_complete_cost'] = Variable<bool>(hasCompleteCost);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -1748,6 +1813,8 @@ class Session extends DataClass implements Insertable<Session> {
       contextWindowTokens: contextWindowTokens == null && nullToAbsent
           ? const Value.absent()
           : Value(contextWindowTokens),
+      totalCostUsd: Value(totalCostUsd),
+      hasCompleteCost: Value(hasCompleteCost),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1783,6 +1850,8 @@ class Session extends DataClass implements Insertable<Session> {
       contextWindowTokens: serializer.fromJson<int?>(
         json['contextWindowTokens'],
       ),
+      totalCostUsd: serializer.fromJson<double>(json['totalCostUsd']),
+      hasCompleteCost: serializer.fromJson<bool>(json['hasCompleteCost']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1811,6 +1880,8 @@ class Session extends DataClass implements Insertable<Session> {
       'currentContextEpoch': serializer.toJson<int>(currentContextEpoch),
       'contextTokensUsed': serializer.toJson<int>(contextTokensUsed),
       'contextWindowTokens': serializer.toJson<int?>(contextWindowTokens),
+      'totalCostUsd': serializer.toJson<double>(totalCostUsd),
+      'hasCompleteCost': serializer.toJson<bool>(hasCompleteCost),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1837,6 +1908,8 @@ class Session extends DataClass implements Insertable<Session> {
     int? currentContextEpoch,
     int? contextTokensUsed,
     Value<int?> contextWindowTokens = const Value.absent(),
+    double? totalCostUsd,
+    bool? hasCompleteCost,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Session(
@@ -1868,6 +1941,8 @@ class Session extends DataClass implements Insertable<Session> {
     contextWindowTokens: contextWindowTokens.present
         ? contextWindowTokens.value
         : this.contextWindowTokens,
+    totalCostUsd: totalCostUsd ?? this.totalCostUsd,
+    hasCompleteCost: hasCompleteCost ?? this.hasCompleteCost,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1913,6 +1988,12 @@ class Session extends DataClass implements Insertable<Session> {
       contextWindowTokens: data.contextWindowTokens.present
           ? data.contextWindowTokens.value
           : this.contextWindowTokens,
+      totalCostUsd: data.totalCostUsd.present
+          ? data.totalCostUsd.value
+          : this.totalCostUsd,
+      hasCompleteCost: data.hasCompleteCost.present
+          ? data.hasCompleteCost.value
+          : this.hasCompleteCost,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1941,6 +2022,8 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('currentContextEpoch: $currentContextEpoch, ')
           ..write('contextTokensUsed: $contextTokensUsed, ')
           ..write('contextWindowTokens: $contextWindowTokens, ')
+          ..write('totalCostUsd: $totalCostUsd, ')
+          ..write('hasCompleteCost: $hasCompleteCost, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1969,6 +2052,8 @@ class Session extends DataClass implements Insertable<Session> {
     currentContextEpoch,
     contextTokensUsed,
     contextWindowTokens,
+    totalCostUsd,
+    hasCompleteCost,
     createdAt,
     updatedAt,
   ]);
@@ -1996,6 +2081,8 @@ class Session extends DataClass implements Insertable<Session> {
           other.currentContextEpoch == this.currentContextEpoch &&
           other.contextTokensUsed == this.contextTokensUsed &&
           other.contextWindowTokens == this.contextWindowTokens &&
+          other.totalCostUsd == this.totalCostUsd &&
+          other.hasCompleteCost == this.hasCompleteCost &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2021,6 +2108,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<int> currentContextEpoch;
   final Value<int> contextTokensUsed;
   final Value<int?> contextWindowTokens;
+  final Value<double> totalCostUsd;
+  final Value<bool> hasCompleteCost;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -2045,6 +2134,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.currentContextEpoch = const Value.absent(),
     this.contextTokensUsed = const Value.absent(),
     this.contextWindowTokens = const Value.absent(),
+    this.totalCostUsd = const Value.absent(),
+    this.hasCompleteCost = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2070,6 +2161,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.currentContextEpoch = const Value.absent(),
     this.contextTokensUsed = const Value.absent(),
     this.contextWindowTokens = const Value.absent(),
+    this.totalCostUsd = const Value.absent(),
+    this.hasCompleteCost = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -2102,6 +2195,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<int>? currentContextEpoch,
     Expression<int>? contextTokensUsed,
     Expression<int>? contextWindowTokens,
+    Expression<double>? totalCostUsd,
+    Expression<bool>? hasCompleteCost,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -2129,6 +2224,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (contextTokensUsed != null) 'context_tokens_used': contextTokensUsed,
       if (contextWindowTokens != null)
         'context_window_tokens': contextWindowTokens,
+      if (totalCostUsd != null) 'total_cost_usd': totalCostUsd,
+      if (hasCompleteCost != null) 'has_complete_cost': hasCompleteCost,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2156,6 +2253,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<int>? currentContextEpoch,
     Value<int>? contextTokensUsed,
     Value<int?>? contextWindowTokens,
+    Value<double>? totalCostUsd,
+    Value<bool>? hasCompleteCost,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -2181,6 +2280,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       currentContextEpoch: currentContextEpoch ?? this.currentContextEpoch,
       contextTokensUsed: contextTokensUsed ?? this.contextTokensUsed,
       contextWindowTokens: contextWindowTokens ?? this.contextWindowTokens,
+      totalCostUsd: totalCostUsd ?? this.totalCostUsd,
+      hasCompleteCost: hasCompleteCost ?? this.hasCompleteCost,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2250,6 +2351,12 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (contextWindowTokens.present) {
       map['context_window_tokens'] = Variable<int>(contextWindowTokens.value);
     }
+    if (totalCostUsd.present) {
+      map['total_cost_usd'] = Variable<double>(totalCostUsd.value);
+    }
+    if (hasCompleteCost.present) {
+      map['has_complete_cost'] = Variable<bool>(hasCompleteCost.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2285,6 +2392,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('currentContextEpoch: $currentContextEpoch, ')
           ..write('contextTokensUsed: $contextTokensUsed, ')
           ..write('contextWindowTokens: $contextWindowTokens, ')
+          ..write('totalCostUsd: $totalCostUsd, ')
+          ..write('hasCompleteCost: $hasCompleteCost, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -9338,6 +9447,8 @@ typedef $$SessionsTableCreateCompanionBuilder =
       Value<int> currentContextEpoch,
       Value<int> contextTokensUsed,
       Value<int?> contextWindowTokens,
+      Value<double> totalCostUsd,
+      Value<bool> hasCompleteCost,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -9364,6 +9475,8 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<int> currentContextEpoch,
       Value<int> contextTokensUsed,
       Value<int?> contextWindowTokens,
+      Value<double> totalCostUsd,
+      Value<bool> hasCompleteCost,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -9654,6 +9767,16 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<int> get contextWindowTokens => $composableBuilder(
     column: $table.contextWindowTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalCostUsd => $composableBuilder(
+    column: $table.totalCostUsd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hasCompleteCost => $composableBuilder(
+    column: $table.hasCompleteCost,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10006,6 +10129,16 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get totalCostUsd => $composableBuilder(
+    column: $table.totalCostUsd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hasCompleteCost => $composableBuilder(
+    column: $table.hasCompleteCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -10157,6 +10290,16 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<int> get contextWindowTokens => $composableBuilder(
     column: $table.contextWindowTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalCostUsd => $composableBuilder(
+    column: $table.totalCostUsd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get hasCompleteCost => $composableBuilder(
+    column: $table.hasCompleteCost,
     builder: (column) => column,
   );
 
@@ -10471,6 +10614,8 @@ class $$SessionsTableTableManager
                 Value<int> currentContextEpoch = const Value.absent(),
                 Value<int> contextTokensUsed = const Value.absent(),
                 Value<int?> contextWindowTokens = const Value.absent(),
+                Value<double> totalCostUsd = const Value.absent(),
+                Value<bool> hasCompleteCost = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -10495,6 +10640,8 @@ class $$SessionsTableTableManager
                 currentContextEpoch: currentContextEpoch,
                 contextTokensUsed: contextTokensUsed,
                 contextWindowTokens: contextWindowTokens,
+                totalCostUsd: totalCostUsd,
+                hasCompleteCost: hasCompleteCost,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -10521,6 +10668,8 @@ class $$SessionsTableTableManager
                 Value<int> currentContextEpoch = const Value.absent(),
                 Value<int> contextTokensUsed = const Value.absent(),
                 Value<int?> contextWindowTokens = const Value.absent(),
+                Value<double> totalCostUsd = const Value.absent(),
+                Value<bool> hasCompleteCost = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -10545,6 +10694,8 @@ class $$SessionsTableTableManager
                 currentContextEpoch: currentContextEpoch,
                 contextTokensUsed: contextTokensUsed,
                 contextWindowTokens: contextWindowTokens,
+                totalCostUsd: totalCostUsd,
+                hasCompleteCost: hasCompleteCost,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

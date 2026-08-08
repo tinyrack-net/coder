@@ -54,7 +54,7 @@ final class RealDaemonFixture {
               RemoteDaemonProfile(
                 id: '$id-daemon',
                 label: '${_title(id)} daemon',
-                websocketUri: daemon.boundEndpoint,
+                connections: directHostConnections(daemon.boundEndpoint),
                 autoConnect: true,
                 createdAt: now,
                 updatedAt: now,

@@ -251,13 +251,13 @@ void main() {
     });
 
     test('returns null when the file carries no daemon section', () async {
-      write(<String, dynamic>{'schemaVersion': 1});
+      write(<String, dynamic>{'schemaVersion': 2});
       expect(await readLocalDaemonBearerToken(directory.path), isNull);
     });
 
     test('reads the token a running daemon provisioned', () async {
       write(<String, dynamic>{
-        'schemaVersion': 1,
+        'schemaVersion': 2,
         'daemon': <String, dynamic>{'bearerToken': 'secret-token'},
         'providerCredentials': <String, dynamic>{},
       });
@@ -283,7 +283,7 @@ void main() {
 
     test('rejects a malformed daemon section', () async {
       write(<String, dynamic>{
-        'schemaVersion': 1,
+        'schemaVersion': 2,
         'daemon': 'not-an-object',
       });
       await expectLater(
@@ -291,7 +291,7 @@ void main() {
         throwsA(isA<FormatException>()),
       );
       write(<String, dynamic>{
-        'schemaVersion': 1,
+        'schemaVersion': 2,
         'daemon': <String, dynamic>{'bearerToken': 7},
       });
       await expectLater(

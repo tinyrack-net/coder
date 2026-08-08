@@ -33,6 +33,8 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Tinyrack Coder connects to a daemon on your trusted local network.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Tinyrack Coder scans one-time daemon connection QR codes.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

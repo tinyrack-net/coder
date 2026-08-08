@@ -45,7 +45,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '원격 daemon 추가'));
+      await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '고급 직접 연결'));
       await tester.pumpAndSettle();
       await tester.enterText(_field('remote-host-label'), 'Recovering daemon');
       await tester.enterText(
@@ -73,7 +75,13 @@ void main() {
       await _pumpUntil(tester, find.textContaining('온라인'));
       expect(fixture.store.profiles.single.label, 'Recovered daemon');
       expect(
-        fixture.store.tokens[fixture.store.profiles.single.id],
+        fixture.store.tokens[fixture
+            .store
+            .profiles
+            .single
+            .connections
+            .single
+            .credentialKey],
         fixture.token,
       );
 

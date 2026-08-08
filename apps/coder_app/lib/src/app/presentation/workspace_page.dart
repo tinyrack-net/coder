@@ -540,7 +540,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           key: ValueKey<String>('draft-pane-${entry.id}'),
           selection: widget.selection,
           draftId: entry.id,
-          onCreated: (session) => _createdSession(entry, session),
+          onCreated: _createdSession,
         ),
       };
 
@@ -768,13 +768,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     if (mounted) _goTerminal(context, widget.selection, terminal.id);
   }
 
-  Future<void> _createdSession(
-    WorkspaceTabEntry entry,
-    SessionDto session,
-  ) async {
-    await ref
-        .read(sessionTabsControllerProvider(widget.selection).notifier)
-        .add(session, draftTabId: entry.id);
+  void _createdSession(SessionDto session) {
     if (mounted) _goSession(context, widget.selection, session.id);
   }
 
@@ -1265,6 +1259,25 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                         busy: busy,
                         contextTokens: current.contextTokens,
                         contextWindow: current.contextWindow,
+                        totalCostUsd: current.totalCostUsd,
+                        providerConnectionId: effective == null
+                            ? null
+                            : connections
+                                  .where(
+                                    (connection) =>
+                                        effective.qualifiedModelId.startsWith(
+                                          '${connection.modelPrefix}/',
+                                        ),
+                                  )
+                                  .firstOrNull
+                                  ?.id,
+                        onLoadProviderUsage: () => ref
+                            .read(
+                              providerSettingsControllerProvider(
+                                widget.selection.hostId,
+                              ).notifier,
+                            )
+                            .loadUsage(),
                         queued: value?.queued ?? const <QueuedTurn>[],
                         onQueue: (submission) =>
                             _conversation(ref, current.id).enqueueTurn(

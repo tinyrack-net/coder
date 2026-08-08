@@ -306,16 +306,21 @@ abstract interface class ProvidersApi {
   /// Lists configured provider connections.
   Future<List<ProviderConnectionDto>> listProviderConnections();
 
+  /// Lazily reads quota usage for configured provider connections.
+  Future<List<ProviderUsageDto>> listProviderUsage();
+
   /// Connects a provider with an API key.
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey, {
+    String? connectionId,
     String? modelPrefix,
   });
 
   /// Connects a provider without credentials.
   Future<ProviderConnectionDto> connectProviderNone(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   });
 
@@ -323,6 +328,7 @@ abstract interface class ProvidersApi {
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
     String methodId, {
+    String? connectionId,
     String? modelPrefix,
   });
 
@@ -456,6 +462,27 @@ abstract interface class AttachmentsApi {
   Future<AttachmentDownload> downloadAttachment(String id);
 }
 
+/// Relay configuration, pairing, and approved-device operations.
+abstract interface class RelayApi {
+  /// Relay status changes emitted by the daemon.
+  Stream<RelayStatusDto> get statusUpdates;
+
+  /// Reads current relay status.
+  Future<RelayStatusDto> getRelayStatus();
+
+  /// Enables or disables outbound relay operation.
+  Future<RelayStatusDto> setRelayEnabled({required bool enabled});
+
+  /// Creates a ten-minute, one-time pairing offer.
+  Future<RelayPairingOfferDto> createRelayPairingOffer();
+
+  /// Lists approved devices.
+  Future<List<RelayDeviceDto>> listRelayDevices();
+
+  /// Revokes a device and terminates its active sessions.
+  Future<void> revokeRelayDevice(String deviceId);
+}
+
 /// Root client API for connection lifecycle and feature-scoped operations.
 abstract interface class CoderApi {
   /// Workspace-scoped operations.
@@ -481,6 +508,9 @@ abstract interface class CoderApi {
 
   /// Attachment operations.
   AttachmentsApi get attachments;
+
+  /// Relay and device-pairing operations.
+  RelayApi get relay;
 
   /// Connection-state changes.
   Stream<ClientConnectionState> get states;

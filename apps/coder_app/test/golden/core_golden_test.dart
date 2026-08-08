@@ -23,6 +23,7 @@ import 'package:coder_app/src/features/settings/domain/settings_category.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:dropwell/dropwell.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1157,6 +1158,18 @@ void main() {
             ),
           ),
           GoldenTestScenario(
+            name: 'context nearly full dark',
+            child: SizedBox(
+              width: 900,
+              height: 240,
+              child: _composerState(
+                ThemeMode.dark,
+                contextTokens: 196000,
+                contextWindow: 200000,
+              ),
+            ),
+          ),
+          GoldenTestScenario(
             name: 'queued during a turn dark',
             child: SizedBox(
               width: 900,
@@ -1200,6 +1213,60 @@ void main() {
       ),
     ),
   );
+
+  for (final mode in <ThemeMode>[ThemeMode.light, ThemeMode.dark]) {
+    unawaited(
+      goldenTest(
+        'context usage details ${mode.name}',
+        fileName: 'context_usage_details_${mode.name}',
+        constraints: const BoxConstraints.tightFor(width: 960, height: 520),
+        builder: () => _composerState(
+          mode,
+          contextTokens: 150000,
+          contextWindow: 200000,
+          totalCostUsd: 1.25,
+          providerConnectionId: 'openai',
+          onLoadProviderUsage: () async => <ProviderUsageDto>[
+            ProviderUsageDto(
+              connectionId: 'openai',
+              status: ProviderUsageStatus.available,
+              fetchedAt: DateTime.utc(2026),
+              provider: 'OpenAI',
+              plan: 'plus',
+              windows: const <ProviderUsageWindowDto>[
+                ProviderUsageWindowDto(
+                  kind: ProviderUsageWindowKind.session,
+                  usedPercent: 40,
+                ),
+                ProviderUsageWindowDto(
+                  kind: ProviderUsageWindowKind.weekly,
+                  usedPercent: 72,
+                ),
+              ],
+              creditBalance: 3.5,
+            ),
+          ],
+        ),
+        whilePerforming: (tester) async {
+          final mouse = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+          );
+          await mouse.addPointer(location: Offset.zero);
+          addTearDown(mouse.removePointer);
+          await mouse.moveTo(
+            tester.getCenter(
+              find.byKey(
+                const ValueKey<String>('session-composer-context-meter'),
+              ),
+            ),
+          );
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pumpAndSettle();
+          return null;
+        },
+      ),
+    );
+  }
 
   unawaited(
     goldenTest(
@@ -1325,6 +1392,9 @@ Widget _composerState(
   List<QueuedTurn> queued = const <QueuedTurn>[],
   int contextTokens = 0,
   int? contextWindow,
+  double? totalCostUsd,
+  String? providerConnectionId,
+  Future<List<ProviderUsageDto>> Function()? onLoadProviderUsage,
 }) => ProviderScope(
   overrides: [
     appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
@@ -1341,6 +1411,9 @@ Widget _composerState(
         queued: queued,
         contextTokens: contextTokens,
         contextWindow: contextWindow,
+        totalCostUsd: totalCostUsd,
+        providerConnectionId: providerConnectionId,
+        onLoadProviderUsage: onLoadProviderUsage,
         onQueue: (_) {},
         onQueuedEdit: (_) => null,
         onQueuedSendNow: (_) {},
@@ -1852,7 +1925,9 @@ Widget _globalSettings(ThemeMode mode) {
       RemoteDaemonProfile(
         id: 'production',
         label: 'Production daemon',
-        websocketUri: Uri.parse('wss://coder.example.com/ws'),
+        connections: directHostConnections(
+          Uri.parse('wss://coder.example.com/ws'),
+        ),
         autoConnect: false,
         createdAt: now,
         updatedAt: now,
@@ -1884,8 +1959,8 @@ final class _UnusedClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => throw StateError('Golden profiles do not auto-connect.');

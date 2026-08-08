@@ -132,6 +132,13 @@ class Sessions extends Table {
   /// path reports the same number as the turn that produced the usage.
   IntColumn get contextWindowTokens => integer().nullable()();
 
+  /// Exact accumulated USD cost while every usage event is priced.
+  RealColumn get totalCostUsd => real().withDefault(const Constant(0))();
+
+  /// False permanently after a usage event cannot be priced exactly.
+  BoolColumn get hasCompleteCost =>
+      boolean().withDefault(const Constant(true))();
+
   /// The createdAt public API member.
   DateTimeColumn get createdAt => dateTime()();
 
@@ -543,7 +550,7 @@ class CoderDatabase extends _$CoderDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

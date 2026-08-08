@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/bootstrap/config.dart';
@@ -28,7 +29,14 @@ import 'package:coder_daemon/src/features/providers/infrastructure/provider_adap
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_catalog.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_usage_service.dart';
 import 'package:coder_daemon/src/features/providers/transport/rpc_bindings.dart';
+import 'package:coder_daemon/src/features/relay/application/relay_control_service.dart';
+import 'package:coder_daemon/src/features/relay/application/relay_pairing_service.dart';
+import 'package:coder_daemon/src/features/relay/infrastructure/daemon_relay_transport.dart';
+import 'package:coder_daemon/src/features/relay/infrastructure/relay_attachment_adapter.dart';
+import 'package:coder_daemon/src/features/relay/infrastructure/settings_relay_device_repository.dart';
+import 'package:coder_daemon/src/features/relay/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/agent_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/exec_session_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/goal_service.dart';
@@ -55,7 +63,9 @@ import 'package:coder_daemon/src/transport/rpc/binding.dart';
 import 'package:coder_daemon/src/transport/rpc/rpc_dispatch.dart';
 import 'package:coder_daemon/src/transport/rpc/server.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:coder_relay_protocol/coder_relay_protocol.dart';
 import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
 import 'package:lua_tool_runtime/lua_tool_runtime.dart' as lua;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -112,6 +122,7 @@ final class DaemonHostOptions {
     this.ids,
     this.modelDiscovery,
     this.oauthGateway,
+    this.providerUsageGateway,
     this.providerCatalogMetadataSource,
     this.workspacePaths,
     this.git,
@@ -134,6 +145,9 @@ final class DaemonHostOptions {
 
   /// Provider authorization port.
   final ProviderOAuthGateway? oauthGateway;
+
+  /// Provider subscription usage transport.
+  final ProviderUsageGateway? providerUsageGateway;
 
   /// Provider catalog metadata port.
   final ProviderCatalogMetadataSource? providerCatalogMetadataSource;
@@ -177,6 +191,8 @@ abstract final class DaemonApplication {
     final effectiveIds = options.ids ?? ids;
     final effectiveModelDiscovery = options.modelDiscovery ?? modelDiscovery;
     final effectiveOAuthGateway = options.oauthGateway ?? oauthGateway;
+    final effectiveUsageGateway =
+        options.providerUsageGateway ?? OpenAIProviderUsageGateway(Dio());
     final effectiveCatalogMetadataSource =
         options.providerCatalogMetadataSource ?? providerCatalogMetadataSource;
     final effectiveWorkspacePaths = options.workspacePaths ?? workspacePaths;
@@ -235,6 +251,50 @@ abstract final class DaemonApplication {
       if (credentials.bearerToken != token) {
         await credentials.setDaemonToken(token);
       }
+      var relayIdentitySeed = credentials.relayIdentityPrivateKey;
+      if (relayIdentitySeed == null) {
+        final random = Random.secure();
+        relayIdentitySeed = List<int>.generate(
+          32,
+          (_) => random.nextInt(256),
+          growable: false,
+        );
+        await credentials.setRelayIdentityPrivateKey(relayIdentitySeed);
+      }
+      final relayIdentity = await RelayIdentity.fromSeed(relayIdentitySeed);
+      final storedRelayEnabled =
+          await database.settingsDao.getValue('relay.enabled') == 'true';
+      DaemonRpcServer? relayRpcSessions;
+      DaemonRelayTransport? relayTransport;
+      final relayPairing = RelayPairingService(
+        serverId: serverId,
+        relayUri: config.relay.endpoint,
+        daemonIdentityPublicKey: relayIdentity.publicKey,
+        devices: SettingsRelayDeviceRepository(database.settingsDao),
+        clock: effectiveClock,
+        ids: effectiveIds,
+        terminateDeviceSessions: (deviceId) async {
+          await relayTransport?.terminateDeviceSessions(deviceId);
+          await relayRpcSessions?.terminateRelayDeviceSessions(deviceId);
+        },
+      );
+      final relay = RelayControlService(
+        enabled: config.relay.enabled || storedRelayEnabled,
+        endpoint: config.relay.endpoint,
+        serverId: serverId,
+        pairing: relayPairing,
+        applyEnabled: ({required enabled}) async {
+          await database.settingsDao.setValue(
+            'relay.enabled',
+            enabled.toString(),
+          );
+          if (enabled) {
+            await relayTransport?.start();
+          } else {
+            await relayTransport?.stop();
+          }
+        },
+      );
       final events = StreamController<OutboundNotification>.broadcast(
         sync: true,
       );
@@ -255,6 +315,9 @@ abstract final class DaemonApplication {
           const GeminiInteractionsWire(),
         ],
       );
+      final oauthRefresher = OAuthCredentialRefresher(
+        registry: providerRegistry,
+      );
       final providers = ProviderConnectionService(
         repository: database.providerDao,
         credentials: credentials,
@@ -268,10 +331,17 @@ abstract final class DaemonApplication {
           metadataSource: effectiveCatalogMetadataSource,
         ),
         modelDiscovery: effectiveModelDiscovery,
-        oauthRefresher: OAuthCredentialRefresher(registry: providerRegistry),
+        oauthRefresher: oauthRefresher,
         fixedProvider: effectiveProvider,
       );
       await providers.initialize();
+      final providerUsage = ProviderUsageService(
+        repository: database.providerDao,
+        credentials: credentials,
+        gateway: effectiveUsageGateway,
+        oauthRefresher: oauthRefresher,
+        clock: effectiveClock,
+      );
       final models = ProviderModelResolver(providers);
       final providerAuth = ProviderAuthCoordinator(
         registry: providerRegistry,
@@ -536,6 +606,7 @@ abstract final class DaemonApplication {
           'skills': true,
           'attachments': true,
           'terminals': true,
+          'relay': true,
         },
       );
       final notificationSubscriptions = <StreamSubscription<Object?>>[
@@ -599,6 +670,14 @@ abstract final class DaemonApplication {
               );
           }
         }),
+        relay.updates.listen((status) {
+          events.add(
+            OutboundNotification(
+              relayStatusChangedNotification,
+              relayStatusToDto(status),
+            ),
+          );
+        }),
       ];
       final bindings = RpcBindingRegistry(
         <RpcBindingDescriptor>[
@@ -618,9 +697,11 @@ abstract final class DaemonApplication {
           ),
           ...providerRpcBindings(
             providers: providers,
+            usage: providerUsage,
             auth: providerAuth,
             agentDefinitions: agentDefinitions,
           ),
+          ...relayRpcBindings(relay),
           ...mcpRpcBindings(
             runtime: mcp,
             servers: mcpServers,
@@ -652,6 +733,20 @@ abstract final class DaemonApplication {
         events: events.stream,
         allowedOrigins: config.allowedOrigins,
       );
+      relayRpcSessions = rpc;
+      relayTransport = DaemonRelayTransport(
+        serverId: serverId,
+        endpoint: config.relay.endpoint,
+        tlsPolicy: config.relay.tlsPolicy,
+        identity: relayIdentity,
+        pairing: relayPairing,
+        rpcSessions: rpc,
+        attachments: RelayAttachmentAdapter(attachments),
+        control: relay,
+      );
+      if (relay.status.enabled) {
+        await relayTransport.start();
+      }
       final http = await shelf_io.serve(rpc.call, config.host, config.port);
       final presentationHost = config.host == '0.0.0.0'
           ? '127.0.0.1'
@@ -685,6 +780,8 @@ abstract final class DaemonApplication {
         providerAuth: providerAuth,
         providers: providers,
         terminals: terminals,
+        relay: relay,
+        relayTransport: relayTransport,
         notificationSubscriptions: notificationSubscriptions,
       );
     } catch (_) {
@@ -717,6 +814,8 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._providerAuth,
     required this._providers,
     required this._terminals,
+    required this._relay,
+    required this._relayTransport,
     required this._notificationSubscriptions,
   }) : _serverId = serverIdValue;
 
@@ -739,6 +838,8 @@ class _LocalDaemonHandle implements DaemonHandle {
   final ProviderAuthCoordinator _providerAuth;
   final ProviderConnectionService _providers;
   final TerminalService _terminals;
+  final RelayControlService _relay;
+  final DaemonRelayTransport _relayTransport;
   final List<StreamSubscription<Object?>> _notificationSubscriptions;
   bool _stopped = false;
 
@@ -766,6 +867,8 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _http.close(force: true);
     await _rpc.close();
     await _terminals.close();
+    await _relayTransport.close();
+    await _relay.close();
     await _providerAuth.close();
     await _providers.close();
     await _mcp.close();

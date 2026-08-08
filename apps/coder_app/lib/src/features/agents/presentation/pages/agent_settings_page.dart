@@ -29,18 +29,15 @@ class AgentSettingsPage extends ConsumerStatefulWidget {
 
 class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   String? _selectedId;
-  SettingsPaneNavigationController? _paneNavigation;
-
-  @override
-  void dispose() {
-    _paneNavigation?.clearBackHandler(this);
-    super.dispose();
-  }
+  bool _creating = false;
 
   @override
   void didUpdateWidget(AgentSettingsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.hostId != widget.hostId) _selectedId = null;
+    if (oldWidget.hostId != widget.hostId) {
+      _selectedId = null;
+      _creating = false;
+    }
   }
 
   @override
@@ -61,65 +58,82 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
           builder: (context, constraints) {
             final compact =
                 constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
-            if (!compact &&
+            if (!_creating &&
+                !compact &&
                 !value.definitions.any(
                   (definition) => definition.id == _selectedId,
                 )) {
               _selectedId = value.definitions.firstOrNull?.id;
             }
-            final selected = value.definitions
-                .where((definition) => definition.id == _selectedId)
-                .firstOrNull;
-            _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
-            syncSettingsPaneBackHandler(
-              context,
-              owner: this,
-              active: compact && selected != null,
-              onBack: _showAgentList,
-            );
-            if (compact && selected != null) {
-              return _AgentEditor(
-                key: ValueKey<String>(selected.contentHash),
-                hostId: widget.hostId,
-                state: value,
-                definition: selected,
-                onArchived: () => setState(() => _selectedId = null),
-              );
-            }
+            final selected = _creating
+                ? null
+                : value.definitions
+                      .where((definition) => definition.id == _selectedId)
+                      .firstOrNull;
             final list = _AgentDefinitionList(
               state: value,
               selectedId: _selectedId,
-              onSelected: (id) => setState(() => _selectedId = id),
+              onSelected: (id) => setState(() {
+                _creating = false;
+                _selectedId = id;
+              }),
               onCreate: () => _create(value),
             );
-            if (compact) return list;
-            return Row(
-              children: <Widget>[
-                SizedBox(
-                  width: CoderLayoutMetrics.settingsCollectionWidth,
-                  child: list,
-                ),
-                const TRSeparator(
-                  orientation: TRSeparatorOrientation.vertical,
-                  variant: TRSeparatorVariant.muted,
-                ),
-                Expanded(
-                  child: selected == null
-                      ? SettingsEmptyState(
-                          title: AppLocalizations.of(
-                            context,
-                          ).agentSettingsSelectAgent,
-                          icon: const Icon(CoderIcons.agent),
-                        )
-                      : _AgentEditor(
-                          key: ValueKey<String>(selected.contentHash),
-                          hostId: widget.hostId,
-                          state: value,
-                          definition: selected,
-                          onArchived: () => setState(() => _selectedId = null),
-                        ),
-                ),
-              ],
+            final detail = _creating
+                ? _CreateAgentPane(
+                    existingIds: value.definitions
+                        .map((definition) => definition.id)
+                        .toSet(),
+                    onCancel: _showAgentList,
+                    onCreate: (input) {
+                      final template = value.definitions
+                          .where((definition) => definition.id == 'coder')
+                          .first;
+                      final definition = template.copyWith(
+                        id: input.id,
+                        name: input.name,
+                        description: '',
+                        mode: input.mode,
+                        systemPrompt: '',
+                        callableAgentIds: const <String>[],
+                        contentHash: '',
+                        sourcePath: '',
+                        isBuiltIn: false,
+                        isArchived: false,
+                        diagnostics: const <AgentDefinitionDiagnosticDto>[],
+                      );
+                      return ref
+                          .read(
+                            agentDefinitionsControllerProvider(
+                              widget.hostId,
+                            ).notifier,
+                          )
+                          .create(input.id, definition);
+                    },
+                    onCreated: (created) => setState(() {
+                      _creating = false;
+                      _selectedId = created.id;
+                    }),
+                  )
+                : selected == null
+                ? SettingsEmptyState(
+                    title: AppLocalizations.of(
+                      context,
+                    ).agentSettingsSelectAgent,
+                    icon: const Icon(CoderIcons.agent),
+                  )
+                : _AgentEditor(
+                    key: ValueKey<String>(selected.contentHash),
+                    hostId: widget.hostId,
+                    state: value,
+                    definition: selected,
+                    onArchived: () => setState(() => _selectedId = null),
+                  );
+            return SettingsListDetailLayout(
+              collection: list,
+              detail: detail,
+              detailVisible: selected != null || _creating,
+              onBack: _showAgentList,
             );
           },
         );
@@ -127,42 +141,15 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
     );
   }
 
-  Future<void> _create(AgentDefinitionsState state) async {
-    final created = await showTRDialog<AgentDefinitionDto>(
-      context: context,
-      builder: (context) => _CreateAgentDialog(
-        existingIds: state.definitions
-            .map((definition) => definition.id)
-            .toSet(),
-        onCreate: (input) {
-          final template = state.definitions
-              .where((definition) => definition.id == 'coder')
-              .first;
-          final definition = template.copyWith(
-            id: input.id,
-            name: input.name,
-            description: '',
-            mode: input.mode,
-            systemPrompt: '',
-            callableAgentIds: const <String>[],
-            contentHash: '',
-            sourcePath: '',
-            isBuiltIn: false,
-            isArchived: false,
-            diagnostics: const <AgentDefinitionDiagnosticDto>[],
-          );
-          return ref
-              .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
-              .create(input.id, definition);
-        },
-      ),
-    );
-    if (created != null && mounted) {
-      setState(() => _selectedId = created.id);
-    }
-  }
+  void _create(AgentDefinitionsState _) => setState(() {
+    _creating = true;
+    _selectedId = null;
+  });
 
-  void _showAgentList() => setState(() => _selectedId = null);
+  void _showAgentList() => setState(() {
+    _creating = false;
+    _selectedId = null;
+  });
 }
 
 class _AgentDefinitionList extends StatelessWidget {
@@ -197,10 +184,10 @@ class _AgentDefinitionList extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: ListView(
+          child: SettingsCollectionList(
             children: <Widget>[
               for (final definition in state.definitions)
-                SettingsRow(
+                SettingsRow.collection(
                   selected: definition.id == selectedId,
                   leading: Icon(
                     definition.mode == AgentMode.primary
@@ -643,17 +630,24 @@ class _CreateAgentInput {
   final AgentMode mode;
 }
 
-class _CreateAgentDialog extends StatefulWidget {
-  const _CreateAgentDialog({required this.existingIds, required this.onCreate});
+class _CreateAgentPane extends StatefulWidget {
+  const _CreateAgentPane({
+    required this.existingIds,
+    required this.onCreate,
+    required this.onCreated,
+    required this.onCancel,
+  });
 
   final Set<String> existingIds;
   final Future<AgentDefinitionDto> Function(_CreateAgentInput input) onCreate;
+  final ValueChanged<AgentDefinitionDto> onCreated;
+  final VoidCallback onCancel;
 
   @override
-  State<_CreateAgentDialog> createState() => _CreateAgentDialogState();
+  State<_CreateAgentPane> createState() => _CreateAgentPaneState();
 }
 
-class _CreateAgentDialogState extends State<_CreateAgentDialog> {
+class _CreateAgentPaneState extends State<_CreateAgentPane> {
   final _id = TextEditingController();
   final _name = TextEditingController();
   AgentMode _mode = AgentMode.primary;
@@ -689,57 +683,71 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return TRAlertDialog(
-      title: TRText.inherit(l10n.agentSettingsAddTitle),
-      content: SettingsDialogForm(
-        children: <Widget>[
-          TRTextField(
-            controller: _id,
-            autofocus: true,
-            enabled: !_saving,
-            onChanged: (_) => setState(() => _error = null),
-            label: l10n.agentSettingsIdLabel,
-            placeholder: 'reviewer',
-            errorText: _idError(l10n),
-          ),
-          TRTextField(
-            controller: _name,
-            enabled: !_saving,
-            onChanged: (_) => setState(() => _error = null),
-            label: l10n.commonName,
-            errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
-                ? null
-                : l10n.agentSettingsNameRequired,
-          ),
-          TRSelectFormField<AgentMode>(
-            initialValue: _mode,
-            label: l10n.commonKind,
-            width: TRMeasurements.overlayWidthMd,
-            items: AgentMode.values
-                .map(
-                  (value) =>
-                      TRSelectItem<AgentMode>(value: value, label: value.name),
-                )
-                .toList(growable: false),
-            onValueChange: _saving
-                ? null
-                : (value) => setState(() => _mode = value!),
-          ),
-          if (_error case final error?)
-            TRText('$error', color: TRTextColor.danger),
-        ],
-      ),
-      actions: <TRButton>[
-        TRButton(
-          appearance: TRAppearance.ghost,
-          onPressed: _saving ? null : () => Navigator.pop(context),
-          child: TRText.inherit(l10n.commonCancel),
+    return Column(
+      children: <Widget>[
+        SettingsPaneHeader.detail(
+          title: l10n.agentSettingsAddTitle,
+          actions: <Widget>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              onPressed: _saving ? null : widget.onCancel,
+              child: TRText.inherit(l10n.commonCancel),
+            ),
+            TRButton(
+              intent: TRIntent.primary,
+              onPressed: _valid && !_saving ? _submit : null,
+              child: TRText.inherit(
+                _saving ? l10n.commonCreating : l10n.commonCreate,
+              ),
+            ),
+          ],
         ),
-        TRButton(
-          intent: TRIntent.primary,
-          onPressed: _valid && !_saving ? _submit : null,
-          child: TRText.inherit(
-            _saving ? l10n.commonCreating : l10n.commonCreate,
+        Expanded(
+          child: SettingsScaffold(
+            children: <Widget>[
+              SettingsSection.form(
+                title: l10n.agentSettingsAddTitle,
+                children: <Widget>[
+                  TRTextField(
+                    controller: _id,
+                    autofocus: true,
+                    enabled: !_saving,
+                    onChanged: (_) => setState(() => _error = null),
+                    label: l10n.agentSettingsIdLabel,
+                    placeholder: 'reviewer',
+                    errorText: _idError(l10n),
+                  ),
+                  TRTextField(
+                    controller: _name,
+                    enabled: !_saving,
+                    onChanged: (_) => setState(() => _error = null),
+                    label: l10n.commonName,
+                    errorText:
+                        _name.text.isEmpty || _name.text.trim().isNotEmpty
+                        ? null
+                        : l10n.agentSettingsNameRequired,
+                  ),
+                  TRSelectFormField<AgentMode>(
+                    initialValue: _mode,
+                    label: l10n.commonKind,
+                    width: CoderLayoutMetrics.settingsContentMaxWidth,
+                    items: AgentMode.values
+                        .map(
+                          (value) => TRSelectItem<AgentMode>(
+                            value: value,
+                            label: value.name,
+                          ),
+                        )
+                        .toList(growable: false),
+                    onValueChange: _saving
+                        ? null
+                        : (value) => setState(() => _mode = value!),
+                  ),
+                  if (_error case final error?)
+                    TRText('$error', color: TRTextColor.danger),
+                ],
+              ),
+            ],
           ),
         ),
       ],
@@ -759,7 +767,7 @@ class _CreateAgentDialogState extends State<_CreateAgentDialog> {
           mode: _mode,
         ),
       );
-      if (mounted) Navigator.pop(context, created);
+      if (mounted) widget.onCreated(created);
     } on Exception catch (error) {
       if (mounted) {
         setState(() {

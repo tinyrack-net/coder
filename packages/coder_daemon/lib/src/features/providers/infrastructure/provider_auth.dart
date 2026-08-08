@@ -34,6 +34,7 @@ abstract interface class ProviderOAuthConnector {
   /// Atomically reserves a unique connection ID and model prefix.
   Future<ProviderOAuthReservation> reserveOAuthConnection(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   });
 
@@ -82,6 +83,7 @@ final class ProviderAuthCoordinator {
   Future<ProviderAuthAttemptDto> start({
     required String definitionId,
     required String methodId,
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final plugin = _registry.require(definitionId);
@@ -101,6 +103,7 @@ final class ProviderAuthCoordinator {
     }
     final reservation = await _connector.reserveOAuthConnection(
       definitionId,
+      connectionId: connectionId,
       modelPrefix: modelPrefix,
     );
     late final ProviderOAuthSession session;

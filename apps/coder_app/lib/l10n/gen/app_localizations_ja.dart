@@ -526,6 +526,77 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appSettingsAddRemote => 'Add remote daemon';
 
   @override
+  String get relayPairTitle => 'デバイスを接続';
+
+  @override
+  String get relayPairDescription =>
+      'daemon に表示されたワンタイムリンクを貼り付けてください。コードとファイルは relay 経由でもエンドツーエンドで暗号化されます。';
+
+  @override
+  String get relayPairLink => '接続リンク';
+
+  @override
+  String get relayPairDeviceName => 'このデバイスの名前';
+
+  @override
+  String get relayPairAction => '接続';
+
+  @override
+  String get relayPairScan => 'QR コードをスキャン';
+
+  @override
+  String get relayPairQrSemantics => 'ワンタイムデバイス接続リンクの QR コード';
+
+  @override
+  String get relayPairInvalid => '有効な Tinyrack Coder 接続リンクを入力してください。';
+
+  @override
+  String get relayPairExpired => 'このリンクは期限切れか使用済みです。daemon で新しいリンクを作成してください。';
+
+  @override
+  String get relayAdvancedDirect => '高度な直接接続';
+
+  @override
+  String get relayDevicesTitle => '接続済みデバイス';
+
+  @override
+  String get relayDevicesDescription => '新しいデバイス用の10分間リンクを作成するか、不要なデバイスを解除します。';
+
+  @override
+  String get relayCreateLink => '接続リンクを作成';
+
+  @override
+  String relayLinkExpires(String expiresAt) {
+    return '$expiresAtに期限切れ';
+  }
+
+  @override
+  String get relayNoDevices => '承認済みデバイスはありません。';
+
+  @override
+  String get relayRevoke => '解除';
+
+  @override
+  String relayRevokeTitle(String name) {
+    return '$name を解除しますか？';
+  }
+
+  @override
+  String get relayRevokeBody => 'デバイスの現在の relay 接続は直ちに終了します。再接続には新しいリンクが必要です。';
+
+  @override
+  String get relayPathDirect => '直接';
+
+  @override
+  String get relayPathRelay => 'Relay';
+
+  @override
+  String get relayConnectionDetails => '接続の詳細';
+
+  @override
+  String get relayApprovedDevices => 'デバイス';
+
+  @override
   String get appSettingsNoRemotes => 'No remote daemons are saved.';
 
   @override
@@ -783,6 +854,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsNoConnections => 'No providers are connected.';
 
   @override
+  String get providerSettingsSelectConnection => '管理するProviderを選択してください。';
+
+  @override
+  String get providerSettingsRequiredFields => '名前とBase URLを入力してください。';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API keyを入力してください。';
+
+  @override
   String get providerSettingsEditAdvanced => 'Edit advanced settings';
 
   @override
@@ -806,6 +886,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => 'Waiting for sign-in';
+
+  @override
+  String get providerSettingsOpenBrowser => 'ブラウザーを開く';
+
+  @override
+  String get providerSettingsReconnect => '再接続';
 
   @override
   String get providerSettingsModelPrefix => 'モデルプレフィックス';
@@ -1661,6 +1747,59 @@ class AppLocalizationsJa extends AppLocalizations {
   String sessionContextMeterValue(int percent) {
     return '$percent% of the context window used';
   }
+
+  @override
+  String get sessionContextDetailsTitle => 'コンテキスト使用量';
+
+  @override
+  String sessionContextPercent(int percent) {
+    return '$percent% 使用';
+  }
+
+  @override
+  String sessionContextTokens(String used, String max) {
+    return '$used / $max トークン';
+  }
+
+  @override
+  String sessionContextCost(String cost) {
+    return 'セッション料金 $cost';
+  }
+
+  @override
+  String get sessionQuotaLoading => 'プロバイダー使用量を読み込み中';
+
+  @override
+  String get sessionQuotaError => 'プロバイダー使用量を一時的に取得できません。';
+
+  @override
+  String sessionQuotaProviderPlan(String provider, String plan) {
+    return '$provider · $plan';
+  }
+
+  @override
+  String sessionQuotaPercent(int percent) {
+    return '$percent% 使用';
+  }
+
+  @override
+  String sessionQuotaResets(String time) {
+    return '$time にリセット';
+  }
+
+  @override
+  String sessionQuotaCredits(String amount) {
+    return 'クレジット $amount';
+  }
+
+  @override
+  String get sessionQuotaWindowSession => 'セッション上限';
+
+  @override
+  String get sessionQuotaWindowWeekly => '週間上限';
+
+  @override
+  String get sessionQuotaWindowCodeReview => 'コードレビュー上限';
 
   @override
   String get composerCommandNoAttachments =>

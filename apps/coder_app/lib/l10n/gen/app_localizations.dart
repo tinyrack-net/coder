@@ -1054,6 +1054,138 @@ abstract class AppLocalizations {
   /// **'Add remote daemon'**
   String get appSettingsAddRemote;
 
+  /// No description provided for @relayPairTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a device'**
+  String get relayPairTitle;
+
+  /// No description provided for @relayPairDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.'**
+  String get relayPairDescription;
+
+  /// No description provided for @relayPairLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing link'**
+  String get relayPairLink;
+
+  /// No description provided for @relayPairDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'This device\'s name'**
+  String get relayPairDeviceName;
+
+  /// No description provided for @relayPairAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get relayPairAction;
+
+  /// No description provided for @relayPairScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get relayPairScan;
+
+  /// No description provided for @relayPairQrSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code for the one-time device connection link'**
+  String get relayPairQrSemantics;
+
+  /// No description provided for @relayPairInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Tinyrack Coder pairing link.'**
+  String get relayPairInvalid;
+
+  /// No description provided for @relayPairExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This pairing link expired or was already used. Create a new link on the daemon.'**
+  String get relayPairExpired;
+
+  /// No description provided for @relayAdvancedDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced direct connection'**
+  String get relayAdvancedDirect;
+
+  /// No description provided for @relayDevicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected devices'**
+  String get relayDevicesTitle;
+
+  /// No description provided for @relayDevicesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a ten-minute link for a new device or remove a device that should no longer connect.'**
+  String get relayDevicesDescription;
+
+  /// No description provided for @relayCreateLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Create connection link'**
+  String get relayCreateLink;
+
+  /// No description provided for @relayLinkExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires {expiresAt}'**
+  String relayLinkExpires(String expiresAt);
+
+  /// No description provided for @relayNoDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'No devices are approved.'**
+  String get relayNoDevices;
+
+  /// No description provided for @relayRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get relayRevoke;
+
+  /// No description provided for @relayRevokeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke {name}?'**
+  String relayRevokeTitle(String name);
+
+  /// No description provided for @relayRevokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The device\'s live relay connection ends immediately. A new pairing link is required to reconnect.'**
+  String get relayRevokeBody;
+
+  /// No description provided for @relayPathDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get relayPathDirect;
+
+  /// No description provided for @relayPathRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay'**
+  String get relayPathRelay;
+
+  /// No description provided for @relayConnectionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection details'**
+  String get relayConnectionDetails;
+
+  /// No description provided for @relayApprovedDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get relayApprovedDevices;
+
   /// Empty state of the remote daemon list.
   ///
   /// In en, this message translates to:
@@ -1528,6 +1660,24 @@ abstract class AppLocalizations {
   /// **'No providers are connected.'**
   String get providerSettingsNoConnections;
 
+  /// Empty detail pane shown before a provider is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a provider to manage.'**
+  String get providerSettingsSelectConnection;
+
+  /// No description provided for @providerSettingsRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and Base URL are required.'**
+  String get providerSettingsRequiredFields;
+
+  /// No description provided for @providerSettingsApiKeyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'API key is required.'**
+  String get providerSettingsApiKeyRequired;
+
   /// Menu entry that opens the custom provider form.
   ///
   /// In en, this message translates to:
@@ -1575,6 +1725,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for sign-in'**
   String get providerSettingsOAuthPending;
+
+  /// Action that reopens a provider OAuth URL in the system browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open browser'**
+  String get providerSettingsOpenBrowser;
+
+  /// Action that replaces credentials for an existing provider connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get providerSettingsReconnect;
 
   /// Label for the globally unique provider model prefix.
   ///
@@ -3003,6 +3165,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{percent}% of the context window used'**
   String sessionContextMeterValue(int percent);
+
+  /// No description provided for @sessionContextDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Context usage'**
+  String get sessionContextDetailsTitle;
+
+  /// No description provided for @sessionContextPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% used'**
+  String sessionContextPercent(int percent);
+
+  /// No description provided for @sessionContextTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} / {max} tokens'**
+  String sessionContextTokens(String used, String max);
+
+  /// No description provided for @sessionContextCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Session cost {cost}'**
+  String sessionContextCost(String cost);
+
+  /// No description provided for @sessionQuotaLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading provider usage'**
+  String get sessionQuotaLoading;
+
+  /// No description provided for @sessionQuotaError.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider usage is temporarily unavailable.'**
+  String get sessionQuotaError;
+
+  /// No description provided for @sessionQuotaProviderPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} · {plan}'**
+  String sessionQuotaProviderPlan(String provider, String plan);
+
+  /// No description provided for @sessionQuotaPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% used'**
+  String sessionQuotaPercent(int percent);
+
+  /// No description provided for @sessionQuotaResets.
+  ///
+  /// In en, this message translates to:
+  /// **'Resets {time}'**
+  String sessionQuotaResets(String time);
+
+  /// No description provided for @sessionQuotaCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits {amount}'**
+  String sessionQuotaCredits(String amount);
+
+  /// No description provided for @sessionQuotaWindowSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Session limit'**
+  String get sessionQuotaWindowSession;
+
+  /// No description provided for @sessionQuotaWindowWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly limit'**
+  String get sessionQuotaWindowWeekly;
+
+  /// No description provided for @sessionQuotaWindowCodeReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Code review limit'**
+  String get sessionQuotaWindowCodeReview;
 
   /// Error shown when a slash command is submitted with attachments.
   ///

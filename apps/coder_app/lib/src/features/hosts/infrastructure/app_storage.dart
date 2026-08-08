@@ -13,7 +13,8 @@ final class SharedPreferencesAppStore
   SharedPreferencesAppStore(this._preferences);
 
   /// Single versioned document key; legacy singleton keys are not read.
-  static const String documentKey = 'tinyrack_coder.app_document_v4';
+  static const String documentKey = 'tinyrack_coder.app_document_v5';
+  static const String _legacyDocumentKey = 'tinyrack_coder.app_document_v4';
 
   final SharedPreferences _preferences;
   Future<void> _writes = Future<void>.value();
@@ -75,7 +76,15 @@ final class SharedPreferencesAppStore
 
   Future<_AppDocument> _read() async {
     final source = _preferences.getString(documentKey);
-    if (source == null) return const _AppDocument();
+    if (source == null) {
+      if (_preferences.containsKey(_legacyDocumentKey)) {
+        throw const FormatException(
+          'incompatible_settings: remove the app_document_v4 preference '
+          'to reset development data.',
+        );
+      }
+      return const _AppDocument();
+    }
     final decoded = jsonDecode(source);
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Invalid app settings document.');
@@ -86,11 +95,11 @@ final class SharedPreferencesAppStore
 
 /// Secure-storage adapter containing only remote bearer tokens.
 final class SecureRemoteHostCredentialStore
-    implements RemoteHostCredentialStore {
+    implements RemoteHostCredentialStore, RelayHostCredentialStore {
   /// Creates a secure remote host credential store.
   const SecureRemoteHostCredentialStore(this._storage);
 
-  static const String _prefix = 'tinyrack_coder.v4.remote_host_token.';
+  static const String _prefix = 'tinyrack_coder.v5.remote_host_credential.';
   final FlutterSecureStorage _storage;
 
   @override
@@ -108,8 +117,15 @@ final class SecureRemoteHostCredentialStore
   }
 
   @override
+  Future<void> deleteAllRelayCredentials() => deleteAllBearerTokens();
+
+  @override
   Future<void> deleteBearerToken(String profileId) =>
       _storage.delete(key: '$_prefix$profileId');
+
+  @override
+  Future<void> deleteRelayCredential(String credentialKey) =>
+      _storage.delete(key: '$_prefix$credentialKey');
 
   @override
   Future<String?> readBearerToken(String profileId) =>
@@ -118,6 +134,42 @@ final class SecureRemoteHostCredentialStore
   @override
   Future<void> writeBearerToken(String profileId, String token) =>
       _storage.write(key: '$_prefix$profileId', value: token);
+
+  @override
+  Future<RelayHostCredential?> readRelayCredential(
+    String credentialKey,
+  ) async {
+    final encoded = await _storage.read(key: '$_prefix$credentialKey');
+    if (encoded == null) {
+      return null;
+    }
+    final decoded = jsonDecode(encoded);
+    if (decoded is! Map<String, dynamic> ||
+        decoded['type'] != 'relay-device' ||
+        decoded['deviceId'] is! String ||
+        decoded['privateKey'] is! String) {
+      throw const FormatException('Invalid relay device credential.');
+    }
+    return RelayHostCredential(
+      deviceId: decoded['deviceId']! as String,
+      privateKey: base64Url.decode(
+        base64Url.normalize(decoded['privateKey']! as String),
+      ),
+    );
+  }
+
+  @override
+  Future<void> writeRelayCredential(
+    String credentialKey,
+    RelayHostCredential credential,
+  ) => _storage.write(
+    key: '$_prefix$credentialKey',
+    value: jsonEncode(<String, dynamic>{
+      'type': 'relay-device',
+      'deviceId': credential.deviceId,
+      'privateKey': base64UrlEncode(credential.privateKey),
+    }),
+  );
 }
 
 final class _AppDocument {
@@ -127,9 +179,9 @@ final class _AppDocument {
   });
 
   factory _AppDocument.fromJson(Map<String, dynamic> json) {
-    if (json['version'] != 4) {
+    if (json['version'] != 5) {
       throw const FormatException(
-        'Incompatible app settings. Remove the app_document_v4 preference '
+        'Incompatible app settings. Remove the app_document_v5 preference '
         'to reset development data.',
       );
     }
@@ -163,7 +215,7 @@ final class _AppDocument {
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'version': 4,
+    'version': 5,
     'settings': <String, dynamic>{
       'embeddedDaemonEnabled': settings.embeddedDaemonEnabled,
       'embeddedDaemonExposure': settings.embeddedDaemonExposure.name,
@@ -393,7 +445,7 @@ Map<String, dynamic>? _selectionToJson(WorkspaceSelection? selection) =>
 RemoteDaemonProfile _profileFromJson(Map<String, dynamic> json) {
   final id = json['id'];
   final label = json['label'];
-  final address = json['websocketUri'];
+  final connectionsJson = json['connections'];
   final autoConnect = json['autoConnect'];
   final serverId = json['serverId'];
   final createdAt = json['createdAt'];
@@ -401,7 +453,7 @@ RemoteDaemonProfile _profileFromJson(Map<String, dynamic> json) {
   final lastConnectedAt = json['lastConnectedAt'];
   if (id is! String ||
       label is! String ||
-      address is! String ||
+      connectionsJson is! List ||
       autoConnect is! bool ||
       (serverId != null && serverId is! String) ||
       createdAt is! String ||
@@ -412,7 +464,14 @@ RemoteDaemonProfile _profileFromJson(Map<String, dynamic> json) {
   return RemoteDaemonProfile(
     id: id,
     label: label,
-    websocketUri: HostEndpoint.parse(address).websocketUri,
+    connections: connectionsJson
+        .map((value) {
+          if (value is! Map<String, dynamic>) {
+            throw const FormatException('Invalid host connection.');
+          }
+          return _connectionFromJson(value);
+        })
+        .toList(growable: false),
     autoConnect: autoConnect,
     serverId: serverId as String?,
     createdAt: DateTime.parse(createdAt).toUtc(),
@@ -427,10 +486,67 @@ Map<String, dynamic> _profileToJson(RemoteDaemonProfile profile) =>
     <String, dynamic>{
       'id': profile.id,
       'label': profile.label,
-      'websocketUri': profile.websocketUri.toString(),
+      'connections': profile.connections
+          .map(_connectionToJson)
+          .toList(growable: false),
       'autoConnect': profile.autoConnect,
       'serverId': profile.serverId,
       'createdAt': profile.createdAt.toIso8601String(),
       'updatedAt': profile.updatedAt.toIso8601String(),
       'lastConnectedAt': profile.lastConnectedAt?.toIso8601String(),
+    };
+
+HostConnection _connectionFromJson(Map<String, dynamic> json) {
+  final id = json['id'];
+  final credentialKey = json['credentialKey'];
+  if (id is! String || credentialKey is! String) {
+    throw const FormatException('Invalid host connection identity.');
+  }
+  return switch (json['type']) {
+    'direct' when json['websocketUri'] is String => DirectHostConnection(
+      id: id,
+      credentialKey: credentialKey,
+      endpoint: HostEndpoint.parse(json['websocketUri']! as String),
+    ),
+    'relay'
+        when json['serverId'] is String &&
+            json['relayUri'] is String &&
+            json['daemonIdentityPublicKey'] is String =>
+      RelayHostConnection(
+        id: id,
+        credentialKey: credentialKey,
+        serverId: json['serverId']! as String,
+        relayUri: Uri.parse(json['relayUri']! as String),
+        daemonIdentityPublicKey: base64Url.decode(
+          base64Url.normalize(json['daemonIdentityPublicKey']! as String),
+        ),
+      ),
+    _ => throw const FormatException('Invalid host connection type.'),
+  };
+}
+
+Map<String, dynamic> _connectionToJson(HostConnection connection) =>
+    switch (connection) {
+      DirectHostConnection(:final id, :final credentialKey, :final endpoint) =>
+        <String, dynamic>{
+          'type': 'direct',
+          'id': id,
+          'credentialKey': credentialKey,
+          'websocketUri': endpoint.websocketUri.toString(),
+        },
+      RelayHostConnection(
+        :final id,
+        :final credentialKey,
+        :final serverId,
+        :final relayUri,
+        :final daemonIdentityPublicKey,
+      ) =>
+        <String, dynamic>{
+          'type': 'relay',
+          'id': id,
+          'credentialKey': credentialKey,
+          'serverId': serverId,
+          'relayUri': relayUri.toString(),
+          'daemonIdentityPublicKey': base64UrlEncode(daemonIdentityPublicKey),
+        },
     };

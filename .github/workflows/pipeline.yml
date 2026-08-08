@@ -23,7 +23,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: 3.44.8
-  TINYRACK_DART_PACKAGES_REF: 6f528d01b9ebfa0cc95e7c2dba96e398e3881f37
+  TINYRACK_DART_PACKAGES_REF: e07124e15bd7495818bd34ed655f39e5a4bcc35b
   # wrangler-action defaults to 3.90.0, which predates Workers static assets
   # and rejects an `assets` config for having no script entry-point.
   WRANGLER_VERSION: 4.118.0
@@ -229,8 +229,8 @@ jobs:
           - os: macos-26
             gradle_cache: false
             command: >-
-              flutter build ios --debug --simulator --no-codesign
-              -t lib/main_mobile.dart
+              flutter build ios --debug --no-codesign
+              -t lib/main_mobile.dart -v
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     steps:

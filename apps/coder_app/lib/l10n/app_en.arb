@@ -625,6 +625,30 @@
   "@appSettingsAddRemote": {
     "description": "Opens the remote daemon form."
   },
+  "relayPairTitle": "Connect a device",
+  "relayPairDescription": "Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.",
+  "relayPairLink": "Pairing link",
+  "relayPairDeviceName": "This device's name",
+  "relayPairAction": "Connect",
+  "relayPairScan": "Scan QR code",
+  "relayPairQrSemantics": "QR code for the one-time device connection link",
+  "relayPairInvalid": "Enter a valid Tinyrack Coder pairing link.",
+  "relayPairExpired": "This pairing link expired or was already used. Create a new link on the daemon.",
+  "relayAdvancedDirect": "Advanced direct connection",
+  "relayDevicesTitle": "Connected devices",
+  "relayDevicesDescription": "Create a ten-minute link for a new device or remove a device that should no longer connect.",
+  "relayCreateLink": "Create connection link",
+  "relayLinkExpires": "Expires {expiresAt}",
+  "@relayLinkExpires": {"placeholders": {"expiresAt": {"type": "String"}}},
+  "relayNoDevices": "No devices are approved.",
+  "relayRevoke": "Revoke",
+  "relayRevokeTitle": "Revoke {name}?",
+  "@relayRevokeTitle": {"placeholders": {"name": {"type": "String"}}},
+  "relayRevokeBody": "The device's live relay connection ends immediately. A new pairing link is required to reconnect.",
+  "relayPathDirect": "Direct",
+  "relayPathRelay": "Relay",
+  "relayConnectionDetails": "Connection details",
+  "relayApprovedDevices": "Devices",
   "appSettingsNoRemotes": "No remote daemons are saved.",
   "@appSettingsNoRemotes": {
     "description": "Empty state of the remote daemon list."
@@ -956,6 +980,12 @@
   "@providerSettingsNoConnections": {
     "description": "Empty state of the connected provider list."
   },
+  "providerSettingsSelectConnection": "Select a provider to manage.",
+  "@providerSettingsSelectConnection": {
+    "description": "Empty detail pane shown before a provider is selected."
+  },
+  "providerSettingsRequiredFields": "Name and Base URL are required.",
+  "providerSettingsApiKeyRequired": "API key is required.",
   "providerSettingsEditAdvanced": "Edit advanced settings",
   "providerSettingsActions": "Connection actions",
   "@providerSettingsEditAdvanced": {
@@ -982,6 +1012,14 @@
     "description": "Alert title shown when the provider catalog fails to load."
   },
   "providerSettingsOAuthPending": "Waiting for sign-in",
+  "providerSettingsOpenBrowser": "Open browser",
+  "@providerSettingsOpenBrowser": {
+    "description": "Action that reopens a provider OAuth URL in the system browser."
+  },
+  "providerSettingsReconnect": "Reconnect",
+  "@providerSettingsReconnect": {
+    "description": "Action that replaces credentials for an existing provider connection."
+  },
   "@providerSettingsOAuthPending": {
     "description": "Title of the pending OAuth attempt bar."
   },
@@ -2180,6 +2218,46 @@
       }
     }
   },
+  "sessionContextDetailsTitle": "Context usage",
+  "sessionContextPercent": "{percent}% used",
+  "@sessionContextPercent": {
+    "placeholders": {"percent": {"type": "int"}}
+  },
+  "sessionContextTokens": "{used} / {max} tokens",
+  "@sessionContextTokens": {
+    "placeholders": {
+      "used": {"type": "String"},
+      "max": {"type": "String"}
+    }
+  },
+  "sessionContextCost": "Session cost {cost}",
+  "@sessionContextCost": {
+    "placeholders": {"cost": {"type": "String"}}
+  },
+  "sessionQuotaLoading": "Loading provider usage",
+  "sessionQuotaError": "Provider usage is temporarily unavailable.",
+  "sessionQuotaProviderPlan": "{provider} · {plan}",
+  "@sessionQuotaProviderPlan": {
+    "placeholders": {
+      "provider": {"type": "String"},
+      "plan": {"type": "String"}
+    }
+  },
+  "sessionQuotaPercent": "{percent}% used",
+  "@sessionQuotaPercent": {
+    "placeholders": {"percent": {"type": "int"}}
+  },
+  "sessionQuotaResets": "Resets {time}",
+  "@sessionQuotaResets": {
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "sessionQuotaCredits": "Credits {amount}",
+  "@sessionQuotaCredits": {
+    "placeholders": {"amount": {"type": "String"}}
+  },
+  "sessionQuotaWindowSession": "Session limit",
+  "sessionQuotaWindowWeekly": "Weekly limit",
+  "sessionQuotaWindowCodeReview": "Code review limit",
   "composerCommandNoAttachments": "Remove attachments to run a command.",
   "@composerCommandNoAttachments": {
     "description": "Error shown when a slash command is submitted with attachments."

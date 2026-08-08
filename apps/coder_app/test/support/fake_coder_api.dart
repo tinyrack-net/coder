@@ -88,7 +88,8 @@ final class FakeCoderApi
         ProvidersApi,
         McpApi,
         TerminalsApi,
-        AttachmentsApi {
+        AttachmentsApi,
+        RelayApi {
   /// Creates a configurable [FakeCoderApi].
   FakeCoderApi({
     ServerInfoDto? serverInfo,
@@ -104,6 +105,7 @@ final class FakeCoderApi
     Map<String, List<TimelineEventDto>>? timelines,
     Map<String, GoalDto>? goals,
     Map<String, List<ProviderModelDto>>? models,
+    List<ProviderUsageDto>? providerUsage,
     this.eventStream,
     this.agentListError,
     this.skillListError,
@@ -134,6 +136,9 @@ final class FakeCoderApi
     this.searchFilesError,
     this.defaultPermissionSetError,
     this.sessionPermissionSetError,
+    this.relayPairingOffer,
+    List<RelayDeviceDto>? relayDevices,
+    this.relayEnabled = false,
     this._defaultPermissionMode = PermissionMode.ask,
   }) : mcpListResponses =
            mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
@@ -163,12 +168,18 @@ final class FakeCoderApi
          skills ?? <SkillDto>[_builtInSkill, _configSkill],
        ),
        _projectSkills = List<SkillDto>.of(projectSkills ?? <SkillDto>[]),
+       relayDevices = List<RelayDeviceDto>.of(
+         relayDevices ?? const <RelayDeviceDto>[],
+       ),
        _timelines = <String, List<TimelineEventDto>>{
          for (final entry
              in (timelines ?? <String, List<TimelineEventDto>>{}).entries)
            entry.key: List<TimelineEventDto>.of(entry.value),
        },
        _goals = Map<String, GoalDto>.of(goals ?? const <String, GoalDto>{}),
+       _providerUsage = List<ProviderUsageDto>.of(
+         providerUsage ?? const <ProviderUsageDto>[],
+       ),
        _models = <String, List<ProviderModelDto>>{
          'openai': <ProviderModelDto>[_openAIModel],
          for (final entry
@@ -188,6 +199,18 @@ final class FakeCoderApi
        };
 
   static final DateTime _now = DateTime.utc(2026);
+
+  /// Pairing offer returned by the relay fake.
+  final RelayPairingOfferDto? relayPairingOffer;
+
+  /// Mutable approved-device state used by relay widget tests.
+  final List<RelayDeviceDto> relayDevices;
+
+  /// Device identifiers revoked through this fake.
+  final List<String> revokedRelayDeviceIds = <String>[];
+
+  /// Current relay activation state.
+  bool relayEnabled;
 
   /// Error thrown once by the next explicit provider catalog refresh.
   CoderClientException? catalogRefreshError;
@@ -347,6 +370,7 @@ final class FakeCoderApi
   final List<SkillDto> _projectSkills;
   final Map<String, List<TimelineEventDto>> _timelines;
   final Map<String, GoalDto> _goals;
+  final List<ProviderUsageDto> _providerUsage;
   final Map<String, List<ProviderModelDto>> _models;
 
   /// Optional event stream that can model transport lifecycle races.
@@ -519,6 +543,12 @@ final class FakeCoderApi
   /// Thrown instead of starting a turn, so a caller's rollback can be checked.
   Exception? startTurnError;
 
+  /// Awaited before a session is created, so pending catalog state is visible.
+  Completer<void>? sessionCreateGate;
+
+  /// Thrown instead of creating a session.
+  Exception? sessionCreateError;
+
   /// Prompts [startTurn] was called with, recorded before it can throw.
   ///
   /// [startedPrompts] only records what succeeded, so a retry bound has to be
@@ -533,6 +563,9 @@ final class FakeCoderApi
 
   /// Awaited before a turn starts, to hold one send in flight.
   Completer<void>? startTurnGate;
+
+  /// Emits the daemon notifications that make a newly-started turn visible.
+  bool emitTurnStartEvents = false;
 
   /// Thrown instead of noting pending input.
   Exception? notePendingInputError;
@@ -621,6 +654,47 @@ final class FakeCoderApi
 
   @override
   AttachmentsApi get attachments => this;
+
+  @override
+  RelayApi get relay => this;
+
+  @override
+  Stream<RelayStatusDto> get statusUpdates =>
+      const Stream<RelayStatusDto>.empty();
+
+  @override
+  Future<RelayStatusDto> getRelayStatus() async => RelayStatusDto(
+    enabled: relayEnabled,
+    connected: false,
+    endpoint: 'wss://relay.tinyrack.net/v1/ws',
+    serverId: serverInfo.serverId,
+  );
+
+  @override
+  Future<RelayStatusDto> setRelayEnabled({required bool enabled}) async {
+    relayEnabled = enabled;
+    return RelayStatusDto(
+      enabled: enabled,
+      connected: false,
+      endpoint: 'wss://relay.tinyrack.net/v1/ws',
+      serverId: serverInfo.serverId,
+    );
+  }
+
+  @override
+  Future<RelayPairingOfferDto> createRelayPairingOffer() async =>
+      relayPairingOffer ??
+      (throw StateError('No relay pairing offer configured for this fake.'));
+
+  @override
+  Future<List<RelayDeviceDto>> listRelayDevices() async =>
+      List<RelayDeviceDto>.unmodifiable(relayDevices);
+
+  @override
+  Future<void> revokeRelayDevice(String deviceId) async {
+    revokedRelayDeviceIds.add(deviceId);
+    relayDevices.removeWhere((device) => device.id == deviceId);
+  }
 
   @override
   Stream<SessionDto> get sessionUpdates => events
@@ -931,6 +1005,10 @@ final class FakeCoderApi
         const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
   }) async {
+    final gate = sessionCreateGate;
+    if (gate != null) await gate.future;
+    final error = sessionCreateError;
+    if (error != null) throw error;
     final agent = SessionDto(
       id: id,
       worktreeId: worktreeId,
@@ -1468,6 +1546,7 @@ final class FakeCoderApi
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
     String apiKey, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final error = providerConnectError;
@@ -1476,24 +1555,29 @@ final class FakeCoderApi
     final existing = _connections
         .where((connection) => connection.definitionId == definitionId)
         .length;
-    final connectionId = existing == 0
-        ? definitionId
-        : '$definitionId-${existing + 1}';
+    final resolvedConnectionId =
+        connectionId ??
+        (existing == 0 ? definitionId : '$definitionId-${existing + 1}');
     credentials[definitionId] = apiKey;
-    credentials[connectionId] = apiKey;
+    credentials[resolvedConnectionId] = apiKey;
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
     return _saveConnection(
       ProviderConnectionDto(
-        id: connectionId,
+        id: resolvedConnectionId,
         definitionId: definitionId,
         modelPrefix: modelPrefix ?? definitionId,
         displayName: definition.name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.apiKey,
         credentialOrigin: ProviderCredentialOrigin.stored,
-        createdAt: _now,
+        createdAt:
+            _connections
+                .where((item) => item.id == resolvedConnectionId)
+                .firstOrNull
+                ?.createdAt ??
+            _now,
         updatedAt: _now,
       ),
     );
@@ -1502,27 +1586,33 @@ final class FakeCoderApi
   @override
   Future<ProviderConnectionDto> connectProviderNone(
     String definitionId, {
+    String? connectionId,
     String? modelPrefix,
   }) async {
     final existing = _connections
         .where((connection) => connection.definitionId == definitionId)
         .length;
-    final connectionId = existing == 0
-        ? definitionId
-        : '$definitionId-${existing + 1}';
+    final resolvedConnectionId =
+        connectionId ??
+        (existing == 0 ? definitionId : '$definitionId-${existing + 1}');
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
     return _saveConnection(
       ProviderConnectionDto(
-        id: connectionId,
+        id: resolvedConnectionId,
         definitionId: definitionId,
         modelPrefix: modelPrefix ?? definitionId,
         displayName: definition.name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.none,
         credentialOrigin: ProviderCredentialOrigin.none,
-        createdAt: _now,
+        createdAt:
+            _connections
+                .where((item) => item.id == resolvedConnectionId)
+                .firstOrNull
+                ?.createdAt ??
+            _now,
         updatedAt: _now,
       ),
     );
@@ -1532,11 +1622,13 @@ final class FakeCoderApi
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
     String methodId, {
+    String? connectionId,
     String? modelPrefix,
   }) async => ProviderAuthAttemptDto(
     id: 'attempt',
     definitionId: definitionId,
     methodId: methodId,
+    connectionId: connectionId ?? definitionId,
     modelPrefix: modelPrefix ?? definitionId,
     status: ProviderAuthAttemptStatus.awaitingUser,
     authorizationUrl: 'https://auth.example/authorize',
@@ -1598,6 +1690,10 @@ final class FakeCoderApi
       _models[connectionId] ?? const <ProviderModelDto>[],
     );
   }
+
+  @override
+  Future<List<ProviderUsageDto>> listProviderUsage() async =>
+      List<ProviderUsageDto>.unmodifiable(_providerUsage);
 
   @override
   Future<SessionModelSelectionDto?> getDefaultModel() async => _defaultModel;
@@ -1726,6 +1822,20 @@ final class FakeCoderApi
     startedPrompts.add(prompt);
     startedTurnIds.add(turnId);
     startedAttachmentIds.add(List<String>.of(attachmentIds));
+    if (emitTurnStartEvents) {
+      final index = _agents.indexWhere((agent) => agent.id == sessionId);
+      if (index >= 0) {
+        emit(
+          SessionUpdatedClientEvent(
+            _agents[index].copyWith(status: SessionStatus.running),
+          ),
+        );
+      }
+      emitTimeline(sessionId, 'user.message', <String, dynamic>{
+        'text': prompt,
+        'attachments': const <Map<String, dynamic>>[],
+      });
+    }
   }
 
   @override
@@ -1847,7 +1957,7 @@ AppServices fakeAppServices(
     RemoteDaemonProfile(
       id: hostId,
       label: 'Test daemon',
-      websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+      connections: directHostConnections(Uri.parse('ws://127.0.0.1:7337/ws')),
       autoConnect: connected,
       createdAt: now,
       updatedAt: now,
@@ -1874,7 +1984,25 @@ AppServices fakeAppServices(
     credentials: effectiveStore,
     clients: _FakeHostClientFactory(api),
     clientKind: 'test',
+    pathProbeScheduler: const _NoopHostPathProbeScheduler(),
   );
+}
+
+final class _NoopHostPathProbeScheduler implements HostPathProbeScheduler {
+  const _NoopHostPathProbeScheduler();
+
+  @override
+  HostPathProbeTask periodic(
+    Duration interval,
+    Future<void> Function() callback,
+  ) => const _NoopHostPathProbeTask();
+}
+
+final class _NoopHostPathProbeTask implements HostPathProbeTask {
+  const _NoopHostPathProbeTask();
+
+  @override
+  void cancel() {}
 }
 
 final class _FakeHostClientFactory implements HostClientFactory {
@@ -1884,8 +2012,8 @@ final class _FakeHostClientFactory implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) async => api;

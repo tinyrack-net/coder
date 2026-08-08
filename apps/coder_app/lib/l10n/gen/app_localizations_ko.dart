@@ -519,6 +519,80 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appSettingsAddRemote => '원격 daemon 추가';
 
   @override
+  String get relayPairTitle => '기기 연결';
+
+  @override
+  String get relayPairDescription =>
+      'daemon에 표시된 일회용 링크를 붙여 넣으세요. 코드와 파일은 relay를 통과할 때도 종단 간 암호화됩니다.';
+
+  @override
+  String get relayPairLink => '연결 링크';
+
+  @override
+  String get relayPairDeviceName => '이 기기 이름';
+
+  @override
+  String get relayPairAction => '연결';
+
+  @override
+  String get relayPairScan => 'QR 코드 스캔';
+
+  @override
+  String get relayPairQrSemantics => '일회용 기기 연결 링크 QR 코드';
+
+  @override
+  String get relayPairInvalid => '올바른 Tinyrack Coder 연결 링크를 입력하세요.';
+
+  @override
+  String get relayPairExpired =>
+      '이 연결 링크가 만료되었거나 이미 사용되었습니다. daemon에서 새 링크를 만드세요.';
+
+  @override
+  String get relayAdvancedDirect => '고급 직접 연결';
+
+  @override
+  String get relayDevicesTitle => '연결된 기기';
+
+  @override
+  String get relayDevicesDescription =>
+      '새 기기를 위한 10분짜리 링크를 만들거나 더 이상 연결하면 안 되는 기기를 해제하세요.';
+
+  @override
+  String get relayCreateLink => '연결 링크 만들기';
+
+  @override
+  String relayLinkExpires(String expiresAt) {
+    return '$expiresAt에 만료';
+  }
+
+  @override
+  String get relayNoDevices => '승인된 기기가 없습니다.';
+
+  @override
+  String get relayRevoke => '해제';
+
+  @override
+  String relayRevokeTitle(String name) {
+    return '$name 기기를 해제할까요?';
+  }
+
+  @override
+  String get relayRevokeBody =>
+      '기기의 현재 relay 연결이 즉시 종료됩니다. 다시 연결하려면 새 연결 링크가 필요합니다.';
+
+  @override
+  String get relayPathDirect => '직접 연결';
+
+  @override
+  String get relayPathRelay => 'Relay';
+
+  @override
+  String get relayConnectionDetails => '연결 세부 정보';
+
+  @override
+  String get relayApprovedDevices => '기기';
+
+  @override
   String get appSettingsNoRemotes => '저장된 원격 daemon이 없습니다.';
 
   @override
@@ -773,6 +847,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsNoConnections => '연결된 Provider가 없습니다.';
 
   @override
+  String get providerSettingsSelectConnection => '관리할 Provider를 선택하세요.';
+
+  @override
+  String get providerSettingsRequiredFields => '이름과 Base URL을 입력하세요.';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API key를 입력하세요.';
+
+  @override
   String get providerSettingsEditAdvanced => '고급 설정 편집';
 
   @override
@@ -795,6 +878,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => '로그인 대기 중';
+
+  @override
+  String get providerSettingsOpenBrowser => '브라우저 열기';
+
+  @override
+  String get providerSettingsReconnect => '다시 연결';
 
   @override
   String get providerSettingsModelPrefix => '모델 Prefix';
@@ -1632,6 +1721,59 @@ class AppLocalizationsKo extends AppLocalizations {
   String sessionContextMeterValue(int percent) {
     return '컨텍스트 창의 $percent% 사용';
   }
+
+  @override
+  String get sessionContextDetailsTitle => '컨텍스트 사용량';
+
+  @override
+  String sessionContextPercent(int percent) {
+    return '$percent% 사용';
+  }
+
+  @override
+  String sessionContextTokens(String used, String max) {
+    return '$used / $max 토큰';
+  }
+
+  @override
+  String sessionContextCost(String cost) {
+    return '세션 비용 $cost';
+  }
+
+  @override
+  String get sessionQuotaLoading => 'Provider 사용량 불러오는 중';
+
+  @override
+  String get sessionQuotaError => 'Provider 사용량을 일시적으로 불러올 수 없습니다.';
+
+  @override
+  String sessionQuotaProviderPlan(String provider, String plan) {
+    return '$provider · $plan';
+  }
+
+  @override
+  String sessionQuotaPercent(int percent) {
+    return '$percent% 사용';
+  }
+
+  @override
+  String sessionQuotaResets(String time) {
+    return '$time 재설정';
+  }
+
+  @override
+  String sessionQuotaCredits(String amount) {
+    return '크레딧 $amount';
+  }
+
+  @override
+  String get sessionQuotaWindowSession => '세션 한도';
+
+  @override
+  String get sessionQuotaWindowWeekly => '주간 한도';
+
+  @override
+  String get sessionQuotaWindowCodeReview => '코드 리뷰 한도';
 
   @override
   String get composerCommandNoAttachments => '명령을 실행하려면 첨부를 제거하세요.';

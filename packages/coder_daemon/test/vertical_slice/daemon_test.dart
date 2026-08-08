@@ -169,6 +169,12 @@ void main() {
         custom.id,
       );
       expect(
+        (await client.listProviderUsage())
+            .singleWhere((usage) => usage.connectionId == custom.id)
+            .status,
+        ProviderUsageStatus.unsupported,
+      );
+      expect(
         (await client.listProviderModels(custom.id)).map((item) => item.id),
         containsAll(<String>[
           'local-test/test-model',
@@ -503,6 +509,7 @@ void main() {
       'feature_test__terminal_settings__verticalSlice',
       'feature_test__turn_execution__verticalSlice',
       'feature_test__provider_catalog__verticalSlice',
+      'feature_test__provider_usage__verticalSlice',
       'feature_test__provider_connection_management__verticalSlice',
       'feature_test__provider_custom__verticalSlice',
       'feature_test__provider_default_model__verticalSlice',
@@ -1291,7 +1298,7 @@ void main() {
         title: 'Reset',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1348,9 +1355,14 @@ void main() {
       final refreshed = await client.sessions.listSessions(
         worktreeId: worktreeId,
       );
+      final refreshedSession = refreshed.firstWhere(
+        (item) => item.id == session.id,
+      );
+      expect(refreshedSession.contextTokens, 0);
       expect(
-        refreshed.firstWhere((item) => item.id == session.id).contextTokens,
-        0,
+        refreshedSession.totalCostUsd,
+        greaterThan(0),
+        reason: 'resetting context does not erase priced session usage',
       );
     },
     tags: const <String>['feature_test__tool_context_budget__verticalSlice'],
@@ -2402,7 +2414,7 @@ void main() {
           useEnvironmentCredentials: false,
         ),
         oauthGateway: gateway,
-        modelDiscovery: const _StaticDiscovery(<String>['gpt-test']),
+        modelDiscovery: const _CredentialAwareDiscovery(),
       );
       addTearDown(() async {
         await handle.stop();
@@ -2415,6 +2427,20 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
+
+      final rejected = await client.connectProviderApiKey(
+        'deepseek',
+        'invalid-key',
+      );
+      expect(rejected.status, ProviderConnectionStatus.error);
+      final corrected = await client.connectProviderApiKey(
+        'deepseek',
+        'valid-key',
+        connectionId: rejected.id,
+      );
+      expect(corrected.id, rejected.id);
+      expect(corrected.status, ProviderConnectionStatus.connected);
+      await client.disconnectProvider(corrected.id);
 
       final completed = await client.startProviderAuth(
         'openai',
@@ -2432,7 +2458,9 @@ void main() {
         completed.id,
         ProviderAuthAttemptStatus.succeeded,
       );
-      final connected = (await client.listProviderConnections()).single;
+      final connected = (await client.listProviderConnections()).singleWhere(
+        (connection) => connection.definitionId == 'openai',
+      );
       expect(connected.credentialOrigin, ProviderCredentialOrigin.oauth);
       // The Codex endpoint has no `/models` listing, so the connection must
       // settle on the bundled catalog instead of degrading on a discovery 400.
@@ -2443,6 +2471,31 @@ void main() {
       )).map((model) => model.id);
       expect(oauthModels, contains('openai/gpt-5.6-sol'));
       expect(oauthModels, isNot(contains('gpt-test')));
+
+      final createdAt = connected.createdAt;
+      final reauth = await client.startProviderAuth(
+        'openai',
+        'chatgpt-device',
+        connectionId: connected.id,
+      );
+      gateway.sessions.last.completer.complete(
+        OAuthCredential(
+          accessToken: 'replacement-access-token',
+          refreshToken: 'replacement-refresh-token',
+          expiresAt: DateTime.now().toUtc().add(const Duration(hours: 2)),
+        ),
+      );
+      await _waitForAuthStatus(
+        client,
+        reauth.id,
+        ProviderAuthAttemptStatus.succeeded,
+      );
+      final reauthenticated = await client.listProviderConnections();
+      final reauthenticatedOpenAI = reauthenticated.singleWhere(
+        (connection) => connection.definitionId == 'openai',
+      );
+      expect(reauthenticatedOpenAI.id, connected.id);
+      expect(reauthenticatedOpenAI.createdAt, createdAt);
 
       final cancelled = await client.startProviderAuth(
         'openai',
@@ -3106,6 +3159,24 @@ final class _StaticDiscovery implements ProviderModelDiscovery {
     ProviderEndpoint endpoint,
     ProviderCredential? credential,
   ) async => modelIds;
+}
+
+final class _CredentialAwareDiscovery implements ProviderModelDiscovery {
+  const _CredentialAwareDiscovery();
+
+  @override
+  Future<List<String>> fetchModelIds(
+    ProviderEndpoint endpoint,
+    ProviderCredential? credential,
+  ) async {
+    if (credential case ApiKeyCredential(:final key) when key != 'valid-key') {
+      throw const ProviderDiscoveryFailure(
+        ProviderDiscoveryFailureKind.invalidCredential,
+        'credential rejected by deterministic provider',
+      );
+    }
+    return const <String>['gpt-test'];
+  }
 }
 
 /// Locates the fake stdio MCP server, whichever directory the suite runs from.

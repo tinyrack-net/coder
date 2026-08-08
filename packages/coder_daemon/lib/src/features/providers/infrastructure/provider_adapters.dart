@@ -1,4 +1,5 @@
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_protocol/coder_protocol.dart';
 
 // Consumers of the daemon's provider ports need the request and endpoint
 // shapes those ports exchange without importing the agent layer directly.
@@ -29,4 +30,49 @@ abstract interface class ProviderModelDiscovery {
 abstract interface class ModelProviderFactory {
   /// Creates a provider adapter for one connected provider.
   ModelProvider create(ModelProviderRequest request);
+}
+
+/// Secret-bearing transport used only by the provider usage service.
+abstract interface class ProviderUsageGateway {
+  /// Reads OpenAI subscription quota using one Coder-managed OAuth credential.
+  Future<ProviderUsagePayload> fetchOpenAIUsage(OAuthCredential credential);
+}
+
+/// Provider-neutral quota payload returned by a usage transport.
+final class ProviderUsagePayload {
+  /// Creates a parsed quota payload.
+  const ProviderUsagePayload({
+    required this.provider,
+    required this.windows,
+    this.plan,
+    this.creditBalance,
+    this.detail,
+  });
+
+  /// Provider display label.
+  final String provider;
+
+  /// Subscription plan name.
+  final String? plan;
+
+  /// Available quota windows.
+  final List<ProviderUsageWindowDto> windows;
+
+  /// Remaining prepaid credits, when reported.
+  final double? creditBalance;
+
+  /// Non-sensitive provider detail.
+  final String? detail;
+}
+
+/// Signals that a quota endpoint rejected the current access token.
+final class ProviderUsageAuthorizationFailure implements Exception {
+  /// Creates an authorization failure.
+  const ProviderUsageAuthorizationFailure();
+}
+
+/// Safe transport failure with no vendor response body or credentials.
+final class ProviderUsageUnavailable implements Exception {
+  /// Creates an unavailable failure.
+  const ProviderUsageUnavailable();
 }

@@ -1,7 +1,6 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/mcp/application/mcp_servers_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
-import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
@@ -33,13 +32,6 @@ class McpSettingsPage extends ConsumerStatefulWidget {
 class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
   String? _selectedId;
   bool _creating = false;
-  SettingsPaneNavigationController? _paneNavigation;
-
-  @override
-  void dispose() {
-    _paneNavigation?.clearBackHandler(this);
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,40 +103,12 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
             onDone: (id) => setState(() => _selectedId = id),
           );
 
-    return LayoutBuilder(
+    return SettingsListDetailLayout(
       key: const ValueKey<String>('mcp-settings-page'),
-      builder: (context, constraints) {
-        if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
-          _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
-          syncSettingsPaneBackHandler(
-            context,
-            owner: this,
-            active: selected != null || _creating,
-            onBack: _showServerList,
-          );
-          return selected == null && !_creating ? list : detail;
-        }
-        syncSettingsPaneBackHandler(
-          context,
-          owner: this,
-          active: false,
-          onBack: _showServerList,
-        );
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            SizedBox(
-              width: CoderLayoutMetrics.settingsCollectionWidth,
-              child: list,
-            ),
-            const TRSeparator(
-              orientation: TRSeparatorOrientation.vertical,
-              variant: TRSeparatorVariant.muted,
-            ),
-            Expanded(child: detail),
-          ],
-        );
-      },
+      collection: list,
+      detail: detail,
+      detailVisible: selected != null || _creating,
+      onBack: _showServerList,
     );
   }
 
@@ -188,14 +152,14 @@ class _ServerList extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: ListView(
+          child: SettingsCollectionList(
             children: <Widget>[
               _SectionHeader(
                 key: const ValueKey<String>('mcp-scope-section-user'),
                 label: l10n.mcpSettingsScopeUser,
               ),
               if (state.userServers.isEmpty)
-                SettingsRow(
+                SettingsRow.collection(
                   key: const ValueKey<String>('mcp-server-list-empty'),
                   title: TRText.inherit(l10n.mcpSettingsEmpty),
                 ),
@@ -232,11 +196,9 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(
-      TRSpacing.large,
-      TRSpacing.medium,
-      TRSpacing.large,
-      TRSpacing.extraSmall,
+    padding: const EdgeInsets.symmetric(
+      horizontal: TRSpacing.extraSmall,
+      vertical: TRSpacing.small,
     ),
     child: TRText(
       label,
@@ -260,7 +222,7 @@ class _ServerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return SettingsRow(
+    return SettingsRow.collection(
       key: ValueKey<String>('mcp-server-tile-${server.config.id}'),
       selected: selected,
       onTap: onTap,

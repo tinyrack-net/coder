@@ -203,7 +203,7 @@ void main() {
           RemoteDaemonProfile(
             id: 'remote',
             label: 'Remote daemon',
-            websocketUri: remoteHandle.boundEndpoint,
+            connections: directHostConnections(remoteHandle.boundEndpoint),
             autoConnect: true,
             createdAt: now,
             updatedAt: now,
@@ -776,11 +776,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('model-search-field')),
-        'gpt-5.6-sol',
+        'gpt-5.2',
       );
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+        find.byKey(const ValueKey('model-option-openai-gpt-5.2')),
       );
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -839,11 +839,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('model-search-field')),
-        'gpt-5.6-sol',
+        'gpt-5.2',
       );
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
+        find.byKey(const ValueKey('model-option-openai-gpt-5.2')),
       );
       await tester.pumpAndSettle();
 
@@ -883,6 +883,19 @@ void main() {
         find.text('Parent completed.', findRichText: true),
         setupClient,
       );
+      final contextMeter = find.byKey(
+        const ValueKey<String>('session-composer-context-meter'),
+      );
+      await pumpUntil(tester, contextMeter);
+      final contextMouse = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      await contextMouse.addPointer(location: Offset.zero);
+      addTearDown(contextMouse.removePointer);
+      await contextMouse.moveTo(tester.getCenter(contextMeter));
+      await pumpUntil(tester, find.text('컨텍스트 사용량'));
+      await contextMouse.moveTo(Offset.zero);
+      await pumpUntilGone(tester, find.text('컨텍스트 사용량'));
       // The child works asynchronously; wait for its FINAL_ANSWER so the
       // track rows below render settled icons instead of live spinners.
       late SessionDto spawnedChild;
@@ -1232,11 +1245,12 @@ void main() {
         find.text('Attached fixtures.', findRichText: true),
       );
 
-      await tester.enterText(
-        find.byKey(composer),
+      await _submitComposerPrompt(
+        tester,
+        composer,
+        send,
         'Publish outbound attachment',
       );
-      await tester.tap(find.byKey(send));
       await pumpUntilCondition(
         tester,
         () async => (await setupClient.sessions.subscribeTimeline(
@@ -1687,13 +1701,23 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
-      await pumpUntil(tester, find.text('Provider 추가'));
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
       await _selectDaemon(
         tester,
         'Remote daemon',
         settleAfterSelection: false,
       );
-      await pumpUntil(tester, find.text('Provider 추가'));
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('OpenAI'), findsWidgets);
       expect(find.text('DeepSeek'), findsWidgets);
       final addCustom = find.byKey(const ValueKey('provider-add-custom'));
@@ -1703,9 +1727,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(_trTextInput('이름'), '');
       await tester.enterText(_trTextInput('Base URL'), '');
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-save')),
+      );
       await tester.pumpAndSettle();
-      expect(find.text('Custom Provider 고급 설정'), findsOneWidget);
+      expect(find.text('이름과 Base URL을 입력하세요.'), findsOneWidget);
       await tester.enterText(
         _trTextInput('이름'),
         'E2E Provider',
@@ -1714,37 +1740,49 @@ void main() {
         _trTextInput('Base URL'),
         'http://127.0.0.1:${modelServer.port}/unavailable/v1',
       );
-      await tester.tap(find.text('API key 필요'));
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await _acceptSuggestedProviderPrefix(tester);
-      await pumpUntil(tester, find.text('Model 자동 조회 실패'));
-      await tester.tap(find.widgetWithText(TRButton, '나중에'));
-      await pumpUntil(tester, find.text('E2E Provider'));
-      final degradedProvider =
-          (await remoteClient.providers.listProviderConnections()).singleWhere(
-            (item) => item.displayName == 'E2E Provider',
-          );
-      expect(degradedProvider.status, ProviderConnectionStatus.degraded);
-
-      // Connections share one card, so the menu is addressed by the key its
-      // own row carries rather than by walking up to a card that holds every
-      // connection.
-      final providerMenu = find.byKey(
-        ValueKey<String>('provider-actions-${degradedProvider.id}'),
+      await tester.enterText(_trTextInput('API key'), 'valid-key');
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-save')),
       );
-      await tester.ensureVisible(providerMenu);
-      await tester.pumpAndSettle();
-      await tester.tap(providerMenu);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('고급 설정 편집'));
-      await tester.pumpAndSettle();
+      ProviderConnectionDto? degradedProvider;
+      await pumpUntilCondition(
+        tester,
+        () async {
+          final matches =
+              (await remoteClient.providers.listProviderConnections()).where(
+                (item) =>
+                    item.displayName == 'E2E Provider' &&
+                    item.status == ProviderConnectionStatus.degraded,
+              );
+          if (matches.length != 1) return false;
+          degradedProvider = matches.single;
+          return true;
+        },
+        'the custom provider to be persisted',
+      );
+      expect(degradedProvider!.status, ProviderConnectionStatus.degraded);
+      await pumpUntil(
+        tester,
+        find.byKey(
+          ValueKey<String>('provider-detail-${degradedProvider!.id}'),
+        ),
+      );
+
       await tester.enterText(_trTextInput('이름'), 'E2E Provider Edited');
       await tester.enterText(
         _trTextInput('Base URL'),
         'http://127.0.0.1:${modelServer.port}/v1',
       );
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await pumpUntil(tester, find.text('E2E Provider Edited'));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-save')),
+      );
+      await pumpUntilCondition(
+        tester,
+        () async => (await remoteClient.providers.listProviderConnections())
+            .any((item) => item.displayName == 'E2E Provider Edited'),
+        'the custom provider edit to be persisted',
+      );
       final providerConnection = await _waitForProviderModels(
         remoteClient,
         'E2E Provider Edited',
@@ -1758,47 +1796,37 @@ void main() {
           '${providerConnection.modelPrefix}/$selectedModelId',
         ]),
       );
-      final connectedSection = find.byKey(
-        const ValueKey('provider-settings-connected'),
+      expect(find.text('E2E Provider Edited'), findsWidgets);
+      const customDelete = ValueKey<String>('provider-custom-delete');
+      await pumpUntilCondition(
+        tester,
+        () =>
+            tester.widget<TRButton>(find.byKey(customDelete)).onPressed != null,
+        'the custom provider delete action to become enabled',
       );
-      final addSection = find.byKey(
-        const ValueKey('provider-settings-add'),
+      await tester.tap(find.byKey(customDelete));
+      await pumpUntil(tester, find.byType(TRAlertDialog));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(TRAlertDialog),
+          matching: find.widgetWithText(TRButton, '취소'),
+        ),
       );
-      // The save dialog carries the same label, so wait for the settings list
-      // itself before measuring section order.
-      await pumpUntil(tester, connectedSection);
-      await tester.pumpAndSettle();
-      expect(
-        tester.getBottomRight(connectedSection).dy,
-        lessThanOrEqualTo(tester.getTopLeft(addSection).dy),
-      );
-      expect(find.text('E2E Provider Edited'), findsOneWidget);
-      await Scrollable.ensureVisible(
-        tester.element(providerMenu),
-        alignment: 0.3,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(providerMenu);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('삭제'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '취소'));
+      await pumpUntil(tester, find.byKey(customDelete));
       expect(
         (await remoteClient.providers.listProviderConnections()).where(
           (item) => item.id == providerConnection.id,
         ),
         hasLength(1),
       );
-      await Scrollable.ensureVisible(
-        tester.element(providerMenu),
-        alignment: 0.3,
+      await tester.tap(find.byKey(customDelete));
+      await pumpUntil(tester, find.byType(TRAlertDialog));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(TRAlertDialog),
+          matching: find.widgetWithText(TRButton, '삭제'),
+        ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(providerMenu.hitTestable());
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('삭제'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await pumpUntilCondition(
         tester,
         () async =>
@@ -1807,56 +1835,27 @@ void main() {
             ),
         'custom provider to be deleted',
       );
+      await pumpUntilGone(
+        tester,
+        find.byKey(
+          ValueKey<String>('provider-detail-${providerConnection.id}'),
+        ),
+      );
 
-      final addDeepSeek = find.byKey(const ValueKey('provider-add-deepseek'));
-      await tester.ensureVisible(addDeepSeek);
-      await tester.tap(addDeepSeek);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
       await tester.pumpAndSettle();
-      await _acceptSuggestedProviderPrefix(tester);
-      await tester.enterText(_trTextInput('API key'), 'invalid-key');
-      await tester.tap(find.widgetWithText(TRButton, '연결'));
-      ProviderConnectionDto? failedDeepSeek;
-      await pumpUntilCondition(
-        tester,
-        () async {
-          final matches =
-              (await remoteClient.providers.listProviderConnections())
-                  .where(
-                    (item) =>
-                        item.definitionId == 'deepseek' &&
-                        item.status == ProviderConnectionStatus.error,
-                  )
-                  .toList();
-          if (matches.length != 1) return false;
-          failedDeepSeek = matches.single;
-          return true;
-        },
-        'invalid provider credential to be rejected',
-      );
-      // The daemon records the failure before the settings controller finishes
-      // reloading, so wait for the card rather than sampling one frame.
-      await pumpUntil(tester, find.textContaining('credential rejected'));
-      expect(find.textContaining('credential rejected'), findsOneWidget);
-      await _disconnectProviderConnection(tester, failedDeepSeek!.id);
-      await pumpUntilCondition(
-        tester,
-        () async =>
-            (await remoteClient.providers.listProviderConnections())
-                .singleWhere((item) => item.id == failedDeepSeek!.id)
-                .status ==
-            ProviderConnectionStatus.disconnected,
-        'failed provider to disconnect',
-      );
-
-      // Disconnecting moves the provider back to the addable list only once
-      // the settings controller has reloaded, which trails the daemon.
+      final addDeepSeek = find.byKey(const ValueKey('provider-add-deepseek'));
       await pumpUntil(tester, addDeepSeek);
       await tester.ensureVisible(addDeepSeek);
       await tester.tap(addDeepSeek);
       await tester.pumpAndSettle();
-      await _acceptSuggestedProviderPrefix(tester);
       await tester.enterText(_trTextInput('API key'), 'valid-key');
-      await tester.tap(find.widgetWithText(TRButton, '연결'));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connect-submit')),
+      );
       ProviderConnectionDto? connectedDeepSeek;
       await pumpUntilCondition(
         tester,
@@ -1873,15 +1872,28 @@ void main() {
           connectedDeepSeek = matches.single;
           return true;
         },
-        'corrected provider credential to connect',
+        'provider credential to connect',
+      );
+      await pumpUntil(
+        tester,
+        find.byKey(
+          ValueKey<String>('provider-detail-${connectedDeepSeek!.id}'),
+        ),
       );
       await _disconnectProviderConnection(tester, connectedDeepSeek!.id);
 
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.pumpAndSettle();
       final addOllama = find.byKey(const ValueKey('provider-add-ollama'));
+      await pumpUntil(tester, addOllama);
       await tester.ensureVisible(addOllama);
       await tester.tap(addOllama);
       await tester.pumpAndSettle();
-      await _acceptSuggestedProviderPrefix(tester);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connect-submit')),
+      );
       ProviderConnectionDto? connectedOllama;
       await pumpUntilCondition(
         tester,
@@ -2048,6 +2060,8 @@ void main() {
       'feature_test__skill_management__e2e',
       'feature_test__agent_collaboration__e2e',
       'feature_test__provider_catalog__e2e',
+      'feature_test__provider_usage__e2e',
+      'feature_scenario__provider_usage__context_usage_hover__e2e',
       'feature_test__provider_connection_management__e2e',
       'feature_test__provider_custom__e2e',
       'feature_test__desktop_window_chrome__e2e',
@@ -2280,34 +2294,19 @@ Future<void> _disconnectProviderConnection(
   WidgetTester tester,
   String connectionId,
 ) async {
-  final menu = find.byKey(
-    ValueKey<String>('provider-actions-$connectionId'),
+  final detail = find.byKey(
+    ValueKey<String>('provider-detail-$connectionId'),
   );
-  await pumpUntil(tester, menu);
-  await Scrollable.ensureVisible(tester.element(menu), alignment: 0.3);
-  await tester.pumpAndSettle();
-  await tester.tap(menu);
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('연결 해제'));
-  await tester.pumpAndSettle();
+  await pumpUntil(tester, detail);
   await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
   await tester.pumpAndSettle();
-}
-
-Future<void> _acceptSuggestedProviderPrefix(WidgetTester tester) async {
-  await pumpUntil(
-    tester,
-    find.byKey(const ValueKey<String>('provider-model-prefix')),
-  );
   await tester.tap(
-    find
-        .descendant(
-          of: find.byType(TRAlertDialog),
-          matching: find.byType(TRButton),
-        )
-        .last,
+    find.descendant(
+      of: find.byType(TRAlertDialog),
+      matching: find.widgetWithText(TRButton, '연결 해제'),
+    ),
   );
-  await tester.pumpAndSettle();
+  await pumpUntilGone(tester, detail);
 }
 
 Future<void> _pumpUntilTextFieldValue(

@@ -67,7 +67,105 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
-    'session tab strip is a TRTabs bar whose commands stay square',
+    'the first turn and assistant response preserve the chat surface',
+    (tester) async {
+      Future<void> verifyAt(Size size) async {
+        await tester.binding.setSurfaceSize(size);
+        final startGate = Completer<void>();
+        final api =
+            FakeCoderApi(
+                workspaces: <WorkspaceDto>[workspace],
+                worktrees: <WorktreeDto>[checkout],
+              )
+              ..startTurnGate = startGate
+              ..emitTurnStartEvents = true;
+        final router = await _pumpRoute(
+          tester,
+          api,
+          WorktreeRoute(
+            hostId: 'server',
+            workspaceId: workspace.id,
+            worktreeId: checkout.id,
+          ).location,
+          disableAnimations: true,
+        );
+
+        const prompt = 'Keep this request visible';
+        await tester.enterText(
+          find.byKey(const ValueKey('session-composer-input')),
+          prompt,
+        );
+        await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+        await tester.pump();
+
+        // The exact draft remains mounted while the daemon accepts the turn;
+        // no workspace loading screen or empty conversation replaces it.
+        expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
+        expect(find.byType(ChatTimelineView), findsNothing);
+
+        startGate.complete();
+        for (var frame = 0; frame < 8; frame += 1) {
+          await tester.pump();
+        }
+        final timeline = find.byType(ChatTimelineView).hitTestable();
+        expect(timeline, findsOneWidget);
+        expect(
+          find.descendant(
+            of: timeline,
+            matching: find.text(prompt, findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        final timelineState = tester.state<State<StatefulWidget>>(timeline);
+
+        final created = api.createdSessions.single;
+        api.emitTimeline(
+          created.id,
+          'assistant.delta',
+          <String, dynamic>{'text': 'First response'},
+        );
+        await tester.pump();
+
+        expect(
+          tester.state<State<StatefulWidget>>(timeline),
+          same(timelineState),
+        );
+        expect(
+          find.descendant(
+            of: timeline,
+            matching: find.text(prompt, findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: timeline,
+            matching: find.text('First response', findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          api.createdSessions.where((item) => item.id == created.id),
+          hasLength(1),
+        );
+
+        router.dispose();
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await verifyAt(const Size(1100, 760));
+      await verifyAt(const Size(390, 760));
+    },
+    tags: const <String>[
+      'feature_test__session_lifecycle__widget',
+      'feature_test__session_tabs__widget',
+      'feature_test__turn_execution__widget',
+    ],
+  );
+
+  testWidgets(
+    'session tab strip uses the unified full-bleed TRTabs contract',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -89,13 +187,20 @@ void _registerSessionsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      // The strip is the design system's tab bar, so its inset, its height,
-      // and the tone of the rule below it are upstream contracts covered by
-      // upstream tests. What Coder owns is that the open session reaches it as
-      // a closable tab.
+      // The design system owns the full-bleed strip geometry and selection
+      // indicator. Coder only supplies the selected, closable session tab.
       final strip = find.byKey(const ValueKey('session-tab-strip'));
       expect(strip, findsOneWidget);
       expect(tester.widget<TRTabs>(strip).value, first.id);
+      expect(
+        find.descendant(
+          of: strip,
+          matching: find.byKey(
+            const ValueKey<String>('tr-tabs-indicator-one'),
+          ),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: strip,

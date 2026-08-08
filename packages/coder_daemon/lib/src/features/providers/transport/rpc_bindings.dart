@@ -1,12 +1,14 @@
 import 'package:coder_daemon/src/features/agents/infrastructure/agent_definitions.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/provider_usage_service.dart';
 import 'package:coder_daemon/src/transport/rpc/binding.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Builds the provider feature's complete v4 RPC surface.
 List<RpcBindingDescriptor> providerRpcBindings({
   required ProviderConnectionService providers,
+  required ProviderUsageService usage,
   required ProviderAuthCoordinator auth,
   required AgentDefinitionService agentDefinitions,
 }) {
@@ -27,12 +29,16 @@ List<RpcBindingDescriptor> providerRpcBindings({
         connections: await providers.connections(),
       );
     }),
+    RpcBinding(providersListUsageProcedure, (_, _) async {
+      return ProviderUsageResultDto(usage: await usage.listUsage());
+    }),
     RpcBinding(providersConnectApiKeyProcedure, (request, _) async {
       return ProviderConnectionResultDto(
         connection: await exposeFailure(
           () => providers.connectApiKey(
             request.definitionId,
             request.apiKey,
+            connectionId: request.connectionId,
             modelPrefix: request.modelPrefix,
           ),
         ),
@@ -43,6 +49,7 @@ List<RpcBindingDescriptor> providerRpcBindings({
         connection: await exposeFailure(
           () => providers.connectNone(
             request.definitionId,
+            connectionId: request.connectionId,
             modelPrefix: request.modelPrefix,
           ),
         ),
@@ -54,6 +61,7 @@ List<RpcBindingDescriptor> providerRpcBindings({
           () => auth.start(
             definitionId: request.definitionId,
             methodId: request.methodId,
+            connectionId: request.connectionId,
             modelPrefix: request.modelPrefix,
           ),
         ),

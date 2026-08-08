@@ -526,6 +526,81 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appSettingsAddRemote => 'Add remote daemon';
 
   @override
+  String get relayPairTitle => 'Connect a device';
+
+  @override
+  String get relayPairDescription =>
+      'Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.';
+
+  @override
+  String get relayPairLink => 'Pairing link';
+
+  @override
+  String get relayPairDeviceName => 'This device\'s name';
+
+  @override
+  String get relayPairAction => 'Connect';
+
+  @override
+  String get relayPairScan => 'Scan QR code';
+
+  @override
+  String get relayPairQrSemantics =>
+      'QR code for the one-time device connection link';
+
+  @override
+  String get relayPairInvalid => 'Enter a valid Tinyrack Coder pairing link.';
+
+  @override
+  String get relayPairExpired =>
+      'This pairing link expired or was already used. Create a new link on the daemon.';
+
+  @override
+  String get relayAdvancedDirect => 'Advanced direct connection';
+
+  @override
+  String get relayDevicesTitle => 'Connected devices';
+
+  @override
+  String get relayDevicesDescription =>
+      'Create a ten-minute link for a new device or remove a device that should no longer connect.';
+
+  @override
+  String get relayCreateLink => 'Create connection link';
+
+  @override
+  String relayLinkExpires(String expiresAt) {
+    return 'Expires $expiresAt';
+  }
+
+  @override
+  String get relayNoDevices => 'No devices are approved.';
+
+  @override
+  String get relayRevoke => 'Revoke';
+
+  @override
+  String relayRevokeTitle(String name) {
+    return 'Revoke $name?';
+  }
+
+  @override
+  String get relayRevokeBody =>
+      'The device\'s live relay connection ends immediately. A new pairing link is required to reconnect.';
+
+  @override
+  String get relayPathDirect => 'Direct';
+
+  @override
+  String get relayPathRelay => 'Relay';
+
+  @override
+  String get relayConnectionDetails => 'Connection details';
+
+  @override
+  String get relayApprovedDevices => 'Devices';
+
+  @override
   String get appSettingsNoRemotes => 'No remote daemons are saved.';
 
   @override
@@ -784,6 +859,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsNoConnections => 'No providers are connected.';
 
   @override
+  String get providerSettingsSelectConnection => 'Select a provider to manage.';
+
+  @override
+  String get providerSettingsRequiredFields =>
+      'Name and Base URL are required.';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API key is required.';
+
+  @override
   String get providerSettingsEditAdvanced => 'Edit advanced settings';
 
   @override
@@ -807,6 +892,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => 'Waiting for sign-in';
+
+  @override
+  String get providerSettingsOpenBrowser => 'Open browser';
+
+  @override
+  String get providerSettingsReconnect => 'Reconnect';
 
   @override
   String get providerSettingsModelPrefix => 'Model prefix';
@@ -1662,6 +1753,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String sessionContextMeterValue(int percent) {
     return '$percent% of the context window used';
   }
+
+  @override
+  String get sessionContextDetailsTitle => 'Context usage';
+
+  @override
+  String sessionContextPercent(int percent) {
+    return '$percent% used';
+  }
+
+  @override
+  String sessionContextTokens(String used, String max) {
+    return '$used / $max tokens';
+  }
+
+  @override
+  String sessionContextCost(String cost) {
+    return 'Session cost $cost';
+  }
+
+  @override
+  String get sessionQuotaLoading => 'Loading provider usage';
+
+  @override
+  String get sessionQuotaError => 'Provider usage is temporarily unavailable.';
+
+  @override
+  String sessionQuotaProviderPlan(String provider, String plan) {
+    return '$provider · $plan';
+  }
+
+  @override
+  String sessionQuotaPercent(int percent) {
+    return '$percent% used';
+  }
+
+  @override
+  String sessionQuotaResets(String time) {
+    return 'Resets $time';
+  }
+
+  @override
+  String sessionQuotaCredits(String amount) {
+    return 'Credits $amount';
+  }
+
+  @override
+  String get sessionQuotaWindowSession => 'Session limit';
+
+  @override
+  String get sessionQuotaWindowWeekly => 'Weekly limit';
+
+  @override
+  String get sessionQuotaWindowCodeReview => 'Code review limit';
 
   @override
   String get composerCommandNoAttachments =>
