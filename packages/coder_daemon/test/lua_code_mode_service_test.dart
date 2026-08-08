@@ -39,7 +39,12 @@ void main() {
       sourceRoot: '${Directory.current.path}/test',
     );
 
-    expect(command.arguments.single, endsWith('native/bootstrap.lua'));
+    expect(
+      command.arguments.single,
+      endsWith(
+        <String>['native', 'bootstrap.lua'].join(Platform.pathSeparator),
+      ),
+    );
   });
 
   test('a nested tool batch resumes the cell and preserves output', () async {
