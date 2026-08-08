@@ -31,15 +31,28 @@ void main() {
           .baseUrl;
 
       final refreshed = await catalog.refresh();
+      final cachedRefresh = await catalog.refresh(force: false);
       final model = catalog
           .modelsFor('deepseek')
           .singleWhere((item) => item.id == 'deepseek-new');
+      final enrichedBundledModel = catalog
+          .modelsFor('deepseek')
+          .singleWhere((item) => item.id == 'deepseek-chat');
 
       expect(refreshed.source, ProviderCatalogSource.refreshed);
+      expect(cachedRefresh, refreshed);
       expect(source.requested, contains('deepseek'));
       expect(model.label, 'DeepSeek New');
       expect(model.pricing!.input, 0.25);
       expect(model.limits!.context, 128000);
+      expect(
+        enrichedBundledModel.capabilities.imageInput,
+        CapabilitySupport.supported,
+      );
+      expect(
+        enrichedBundledModel.capabilities.fileInput,
+        CapabilitySupport.supported,
+      );
       expect(catalog.isRefreshedModel('deepseek', model.id), isTrue);
       expect(
         registry
@@ -51,6 +64,28 @@ void main() {
       expect(registry.find('attacker'), isNull);
     },
   );
+
+  test('refreshed metadata fills unknown bundled capabilities', () async {
+    final catalog = BuiltInProviderCatalog(
+      clock: _Clock(now),
+      registry: ProviderRegistry(
+        plugins: const <ProviderPlugin>[_UnknownCapabilityPlugin()],
+        wireProtocols: openAIWireProtocols(),
+      ),
+      metadataSource: _MetadataSource(),
+    );
+
+    await catalog.refresh();
+    final capabilities = catalog
+        .modelsFor('deepseek')
+        .singleWhere((model) => model.id == 'deepseek-chat')
+        .capabilities;
+
+    expect(capabilities.streaming, CapabilitySupport.supported);
+    expect(capabilities.toolCalling, CapabilitySupport.supported);
+    expect(capabilities.imageInput, CapabilitySupport.supported);
+    expect(capabilities.fileInput, CapabilitySupport.supported);
+  });
 
   test('Models.dev parser accepts only requested model metadata', () async {
     final adapter = _JsonAdapter(<String, dynamic>{
@@ -108,6 +143,34 @@ void main() {
     expect(model.limits!.output, 32000);
     expect(adapter.path, '/api.json');
   });
+
+  test(
+    'Models.dev reuses its parsed catalog after a not-modified reply',
+    () async {
+      final adapter = _JsonAdapter(
+        <String, dynamic>{
+          'deepseek': <String, dynamic>{
+            'models': <String, dynamic>{
+              'deepseek-next': <String, dynamic>{
+                'id': 'deepseek-next',
+                'name': 'DeepSeek Next',
+              },
+            },
+          },
+        },
+        returnNotModifiedAfterFirst: true,
+      );
+      final source = ModelsDevCatalogMetadataSource(
+        dio: Dio()..httpClientAdapter = adapter,
+      );
+
+      final first = await source.fetch(<String>{'deepseek'});
+      final cached = await source.fetch(<String>{'deepseek'});
+
+      expect(cached, same(first));
+      expect(adapter.requestCount, 2);
+    },
+  );
 
   test('refresh failure retains the bundled snapshot', () async {
     final catalog = BuiltInProviderCatalog(
@@ -183,6 +246,17 @@ final class _MetadataSource implements ProviderCatalogMetadataSource {
     return const <String, List<ProviderCatalogMetadata>>{
       'deepseek': <ProviderCatalogMetadata>[
         ProviderCatalogMetadata(
+          id: 'deepseek-chat',
+          label: 'DeepSeek Chat (refreshed)',
+          capabilities: ModelCapabilitiesDto(
+            streaming: CapabilitySupport.supported,
+            toolCalling: CapabilitySupport.supported,
+            imageInput: CapabilitySupport.supported,
+            fileInput: CapabilitySupport.supported,
+            source: CapabilitySource.refreshed,
+          ),
+        ),
+        ProviderCatalogMetadata(
           id: 'deepseek-new',
           label: 'DeepSeek New',
           capabilities: ModelCapabilitiesDto(
@@ -206,6 +280,39 @@ final class _MetadataSource implements ProviderCatalogMetadataSource {
 
   @override
   Future<void> close() async {}
+}
+
+final class _UnknownCapabilityPlugin extends ProviderPlugin {
+  const _UnknownCapabilityPlugin();
+
+  @override
+  String get id => deepseekDefinition.id;
+
+  @override
+  AgentProviderDefinition get definition => deepseekDefinition;
+
+  @override
+  List<ProviderCatalogModel> get models => const <ProviderCatalogModel>[
+    ProviderCatalogModel(
+      id: 'deepseek-chat',
+      label: 'DeepSeek Chat',
+      capabilities: AgentModelCapabilities(),
+    ),
+  ];
+
+  @override
+  ProviderEndpoint endpoint(AgentProviderAuthKind authKind) =>
+      const ProviderEndpoint(baseUrl: 'https://api.deepseek.com');
+
+  @override
+  ModelProvider createProvider(ModelProviderRequest request) =>
+      throw UnsupportedError('Catalog-only test plugin.');
+
+  @override
+  Future<List<String>> discoverModels(
+    ProviderEndpoint endpoint,
+    ProviderCredential? credential,
+  ) async => const <String>[];
 }
 
 final class _BlockingMetadataSource implements ProviderCatalogMetadataSource {
@@ -244,10 +351,12 @@ final class _FailingMetadataSource implements ProviderCatalogMetadataSource {
 }
 
 final class _JsonAdapter implements HttpClientAdapter {
-  _JsonAdapter(this.data);
+  _JsonAdapter(this.data, {this.returnNotModifiedAfterFirst = false});
 
   final Map<String, dynamic> data;
+  final bool returnNotModifiedAfterFirst;
   String? path;
+  int requestCount = 0;
 
   @override
   Future<ResponseBody> fetch(
@@ -256,10 +365,15 @@ final class _JsonAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     path = options.path;
+    requestCount += 1;
+    if (returnNotModifiedAfterFirst && requestCount > 1) {
+      return ResponseBody.fromString('', 304);
+    }
     return ResponseBody.fromString(
       jsonEncode(data),
       200,
       headers: <String, List<String>>{
+        'etag': <String>['catalog-v1'],
         Headers.contentTypeHeader: <String>[Headers.jsonContentType],
       },
     );

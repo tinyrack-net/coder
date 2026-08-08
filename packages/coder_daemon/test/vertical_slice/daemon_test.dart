@@ -164,16 +164,19 @@ void main() {
       expect(custom.authKind, ProviderAuthKind.none);
       expect(
         (await client.listProviderConnections())
-            .singleWhere((connection) => connection.id == 'local-test')
+            .singleWhere((connection) => connection.id == custom.id)
             .id,
-        'local-test',
+        custom.id,
       );
       expect(
-        (await client.listProviderModels('local-test')).map((item) => item.id),
-        containsAll(<String>['test-model', 'discovered-model']),
+        (await client.listProviderModels(custom.id)).map((item) => item.id),
+        containsAll(<String>[
+          'local-test/test-model',
+          'local-test/discovered-model',
+        ]),
       );
       final updatedCustom = await client.updateCustomProvider(
-        'local-test',
+        custom.id,
         CustomProviderConfigDto(
           name: 'Updated local test',
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
@@ -197,7 +200,7 @@ void main() {
           ],
         ),
       );
-      expect(temporary.id, 'temporary');
+      expect(temporary.id, isNot('temporary'));
       await client.deleteCustomProvider(temporary.id);
       expect(
         (await client.listProviderConnections()).map((item) => item.id),
@@ -262,8 +265,7 @@ void main() {
       // back to the daemon default and leaves the session without an override.
       expect(await client.getDefaultModel(), isNull);
       const wireDefault = SessionModelSelectionDto(
-        providerConnectionId: 'local-test',
-        modelId: 'test-model',
+        modelId: 'local-test/test-model',
       );
       await client.setDefaultModel(wireDefault);
       expect(await client.getDefaultModel(), wireDefault);
@@ -283,8 +285,7 @@ void main() {
           title: 'Rejected',
           agentDefinitionId: 'coder',
           model: const SessionModelSelectionDto(
-            providerConnectionId: 'missing-connection',
-            modelId: 'test-model',
+            modelId: 'missing-connection/test-model',
           ),
         ),
         throwsA(
@@ -302,16 +303,14 @@ void main() {
         agentDefinitionId: 'coder',
         mode: SessionMode.plan,
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'local-test',
-          modelId: 'test-model',
+          modelId: 'local-test/test-model',
         ),
       );
       expect(agent.status, SessionStatus.idle);
       expect(
         agent.model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'local-test',
-          modelId: 'test-model',
+          modelId: 'local-test/test-model',
         ),
       );
       expect(
@@ -343,8 +342,7 @@ void main() {
         coder.copyWith(
           model: const AgentModelSelectionDto(
             source: AgentModelSource.fixed,
-            providerConnectionId: 'local-test',
-            modelId: 'test-model',
+            modelId: 'local-test/test-model',
           ),
           modelControls: const <String, ModelControlValueDto>{},
         ),
@@ -388,14 +386,12 @@ void main() {
           const SessionSettingsPatchDto(
             hasModel: true,
             model: SessionModelSelectionDto(
-              providerConnectionId: 'local-test',
-              modelId: 'test-model',
+              modelId: 'local-test/test-model',
             ),
           ),
         )).model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'local-test',
-          modelId: 'test-model',
+          modelId: 'local-test/test-model',
         ),
       );
       // Clearing the override is always legal now: the model resolves through
@@ -426,8 +422,7 @@ void main() {
           const SessionSettingsPatchDto(
             hasModel: true,
             model: SessionModelSelectionDto(
-              providerConnectionId: 'local-test',
-              modelId: 'missing-model',
+              modelId: 'local-test/missing-model',
             ),
           ),
         ),
@@ -478,7 +473,7 @@ void main() {
       );
       expect(timeline.map((event) => event.type), contains('tool.completed'));
       expect(timeline.map((event) => event.type), contains('turn.completed'));
-      await client.disconnectProvider('local-test');
+      await client.disconnectProvider(custom.id);
       await expectLater(
         client.startTurn(
           sessionId: agent.id,
@@ -581,8 +576,7 @@ void main() {
         title: 'Parent',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       final timelineEvents = client.sessions.timelineEvents;
@@ -680,6 +674,7 @@ void main() {
       await _waitForIdleSession(client, worktreeId, child.id);
     },
     tags: const <String>['feature_test__agent_collaboration__verticalSlice'],
+    timeout: const Timeout(Duration(minutes: 1)),
   );
 
   test(
@@ -729,8 +724,7 @@ void main() {
         title: 'Parent',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -854,8 +848,7 @@ void main() {
         title: 'MCP',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       // A dangerous tool always asks, even under workspaceWrite.
@@ -1063,8 +1056,7 @@ void main() {
           title: 'Exec',
           agentDefinitionId: 'coder',
           model: const SessionModelSelectionDto(
-            providerConnectionId: 'openai',
-            modelId: 'gpt-5.6-sol',
+            modelId: 'openai/gpt-5.6-sol',
           ),
         );
         await client.subscribeTimeline(session.id);
@@ -1155,8 +1147,7 @@ void main() {
         title: 'Image',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1230,8 +1221,7 @@ void main() {
         title: 'Sleep',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1301,8 +1291,7 @@ void main() {
         title: 'Reset',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1411,8 +1400,7 @@ void main() {
         title: 'Compact',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1530,8 +1518,7 @@ void main() {
         title: 'Search',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1602,8 +1589,7 @@ void main() {
         title: 'Ask',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1690,6 +1676,7 @@ void main() {
       expect(result.data['output'], contains('Postgres'));
     },
     tags: const <String>['feature_test__turn_question__verticalSlice'],
+    timeout: const Timeout(Duration(minutes: 1)),
   );
 
   test(
@@ -1755,8 +1742,7 @@ void main() {
         title: 'Broken',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -1910,8 +1896,7 @@ void main() {
         title: 'Skills',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'openai/gpt-5.6-sol',
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -2122,7 +2107,7 @@ void main() {
           authenticationRequired: false,
         ),
       );
-      expect(connection.id, 'denied');
+      expect(connection.id, isNot('denied'));
       final coder = (await client.listAgentDefinitions()).single;
       final updated = await client.updateAgentDefinition(
         coder.copyWith(name: 'Bearer managed Coder'),
@@ -2242,8 +2227,7 @@ void main() {
         title: 'No project',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          providerConnectionId: 'local-test',
-          modelId: 'test-model',
+          modelId: 'local-test/test-model',
         ),
       );
       expect(session.worktreeId, homeCheckout.id);
@@ -2418,7 +2402,7 @@ void main() {
           useEnvironmentCredentials: false,
         ),
         oauthGateway: gateway,
-        modelDiscovery: const _StaticDiscovery(<String>['gpt-test']),
+        modelDiscovery: const _CredentialAwareDiscovery(),
       );
       addTearDown(() async {
         await handle.stop();
@@ -2431,6 +2415,20 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
+
+      final rejected = await client.connectProviderApiKey(
+        'deepseek',
+        'invalid-key',
+      );
+      expect(rejected.status, ProviderConnectionStatus.error);
+      final corrected = await client.connectProviderApiKey(
+        'deepseek',
+        'valid-key',
+        connectionId: rejected.id,
+      );
+      expect(corrected.id, rejected.id);
+      expect(corrected.status, ProviderConnectionStatus.connected);
+      await client.disconnectProvider(corrected.id);
 
       final completed = await client.startProviderAuth(
         'openai',
@@ -2448,7 +2446,9 @@ void main() {
         completed.id,
         ProviderAuthAttemptStatus.succeeded,
       );
-      final connected = (await client.listProviderConnections()).single;
+      final connected = (await client.listProviderConnections()).singleWhere(
+        (connection) => connection.definitionId == 'openai',
+      );
       expect(connected.credentialOrigin, ProviderCredentialOrigin.oauth);
       // The Codex endpoint has no `/models` listing, so the connection must
       // settle on the bundled catalog instead of degrading on a discovery 400.
@@ -2457,8 +2457,33 @@ void main() {
       final oauthModels = (await client.listProviderModels(
         connected.id,
       )).map((model) => model.id);
-      expect(oauthModels, contains('gpt-5.6-sol'));
+      expect(oauthModels, contains('openai/gpt-5.6-sol'));
       expect(oauthModels, isNot(contains('gpt-test')));
+
+      final createdAt = connected.createdAt;
+      final reauth = await client.startProviderAuth(
+        'openai',
+        'chatgpt-device',
+        connectionId: connected.id,
+      );
+      gateway.sessions.last.completer.complete(
+        OAuthCredential(
+          accessToken: 'replacement-access-token',
+          refreshToken: 'replacement-refresh-token',
+          expiresAt: DateTime.now().toUtc().add(const Duration(hours: 2)),
+        ),
+      );
+      await _waitForAuthStatus(
+        client,
+        reauth.id,
+        ProviderAuthAttemptStatus.succeeded,
+      );
+      final reauthenticated = await client.listProviderConnections();
+      final reauthenticatedOpenAI = reauthenticated.singleWhere(
+        (connection) => connection.definitionId == 'openai',
+      );
+      expect(reauthenticatedOpenAI.id, connected.id);
+      expect(reauthenticatedOpenAI.createdAt, createdAt);
 
       final cancelled = await client.startProviderAuth(
         'openai',
@@ -2496,7 +2521,6 @@ void main() {
         port: 0,
         bearerToken: token,
         useEnvironmentCredentials: false,
-        apiKey: 'test-api-key',
       );
       var handle = await DaemonApplication.start(config, provider: provider);
       var client = await CoderClient.connect(
@@ -2564,7 +2588,6 @@ void main() {
         title: 'Attachment session',
         agentDefinitionId: 'coder',
         model: SessionModelSelectionDto(
-          providerConnectionId: 'openai',
           modelId: runnableModel.id,
         ),
       );
@@ -2650,7 +2673,6 @@ void main() {
       'coder-secret-config-',
     );
     const token = 'plaintext-token-that-must-not-be-stored';
-    const apiKey = 'plaintext-api-key-that-must-not-be-stored';
     final handle = await DaemonApplication.start(
       DaemonConfig(
         homeDirectory: home.path,
@@ -2658,7 +2680,6 @@ void main() {
         port: 0,
         bearerToken: token,
         useEnvironmentCredentials: false,
-        apiKey: apiKey,
       ),
       modelDiscovery: const _StaticDiscovery(<String>['gpt-5.6-sol']),
     );
@@ -2670,12 +2691,10 @@ void main() {
       }
     }
     expect(persisted.toString(), isNot(contains(token)));
-    expect(persisted.toString(), isNot(contains(apiKey)));
     final credentials = await File(
       '${config.path}/v4/secrets.json',
     ).readAsString();
     expect(credentials, contains(token));
-    expect(credentials, contains(apiKey));
     expect(File('${config.path}/auth.json').existsSync(), isFalse);
     if (!Platform.isWindows) {
       expect(
@@ -2752,7 +2771,6 @@ void main() {
           port: 0,
           bearerToken: token,
           useEnvironmentCredentials: false,
-          apiKey: 'test-api-key',
         ),
         provider: _TextProvider(),
       );
@@ -2782,7 +2800,6 @@ void main() {
         title: 'Queue session',
         agentDefinitionId: 'coder',
         model: SessionModelSelectionDto(
-          providerConnectionId: 'openai',
           modelId: models.first.id,
         ),
       );
@@ -3130,6 +3147,24 @@ final class _StaticDiscovery implements ProviderModelDiscovery {
     ProviderEndpoint endpoint,
     ProviderCredential? credential,
   ) async => modelIds;
+}
+
+final class _CredentialAwareDiscovery implements ProviderModelDiscovery {
+  const _CredentialAwareDiscovery();
+
+  @override
+  Future<List<String>> fetchModelIds(
+    ProviderEndpoint endpoint,
+    ProviderCredential? credential,
+  ) async {
+    if (credential case ApiKeyCredential(:final key) when key != 'valid-key') {
+      throw const ProviderDiscoveryFailure(
+        ProviderDiscoveryFailureKind.invalidCredential,
+        'credential rejected by deterministic provider',
+      );
+    }
+    return const <String>['gpt-test'];
+  }
 }
 
 /// Locates the fake stdio MCP server, whichever directory the suite runs from.

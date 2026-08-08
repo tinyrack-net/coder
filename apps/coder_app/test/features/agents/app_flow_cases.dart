@@ -54,6 +54,7 @@ void _registerAgentsAppFlows() {
 
       await tester.tap(find.byKey(const ValueKey('agent-add-button')));
       await tester.pumpAndSettle();
+      expect(find.byType(TRAlertDialog), findsNothing);
       await tester.enterText(
         _textInput('ID (파일명)'),
         'reviewer',
@@ -85,7 +86,7 @@ void _registerAgentsAppFlows() {
   );
 
   testWidgets(
-    'agent create validates input and keeps daemon failures in the dialog',
+    'agent create validates input and keeps daemon failures in the pane',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -134,7 +135,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '생성'));
       await tester.pumpAndSettle();
       expect(find.textContaining('agent_create_failed'), findsOneWidget);
-      expect(find.text('Agent 추가'), findsOneWidget);
+      expect(find.text('Agent 추가'), findsWidgets);
 
       await tester.tap(find.widgetWithText(TRButton, '생성'));
       await tester.pumpAndSettle();
@@ -238,14 +239,15 @@ void _registerAgentsAppFlows() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('고정 provider/model'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        _textInput('Provider 연결 ID'),
-        'openai',
+      await tester.tap(find.widgetWithText(TRButton, '변경').last);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ModelPicker),
+          matching: find.text('openai/gpt-5.6-sol'),
+        ),
       );
-      await tester.enterText(
-        _textInput('Model ID'),
-        'gpt-test',
-      );
+      await tester.pumpAndSettle();
       await tester.drag(editorList, const Offset(0, -600));
       await tester.pumpAndSettle();
       await tester.tap(find.text('read_file').last);
@@ -258,8 +260,7 @@ void _registerAgentsAppFlows() {
 
       final updated = await api.agents.getAgentDefinition('coder');
       expect(updated.promptEnabled, isFalse);
-      expect(updated.model.providerConnectionId, 'openai');
-      expect(updated.model.modelId, 'gpt-test');
+      expect(updated.model.modelId, 'openai/gpt-5.6-sol');
       expect(updated.toolIds, isEmpty);
       expect(updated.callableAgentIds, <String>['reviewer']);
 

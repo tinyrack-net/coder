@@ -39,6 +39,7 @@ void main() {
       final attempt = await coordinator.start(
         definitionId: 'openai',
         methodId: 'chatgpt-device',
+        connectionId: 'existing-openai',
       );
 
       expect(attempt.id, 'auth-attempt');
@@ -58,7 +59,7 @@ void main() {
         (await coordinator.status(attempt.id)).status,
         ProviderAuthAttemptStatus.succeeded,
       );
-      expect(connector.connectionId, 'openai');
+      expect(connector.connectionId, 'existing-openai');
       expect(connector.credential, isA<OAuthCredential>());
       expect(events.last.status, ProviderAuthAttemptStatus.succeeded);
     },
@@ -133,8 +134,8 @@ void main() {
         expiresAt: now,
       );
 
-      final first = refresher.refresh('openai', expired);
-      final second = refresher.refresh('openai', expired);
+      final first = refresher.refresh('openai-connection', 'openai', expired);
+      final second = refresher.refresh('openai-connection', 'openai', expired);
       expect(identical(first, second), isTrue);
       gateway.refreshCompleter.complete(
         OAuthCredential(
@@ -209,10 +210,14 @@ void main() {
     );
 
     await expectLater(
-      refresher.refresh('openai', credential),
+      refresher.refresh('openai-connection', 'openai', credential),
       throwsA(isA<StateError>()),
     );
-    final refreshed = await refresher.refresh('openai', credential);
+    final refreshed = await refresher.refresh(
+      'openai-connection',
+      'openai',
+      credential,
+    );
     expect(refreshed.accessToken, 'fresh');
     expect(gateway.calls, 2);
   });
@@ -304,14 +309,52 @@ final class _Session implements ProviderOAuthSession {
 final class _OAuthConnector implements ProviderOAuthConnector {
   String? connectionId;
   OAuthCredential? credential;
+  final Set<String> _prefixes = <String>{};
+  int _connectionSequence = 0;
+
+  @override
+  Future<ProviderOAuthReservation> reserveOAuthConnection(
+    String definitionId, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
+    final base = modelPrefix ?? definitionId;
+    var prefix = base;
+    var suffix = 2;
+    while (_prefixes.contains(prefix)) {
+      prefix = '$base-${suffix++}';
+    }
+    _prefixes.add(prefix);
+    _connectionSequence += 1;
+    return (
+      connectionId:
+          connectionId ??
+          (_connectionSequence == 1
+              ? definitionId
+              : '$definitionId-$_connectionSequence'),
+      modelPrefix: prefix,
+    );
+  }
+
+  @override
+  Future<void> releaseOAuthConnection(String connectionId) async {
+    if (connectionId == this.connectionId) return;
+    final prefix = connectionId == 'openai'
+        ? 'openai'
+        : 'openai-${connectionId.split('-').last}';
+    _prefixes.remove(prefix);
+  }
 
   @override
   Future<void> connectOAuth(
     String definitionId,
-    OAuthCredential credential,
-  ) async {
-    connectionId = definitionId;
+    OAuthCredential credential, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
+    this.connectionId = connectionId ?? definitionId;
     this.credential = credential;
+    if (modelPrefix != null) _prefixes.remove(modelPrefix);
   }
 }
 

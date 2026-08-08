@@ -112,6 +112,7 @@ final class FakeCoderApi
     this.failNextAgentUpdate = false,
     this.failNextSkillUpdate = false,
     this.catalogRefreshError,
+    this.providerConnectError,
     this.modelListGate,
     this.suggestDirectoriesGate,
     this.workspaceCatalogGate,
@@ -147,11 +148,18 @@ final class FakeCoderApi
        ),
        _serverInfo = serverInfo ?? _defaultServerInfo,
        _catalog = catalog ?? _defaultCatalog,
-       _connections = connections ?? <ProviderConnectionDto>[_openAIConnection],
+       _connections =
+           (connections ?? <ProviderConnectionDto>[_openAIConnection])
+               .map(
+                 (connection) => connection.modelPrefix.isEmpty
+                     ? connection.copyWith(modelPrefix: connection.definitionId)
+                     : connection,
+               )
+               .toList(),
        _workspaces = workspaces ?? <WorkspaceDto>[],
        _worktrees = worktrees ?? <WorktreeDto>[],
        _agents = agents ?? <SessionDto>[],
-       _terminals = terminals ?? <TerminalDto>[],
+       _terminals = List<TerminalDto>.of(terminals ?? const <TerminalDto>[]),
        _agentDefinitions = List<AgentDefinitionDto>.of(
          agentDefinitions ?? <AgentDefinitionDto>[_coder],
        ),
@@ -172,7 +180,18 @@ final class FakeCoderApi
          'openai': <ProviderModelDto>[_openAIModel],
          for (final entry
              in (models ?? <String, List<ProviderModelDto>>{}).entries)
-           entry.key: List<ProviderModelDto>.of(entry.value),
+           entry.key: entry.value
+               .map(
+                 (model) => model.id.contains('/')
+                     ? model
+                     : model.copyWith(
+                         id: '${entry.key}/${model.id}',
+                         providerModelId: model.providerModelId.isEmpty
+                             ? model.id
+                             : model.providerModelId,
+                       ),
+               )
+               .toList(),
        };
 
   static final DateTime _now = DateTime.utc(2026);
@@ -191,6 +210,9 @@ final class FakeCoderApi
 
   /// Error thrown once by the next explicit provider catalog refresh.
   CoderClientException? catalogRefreshError;
+
+  /// Error thrown once by the next explicit provider connection.
+  CoderClientException? providerConnectError;
   static const ServerInfoDto _defaultServerInfo = ServerInfoDto(
     serverId: 'server',
     version: 'test',
@@ -240,6 +262,7 @@ final class FakeCoderApi
   static final ProviderConnectionDto _openAIConnection = ProviderConnectionDto(
     id: 'openai',
     definitionId: 'openai',
+    modelPrefix: 'openai',
     displayName: 'OpenAI',
     status: ProviderConnectionStatus.connected,
     authKind: ProviderAuthKind.apiKey,
@@ -249,7 +272,8 @@ final class FakeCoderApi
   );
   static const ProviderModelDto _openAIModel = ProviderModelDto(
     connectionId: 'openai',
-    id: 'gpt-5.6-sol',
+    id: 'openai/gpt-5.6-sol',
+    providerModelId: 'gpt-5.6-sol',
     label: 'GPT-5.6 Sol',
     source: ProviderModelSource.bundled,
     capabilities: ModelCapabilitiesDto(
@@ -502,11 +526,23 @@ final class FakeCoderApi
   final List<({String id, List<UserQuestionAnswerDto> answers})>
   questionAnswers = <({String id, List<UserQuestionAnswerDto> answers})>[];
 
+  /// Holds an answer request in flight until a test releases it.
+  Completer<void>? questionAnswerGate;
+
+  /// Error thrown after a question answer is recorded.
+  Exception? questionAnswerError;
+
   final List<({String id, bool approved})> approvalDecisions =
       <({String id, bool approved})>[];
 
   /// Thrown instead of starting a turn, so a caller's rollback can be checked.
   Exception? startTurnError;
+
+  /// Awaited before a session is created, so pending catalog state is visible.
+  Completer<void>? sessionCreateGate;
+
+  /// Thrown instead of creating a session.
+  Exception? sessionCreateError;
 
   /// Prompts [startTurn] was called with, recorded before it can throw.
   ///
@@ -522,6 +558,9 @@ final class FakeCoderApi
 
   /// Awaited before a turn starts, to hold one send in flight.
   Completer<void>? startTurnGate;
+
+  /// Emits the daemon notifications that make a newly-started turn visible.
+  bool emitTurnStartEvents = false;
 
   /// Thrown instead of noting pending input.
   Exception? notePendingInputError;
@@ -961,6 +1000,10 @@ final class FakeCoderApi
         const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
   }) async {
+    final gate = sessionCreateGate;
+    if (gate != null) await gate.future;
+    final error = sessionCreateError;
+    if (error != null) throw error;
     final agent = SessionDto(
       id: id,
       worktreeId: worktreeId,
@@ -1151,6 +1194,10 @@ final class FakeCoderApi
   final List<({String terminalId, String data})> terminalWrites =
       <({String terminalId, String data})>[];
 
+  /// Terminal viewport sizes received by the fake.
+  final List<({String terminalId, int columns, int rows})> terminalResizes =
+      <({String terminalId, int columns, int rows})>[];
+
   @override
   Future<void> writeTerminal(String terminalId, String data) async {
     terminalWrites.add((terminalId: terminalId, data: data));
@@ -1162,6 +1209,11 @@ final class FakeCoderApi
     required int columns,
     required int rows,
   }) async {
+    terminalResizes.add((
+      terminalId: terminalId,
+      columns: columns,
+      rows: rows,
+    ));
     final index = _terminals.indexWhere((item) => item.id == terminalId);
     final terminal = _terminals[index].copyWith(columns: columns, rows: rows);
     _terminals[index] = terminal;
@@ -1488,40 +1540,74 @@ final class FakeCoderApi
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
+    final error = providerConnectError;
+    providerConnectError = null;
+    if (error != null) throw error;
+    final existing = _connections
+        .where((connection) => connection.definitionId == definitionId)
+        .length;
+    final resolvedConnectionId =
+        connectionId ??
+        (existing == 0 ? definitionId : '$definitionId-${existing + 1}');
     credentials[definitionId] = apiKey;
+    credentials[resolvedConnectionId] = apiKey;
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
     return _saveConnection(
       ProviderConnectionDto(
-        id: definitionId,
+        id: resolvedConnectionId,
         definitionId: definitionId,
+        modelPrefix: modelPrefix ?? definitionId,
         displayName: definition.name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.apiKey,
         credentialOrigin: ProviderCredentialOrigin.stored,
-        createdAt: _now,
+        createdAt:
+            _connections
+                .where((item) => item.id == resolvedConnectionId)
+                .firstOrNull
+                ?.createdAt ??
+            _now,
         updatedAt: _now,
       ),
     );
   }
 
   @override
-  Future<ProviderConnectionDto> connectProviderNone(String definitionId) async {
+  Future<ProviderConnectionDto> connectProviderNone(
+    String definitionId, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
+    final existing = _connections
+        .where((connection) => connection.definitionId == definitionId)
+        .length;
+    final resolvedConnectionId =
+        connectionId ??
+        (existing == 0 ? definitionId : '$definitionId-${existing + 1}');
     final definition = _catalog.definitions.singleWhere(
       (item) => item.id == definitionId,
     );
     return _saveConnection(
       ProviderConnectionDto(
-        id: definitionId,
+        id: resolvedConnectionId,
         definitionId: definitionId,
+        modelPrefix: modelPrefix ?? definitionId,
         displayName: definition.name,
         status: ProviderConnectionStatus.connected,
         authKind: ProviderAuthKind.none,
         credentialOrigin: ProviderCredentialOrigin.none,
-        createdAt: _now,
+        createdAt:
+            _connections
+                .where((item) => item.id == resolvedConnectionId)
+                .firstOrNull
+                ?.createdAt ??
+            _now,
         updatedAt: _now,
       ),
     );
@@ -1530,11 +1616,15 @@ final class FakeCoderApi
   @override
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
-    String methodId,
-  ) async => ProviderAuthAttemptDto(
+    String methodId, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async => ProviderAuthAttemptDto(
     id: 'attempt',
     definitionId: definitionId,
     methodId: methodId,
+    connectionId: connectionId ?? definitionId,
+    modelPrefix: modelPrefix ?? definitionId,
     status: ProviderAuthAttemptStatus.awaitingUser,
     authorizationUrl: 'https://auth.example/authorize',
     userCode: methodId.contains('device') ? 'CODE-1234' : null,
@@ -1564,6 +1654,15 @@ final class FakeCoderApi
         credentialOrigin: ProviderCredentialOrigin.none,
       ),
     );
+  }
+
+  @override
+  Future<ProviderConnectionDto> updateProviderModelPrefix(
+    String connectionId,
+    String modelPrefix,
+  ) async {
+    final current = _connections.singleWhere((item) => item.id == connectionId);
+    return _saveConnection(current.copyWith(modelPrefix: modelPrefix));
   }
 
   @override
@@ -1600,7 +1699,10 @@ final class FakeCoderApi
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
+    String? modelPrefix,
   }) async {
+    final prefix =
+        modelPrefix ?? config.name.toLowerCase().replaceAll(' ', '-');
     if (apiKey != null) credentials[id] = apiKey;
     for (final manualModel in config.models) {
       _models
@@ -1608,7 +1710,8 @@ final class FakeCoderApi
           .add(
             ProviderModelDto(
               connectionId: id,
-              id: manualModel.id,
+              id: '$prefix/${manualModel.id}',
+              providerModelId: manualModel.id,
               label: manualModel.label,
               source: ProviderModelSource.manual,
               capabilities: const ModelCapabilitiesDto(
@@ -1623,6 +1726,7 @@ final class FakeCoderApi
       ProviderConnectionDto(
         id: id,
         definitionId: 'custom',
+        modelPrefix: prefix,
         displayName: config.name,
         status: ProviderConnectionStatus.connected,
         authKind: config.authenticationRequired
@@ -1709,6 +1813,20 @@ final class FakeCoderApi
     startedPrompts.add(prompt);
     startedTurnIds.add(turnId);
     startedAttachmentIds.add(List<String>.of(attachmentIds));
+    if (emitTurnStartEvents) {
+      final index = _agents.indexWhere((agent) => agent.id == sessionId);
+      if (index >= 0) {
+        emit(
+          SessionUpdatedClientEvent(
+            _agents[index].copyWith(status: SessionStatus.running),
+          ),
+        );
+      }
+      emitTimeline(sessionId, 'user.message', <String, dynamic>{
+        'text': prompt,
+        'attachments': const <Map<String, dynamic>>[],
+      });
+    }
   }
 
   @override
@@ -1786,6 +1904,8 @@ final class FakeCoderApi
     required List<UserQuestionAnswerDto> answers,
   }) async {
     questionAnswers.add((id: requestId, answers: answers));
+    await questionAnswerGate?.future;
+    if (questionAnswerError case final error?) throw error;
     return UserQuestionRequestDto(
       id: requestId,
       sessionId: 'session',

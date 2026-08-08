@@ -1160,18 +1160,6 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     requiredDuringInsert: false,
     defaultValue: const Constant('normal'),
   );
-  static const VerificationMeta _modelConnectionIdMeta = const VerificationMeta(
-    'modelConnectionId',
-  );
-  @override
-  late final GeneratedColumn<String> modelConnectionId =
-      GeneratedColumn<String>(
-        'model_connection_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
   static const VerificationMeta _modelIdMeta = const VerificationMeta(
     'modelId',
   );
@@ -1278,7 +1266,6 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     activeTurnId,
     lastError,
     mode,
-    modelConnectionId,
     modelId,
     modelControlsJson,
     permissionMode,
@@ -1403,15 +1390,6 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       context.handle(
         _modeMeta,
         mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
-      );
-    }
-    if (data.containsKey('model_connection_id')) {
-      context.handle(
-        _modelConnectionIdMeta,
-        modelConnectionId.isAcceptableOrUnknown(
-          data['model_connection_id']!,
-          _modelConnectionIdMeta,
-        ),
       );
     }
     if (data.containsKey('model_id')) {
@@ -1546,10 +1524,6 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}mode'],
       )!,
-      modelConnectionId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}model_connection_id'],
-      ),
       modelId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}model_id'],
@@ -1634,10 +1608,7 @@ class Session extends DataClass implements Insertable<Session> {
   /// Collaboration mode: `plan` proposes work, `normal` performs it.
   final String mode;
 
-  /// Provider connection pinned for this session; null inherits the agent.
-  final String? modelConnectionId;
-
-  /// Model pinned for this session; null inherits the agent definition.
+  /// Qualified model pinned for this session; null inherits the agent.
   final String? modelId;
 
   /// JSON-encoded typed model-control values for this session.
@@ -1678,7 +1649,6 @@ class Session extends DataClass implements Insertable<Session> {
     this.activeTurnId,
     this.lastError,
     required this.mode,
-    this.modelConnectionId,
     this.modelId,
     required this.modelControlsJson,
     this.permissionMode,
@@ -1719,9 +1689,6 @@ class Session extends DataClass implements Insertable<Session> {
       map['last_error'] = Variable<String>(lastError);
     }
     map['mode'] = Variable<String>(mode);
-    if (!nullToAbsent || modelConnectionId != null) {
-      map['model_connection_id'] = Variable<String>(modelConnectionId);
-    }
     if (!nullToAbsent || modelId != null) {
       map['model_id'] = Variable<String>(modelId);
     }
@@ -1769,9 +1736,6 @@ class Session extends DataClass implements Insertable<Session> {
           ? const Value.absent()
           : Value(lastError),
       mode: Value(mode),
-      modelConnectionId: modelConnectionId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(modelConnectionId),
       modelId: modelId == null && nullToAbsent
           ? const Value.absent()
           : Value(modelId),
@@ -1809,9 +1773,6 @@ class Session extends DataClass implements Insertable<Session> {
       activeTurnId: serializer.fromJson<String?>(json['activeTurnId']),
       lastError: serializer.fromJson<String?>(json['lastError']),
       mode: serializer.fromJson<String>(json['mode']),
-      modelConnectionId: serializer.fromJson<String?>(
-        json['modelConnectionId'],
-      ),
       modelId: serializer.fromJson<String?>(json['modelId']),
       modelControlsJson: serializer.fromJson<String>(json['modelControlsJson']),
       permissionMode: serializer.fromJson<String?>(json['permissionMode']),
@@ -1844,7 +1805,6 @@ class Session extends DataClass implements Insertable<Session> {
       'activeTurnId': serializer.toJson<String?>(activeTurnId),
       'lastError': serializer.toJson<String?>(lastError),
       'mode': serializer.toJson<String>(mode),
-      'modelConnectionId': serializer.toJson<String?>(modelConnectionId),
       'modelId': serializer.toJson<String?>(modelId),
       'modelControlsJson': serializer.toJson<String>(modelControlsJson),
       'permissionMode': serializer.toJson<String?>(permissionMode),
@@ -1871,7 +1831,6 @@ class Session extends DataClass implements Insertable<Session> {
     Value<String?> activeTurnId = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
     String? mode,
-    Value<String?> modelConnectionId = const Value.absent(),
     Value<String?> modelId = const Value.absent(),
     String? modelControlsJson,
     Value<String?> permissionMode = const Value.absent(),
@@ -1899,9 +1858,6 @@ class Session extends DataClass implements Insertable<Session> {
     activeTurnId: activeTurnId.present ? activeTurnId.value : this.activeTurnId,
     lastError: lastError.present ? lastError.value : this.lastError,
     mode: mode ?? this.mode,
-    modelConnectionId: modelConnectionId.present
-        ? modelConnectionId.value
-        : this.modelConnectionId,
     modelId: modelId.present ? modelId.value : this.modelId,
     modelControlsJson: modelControlsJson ?? this.modelControlsJson,
     permissionMode: permissionMode.present
@@ -1941,9 +1897,6 @@ class Session extends DataClass implements Insertable<Session> {
           : this.activeTurnId,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
       mode: data.mode.present ? data.mode.value : this.mode,
-      modelConnectionId: data.modelConnectionId.present
-          ? data.modelConnectionId.value
-          : this.modelConnectionId,
       modelId: data.modelId.present ? data.modelId.value : this.modelId,
       modelControlsJson: data.modelControlsJson.present
           ? data.modelControlsJson.value
@@ -1982,7 +1935,6 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
           ..write('mode: $mode, ')
-          ..write('modelConnectionId: $modelConnectionId, ')
           ..write('modelId: $modelId, ')
           ..write('modelControlsJson: $modelControlsJson, ')
           ..write('permissionMode: $permissionMode, ')
@@ -2011,7 +1963,6 @@ class Session extends DataClass implements Insertable<Session> {
     activeTurnId,
     lastError,
     mode,
-    modelConnectionId,
     modelId,
     modelControlsJson,
     permissionMode,
@@ -2039,7 +1990,6 @@ class Session extends DataClass implements Insertable<Session> {
           other.activeTurnId == this.activeTurnId &&
           other.lastError == this.lastError &&
           other.mode == this.mode &&
-          other.modelConnectionId == this.modelConnectionId &&
           other.modelId == this.modelId &&
           other.modelControlsJson == this.modelControlsJson &&
           other.permissionMode == this.permissionMode &&
@@ -2065,7 +2015,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String?> activeTurnId;
   final Value<String?> lastError;
   final Value<String> mode;
-  final Value<String?> modelConnectionId;
   final Value<String?> modelId;
   final Value<String> modelControlsJson;
   final Value<String?> permissionMode;
@@ -2090,7 +2039,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
     this.mode = const Value.absent(),
-    this.modelConnectionId = const Value.absent(),
     this.modelId = const Value.absent(),
     this.modelControlsJson = const Value.absent(),
     this.permissionMode = const Value.absent(),
@@ -2116,7 +2064,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
     this.mode = const Value.absent(),
-    this.modelConnectionId = const Value.absent(),
     this.modelId = const Value.absent(),
     this.modelControlsJson = const Value.absent(),
     this.permissionMode = const Value.absent(),
@@ -2149,7 +2096,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? activeTurnId,
     Expression<String>? lastError,
     Expression<String>? mode,
-    Expression<String>? modelConnectionId,
     Expression<String>? modelId,
     Expression<String>? modelControlsJson,
     Expression<String>? permissionMode,
@@ -2175,7 +2121,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (activeTurnId != null) 'active_turn_id': activeTurnId,
       if (lastError != null) 'last_error': lastError,
       if (mode != null) 'mode': mode,
-      if (modelConnectionId != null) 'model_connection_id': modelConnectionId,
       if (modelId != null) 'model_id': modelId,
       if (modelControlsJson != null) 'model_controls_json': modelControlsJson,
       if (permissionMode != null) 'permission_mode': permissionMode,
@@ -2205,7 +2150,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String?>? activeTurnId,
     Value<String?>? lastError,
     Value<String>? mode,
-    Value<String?>? modelConnectionId,
     Value<String?>? modelId,
     Value<String>? modelControlsJson,
     Value<String?>? permissionMode,
@@ -2231,7 +2175,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       activeTurnId: activeTurnId ?? this.activeTurnId,
       lastError: lastError ?? this.lastError,
       mode: mode ?? this.mode,
-      modelConnectionId: modelConnectionId ?? this.modelConnectionId,
       modelId: modelId ?? this.modelId,
       modelControlsJson: modelControlsJson ?? this.modelControlsJson,
       permissionMode: permissionMode ?? this.permissionMode,
@@ -2289,9 +2232,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (mode.present) {
       map['mode'] = Variable<String>(mode.value);
     }
-    if (modelConnectionId.present) {
-      map['model_connection_id'] = Variable<String>(modelConnectionId.value);
-    }
     if (modelId.present) {
       map['model_id'] = Variable<String>(modelId.value);
     }
@@ -2339,7 +2279,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
           ..write('mode: $mode, ')
-          ..write('modelConnectionId: $modelConnectionId, ')
           ..write('modelId: $modelId, ')
           ..write('modelControlsJson: $modelControlsJson, ')
           ..write('permissionMode: $permissionMode, ')
@@ -7103,6 +7042,18 @@ class $ProviderConnectionsTable extends ProviderConnections
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _modelPrefixMeta = const VerificationMeta(
+    'modelPrefix',
+  );
+  @override
+  late final GeneratedColumn<String> modelPrefix = GeneratedColumn<String>(
+    'model_prefix',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
   static const VerificationMeta _displayNameMeta = const VerificationMeta(
     'displayName',
   );
@@ -7191,6 +7142,7 @@ class $ProviderConnectionsTable extends ProviderConnections
   List<GeneratedColumn> get $columns => [
     id,
     definitionId,
+    modelPrefix,
     displayName,
     status,
     authKind,
@@ -7227,6 +7179,17 @@ class $ProviderConnectionsTable extends ProviderConnections
       );
     } else if (isInserting) {
       context.missing(_definitionIdMeta);
+    }
+    if (data.containsKey('model_prefix')) {
+      context.handle(
+        _modelPrefixMeta,
+        modelPrefix.isAcceptableOrUnknown(
+          data['model_prefix']!,
+          _modelPrefixMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_modelPrefixMeta);
     }
     if (data.containsKey('display_name')) {
       context.handle(
@@ -7314,6 +7277,10 @@ class $ProviderConnectionsTable extends ProviderConnections
         DriftSqlType.string,
         data['${effectivePrefix}definition_id'],
       )!,
+      modelPrefix: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_prefix'],
+      )!,
       displayName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}display_name'],
@@ -7363,6 +7330,9 @@ class ProviderConnection extends DataClass
   /// Built-in definition identifier, or `custom`.
   final String definitionId;
 
+  /// Globally unique prefix used by qualified model identifiers.
+  final String modelPrefix;
+
   /// Human-readable connection name.
   final String displayName;
 
@@ -7389,6 +7359,7 @@ class ProviderConnection extends DataClass
   const ProviderConnection({
     required this.id,
     required this.definitionId,
+    required this.modelPrefix,
     required this.displayName,
     required this.status,
     required this.authKind,
@@ -7403,6 +7374,7 @@ class ProviderConnection extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['definition_id'] = Variable<String>(definitionId);
+    map['model_prefix'] = Variable<String>(modelPrefix);
     map['display_name'] = Variable<String>(displayName);
     map['status'] = Variable<String>(status);
     map['auth_kind'] = Variable<String>(authKind);
@@ -7422,6 +7394,7 @@ class ProviderConnection extends DataClass
     return ProviderConnectionsCompanion(
       id: Value(id),
       definitionId: Value(definitionId),
+      modelPrefix: Value(modelPrefix),
       displayName: Value(displayName),
       status: Value(status),
       authKind: Value(authKind),
@@ -7445,6 +7418,7 @@ class ProviderConnection extends DataClass
     return ProviderConnection(
       id: serializer.fromJson<String>(json['id']),
       definitionId: serializer.fromJson<String>(json['definitionId']),
+      modelPrefix: serializer.fromJson<String>(json['modelPrefix']),
       displayName: serializer.fromJson<String>(json['displayName']),
       status: serializer.fromJson<String>(json['status']),
       authKind: serializer.fromJson<String>(json['authKind']),
@@ -7461,6 +7435,7 @@ class ProviderConnection extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'definitionId': serializer.toJson<String>(definitionId),
+      'modelPrefix': serializer.toJson<String>(modelPrefix),
       'displayName': serializer.toJson<String>(displayName),
       'status': serializer.toJson<String>(status),
       'authKind': serializer.toJson<String>(authKind),
@@ -7475,6 +7450,7 @@ class ProviderConnection extends DataClass
   ProviderConnection copyWith({
     String? id,
     String? definitionId,
+    String? modelPrefix,
     String? displayName,
     String? status,
     String? authKind,
@@ -7486,6 +7462,7 @@ class ProviderConnection extends DataClass
   }) => ProviderConnection(
     id: id ?? this.id,
     definitionId: definitionId ?? this.definitionId,
+    modelPrefix: modelPrefix ?? this.modelPrefix,
     displayName: displayName ?? this.displayName,
     status: status ?? this.status,
     authKind: authKind ?? this.authKind,
@@ -7503,6 +7480,9 @@ class ProviderConnection extends DataClass
       definitionId: data.definitionId.present
           ? data.definitionId.value
           : this.definitionId,
+      modelPrefix: data.modelPrefix.present
+          ? data.modelPrefix.value
+          : this.modelPrefix,
       displayName: data.displayName.present
           ? data.displayName.value
           : this.displayName,
@@ -7525,6 +7505,7 @@ class ProviderConnection extends DataClass
     return (StringBuffer('ProviderConnection(')
           ..write('id: $id, ')
           ..write('definitionId: $definitionId, ')
+          ..write('modelPrefix: $modelPrefix, ')
           ..write('displayName: $displayName, ')
           ..write('status: $status, ')
           ..write('authKind: $authKind, ')
@@ -7541,6 +7522,7 @@ class ProviderConnection extends DataClass
   int get hashCode => Object.hash(
     id,
     definitionId,
+    modelPrefix,
     displayName,
     status,
     authKind,
@@ -7556,6 +7538,7 @@ class ProviderConnection extends DataClass
       (other is ProviderConnection &&
           other.id == this.id &&
           other.definitionId == this.definitionId &&
+          other.modelPrefix == this.modelPrefix &&
           other.displayName == this.displayName &&
           other.status == this.status &&
           other.authKind == this.authKind &&
@@ -7569,6 +7552,7 @@ class ProviderConnection extends DataClass
 class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
   final Value<String> id;
   final Value<String> definitionId;
+  final Value<String> modelPrefix;
   final Value<String> displayName;
   final Value<String> status;
   final Value<String> authKind;
@@ -7581,6 +7565,7 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
   const ProviderConnectionsCompanion({
     this.id = const Value.absent(),
     this.definitionId = const Value.absent(),
+    this.modelPrefix = const Value.absent(),
     this.displayName = const Value.absent(),
     this.status = const Value.absent(),
     this.authKind = const Value.absent(),
@@ -7594,6 +7579,7 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
   ProviderConnectionsCompanion.insert({
     required String id,
     required String definitionId,
+    required String modelPrefix,
     required String displayName,
     required String status,
     required String authKind,
@@ -7605,6 +7591,7 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        definitionId = Value(definitionId),
+       modelPrefix = Value(modelPrefix),
        displayName = Value(displayName),
        status = Value(status),
        authKind = Value(authKind),
@@ -7614,6 +7601,7 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
   static Insertable<ProviderConnection> custom({
     Expression<String>? id,
     Expression<String>? definitionId,
+    Expression<String>? modelPrefix,
     Expression<String>? displayName,
     Expression<String>? status,
     Expression<String>? authKind,
@@ -7627,6 +7615,7 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (definitionId != null) 'definition_id': definitionId,
+      if (modelPrefix != null) 'model_prefix': modelPrefix,
       if (displayName != null) 'display_name': displayName,
       if (status != null) 'status': status,
       if (authKind != null) 'auth_kind': authKind,
@@ -7642,6 +7631,7 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
   ProviderConnectionsCompanion copyWith({
     Value<String>? id,
     Value<String>? definitionId,
+    Value<String>? modelPrefix,
     Value<String>? displayName,
     Value<String>? status,
     Value<String>? authKind,
@@ -7655,6 +7645,7 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     return ProviderConnectionsCompanion(
       id: id ?? this.id,
       definitionId: definitionId ?? this.definitionId,
+      modelPrefix: modelPrefix ?? this.modelPrefix,
       displayName: displayName ?? this.displayName,
       status: status ?? this.status,
       authKind: authKind ?? this.authKind,
@@ -7675,6 +7666,9 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     }
     if (definitionId.present) {
       map['definition_id'] = Variable<String>(definitionId.value);
+    }
+    if (modelPrefix.present) {
+      map['model_prefix'] = Variable<String>(modelPrefix.value);
     }
     if (displayName.present) {
       map['display_name'] = Variable<String>(displayName.value);
@@ -7711,6 +7705,7 @@ class ProviderConnectionsCompanion extends UpdateCompanion<ProviderConnection> {
     return (StringBuffer('ProviderConnectionsCompanion(')
           ..write('id: $id, ')
           ..write('definitionId: $definitionId, ')
+          ..write('modelPrefix: $modelPrefix, ')
           ..write('displayName: $displayName, ')
           ..write('status: $status, ')
           ..write('authKind: $authKind, ')
@@ -7751,6 +7746,17 @@ class $ProviderModelsTable extends ProviderModels
   @override
   late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
     'model_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _providerModelIdMeta = const VerificationMeta(
+    'providerModelId',
+  );
+  @override
+  late final GeneratedColumn<String> providerModelId = GeneratedColumn<String>(
+    'provider_model_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -7845,6 +7851,7 @@ class $ProviderModelsTable extends ProviderModels
   List<GeneratedColumn> get $columns => [
     connectionId,
     modelId,
+    providerModelId,
     label,
     source,
     capabilitiesJson,
@@ -7884,6 +7891,17 @@ class $ProviderModelsTable extends ProviderModels
       );
     } else if (isInserting) {
       context.missing(_modelIdMeta);
+    }
+    if (data.containsKey('provider_model_id')) {
+      context.handle(
+        _providerModelIdMeta,
+        providerModelId.isAcceptableOrUnknown(
+          data['provider_model_id']!,
+          _providerModelIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_providerModelIdMeta);
     }
     if (data.containsKey('label')) {
       context.handle(
@@ -7968,6 +7986,10 @@ class $ProviderModelsTable extends ProviderModels
         DriftSqlType.string,
         data['${effectivePrefix}model_id'],
       )!,
+      providerModelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_model_id'],
+      )!,
       label: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}label'],
@@ -8016,6 +8038,9 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   /// The modelId public API member.
   final String modelId;
 
+  /// Model identifier sent to the upstream provider.
+  final String providerModelId;
+
   /// The label public API member.
   final String label;
 
@@ -8042,6 +8067,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   const ProviderModel({
     required this.connectionId,
     required this.modelId,
+    required this.providerModelId,
     required this.label,
     required this.source,
     required this.capabilitiesJson,
@@ -8056,6 +8082,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
     final map = <String, Expression>{};
     map['connection_id'] = Variable<String>(connectionId);
     map['model_id'] = Variable<String>(modelId);
+    map['provider_model_id'] = Variable<String>(providerModelId);
     map['label'] = Variable<String>(label);
     map['source'] = Variable<String>(source);
     map['capabilities_json'] = Variable<String>(capabilitiesJson);
@@ -8079,6 +8106,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
     return ProviderModelsCompanion(
       connectionId: Value(connectionId),
       modelId: Value(modelId),
+      providerModelId: Value(providerModelId),
       label: Value(label),
       source: Value(source),
       capabilitiesJson: Value(capabilitiesJson),
@@ -8106,6 +8134,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
     return ProviderModel(
       connectionId: serializer.fromJson<String>(json['connectionId']),
       modelId: serializer.fromJson<String>(json['modelId']),
+      providerModelId: serializer.fromJson<String>(json['providerModelId']),
       label: serializer.fromJson<String>(json['label']),
       source: serializer.fromJson<String>(json['source']),
       capabilitiesJson: serializer.fromJson<String>(json['capabilitiesJson']),
@@ -8122,6 +8151,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
     return <String, dynamic>{
       'connectionId': serializer.toJson<String>(connectionId),
       'modelId': serializer.toJson<String>(modelId),
+      'providerModelId': serializer.toJson<String>(providerModelId),
       'label': serializer.toJson<String>(label),
       'source': serializer.toJson<String>(source),
       'capabilitiesJson': serializer.toJson<String>(capabilitiesJson),
@@ -8136,6 +8166,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   ProviderModel copyWith({
     String? connectionId,
     String? modelId,
+    String? providerModelId,
     String? label,
     String? source,
     String? capabilitiesJson,
@@ -8147,6 +8178,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   }) => ProviderModel(
     connectionId: connectionId ?? this.connectionId,
     modelId: modelId ?? this.modelId,
+    providerModelId: providerModelId ?? this.providerModelId,
     label: label ?? this.label,
     source: source ?? this.source,
     capabilitiesJson: capabilitiesJson ?? this.capabilitiesJson,
@@ -8164,6 +8196,9 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
           ? data.connectionId.value
           : this.connectionId,
       modelId: data.modelId.present ? data.modelId.value : this.modelId,
+      providerModelId: data.providerModelId.present
+          ? data.providerModelId.value
+          : this.providerModelId,
       label: data.label.present ? data.label.value : this.label,
       source: data.source.present ? data.source.value : this.source,
       capabilitiesJson: data.capabilitiesJson.present
@@ -8192,6 +8227,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
     return (StringBuffer('ProviderModel(')
           ..write('connectionId: $connectionId, ')
           ..write('modelId: $modelId, ')
+          ..write('providerModelId: $providerModelId, ')
           ..write('label: $label, ')
           ..write('source: $source, ')
           ..write('capabilitiesJson: $capabilitiesJson, ')
@@ -8208,6 +8244,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
   int get hashCode => Object.hash(
     connectionId,
     modelId,
+    providerModelId,
     label,
     source,
     capabilitiesJson,
@@ -8223,6 +8260,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
       (other is ProviderModel &&
           other.connectionId == this.connectionId &&
           other.modelId == this.modelId &&
+          other.providerModelId == this.providerModelId &&
           other.label == this.label &&
           other.source == this.source &&
           other.capabilitiesJson == this.capabilitiesJson &&
@@ -8236,6 +8274,7 @@ class ProviderModel extends DataClass implements Insertable<ProviderModel> {
 class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
   final Value<String> connectionId;
   final Value<String> modelId;
+  final Value<String> providerModelId;
   final Value<String> label;
   final Value<String> source;
   final Value<String> capabilitiesJson;
@@ -8248,6 +8287,7 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
   const ProviderModelsCompanion({
     this.connectionId = const Value.absent(),
     this.modelId = const Value.absent(),
+    this.providerModelId = const Value.absent(),
     this.label = const Value.absent(),
     this.source = const Value.absent(),
     this.capabilitiesJson = const Value.absent(),
@@ -8261,6 +8301,7 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
   ProviderModelsCompanion.insert({
     required String connectionId,
     required String modelId,
+    required String providerModelId,
     required String label,
     required String source,
     required String capabilitiesJson,
@@ -8272,12 +8313,14 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
     this.rowid = const Value.absent(),
   }) : connectionId = Value(connectionId),
        modelId = Value(modelId),
+       providerModelId = Value(providerModelId),
        label = Value(label),
        source = Value(source),
        capabilitiesJson = Value(capabilitiesJson);
   static Insertable<ProviderModel> custom({
     Expression<String>? connectionId,
     Expression<String>? modelId,
+    Expression<String>? providerModelId,
     Expression<String>? label,
     Expression<String>? source,
     Expression<String>? capabilitiesJson,
@@ -8291,6 +8334,7 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
     return RawValuesInsertable({
       if (connectionId != null) 'connection_id': connectionId,
       if (modelId != null) 'model_id': modelId,
+      if (providerModelId != null) 'provider_model_id': providerModelId,
       if (label != null) 'label': label,
       if (source != null) 'source': source,
       if (capabilitiesJson != null) 'capabilities_json': capabilitiesJson,
@@ -8306,6 +8350,7 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
   ProviderModelsCompanion copyWith({
     Value<String>? connectionId,
     Value<String>? modelId,
+    Value<String>? providerModelId,
     Value<String>? label,
     Value<String>? source,
     Value<String>? capabilitiesJson,
@@ -8319,6 +8364,7 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
     return ProviderModelsCompanion(
       connectionId: connectionId ?? this.connectionId,
       modelId: modelId ?? this.modelId,
+      providerModelId: providerModelId ?? this.providerModelId,
       label: label ?? this.label,
       source: source ?? this.source,
       capabilitiesJson: capabilitiesJson ?? this.capabilitiesJson,
@@ -8339,6 +8385,9 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
     }
     if (modelId.present) {
       map['model_id'] = Variable<String>(modelId.value);
+    }
+    if (providerModelId.present) {
+      map['provider_model_id'] = Variable<String>(providerModelId.value);
     }
     if (label.present) {
       map['label'] = Variable<String>(label.value);
@@ -8375,6 +8424,7 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
     return (StringBuffer('ProviderModelsCompanion(')
           ..write('connectionId: $connectionId, ')
           ..write('modelId: $modelId, ')
+          ..write('providerModelId: $providerModelId, ')
           ..write('label: $label, ')
           ..write('source: $source, ')
           ..write('capabilitiesJson: $capabilitiesJson, ')
@@ -9282,7 +9332,6 @@ typedef $$SessionsTableCreateCompanionBuilder =
       Value<String?> activeTurnId,
       Value<String?> lastError,
       Value<String> mode,
-      Value<String?> modelConnectionId,
       Value<String?> modelId,
       Value<String> modelControlsJson,
       Value<String?> permissionMode,
@@ -9309,7 +9358,6 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String?> activeTurnId,
       Value<String?> lastError,
       Value<String> mode,
-      Value<String?> modelConnectionId,
       Value<String?> modelId,
       Value<String> modelControlsJson,
       Value<String?> permissionMode,
@@ -9576,11 +9624,6 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get mode => $composableBuilder(
     column: $table.mode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get modelConnectionId => $composableBuilder(
-    column: $table.modelConnectionId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9933,11 +9976,6 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get modelConnectionId => $composableBuilder(
-    column: $table.modelConnectionId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get modelId => $composableBuilder(
     column: $table.modelId,
     builder: (column) => ColumnOrderings(column),
@@ -10093,11 +10131,6 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<String> get mode =>
       $composableBuilder(column: $table.mode, builder: (column) => column);
-
-  GeneratedColumn<String> get modelConnectionId => $composableBuilder(
-    column: $table.modelConnectionId,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get modelId =>
       $composableBuilder(column: $table.modelId, builder: (column) => column);
@@ -10432,7 +10465,6 @@ class $$SessionsTableTableManager
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<String> mode = const Value.absent(),
-                Value<String?> modelConnectionId = const Value.absent(),
                 Value<String?> modelId = const Value.absent(),
                 Value<String> modelControlsJson = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
@@ -10457,7 +10489,6 @@ class $$SessionsTableTableManager
                 activeTurnId: activeTurnId,
                 lastError: lastError,
                 mode: mode,
-                modelConnectionId: modelConnectionId,
                 modelId: modelId,
                 modelControlsJson: modelControlsJson,
                 permissionMode: permissionMode,
@@ -10484,7 +10515,6 @@ class $$SessionsTableTableManager
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<String> mode = const Value.absent(),
-                Value<String?> modelConnectionId = const Value.absent(),
                 Value<String?> modelId = const Value.absent(),
                 Value<String> modelControlsJson = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
@@ -10509,7 +10539,6 @@ class $$SessionsTableTableManager
                 activeTurnId: activeTurnId,
                 lastError: lastError,
                 mode: mode,
-                modelConnectionId: modelConnectionId,
                 modelId: modelId,
                 modelControlsJson: modelControlsJson,
                 permissionMode: permissionMode,
@@ -14819,6 +14848,7 @@ typedef $$ProviderConnectionsTableCreateCompanionBuilder =
     ProviderConnectionsCompanion Function({
       required String id,
       required String definitionId,
+      required String modelPrefix,
       required String displayName,
       required String status,
       required String authKind,
@@ -14833,6 +14863,7 @@ typedef $$ProviderConnectionsTableUpdateCompanionBuilder =
     ProviderConnectionsCompanion Function({
       Value<String> id,
       Value<String> definitionId,
+      Value<String> modelPrefix,
       Value<String> displayName,
       Value<String> status,
       Value<String> authKind,
@@ -14892,6 +14923,11 @@ class $$ProviderConnectionsTableFilterComposer
 
   ColumnFilters<String> get definitionId => $composableBuilder(
     column: $table.definitionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelPrefix => $composableBuilder(
+    column: $table.modelPrefix,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14980,6 +15016,11 @@ class $$ProviderConnectionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get modelPrefix => $composableBuilder(
+    column: $table.modelPrefix,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get displayName => $composableBuilder(
     column: $table.displayName,
     builder: (column) => ColumnOrderings(column),
@@ -15035,6 +15076,11 @@ class $$ProviderConnectionsTableAnnotationComposer
 
   GeneratedColumn<String> get definitionId => $composableBuilder(
     column: $table.definitionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modelPrefix => $composableBuilder(
+    column: $table.modelPrefix,
     builder: (column) => column,
   );
 
@@ -15132,6 +15178,7 @@ class $$ProviderConnectionsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> definitionId = const Value.absent(),
+                Value<String> modelPrefix = const Value.absent(),
                 Value<String> displayName = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String> authKind = const Value.absent(),
@@ -15144,6 +15191,7 @@ class $$ProviderConnectionsTableTableManager
               }) => ProviderConnectionsCompanion(
                 id: id,
                 definitionId: definitionId,
+                modelPrefix: modelPrefix,
                 displayName: displayName,
                 status: status,
                 authKind: authKind,
@@ -15158,6 +15206,7 @@ class $$ProviderConnectionsTableTableManager
               ({
                 required String id,
                 required String definitionId,
+                required String modelPrefix,
                 required String displayName,
                 required String status,
                 required String authKind,
@@ -15170,6 +15219,7 @@ class $$ProviderConnectionsTableTableManager
               }) => ProviderConnectionsCompanion.insert(
                 id: id,
                 definitionId: definitionId,
+                modelPrefix: modelPrefix,
                 displayName: displayName,
                 status: status,
                 authKind: authKind,
@@ -15244,6 +15294,7 @@ typedef $$ProviderModelsTableCreateCompanionBuilder =
     ProviderModelsCompanion Function({
       required String connectionId,
       required String modelId,
+      required String providerModelId,
       required String label,
       required String source,
       required String capabilitiesJson,
@@ -15258,6 +15309,7 @@ typedef $$ProviderModelsTableUpdateCompanionBuilder =
     ProviderModelsCompanion Function({
       Value<String> connectionId,
       Value<String> modelId,
+      Value<String> providerModelId,
       Value<String> label,
       Value<String> source,
       Value<String> capabilitiesJson,
@@ -15308,6 +15360,11 @@ class $$ProviderModelsTableFilterComposer
   });
   ColumnFilters<String> get modelId => $composableBuilder(
     column: $table.modelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get providerModelId => $composableBuilder(
+    column: $table.providerModelId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15389,6 +15446,11 @@ class $$ProviderModelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get providerModelId => $composableBuilder(
+    column: $table.providerModelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get label => $composableBuilder(
     column: $table.label,
     builder: (column) => ColumnOrderings(column),
@@ -15465,6 +15527,11 @@ class $$ProviderModelsTableAnnotationComposer
   });
   GeneratedColumn<String> get modelId =>
       $composableBuilder(column: $table.modelId, builder: (column) => column);
+
+  GeneratedColumn<String> get providerModelId => $composableBuilder(
+    column: $table.providerModelId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get label =>
       $composableBuilder(column: $table.label, builder: (column) => column);
@@ -15559,6 +15626,7 @@ class $$ProviderModelsTableTableManager
               ({
                 Value<String> connectionId = const Value.absent(),
                 Value<String> modelId = const Value.absent(),
+                Value<String> providerModelId = const Value.absent(),
                 Value<String> label = const Value.absent(),
                 Value<String> source = const Value.absent(),
                 Value<String> capabilitiesJson = const Value.absent(),
@@ -15571,6 +15639,7 @@ class $$ProviderModelsTableTableManager
               }) => ProviderModelsCompanion(
                 connectionId: connectionId,
                 modelId: modelId,
+                providerModelId: providerModelId,
                 label: label,
                 source: source,
                 capabilitiesJson: capabilitiesJson,
@@ -15585,6 +15654,7 @@ class $$ProviderModelsTableTableManager
               ({
                 required String connectionId,
                 required String modelId,
+                required String providerModelId,
                 required String label,
                 required String source,
                 required String capabilitiesJson,
@@ -15597,6 +15667,7 @@ class $$ProviderModelsTableTableManager
               }) => ProviderModelsCompanion.insert(
                 connectionId: connectionId,
                 modelId: modelId,
+                providerModelId: providerModelId,
                 label: label,
                 source: source,
                 capabilitiesJson: capabilitiesJson,

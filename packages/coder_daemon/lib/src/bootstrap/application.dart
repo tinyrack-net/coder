@@ -39,6 +39,7 @@ import 'package:coder_daemon/src/features/relay/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/agent_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/exec_session_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/goal_service.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/lua_code_mode_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_settings.dart';
@@ -54,6 +55,7 @@ import 'package:coder_daemon/src/features/workspaces/infrastructure/project_sett
 import 'package:coder_daemon/src/features/workspaces/infrastructure/workspace_service.dart';
 import 'package:coder_daemon/src/features/workspaces/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/database.dart';
+import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_daemon/src/shared/ports/agent_protocol_mapping.dart';
 import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_daemon/src/transport/rpc/binding.dart';
@@ -62,6 +64,7 @@ import 'package:coder_daemon/src/transport/rpc/server.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:coder_relay_protocol/coder_relay_protocol.dart';
 import 'package:crypto/crypto.dart';
+import 'package:lua_tool_runtime/lua_tool_runtime.dart' as lua;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
@@ -308,9 +311,7 @@ abstract final class DaemonApplication {
         repository: database.providerDao,
         credentials: credentials,
         settings: database.settingsDao,
-        environment: config.useEnvironmentCredentials
-            ? Platform.environment
-            : const <String, String>{},
+        ids: effectiveIds,
         clock: effectiveClock,
         registry: providerRegistry,
         catalog: BuiltInProviderCatalog(
@@ -324,13 +325,6 @@ abstract final class DaemonApplication {
       );
       await providers.initialize();
       final models = ProviderModelResolver(providers);
-      // A bare API key in daemon config has always meant the first vendor's
-      // platform key; the composition root is where that convention lives.
-      final apiKeyDefinition = providerRegistry.plugins.first.id;
-      if (config.apiKey?.isNotEmpty == true &&
-          await database.providerDao.getConnection(apiKeyDefinition) == null) {
-        await providers.connectApiKey(apiKeyDefinition, config.apiKey!);
-      }
       final providerAuth = ProviderAuthCoordinator(
         registry: providerRegistry,
         connector: providers,
@@ -387,6 +381,10 @@ abstract final class DaemonApplication {
         alwaysOnToolIds: toolRegistry.alwaysOnIds,
       );
       await agentDefinitions.initialize();
+      providers.referenceUpdater = _StoredProviderModelReferenceUpdater(
+        database.sessionDao,
+        agentDefinitions,
+      );
       final userHome = config.userHomeDirectory;
       final skills = SkillCatalogService(
         store: FileSkillStore(
@@ -438,6 +436,18 @@ abstract final class DaemonApplication {
         const Duration(minutes: 5),
         (_) => execSessions.sweepIdle(),
       );
+      final luaCodeMode = LuaCodeModeService(
+        lua.LuaToolRuntime<ConversationAttachment>(
+          host: discoverLuaHostCommand(sourceRoot: Directory.current.path),
+          processLauncher: const lua.IoLuaHostProcessLauncher(),
+          clock: _CoderLuaClock(effectiveClock),
+          ids: _CoderLuaIds(effectiveIds),
+        ),
+      );
+      final luaSweep = Timer.periodic(
+        const Duration(minutes: 5),
+        (_) => luaCodeMode.sweep(),
+      );
       final sessionInteractions = SessionInteractionCoordinator(
         timeline: database.timelineDao,
         events: events.add,
@@ -465,6 +475,8 @@ abstract final class DaemonApplication {
         toolRegistry: toolRegistry,
         externalTools: _McpToolSource(mcp),
         execHostFor: (id) => SessionExecHost(execSessions, id),
+        luaHostFor: (id, workingDirectory) =>
+            SessionLuaCodeModeHost(luaCodeMode, id, workingDirectory),
         skills: skills,
         settings: database.settingsDao,
         interactions: sessionInteractions,
@@ -474,7 +486,7 @@ abstract final class DaemonApplication {
         mailbox: database.agentMailboxDao,
         timeline: database.timelineDao,
         getDefinition: agentDefinitions.get,
-        validateModel: models.validateAgentModel,
+        validateModel: models.validateQualifiedModel,
         fallbackModel: models.fallbackModel,
         events: events.add,
         clock: effectiveClock,
@@ -744,6 +756,8 @@ abstract final class DaemonApplication {
         attachmentCleanup: attachmentCleanup,
         execSweep: execSweep,
         execSessions: execSessions,
+        luaSweep: luaSweep,
+        luaCodeMode: luaCodeMode,
         providerAuth: providerAuth,
         providers: providers,
         terminals: terminals,
@@ -776,6 +790,8 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._attachmentCleanup,
     required this._execSweep,
     required this._execSessions,
+    required this._luaSweep,
+    required this._luaCodeMode,
     required this._providerAuth,
     required this._providers,
     required this._terminals,
@@ -798,6 +814,8 @@ class _LocalDaemonHandle implements DaemonHandle {
   final Timer _attachmentCleanup;
   final Timer _execSweep;
   final ExecSessionService _execSessions;
+  final Timer _luaSweep;
+  final LuaCodeModeService _luaCodeMode;
   final ProviderAuthCoordinator _providerAuth;
   final ProviderConnectionService _providers;
   final TerminalService _terminals;
@@ -821,7 +839,9 @@ class _LocalDaemonHandle implements DaemonHandle {
     _stopped = true;
     _attachmentCleanup.cancel();
     _execSweep.cancel();
+    _luaSweep.cancel();
     await _execSessions.close();
+    await _luaCodeMode.close();
     for (final subscription in _notificationSubscriptions) {
       await subscription.cancel();
     }
@@ -839,6 +859,25 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _database.close();
     await _lock.unlock();
     await _lock.close();
+  }
+}
+
+final class _StoredProviderModelReferenceUpdater
+    implements ProviderModelReferenceUpdater {
+  const _StoredProviderModelReferenceUpdater(this._sessions, this._agents);
+
+  final SessionRepository _sessions;
+  final AgentDefinitionService _agents;
+
+  @override
+  Future<void> rewrite(String oldPrefix, String newPrefix) async {
+    await _agents.rewriteModelPrefix(oldPrefix, newPrefix);
+    try {
+      await _sessions.rewriteModelPrefix(oldPrefix, newPrefix);
+    } catch (_) {
+      await _agents.rewriteModelPrefix(newPrefix, oldPrefix);
+      rethrow;
+    }
   }
 }
 
@@ -865,4 +904,22 @@ final class _McpToolSource implements ExternalToolSource {
     return (id) =>
         _mcp.tool(id, workspaceRoot: workspaceRoot, exposure: exposure);
   }
+}
+
+final class _CoderLuaClock implements lua.LuaClock {
+  const _CoderLuaClock(this._clock);
+
+  final Clock _clock;
+
+  @override
+  DateTime nowUtc() => _clock.nowUtc();
+}
+
+final class _CoderLuaIds implements lua.LuaIdGenerator {
+  const _CoderLuaIds(this._ids);
+
+  final IdGenerator _ids;
+
+  @override
+  String generate() => _ids.generate();
 }

@@ -91,8 +91,7 @@ abstract final class AgentPaths {
 typedef AgentDefinitionLookup = Future<AgentDefinitionDto> Function(String id);
 
 /// Validates that a model exists on a provider connection.
-typedef AgentModelValidator =
-    Future<void> Function(String providerConnectionId, String modelId);
+typedef AgentModelValidator = Future<void> Function(String modelId);
 
 /// Resolves the daemon-wide fallback model, mirroring the chat composer's
 /// four-step chain; null when no connected provider offers a usable model.
@@ -453,17 +452,13 @@ per tree.''';
 
     SessionModelSelectionDto? childModel;
     if (model != null) {
-      final base = await _effectiveModelOf(caller, callerDefinition);
-      if (base == null) {
+      if (await _effectiveModelOf(caller, callerDefinition) == null) {
         throw const CollaborationException(
           'No connected provider offers a usable model to override.',
         );
       }
-      await _validateModel(base.providerConnectionId, model);
-      childModel = SessionModelSelectionDto(
-        providerConnectionId: base.providerConnectionId,
-        modelId: model,
-      );
+      await _validateModel(model);
+      childModel = SessionModelSelectionDto(modelId: model);
     } else if (childDefinition.model.source == AgentModelSource.session) {
       // May stay null: the child's turn start then resolves the same
       // fallback chain the chat composer uses.
@@ -754,15 +749,9 @@ per tree.''';
   ) async {
     final selected = session.model;
     if (selected != null) return selected;
-    final providerConnectionId = definition.model.providerConnectionId;
     final modelId = definition.model.modelId;
-    if (definition.model.source == AgentModelSource.fixed &&
-        providerConnectionId != null &&
-        modelId != null) {
-      return SessionModelSelectionDto(
-        providerConnectionId: providerConnectionId,
-        modelId: modelId,
-      );
+    if (definition.model.source == AgentModelSource.fixed && modelId != null) {
+      return SessionModelSelectionDto(modelId: modelId);
     }
     return _fallbackModel();
   }

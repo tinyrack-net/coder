@@ -30,22 +30,35 @@ List<RpcBindingDescriptor> providerRpcBindings({
     RpcBinding(providersConnectApiKeyProcedure, (request, _) async {
       return ProviderConnectionResultDto(
         connection: await exposeFailure(
-          () => providers.connectApiKey(request.definitionId, request.apiKey),
+          () => providers.connectApiKey(
+            request.definitionId,
+            request.apiKey,
+            connectionId: request.connectionId,
+            modelPrefix: request.modelPrefix,
+          ),
         ),
       );
     }),
     RpcBinding(providersConnectNoneProcedure, (request, _) async {
       return ProviderConnectionResultDto(
         connection: await exposeFailure(
-          () => providers.connectNone(request.definitionId),
+          () => providers.connectNone(
+            request.definitionId,
+            connectionId: request.connectionId,
+            modelPrefix: request.modelPrefix,
+          ),
         ),
       );
     }),
     RpcBinding(providersStartAuthProcedure, (request, _) async {
       return ProviderAuthAttemptResultDto(
-        attempt: await auth.start(
-          definitionId: request.definitionId,
-          methodId: request.methodId,
+        attempt: await exposeFailure(
+          () => auth.start(
+            definitionId: request.definitionId,
+            methodId: request.methodId,
+            connectionId: request.connectionId,
+            modelPrefix: request.modelPrefix,
+          ),
         ),
       );
     }),
@@ -61,6 +74,16 @@ List<RpcBindingDescriptor> providerRpcBindings({
     RpcBinding(providersDisconnectProcedure, (request, _) async {
       await providers.disconnect(request.connectionId);
       return const EmptyResultDto();
+    }),
+    RpcBinding(providersUpdateModelPrefixProcedure, (request, _) async {
+      return ProviderConnectionResultDto(
+        connection: await exposeFailure(
+          () => providers.updateModelPrefix(
+            request.connectionId,
+            request.modelPrefix,
+          ),
+        ),
+      );
     }),
     RpcBinding(providersRefreshCatalogProcedure, (_, _) async {
       return ProviderCatalogResultDto(
@@ -88,6 +111,7 @@ List<RpcBindingDescriptor> providerRpcBindings({
             request.id,
             request.config,
             apiKey: request.apiKey,
+            modelPrefix: request.modelPrefix,
           ),
         ),
       );
@@ -104,7 +128,8 @@ List<RpcBindingDescriptor> providerRpcBindings({
       );
     }),
     RpcBinding(providersDeleteCustomProcedure, (request, _) async {
-      if (await agentDefinitions.referencesProvider(request.connectionId)) {
+      final connection = await providers.get(request.connectionId);
+      if (await agentDefinitions.referencesProvider(connection.modelPrefix)) {
         throw const FormatException(
           'Provider connection is referenced by an agent definition.',
         );

@@ -859,6 +859,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsNoConnections => 'No providers are connected.';
 
   @override
+  String get providerSettingsSelectConnection => 'Select a provider to manage.';
+
+  @override
+  String get providerSettingsRequiredFields =>
+      'Name and Base URL are required.';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API key is required.';
+
+  @override
   String get providerSettingsEditAdvanced => 'Edit advanced settings';
 
   @override
@@ -882,6 +892,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => 'Waiting for sign-in';
+
+  @override
+  String get providerSettingsOpenBrowser => 'Open browser';
+
+  @override
+  String get providerSettingsReconnect => 'Reconnect';
+
+  @override
+  String get providerSettingsModelPrefix => 'Model prefix';
+
+  @override
+  String get providerSettingsModelPrefixHelp =>
+      'Used in model IDs such as openai/gpt-5.6-col.';
+
+  @override
+  String get providerSettingsModelPrefixInvalid =>
+      'Use 1–64 lowercase letters, numbers, hyphens, or underscores.';
+
+  @override
+  String get providerSettingsModelPrefixConflict =>
+      'That model prefix is already in use. Try the updated suggestion.';
 
   @override
   String providerSettingsConnectTitle(String name) {
@@ -1274,6 +1305,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatQuestionSubmit => 'Answer';
+
+  @override
+  String get chatQuestionNext => 'Next';
+
+  @override
+  String get chatQuestionNavigation => 'Questions';
+
+  @override
+  String get chatQuestionSubmitting => 'Submitting answers';
 
   @override
   String get chatQuestionOther => 'Other';
@@ -1859,4 +1899,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerSuggestionsLabel => 'Suggestions';
+
+  @override
+  String get composerDropFilesHere => 'Drop files here';
 }

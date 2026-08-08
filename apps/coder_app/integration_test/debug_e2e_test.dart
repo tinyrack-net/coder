@@ -13,7 +13,6 @@ import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
-import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
 import 'package:coder_protocol/coder_protocol.dart';
@@ -1023,7 +1022,6 @@ void main() {
         worktreeId: 'checkout-e2e',
       )).length;
       tester.testTextInput.enterText('/clear');
-      await tester.pumpAndSettle();
       await pumpUntil(tester, find.text('clear'));
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
@@ -1218,11 +1216,12 @@ void main() {
         find.text('Attached fixtures.', findRichText: true),
       );
 
-      await tester.enterText(
-        find.byKey(composer),
+      await _submitComposerPrompt(
+        tester,
+        composer,
+        send,
         'Publish outbound attachment',
       );
-      await tester.tap(find.byKey(send));
       await pumpUntilCondition(
         tester,
         () async => (await setupClient.sessions.subscribeTimeline(
@@ -1479,18 +1478,41 @@ void main() {
       // The turn stays blocked: nothing was chosen yet.
       expect(tester.widget<TRButton>(questionSubmit).onPressed, isNull);
       await tester.tap(find.text('SQLite'));
-      // The blocked turn keeps the tool row spinning, so the tree never goes
-      // quiet and pumpAndSettle would run to its deadline. Wait on the state
-      // the tap produces instead.
+      await pumpUntil(tester, find.text('Which theme should the editor use?'));
+      expect(find.text('Which store should the cache use?'), findsNothing);
+
+      await tester.tap(find.text('직접 입력'));
+      final themeAnswer = find.byKey(
+        const ValueKey<String>('chat-question-other-theme'),
+      );
+      await pumpUntil(tester, themeAnswer);
+      await tester.enterText(themeAnswer, 'High contrast');
       await pumpUntilCondition(
         tester,
         () => tester.widget<TRButton>(questionSubmit).onPressed != null,
-        'the answer button to accept the chosen option',
+        'the next button to accept the typed answer',
+      );
+      expect(find.widgetWithText(TRButton, '다음'), findsOneWidget);
+      await tester.ensureVisible(questionSubmit);
+      await tester.pump();
+      await tester.tap(questionSubmit);
+      await pumpUntil(tester, find.text('How should changes be reviewed?'));
+
+      expect(find.widgetWithText(TRButton, '답변'), findsOneWidget);
+      expect(tester.widget<TRButton>(questionSubmit).onPressed, isNull);
+      await tester.tap(find.text('Pull request'));
+      await pumpUntilCondition(
+        tester,
+        () => tester.widget<TRButton>(questionSubmit).onPressed != null,
+        'the answer button to accept all three answers',
       );
       await tester.ensureVisible(questionSubmit);
       await tester.pump();
       await tester.tap(questionSubmit);
-      await pumpUntil(tester, find.textContaining('Chose SQLite'));
+      await pumpUntil(
+        tester,
+        find.textContaining('Chose SQLite, High contrast, and Pull request'),
+      );
       await pumpUntilGone(tester, questionSubmit);
 
       final reconnected = await CoderClient.connect(
@@ -1650,13 +1672,23 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
-      await pumpUntil(tester, find.text('Provider 추가'));
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
       await _selectDaemon(
         tester,
         'Remote daemon',
         settleAfterSelection: false,
       );
-      await pumpUntil(tester, find.text('Provider 추가'));
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('OpenAI'), findsWidgets);
       expect(find.text('DeepSeek'), findsWidgets);
       final addCustom = find.byKey(const ValueKey('provider-add-custom'));
@@ -1666,9 +1698,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(_trTextInput('이름'), '');
       await tester.enterText(_trTextInput('Base URL'), '');
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-save')),
+      );
       await tester.pumpAndSettle();
-      expect(find.text('Custom Provider 고급 설정'), findsOneWidget);
+      expect(find.text('이름과 Base URL을 입력하세요.'), findsOneWidget);
       await tester.enterText(
         _trTextInput('이름'),
         'E2E Provider',
@@ -1677,36 +1711,49 @@ void main() {
         _trTextInput('Base URL'),
         'http://127.0.0.1:${modelServer.port}/unavailable/v1',
       );
-      await tester.tap(find.text('API key 필요'));
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await pumpUntil(tester, find.text('Model 자동 조회 실패'));
-      await tester.tap(find.widgetWithText(TRButton, '나중에'));
-      await pumpUntil(tester, find.text('E2E Provider'));
-      final degradedProvider =
-          (await remoteClient.providers.listProviderConnections()).singleWhere(
-            (item) => item.displayName == 'E2E Provider',
-          );
-      expect(degradedProvider.status, ProviderConnectionStatus.degraded);
-
-      // Connections share one card, so the menu is addressed by the key its
-      // own row carries rather than by walking up to a card that holds every
-      // connection.
-      final providerMenu = find.byKey(
-        const ValueKey<String>('provider-actions-custom'),
+      await tester.enterText(_trTextInput('API key'), 'valid-key');
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-save')),
       );
-      await tester.ensureVisible(providerMenu);
-      await tester.pumpAndSettle();
-      await tester.tap(providerMenu);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('고급 설정 편집'));
-      await tester.pumpAndSettle();
+      ProviderConnectionDto? degradedProvider;
+      await pumpUntilCondition(
+        tester,
+        () async {
+          final matches =
+              (await remoteClient.providers.listProviderConnections()).where(
+                (item) =>
+                    item.displayName == 'E2E Provider' &&
+                    item.status == ProviderConnectionStatus.degraded,
+              );
+          if (matches.length != 1) return false;
+          degradedProvider = matches.single;
+          return true;
+        },
+        'the custom provider to be persisted',
+      );
+      expect(degradedProvider!.status, ProviderConnectionStatus.degraded);
+      await pumpUntil(
+        tester,
+        find.byKey(
+          ValueKey<String>('provider-detail-${degradedProvider!.id}'),
+        ),
+      );
+
       await tester.enterText(_trTextInput('이름'), 'E2E Provider Edited');
       await tester.enterText(
         _trTextInput('Base URL'),
         'http://127.0.0.1:${modelServer.port}/v1',
       );
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await pumpUntil(tester, find.text('E2E Provider Edited'));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-save')),
+      );
+      await pumpUntilCondition(
+        tester,
+        () async => (await remoteClient.providers.listProviderConnections())
+            .any((item) => item.displayName == 'E2E Provider Edited'),
+        'the custom provider edit to be persisted',
+      );
       final providerConnection = await _waitForProviderModels(
         remoteClient,
         'E2E Provider Edited',
@@ -1715,49 +1762,42 @@ void main() {
         (await remoteClient.providers.listProviderModels(
           providerConnection.id,
         )).map((model) => model.id),
-        containsAll(<String>['e2e-model', selectedModelId]),
+        containsAll(<String>[
+          '${providerConnection.modelPrefix}/e2e-model',
+          '${providerConnection.modelPrefix}/$selectedModelId',
+        ]),
       );
-      final connectedSection = find.byKey(
-        const ValueKey('provider-settings-connected'),
+      expect(find.text('E2E Provider Edited'), findsWidgets);
+      const customDelete = ValueKey<String>('provider-custom-delete');
+      await pumpUntilCondition(
+        tester,
+        () =>
+            tester.widget<TRButton>(find.byKey(customDelete)).onPressed != null,
+        'the custom provider delete action to become enabled',
       );
-      final addSection = find.byKey(
-        const ValueKey('provider-settings-add'),
+      await tester.tap(find.byKey(customDelete));
+      await pumpUntil(tester, find.byType(TRAlertDialog));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(TRAlertDialog),
+          matching: find.widgetWithText(TRButton, '취소'),
+        ),
       );
-      // The save dialog carries the same label, so wait for the settings list
-      // itself before measuring section order.
-      await pumpUntil(tester, connectedSection);
-      await tester.pumpAndSettle();
-      expect(
-        tester.getBottomRight(connectedSection).dy,
-        lessThanOrEqualTo(tester.getTopLeft(addSection).dy),
-      );
-      expect(find.text('E2E Provider Edited'), findsOneWidget);
-      await Scrollable.ensureVisible(
-        tester.element(providerMenu),
-        alignment: 0.3,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(providerMenu);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('삭제'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '취소'));
+      await pumpUntil(tester, find.byKey(customDelete));
       expect(
         (await remoteClient.providers.listProviderConnections()).where(
           (item) => item.id == providerConnection.id,
         ),
         hasLength(1),
       );
-      await Scrollable.ensureVisible(
-        tester.element(providerMenu),
-        alignment: 0.3,
+      await tester.tap(find.byKey(customDelete));
+      await pumpUntil(tester, find.byType(TRAlertDialog));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(TRAlertDialog),
+          matching: find.widgetWithText(TRButton, '삭제'),
+        ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(providerMenu.hitTestable());
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('삭제'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await pumpUntilCondition(
         tester,
         () async =>
@@ -1766,85 +1806,95 @@ void main() {
             ),
         'custom provider to be deleted',
       );
+      await pumpUntilGone(
+        tester,
+        find.byKey(
+          ValueKey<String>('provider-detail-${providerConnection.id}'),
+        ),
+      );
 
-      final addDeepSeek = find.byKey(const ValueKey('provider-add-deepseek'));
-      await tester.ensureVisible(addDeepSeek);
-      await tester.tap(addDeepSeek);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
       await tester.pumpAndSettle();
-      await tester.enterText(_trTextInput('API key'), 'invalid-key');
-      await tester.tap(find.widgetWithText(TRButton, '연결'));
-      await pumpUntilCondition(
-        tester,
-        () async {
-          final matches =
-              (await remoteClient.providers.listProviderConnections())
-                  .where((item) => item.id == 'deepseek')
-                  .toList();
-          return matches.isNotEmpty &&
-              matches.single.status == ProviderConnectionStatus.error;
-        },
-        'invalid provider credential to be rejected',
-      );
-      // The daemon records the failure before the settings controller finishes
-      // reloading, so wait for the card rather than sampling one frame.
-      await pumpUntil(tester, find.textContaining('credential rejected'));
-      expect(find.textContaining('credential rejected'), findsOneWidget);
-      await _disconnectProviderCard(tester, 'DeepSeek');
-      await pumpUntilCondition(
-        tester,
-        () async =>
-            (await remoteClient.providers.listProviderConnections())
-                .singleWhere((item) => item.id == 'deepseek')
-                .status ==
-            ProviderConnectionStatus.disconnected,
-        'failed provider to disconnect',
-      );
-
-      // Disconnecting moves the provider back to the addable list only once
-      // the settings controller has reloaded, which trails the daemon.
+      final addDeepSeek = find.byKey(const ValueKey('provider-add-deepseek'));
       await pumpUntil(tester, addDeepSeek);
       await tester.ensureVisible(addDeepSeek);
       await tester.tap(addDeepSeek);
       await tester.pumpAndSettle();
       await tester.enterText(_trTextInput('API key'), 'valid-key');
-      await tester.tap(find.widgetWithText(TRButton, '연결'));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connect-submit')),
+      );
+      ProviderConnectionDto? connectedDeepSeek;
       await pumpUntilCondition(
         tester,
         () async {
           final matches =
               (await remoteClient.providers.listProviderConnections())
-                  .where((item) => item.id == 'deepseek')
+                  .where(
+                    (item) =>
+                        item.definitionId == 'deepseek' &&
+                        item.status == ProviderConnectionStatus.connected,
+                  )
                   .toList();
-          return matches.isNotEmpty &&
-              matches.single.status == ProviderConnectionStatus.connected;
+          if (matches.length != 1) return false;
+          connectedDeepSeek = matches.single;
+          return true;
         },
-        'corrected provider credential to connect',
+        'provider credential to connect',
       );
-      await _disconnectProviderCard(tester, 'DeepSeek');
+      await pumpUntil(
+        tester,
+        find.byKey(
+          ValueKey<String>('provider-detail-${connectedDeepSeek!.id}'),
+        ),
+      );
+      await _disconnectProviderConnection(tester, connectedDeepSeek!.id);
 
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.pumpAndSettle();
       final addOllama = find.byKey(const ValueKey('provider-add-ollama'));
+      await pumpUntil(tester, addOllama);
       await tester.ensureVisible(addOllama);
       await tester.tap(addOllama);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connect-submit')),
+      );
+      ProviderConnectionDto? connectedOllama;
       await pumpUntilCondition(
         tester,
         () async {
           final matches =
               (await remoteClient.providers.listProviderConnections())
-                  .where((item) => item.id == 'ollama')
+                  .where(
+                    (item) =>
+                        item.definitionId == 'ollama' &&
+                        item.status == ProviderConnectionStatus.connected,
+                  )
                   .toList();
-          return matches.isNotEmpty &&
-              matches.single.status == ProviderConnectionStatus.connected &&
-              matches.single.credentialOrigin == ProviderCredentialOrigin.none;
+          if (matches.length != 1 ||
+              matches.single.credentialOrigin !=
+                  ProviderCredentialOrigin.none) {
+            return false;
+          }
+          connectedOllama = matches.single;
+          return true;
         },
         'no-auth provider to connect',
       );
-      await _disconnectProviderCard(tester, 'Ollama');
+      await _disconnectProviderConnection(tester, connectedOllama!.id);
       await pumpUntilCondition(
         tester,
         () async => (await remoteClient.providers.listProviderConnections())
             .where(
               (item) =>
-                  (item.id == 'deepseek' || item.id == 'ollama') &&
+                  (item.definitionId == 'deepseek' ||
+                      item.definitionId == 'ollama') &&
                   item.status == ProviderConnectionStatus.connected,
             )
             .isEmpty,
@@ -1855,13 +1905,16 @@ void main() {
       expect(
         remainingConnections.where(
           (item) =>
-              (item.id == 'deepseek' || item.id == 'ollama') &&
+              (item.definitionId == 'deepseek' ||
+                  item.definitionId == 'ollama') &&
               item.status == ProviderConnectionStatus.connected,
         ),
         isEmpty,
       );
       expect(
-        remainingConnections.singleWhere((item) => item.id == 'openai').status,
+        remainingConnections
+            .singleWhere((item) => item.definitionId == 'openai')
+            .status,
         ProviderConnectionStatus.connected,
       );
 
@@ -2206,26 +2259,23 @@ Future<void> _selectDaemon(
   }
 }
 
-Future<void> _disconnectProviderCard(
+Future<void> _disconnectProviderConnection(
   WidgetTester tester,
-  String displayName,
+  String connectionId,
 ) async {
-  // Connections share one card, so the menu is scoped to the connection's own
-  // row rather than to a card that holds every connection.
-  final row = find.ancestor(
-    of: find.text(displayName),
-    matching: find.byType(SettingsRow),
+  final detail = find.byKey(
+    ValueKey<String>('provider-detail-$connectionId'),
   );
-  final menu = find.descendant(of: row.first, matching: find.byType(TRMenu));
-  await pumpUntil(tester, menu);
-  await Scrollable.ensureVisible(tester.element(menu), alignment: 0.3);
-  await tester.pumpAndSettle();
-  await tester.tap(menu);
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('연결 해제'));
-  await tester.pumpAndSettle();
+  await pumpUntil(tester, detail);
   await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
   await tester.pumpAndSettle();
+  await tester.tap(
+    find.descendant(
+      of: find.byType(TRAlertDialog),
+      matching: find.widgetWithText(TRButton, '연결 해제'),
+    ),
+  );
+  await pumpUntilGone(tester, detail);
 }
 
 Future<void> _pumpUntilTextFieldValue(
@@ -2730,6 +2780,36 @@ final class _AgentE2eProvider implements ModelProvider {
                 },
               ],
             },
+            <String, dynamic>{
+              'id': 'theme',
+              'header': 'Theme',
+              'question': 'Which theme should the editor use?',
+              'options': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'label': 'System',
+                  'description': 'Follow the operating system.',
+                },
+                <String, dynamic>{
+                  'label': 'Dark',
+                  'description': 'Always use the dark theme.',
+                },
+              ],
+            },
+            <String, dynamic>{
+              'id': 'review',
+              'header': 'Review',
+              'question': 'How should changes be reviewed?',
+              'options': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'label': 'Pull request',
+                  'description': 'Require a review before merging.',
+                },
+                <String, dynamic>{
+                  'label': 'Direct',
+                  'description': 'Merge directly after checks pass.',
+                },
+              ],
+            },
           ],
         };
         yield const ModelFunctionCall(
@@ -2751,8 +2831,11 @@ final class _AgentE2eProvider implements ModelProvider {
         );
         return;
       }
-      final reply = answered.output.contains('SQLite')
-          ? 'Chose SQLite'
+      final reply =
+          answered.output.contains('SQLite') &&
+              answered.output.contains('High contrast') &&
+              answered.output.contains('Pull request')
+          ? 'Chose SQLite, High contrast, and Pull request'
           : 'Chose something else';
       yield ModelTextDelta(reply);
       yield ModelResponseCompleted(

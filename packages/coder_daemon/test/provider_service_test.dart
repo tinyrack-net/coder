@@ -53,22 +53,206 @@ void main() {
     tags: const <String>['feature_test__provider_catalog__unit'],
   );
 
-  test('initialization auto-connects environment credentials', () async {
-    final fixture = _ServiceFixture(
-      now,
-      environment: const <String, String>{'DEEPSEEK_API_KEY': 'env-secret'},
+  test(
+    'initialization ignores provider credential environment variables',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>['deepseek-v4-pro'];
+
+      await fixture.service.initialize();
+
+      expect(await fixture.service.connections(), isEmpty);
+      expect(fixture.credentials.values, isEmpty);
+      expect(fixture.discovery.calls, 0);
+    },
+  );
+
+  test(
+    'same provider connects repeatedly with unique prefixes and credentials',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>['gpt-5.6-sol'];
+
+      final first = await fixture.service.connectApiKey('openai', 'first');
+      final second = await fixture.service.connectApiKey('openai', 'second');
+      await fixture.service.refreshCatalog(force: false);
+
+      expect(first.id, isNot(second.id));
+      expect(first.modelPrefix, 'openai');
+      expect(second.modelPrefix, 'openai-2');
+      expect(
+        (await fixture.service.connections()).map(
+          (connection) => connection.modelPrefix,
+        ),
+        <String>['openai', 'openai-2'],
+      );
+      expect(
+        fixture.credentials.values[first.id],
+        const TypeMatcher<ApiKeyCredential>(),
+      );
+      expect(
+        fixture.credentials.values[second.id],
+        const TypeMatcher<ApiKeyCredential>(),
+      );
+      expect(
+        (await fixture.service.listModels(first.id)).map((model) => model.id),
+        contains('openai/gpt-5.6-sol'),
+      );
+      expect(
+        (await fixture.service.listModels(second.id)).map((model) => model.id),
+        contains('openai-2/gpt-5.6-sol'),
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_connection_management__unit',
+    ],
+  );
+
+  test(
+    'reconnecting replaces credentials without duplicating the connection',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>['deepseek-v4-pro'];
+      final original = await fixture.service.connectApiKey(
+        'deepseek',
+        'old-secret',
+        modelPrefix: 'primary',
+      );
+      await fixture.service.disconnect(original.id);
+
+      final reconnected = await fixture.service.connectApiKey(
+        'deepseek',
+        'new-secret',
+        connectionId: original.id,
+        modelPrefix: 'primary',
+      );
+
+      expect(reconnected.id, original.id);
+      expect(reconnected.createdAt, original.createdAt);
+      expect(reconnected.modelPrefix, 'primary');
+      expect(await fixture.service.connections(), hasLength(1));
+      expect(
+        (fixture.credentials.values[original.id]! as ApiKeyCredential).key,
+        'new-secret',
+      );
+      await expectLater(
+        fixture.service.connectNone(
+          'ollama',
+          connectionId: original.id,
+        ),
+        throwsA(isA<ProviderConnectionFailure>()),
+      );
+      await expectLater(
+        fixture.service.connectApiKey(
+          'deepseek',
+          'secret',
+          connectionId: 'missing-connection',
+        ),
+        throwsA(
+          isA<ProviderConnectionFailure>().having(
+            (error) => error.code,
+            'code',
+            'provider_not_connected',
+          ),
+        ),
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_connection_management__unit',
+    ],
+  );
+
+  test(
+    'an explicitly requested prefix conflicts instead of being renamed',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>['gpt-5.6-sol'];
+      await fixture.service.connectApiKey(
+        'openai',
+        'first',
+        modelPrefix: 'openai-new',
+      );
+
+      await expectLater(
+        fixture.service.connectApiKey(
+          'openai',
+          'second',
+          modelPrefix: 'OPENAI-NEW',
+        ),
+        throwsA(
+          isA<ProviderConnectionFailure>().having(
+            (error) => error.code,
+            'code',
+            'model_prefix_conflict',
+          ),
+        ),
+      );
+      await expectLater(
+        fixture.service.connectApiKey(
+          'openai',
+          'third',
+          modelPrefix: 'openai/new',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+      final second = await fixture.service.connectApiKey(
+        'openai',
+        'fourth',
+      );
+      await expectLater(
+        fixture.service.updateModelPrefix(second.id, 'openai-new'),
+        throwsA(isA<ProviderConnectionFailure>()),
+      );
+    },
+  );
+
+  test('OAuth attempts reserve unique prefixes until released', () async {
+    final fixture = _ServiceFixture(now);
+
+    final first = await fixture.service.reserveOAuthConnection('openai');
+    final second = await fixture.service.reserveOAuthConnection('openai');
+
+    expect(first.modelPrefix, 'openai');
+    expect(second.modelPrefix, 'openai-2');
+    await fixture.service.releaseOAuthConnection(first.connectionId);
+    final replacement = await fixture.service.reserveOAuthConnection(
+      'openai',
+      modelPrefix: 'openai',
     );
+    expect(replacement.modelPrefix, 'openai');
+  });
+
+  test('prefix rename cascades models, defaults, and references', () async {
+    final updater = _ReferenceUpdater();
+    final fixture = _ServiceFixture(now, referenceUpdater: updater);
     fixture.discovery.ids = <String>['deepseek-v4-pro'];
+    final connection = await fixture.service.connectApiKey(
+      'deepseek',
+      'secret',
+    );
+    await fixture.service.setDefaultModel(
+      const SessionModelSelectionDto(
+        modelId: 'deepseek/deepseek-v4-pro',
+      ),
+    );
 
-    await fixture.service.initialize();
+    final renamed = await fixture.service.updateModelPrefix(
+      connection.id,
+      'deepseek-new',
+    );
 
-    final connection = (await fixture.service.connections()).single;
-    expect(connection.id, 'deepseek');
-    expect(connection.credentialOrigin, ProviderCredentialOrigin.environment);
-    expect(connection.status, ProviderConnectionStatus.connected);
-    expect(await fixture.service.listModels(connection.id), isNotEmpty);
-    expect(fixture.credentials.values, isEmpty);
-    expect(fixture.discovery.lastSecret, 'env-secret');
+    expect(renamed.modelPrefix, 'deepseek-new');
+    expect(updater.calls, <String>['deepseek->deepseek-new']);
+    expect(
+      (await fixture.service.listModels(
+        connection.id,
+      )).singleWhere((model) => model.providerModelId == 'deepseek-v4-pro').id,
+      'deepseek-new/deepseek-v4-pro',
+    );
+    expect(
+      (await fixture.service.storedDefaultModel())!.modelId,
+      'deepseek-new/deepseek-v4-pro',
+    );
   });
 
   test(
@@ -76,7 +260,10 @@ void main() {
     () async {
       final fixture = _ServiceFixture(now);
       fixture.discovery.ids = <String>[];
-      await fixture.service.connectApiKey('openai', 'secret');
+      final connection = await fixture.service.connectApiKey(
+        'openai',
+        'secret',
+      );
 
       for (final controls in <Map<String, ModelControlValueDto>>[
         const <String, ModelControlValueDto>{
@@ -97,7 +284,7 @@ void main() {
       ]) {
         await expectLater(
           fixture.service.validateModelControls(
-            'openai',
+            connection.id,
             'gpt-5.6-sol',
             controls,
           ),
@@ -106,7 +293,7 @@ void main() {
       }
 
       final retained = await fixture.service.retainValidModelControls(
-        'openai',
+        connection.id,
         'gpt-5.6-sol',
         const <String, ModelControlValueDto>{
           'reasoning_effort': ModelControlValueDto.stringValue(value: 'high'),
@@ -116,6 +303,51 @@ void main() {
       expect(retained.keys, <String>['reasoning_effort']);
     },
   );
+
+  test('model resolver delegates every qualified model operation', () async {
+    final fixture = _ServiceFixture(now);
+    fixture.discovery.ids = <String>[];
+    final connection = await fixture.service.connectApiKey(
+      'deepseek',
+      'secret',
+    );
+    final resolver = ProviderModelResolver(fixture.service);
+    const modelId = 'deepseek/deepseek-chat';
+
+    expect((await resolver.fallbackModel())!.modelId, modelId);
+    expect(
+      (await resolver.resolveAgentModel(
+        const AgentModelSelectionDto(
+          source: AgentModelSource.fixed,
+          modelId: modelId,
+        ),
+      )).connectionId,
+      connection.id,
+    );
+    expect(
+      (await resolver.resolveQualifiedModel(modelId)).connectionId,
+      connection.id,
+    );
+    expect(
+      (await resolver.resolveExplicitModel(connection.id, modelId)).modelId,
+      'deepseek-chat',
+    );
+    expect(
+      (await resolver.validateAgentModel(connection.id, modelId)).id,
+      modelId,
+    );
+    expect((await resolver.validateQualifiedModel(modelId)).id, modelId);
+    await resolver.validateModelControls(connection.id, modelId, const {});
+    await resolver.validateQualifiedModelControls(modelId, const {});
+    expect(
+      await resolver.retainValidModelControls(connection.id, modelId, const {}),
+      isEmpty,
+    );
+    expect(
+      await resolver.retainValidQualifiedModelControls(modelId, const {}),
+      isEmpty,
+    );
+  });
 
   test(
     'fixed test provider creates a deterministic in-memory connection',
@@ -161,9 +393,9 @@ void main() {
       expect(hosted.status, ProviderConnectionStatus.connected);
       expect(hosted.authKind, ProviderAuthKind.apiKey);
       expect(hosted.credentialOrigin, ProviderCredentialOrigin.stored);
-      expect(fixture.credentials.values['deepseek'], isA<ApiKeyCredential>());
+      expect(fixture.credentials.values[hosted.id], isA<ApiKeyCredential>());
       expect(
-        (fixture.credentials.values['deepseek']! as ApiKeyCredential).key,
+        (fixture.credentials.values[hosted.id]! as ApiKeyCredential).key,
         'stored-secret',
       );
 
@@ -173,11 +405,11 @@ void main() {
       expect(local.credentialOrigin, ProviderCredentialOrigin.none);
       expect(local.status, ProviderConnectionStatus.connected);
 
-      expect(await fixture.service.listModels('ollama'), isNotEmpty);
+      expect(await fixture.service.listModels(local.id), isNotEmpty);
 
-      await fixture.service.disconnect('deepseek');
+      await fixture.service.disconnect(hosted.id);
       expect(
-        (await fixture.service.get('deepseek')).status,
+        (await fixture.service.get(hosted.id)).status,
         ProviderConnectionStatus.disconnected,
       );
       expect(fixture.credentials.values, isNot(contains('deepseek')));
@@ -198,7 +430,10 @@ void main() {
       'secret',
     );
     expect(degradedConnection.status, ProviderConnectionStatus.degraded);
-    expect(await degraded.service.listModels('deepseek'), isNotEmpty);
+    expect(
+      await degraded.service.listModels(degradedConnection.id),
+      isNotEmpty,
+    );
 
     final invalid = _ServiceFixture(now);
     invalid.discovery.failure = const ProviderDiscoveryFailure(
@@ -212,7 +447,10 @@ void main() {
     expect(invalidConnection.status, ProviderConnectionStatus.error);
     expect(invalidConnection.error, 'unauthorized');
     await expectLater(
-      invalid.service.resolve('deepseek', modelId: 'deepseek-v4-pro'),
+      invalid.service.resolve(
+        invalidConnection.id,
+        modelId: 'deepseek-v4-pro',
+      ),
       throwsA(isA<ProviderConnectionFailure>()),
     );
   });
@@ -240,7 +478,7 @@ void main() {
         apiKey: 'secret-2',
       );
       expect(first.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
-      expect(second.id, 'custom-two');
+      expect(second.id, isNot(first.id));
       expect(await fixture.service.connections(), hasLength(2));
 
       await expectLater(
@@ -262,16 +500,19 @@ void main() {
     () async {
       final fixture = _ServiceFixture(now);
       fixture.discovery.ids = <String>['deepseek-v4-pro'];
-      await fixture.service.connectApiKey('deepseek', 'runtime-secret');
+      final connection = await fixture.service.connectApiKey(
+        'deepseek',
+        'runtime-secret',
+      );
 
       final provider = await fixture.service.resolve(
-        'deepseek',
+        connection.id,
         modelId: 'deepseek-v4-pro',
       );
 
       expect(provider.id, 'created');
       final request = fixture.factory.lastRequest!;
-      expect(request.connectionId, 'deepseek');
+      expect(request.connectionId, connection.id);
       expect(request.endpoint.baseUrl, 'https://api.deepseek.com');
       expect(request.credential, isA<ApiKeyCredential>());
       expect(
@@ -282,9 +523,12 @@ void main() {
         request.capabilities.controls.map((control) => control.id),
         contains(AgentModelControlIds.reasoningEffort),
       );
-      await fixture.service.validateAgentModel('deepseek', 'deepseek-v4-pro');
+      await fixture.service.validateAgentModel(
+        connection.id,
+        'deepseek-v4-pro',
+      );
       await expectLater(
-        fixture.service.validateAgentModel('deepseek', 'missing'),
+        fixture.service.validateAgentModel(connection.id, 'missing'),
         throwsA(isA<StateError>()),
       );
     },
@@ -309,14 +553,20 @@ void main() {
           accountId: 'account',
         ),
       );
+      final connection = (await fixture.service.connections()).single;
 
-      final connection = await fixture.service.get('openai');
       expect(fixture.discovery.calls, 0);
       expect(connection.status, ProviderConnectionStatus.connected);
       expect(connection.error, isNull);
       expect(
-        (await fixture.service.listModels('openai')).map((model) => model.id),
-        containsAll(<String>['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna']),
+        (await fixture.service.listModels(connection.id)).map(
+          (model) => model.id,
+        ),
+        containsAll(<String>[
+          'openai/gpt-5.6-sol',
+          'openai/gpt-5.6-terra',
+          'openai/gpt-5.6-luna',
+        ]),
       );
     },
     tags: const <String>['feature_test__provider_oauth__unit'],
@@ -364,12 +614,15 @@ void main() {
         'openai',
         expired,
       );
-
-      await fixture.service.resolve('openai', modelId: 'gpt-5.6-sol');
+      final connection = (await fixture.service.connections()).single;
+      await fixture.service.resolve(
+        connection.id,
+        modelId: 'gpt-5.6-sol',
+      );
 
       expect(fixture.refresher.calls, 1);
       expect(fixture.factory.lastCredential, same(rotated));
-      expect(fixture.credentials.values['openai'], same(rotated));
+      expect(fixture.credentials.values[connection.id], same(rotated));
       // The subscription backend answers 400 for the platform-only request
       // fields, so the narrower surface is resolved from the endpoint the
       // OAuth credential selects — not from the bundled model capabilities,
@@ -404,9 +657,10 @@ void main() {
           expiresAt: now,
         ),
       );
+      final connection = (await fixture.service.connections()).single;
 
       await expectLater(
-        fixture.service.resolve('openai', modelId: 'gpt-5.6-sol'),
+        fixture.service.resolve(connection.id, modelId: 'gpt-5.6-sol'),
         throwsA(
           isA<ProviderConnectionFailure>().having(
             (error) => error.code,
@@ -416,7 +670,7 @@ void main() {
         ),
       );
       expect(
-        (await fixture.service.get('openai')).status,
+        (await fixture.service.get(connection.id)).status,
         ProviderConnectionStatus.reauthRequired,
       );
     },
@@ -436,6 +690,22 @@ void main() {
           'provider_not_connected',
         ),
       ),
+    );
+    await expectLater(
+      fixture.service.resolveQualifiedModel('unqualified'),
+      throwsA(isA<FormatException>()),
+    );
+    await expectLater(
+      fixture.service.createCustom(
+        'unknown-wire',
+        const CustomProviderConfigDto(
+          name: 'Unknown wire',
+          baseUrl: 'https://example.com/v1',
+          wireFormatId: 'missing-wire',
+          authenticationRequired: false,
+        ),
+      ),
+      throwsA(isA<FormatException>()),
     );
     await expectLater(
       fixture.service.connectApiKey('deepseek', '  '),
@@ -483,16 +753,13 @@ void main() {
         <String>['manual'],
       );
       expect(created.authKind, ProviderAuthKind.none);
-      expect(await fixture.service.listModels('lab'), hasLength(2));
+      expect(await fixture.service.listModels(created.id), hasLength(2));
 
       await expectLater(
         fixture.service.createCustom('', noAuth),
         throwsA(isA<FormatException>()),
       );
-      await expectLater(
-        fixture.service.createCustom('lab', noAuth),
-        throwsA(isA<StateError>()),
-      );
+      expect(await fixture.service.createCustom('lab', noAuth), isNotNull);
       await expectLater(
         fixture.service.createCustom(
           'unsafe',
@@ -524,31 +791,34 @@ void main() {
       );
 
       final updated = await fixture.service.updateCustom(
-        'lab',
+        created.id,
         noAuth.copyWith(authenticationRequired: true),
         apiKey: 'new-secret',
       );
       expect(updated.credentialOrigin, ProviderCredentialOrigin.stored);
-      expect(fixture.credentials.values['lab'], isA<ApiKeyCredential>());
+      expect(fixture.credentials.values[created.id], isA<ApiKeyCredential>());
       await fixture.service.updateCustom(
-        'lab',
+        created.id,
         noAuth,
         apiKey: '',
       );
-      expect(fixture.credentials.values, isNot(contains('lab')));
+      expect(fixture.credentials.values, isNot(contains(created.id)));
 
-      await fixture.service.connectApiKey('deepseek', 'secret');
+      final builtIn = await fixture.service.connectApiKey(
+        'deepseek',
+        'secret',
+      );
       await expectLater(
-        fixture.service.updateCustom('deepseek', noAuth),
+        fixture.service.updateCustom(builtIn.id, noAuth),
         throwsA(isA<StateError>()),
       );
       await expectLater(
-        fixture.service.deleteCustom('deepseek'),
+        fixture.service.deleteCustom(builtIn.id),
         throwsA(isA<StateError>()),
       );
-      await fixture.service.deleteCustom('lab');
+      await fixture.service.deleteCustom(created.id);
       await expectLater(
-        fixture.service.get('lab'),
+        fixture.service.get(created.id),
         throwsA(isA<ProviderConnectionFailure>()),
       );
     },
@@ -560,8 +830,7 @@ void main() {
     () async {
       final fixture = _ServiceFixture(now);
       const selection = SessionModelSelectionDto(
-        providerConnectionId: 'deepseek',
-        modelId: 'deepseek-v4-pro',
+        modelId: 'deepseek/deepseek-v4-pro',
       );
 
       expect(await fixture.service.storedDefaultModel(), isNull);
@@ -580,10 +849,12 @@ void main() {
     () async {
       final fixture = _ServiceFixture(now);
       fixture.discovery.ids = <String>[];
-      await fixture.service.connectApiKey('deepseek', 'secret');
+      final deepseek = await fixture.service.connectApiKey(
+        'deepseek',
+        'secret',
+      );
       const stored = SessionModelSelectionDto(
-        providerConnectionId: 'deepseek',
-        modelId: 'deepseek-v4-pro',
+        modelId: 'deepseek/deepseek-v4-pro',
       );
       await fixture.service.setDefaultModel(stored);
 
@@ -592,21 +863,19 @@ void main() {
       // A model the catalog no longer offers must not block resolution.
       await fixture.service.setDefaultModel(
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'retired-model',
+          modelId: 'deepseek/retired-model',
         ),
       );
       expect(
         await fixture.service.fallbackModel(),
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-chat',
+          modelId: 'deepseek/deepseek-chat',
         ),
       );
 
       // Nor must a connection that can no longer run.
       await fixture.service.setDefaultModel(stored);
-      await fixture.service.disconnect('deepseek');
+      await fixture.service.disconnect(deepseek.id);
       expect(await fixture.service.fallbackModel(), isNull);
 
       // The unusable default survives so the settings page can surface it.
@@ -620,34 +889,36 @@ void main() {
     () async {
       final fixture = _ServiceFixture(now);
       fixture.discovery.ids = <String>[];
-      await fixture.service.connectApiKey('xai', 'secret');
+      final xai = await fixture.service.connectApiKey('xai', 'secret');
 
       expect(
         await fixture.service.firstUsableModel(),
         const SessionModelSelectionDto(
-          providerConnectionId: 'xai',
-          modelId: 'grok-4.3',
+          modelId: 'xai/grok-4.3',
         ),
       );
 
       // "DeepSeek" sorts before "xAI", so connecting it moves the choice.
-      await fixture.service.connectApiKey('deepseek', 'secret');
+      final deepseek = await fixture.service.connectApiKey(
+        'deepseek',
+        'secret',
+      );
       expect(
         await fixture.service.firstUsableModel(),
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-chat',
+          modelId: 'deepseek/deepseek-chat',
         ),
       );
 
       // A first-by-label model that cannot stream is skipped, not returned.
       await fixture.repository.upsertModel(
-        const ProviderModelDto(
-          connectionId: 'deepseek',
-          id: 'deepseek-alpha',
+        ProviderModelDto(
+          connectionId: deepseek.id,
+          id: 'deepseek/deepseek-alpha',
+          providerModelId: 'deepseek-alpha',
           label: 'DeepSeek Alpha',
           source: ProviderModelSource.manual,
-          capabilities: ModelCapabilitiesDto(
+          capabilities: const ModelCapabilitiesDto(
             streaming: CapabilitySupport.unsupported,
             toolCalling: CapabilitySupport.supported,
           ),
@@ -656,13 +927,12 @@ void main() {
       expect(
         await fixture.service.firstUsableModel(),
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-chat',
+          modelId: 'deepseek/deepseek-chat',
         ),
       );
 
-      await fixture.service.disconnect('deepseek');
-      await fixture.service.disconnect('xai');
+      await fixture.service.disconnect(deepseek.id);
+      await fixture.service.disconnect(xai.id);
       expect(await fixture.service.firstUsableModel(), isNull);
     },
     tags: const <String>['feature_test__provider_default_model__unit'],
@@ -673,7 +943,10 @@ void main() {
     () async {
       final fixture = _ServiceFixture(now);
       fixture.discovery.ids = <String>[];
-      await fixture.service.connectApiKey('deepseek', 'secret');
+      final deepseek = await fixture.service.connectApiKey(
+        'deepseek',
+        'secret',
+      );
 
       final sessionSourced = await fixture.service.resolveAgentModel(
         const AgentModelSelectionDto(source: AgentModelSource.session),
@@ -683,22 +956,20 @@ void main() {
       final pinnedToMissing = await fixture.service.resolveAgentModel(
         const AgentModelSelectionDto(
           source: AgentModelSource.fixed,
-          providerConnectionId: 'xai',
-          modelId: 'grok-4.5',
+          modelId: 'xai/grok-4.5',
         ),
       );
-      expect(pinnedToMissing.connectionId, 'deepseek');
+      expect(pinnedToMissing.connectionId, deepseek.id);
 
       final pinned = await fixture.service.resolveAgentModel(
         const AgentModelSelectionDto(
           source: AgentModelSource.fixed,
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-v4-pro',
+          modelId: 'deepseek/deepseek-v4-pro',
         ),
       );
       expect(pinned.modelId, 'deepseek-v4-pro');
 
-      await fixture.service.disconnect('deepseek');
+      await fixture.service.disconnect(deepseek.id);
       await expectLater(
         fixture.service.resolveAgentModel(
           const AgentModelSelectionDto(source: AgentModelSource.session),
@@ -718,19 +989,28 @@ void main() {
   test('model validation rejects unusable selections', () async {
     final fixture = _ServiceFixture(now);
     fixture.discovery.ids = <String>['unknown-capabilities'];
-    await fixture.service.connectApiKey('deepseek', 'secret');
+    final connection = await fixture.service.connectApiKey(
+      'deepseek',
+      'secret',
+    );
 
     await expectLater(
-      fixture.service.validateAgentModel('deepseek', 'missing'),
+      fixture.service.validateAgentModel(connection.id, 'missing'),
       throwsA(isA<StateError>()),
     );
     await expectLater(
-      fixture.service.validateAgentModel('deepseek', 'unknown-capabilities'),
+      fixture.service.validateAgentModel(
+        connection.id,
+        'unknown-capabilities',
+      ),
       throwsA(isA<StateError>()),
     );
-    await fixture.service.disconnect('deepseek');
+    await fixture.service.disconnect(connection.id);
     await expectLater(
-      fixture.service.validateAgentModel('deepseek', 'deepseek-v4-pro'),
+      fixture.service.validateAgentModel(
+        connection.id,
+        'deepseek-v4-pro',
+      ),
       throwsA(isA<ProviderConnectionFailure>()),
     );
   });
@@ -740,22 +1020,28 @@ void main() {
     () async {
       final fixture = _ServiceFixture(now);
       fixture.discovery.ids = <String>['deepseek-v4-pro'];
-      await fixture.service.connectApiKey('deepseek', 'secret');
+      final connection = await fixture.service.connectApiKey(
+        'deepseek',
+        'secret',
+      );
 
       final resolved = await fixture.service.resolveExplicitModel(
-        'deepseek',
+        connection.id,
         'deepseek-v4-pro',
       );
-      expect(resolved.connectionId, 'deepseek');
+      expect(resolved.connectionId, connection.id);
       expect(resolved.modelId, 'deepseek-v4-pro');
 
       await expectLater(
-        fixture.service.resolveExplicitModel('deepseek', 'missing'),
+        fixture.service.resolveExplicitModel(connection.id, 'missing'),
         throwsA(isA<StateError>()),
       );
-      await fixture.service.disconnect('deepseek');
+      await fixture.service.disconnect(connection.id);
       await expectLater(
-        fixture.service.resolveExplicitModel('deepseek', 'deepseek-v4-pro'),
+        fixture.service.resolveExplicitModel(
+          connection.id,
+          'deepseek-v4-pro',
+        ),
         throwsA(isA<ProviderConnectionFailure>()),
       );
     },
@@ -767,13 +1053,16 @@ void main() {
     () async {
       final missing = _ServiceFixture(now);
       missing.discovery.ids = <String>['deepseek-v4-pro'];
-      final connection = await missing.service.connectApiKey(
+      final missingConnection = await missing.service.connectApiKey(
         'deepseek',
         'secret',
       );
-      missing.credentials.values.remove('deepseek');
+      missing.credentials.values.remove(missingConnection.id);
       await expectLater(
-        missing.service.resolve(connection.id, modelId: 'deepseek-v4-pro'),
+        missing.service.resolve(
+          missingConnection.id,
+          modelId: 'deepseek-v4-pro',
+        ),
         throwsA(isA<ProviderConnectionFailure>()),
       );
 
@@ -791,8 +1080,9 @@ void main() {
           expiresAt: now,
         ),
       );
+      final connection = (await transient.service.connections()).single;
       await expectLater(
-        transient.service.resolve('openai', modelId: 'gpt-5.6-sol'),
+        transient.service.resolve(connection.id, modelId: 'gpt-5.6-sol'),
         throwsA(
           isA<ProviderConnectionFailure>().having(
             (error) => error.code,
@@ -802,7 +1092,7 @@ void main() {
         ),
       );
       expect(
-        (await transient.service.get('openai')).status,
+        (await transient.service.get(connection.id)).status,
         ProviderConnectionStatus.connected,
       );
     },
@@ -812,9 +1102,9 @@ void main() {
 final class _ServiceFixture {
   _ServiceFixture(
     DateTime now, {
-    Map<String, String> environment = const <String, String>{},
     ModelProvider? fixedProvider,
     ProviderCatalogMetadataSource? metadataSource,
+    ProviderModelReferenceUpdater? referenceUpdater,
   }) : clock = _Clock(now),
        registry = ProviderRegistry(
          plugins: openAIFamilyPlugins(clock: _Clock(now)),
@@ -824,7 +1114,6 @@ final class _ServiceFixture {
       repository: repository,
       credentials: credentials,
       settings: settings,
-      environment: environment,
       clock: clock,
       registry: registry,
       catalog: BuiltInProviderCatalog(
@@ -836,6 +1125,7 @@ final class _ServiceFixture {
       providerFactory: factory,
       fixedProvider: fixedProvider,
       oauthRefresher: refresher,
+      referenceUpdater: referenceUpdater,
     );
   }
 
@@ -848,6 +1138,15 @@ final class _ServiceFixture {
   final _Clock clock;
   final ProviderRegistry registry;
   late final ProviderConnectionService service;
+}
+
+final class _ReferenceUpdater implements ProviderModelReferenceUpdater {
+  final List<String> calls = <String>[];
+
+  @override
+  Future<void> rewrite(String oldPrefix, String newPrefix) async {
+    calls.add('$oldPrefix->$newPrefix');
+  }
 }
 
 final class _OfflineMetadataSource implements ProviderCatalogMetadataSource {
@@ -872,6 +1171,7 @@ final class _Refresher implements ProviderCredentialRefresher {
   @override
   Future<OAuthCredential> refresh(
     String connectionId,
+    String definitionId,
     OAuthCredential credential,
   ) async {
     calls += 1;

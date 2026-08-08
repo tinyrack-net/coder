@@ -7,6 +7,7 @@ import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_catalog.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:coder_daemon/src/shared/ports/agent_protocol_mapping.dart';
+import 'package:coder_daemon/src/shared/ports/daemon_ports.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 
 /// Runtime provider selection resolved from one Markdown agent snapshot.
@@ -63,6 +64,10 @@ final class ProviderModelResolver {
     AgentModelSelectionDto selection,
   ) => _connections.resolveAgentModel(selection);
 
+  /// Resolves one canonical qualified model identifier.
+  Future<ResolvedAgentModel> resolveQualifiedModel(String modelId) =>
+      _connections.resolveQualifiedModel(modelId);
+
   /// Resolves one explicit provider connection and model.
   Future<ResolvedAgentModel> resolveExplicitModel(
     String connectionId,
@@ -75,6 +80,12 @@ final class ProviderModelResolver {
     String modelId,
   ) => _connections.validateAgentModel(connectionId, modelId);
 
+  /// Validates one qualified model identifier.
+  Future<ProviderModelDto> validateQualifiedModel(String modelId) async {
+    final resolved = await _connections.resolveQualifiedModel(modelId);
+    return _connections.validateAgentModel(resolved.connectionId, modelId);
+  }
+
   /// Validates submitted controls against one resolved connection and model.
   Future<void> validateModelControls(
     String connectionId,
@@ -82,12 +93,38 @@ final class ProviderModelResolver {
     Map<String, ModelControlValueDto> controls,
   ) => _connections.validateModelControls(connectionId, modelId, controls);
 
+  /// Validates controls for one qualified model identifier.
+  Future<void> validateQualifiedModelControls(
+    String modelId,
+    Map<String, ModelControlValueDto> controls,
+  ) async {
+    final resolved = await _connections.resolveQualifiedModel(modelId);
+    await _connections.validateModelControls(
+      resolved.connectionId,
+      modelId,
+      controls,
+    );
+  }
+
   /// Retains only values accepted by one resolved connection and model.
   Future<Map<String, ModelControlValueDto>> retainValidModelControls(
     String connectionId,
     String modelId,
     Map<String, ModelControlValueDto> controls,
   ) => _connections.retainValidModelControls(connectionId, modelId, controls);
+
+  /// Retains controls accepted by one qualified model identifier.
+  Future<Map<String, ModelControlValueDto>> retainValidQualifiedModelControls(
+    String modelId,
+    Map<String, ModelControlValueDto> controls,
+  ) async {
+    final resolved = await _connections.resolveQualifiedModel(modelId);
+    return _connections.retainValidModelControls(
+      resolved.connectionId,
+      modelId,
+      controls,
+    );
+  }
 }
 
 /// Definition id recorded for connections built from custom configuration.
@@ -103,6 +140,12 @@ const String customProviderDefinitionId = 'custom';
 /// fall back to the first usable provider model instead.
 const String defaultModelSettingKey = 'provider.defaultModel';
 
+/// Rewrites persisted references owned outside provider persistence.
+abstract interface class ProviderModelReferenceUpdater {
+  /// Replaces the qualified prefix everywhere outside provider storage.
+  Future<void> rewrite(String oldPrefix, String newPrefix);
+}
+
 /// Owns provider connections while keeping runtime details out of the protocol.
 final class ProviderConnectionService implements ProviderOAuthConnector {
   /// Creates the provider connection service.
@@ -110,19 +153,21 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     required ProviderRepository repository,
     required CredentialRepository credentials,
     required SettingsRepository settings,
-    required Map<String, String> environment,
     required Clock clock,
     required ProviderRegistry registry,
     required BuiltInProviderCatalog catalog,
+    IdGenerator ids = const UuidIdGenerator(),
     ProviderModelDiscovery? modelDiscovery,
     ModelProviderFactory? providerFactory,
     ProviderCredentialRefresher? oauthRefresher,
     ModelProvider? fixedProvider,
+    ProviderModelReferenceUpdater? referenceUpdater,
   }) => ProviderConnectionService._(
+    referenceUpdater,
     repository: repository,
     credentials: credentials,
     settings: settings,
-    environment: environment,
+    ids: ids,
     clock: clock,
     registry: registry,
     catalog: catalog,
@@ -132,11 +177,12 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     fixedProvider: fixedProvider,
   );
 
-  ProviderConnectionService._({
+  ProviderConnectionService._(
+    this._referenceUpdater, {
     required this._repository,
     required this._credentials,
     required this._settings,
-    required this._environment,
+    required this._ids,
     required this._clock,
     required this._registry,
     required this._catalog,
@@ -150,7 +196,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   final ProviderRepository _repository;
   final SettingsRepository _settings;
   final CredentialRepository _credentials;
-  final Map<String, String> _environment;
+  final IdGenerator _ids;
   final Clock _clock;
   final ProviderRegistry _registry;
   final BuiltInProviderCatalog _catalog;
@@ -158,12 +204,21 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   final ModelProviderFactory? _factoryOverride;
   final ProviderCredentialRefresher? _oauthRefresher;
   final ModelProvider? _fixedProvider;
+  ProviderModelReferenceUpdater? _referenceUpdater;
   final StreamController<ProviderCatalogDto> _catalogUpdates =
       StreamController<ProviderCatalogDto>.broadcast(sync: true);
   Future<void>? _backgroundRefresh;
+  final Map<String, String> _oauthPrefixReservations = <String, String>{};
 
   /// Background catalog refresh results.
   Stream<ProviderCatalogDto> get catalogUpdates => _catalogUpdates.stream;
+
+  /// Persistence coordinator currently attached by the composition root.
+  ProviderModelReferenceUpdater? get referenceUpdater => _referenceUpdater;
+
+  /// Attaches persistence that is initialized after the provider service.
+  set referenceUpdater(ProviderModelReferenceUpdater updater) =>
+      _referenceUpdater = updater;
 
   /// The definition a fixed test provider connects under.
   ///
@@ -172,25 +227,12 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   /// runs deterministic.
   String get _fixedProviderDefinitionId => _registry.plugins.first.id;
 
-  /// Loads secrets and connects built-ins backed by daemon environment keys.
+  /// Loads explicitly stored credentials and starts catalog refresh.
   Future<void> initialize() async {
     await _credentials.load();
     if (_fixedProvider != null &&
         await _repository.getConnection(_fixedProviderDefinitionId) == null) {
       await _initializeFixedProvider();
-    }
-    for (final plugin in _registry.plugins) {
-      if (await _repository.getConnection(plugin.id) != null) {
-        continue;
-      }
-      final environmentCredential = _environmentCredential(plugin);
-      if (environmentCredential == null) continue;
-      await _connectBuiltIn(
-        plugin,
-        ProviderAuthKind.apiKey,
-        ProviderCredentialOrigin.environment,
-        environmentCredential,
-      );
     }
     _backgroundRefresh = _runBackgroundRefresh();
     unawaited(_backgroundRefresh);
@@ -218,6 +260,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     final connection = ProviderConnectionDto(
       id: plugin.id,
       definitionId: plugin.id,
+      modelPrefix: plugin.id,
       displayName: plugin.definition.name,
       status: ProviderConnectionStatus.connected,
       authKind: ProviderAuthKind.none,
@@ -256,9 +299,11 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
           model.id: model,
       };
       for (final metadata in _catalog.modelsFor(connection.definitionId)) {
-        models[metadata.id] = ProviderModelDto(
+        final qualifiedId = _qualify(connection.modelPrefix, metadata.id);
+        models[qualifiedId] = ProviderModelDto(
           connectionId: connection.id,
-          id: metadata.id,
+          id: qualifiedId,
+          providerModelId: metadata.id,
           label: metadata.label,
           source:
               _catalog.isRefreshedModel(
@@ -281,7 +326,11 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   /// Returns all user-owned connections with deterministic ordering.
   Future<List<ProviderConnectionDto>> connections() async {
     final result = await _repository.listConnections();
-    result.sort((left, right) => left.displayName.compareTo(right.displayName));
+    result.sort((left, right) {
+      final byName = left.displayName.compareTo(right.displayName);
+      if (byName != 0) return byName;
+      return left.modelPrefix.compareTo(right.modelPrefix);
+    });
     return result;
   }
 
@@ -328,15 +377,16 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
           .map((model) => model.id)
           .toSet();
       models.sort((left, right) {
-        final leftRuntime = runtimeModelIds?.contains(left.id) ?? false;
-        final rightRuntime = runtimeModelIds?.contains(right.id) ?? false;
+        final leftRuntime =
+            runtimeModelIds?.contains(left.providerModelId) ?? false;
+        final rightRuntime =
+            runtimeModelIds?.contains(right.providerModelId) ?? false;
         if (leftRuntime != rightRuntime) return leftRuntime ? -1 : 1;
         return left.label.compareTo(right.label);
       });
       for (final model in models) {
         if (!_isRunnableModel(model)) continue;
         return SessionModelSelectionDto(
-          providerConnectionId: connection.id,
           modelId: model.id,
         );
       }
@@ -355,19 +405,15 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       case AgentModelSource.session:
         return _resolveFallback();
       case AgentModelSource.fixed:
-        final fixedConnection = selection.providerConnectionId;
-        final fixedModel = selection.modelId;
-        if (fixedConnection == null || fixedModel == null) {
+        final fixedModel = selection.qualifiedModelId;
+        if (fixedModel == null) {
           throw const FormatException(
-            'Fixed agent models require a provider and model.',
+            'Fixed agent models require a qualified model ID.',
           );
         }
-        final pinned = SessionModelSelectionDto(
-          providerConnectionId: fixedConnection,
-          modelId: fixedModel,
-        );
+        final pinned = SessionModelSelectionDto(modelId: fixedModel);
         if (!await _isRunnableSelection(pinned)) return _resolveFallback();
-        return resolveExplicitModel(fixedConnection, fixedModel);
+        return resolveQualifiedModel(fixedModel);
     }
   }
 
@@ -379,22 +425,42 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
         'No connected provider offers a usable model.',
       );
     }
-    return resolveExplicitModel(
-      fallback.providerConnectionId,
-      fallback.modelId,
-    );
+    return resolveQualifiedModel(fallback.qualifiedModelId);
   }
 
   Future<bool> _isRunnableSelection(SessionModelSelectionDto selection) async {
-    final connection = await _repository.getConnection(
-      selection.providerConnectionId,
-    );
+    final modelId = selection.qualifiedModelId;
+    final connection = await _connectionForQualifiedModel(modelId);
     if (connection == null || !_canRun(connection.status)) return false;
-    final model = await _repository.getModel(
-      selection.providerConnectionId,
-      selection.modelId,
-    );
+    final model = await _repository.getModel(connection.id, modelId);
     return model != null && _isRunnableModel(model);
+  }
+
+  /// Resolves one canonical `<prefix>/<provider-model-id>` selection.
+  Future<ResolvedAgentModel> resolveQualifiedModel(String modelId) async {
+    final connection = await _connectionForQualifiedModel(modelId);
+    if (connection == null) {
+      throw ProviderConnectionFailure(
+        'provider_not_connected',
+        'Provider model prefix is not connected: $modelId',
+      );
+    }
+    return resolveExplicitModel(connection.id, modelId);
+  }
+
+  Future<ProviderConnectionDto?> _connectionForQualifiedModel(
+    String modelId,
+  ) async {
+    final separator = modelId.indexOf('/');
+    if (separator <= 0 || separator == modelId.length - 1) {
+      throw FormatException(
+        'Model ID must be qualified as prefix/model: $modelId',
+      );
+    }
+    final prefix = modelId.substring(0, separator).toLowerCase();
+    return (await _repository.listConnections())
+        .where((connection) => connection.modelPrefix.toLowerCase() == prefix)
+        .firstOrNull;
   }
 
   /// Validates and resolves one explicitly chosen connection and model.
@@ -405,7 +471,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     final model = await validateAgentModel(connectionId, modelId);
     return ResolvedAgentModel(
       connectionId: connectionId,
-      modelId: modelId,
+      modelId: model.providerModelId,
       provider: await resolve(connectionId, modelId: modelId),
       limits: model.limits,
     );
@@ -426,8 +492,10 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   /// Connects a hosted built-in provider with one API key.
   Future<ProviderConnectionDto> connectApiKey(
     String definitionId,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
     if (apiKey.trim().isEmpty) {
       throw const FormatException('API key must not be empty.');
     }
@@ -438,47 +506,98 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       );
     }
     final credential = ApiKeyCredential(apiKey);
-    await _credentials.setCredential(definitionId, credential);
     return _connectBuiltIn(
       plugin,
       ProviderAuthKind.apiKey,
       ProviderCredentialOrigin.stored,
       credential,
+      connectionId: connectionId,
+      modelPrefix: modelPrefix,
     );
   }
 
   /// Connects a local built-in provider without authentication.
-  Future<ProviderConnectionDto> connectNone(String definitionId) async {
+  Future<ProviderConnectionDto> connectNone(
+    String definitionId, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
     final plugin = _registry.require(definitionId);
     if (!_supportsFlow(plugin, AgentProviderAuthFlow.none)) {
       throw StateError('$definitionId requires authentication.');
     }
-    await _credentials.removeCredential(definitionId);
     return _connectBuiltIn(
       plugin,
       ProviderAuthKind.none,
       ProviderCredentialOrigin.none,
       null,
+      connectionId: connectionId,
+      modelPrefix: modelPrefix,
     );
   }
 
   @override
   Future<void> connectOAuth(
     String definitionId,
-    OAuthCredential credential,
-  ) async {
+    OAuthCredential credential, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
     final plugin = _registry.require(definitionId);
     if (!_supportsFlow(plugin, AgentProviderAuthFlow.oauthBrowser) &&
         !_supportsFlow(plugin, AgentProviderAuthFlow.oauthDevice)) {
       throw StateError('$definitionId does not support OAuth.');
     }
-    await _credentials.setCredential(definitionId, credential);
-    await _connectBuiltIn(
-      plugin,
-      ProviderAuthKind.oauth,
-      ProviderCredentialOrigin.oauth,
-      credential,
+    final id = connectionId;
+    final reservedPrefix = id == null ? null : _oauthPrefixReservations[id];
+    if (id != null &&
+        (reservedPrefix == null || reservedPrefix != modelPrefix)) {
+      throw const ProviderConnectionFailure(
+        'model_prefix_conflict',
+        'OAuth provider prefix reservation is no longer valid.',
+      );
+    }
+    try {
+      await _connectBuiltIn(
+        plugin,
+        ProviderAuthKind.oauth,
+        ProviderCredentialOrigin.oauth,
+        credential,
+        connectionId: connectionId,
+        modelPrefix: modelPrefix,
+        reservedPrefix: reservedPrefix,
+      );
+    } finally {
+      if (id != null) _oauthPrefixReservations.remove(id);
+    }
+  }
+
+  @override
+  Future<ProviderOAuthReservation> reserveOAuthConnection(
+    String definitionId, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
+    _registry.require(definitionId);
+    final existing = connectionId == null ? null : await get(connectionId);
+    if (existing != null && existing.definitionId != definitionId) {
+      throw const ProviderConnectionFailure(
+        'provider_definition_mismatch',
+        'An existing connection cannot change provider definition.',
+      );
+    }
+    final resolvedId = connectionId ?? _ids.generate();
+    final prefix = await _reservePrefixFor(
+      resolvedId,
+      requested: modelPrefix ?? existing?.modelPrefix,
+      fallback: definitionId,
     );
+    return (connectionId: resolvedId, modelPrefix: prefix);
+  }
+
+  @override
+  Future<void> releaseOAuthConnection(String connectionId) async {
+    _oauthPrefixReservations.remove(connectionId);
   }
 
   /// Creates an advanced custom connection speaking a registered wire format.
@@ -486,35 +605,47 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
+    String? modelPrefix,
   }) async {
     if (id.trim().isEmpty) {
       throw const FormatException('Custom provider ID must not be empty.');
     }
-    if (await _repository.getConnection(id) != null) {
-      throw StateError('Provider connection already exists: $id');
-    }
     final normalized = _validateCustom(config);
-    final credential = _customCredential(normalized, apiKey);
-    if (credential != null) {
-      await _credentials.setCredential(id, credential);
-    }
-    final now = _clock.nowUtc();
-    final connection = ProviderConnectionDto(
-      id: id,
-      definitionId: customProviderDefinitionId,
-      displayName: normalized.name,
-      status: ProviderConnectionStatus.connecting,
-      authKind: normalized.authenticationRequired
-          ? ProviderAuthKind.apiKey
-          : ProviderAuthKind.none,
-      credentialOrigin: credential == null
-          ? ProviderCredentialOrigin.none
-          : ProviderCredentialOrigin.stored,
-      createdAt: now,
-      updatedAt: now,
-      customConfig: normalized,
+    final connectionId = _ids.generate();
+    final prefix = await _reservePrefixFor(
+      connectionId,
+      requested: modelPrefix,
+      fallback: normalized.name,
     );
-    return _discoverAndSave(connection, credential);
+    try {
+      final credential = _customCredential(normalized, apiKey);
+      if (credential != null) {
+        await _credentials.setCredential(connectionId, credential);
+      }
+      final now = _clock.nowUtc();
+      final connection = ProviderConnectionDto(
+        id: connectionId,
+        definitionId: customProviderDefinitionId,
+        modelPrefix: prefix,
+        displayName: normalized.name,
+        status: ProviderConnectionStatus.connecting,
+        authKind: normalized.authenticationRequired
+            ? ProviderAuthKind.apiKey
+            : ProviderAuthKind.none,
+        credentialOrigin: credential == null
+            ? ProviderCredentialOrigin.none
+            : ProviderCredentialOrigin.stored,
+        createdAt: now,
+        updatedAt: now,
+        customConfig: normalized,
+      );
+      return await _discoverAndSave(connection, credential);
+    } on Object {
+      await _credentials.removeCredential(connectionId);
+      rethrow;
+    } finally {
+      _oauthPrefixReservations.remove(connectionId);
+    }
   }
 
   /// Updates advanced settings for an existing custom connection.
@@ -567,6 +698,68 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     );
   }
 
+  /// Changes one connection prefix and every provider-owned model identifier.
+  Future<ProviderConnectionDto> updateModelPrefix(
+    String id,
+    String modelPrefix,
+  ) async {
+    final current = await get(id);
+    final normalized = _validateRequestedPrefix(modelPrefix);
+    if (normalized == current.modelPrefix) return current;
+    final conflict = (await _repository.listConnections()).any(
+      (connection) =>
+          connection.id != id &&
+          connection.modelPrefix.toLowerCase() == normalized,
+    );
+    if (conflict) {
+      throw ProviderConnectionFailure(
+        'model_prefix_conflict',
+        'Model prefix is already in use: $normalized',
+      );
+    }
+    final oldPrefix = current.modelPrefix;
+    final models = await _repository.listModels(id);
+    final updated = current.copyWith(
+      modelPrefix: normalized,
+      updatedAt: _clock.nowUtc(),
+    );
+    final stored = await storedDefaultModel();
+    final renamedDefault =
+        stored != null && stored.modelId.startsWith('$oldPrefix/')
+        ? SessionModelSelectionDto(
+            modelId:
+                '$normalized/${stored.modelId.substring(oldPrefix.length + 1)}',
+          )
+        : stored;
+    final updater = _referenceUpdater;
+    var referencesUpdated = false;
+    try {
+      if (updater != null) {
+        await updater.rewrite(oldPrefix, normalized);
+        referencesUpdated = true;
+      }
+      await _repository.upsertConnection(updated);
+      await _repository.replaceModels(
+        id,
+        models.map(
+          (model) => model.copyWith(
+            id: _qualify(normalized, model.providerModelId),
+          ),
+        ),
+      );
+      if (renamedDefault != stored) {
+        await setDefaultModel(renamedDefault);
+      }
+      return updated;
+    } catch (_) {
+      await _repository.upsertConnection(current);
+      await _repository.replaceModels(id, models);
+      if (renamedDefault != stored) await setDefaultModel(stored);
+      if (referencesUpdated) await updater!.rewrite(normalized, oldPrefix);
+      rethrow;
+    }
+  }
+
   /// Permanently removes a custom provider connection.
   Future<void> deleteCustom(String id) async {
     final connection = await get(id);
@@ -579,7 +772,9 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
 
   /// Returns cached and discovered models for a connection.
   Future<List<ProviderModelDto>> listModels(String connectionId) =>
-      _repository.listModels(connectionId);
+      get(connectionId).then(
+        (connection) => _repository.listModels(connection.id),
+      );
 
   /// Creates an executable provider without exposing secrets or endpoints.
   Future<ModelProvider> resolve(
@@ -607,7 +802,10 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
         )) {
       credential = await _refreshOAuth(connection, oauthCredential);
     }
-    final model = await _repository.getModel(connectionId, modelId);
+    final qualifiedModelId = modelId.contains('/')
+        ? modelId
+        : _qualify(connection.modelPrefix, modelId);
+    final model = await _repository.getModel(connection.id, qualifiedModelId);
     final request = ModelProviderRequest(
       connectionId: connection.id,
       endpoint: _endpointFor(connection),
@@ -630,7 +828,11 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       throw StateError('OAuth credential refresh is not configured.');
     }
     try {
-      final refreshed = await refresher.refresh(connection.id, credential);
+      final refreshed = await refresher.refresh(
+        connection.id,
+        connection.definitionId,
+        credential,
+      );
       await _credentials.setCredential(connection.id, refreshed);
       return refreshed;
     } on OAuthRefreshFailure catch (failure) {
@@ -667,7 +869,10 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
         'Provider is not connected: $connectionId',
       );
     }
-    final model = await _repository.getModel(connectionId, modelId);
+    final qualifiedModelId = modelId.contains('/')
+        ? modelId
+        : _qualify(connection.modelPrefix, modelId);
+    final model = await _repository.getModel(connection.id, qualifiedModelId);
     if (model == null) throw StateError('Unknown provider model: $modelId');
     if (!_isRunnableModel(model)) {
       throw StateError(
@@ -701,13 +906,40 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     ProviderPlugin plugin,
     ProviderAuthKind authKind,
     ProviderCredentialOrigin origin,
-    ProviderCredential? credential,
-  ) async {
-    final existing = await _repository.getConnection(plugin.id);
+    ProviderCredential? credential, {
+    String? connectionId,
+    String? modelPrefix,
+    String? reservedPrefix,
+  }) async {
     final now = _clock.nowUtc();
+    final id = connectionId ?? _ids.generate();
+    final existing = connectionId == null
+        ? null
+        : await _repository.getConnection(id);
+    if (connectionId != null && existing == null && reservedPrefix == null) {
+      throw ProviderConnectionFailure(
+        'provider_not_connected',
+        'Provider connection not found: $id',
+      );
+    }
+    if (existing != null && existing.definitionId != plugin.id) {
+      throw const ProviderConnectionFailure(
+        'provider_definition_mismatch',
+        'An existing connection cannot change provider definition.',
+      );
+    }
+    final ownsReservation = reservedPrefix == null;
+    final prefix =
+        reservedPrefix ??
+        await _reservePrefixFor(
+          id,
+          requested: modelPrefix ?? existing?.modelPrefix,
+          fallback: plugin.id,
+        );
     final connection = ProviderConnectionDto(
-      id: plugin.id,
+      id: id,
       definitionId: plugin.id,
+      modelPrefix: prefix,
       displayName: plugin.definition.name,
       status: ProviderConnectionStatus.connecting,
       authKind: authKind,
@@ -715,7 +947,12 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
-    return _discoverAndSave(connection, credential);
+    try {
+      if (credential != null) await _credentials.setCredential(id, credential);
+      return await _discoverAndSave(connection, credential);
+    } finally {
+      if (ownsReservation) _oauthPrefixReservations.remove(id);
+    }
   }
 
   Future<ProviderConnectionDto> _discoverAndSave(
@@ -742,17 +979,19 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
           endpoint,
           credential,
         );
-        for (final modelId in discovered) {
+        for (final providerModelId in discovered) {
+          final modelId = _qualify(connection.modelPrefix, providerModelId);
           models.putIfAbsent(
             modelId,
             () => ProviderModelDto(
               connectionId: connection.id,
               id: modelId,
-              label: modelId,
+              providerModelId: providerModelId,
+              label: providerModelId,
               source: ProviderModelSource.discovered,
               capabilities: _catalogCapabilities(
                 connection.definitionId,
-                modelId,
+                providerModelId,
               ),
             ),
           );
@@ -792,9 +1031,11 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
                 AgentProviderAuthKind.values.byName(connection.authKind.name),
               ),
             );
-      result[model.id] = ProviderModelDto(
+      final id = _qualify(connection.modelPrefix, model.id);
+      result[id] = ProviderModelDto(
         connectionId: connection.id,
-        id: model.id,
+        id: id,
+        providerModelId: model.id,
         label: model.label,
         source: _catalog.isRefreshedModel(connection.definitionId, model.id)
             ? ProviderModelSource.refreshed
@@ -807,9 +1048,11 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     for (final model
         in connection.customConfig?.models ??
             const <ManualProviderModelDto>[]) {
-      result[model.id] = ProviderModelDto(
+      final id = _qualify(connection.modelPrefix, model.id);
+      result[id] = ProviderModelDto(
         connectionId: connection.id,
-        id: model.id,
+        id: id,
+        providerModelId: model.id,
         label: model.label,
         source: ProviderModelSource.manual,
         capabilities: ModelCapabilitiesDto(
@@ -891,19 +1134,91 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       switch (connection.credentialOrigin) {
         ProviderCredentialOrigin.stored || ProviderCredentialOrigin.oauth =>
           _credentials.credential(connection.id),
-        ProviderCredentialOrigin.environment => _environmentCredential(
-          _registry.require(connection.definitionId),
-        ),
         ProviderCredentialOrigin.none => null,
       };
 
-  ApiKeyCredential? _environmentCredential(ProviderPlugin plugin) {
-    for (final name in plugin.environmentVariables) {
-      final value = _environment[name];
-      if (value != null && value.isNotEmpty) return ApiKeyCredential(value);
+  Future<String> _availablePrefix(String requested) async {
+    final base = _slugPrefix(requested);
+    final used = <String>{
+      for (final connection in await _repository.listConnections())
+        connection.modelPrefix.toLowerCase(),
+      ..._oauthPrefixReservations.values.map((prefix) => prefix.toLowerCase()),
+    };
+    if (!used.contains(base)) return base;
+    var suffix = 2;
+    while (used.contains('$base-$suffix')) {
+      suffix += 1;
     }
-    return null;
+    return '$base-$suffix';
   }
+
+  Future<String> _allocatePrefix({
+    required String connectionId,
+    required String? requested,
+    required String fallback,
+  }) async {
+    if (requested == null) return _availablePrefix(fallback);
+    final normalized = _validateRequestedPrefix(requested);
+    final conflict = (await _repository.listConnections()).any(
+      (connection) =>
+          connection.id != connectionId &&
+          connection.modelPrefix.toLowerCase() == normalized.toLowerCase(),
+    );
+    final reserved = _oauthPrefixReservations.entries.any(
+      (entry) =>
+          entry.key != connectionId &&
+          entry.value.toLowerCase() == normalized.toLowerCase(),
+    );
+    if (conflict || reserved) {
+      throw ProviderConnectionFailure(
+        'model_prefix_conflict',
+        'Model prefix is already in use: $normalized',
+      );
+    }
+    return normalized;
+  }
+
+  Future<String> _reservePrefixFor(
+    String connectionId, {
+    required String? requested,
+    required String fallback,
+  }) async {
+    final prefix = await _allocatePrefix(
+      connectionId: connectionId,
+      requested: requested,
+      fallback: fallback,
+    );
+    _oauthPrefixReservations[connectionId] = prefix;
+    return prefix;
+  }
+
+  static String _slugPrefix(String value) {
+    final normalized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z0-9_-]+'), '-')
+        .replaceAll(RegExp('-+'), '-')
+        .replaceAll(RegExp(r'^[-_]+|[-_]+$'), '');
+    if (!RegExp(r'^[a-z0-9][a-z0-9_-]{0,63}$').hasMatch(normalized)) {
+      throw const FormatException(
+        'Model prefix must be a 1-64 character lowercase slug.',
+      );
+    }
+    return normalized;
+  }
+
+  static String _validateRequestedPrefix(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (!RegExp(r'^[a-z0-9][a-z0-9_-]{0,63}$').hasMatch(normalized)) {
+      throw const FormatException(
+        'Model prefix must be a 1-64 character lowercase slug.',
+      );
+    }
+    return normalized;
+  }
+
+  static String _qualify(String prefix, String providerModelId) =>
+      '$prefix/$providerModelId';
 
   static bool _supportsFlow(
     ProviderPlugin plugin,

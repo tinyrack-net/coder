@@ -3,6 +3,7 @@ import 'package:coder_agent/src/contracts.dart';
 import 'package:coder_agent/src/model.dart';
 import 'package:coder_agent/src/tools/clock_tools.dart';
 import 'package:coder_agent/src/tools/exec_sessions.dart';
+import 'package:coder_agent/src/tools/lua_code_mode.dart';
 import 'package:coder_agent/src/tools/skills.dart';
 import 'package:coder_agent/src/tools/tool_support.dart';
 
@@ -26,6 +27,7 @@ final class AgentToolScope {
     required this.questions,
     required this.execHost,
     required this.skills,
+    this.luaCodeModeHost,
   });
 
   /// The session this turn belongs to.
@@ -60,6 +62,9 @@ final class AgentToolScope {
 
   /// Skills resolved against this worktree.
   final SkillCatalog skills;
+
+  /// Session-scoped Lua cell host, absent on unsupported runtimes.
+  final LuaCodeModeHost? luaCodeModeHost;
 
   /// The session this turn belongs to.
   String get sessionId => session.id;
@@ -118,6 +123,41 @@ abstract base class SelectableToolProvider extends AgentToolProvider {
   @override
   List<AgentTool> create(AgentToolScope scope) =>
       scope.selectedToolIds.contains(id) ? build(scope) : const <AgentTool>[];
+}
+
+/// A capability that replaces the model-facing tools with an orchestration
+/// surface while retaining the original tools for nested dispatch.
+abstract base class AgentToolSurfaceProvider extends AgentToolProvider {
+  /// Allows subclasses to be const.
+  const AgentToolSurfaceProvider();
+
+  /// Builds the direct surface over all tools selected for this turn.
+  AgentToolSurface buildSurface(
+    AgentToolScope scope,
+    List<AgentTool> nestedTools,
+  );
+
+  @override
+  List<AgentTool> create(AgentToolScope scope) => const <AgentTool>[];
+}
+
+/// The direct and nested halves contributed by an orchestration surface.
+final class AgentToolSurface {
+  /// Creates an orchestration surface.
+  const AgentToolSurface({
+    required this.tools,
+    required this.nestedTools,
+    this.promptFragment,
+  });
+
+  /// Tools advertised to the model.
+  final List<AgentTool> tools;
+
+  /// Tools callable only through the orchestration surface.
+  final List<AgentTool> nestedTools;
+
+  /// Instructions describing the nested API.
+  final String? promptFragment;
 }
 
 /// The capabilities compiled into the daemon, and their advertised order.
@@ -179,6 +219,7 @@ final class AgentToolRegistry {
     final tools = <AgentTool>[];
     final present = <AgentToolProvider>[];
     for (final provider in _providers) {
+      if (provider is AgentToolSurfaceProvider) continue;
       final built = provider.create(scope);
       if (built.isEmpty) continue;
       present.add(provider);
@@ -189,10 +230,28 @@ final class AgentToolRegistry {
       final tool = external?.call(id);
       if (tool != null) tools.add(tool);
     }
+    final surfaces = _providers
+        .whereType<AgentToolSurfaceProvider>()
+        .where((provider) => scope.selectedToolIds.contains(provider.id))
+        .toList(growable: false);
+    if (surfaces.length > 1) {
+      throw StateError('Only one agent tool surface may be selected.');
+    }
+    final surface = surfaces.isEmpty
+        ? null
+        : surfaces.single.buildSurface(
+            scope,
+            List<AgentTool>.unmodifiable(tools),
+          );
+    if (surfaces.isNotEmpty) present.add(surfaces.single);
     return AgentToolTurn._(
-      tools: List<AgentTool>.unmodifiable(tools),
+      tools: List<AgentTool>.unmodifiable(surface?.tools ?? tools),
+      nestedTools: List<AgentTool>.unmodifiable(
+        surface?.nestedTools ?? const <AgentTool>[],
+      ),
       promptFragments: List<String>.unmodifiable(<String>[
         for (final provider in present) ?provider.promptFragment(scope),
+        ?surface?.promptFragment,
       ]),
       decorate: (inner) {
         var policy = inner;
@@ -209,12 +268,16 @@ final class AgentToolRegistry {
 final class AgentToolTurn {
   const AgentToolTurn._({
     required this.tools,
+    required this.nestedTools,
     required this.promptFragments,
     required this._decorate,
   });
 
   /// Every tool this turn may call.
   final List<AgentTool> tools;
+
+  /// Tools available only to a selected orchestration surface.
+  final List<AgentTool> nestedTools;
 
   /// System-prompt paragraphs contributed by the capabilities present.
   final List<String> promptFragments;

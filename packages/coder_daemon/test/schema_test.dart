@@ -41,7 +41,6 @@ void main() {
       () => sessions.activeTurnId,
       () => sessions.lastError,
       () => sessions.mode,
-      () => sessions.modelConnectionId,
       () => sessions.modelId,
       () => sessions.currentContextEpoch,
       () => sessions.contextTokensUsed,

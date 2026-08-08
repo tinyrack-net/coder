@@ -594,16 +594,20 @@ final class _FakeClient
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
     apiKeys[definitionId] = apiKey;
     return _connection(definitionId, definitionId);
   }
 
   @override
   Future<ProviderConnectionDto> connectProviderNone(
-    String definitionId,
-  ) async {
+    String definitionId, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
     noneConnections.add(definitionId);
     return _connection(definitionId, definitionId);
   }

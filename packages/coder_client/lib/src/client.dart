@@ -9,6 +9,12 @@ import 'package:coder_protocol/coder_protocol.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 
+SessionModelSelectionDto? _canonicalSelection(
+  SessionModelSelectionDto? selection,
+) => selection == null
+    ? null
+    : SessionModelSelectionDto(modelId: selection.qualifiedModelId);
+
 /// CoderClientException defines a public contract.
 class CoderClientException implements Exception {
   /// Creates a [CoderClientException].
@@ -611,7 +617,7 @@ class CoderClient
         title: title,
         agentDefinitionId: agentDefinitionId,
         mode: mode,
-        model: model,
+        model: _canonicalSelection(model),
         modelControls: modelControls,
         permissionMode: permissionMode,
       ),
@@ -628,7 +634,9 @@ class CoderClient
       sessionsUpdateSettingsProcedure,
       SessionSettingsUpdateParamsDto(
         sessionId: sessionId,
-        patch: patch,
+        patch: patch.hasModel
+            ? patch.copyWith(model: _canonicalSelection(patch.model))
+            : patch,
       ),
     );
     return response.session;
@@ -1049,23 +1057,35 @@ class CoderClient
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(
     String definitionId,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
     final response = await _call(
       providersConnectApiKeyProcedure,
       ProviderConnectApiKeyParamsDto(
         definitionId: definitionId,
         apiKey: apiKey,
+        connectionId: connectionId,
+        modelPrefix: modelPrefix,
       ),
     );
     return response.connection;
   }
 
   @override
-  Future<ProviderConnectionDto> connectProviderNone(String definitionId) async {
+  Future<ProviderConnectionDto> connectProviderNone(
+    String definitionId, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
     final response = await _call(
       providersConnectNoneProcedure,
-      ProviderConnectNoneParamsDto(definitionId: definitionId),
+      ProviderConnectNoneParamsDto(
+        definitionId: definitionId,
+        connectionId: connectionId,
+        modelPrefix: modelPrefix,
+      ),
     );
     return response.connection;
   }
@@ -1073,13 +1093,17 @@ class CoderClient
   @override
   Future<ProviderAuthAttemptDto> startProviderAuth(
     String definitionId,
-    String methodId,
-  ) async {
+    String methodId, {
+    String? connectionId,
+    String? modelPrefix,
+  }) async {
     final response = await _call(
       providersStartAuthProcedure,
       ProviderAuthStartParamsDto(
         definitionId: definitionId,
         methodId: methodId,
+        connectionId: connectionId,
+        modelPrefix: modelPrefix,
       ),
     );
     return response.attempt;
@@ -1108,6 +1132,21 @@ class CoderClient
       providersDisconnectProcedure,
       ProviderConnectionIdParamsDto(connectionId: connectionId),
     );
+  }
+
+  @override
+  Future<ProviderConnectionDto> updateProviderModelPrefix(
+    String connectionId,
+    String modelPrefix,
+  ) async {
+    final response = await _call(
+      providersUpdateModelPrefixProcedure,
+      ProviderPrefixUpdateParamsDto(
+        connectionId: connectionId,
+        modelPrefix: modelPrefix,
+      ),
+    );
+    return response.connection;
   }
 
   @override
@@ -1142,7 +1181,7 @@ class CoderClient
   @override
   Future<void> setDefaultModel(SessionModelSelectionDto? model) => _call(
     providersSetDefaultModelProcedure,
-    DefaultModelDto(model: model),
+    DefaultModelDto(model: _canonicalSelection(model)),
   );
 
   @override
@@ -1150,6 +1189,7 @@ class CoderClient
     String id,
     CustomProviderConfigDto config, {
     String? apiKey,
+    String? modelPrefix,
   }) async {
     final response = await _call(
       providersCreateCustomProcedure,
@@ -1157,6 +1197,7 @@ class CoderClient
         id: id,
         config: config,
         apiKey: apiKey,
+        modelPrefix: modelPrefix,
       ),
     );
     return response.connection;

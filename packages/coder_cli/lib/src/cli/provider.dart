@@ -52,11 +52,20 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
             placeholder: 'key',
           ),
         )
+        .and(
+          ParsedFlag.optional<String, CoderCliContext>(
+            name: 'prefix',
+            brief: 'Qualified model prefix (generated when omitted)',
+            parse: stringParser,
+            placeholder: 'prefix',
+          ),
+        )
         .map(
           (values) => (
-            daemon: values.$1.$1,
-            method: values.$1.$2,
-            apiKey: values.$2,
+            daemon: values.$1.$1.$1,
+            method: values.$1.$1.$2,
+            apiKey: values.$1.$2,
+            prefix: values.$2,
           ),
         ),
     positional: PositionalSet.one(
@@ -76,8 +85,42 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
       definitionId: args.id,
       methodId: flags.method,
       apiKey: flags.apiKey,
+      modelPrefix: flags.prefix,
       readSecret: context.readSecret,
       progress: context.progress,
+    ),
+  ),
+);
+
+final Command<CoderCliContext> _prefixSetCommand = buildCommand(
+  docs: const CommandDocs(brief: 'Change a provider model prefix'),
+  parameters: CommandParameters(
+    flags: daemonConnectionFlagSet(),
+    positional:
+        PositionalSet.one(
+              Positional.required<String, CoderCliContext>(
+                brief: 'Connection ID',
+                parse: stringParser,
+                placeholder: 'connection-id',
+              ),
+            )
+            .and(
+              Positional.required<String, CoderCliContext>(
+                brief: 'New model prefix',
+                parse: stringParser,
+                placeholder: 'prefix',
+              ),
+            )
+            .map((values) => (values.$1, values.$2)),
+  ),
+  func: (context, flags, args) => withDaemon(
+    context,
+    flags,
+    (client) => providerPrefixSet(
+      backend: CoderApiProviderCliBackend(client),
+      output: context.output,
+      connectionId: args.$1,
+      modelPrefix: args.$2,
     ),
   ),
 );
@@ -129,6 +172,7 @@ RouteMap<CoderCliContext> buildProviderRoutes() => buildRouteMap(
     'list': _listCommand,
     'connect': _connectCommand,
     'disconnect': _disconnectCommand,
+    'prefix-set': _prefixSetCommand,
     'catalog-refresh': _catalogRefreshCommand,
   },
 );

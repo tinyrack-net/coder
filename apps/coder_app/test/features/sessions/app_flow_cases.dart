@@ -67,6 +67,104 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
+    'the first turn and assistant response preserve the chat surface',
+    (tester) async {
+      Future<void> verifyAt(Size size) async {
+        await tester.binding.setSurfaceSize(size);
+        final startGate = Completer<void>();
+        final api =
+            FakeCoderApi(
+                workspaces: <WorkspaceDto>[workspace],
+                worktrees: <WorktreeDto>[checkout],
+              )
+              ..startTurnGate = startGate
+              ..emitTurnStartEvents = true;
+        final router = await _pumpRoute(
+          tester,
+          api,
+          WorktreeRoute(
+            hostId: 'server',
+            workspaceId: workspace.id,
+            worktreeId: checkout.id,
+          ).location,
+          disableAnimations: true,
+        );
+
+        const prompt = 'Keep this request visible';
+        await tester.enterText(
+          find.byKey(const ValueKey('session-composer-input')),
+          prompt,
+        );
+        await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+        await tester.pump();
+
+        // The exact draft remains mounted while the daemon accepts the turn;
+        // no workspace loading screen or empty conversation replaces it.
+        expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
+        expect(find.byType(ChatTimelineView), findsNothing);
+
+        startGate.complete();
+        for (var frame = 0; frame < 8; frame += 1) {
+          await tester.pump();
+        }
+        final timeline = find.byType(ChatTimelineView).hitTestable();
+        expect(timeline, findsOneWidget);
+        expect(
+          find.descendant(
+            of: timeline,
+            matching: find.text(prompt, findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        final timelineState = tester.state<State<StatefulWidget>>(timeline);
+
+        final created = api.createdSessions.single;
+        api.emitTimeline(
+          created.id,
+          'assistant.delta',
+          <String, dynamic>{'text': 'First response'},
+        );
+        await tester.pump();
+
+        expect(
+          tester.state<State<StatefulWidget>>(timeline),
+          same(timelineState),
+        );
+        expect(
+          find.descendant(
+            of: timeline,
+            matching: find.text(prompt, findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: timeline,
+            matching: find.text('First response', findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          api.createdSessions.where((item) => item.id == created.id),
+          hasLength(1),
+        );
+
+        router.dispose();
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await verifyAt(const Size(1100, 760));
+      await verifyAt(const Size(390, 760));
+    },
+    tags: const <String>[
+      'feature_test__session_lifecycle__widget',
+      'feature_test__session_tabs__widget',
+      'feature_test__turn_execution__widget',
+    ],
+  );
+
+  testWidgets(
     'session tab strip is a TRTabs bar whose commands stay square',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
@@ -824,15 +922,34 @@ void _registerSessionsAppFlows() {
       );
       await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
-      expect(find.textContaining('OpenAI · gpt-5.6-sol'), findsOneWidget);
-      expect(find.text('DeepSeek · gpt-5.6-sol'), findsOneWidget);
+      final picker = find.byType(ModelPicker);
+      expect(
+        find.descendant(
+          of: picker,
+          matching: find.text('openai/gpt-5.6-sol'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: picker,
+          matching: find.text('deepseek/gpt-5.6-sol'),
+        ),
+        findsOneWidget,
+      );
       await tester.enterText(
         find.byKey(const ValueKey('model-search-field')),
         'DeepSeek',
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('OpenAI · gpt-5.6-sol'), findsNothing);
-      expect(find.text('DeepSeek · gpt-5.6-sol'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: picker,
+          matching: find.text('openai/gpt-5.6-sol'),
+        ),
+        findsNothing,
+      );
+      expect(find.text('DeepSeek · Shared Model'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey('model-option-deepseek-gpt-5.6-sol')),
       );
@@ -851,8 +968,7 @@ void _registerSessionsAppFlows() {
       expect(
         created.model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'deepseek/gpt-5.6-sol',
         ),
       );
       expect(api.startedPrompts, <String>['Run the tests']);
@@ -910,8 +1026,7 @@ void _registerSessionsAppFlows() {
             systemPrompt: 'Code carefully.',
             model: AgentModelSelectionDto(
               source: AgentModelSource.fixed,
-              providerConnectionId: 'openai',
-              modelId: 'gpt-5.6-sol',
+              modelId: 'openai/gpt-5.6-sol',
             ),
             modelControls: <String, ModelControlValueDto>{
               'reasoning_effort': ModelControlValueDto.stringValue(
@@ -972,7 +1087,7 @@ void _registerSessionsAppFlows() {
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-fast')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('GPT-5.6 Fast'), findsOneWidget);
+      expect(find.text('openai/gpt-5.6-fast'), findsOneWidget);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
@@ -983,8 +1098,7 @@ void _registerSessionsAppFlows() {
       expect(
         api.createdSessions.single.model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'openai',
-          modelId: 'gpt-5.6-fast',
+          modelId: 'openai/gpt-5.6-fast',
         ),
       );
 
@@ -997,8 +1111,7 @@ void _registerSessionsAppFlows() {
       expect(
         api.updatedSessionModels.single.model,
         const SessionModelSelectionDto(
-          providerConnectionId: 'deepseek',
-          modelId: 'deepseek-v4',
+          modelId: 'deepseek/deepseek-v4',
         ),
       );
 

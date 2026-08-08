@@ -599,8 +599,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       FeatureScenario(
         id: 'keyboard_context_menu_input',
         description:
-            'Pastes through the native terminal menu, restores focus, and '
-            'continues standard keyboard input.',
+            'Restores input after native-menu selection and cancellation, '
+            'edits across an automatically wrapped row, and renders real IME '
+            'preedit before continuing committed keyboard input.',
         surfaces: _desktop,
       ),
     ],
@@ -714,6 +715,18 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.verticalSlice,
       FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
+    id: 'lua.tool.orchestration',
+    description:
+        'Runs sandboxed Lua cells that orchestrate selected tools through the '
+        'ordinary approval, cancellation, media, and session lifecycle.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.platformSmoke,
     },
   ),
   FeatureContract(
@@ -1109,12 +1122,14 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'provider.connection.management',
     description:
-        'Connects and disconnects OpenAI, Anthropic, Gemini, and compatible '
-        'provider presets through their public API contracts.',
+        'Connects, reconnects in place, and disconnects OpenAI, Anthropic, '
+        'Gemini, and compatible provider presets through their public API '
+        'contracts.',
     apiMethods: <String>[
       'providers.connectProviderApiKey',
       'providers.connectProviderNone',
       'providers.disconnectProvider',
+      'providers.updateProviderModelPrefix',
     ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -1139,8 +1154,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'provider.oauth',
     description:
-        'Starts, observes, cancels, and refreshes supported public provider '
-        'OAuth flows without subscription-only private endpoints.',
+        'Starts, observes, cancels, retries, and uses supported public '
+        'provider OAuth flows to create or reauthenticate a connection '
+        'without subscription-only private endpoints.',
     apiMethods: <String>[
       'providers.startProviderAuth',
       'providers.providerAuthStatus',

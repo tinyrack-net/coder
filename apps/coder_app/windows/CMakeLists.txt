@@ -52,6 +52,28 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+find_program(DART_EXECUTABLE NAMES dart dart.exe REQUIRED)
+set(LUA_RUNTIME_STAGE "${CMAKE_BINARY_DIR}/lua_tool_runtime_stage")
+set(LUA_RUNTIME_BUILD "${CMAKE_BINARY_DIR}/lua_tool_runtime_build")
+add_custom_command(
+  OUTPUT
+    "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host.exe"
+    "${LUA_RUNTIME_STAGE}/lua_tool_runtime/bootstrap.lua"
+  COMMAND "${DART_EXECUTABLE}" run tool/build_lua_host.dart
+    --destination "${LUA_RUNTIME_STAGE}" --build-mode release
+    --cmake-executable "${CMAKE_COMMAND}"
+    --build-directory "${LUA_RUNTIME_BUILD}"
+  DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../pubspec.lock"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../tool/build_lua_host.dart"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../.."
+  COMMENT "Staging lua_tool_runtime"
+  VERBATIM)
+add_custom_target(lua_tool_runtime_stage ALL DEPENDS
+  "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host.exe"
+  "${LUA_RUNTIME_STAGE}/lua_tool_runtime/bootstrap.lua")
+add_dependencies(${BINARY_NAME} lua_tool_runtime_stage)
+
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
@@ -74,6 +96,10 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
+install(PROGRAMS "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host.exe"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+install(DIRECTORY "${LUA_RUNTIME_STAGE}/lua_tool_runtime"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)

@@ -37,3 +37,5 @@ runs:
           mv "dist/coder-cli-$TARGET/bin/coder_cli" \
             "dist/coder-cli-$TARGET/bin/coder-cli"
         fi
+        dart run tool/build_lua_host.dart \
+          --destination "dist/coder-cli-$TARGET/bin"

@@ -178,7 +178,13 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final inheritedPermission =
         agent?.permissionMode ?? daemonDefault ?? PermissionMode.ask;
     final connection = connections
-        .where((item) => item.id == selection?.providerConnectionId)
+        .where(
+          (item) =>
+              selection?.qualifiedModelId.startsWith(
+                '${item.modelPrefix}/',
+              ) ??
+              false,
+        )
         .firstOrNull;
     final models =
         providers?.models[connection?.id] ?? const <ProviderModelDto>[];
@@ -220,7 +226,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-model'),
           icon: CoderIcons.memory,
-          label: modelLabel ?? selection?.modelId ?? l10n.composerModel,
+          label: selection?.modelId ?? modelLabel ?? l10n.composerModel,
           tooltip: l10n.composerSelectModel,
           onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
         ),
@@ -903,7 +909,7 @@ class ComposerChip extends StatelessWidget {
 }
 
 /// Composer shown when no session is selected; the first prompt creates one.
-class DraftSessionPane extends ConsumerWidget {
+class DraftSessionPane extends ConsumerStatefulWidget {
   /// Creates a [DraftSessionPane].
   const DraftSessionPane({
     required this.selection,
@@ -919,10 +925,27 @@ class DraftSessionPane extends ConsumerWidget {
   final String draftId;
 
   /// Called after the session exists and its first turn has started.
+  ///
+  /// The starter has already promoted this draft tab; the callback only
+  /// updates navigation to the resulting session.
   final ValueChanged<SessionDto> onCreated;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DraftSessionPane> createState() => _DraftSessionPaneState();
+}
+
+class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
+  final SessionComposerController _dropController = SessionComposerController();
+
+  @override
+  void dispose() {
+    _dropController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selection = widget.selection;
     final agentsAsync = ref.watch(
       agentDefinitionsControllerProvider(selection.hostId),
     );
@@ -938,7 +961,7 @@ class DraftSessionPane extends ConsumerWidget {
       sessionComposerDraftControllerProvider(
         selection.hostId,
         selection.worktreeId,
-        draftId,
+        widget.draftId,
       ),
     );
     final definitions = selectableAgentDefinitions(
@@ -964,67 +987,73 @@ class DraftSessionPane extends ConsumerWidget {
       sessionComposerDraftControllerProvider(
         selection.hostId,
         selection.worktreeId,
-        draftId,
+        widget.draftId,
       ).notifier,
     );
-    return Column(
-      children: <Widget>[
-        Expanded(child: Center(child: TRText.inherit(l10n.composerStartHint))),
-        ComposerCompletionScope(
-          hostId: selection.hostId,
-          workspaceId: selection.workspaceId,
-          worktreeId: selection.worktreeId,
-          excludedClientActions: sessionlessClientActions,
-          builder: (context, completion) => SessionComposer(
-            commands: completion.commands,
-            suggestions: completion.suggestions,
-            onCompletionQueryChanged: completion.onQueryChanged,
-            onClientCommand: (invocation) => runSessionlessClientCommand(
-              context,
-              invocation,
-              hostId: selection.hostId,
-              onToggleMode: () => notifier.selectMode(
+    return ComposerDropPane(
+      controller: _dropController,
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: Center(child: TRText.inherit(l10n.composerStartHint)),
+          ),
+          ComposerCompletionScope(
+            hostId: selection.hostId,
+            workspaceId: selection.workspaceId,
+            worktreeId: selection.worktreeId,
+            excludedClientActions: sessionlessClientActions,
+            builder: (context, completion) => SessionComposer(
+              controller: _dropController,
+              commands: completion.commands,
+              suggestions: completion.suggestions,
+              onCompletionQueryChanged: completion.onQueryChanged,
+              onClientCommand: (invocation) => runSessionlessClientCommand(
+                context,
+                invocation,
+                hostId: selection.hostId,
+                onToggleMode: () => notifier.selectMode(
+                  draft.mode == SessionMode.plan
+                      ? SessionMode.normal
+                      : SessionMode.plan,
+                ),
+              ),
+              enabled: agent != null && effective != null,
+              hint: (agentsLoading || providersLoading)
+                  ? null
+                  : (agent == null
+                        ? l10n.composerNoPrimaryAgent
+                        : (effective == null
+                              ? l10n.composerConnectProviderFirst
+                              : null)),
+              bar: SessionComposerBar(
+                hostId: selection.hostId,
+                definitions: definitions,
+                agentDefinitionId: agent?.id,
+                selection: effective,
+                onAgentChanged: notifier.selectAgent,
+                onModelChanged: (selection, controls) {
+                  notifier
+                    ..selectModel(selection)
+                    ..selectModelControls(controls);
+                },
+                mode: draft.mode,
+                onModeChanged: notifier.selectMode,
+                modelControls: draft.modelControls,
+                onModelControlsChanged: notifier.selectModelControls,
+                permissionMode: draft.permissionMode,
+                onPermissionModeChanged: notifier.selectPermissionMode,
+              ),
+              onModeToggled: () => notifier.selectMode(
                 draft.mode == SessionMode.plan
                     ? SessionMode.normal
                     : SessionMode.plan,
               ),
+              attachmentInput: ref.read(attachmentInputProvider),
+              onSubmit: (submission) => _start(ref, submission, agent!, draft),
             ),
-            enabled: agent != null && effective != null,
-            hint: (agentsLoading || providersLoading)
-                ? null
-                : (agent == null
-                      ? l10n.composerNoPrimaryAgent
-                      : (effective == null
-                            ? l10n.composerConnectProviderFirst
-                            : null)),
-            bar: SessionComposerBar(
-              hostId: selection.hostId,
-              definitions: definitions,
-              agentDefinitionId: agent?.id,
-              selection: effective,
-              onAgentChanged: notifier.selectAgent,
-              onModelChanged: (selection, controls) {
-                notifier
-                  ..selectModel(selection)
-                  ..selectModelControls(controls);
-              },
-              mode: draft.mode,
-              onModeChanged: notifier.selectMode,
-              modelControls: draft.modelControls,
-              onModelControlsChanged: notifier.selectModelControls,
-              permissionMode: draft.permissionMode,
-              onPermissionModeChanged: notifier.selectPermissionMode,
-            ),
-            onModeToggled: () => notifier.selectMode(
-              draft.mode == SessionMode.plan
-                  ? SessionMode.normal
-                  : SessionMode.plan,
-            ),
-            attachmentInput: ref.read(attachmentInputProvider),
-            onSubmit: (submission) => _start(ref, submission, agent!, draft),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1034,10 +1063,10 @@ class DraftSessionPane extends ConsumerWidget {
     AgentDefinitionDto agent,
     SessionComposerDraft draft,
   ) async {
-    onCreated(
+    widget.onCreated(
       await startSessionWithPrompt(
         ref,
-        selection: selection,
+        selection: widget.selection,
         agentDefinitionId: agent.id,
         title: deriveSessionTitle(
           submission.text.isEmpty
@@ -1045,12 +1074,130 @@ class DraftSessionPane extends ConsumerWidget {
               : submission.text,
         ),
         prompt: submission.text,
+        draftTabId: widget.draftId,
         attachments: submission.attachments,
         mode: draft.mode,
         model: draft.model,
         modelControls: draft.modelControls,
         permissionMode: draft.permissionMode,
       ),
+    );
+  }
+}
+
+/// Connects a pane-owned drop target to the composer currently inside it.
+class SessionComposerController extends ChangeNotifier {
+  Object? _owner;
+  bool _canAcceptDrop = false;
+  bool _disposed = false;
+  Future<void> Function(List<DropwellFile> files)? _onDrop;
+
+  /// Whether the current composer can receive a native file drop.
+  bool get canAcceptDrop => _canAcceptDrop;
+
+  Future<void> _acceptDrop(List<DropwellFile> files) async {
+    if (!_canAcceptDrop) return;
+    await _onDrop?.call(files);
+  }
+
+  void _attach({
+    required Object owner,
+    required bool canAcceptDrop,
+    required Future<void> Function(List<DropwellFile> files) onDrop,
+  }) {
+    if (_disposed) return;
+    final changed = _owner != owner || _canAcceptDrop != canAcceptDrop;
+    _owner = owner;
+    _canAcceptDrop = canAcceptDrop;
+    _onDrop = onDrop;
+    if (changed) notifyListeners();
+  }
+
+  void _detach(Object owner) {
+    if (_disposed) return;
+    if (_owner != owner) return;
+    _owner = null;
+    _canAcceptDrop = false;
+    _onDrop = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _owner = null;
+    _canAcceptDrop = false;
+    _onDrop = null;
+    super.dispose();
+  }
+}
+
+/// A whole-pane native drop target connected to its descendant composer.
+class ComposerDropPane extends StatefulWidget {
+  /// Creates a pane-wide composer drop target.
+  const ComposerDropPane({
+    required this.controller,
+    required this.child,
+    super.key,
+  });
+
+  /// Composer accepting files for this pane.
+  final SessionComposerController controller;
+
+  /// Complete pane covered by the drag-active overlay.
+  final Widget child;
+
+  @override
+  State<ComposerDropPane> createState() => _ComposerDropPaneState();
+}
+
+class _ComposerDropPaneState extends State<ComposerDropPane> {
+  bool _dragging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_handleAvailabilityChanged);
+  }
+
+  @override
+  void didUpdateWidget(ComposerDropPane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) return;
+    oldWidget.controller.removeListener(_handleAvailabilityChanged);
+    widget.controller.addListener(_handleAvailabilityChanged);
+    _dragging = false;
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleAvailabilityChanged);
+    super.dispose();
+  }
+
+  void _handleAvailabilityChanged() {
+    if (!mounted) return;
+    setState(() {
+      if (!widget.controller.canAcceptDrop) _dragging = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final overlay = TRDropOverlay(
+      key: const ValueKey<String>('composer-drop-overlay'),
+      visible: _dragging && widget.controller.canAcceptDrop,
+      label: AppLocalizations.of(context).composerDropFilesHere,
+      child: widget.child,
+    );
+    if (!widget.controller.canAcceptDrop) return overlay;
+    return DropwellRegion(
+      onHoverChanged: (hovering) => setState(() => _dragging = hovering),
+      onDrop: (files) async {
+        setState(() => _dragging = false);
+        await widget.controller._acceptDrop(files);
+      },
+      child: overlay,
     );
   }
 }
@@ -1078,6 +1225,7 @@ class SessionComposer extends StatefulWidget {
     this.suggestions = ComposerSuggestionsState.closed,
     this.onCompletionQueryChanged,
     this.onClientCommand,
+    this.controller,
     super.key,
   });
 
@@ -1096,6 +1244,9 @@ class SessionComposer extends StatefulWidget {
 
   /// Native input boundary; null disables picker, paste, and drop.
   final AttachmentInputPort? attachmentInput;
+
+  /// Connects this composer to a pane-owned native drop target.
+  final SessionComposerController? controller;
 
   /// Whether a turn is running, so a new prompt has to wait its turn.
   final bool busy;
@@ -1161,7 +1312,6 @@ class _SessionComposerState extends State<SessionComposer> {
       TRInlineSuggestionsController<String>();
   final List<PendingAttachment> _attachments = <PendingAttachment>[];
   bool _submitting = false;
-  bool _dragging = false;
 
   /// Mention the user dismissed, so Enter sends it as prose again.
   Object? _dismissedMention;
@@ -1175,6 +1325,18 @@ class _SessionComposerState extends State<SessionComposer> {
     // A listener rather than onChanged: a completion splices the value
     // programmatically, and that has to re-evaluate the token too.
     _controller.addListener(_handleTextChanged);
+    _scheduleDropBinding();
+  }
+
+  @override
+  void didUpdateWidget(SessionComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => oldWidget.controller?._detach(this),
+      );
+    }
+    _scheduleDropBinding();
   }
 
   void _handleTextChanged() {
@@ -1186,12 +1348,44 @@ class _SessionComposerState extends State<SessionComposer> {
 
   @override
   void dispose() {
+    final dropController = widget.controller;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => dropController?._detach(this),
+    );
     _inputFocus.dispose();
     _controller
       ..removeListener(_handleTextChanged)
       ..dispose();
     _suggestions.dispose();
     super.dispose();
+  }
+
+  void _scheduleDropBinding() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final input = widget.attachmentInput;
+      widget.controller?._attach(
+        owner: this,
+        canAcceptDrop:
+            widget.enabled &&
+            !_submitting &&
+            input != null &&
+            input.supportsDrop,
+        onDrop: _receiveDrop,
+      );
+    });
+  }
+
+  Future<void> _receiveDrop(List<DropwellFile> files) async {
+    final input = widget.attachmentInput;
+    if (!mounted ||
+        !widget.enabled ||
+        _submitting ||
+        input == null ||
+        !input.supportsDrop) {
+      return;
+    }
+    await _addFiles(input.droppedFiles(files));
   }
 
   /// Splices the chosen row over the token that asked for it.
@@ -1253,11 +1447,10 @@ class _SessionComposerState extends State<SessionComposer> {
             if (widget.header != null) widget.header!,
             TRCard(
               // The card is the control: the prompt, its settings, and send are
-              // one thing to the reader, so focus anywhere inside rings all of
-              // it. A drop target reads the same way, since this card is where
-              // the content lands. The input is plain, so the ring is painted
-              // here once rather than around the text as well.
-              focused: _focused || _dragging,
+              // one thing to the reader, so descendant focus is passed through
+              // once. The design system decides whether that raw focus should
+              // be visible for the current input modality.
+              focused: _focused,
               padding: TRCardPadding.sm,
               child: Focus(
                 canRequestFocus: false,
@@ -1403,17 +1596,7 @@ class _SessionComposerState extends State<SessionComposer> {
         ),
       ),
     );
-    final input = widget.attachmentInput;
-    if (input == null || !input.supportsDrop) return content;
-    return DropwellRegion(
-      enabled: editable,
-      onHoverChanged: (hovering) => setState(() => _dragging = hovering),
-      onDrop: (files) async {
-        setState(() => _dragging = false);
-        await _addFiles(input.droppedFiles(files));
-      },
-      child: content,
-    );
+    return content;
   }
 
   /// Whether Enter sends rather than opening a new line.
@@ -1570,6 +1753,7 @@ class _SessionComposerState extends State<SessionComposer> {
     // failure puts it back rather than freezing it in the field.
     _clear();
     setState(() => _submitting = true);
+    _scheduleDropBinding();
     try {
       await send(submission);
     } on Exception catch (error) {
@@ -1577,7 +1761,10 @@ class _SessionComposerState extends State<SessionComposer> {
       _restore(submission);
       setState(() => _attachmentError = '$error');
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) {
+        setState(() => _submitting = false);
+        _scheduleDropBinding();
+      }
     }
   }
 

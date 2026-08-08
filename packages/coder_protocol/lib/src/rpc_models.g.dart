@@ -491,6 +491,8 @@ _ProviderConnectApiKeyParamsDto _$ProviderConnectApiKeyParamsDtoFromJson(
 ) => _ProviderConnectApiKeyParamsDto(
   definitionId: json['definitionId'] as String,
   apiKey: json['apiKey'] as String,
+  connectionId: json['connectionId'] as String?,
+  modelPrefix: json['modelPrefix'] as String?,
 );
 
 Map<String, dynamic> _$ProviderConnectApiKeyParamsDtoToJson(
@@ -498,16 +500,25 @@ Map<String, dynamic> _$ProviderConnectApiKeyParamsDtoToJson(
 ) => <String, dynamic>{
   'definitionId': instance.definitionId,
   'apiKey': instance.apiKey,
+  'connectionId': instance.connectionId,
+  'modelPrefix': instance.modelPrefix,
 };
 
 _ProviderConnectNoneParamsDto _$ProviderConnectNoneParamsDtoFromJson(
   Map<String, dynamic> json,
-) =>
-    _ProviderConnectNoneParamsDto(definitionId: json['definitionId'] as String);
+) => _ProviderConnectNoneParamsDto(
+  definitionId: json['definitionId'] as String,
+  connectionId: json['connectionId'] as String?,
+  modelPrefix: json['modelPrefix'] as String?,
+);
 
 Map<String, dynamic> _$ProviderConnectNoneParamsDtoToJson(
   _ProviderConnectNoneParamsDto instance,
-) => <String, dynamic>{'definitionId': instance.definitionId};
+) => <String, dynamic>{
+  'definitionId': instance.definitionId,
+  'connectionId': instance.connectionId,
+  'modelPrefix': instance.modelPrefix,
+};
 
 _ProviderConnectionIdParamsDto _$ProviderConnectionIdParamsDtoFromJson(
   Map<String, dynamic> json,
@@ -538,6 +549,8 @@ _ProviderAuthStartParamsDto _$ProviderAuthStartParamsDtoFromJson(
 ) => _ProviderAuthStartParamsDto(
   definitionId: json['definitionId'] as String,
   methodId: json['methodId'] as String,
+  connectionId: json['connectionId'] as String?,
+  modelPrefix: json['modelPrefix'] as String?,
 );
 
 Map<String, dynamic> _$ProviderAuthStartParamsDtoToJson(
@@ -545,6 +558,22 @@ Map<String, dynamic> _$ProviderAuthStartParamsDtoToJson(
 ) => <String, dynamic>{
   'definitionId': instance.definitionId,
   'methodId': instance.methodId,
+  'connectionId': instance.connectionId,
+  'modelPrefix': instance.modelPrefix,
+};
+
+_ProviderPrefixUpdateParamsDto _$ProviderPrefixUpdateParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _ProviderPrefixUpdateParamsDto(
+  connectionId: json['connectionId'] as String,
+  modelPrefix: json['modelPrefix'] as String,
+);
+
+Map<String, dynamic> _$ProviderPrefixUpdateParamsDtoToJson(
+  _ProviderPrefixUpdateParamsDto instance,
+) => <String, dynamic>{
+  'connectionId': instance.connectionId,
+  'modelPrefix': instance.modelPrefix,
 };
 
 _ProviderAuthAttemptParamsDto _$ProviderAuthAttemptParamsDtoFromJson(
@@ -563,6 +592,7 @@ _ProviderCustomCreateParamsDto _$ProviderCustomCreateParamsDtoFromJson(
     json['config'] as Map<String, dynamic>,
   ),
   apiKey: json['apiKey'] as String?,
+  modelPrefix: json['modelPrefix'] as String?,
 );
 
 Map<String, dynamic> _$ProviderCustomCreateParamsDtoToJson(
@@ -571,6 +601,7 @@ Map<String, dynamic> _$ProviderCustomCreateParamsDtoToJson(
   'id': instance.id,
   'config': instance.config,
   'apiKey': instance.apiKey,
+  'modelPrefix': instance.modelPrefix,
 };
 
 _ProviderCustomUpdateParamsDto _$ProviderCustomUpdateParamsDtoFromJson(

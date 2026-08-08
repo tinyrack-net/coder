@@ -17,12 +17,17 @@ dependencies:
   drift: 2.34.3
   http: ^1.5.0
   json_rpc_2: ^4.1.0
+  lua_tool_runtime:
+    git:
+      url: https://github.com/tinyrack-net/dart-packages.git
+      ref: e07124e15bd7495818bd34ed655f39e5a4bcc35b
+      path: packages/lua_tool_runtime
   path: ^1.9.1
   process: ^5.0.5
   ptyworld:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: 1c59d79ef94d6890f0b04045a23445b207bd7150
+      ref: e07124e15bd7495818bd34ed655f39e5a4bcc35b
       path: packages/ptyworld
   shelf: ^1.4.2
   shelf_web_socket: ^3.0.0

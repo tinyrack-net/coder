@@ -25,6 +25,7 @@ AgentToolRegistry builtInAgentToolRegistry({
   const AttachFileToolProvider(),
   const CurrentTimeToolProvider(),
   const SleepToolProvider(),
+  const LuaCodeModeToolProvider(),
   McpResourceToolProvider(
     id: 'list_mcp_resources',
     description:

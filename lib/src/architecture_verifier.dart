@@ -251,6 +251,26 @@ final class ArchitectureVerifier {
         violations.addAll(
           _verifyCoderAppLayerImport(path: path, line: index + 1, source: line),
         );
+        final terminalCaret =
+            path.endsWith(
+              '/features/terminals/presentation/coder_terminal_view.dart',
+            ) &&
+            line.contains('cursor: colors.focus');
+        if (!terminalCaret &&
+            (line.contains('TRControlMetrics.focusWidth') ||
+                line.contains('tinyrackTheme.focus') ||
+                line.contains('colors.focus'))) {
+          violations.add(
+            ArchitectureViolation(
+              path: path,
+              line: index + 1,
+              rule: 'local_focus_style',
+              message:
+                  'App controls must delegate focus emphasis to a public '
+                  'Tinyrack component.',
+            ),
+          );
+        }
       }
       if (importedPackage != null &&
           importedPackage != package &&

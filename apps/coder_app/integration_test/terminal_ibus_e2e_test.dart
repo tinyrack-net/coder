@@ -10,6 +10,7 @@ import 'package:coder_app/src/app/composition/app_services.dart';
 import 'package:coder_app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
+import 'package:coder_app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:coder_app/src/features/workspace/application/directory_picker_port.dart';
 import 'package:coder_client/coder_client.dart';
 import 'package:coder_daemon/coder_daemon.dart';
@@ -64,7 +65,7 @@ void main() {
         }
       });
 
-      const expected = '한글 abc 안녕 붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
+      const expected = '한글 abc 안녕 \u001bz붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
       final expectedBytes = utf8.encode(expected);
       final artifactDirectory =
           Platform.environment['TINYRACK_IBUS_ARTIFACT_DIR'];
@@ -139,13 +140,35 @@ void main() {
       final terminal = (await setupClient.terminals.listTerminals(
         checkout.id,
       )).single;
-      await pumpUntil(
-        tester,
-        find.byKey(ValueKey<String>('terminal-view-${terminal.id}')),
+      final terminalViewFinder = find
+          .byKey(ValueKey<String>('terminal-view-${terminal.id}'))
+          .hitTestable();
+      await pumpUntil(tester, terminalViewFinder);
+      final terminalView = tester.widget<CoderTerminalView>(
+        terminalViewFinder,
       );
+      const wrapReadyMarker = '__CODER_WRAP_PROBE_READY__';
+      await setupClient.terminals.writeTerminal(
+        terminal.id,
+        "stty -echo; printf '\\r\\n$wrapReadyMarker\\r\\n'\r",
+      );
+      await _waitUntil(
+        () => _terminalRows(
+          terminalView,
+        ).any((line) => line.contains(wrapReadyMarker)),
+        'the shell to disable echo before the wrapped-row probe',
+      );
+      await tester.pumpAndSettle();
+      // xterm crosses a soft-wrap boundary on Backspace only when the
+      // terminal application enables DEC reverse-wrap mode.
+      const reverseWrapPrefix = '\r\n\u001b[2K\u001b[?45h\u001b[999C\u001b[5D';
+      const eraseAcrossWrap = 'WRAPQWxy\b \b\b \b\b \b\r\n';
+      const wrappedProbe = '$reverseWrapPrefix$eraseAcrossWrap';
+      final encodedWrappedProbe = base64Encode(utf8.encode(wrappedProbe));
       await setupClient.terminals.writeTerminal(
         terminal.id,
         r"printf '\033[?2004l'; stty raw -echo; "
+        "printf '%s' '$encodedWrappedProbe' | base64 --decode; "
         ": > '${modeProbe.path}'; touch '${modeReady.path}'; "
         "dd bs=1 count=1 of='${modeProbe.path}' status=none; "
         ": > '${capture.path}'; touch '${ready.path}'; "
@@ -183,14 +206,47 @@ void main() {
         ready.existsSync,
         'the PTY byte recorder to follow the mode probe',
       );
-      await _keys(<String>[...'gksrmf'.split(''), 'space']);
+      await _waitForTerminalParsed(terminalView.terminal);
+      final wrappedEraseObserved = await _waitForOptional(
+        () => _terminalRows(terminalView).any(
+          (line) => line.endsWith('WRAPQ'),
+        ),
+        const Duration(seconds: 15),
+      );
+      final terminalRows = _terminalRows(terminalView);
+      expect(
+        wrappedEraseObserved,
+        isTrue,
+        reason:
+            'Expected Backspace to erase W across the WRAPQW '
+            'soft-wrap boundary; rows=$terminalRows',
+      );
+      await _keys(<String>['g', 'k']);
+      if (artifactDirectory != null) {
+        await _run('scrot', <String>[
+          '--overwrite',
+          '$artifactDirectory/ime-preedit.png',
+        ]);
+      }
+      await _keys(<String>[...'srmf'.split(''), 'space']);
       await _toggleLanguage();
       await _keys(<String>['a', 'b', 'c', 'space']);
       await _toggleLanguage();
       await _keys(<String>[...'dkssud'.split(''), 'space']);
+      await _toggleLanguage();
 
       const pasted = '붙여넣기 👩🏽\u200d💻';
       clipboard = await _setClipboard(pasted);
+      await _clickFinder(tester, windowId, terminalSurface, button: 3);
+      await _keys(<String>['Escape']);
+      await _waitForTerminalFocus(tester);
+      await _keys(<String>['z']);
+      await _waitUntil(
+        () =>
+            capture.existsSync() &&
+            capture.lengthSync() >= utf8.encode('한글 abc 안녕 \u001bz').length,
+        'terminal input to resume after native-menu cancellation',
+      );
       await _clickFinder(tester, windowId, terminalSurface, button: 3);
       final nativeMenuGesture = await tester.startGesture(
         tester.getTopLeft(terminalSurface) + const Offset(24, 24),
@@ -488,6 +544,22 @@ Future<bool> _waitForOptional(
     await Future<void>.delayed(const Duration(milliseconds: 20));
   }
   return predicate();
+}
+
+Future<void> _waitForTerminalParsed(Terminal terminal) async {
+  final parsed = Completer<void>();
+  // Terminal.write queues parser work. An empty write acts as a FIFO barrier,
+  // so the buffer assertions below cannot race the preceding PTY output.
+  terminal.write('', onParsed: parsed.complete);
+  await parsed.future.timeout(const Duration(seconds: 15));
+}
+
+List<String> _terminalRows(CoderTerminalView view) {
+  final buffer = view.terminal.buffer.active;
+  return <String>[
+    for (var index = 0; index < buffer.length; index++)
+      buffer.getLine(index)!.translateToString(trimRight: true),
+  ];
 }
 
 String _hex(int value) => value.toRadixString(16).padLeft(2, '0');

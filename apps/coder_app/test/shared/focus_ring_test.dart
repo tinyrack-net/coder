@@ -4,8 +4,10 @@ import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/src/internal/focus_source.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../support/localization.dart';
@@ -22,36 +24,18 @@ Widget _host(Widget child, {double width = 1200}) => MaterialApp(
   ),
 );
 
-/// The ring colour the row itself paints, whichever layer it paints it on.
-///
-/// The row is free to move its ring between the background and the foreground
-/// decoration; what a caller can see is only the colour, so that is what these
-/// tests assert on.
-Color _rowRingColor(WidgetTester tester) {
-  final container = tester.widget<AnimatedContainer>(
-    find
-        .descendant(
-          of: find.byType(CoderListRow),
-          matching: find.byType(AnimatedContainer),
-        )
-        .first,
+void Function(Canvas) _focusRingPainter(WidgetTester tester, Finder owner) {
+  final ring = find
+      .descendant(
+        of: owner,
+        matching: find.byType(TRFocusRing),
+      )
+      .first;
+  final render = tester.renderObject<RenderCustomPaint>(
+    find.descendant(of: ring, matching: find.byType(CustomPaint)).first,
   );
-  for (final decoration in <Decoration?>[
-    container.foregroundDecoration,
-    container.decoration,
-  ]) {
-    final border = (decoration as BoxDecoration?)?.border;
-    if (border != null) return border.top.color;
-  }
-  return Colors.transparent;
+  return (canvas) => render.foregroundPainter?.paint(canvas, render.size);
 }
-
-/// Puts the primary focus on the row itself, without a pointer.
-///
-/// Tapping a row runs its activation, and tapping a select opens its menu, so
-/// neither says anything about the ring.
-void _focusRow(WidgetTester tester, String title) =>
-    Focus.of(tester.element(find.text(title))).requestFocus();
 
 /// Matches the widget that currently holds the primary focus.
 ///
@@ -65,11 +49,30 @@ Finder get _primaryFocus => find.byElementPredicate(
 Color _focusColor(WidgetTester tester) =>
     tester.element(find.byType(CoderListRow)).tinyrackTheme.focus;
 
+Future<void> _requestFocusFromKeyboard(
+  WidgetTester tester,
+  Finder owner,
+) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
+  TRFocusSource.instance.debugSetKeyboardModality(true);
+  Focus.of(
+    tester.element(
+      find.descendant(of: owner, matching: find.byType(TRFocusRing)).first,
+    ),
+  ).requestFocus();
+  await tester.pumpAndSettle();
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
+}
+
 void main() {
   setUp(
-    () => FocusManager.instance.highlightStrategy =
-        FocusHighlightStrategy.alwaysTraditional,
+    () {
+      FocusManager.instance.highlightStrategy =
+          FocusHighlightStrategy.alwaysTraditional;
+      TRFocusSource.instance.debugReset();
+    },
   );
+  tearDown(TRFocusSource.instance.debugReset);
 
   group('CoderListRow focus ring', () {
     testWidgets('leaves the ring to a control that takes the focus', (
@@ -102,10 +105,15 @@ void main() {
       // The select draws its own focus, so a row that also drew one showed two
       // rings for one control. A row reports focus for its descendants too, so
       // the ring has to follow the primary focus rather than that.
-      expect(_rowRingColor(tester), isNot(_focusColor(tester)));
+      expect(
+        _focusRingPainter(tester, find.byType(CoderListRow)),
+        isNot(paints..rrect(color: _focusColor(tester))),
+      );
     });
 
-    testWidgets('rings itself while it holds the focus', (tester) async {
+    testWidgets('rings itself for keyboard focus but not pointer focus', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           SettingsRow(
@@ -116,10 +124,21 @@ void main() {
         ),
       );
 
-      _focusRow(tester, 'Open');
+      await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
+      expect(
+        _focusRingPainter(tester, find.byType(CoderListRow)),
+        isNot(paints..rrect(color: _focusColor(tester))),
+      );
 
-      expect(_rowRingColor(tester), _focusColor(tester));
+      tester.binding.focusManager.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await _requestFocusFromKeyboard(tester, find.byType(CoderListRow));
+
+      expect(
+        _focusRingPainter(tester, find.byType(CoderListRow)),
+        paints..rrect(color: _focusColor(tester)),
+      );
     });
 
     testWidgets('does not move its content when it takes the focus', (
@@ -136,7 +155,7 @@ void main() {
       );
 
       final before = tester.getRect(find.byType(Icon));
-      _focusRow(tester, 'Open');
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
 
       // A ring added to the layout shrinks the content box and re-lays-out the
@@ -218,13 +237,19 @@ void main() {
 
       // Selecting a tab and closing it are two actions, so a row whose trailing
       // control does something else keeps both stops.
-      _focusRow(tester, 'Session');
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(_rowRingColor(tester), _focusColor(tester));
+      expect(
+        _focusRingPainter(tester, find.byType(CoderListRow)),
+        paints..rrect(color: _focusColor(tester)),
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(_rowRingColor(tester), isNot(_focusColor(tester)));
+      expect(
+        _focusRingPainter(tester, find.byType(CoderListRow)),
+        isNot(paints..rrect(color: _focusColor(tester))),
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
@@ -272,26 +297,29 @@ void main() {
         ),
       );
 
-      final ring = find.descendant(
-        of: find.byType(ChatToolCard),
-        matching: find.byType(Container),
-      );
-      Color ringColor() =>
-          (tester.widget<Container>(ring.first).foregroundDecoration!
-                  as BoxDecoration)
-              .border!
-              .top
-              .color;
       final focus = tester
           .element(find.byType(ChatToolCard))
           .tinyrackTheme
           .focus;
 
       // The card is a tab stop, so a keyboard user has to be able to see it.
-      expect(ringColor(), isNot(focus));
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(
+        _focusRingPainter(tester, find.byType(ChatToolCard)),
+        isNot(paints..rrect(color: focus)),
+      );
+      await tester.tap(find.byType(ChatToolCard));
       await tester.pumpAndSettle();
-      expect(ringColor(), focus);
+      expect(
+        _focusRingPainter(tester, find.byType(ChatToolCard)),
+        isNot(paints..rrect(color: focus)),
+      );
+      tester.binding.focusManager.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await _requestFocusFromKeyboard(tester, find.byType(ChatToolCard));
+      expect(
+        _focusRingPainter(tester, find.byType(ChatToolCard)),
+        paints..rrect(color: focus),
+      );
     });
   });
 }

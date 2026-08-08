@@ -854,6 +854,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsNoConnections => 'No providers are connected.';
 
   @override
+  String get providerSettingsSelectConnection => '管理するProviderを選択してください。';
+
+  @override
+  String get providerSettingsRequiredFields => '名前とBase URLを入力してください。';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API keyを入力してください。';
+
+  @override
   String get providerSettingsEditAdvanced => 'Edit advanced settings';
 
   @override
@@ -877,6 +886,27 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => 'Waiting for sign-in';
+
+  @override
+  String get providerSettingsOpenBrowser => 'ブラウザーを開く';
+
+  @override
+  String get providerSettingsReconnect => '再接続';
+
+  @override
+  String get providerSettingsModelPrefix => 'モデルプレフィックス';
+
+  @override
+  String get providerSettingsModelPrefixHelp =>
+      'openai/gpt-5.6-col のようなモデル ID に使用されます。';
+
+  @override
+  String get providerSettingsModelPrefixInvalid =>
+      '小文字、数字、ハイフン、アンダースコアを1〜64文字で入力してください。';
+
+  @override
+  String get providerSettingsModelPrefixConflict =>
+      'そのモデルプレフィックスはすでに使用されています。更新された候補をお試しください。';
 
   @override
   String providerSettingsConnectTitle(String name) {
@@ -1269,6 +1299,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get chatQuestionSubmit => 'Answer';
+
+  @override
+  String get chatQuestionNext => 'Next';
+
+  @override
+  String get chatQuestionNavigation => 'Questions';
+
+  @override
+  String get chatQuestionSubmitting => 'Submitting answers';
 
   @override
   String get chatQuestionOther => 'Other';
@@ -1852,4 +1891,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerSuggestionsLabel => 'Suggestions';
+
+  @override
+  String get composerDropFilesHere => 'ここにファイルをドロップ';
 }

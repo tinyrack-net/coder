@@ -19,7 +19,6 @@ void main() {
         homeDirectory: home.path,
         userHomeDirectory: userHome.path,
         port: 0,
-        apiKey: 'test-key',
         bearerToken: token,
         useEnvironmentCredentials: false,
       );

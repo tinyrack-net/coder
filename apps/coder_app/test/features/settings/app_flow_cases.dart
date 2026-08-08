@@ -174,6 +174,23 @@ void _registerSettingsAppFlows() {
         tester.widget<TRSelect<String>>(daemonSelect).appearance,
         TRFieldAppearance.ghost,
       );
+
+      final trigger = find.descendant(
+        of: daemonSelect,
+        matching: find.byType(TextButton),
+      );
+      final button = tester.widget<TextButton>(trigger);
+      await tester.tap(trigger, kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      final states = <WidgetState>{
+        if (button.focusNode?.hasFocus ?? false) WidgetState.focused,
+      };
+      final colors = tester.element(daemonSelect).tinyrackTheme;
+      expect(
+        button.style!.backgroundColor!.resolve(states),
+        colors.surfaceSelected,
+      );
+      expect(button.style!.side!.resolve(states)!.color, isNot(colors.focus));
     },
     tags: const <String>['feature_test__daemon_management__widget'],
   );

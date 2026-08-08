@@ -10,6 +10,7 @@ export 'package:coder_agent/src/tools/ask_user.dart';
 export 'package:coder_agent/src/tools/attach_file.dart';
 export 'package:coder_agent/src/tools/glob.dart';
 export 'package:coder_agent/src/tools/list_directory.dart';
+export 'package:coder_agent/src/tools/lua_code_mode.dart';
 export 'package:coder_agent/src/tools/patch/unified_diff.dart';
 export 'package:coder_agent/src/tools/read_attachment.dart';
 export 'package:coder_agent/src/tools/read_file.dart';

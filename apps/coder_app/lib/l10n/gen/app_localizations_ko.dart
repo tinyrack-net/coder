@@ -847,6 +847,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsNoConnections => '연결된 Provider가 없습니다.';
 
   @override
+  String get providerSettingsSelectConnection => '관리할 Provider를 선택하세요.';
+
+  @override
+  String get providerSettingsRequiredFields => '이름과 Base URL을 입력하세요.';
+
+  @override
+  String get providerSettingsApiKeyRequired => 'API key를 입력하세요.';
+
+  @override
   String get providerSettingsEditAdvanced => '고급 설정 편집';
 
   @override
@@ -869,6 +878,27 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerSettingsOAuthPending => '로그인 대기 중';
+
+  @override
+  String get providerSettingsOpenBrowser => '브라우저 열기';
+
+  @override
+  String get providerSettingsReconnect => '다시 연결';
+
+  @override
+  String get providerSettingsModelPrefix => '모델 Prefix';
+
+  @override
+  String get providerSettingsModelPrefixHelp =>
+      'openai/gpt-5.6-col 같은 모델 ID에 사용됩니다.';
+
+  @override
+  String get providerSettingsModelPrefixInvalid =>
+      '소문자, 숫자, 하이픈, 밑줄을 사용해 1~64자로 입력하세요.';
+
+  @override
+  String get providerSettingsModelPrefixConflict =>
+      '이미 사용 중인 모델 Prefix입니다. 갱신된 제안을 사용해 보세요.';
 
   @override
   String providerSettingsConnectTitle(String name) {
@@ -1253,6 +1283,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get chatQuestionSubmit => '답변';
+
+  @override
+  String get chatQuestionNext => '다음';
+
+  @override
+  String get chatQuestionNavigation => '질문';
+
+  @override
+  String get chatQuestionSubmitting => '답변 제출 중';
 
   @override
   String get chatQuestionOther => '직접 입력';
@@ -1824,4 +1863,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerSuggestionsLabel => '제안';
+
+  @override
+  String get composerDropFilesHere => '여기에 파일을 놓으세요';
 }

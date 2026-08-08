@@ -188,8 +188,7 @@ void main() {
 
   test('session model overrides round-trip', () {
     const selection = SessionModelSelectionDto(
-      providerConnectionId: 'provider',
-      modelId: 'model',
+      modelId: 'provider/model',
     );
     final overridden = SessionDto(
       id: 'session',
@@ -1184,12 +1183,16 @@ void main() {
       const ProviderConnectApiKeyParamsDto(
         definitionId: 'provider',
         apiKey: 'secret',
+        connectionId: 'existing-provider',
       ),
       (value) => value.toJson(),
       ProviderConnectApiKeyParamsDto.fromJson,
     );
     _roundTrip(
-      const ProviderConnectNoneParamsDto(definitionId: 'ollama'),
+      const ProviderConnectNoneParamsDto(
+        definitionId: 'ollama',
+        connectionId: 'existing-ollama',
+      ),
       (value) => value.toJson(),
       ProviderConnectNoneParamsDto.fromJson,
     );
@@ -1210,6 +1213,7 @@ void main() {
       const ProviderAuthStartParamsDto(
         definitionId: 'openai',
         methodId: 'chatgpt-device',
+        connectionId: 'existing-openai',
       ),
       (value) => value.toJson(),
       ProviderAuthStartParamsDto.fromJson,
@@ -1829,8 +1833,7 @@ void main() {
       _roundTrip(
         const DefaultModelDto(
           model: SessionModelSelectionDto(
-            providerConnectionId: 'connection-1',
-            modelId: 'model-1',
+            modelId: 'connection-1/model-1',
           ),
         ),
         (value) => value.toJson(),

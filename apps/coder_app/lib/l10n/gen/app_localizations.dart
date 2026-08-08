@@ -1660,6 +1660,24 @@ abstract class AppLocalizations {
   /// **'No providers are connected.'**
   String get providerSettingsNoConnections;
 
+  /// Empty detail pane shown before a provider is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a provider to manage.'**
+  String get providerSettingsSelectConnection;
+
+  /// No description provided for @providerSettingsRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and Base URL are required.'**
+  String get providerSettingsRequiredFields;
+
+  /// No description provided for @providerSettingsApiKeyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'API key is required.'**
+  String get providerSettingsApiKeyRequired;
+
   /// Menu entry that opens the custom provider form.
   ///
   /// In en, this message translates to:
@@ -1707,6 +1725,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for sign-in'**
   String get providerSettingsOAuthPending;
+
+  /// Action that reopens a provider OAuth URL in the system browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open browser'**
+  String get providerSettingsOpenBrowser;
+
+  /// Action that replaces credentials for an existing provider connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get providerSettingsReconnect;
+
+  /// Label for the globally unique provider model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Model prefix'**
+  String get providerSettingsModelPrefix;
+
+  /// Help text explaining qualified model identifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in model IDs such as openai/gpt-5.6-col.'**
+  String get providerSettingsModelPrefixHelp;
+
+  /// Validation message for an invalid model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 1–64 lowercase letters, numbers, hyphens, or underscores.'**
+  String get providerSettingsModelPrefixInvalid;
+
+  /// Inline error shown when the daemon rejects a duplicate model prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'That model prefix is already in use. Try the updated suggestion.'**
+  String get providerSettingsModelPrefixConflict;
 
   /// Title of the API key dialog.
   ///
@@ -2337,6 +2391,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer'**
   String get chatQuestionSubmit;
+
+  /// Button that advances to the next agent question.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get chatQuestionNext;
+
+  /// Screen-reader name of the agent question tab strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions'**
+  String get chatQuestionNavigation;
+
+  /// Screen-reader status while agent question answers are submitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting answers'**
+  String get chatQuestionSubmitting;
 
   /// Choice that lets the user type a free-form answer.
   ///
@@ -3369,6 +3441,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggestions'**
   String get composerSuggestionsLabel;
+
+  /// Instruction shown over a composer pane while files are dragged over it.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop files here'**
+  String get composerDropFilesHere;
 }
 
 class _AppLocalizationsDelegate
