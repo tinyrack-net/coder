@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/lua_code_mode_service.dart';
 import 'package:lua_tool_runtime/lua_tool_runtime.dart' as lua;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -45,6 +46,36 @@ void main() {
         <String>['native', 'bootstrap.lua'].join(Platform.pathSeparator),
       ),
     );
+  });
+
+  test('macOS discovery reads bootstrap from app resources', () {
+    final bundle = Directory.systemTemp.createTempSync('coder-lua-bundle-');
+    addTearDown(() => bundle.deleteSync(recursive: true));
+    final executableDirectory = Directory(
+      p.join(bundle.path, 'Coder.app', 'Contents', 'MacOS'),
+    )..createSync(recursive: true);
+    final helper = File(
+      p.join(executableDirectory.path, 'lua-tool-runtime-host'),
+    )..createSync();
+    final bootstrap = File(
+      p.join(
+        bundle.path,
+        'Coder.app',
+        'Contents',
+        'Resources',
+        'lua_tool_runtime',
+        'bootstrap.lua',
+      ),
+    )..createSync(recursive: true);
+
+    final command = discoverLuaHostCommand(
+      sourceRoot: bundle.path,
+      resolvedExecutable: p.join(executableDirectory.path, 'Coder'),
+      isMacOS: true,
+    );
+
+    expect(command.executable, helper.path);
+    expect(command.arguments, <String>[bootstrap.path]);
   });
 
   test('a nested tool batch resumes the cell and preserves output', () async {

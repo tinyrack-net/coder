@@ -336,7 +336,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nROOT=\"$PROJECT_DIR/../../..\"\nDEST=\"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/MacOS\"\ncd \"$ROOT\"\ndart run tool/build_lua_host.dart --destination \"$DEST\" --build-mode release\n";
+			shellScript = "set -e\nROOT=\"$PROJECT_DIR/../../..\"\nCONTENTS=\"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents\"\nEXECUTABLES=\"$CONTENTS/MacOS\"\nRESOURCES=\"$CONTENTS/Resources\"\ncd \"$ROOT\"\nrm -rf \"$EXECUTABLES/lua_tool_runtime\"\ndart run tool/build_lua_host.dart --destination \"$RESOURCES\" --build-mode release\nmv -f \"$RESOURCES/lua-tool-runtime-host\" \"$EXECUTABLES/lua-tool-runtime-host\"\nif [ \"${CODE_SIGNING_ALLOWED:-YES}\" != \"NO\" ]; then\n  SIGNING_IDENTITY=\"${EXPANDED_CODE_SIGN_IDENTITY:--}\"\n  if [ \"$SIGNING_IDENTITY\" = \"-\" ]; then\n    /usr/bin/codesign --force --sign - --timestamp=none \"$EXECUTABLES/lua-tool-runtime-host\"\n  else\n    /usr/bin/codesign --force --sign \"$SIGNING_IDENTITY\" --timestamp \"$EXECUTABLES/lua-tool-runtime-host\"\n  fi\nfi\n";
 		};
 		33CC111E2044C6BF0003C045 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

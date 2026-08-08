@@ -7,12 +7,36 @@ import 'package:path/path.dart' as p;
 
 /// Resolves a packaged host, with the dependency source as a development
 /// fallback. Production bundles always take the first branch.
-lua.LuaHostCommand discoverLuaHostCommand({required String sourceRoot}) {
-  final executableDirectory = p.dirname(Platform.resolvedExecutable);
+lua.LuaHostCommand discoverLuaHostCommand({
+  required String sourceRoot,
+  String? resolvedExecutable,
+  bool? isMacOS,
+}) {
+  final executableDirectory = p.dirname(
+    resolvedExecutable ?? Platform.resolvedExecutable,
+  );
   final packaged = lua.LuaHostCommand.fromDirectory(executableDirectory);
   if (File(packaged.executable).existsSync() &&
       File(packaged.arguments.single).existsSync()) {
     return packaged;
+  }
+  if (isMacOS ?? Platform.isMacOS) {
+    final resourceBootstrap = p.normalize(
+      p.join(
+        executableDirectory,
+        '..',
+        'Resources',
+        'lua_tool_runtime',
+        'bootstrap.lua',
+      ),
+    );
+    if (File(packaged.executable).existsSync() &&
+        File(resourceBootstrap).existsSync()) {
+      return lua.LuaHostCommand(
+        executable: packaged.executable,
+        arguments: <String>[resourceBootstrap],
+      );
+    }
   }
 
   var directory = Directory(p.normalize(p.absolute(sourceRoot)));
@@ -46,7 +70,7 @@ lua.LuaHostCommand discoverLuaHostCommand({required String sourceRoot}) {
   }
   throw StateError(
     'lua-tool-runtime-host and its bootstrap could not be located next to '
-    '${Platform.resolvedExecutable}.',
+    '${resolvedExecutable ?? Platform.resolvedExecutable}.',
   );
 }
 
