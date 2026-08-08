@@ -47,25 +47,25 @@ class SessionsController extends _$SessionsController {
       throw StateError('Worktree selection and daemon connection required.');
     }
     final api = await requireHostApi(ref, hostId);
-    final previous = state.asData?.value ?? const <SessionDto>[];
-    state = const AsyncLoading<List<SessionDto>>();
-    try {
-      final session = await api.sessions.createSession(
-        id: ref.read(appIdGeneratorProvider).generate(),
-        worktreeId: worktreeId,
-        title: title,
-        agentDefinitionId: agentDefinitionId,
-        mode: mode,
-        model: model,
-        modelControls: modelControls,
-        permissionMode: permissionMode,
-      );
-      state = AsyncData<List<SessionDto>>(<SessionDto>[session, ...previous]);
-      return session;
-    } catch (error, stackTrace) {
-      state = AsyncError<List<SessionDto>>(error, stackTrace);
-      rethrow;
-    }
+    // Creating one row must not turn the whole catalog back into a loading
+    // screen. The caller owns the in-flight/error presentation; this provider
+    // keeps the last usable snapshot until the daemon confirms the new row.
+    final session = await api.sessions.createSession(
+      id: ref.read(appIdGeneratorProvider).generate(),
+      worktreeId: worktreeId,
+      title: title,
+      agentDefinitionId: agentDefinitionId,
+      mode: mode,
+      model: model,
+      modelControls: modelControls,
+      permissionMode: permissionMode,
+    );
+    final current = state.asData?.value ?? const <SessionDto>[];
+    state = AsyncData<List<SessionDto>>(<SessionDto>[
+      session,
+      ...current.where((item) => item.id != session.id),
+    ]);
+    return session;
   }
 
   /// Switches one session between planning and normal collaboration.

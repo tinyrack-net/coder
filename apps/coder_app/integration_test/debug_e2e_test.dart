@@ -1216,11 +1216,12 @@ void main() {
         find.text('Attached fixtures.', findRichText: true),
       );
 
-      await tester.enterText(
-        find.byKey(composer),
+      await _submitComposerPrompt(
+        tester,
+        composer,
+        send,
         'Publish outbound attachment',
       );
-      await tester.tap(find.byKey(send));
       await pumpUntilCondition(
         tester,
         () async => (await setupClient.sessions.subscribeTimeline(
