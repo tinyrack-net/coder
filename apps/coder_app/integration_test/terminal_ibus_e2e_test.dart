@@ -206,6 +206,7 @@ void main() {
         ready.existsSync,
         'the PTY byte recorder to follow the mode probe',
       );
+      await _waitForTerminalParsed(terminalView.terminal);
       final wrappedEraseObserved = await _waitForOptional(
         () => _terminalRows(terminalView).any(
           (line) => line.endsWith('WRAPQ'),
@@ -543,6 +544,14 @@ Future<bool> _waitForOptional(
     await Future<void>.delayed(const Duration(milliseconds: 20));
   }
   return predicate();
+}
+
+Future<void> _waitForTerminalParsed(Terminal terminal) async {
+  final parsed = Completer<void>();
+  // Terminal.write queues parser work. An empty write acts as a FIFO barrier,
+  // so the buffer assertions below cannot race the preceding PTY output.
+  terminal.write('', onParsed: parsed.complete);
+  await parsed.future.timeout(const Duration(seconds: 15));
 }
 
 List<String> _terminalRows(CoderTerminalView view) {
