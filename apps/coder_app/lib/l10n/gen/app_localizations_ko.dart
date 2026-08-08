@@ -1181,6 +1181,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatQuestionSubmit => '답변';
 
   @override
+  String get chatQuestionNext => '다음';
+
+  @override
+  String get chatQuestionNavigation => '질문';
+
+  @override
+  String get chatQuestionSubmitting => '답변 제출 중';
+
+  @override
   String get chatQuestionOther => '직접 입력';
 
   @override

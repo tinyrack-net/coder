@@ -483,6 +483,12 @@ final class FakeCoderApi
   final List<({String id, List<UserQuestionAnswerDto> answers})>
   questionAnswers = <({String id, List<UserQuestionAnswerDto> answers})>[];
 
+  /// Holds an answer request in flight until a test releases it.
+  Completer<void>? questionAnswerGate;
+
+  /// Error thrown after a question answer is recorded.
+  Exception? questionAnswerError;
+
   final List<({String id, bool approved})> approvalDecisions =
       <({String id, bool approved})>[];
 
@@ -1726,6 +1732,8 @@ final class FakeCoderApi
     required List<UserQuestionAnswerDto> answers,
   }) async {
     questionAnswers.add((id: requestId, answers: answers));
+    await questionAnswerGate?.future;
+    if (questionAnswerError case final error?) throw error;
     return UserQuestionRequestDto(
       id: requestId,
       sessionId: 'session',

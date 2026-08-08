@@ -1200,6 +1200,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get chatQuestionSubmit => 'Answer';
 
   @override
+  String get chatQuestionNext => 'Next';
+
+  @override
+  String get chatQuestionNavigation => 'Questions';
+
+  @override
+  String get chatQuestionSubmitting => 'Submitting answers';
+
+  @override
   String get chatQuestionOther => 'Other';
 
   @override

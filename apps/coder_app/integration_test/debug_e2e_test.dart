@@ -1479,18 +1479,41 @@ void main() {
       // The turn stays blocked: nothing was chosen yet.
       expect(tester.widget<TRButton>(questionSubmit).onPressed, isNull);
       await tester.tap(find.text('SQLite'));
-      // The blocked turn keeps the tool row spinning, so the tree never goes
-      // quiet and pumpAndSettle would run to its deadline. Wait on the state
-      // the tap produces instead.
+      await pumpUntil(tester, find.text('Which theme should the editor use?'));
+      expect(find.text('Which store should the cache use?'), findsNothing);
+
+      await tester.tap(find.text('직접 입력'));
+      final themeAnswer = find.byKey(
+        const ValueKey<String>('chat-question-other-theme'),
+      );
+      await pumpUntil(tester, themeAnswer);
+      await tester.enterText(themeAnswer, 'High contrast');
       await pumpUntilCondition(
         tester,
         () => tester.widget<TRButton>(questionSubmit).onPressed != null,
-        'the answer button to accept the chosen option',
+        'the next button to accept the typed answer',
+      );
+      expect(find.widgetWithText(TRButton, '다음'), findsOneWidget);
+      await tester.ensureVisible(questionSubmit);
+      await tester.pump();
+      await tester.tap(questionSubmit);
+      await pumpUntil(tester, find.text('How should changes be reviewed?'));
+
+      expect(find.widgetWithText(TRButton, '답변'), findsOneWidget);
+      expect(tester.widget<TRButton>(questionSubmit).onPressed, isNull);
+      await tester.tap(find.text('Pull request'));
+      await pumpUntilCondition(
+        tester,
+        () => tester.widget<TRButton>(questionSubmit).onPressed != null,
+        'the answer button to accept all three answers',
       );
       await tester.ensureVisible(questionSubmit);
       await tester.pump();
       await tester.tap(questionSubmit);
-      await pumpUntil(tester, find.textContaining('Chose SQLite'));
+      await pumpUntil(
+        tester,
+        find.textContaining('Chose SQLite, High contrast, and Pull request'),
+      );
       await pumpUntilGone(tester, questionSubmit);
 
       final reconnected = await CoderClient.connect(
@@ -2730,6 +2753,36 @@ final class _AgentE2eProvider implements ModelProvider {
                 },
               ],
             },
+            <String, dynamic>{
+              'id': 'theme',
+              'header': 'Theme',
+              'question': 'Which theme should the editor use?',
+              'options': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'label': 'System',
+                  'description': 'Follow the operating system.',
+                },
+                <String, dynamic>{
+                  'label': 'Dark',
+                  'description': 'Always use the dark theme.',
+                },
+              ],
+            },
+            <String, dynamic>{
+              'id': 'review',
+              'header': 'Review',
+              'question': 'How should changes be reviewed?',
+              'options': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'label': 'Pull request',
+                  'description': 'Require a review before merging.',
+                },
+                <String, dynamic>{
+                  'label': 'Direct',
+                  'description': 'Merge directly after checks pass.',
+                },
+              ],
+            },
           ],
         };
         yield const ModelFunctionCall(
@@ -2751,8 +2804,11 @@ final class _AgentE2eProvider implements ModelProvider {
         );
         return;
       }
-      final reply = answered.output.contains('SQLite')
-          ? 'Chose SQLite'
+      final reply =
+          answered.output.contains('SQLite') &&
+              answered.output.contains('High contrast') &&
+              answered.output.contains('Pull request')
+          ? 'Chose SQLite, High contrast, and Pull request'
           : 'Chose something else';
       yield ModelTextDelta(reply);
       yield ModelResponseCompleted(

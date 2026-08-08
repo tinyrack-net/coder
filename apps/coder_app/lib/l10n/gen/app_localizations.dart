@@ -2206,6 +2206,24 @@ abstract class AppLocalizations {
   /// **'Answer'**
   String get chatQuestionSubmit;
 
+  /// Button that advances to the next agent question.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get chatQuestionNext;
+
+  /// Screen-reader name of the agent question tab strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions'**
+  String get chatQuestionNavigation;
+
+  /// Screen-reader status while agent question answers are submitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting answers'**
+  String get chatQuestionSubmitting;
+
   /// Choice that lets the user type a free-form answer.
   ///
   /// In en, this message translates to:
